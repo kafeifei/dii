@@ -76,8 +76,8 @@ node tools/play.mjs tools/bot.mjs --url "http://localhost:5174/?dev"
 
 `DEPTH` 和 `MINUTES` 环境变量控制机器人打到第几层、最多模拟多少分钟（游戏内时间，快进运行）。
 
-单个机器人受装备运气影响很大，调平衡时用批量版本，并行跑多轮后按层给出死亡中位数、耗时、角色属性和死因：
+单个机器人受装备运气影响很大，调平衡时用批量版本，并行跑多轮后按层给出死亡中位数、耗时、角色属性和死因。它默认连 `http://localhost:5174/?dev`，那里没有服务器时会自己起一个、跑完关掉，不用先 `npm run dev`：
 
 ```bash
-node tools/balance.mjs --runs 16 --depth 20 --url "http://localhost:5174/?dev" --dump 12,16
+node tools/balance.mjs --runs 16 --depth 20 --dump 12,16
 ```

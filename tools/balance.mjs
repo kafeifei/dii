@@ -1,5 +1,6 @@
 // Runs several balance bots in parallel and aggregates per-floor results.
 // node tools/balance.mjs --runs 6 --depth 16 --minutes 120 --url "http://localhost:PORT/?dev"
+// Starts its own vite dev server when nothing answers at a localhost --url.
 import { spawn } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
@@ -15,6 +16,32 @@ const minutes = +opt('minutes', 120);
 const url = opt('url', 'http://localhost:5174/?dev');
 const from = +opt('from', 1);
 
+async function reachable(u) {
+  try {
+    const r = await fetch(u, { signal: AbortSignal.timeout(2000) });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
+let server = null;
+if (!(await reachable(url))) {
+  const u = new URL(url);
+  if (!['localhost', '127.0.0.1'].includes(u.hostname)) {
+    console.error(`nothing answers at ${url}`);
+    process.exit(1);
+  }
+  console.log(`no dev server at ${u.origin}, starting one`);
+  server = spawn('node_modules/.bin/vite', ['--port', u.port || '80', '--strictPort'], { stdio: 'ignore' });
+  process.on('exit', () => server.kill());
+  for (let t = 0; t < 60 && !(await reachable(url)); t++) await new Promise((r) => setTimeout(r, 500));
+  if (!(await reachable(url))) {
+    console.error(`dev server did not come up at ${u.origin}`);
+    process.exit(1);
+  }
+}
+
 function runOne(i) {
   return new Promise((resolve) => {
     const out = path.join(os.tmpdir(), `dii-balance-${process.pid}-${i}`);
@@ -28,14 +55,21 @@ function runOne(i) {
     child.on('close', () => {
       clearTimeout(kill);
       const line = buf.split('\n').find((l) => l.startsWith('BOT_RESULT '));
-      resolve(line ? JSON.parse(line.slice('BOT_RESULT '.length)) : null);
+      if (line) resolve(JSON.parse(line.slice('BOT_RESULT '.length)));
+      else {
+        failures.push(buf.trim().split('\n').slice(-15).join('\n'));
+        resolve(null);
+      }
     });
   });
 }
 
+const failures = [];
 const t0 = Date.now();
 const results = (await Promise.all(Array.from({ length: runs }, (_, i) => runOne(i)))).filter(Boolean);
 console.log(`${results.length}/${runs} runs finished in ${Math.round((Date.now() - t0) / 1000)}s\n`);
+if (failures.length) console.log(`a failed run's last output:\n${failures[0]}\n`);
+if (!results.length) process.exit(1);
 // runs that stopped short: why
 for (const r of results) {
   const top = Math.max(0, ...r.levels.map((l) => l.depth));
@@ -43,7 +77,7 @@ for (const r of results) {
 }
 
 const med = (a) => {
-  if (!a.length) return NaN;
+  if (!a.length) return '-';
   const s = [...a].sort((x, y) => x - y);
   return s[Math.floor(s.length / 2)];
 };
@@ -83,3 +117,5 @@ for (const d of (opt('dump', '') || '').split(',').filter(Boolean).map(Number)) 
   console.log(`\nfloor ${d} deaths:`);
   for (const [k, n] of Object.entries(combos).sort((a, b) => b[1] - a[1]).slice(0, 14)) console.log(`  ${n}x  ${k}`);
 }
+
+server?.kill();
