@@ -18,7 +18,7 @@ import { floorTexture, runeCircleTexture, shadowTexture, wallTexture } from './t
 const CAM_YAW = Math.PI / 4;
 const CAM_PITCH = 0.68; // ~39°
 const CAM_DIST = 40;
-const WALL_H = 2.1;
+const WALL_H = 1.9;
 const TORCH_LIGHTS = 5;
 const FX_LIGHTS = 6;
 
@@ -224,10 +224,10 @@ export class Renderer implements Picker {
     this.scene.background = new THREE.Color(theme.bg);
     this.hemi.color.set(theme.ambient);
     this.hemi.groundColor.set('#0a0606');
-    this.hemi.intensity = theme.ambientIntensity * 2.2;
+    this.hemi.intensity = theme.ambientIntensity * 2.8;
     this.dir.color.set(level.depth === 0 ? '#8aa0d8' : theme.ambient);
     this.dir.intensity = level.depth === 0 ? 0.9 : 0.25;
-    this.playerLight.intensity = level.depth === 0 ? 14 : 34;
+    this.playerLight.intensity = level.depth === 0 ? 16 : 42;
     this.playerLight.distance = level.depth === 0 ? 10 : 13;
 
     // floor
@@ -276,7 +276,7 @@ export class Renderer implements Picker {
     // walls
     const sideTex = wallTexture(theme.wallTexture, theme.wall);
     const sideMat = new THREE.MeshStandardMaterial({ map: sideTex, roughness: 0.92 });
-    const topMat = new THREE.MeshStandardMaterial({ color: theme.wallDark, roughness: 1 });
+    const topMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(theme.wall).lerp(new THREE.Color(theme.wallDark), 0.35), roughness: 1 });
     applyOcclusionFade(sideMat, this.occ);
     applyOcclusionFade(topMat, this.occ);
     const wallGeo = new THREE.BoxGeometry(1, WALL_H, 1);
@@ -512,7 +512,7 @@ export class Renderer implements Picker {
     // player light
     const lr = p.stats.lightRadius;
     this.playerLight.position.set(p.pos.x, 2.6, p.pos.z);
-    this.playerLight.distance = (level.depth === 0 ? 10 : 13) + lr * 1.2;
+    this.playerLight.distance = (level.depth === 0 ? 11 : 14) + lr * 1.2;
 
     // player rig
     const key = playerLookKey(p);

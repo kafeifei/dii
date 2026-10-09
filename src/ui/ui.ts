@@ -1201,8 +1201,8 @@ export class UI implements GameHooks {
     const r = this.renderer;
     const ps = r.playerScreen;
     const town = g.level.depth === 0;
-    const radius = (town ? 9 : 6.2 + d.lightRadius * 0.7) * r.pxPerUnit;
-    const a = town ? 0.45 : 0.9;
+    const radius = (town ? 10 : 7 + d.lightRadius * 0.7) * r.pxPerUnit;
+    const a = town ? 0.4 : 0.85;
     this.vignette.style.background = `radial-gradient(circle at ${ps.x}px ${ps.y}px, rgba(0,0,0,0) ${radius * 0.55}px, rgba(0,0,0,${a * 0.6}) ${radius}px, rgba(0,0,0,${a}) ${radius * 1.6}px)`;
 
     this.updateLabels();

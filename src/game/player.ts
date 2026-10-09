@@ -13,7 +13,7 @@ export const MAX_LEVEL = 60;
 /** cumulative xp needed to reach level L */
 export function xpForLevel(L: number): number {
   if (L <= 1) return 0;
-  return Math.floor(60 * Math.pow(L - 1, 2.4) + 100 * (L - 1));
+  return Math.floor(60 * Math.pow(L - 1, 2.3) + 100 * (L - 1));
 }
 
 export interface Derived {

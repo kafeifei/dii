@@ -49,10 +49,10 @@ export class Monster extends Actor {
     let life = def.life * (1 + l * 0.34);
     let dmgMul = 1 + l * 0.13;
     this.defense = Math.floor(def.def + mlvl * 6);
-    this.ar = Math.floor(def.ar + mlvl * 9);
+    this.ar = Math.floor(def.ar + mlvl * 7);
     this.speed = def.speed;
     this.attackSpeed = def.attackSpeed;
-    let xp = def.xp * (1 + l * 0.27);
+    let xp = def.xp * (1 + l * 0.38);
     this.res = {
       fire: def.res?.fire ?? 0,
       cold: def.res?.cold ?? 0,
@@ -62,33 +62,33 @@ export class Monster extends Actor {
     };
     switch (rank) {
       case 'champion':
-        life *= 3;
-        dmgMul *= 1.5;
-        this.ar *= 1.5;
+        life *= 2.5;
+        dmgMul *= 1.35;
+        this.ar *= 1.4;
         this.speed *= 1.15;
         xp *= 3;
         break;
       case 'unique':
-        life *= 4;
-        dmgMul *= 1.7;
-        this.ar *= 1.8;
+        life *= 3;
+        dmgMul *= 1.4;
+        this.ar *= 1.6;
         xp *= 5;
         break;
       case 'minion':
-        life *= 1.6;
-        dmgMul *= 1.2;
+        life *= 1.3;
+        dmgMul *= 1.1;
         xp *= 1.5;
         break;
       case 'boss':
-        life *= 9 + l * 0.15;
-        dmgMul *= 1.6;
+        life *= 2.6 + l * 0.05;
+        this.attackSpeed *= 0.8;
         xp *= 1;
         break;
     }
     for (const m of mods) {
       switch (m) {
         case 'strong':
-          dmgMul *= 1.8;
+          dmgMul *= 1.5;
           break;
         case 'fast':
           this.speed *= 1.4;

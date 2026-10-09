@@ -72,8 +72,9 @@ export class Level {
     };
 
     const rooms = L.spawnRooms.filter((r) => r !== L.bossRoom);
-    const uniqueCount = 1 + (rng.chance(0.5) ? 1 : 0);
-    const championCount = rng.int(1, 3);
+    // early floors are gentler: one unique pack and no champions on floor 1
+    const uniqueCount = this.depth <= 1 ? 1 : 1 + (rng.chance(0.5) ? 1 : 0);
+    const championCount = this.depth <= 1 ? 0 : this.depth <= 3 ? rng.int(1, 2) : rng.int(1, 3);
     const order = rooms.map((_, i) => i);
     // shuffle deterministic
     for (let i = order.length - 1; i > 0; i--) {
@@ -134,7 +135,7 @@ export class Level {
         const m = rng.pick(ALL_MODS);
         if (!mods.includes(m)) mods.push(m);
       }
-      const boss = new Monster(def, mlvl + 3, 'unique', c, mods);
+      const boss = new Monster(def, mlvl + 2, 'unique', c, mods);
       boss.displayName = rng.pick(UNIQUE_FIRST) + rng.pick(UNIQUE_SECOND);
       this.monsters.push(boss);
       const minions = rng.int(3, 5);

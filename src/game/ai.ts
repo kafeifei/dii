@@ -239,7 +239,7 @@ function fireAction(g: Game, m: Monster) {
     // lead the target a little
     const lead = { x: p.pos.x, z: p.pos.z };
     shoot(g, m, m.def.projectile!, lead);
-    if (m.rank === 'unique' || m.rank === 'champion') {
+    if (m.rank === 'unique') {
       shoot(g, m, m.def.projectile!, lead, 0.18);
       shoot(g, m, m.def.projectile!, lead, -0.18);
     }
