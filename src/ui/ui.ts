@@ -6,7 +6,7 @@ import { MOD_NAMES } from '../data/monsters';
 import type { Game, GameHooks } from '../game/game';
 import type { Level } from '../game/level';
 import { xpForLevel } from '../game/player';
-import { deleteSave, hasSave } from '../game/save';
+import { deleteSave, hasSave, markInGame } from '../game/save';
 import { skillCost } from '../game/playerctl';
 import { createItem, findRuneword, applyRuneword } from '../items/gen';
 import type { Grid } from '../items/grid';
@@ -288,6 +288,13 @@ export class UI implements GameHooks {
     } else el.textContent = `载入模型 ${Math.round((done / total) * 100)}%`;
   }
 
+  /** continue the saved run without going through the title screen */
+  resume() {
+    if (!this.game.continueGame()) return;
+    this.titleEl.classList.remove('open');
+    this.dirty = true;
+  }
+
   devStart() {
     this.game.newGame('测试骑士');
     this.titleEl.classList.remove('open');
@@ -323,6 +330,7 @@ export class UI implements GameHooks {
     (m.querySelector('.volr') as HTMLInputElement).oninput = (e) => this.sfx.setVolume(+(e.target as HTMLInputElement).value / 100);
     (m.querySelector('.quit') as HTMLButtonElement).onclick = () => {
       this.game.save();
+      markInGame(false);
       this.game.started = false;
       this.game.paused = false;
       this.sfx.ambience('none');

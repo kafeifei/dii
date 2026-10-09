@@ -2,9 +2,13 @@ import './data/legendary';
 import { Sfx } from './audio/sfx';
 import { Input } from './core/input';
 import { Game } from './game/game';
+import { useDevSlot, wasInGame } from './game/save';
 import { assets } from './render/assets';
 import { Renderer } from './render/renderer';
 import { UI } from './ui/ui';
+
+const DEV = location.search.includes('dev');
+if (DEV) useDevSlot();
 
 const canvas = document.getElementById('world') as HTMLCanvasElement;
 const sfx = new Sfx();
@@ -49,19 +53,26 @@ function raf(now: number) {
 }
 requestAnimationFrame(raf);
 // dev: keep simulating when the page is hidden (rAF pauses), useful for automated testing
-if (location.search.includes('dev')) {
+if (DEV) {
   setInterval(() => {
     if (performance.now() - lastRaf > 100) frame(performance.now());
   }, 16);
 }
 
+// save whenever the page may go away (beforeunload alone is unreliable in embedded browsers)
 window.addEventListener('beforeunload', () => game.save());
+window.addEventListener('pagehide', () => game.save());
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') game.save();
+});
 
 assets
   .load((done, total) => ui.loadProgress(done, total))
   .then(() => {
     ui.loadProgress(1, 1);
-    if (location.search.includes('dev')) ui.devStart();
+    if (DEV) ui.devStart();
+    // a reload mid-run goes straight back into the game
+    else if (wasInGame()) ui.resume();
   });
 
 // debug handle

@@ -16,7 +16,7 @@ import { DelayedBlast, GroundItem, Projectile, WorldObject } from './objects';
 import { Player } from './player';
 import { startCast, toggleAura, updatePlayer, type PlayerAction } from './playerctl';
 import type { Elem } from '../data/monsters';
-import { loadSave, writeSave } from './save';
+import { loadSave, markInGame, writeSave } from './save';
 
 export interface GameHooks {
   message(text: string, color?: string, dur?: number): void;
@@ -88,20 +88,23 @@ export class Game {
     p.mana = p.d.maxMana;
     this.player = p;
     this.started = true;
+    markInGame(true);
     this.enterLevel(0, 'start');
   }
 
   continueGame(): boolean {
-    const p = loadSave();
-    if (!p) return false;
-    this.player = p;
+    const s = loadSave();
+    if (!s) return false;
+    this.player = s.player;
     this.started = true;
-    this.enterLevel(0, 'start');
+    markInGame(true);
+    // floors are regenerated; you arrive at the entrance of the floor you were on
+    this.enterLevel(s.depth, 'start');
     return true;
   }
 
   save() {
-    if (this.started) writeSave(this.player);
+    if (this.started && this.level) writeSave(this.player, this.level.depth);
   }
 
   enterLevel(depth: number, how: 'start' | 'stairs' | 'waypoint' | 'portal' | 'respawn') {
@@ -228,7 +231,7 @@ export class Game {
       L.monsters = L.monsters.filter((m) => !m.dead || m.deathTime < 40);
     }
     this.saveTimer += dt;
-    if (this.saveTimer > 20) {
+    if (this.saveTimer > 8) {
       this.saveTimer = 0;
       this.save();
     }

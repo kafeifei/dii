@@ -3,7 +3,31 @@ import type { Item } from '../items/item';
 import type { Placed } from '../items/grid';
 import { Player } from './player';
 
-const KEY = 'dii-save-v1';
+let KEY = 'dii-save-v1';
+/** remembers, per browser tab, that a run is in progress so a reload drops straight back in */
+const SESSION_KEY = 'dii-in-game';
+
+/** ?dev runs (tests, bots) get their own slot so they never clobber the real save */
+export function useDevSlot() {
+  KEY = 'dii-save-dev';
+}
+
+export function markInGame(on: boolean) {
+  try {
+    if (on) sessionStorage.setItem(SESSION_KEY, '1');
+    else sessionStorage.removeItem(SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function wasInGame(): boolean {
+  try {
+    return sessionStorage.getItem(SESSION_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
 
 interface SaveData {
   v: 1;
@@ -24,10 +48,14 @@ interface SaveData {
   activeAura: string | null;
   depthReached: number;
   waypoints: number[];
+  /** floor the player was on (0 = town); dead players resume in town */
+  depth?: number;
+  life?: number;
+  mana?: number;
   time: number;
 }
 
-export function writeSave(p: Player) {
+export function writeSave(p: Player, depth: number) {
   const data: SaveData = {
     v: 1,
     name: p.name,
@@ -47,6 +75,9 @@ export function writeSave(p: Player) {
     activeAura: p.activeAura,
     depthReached: p.depthReached,
     waypoints: p.waypoints,
+    depth: p.dead ? 0 : depth,
+    life: p.dead ? undefined : p.life,
+    mana: p.dead ? undefined : p.mana,
     time: Date.now(),
   };
   try {
@@ -79,7 +110,7 @@ export function deleteSave() {
   }
 }
 
-export function loadSave(): Player | null {
+export function loadSave(): { player: Player; depth: number } | null {
   let d: SaveData;
   try {
     const raw = localStorage.getItem(KEY);
@@ -110,7 +141,7 @@ export function loadSave(): Player | null {
   p.waypoints = d.waypoints ?? [0];
   p.markDirty();
   p.recalc();
-  p.life = p.d.maxLife;
-  p.mana = p.d.maxMana;
-  return p;
+  p.life = Math.min(p.d.maxLife, Math.max(1, d.life ?? p.d.maxLife));
+  p.mana = Math.min(p.d.maxMana, Math.max(0, d.mana ?? p.d.maxMana));
+  return { player: p, depth: d.depth ?? 0 };
 }
