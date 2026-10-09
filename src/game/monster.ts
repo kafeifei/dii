@@ -46,8 +46,10 @@ export class Monster extends Actor {
     this.homePos = { ...pos };
     this.radius = def.radius * (rank === 'champion' || rank === 'unique' ? 1.12 : 1);
     const l = mlvl - 1;
-    let life = def.life * (1 + l * 0.34);
-    let dmgMul = 1 + l * 0.13;
+    // growth flattens past level 16 (floor 9+), where gear upgrades start to come slower
+    const hi = Math.max(0, l - 15);
+    let life = def.life * (1 + (l - hi) * 0.34 + hi * 0.24);
+    let dmgMul = 1 + (l - hi) * 0.13 + hi * 0.09;
     this.defense = Math.floor(def.def + mlvl * 6);
     this.ar = Math.floor(def.ar + mlvl * 7);
     this.speed = def.speed;
@@ -80,7 +82,8 @@ export class Monster extends Actor {
         xp *= 1.5;
         break;
       case 'boss':
-        life *= 2.6 + l * 0.05;
+        // bosses come back every four floors: keep their bulk from snowballing
+        life *= 2.2 + l * 0.03;
         this.attackSpeed *= 0.8;
         xp *= 1;
         break;

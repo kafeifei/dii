@@ -38,7 +38,7 @@ export function monsterPacket(m: Monster, mult = 1): DamagePacket {
   return pk;
 }
 
-export function shoot(g: Game, m: Monster, kind: ProjectileKind, at: P2, spread = 0) {
+export function shoot(g: Game, m: Monster, kind: ProjectileKind, at: P2, spread = 0, mult = 1) {
   const speed = PROJ_SPEED[kind];
   const d = dist(m.pos, at) || 1;
   let dx = (at.x - m.pos.x) / d;
@@ -50,7 +50,7 @@ export function shoot(g: Game, m: Monster, kind: ProjectileKind, at: P2, spread 
   }
   const pk = monsterPacket(m);
   const elem = m.def.projectileElem ?? 'phys';
-  const total = pk.phys + pk.fire + pk.cold + pk.light;
+  const total = (pk.phys + pk.fire + pk.cold + pk.light) * mult;
   const out = emptyPacket();
   out.source = m;
   if (elem === 'phys') out.phys = total;
@@ -293,7 +293,7 @@ function bossSpecial(g: Game, m: Monster, dP: number): boolean {
     case 'lich': {
       if (dP < 4.5) {
         const pk = emptyPacket();
-        pk.cold = randInt(m.dmg[0], m.dmg[1]) * 1.2;
+        pk.cold = randInt(m.dmg[0], m.dmg[1]);
         pk.chill = 3;
         pk.source = m;
         pk.spell = true;
@@ -306,10 +306,11 @@ function bossSpecial(g: Game, m: Monster, dP: number): boolean {
       }
       if (m.hasLos && dP < 11) {
         faceNow(m, p.pos);
-        for (let i = -3; i <= 3; i++) shoot(g, m, 'iceshard', p.pos, i * 0.14);
+        // a fan of five: at range most of it misses, up close it still hurts
+        for (let i = -2; i <= 2; i++) shoot(g, m, 'iceshard', p.pos, i * 0.17, 0.55);
         m.setState('attack', 0.8);
         m.actionFired = true;
-        m.specialCd = rand(2.5, 4);
+        m.specialCd = rand(3, 4.5);
         return true;
       }
       break;
@@ -317,7 +318,7 @@ function bossSpecial(g: Game, m: Monster, dP: number): boolean {
     case 'overlord': {
       if (dP < 4) {
         const pk = emptyPacket();
-        pk.fire = randInt(m.dmg[0], m.dmg[1]) * 1.4;
+        pk.fire = randInt(m.dmg[0], m.dmg[1]) * 1.1;
         pk.source = m;
         pk.spell = true;
         g.level.blasts.push(new DelayedBlast({ ...m.pos }, 4, 0.5, pk, 'monster', 'fire', m));
@@ -330,7 +331,7 @@ function bossSpecial(g: Game, m: Monster, dP: number): boolean {
       }
       if (m.hasLos && dP < 12) {
         faceNow(m, p.pos);
-        for (let i = -1; i <= 1; i++) shoot(g, m, 'fireball', p.pos, i * 0.25);
+        for (let i = -1; i <= 1; i++) shoot(g, m, 'fireball', p.pos, i * 0.25, 0.7);
         m.setState('attack', 0.8);
         m.actionFired = true;
         m.specialCd = rand(2.5, 4);

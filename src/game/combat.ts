@@ -144,7 +144,7 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
       if (src.life <= 0) g.killMonster(src, 'phys');
     }
     if (src instanceof Monster && src.mods.includes('manaburn')) p.mana = Math.max(0, p.mana - total * 0.6);
-    if (src instanceof Monster && src.mods.includes('vampiric')) src.life = Math.min(src.maxLife, src.life + total * 0.5);
+    if (src instanceof Monster && src.mods.includes('vampiric')) src.life = Math.min(src.maxLife, src.life + total * 0.25);
     if (p.life <= 0) g.killPlayer();
   }
   return total;

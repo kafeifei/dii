@@ -29,7 +29,7 @@ function frame(now: number) {
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
   let steps = 0;
-  if (game.started && !game.paused) {
+  if (game.started && !game.paused && !game.headless) {
     acc += dt;
     while (acc >= STEP && steps < 6) {
       game.update(STEP);

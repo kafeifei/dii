@@ -109,9 +109,28 @@ export class Level {
       const boss = new Monster(def, mlvl + 3, 'boss', near(c, 0.5));
       this.boss = boss;
       this.monsters.push(boss);
-      // retinue
-      const ret = pool.length ? pool[0] : MONSTERS.skeleton;
-      for (let i = 0; i < 4; i++) this.monsters.push(new Monster(ret, mlvl, 'normal', near(c, 3)));
+      // retinue: melee bodyguards (a ranged escort stacked on a caster boss is a wall of missiles)
+      const guards = pool.filter((d) => d.ai === 'melee');
+      const ret = guards.length ? rng.pick(guards) : MONSTERS.skeleton;
+      for (let i = 0; i < 3; i++) this.monsters.push(new Monster(ret, mlvl, 'normal', near(c, 3)));
+    }
+  }
+
+  /** coming back to a floor: survivors heal and go home, stray missiles are gone */
+  reenter() {
+    this.projectiles = [];
+    this.hammers = [];
+    this.blasts = [];
+    for (const m of this.monsters) {
+      if (m.dead) continue;
+      m.life = m.maxLife;
+      // back to where they were spawned, so nothing camps the waypoint
+      m.pos = { ...m.homePos };
+      m.chillTime = 0;
+      m.poisonTime = 0;
+      m.awake = false;
+      m.path = null;
+      m.setState('idle');
     }
   }
 

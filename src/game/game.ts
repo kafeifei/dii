@@ -42,6 +42,8 @@ export class Game {
   player: Player;
   level!: Level;
   portalLevel: Level | null = null;
+  /** the dungeon floor visited last, kept so waypoint trips and deaths don't reroll it */
+  lastDungeon: Level | null = null;
   fx: Fx = nullFx;
   hooks!: GameHooks;
   picker!: Picker;
@@ -54,6 +56,8 @@ export class Game {
   lmbMode: 'none' | 'move' | 'attack' | 'other' = 'none';
   shop = new Grid(10, 10);
   paused = false;
+  /** driven externally (balance bot): the page loop neither steps nor renders */
+  headless = false;
   started = false;
 
   constructor(
@@ -88,6 +92,8 @@ export class Game {
     p.mana = p.d.maxMana;
     this.player = p;
     this.started = true;
+    this.lastDungeon = null;
+    this.portalLevel = null;
     markInGame(true);
     this.enterLevel(0, 'start');
   }
@@ -97,6 +103,8 @@ export class Game {
     if (!s) return false;
     this.player = s.player;
     this.started = true;
+    this.lastDungeon = null;
+    this.portalLevel = null;
     markInGame(true);
     // floors are regenerated; you arrive at the entrance of the floor you were on
     this.enterLevel(s.depth, 'start');
@@ -112,9 +120,15 @@ export class Game {
     let level: Level;
     if (how === 'portal' && depth > 0 && this.portalLevel && this.portalLevel.depth === depth) {
       level = this.portalLevel;
+    } else if (how !== 'stairs' && depth > 0 && this.lastDungeon?.depth === depth) {
+      // like D2: going back to the floor you left (waypoint, after dying) finds it as you left it;
+      // the dead stay dead, survivors have healed
+      level = this.lastDungeon;
+      level.reenter();
     } else {
       level = new Level(depth, (Math.random() * 2 ** 31) | 0);
     }
+    if (depth > 0) this.lastDungeon = level;
     this.level = level;
     let spawn: P2 = level.layout.start;
     if (how === 'portal') {

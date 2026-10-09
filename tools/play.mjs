@@ -30,6 +30,15 @@ function findChrome() {
 
 const browser = await chromium.launch({ executablePath: findChrome(), headless: true, args: ['--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
 const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
+// a crashed renderer would otherwise leave the scenario waiting forever
+page.on('crash', () => {
+  console.log('[page crashed]');
+  process.exit(2);
+});
+let closing = false;
+browser.on('disconnected', () => {
+  if (!closing) process.exit(2);
+});
 const logs = [];
 page.on('console', (m) => {
   if (m.type() === 'error' || m.type() === 'warning') logs.push(`[${m.type()}] ${m.text()}`);
@@ -52,4 +61,5 @@ try {
   console.log('[scenario error]', e);
 }
 if (logs.length) console.log(logs.slice(0, 30).join('\n'));
+closing = true;
 await browser.close();

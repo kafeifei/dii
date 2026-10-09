@@ -86,7 +86,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
   },
   hellimp: {
     id: 'hellimp', name: '炼狱小鬼', model: 'imp', life: 8, dmg: [2, 4], def: 8, ar: 40, speed: 3.6, attackSpeed: 1.4, range: 1.0,
-    radius: 0.33, scale: 0.78, xp: 10, ai: 'melee', meleeElem: 'fire', blood: 'fire', minDepth: 13, maxDepth: 99, weight: 8, pack: [5, 9],
+    radius: 0.33, scale: 0.78, xp: 10, ai: 'melee', meleeElem: 'fire', blood: 'fire', minDepth: 13, maxDepth: 99, weight: 8, pack: [4, 7],
     flee: true, res: { fire: 60 }, color: '#d8501a', color2: '#2a0a04',
   },
   // ── bosses ──
@@ -131,7 +131,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
     weight: 0, pack: [1, 1], boss: true, undead: true, res: { cold: 75, fire: 20, light: 40, poison: 100 }, color: '#6a8aaa', color2: '#c0e8ff',
   },
   overlord: {
-    id: 'overlord', name: '深渊领主', model: 'overlord', life: 70, dmg: [9, 18], def: 45, ar: 140, speed: 2.7, attackSpeed: 0.9, range: 2.0,
+    id: 'overlord', name: '深渊领主', model: 'overlord', life: 56, dmg: [6, 13], def: 30, ar: 110, speed: 2.7, attackSpeed: 0.9, range: 2.0,
     radius: 0.85, scale: 1.9, xp: 900, ai: 'boss', projectile: 'fireball', projectileElem: 'fire', blood: 'fire', minDepth: 99, maxDepth: 99,
     weight: 0, pack: [1, 1], boss: true, res: { fire: 75, cold: 30, light: 30, poison: 40 }, color: '#4a1410', color2: '#ff8030',
   },

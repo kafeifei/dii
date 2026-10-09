@@ -9,8 +9,10 @@ export default async function (page, shot, log) {
     const { SKILL_BY_ID } = await import('/src/data/skills.ts');
     const { createItem } = await import('/src/items/gen.ts');
     const g = game;
+    // the bot steps the sim itself; skip the page's own update/render loop (much faster headless)
+    g.headless = true;
     const STEP = 1 / 60;
-    const stats = { deaths: 0, levels: [], kills: 0, uniques: 0, sets: 0, rares: 0, runes: 0, potionsUsed: 0, timeline: [] };
+    const stats = { deaths: 0, levels: [], kills: 0, uniques: 0, sets: 0, rares: 0, runes: 0, potionsUsed: 0, timeline: [], deathList: [] };
     window.__bot = stats;
     let depth = 1;
     let levelStart = 0;
@@ -102,6 +104,7 @@ export default async function (page, shot, log) {
     let stallSince = 0;
     let stallsLogged = 0;
     let lastPick = '';
+    let floorDeaths = 0;
     const runChunk = (seconds) => {
       const steps = Math.floor(seconds / STEP);
       for (let i = 0; i < steps; i++) {
@@ -113,7 +116,11 @@ export default async function (page, shot, log) {
           const desc = {};
           for (const m of around) { const k = `${m.def.id}/${m.rank}${m.mods.length ? '(' + m.mods.join('+') + ')' : ''}`; desc[k] = (desc[k] ?? 0) + 1; }
           stats.timeline.push(`death at depth ${depth} lvl ${pl.level} t=${Math.round(simTime)} by ${JSON.stringify(desc)} proj=${g.level.projectiles.length}`);
+          stats.deathList.push({ depth, lvl: pl.level, causes: desc, proj: g.level.projectiles.length });
           g.respawn();
+          floorDeaths++;
+          // stuck on a floor: do what a player does and start a fresh game of it (a new layout)
+          if (floorDeaths % 4 === 0) g.lastDungeon = null;
           g.travel(depth);
           continue;
         }
@@ -138,7 +145,7 @@ export default async function (page, shot, log) {
           }
           if (pl.state === 'idle' || pl.state === 'move') {
             const near = g.level.monsters.filter((m) => !m.dead).map((m) => ({ m, d: Math.hypot(m.pos.x - pl.pos.x, m.pos.z - pl.pos.z) })).sort((a, b) => a.d - b.d);
-            const loot = g.level.ground.filter((gi) => !gi.gold && gi.item && Math.hypot(gi.pos.x - pl.pos.x, gi.pos.z - pl.pos.z) < 8).sort((a, b) => Math.hypot(a.pos.x - pl.pos.x, a.pos.z - pl.pos.z) - Math.hypot(b.pos.x - pl.pos.x, b.pos.z - pl.pos.z))[0];
+            const loot = g.level.ground.filter((gi) => !gi.gold && gi.item && pl.inventory.findSpace(gi.item) && Math.hypot(gi.pos.x - pl.pos.x, gi.pos.z - pl.pos.z) < 8).sort((a, b) => Math.hypot(a.pos.x - pl.pos.x, a.pos.z - pl.pos.z) - Math.hypot(b.pos.x - pl.pos.x, b.pos.z - pl.pos.z))[0];
             if (near.length && near[0].d < 7 && !(pl.intent && pl.intent.kind === 'attack' && !pl.intent.target.dead)) {
               pl.intent = { kind: 'attack', target: near[0].m, skill: attackSkill(), hold: true };
               lastPick = 'near-attack:' + pl.intent.skill;
@@ -189,9 +196,15 @@ export default async function (page, shot, log) {
           stats.timeline.push(`STALL depth ${depth} t=${Math.round(simTime)} pos=${pl.pos.x.toFixed(1)},${pl.pos.z.toFixed(1)} state=${pl.state} intent=${it?.kind}${it?.target ? '(' + it.target.def.id + (it.target.dead ? ',dead' : '') + ')' : ''} tgt=${tgt ? tgt.x.toFixed(1) + ',' + tgt.z.toFixed(1) : '-'} path=${pl.path?.length ?? 0} mana=${Math.round(pl.mana)} lastPick=${lastPick}\n      near: ${g.level.monsters.filter((m) => !m.dead).map((m) => ({ m, d: Math.hypot(m.pos.x - pl.pos.x, m.pos.z - pl.pos.z) })).sort((a, b) => a.d - b.d).slice(0, 3).map(({ m, d }) => `${m.def.id}@${d.toFixed(1)} los=${map.los(pl.pos, m.pos)} st=${m.state} tile=${map.get(Math.floor(m.pos.x), Math.floor(m.pos.z))}`).join(' | ')}\n      ${grid.join('\n      ')}`);
         }
         if (g.level.depth !== depth && g.level.depth > 0) {
-          stats.levels.push({ depth, lvl: pl.level, secs: Math.round(simTime - levelStart), deaths: stats.deaths, gold: pl.gold, kills: stats.kills });
+          const d = pl.stats;
+          stats.levels.push({
+            depth, lvl: pl.level, secs: Math.round(simTime - levelStart), deaths: stats.deaths, gold: pl.gold, kills: stats.kills,
+            life: Math.round(d.maxLife), def: Math.round(d.def), res: Math.round((d.res.fire + d.res.cold + d.res.light + d.res.poison) / 4),
+            dmg: Math.round(((d.wMin + d.wMax) / 2) * (1 + d.dmgPct / 100)), ar: Math.round(d.ar),
+          });
           depth = g.level.depth;
           levelStart = simTime;
+          floorDeaths = 0;
         }
       }
     };
@@ -204,7 +217,7 @@ export default async function (page, shot, log) {
     await page.evaluate(() => window.__runChunk(20));
     const s = await page.evaluate(() => window.__botStatus());
     if (s.simTime % 120 < 20) log('…', JSON.stringify(s), `${Math.round((Date.now() - t0) / 1000)}s real`);
-    if (Date.now() - t0 > 15 * 60 * 1000) break;
+    if (Date.now() - t0 > 30 * 60 * 1000) break;
   }
   const result = await page.evaluate(() => {
     const pl = game.player;
@@ -212,10 +225,11 @@ export default async function (page, shot, log) {
     const d = pl.stats;
     return { ...window.__bot, final: { lvl: pl.level, life: d.maxLife, def: d.def, dmg: [d.wMin, d.wMax, d.dmgPct], ar: d.ar, res: d.res, eq, base: pl.base, skills: pl.skills } };
   });
-  const { timeline, ...rest } = result;
+  const { timeline, deathList, ...rest } = result;
   log(JSON.stringify(rest));
+  log('BOT_RESULT ' + JSON.stringify({ levels: result.levels, deathList, final: result.final, stalls: timeline.filter((t) => t.startsWith('STALL')).slice(0, 2), status: await page.evaluate(() => window.__botStatus()) }));
   const byDepth = {};
-  for (const t of timeline) { const d = t.match(/depth (\d+)/)[1]; byDepth[d] = (byDepth[d] ?? 0) + 1; }
+  for (const t of deathList) byDepth[t.depth] = (byDepth[t.depth] ?? 0) + 1;
   log('deaths by depth', JSON.stringify(byDepth));
   log(timeline.join('\n'));
 }
