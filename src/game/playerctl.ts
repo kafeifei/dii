@@ -1,11 +1,11 @@
-import { angleTo, dist, randInt, type P2 } from '../core/math';
+import { angleTo, dist, rand, randInt, type P2 } from '../core/math';
 import { ITEM_BASES } from '../data/items';
 import { SKILL_BY_ID } from '../data/skills';
-import { emptyPacket } from './actor';
-import { playerStrike, playerWeaponPacket } from './combat';
+import { emptyPacket, type DamagePacket } from './actor';
+import { applyDamage, playerStrike, playerWeaponPacket } from './combat';
 import type { Game } from './game';
 import type { Monster } from './monster';
-import { DelayedBlast, Hammer, Projectile } from './objects';
+import { DelayedBlast, Hammer, Projectile, type ProjKind } from './objects';
 import { face, faceNow, moveBy, stepToward } from './movement';
 import type { Player } from './player';
 
@@ -169,9 +169,231 @@ function hammerPacket(p: Player) {
   return pk;
 }
 
+// ───────────────────────── sorceress ─────────────────────────
+
+function spellPacket(p: Player, elem: 'fire' | 'cold' | 'light' | 'magic', min: number, max: number): DamagePacket {
+  const pk = emptyPacket();
+  pk[elem] = randInt(min, max);
+  pk.source = p;
+  pk.spell = true;
+  pk.pierceRes = p.stats.pierceRes;
+  return pk;
+}
+
+/** a bolt fired from the caster toward the cast point */
+function shootSpell(g: Game, p: Player, kind: ProjKind, speed: number, range: number, pk: DamagePacket, angle = p.facing, radius = 0.3): Projectile {
+  const dir = { x: Math.sin(angle), z: Math.cos(angle) };
+  const from = { x: p.pos.x + dir.x * 0.4, z: p.pos.z + dir.z * 0.4 };
+  const pr = new Projectile(kind, from, { x: dir.x * speed, z: dir.z * speed }, p, 'player', pk, range / speed, radius);
+  g.level.projectiles.push(pr);
+  return pr;
+}
+
+function nearestMonster(g: Game, at: P2, maxDist: number, skip?: Set<number>): Monster | null {
+  let best: Monster | null = null;
+  let bestD = Infinity;
+  for (const m of g.level.monsters) {
+    if (m.dead || skip?.has(m.id)) continue;
+    const d = dist(m.pos, at) - m.radius;
+    if (d <= maxDist && d < bestD) {
+      bestD = d;
+      best = m;
+    }
+  }
+  return best;
+}
+
+/** cast point pulled in to `range` from the caster */
+function clampedPoint(p: Player, pt: P2, range: number): P2 {
+  const d = dist(p.pos, pt);
+  if (d <= range) return { ...pt };
+  const k = range / d;
+  return { x: p.pos.x + (pt.x - p.pos.x) * k, z: p.pos.z + (pt.z - p.pos.z) * k };
+}
+
+function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
+  const L = g.level;
+  switch (act.skill) {
+    case 'fire_bolt': {
+      const sp = p.skillParams('fire_bolt');
+      shootSpell(g, p, 'firebolt', 15, 13, spellPacket(p, 'fire', sp.min, sp.max));
+      g.sfx.play('fire', 0.5);
+      return true;
+    }
+    case 'fire_ball': {
+      const sp = p.skillParams('fire_ball');
+      const pr = shootSpell(g, p, 'fireball', 12, 13, spellPacket(p, 'fire', sp.min, sp.max), p.facing, 0.35);
+      pr.splash = sp.radius;
+      g.sfx.play('fire', 0.6);
+      return true;
+    }
+    case 'fire_wall': {
+      const sp = p.skillParams('fire_wall');
+      const c = clampedPoint(p, act.point, 12);
+      const a = angleTo(p.pos, c);
+      const side = { x: Math.cos(a), z: -Math.sin(a) };
+      const n = Math.max(3, Math.round(sp.len / 0.7));
+      const step = sp.len / (n - 1);
+      const tick = 0.4;
+      for (let i = 0; i < n; i++) {
+        const off = (i - (n - 1) / 2) * step;
+        const pos = { x: c.x + side.x * off, z: c.z + side.z * off };
+        if (!L.map.walkableAt(pos.x, pos.z)) continue;
+        for (let t = 0; t < sp.dur; t += tick) {
+          const pk = emptyPacket();
+          pk.fire = Math.max(1, Math.round(sp.dps * tick));
+          pk.source = p;
+          pk.spell = true;
+          pk.pierceRes = p.stats.pierceRes;
+          const b = new DelayedBlast(pos, 0.55, 0.05 + t, pk, 'player', 'fire', p);
+          b.fx = 'flame';
+          L.blasts.push(b);
+        }
+      }
+      g.sfx.play('fire', 0.8);
+      return true;
+    }
+    case 'meteor': {
+      const sp = p.skillParams('meteor');
+      const c = clampedPoint(p, act.target && !act.target.dead ? act.target.pos : act.point, 14);
+      const b = new DelayedBlast(c, sp.radius, 1.0, spellPacket(p, 'fire', sp.min, sp.max), 'player', 'fire', p);
+      b.dmg.heavy = true;
+      b.fx = 'meteor';
+      L.blasts.push(b);
+      g.fx.burst('meteor_mark', c, { radius: sp.radius });
+      g.sfx.play('fire', 0.4);
+      return true;
+    }
+    case 'charged_bolt': {
+      const sp = p.skillParams('charged_bolt');
+      for (let i = 0; i < sp.bolts; i++) {
+        const a = p.facing + (sp.bolts > 1 ? (i / (sp.bolts - 1) - 0.5) * 1.1 : 0) + rand(-0.08, 0.08);
+        shootSpell(g, p, 'chargedbolt', rand(6.5, 8.5), 9, spellPacket(p, 'light', sp.min, sp.max), a, 0.28);
+      }
+      g.sfx.play('lightning', 0.4);
+      return true;
+    }
+    case 'static_field': {
+      const sp = p.skillParams('static_field');
+      for (const m of L.monsters) {
+        if (m.dead || dist(m.pos, p.pos) > sp.radius + m.radius) continue;
+        const pk = emptyPacket();
+        // like D2, a share of current life that ignores resistances (halved on bosses)
+        pk.magic = Math.max(1, Math.floor((m.life * sp.pct) / 100 / (m.rank === 'boss' ? 2 : 1)));
+        pk.source = p;
+        pk.spell = true;
+        applyDamage(g, m, pk, p.pos);
+      }
+      g.fx.burst('static', p.pos, { radius: sp.radius });
+      g.sfx.play('lightning', 0.6);
+      return true;
+    }
+    case 'nova': {
+      const sp = p.skillParams('nova');
+      L.blasts.push(new DelayedBlast(p.pos, sp.radius, 0.08, spellPacket(p, 'light', sp.min, sp.max), 'player', 'lightning', p));
+      g.fx.burst('nova', p.pos, { radius: sp.radius });
+      g.sfx.play('lightning', 0.8);
+      return true;
+    }
+    case 'teleport': {
+      const sp = p.skillParams('teleport');
+      const want = clampedPoint(p, act.point, sp.range);
+      let dest = L.map.walkableAt(want.x, want.z) ? want : L.map.nearestWalkable(want.x, want.z, 2);
+      // aimed into a wall: land at the last open spot on the way there
+      for (let k = 1; !dest && k <= 40; k++) {
+        const t = 1 - k / 40;
+        const c = { x: p.pos.x + (want.x - p.pos.x) * t, z: p.pos.z + (want.z - p.pos.z) * t };
+        if (L.map.walkableAt(c.x, c.z)) dest = c;
+      }
+      if (!dest) return true;
+      g.fx.burst('teleport', p.pos);
+      p.pos = { ...dest };
+      p.prevPos = { ...dest };
+      p.intent = null;
+      g.fx.burst('teleport', dest);
+      g.sfx.play('portal', 0.6);
+      return true;
+    }
+    case 'chain_lightning': {
+      const sp = p.skillParams('chain_lightning');
+      const reach = 14;
+      let cur: Monster | null = act.target && !act.target.dead ? act.target : nearestMonster(g, act.point, 2.5);
+      if (cur && dist(cur.pos, p.pos) > reach) cur = null;
+      cur ??= nearestInFront(g, p, 10);
+      if (!cur) {
+        const end = clampedPoint(p, act.point, 10);
+        g.fx.burst('chain', p.pos, { target: end });
+      }
+      let from = { ...p.pos };
+      const hit = new Set<number>();
+      for (let i = 0; i <= sp.jumps && cur; i++) {
+        g.fx.burst('chain', from, { target: cur.pos });
+        applyDamage(g, cur, spellPacket(p, 'light', sp.min, sp.max), from);
+        hit.add(cur.id);
+        from = { ...cur.pos };
+        cur = nearestMonster(g, from, sp.range, hit);
+      }
+      g.sfx.play('lightning', 0.8);
+      return true;
+    }
+    case 'ice_bolt': {
+      const sp = p.skillParams('ice_bolt');
+      const pk = spellPacket(p, 'cold', sp.min, sp.max);
+      pk.chill = sp.chill;
+      shootSpell(g, p, 'iceshard', 14, 13, pk);
+      g.sfx.play('cold', 0.5);
+      return true;
+    }
+    case 'frozen_armor': {
+      p.frozenArmor = p.skillParams('frozen_armor').dur;
+      p.markDirty();
+      g.fx.burst('freeze', p.pos, { radius: 1.6 });
+      g.sfx.play('cold', 0.7);
+      return true;
+    }
+    case 'frost_nova': {
+      const sp = p.skillParams('frost_nova');
+      const pk = spellPacket(p, 'cold', sp.min, sp.max);
+      pk.chill = sp.chill;
+      L.blasts.push(new DelayedBlast(p.pos, sp.radius, 0.08, pk, 'player', 'frost', p));
+      g.fx.burst('frostnova', p.pos, { radius: sp.radius });
+      g.sfx.play('cold', 0.8);
+      return true;
+    }
+    case 'glacial_spike': {
+      const sp = p.skillParams('glacial_spike');
+      const pk = spellPacket(p, 'cold', sp.min, sp.max);
+      pk.chill = sp.chill;
+      const pr = shootSpell(g, p, 'iceshard', 12, 13, pk, p.facing, 0.35);
+      pr.splash = sp.radius;
+      pr.splashKind = 'cold';
+      g.sfx.play('cold', 0.6);
+      return true;
+    }
+    case 'blizzard': {
+      const sp = p.skillParams('blizzard');
+      const c = clampedPoint(p, act.target && !act.target.dead ? act.target.pos : act.point, 14);
+      for (let i = 0; i < sp.shards; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = Math.sqrt(Math.random()) * sp.radius;
+        const pos = { x: c.x + Math.sin(a) * r, z: c.z + Math.cos(a) * r };
+        const pk = spellPacket(p, 'cold', sp.min, sp.max);
+        pk.chill = 1.5;
+        const b = new DelayedBlast(pos, 0.9, 0.2 + (i / sp.shards) * sp.dur, pk, 'player', 'frost', p);
+        b.fx = 'hail';
+        L.blasts.push(b);
+      }
+      g.sfx.play('cold', 0.8);
+      return true;
+    }
+  }
+  return false;
+}
+
 function fireSpell(g: Game, p: Player) {
   const act = g.playerAction;
   if (!act) return;
+  if (fireSorceressSpell(g, p, act)) return;
   switch (act.skill) {
     case 'blessed_hammer': {
       g.level.hammers.push(new Hammer(p.pos, p.facing, hammerPacket(p)));
@@ -230,6 +452,14 @@ export function updatePlayer(g: Game, p: Player, dt: number) {
       p.holyShield = 0;
       p.markDirty();
       g.hooks.message('神圣之盾消散了', '#aaa', 1);
+    }
+  }
+  if (p.frozenArmor > 0) {
+    p.frozenArmor -= dt;
+    if (p.frozenArmor <= 0) {
+      p.frozenArmor = 0;
+      p.markDirty();
+      g.hooks.message('冰封装甲消散了', '#aaa', 1);
     }
   }
   p.life = Math.min(d.maxLife, p.life + d.lifeRegen * dt);

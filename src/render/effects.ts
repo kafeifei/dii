@@ -371,6 +371,95 @@ export class Effects implements Fx {
       case 'holyburst':
         this.sparks(x, 0.8, z, '#fff0c0', 14, 3, 0.18, 0.4, 0);
         break;
+      // ── sorceress ──
+      case 'nova': {
+        const r = opts.radius ?? 4.5;
+        this.ring(pos, '#c8d4ff', 0.3, r, 0.4, 1);
+        for (let i = 0; i < 14; i++) {
+          const a = (i / 14) * Math.PI * 2 + Math.random() * 0.3;
+          const from = new THREE.Vector3(x + Math.sin(a) * 0.4, 0.9, z + Math.cos(a) * 0.4);
+          const to = new THREE.Vector3(x + Math.sin(a) * r, 0.5, z + Math.cos(a) * r);
+          this.lightningBolt(from, to, i % 3 ? '#a0b0ff' : '#ffffff', 0.25, 0.7);
+        }
+        this.flash(pos, '#b0c0ff', 60, 0.3, r * 2.5);
+        break;
+      }
+      case 'chain': {
+        const t = opts.target ?? pos;
+        this.lightningBolt(new THREE.Vector3(x, 1.1, z), new THREE.Vector3(t.x, 1.0, t.z), '#ffffff', 0.3, 0.8);
+        this.lightningBolt(new THREE.Vector3(x, 1.1, z), new THREE.Vector3(t.x, 1.0, t.z), '#90a8ff', 0.35, 1.2);
+        this.sparks(t.x, 1, t.z, '#e0e8ff', 12, 5, 0.12, 0.3, 2);
+        this.flash(t, '#c0d0ff', 30, 0.25, 6);
+        break;
+      }
+      case 'static': {
+        const r = opts.radius ?? 4;
+        this.ring(pos, '#d8e0ff', 0.2, r, 0.35, 0.9);
+        this.ring(pos, '#8090ff', 0.2, r * 0.7, 0.3, 0.7, 0.9);
+        for (let i = 0; i < 40; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const d = Math.random() * r;
+          this.add.spawn({ x: x + Math.sin(a) * d, y: 0.3 + Math.random() * 1.2, z: z + Math.cos(a) * d, color: '#e8f0ff', size: 0.12, life: 0.25 });
+        }
+        this.flash(pos, '#a0b0ff', 40, 0.25, r * 2);
+        break;
+      }
+      case 'teleport': {
+        this.ring(pos, '#b0a0ff', 1.2, 0.2, 0.35, 0.9);
+        for (let i = 0; i < 30; i++) {
+          const a = Math.random() * Math.PI * 2;
+          this.add.spawn({ x: x + Math.sin(a) * 0.4, y: Math.random() * 1.8, z: z + Math.cos(a) * 0.4, vy: 2 + Math.random() * 2, color: Math.random() < 0.5 ? '#c0b0ff' : '#ffffff', size: 0.18, life: 0.5, drag: 1 });
+        }
+        this.flash(pos, '#a090ff', 40, 0.35, 7);
+        break;
+      }
+      case 'flame': {
+        // one tick of a fire wall segment: no light (dozens go off at once)
+        for (let i = 0; i < 7; i++) {
+          this.add.spawn({ x: x + (Math.random() - 0.5) * 0.7, y: 0.15, z: z + (Math.random() - 0.5) * 0.7, vy: 1.8 + Math.random() * 2.4, color: i % 3 ? '#ff5010' : '#ffc050', size: 0.65 + Math.random() * 0.5, life: 0.6, drag: 1, gravity: -1.5, endSize: 0.25 });
+        }
+        this.glow(x, 0.5, z, '#ff6a20', 1.4, 0.45);
+        break;
+      }
+      case 'meteor_mark': {
+        const r = opts.radius ?? 2.2;
+        this.ring(pos, '#ff3a10', r, r * 0.25, 1.0, 0.8);
+        this.ring(pos, '#ff8a30', r * 1.05, r, 1.0, 0.5);
+        break;
+      }
+      case 'meteor': {
+        const r = opts.radius ?? 2.2;
+        // the rock streaking in, then the blast
+        for (let i = 0; i < 10; i++) this.add.spawn({ x: x - 1.5 + i * 0.15, y: 6 - i * 0.6, z: z - 1.5 + i * 0.15, color: '#ffb040', size: 0.9 - i * 0.04, life: 0.18 });
+        this.ring(pos, '#ff4a10', 0.3, r * 1.2, 0.6, 1);
+        for (let i = 0; i < 90; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const sp = Math.random() * r * 3;
+          this.add.spawn({ x, y: 0.4, z, vx: Math.sin(a) * sp, vy: 1 + Math.random() * 5, vz: Math.cos(a) * sp, color: Math.random() < 0.5 ? '#ff4010' : '#ffc050', size: 0.45 + Math.random() * 0.5, life: 0.8, drag: 2, gravity: 2 });
+        }
+        this.decal(pos, '#1a0a04', r * 1.6, 20);
+        this.flash(pos, '#ff5010', 120, 0.6, r * 5);
+        this.shake(0.5);
+        break;
+      }
+      case 'ice_shatter': {
+        const r = opts.radius ?? 1.6;
+        this.ring(pos, '#a0e0ff', 0.2, r, 0.35, 1);
+        for (let i = 0; i < 24; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const sp = Math.random() * r * 3;
+          this.add.spawn({ x, y: 0.6, z, vx: Math.sin(a) * sp, vy: 1 + Math.random() * 3, vz: Math.cos(a) * sp, color: Math.random() < 0.5 ? '#c0ecff' : '#ffffff', size: 0.16 + Math.random() * 0.12, life: 0.5, gravity: 8, drag: 1.5 });
+        }
+        this.flash(pos, '#80c8ff', 25, 0.3, r * 3);
+        break;
+      }
+      case 'hail': {
+        // a shard falling in, then a small burst
+        for (let i = 0; i < 4; i++) this.add.spawn({ x: x + 0.3 - i * 0.1, y: 1.4 + i * 0.5, z: z + 0.3 - i * 0.1, color: '#e0f6ff', size: 0.3 - i * 0.05, life: 0.12 });
+        this.ring(pos, '#a0e0ff', 0.1, opts.radius ?? 0.9, 0.3, 0.8);
+        this.sparks(x, 0.2, z, '#d0f0ff', 8, 2.5, 0.14, 0.35, 8);
+        break;
+      }
     }
   }
 

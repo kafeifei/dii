@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { MODEL_FILES } from './model-list';
 
 /**
@@ -30,7 +31,8 @@ class AssetLib {
 
   load(onProgress?: (done: number, total: number) => void): Promise<void> {
     if (this.loading) return this.loading;
-    const loader = new GLTFLoader();
+    // tools/build-models.mjs writes meshopt-compressed files
+    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     let done = 0;
     this.loading = Promise.all(
       FILES.map(async (name) => {

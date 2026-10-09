@@ -80,20 +80,9 @@ export function topCentroid(root: THREE.Object3D, band: number): THREE.Vector3 {
   return c.divideScalar(Math.max(1, sel.length)).setY(top - band * 0.5);
 }
 
-let torchMatCache: THREE.MeshBasicMaterial | null = null;
-function torchMat(map: THREE.Texture | null): THREE.MeshBasicMaterial {
-  if (!torchMatCache) torchMatCache = new THREE.MeshBasicMaterial({ map, color: '#c8b8a8' });
-  return torchMatCache;
-}
-
 export function makeTorch(color: string): { group: THREE.Group; flame: THREE.Sprite } {
   const model = assetProp('d_torch_mounted', 0.8, { center: false });
   if (model) {
-    // the model's own flame sits right next to the torch light and blows out to white; draw it unlit
-    model.traverse((c) => {
-      const m = c as THREE.Mesh;
-      if (m.isMesh) m.material = torchMat((m.material as THREE.MeshStandardMaterial).map);
-    });
     const g = new THREE.Group();
     model.position.y = 1.3;
     g.add(model);
@@ -135,6 +124,16 @@ export function makeChest(big = false): { group: THREE.Group; lid: THREE.Group }
       pivot.position.copy(lidMesh.parent.worldToLocal(hinge));
       pivot.updateMatrixWorld(true);
       pivot.attach(lidMesh);
+      // the lid of a one-piece model is cut off a closed shell: show the inner faces once it opens
+      // and put a dark floor in the hollow
+      model.traverse((c) => {
+        const m = c as THREE.Mesh;
+        if (m.isMesh) (m.material as THREE.Material).side = THREE.DoubleSide;
+      });
+      const inside = new THREE.Mesh(new THREE.PlaneGeometry(box.max.x - box.min.x, box.max.z - box.min.z).rotateX(-Math.PI / 2), stdMat('#120c08', 1));
+      inside.scale.setScalar(0.9);
+      model.add(inside);
+      inside.position.copy(model.worldToLocal(new THREE.Vector3((box.min.x + box.max.x) / 2, box.min.y - 0.02, (box.min.z + box.max.z) / 2)));
       model.userData.looted = false;
       return { group: model, lid: pivot };
     }
@@ -175,6 +174,9 @@ export function makeBarrel(): THREE.Group {
 }
 
 export function makeStairs(town: boolean): THREE.Group {
+  // a stone stairway under a gothic arch, opening toward +z
+  const model = assetProp('p_entrance', town ? 1 : 0.85);
+  if (model) return model;
   const g = new THREE.Group();
   const stone = stdMat(town ? '#5a5248' : '#4a4640');
   const black = new THREE.MeshBasicMaterial({ color: '#000000' });
@@ -193,17 +195,53 @@ export function makeStairs(town: boolean): THREE.Group {
   return g;
 }
 
-export function makeWaypoint(): { group: THREE.Group; rune: THREE.Mesh } {
+/** an iron fire bowl on three legs; the renderer adds the flames */
+export function makeBrazier(): THREE.Group {
+  const model = assetProp('p_brazier', 1);
+  if (model) {
+    // glowing coals in the bowl and the flame over them
+    const top = new THREE.Box3().setFromObject(model).max.y;
+    add(model, new THREE.CircleGeometry(0.2, 10), stdMat('#ff7a20', 1, 0, '#ff5a10', 2), 0, top - 0.07, 0, -Math.PI / 2, 0, 0);
+    const flame = glowSprite('#ff8a30', 1.4, 0.8);
+    flame.position.y = top + 0.2;
+    model.add(flame);
+    return model;
+  }
   const g = new THREE.Group();
+  const iron = stdMat('#2a2624', 0.6, 0.5);
+  for (let i = 0; i < 3; i++) {
+    const a = (i / 3) * Math.PI * 2;
+    add(g, new THREE.CylinderGeometry(0.03, 0.04, 0.95, 5), iron, Math.cos(a) * 0.16, 0.45, Math.sin(a) * 0.16, Math.sin(a) * 0.25, 0, -Math.cos(a) * 0.25);
+  }
+  add(g, new THREE.CylinderGeometry(0.3, 0.16, 0.2, 10, 1, true), iron, 0, 0.95, 0);
+  add(g, new THREE.CylinderGeometry(0.26, 0.26, 0.04, 10), stdMat('#ff7a20', 1, 0, '#ff5a10', 2), 0, 1.0, 0);
+  const flame = glowSprite('#ff8a30', 1.4, 0.8);
+  flame.position.y = 1.25;
+  g.add(flame);
+  return g;
+}
+
+/** height of a model's surface straight below (x, z), or null where it has none */
+function surfaceY(root: THREE.Object3D, x: number, z: number): number | null {
+  root.updateMatrixWorld(true);
+  const ray = new THREE.Raycaster(new THREE.Vector3(x, 50, z), new THREE.Vector3(0, -1, 0));
+  const hit = ray.intersectObject(root, true)[0];
+  return hit ? hit.point.y : null;
+}
+
+export function makeWaypoint(): { group: THREE.Group; rune: THREE.Mesh } {
+  const model = assetProp('p_waypoint', 1);
+  const g = model ?? new THREE.Group();
   const stone = stdMat('#6a6660');
-  add(g, new THREE.CylinderGeometry(1.25, 1.35, 0.16, 16), stone, 0, 0.08, 0);
+  if (!model) add(g, new THREE.CylinderGeometry(1.25, 1.35, 0.16, 16), stone, 0, 0.08, 0);
   const rune = new THREE.Mesh(
     new THREE.PlaneGeometry(2.2, 2.2),
     new THREE.MeshBasicMaterial({ map: runeCircleTexture('#60b0ff'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, color: '#80c8ff' }),
   );
   rune.rotation.x = -Math.PI / 2;
-  rune.position.y = 0.17;
+  rune.position.y = model ? (surfaceY(model, 0, 0) ?? 0.2) + 0.02 : 0.17;
   g.add(rune);
+  if (model) return { group: g, rune };
   for (let i = 0; i < 4; i++) {
     const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
     add(g, new THREE.BoxGeometry(0.22, 1.0, 0.22), stone, Math.sin(a) * 1.2, 0.5, Math.cos(a) * 1.2);
@@ -232,6 +270,19 @@ export function makePortal(color: string): { group: THREE.Group; disc: THREE.Mes
 }
 
 export function makeCampfire(): THREE.Group {
+  const model = assetProp('p_campfire', 1);
+  if (model) {
+    // embers under the logs and a low flame; the renderer adds the light
+    const y = surfaceY(model, 0, 0) ?? 0.2;
+    add(model, new THREE.CircleGeometry(0.32, 12), stdMat('#ff6010', 1, 0, '#ff4a10', 2), 0, 0.06, 0, -Math.PI / 2, 0, 0);
+    const flame = glowSprite('#ff8030', 1.5, 0.85);
+    flame.position.y = y + 0.35;
+    model.add(flame);
+    const core = glowSprite('#ffd080', 0.6, 0.9);
+    core.position.y = y + 0.2;
+    model.add(core);
+    return model;
+  }
   const g = new THREE.Group();
   const stone = stdMat('#5a5650');
   for (let i = 0; i < 9; i++) {
@@ -245,6 +296,8 @@ export function makeCampfire(): THREE.Group {
 }
 
 export function makeTree(scale: number, dead: boolean): THREE.Group {
+  const model = dead ? assetProp('h_tree_dead_medium', 0.5 * scale) : assetProp(Math.random() < 0.5 ? 'x_tree_single_A' : 'x_tree_single_B', 2.5 * scale);
+  if (model) return model;
   const g = new THREE.Group();
   const bark = stdMat('#3a2a1c');
   add(g, new THREE.CylinderGeometry(0.1, 0.18, 1.6, 6), bark, 0, 0.8, 0);
@@ -277,8 +330,17 @@ const DECOR_MODELS: Partial<Record<DecorKind, [ModelKey, number][]>> = {
   bones: [
     ['d_sword_shield_broken', 0.45],
     ['h_ribcage', 0.6],
+    ['h_bone_A', 0.6],
+    ['h_bone_B', 0.6],
     ['h_bone_C', 0.6],
+    ['h_skull', 0.4],
   ],
+  skullpile: [['p_skullpile', 1]],
+  cage: [['p_cage', 1]],
+  banner: [['p_banner', 1]],
+  stalagmite: [['p_stalagmite', 1]],
+  crystal: [['p_crystal', 1]],
+  tent: [['p_tent', 1]],
   rock: [
     ['x_rock_single_A', 3.2],
     ['x_rock_single_C', 2.8],
@@ -288,11 +350,17 @@ const DECOR_MODELS: Partial<Record<DecorKind, [ModelKey, number][]>> = {
 
 export function makeDecor(kind: DecorKind, themeKey: string): THREE.Group {
   const opts = DECOR_MODELS[kind];
-  // bones are a mix of procedural scatter and CC0 pieces
-  if (opts && (kind !== 'bones' || Math.random() < 0.6)) {
+  if (opts) {
     const [key, sc] = pickKey(opts);
     const model = assetProp(key, sc);
-    if (model) return model;
+    if (model) {
+      if (kind === 'crystal') {
+        const glow = glowSprite('#4a90d0', 1.3, 0.45);
+        glow.position.y = 0.55;
+        model.add(glow);
+      }
+      return model;
+    }
   }
   const g = new THREE.Group();
   const bone = stdMat('#d8d0bc');
@@ -368,6 +436,41 @@ export function makeDecor(kind: DecorKind, themeKey: string): THREE.Group {
 
 // ─────────────────────────── ground items ───────────────────────────
 
+/** drops lying on the ground, modelled at size */
+const GROUND_MODELS: Partial<Record<string, ModelKey>> = {
+  helm: 'g_helm', armor: 'g_armor', gloves: 'g_gloves', boots: 'g_boots', belt: 'g_belt', ring: 'g_ring', amulet: 'g_amulet', potion: 'g_potion', rune: 'g_rune',
+};
+
+/** the model a weapon or shield is held as (see specs.ts meshyGear), and its scale */
+export function heldModel(b: (typeof ITEM_BASES)[string]): [ModelKey, number] | null {
+  switch (b.type) {
+    case 'sword':
+      return b.twoHanded ? ['w_greatsword', 0.7] : ['skeleton_blade', 0.65];
+    case 'axe':
+      return b.twoHanded ? ['axe_2handed', 0.75] : ['axe_1handed', 0.75];
+    case 'mace':
+      return b.twoHanded ? ['w_maul', 0.75] : ['w_mace', 0.65];
+    case 'staff':
+      return ['w_staff', 0.8];
+    case 'shield':
+      return [b.id === 'towershield' || b.id === 'gothicshield' ? 'skeleton_shield_large_a' : 'skeleton_shield_small_a', 0.7];
+  }
+  return null;
+}
+
+/** a held piece (+y up, flat side facing z) laid flat on its back, centred and resting on y=0 */
+function lyingFlat(key: ModelKey, scale: number): THREE.Group | null {
+  const m = assetProp(key, scale, { center: false });
+  if (!m) return null;
+  m.rotation.x = -Math.PI / 2;
+  const g = new THREE.Group();
+  g.add(m);
+  const box = new THREE.Box3().setFromObject(g);
+  const c = box.getCenter(new THREE.Vector3());
+  m.position.set(-c.x, -box.min.y, -c.z);
+  return g;
+}
+
 export function makeGroundItem(item: Item | null, color: string): THREE.Group {
   const g = new THREE.Group();
   if (!item) {
@@ -378,6 +481,24 @@ export function makeGroundItem(item: Item | null, color: string): THREE.Group {
     return g;
   }
   const b = ITEM_BASES[item.baseId];
+  const held = heldModel(b);
+  // weapons on the floor are drawn a size up, or a blade seen from above is a hairline
+  const model = held ? lyingFlat(held[0], held[1] * 1.3) : GROUND_MODELS[b.type] ? assetProp(GROUND_MODELS[b.type]!, 1, { ownMaterials: b.type === 'potion' }) : null;
+  if (model) {
+    // potions and runes show their colour: a tinted bottle, and a glow around it
+    if (b.type === 'potion') {
+      model.traverse((o) => {
+        const mm = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
+        mm?.color?.set('#ffffff').lerp(new THREE.Color(b.tint ?? '#c01010'), 0.55);
+      });
+    }
+    if (b.type === 'potion' || b.type === 'rune') {
+      const glow = glowSprite(b.tint ?? (b.type === 'rune' ? '#ff9020' : '#c01010'), b.type === 'potion' ? 0.32 : 0.28, 0.75);
+      glow.position.y = b.type === 'potion' ? 0.1 : 0.05;
+      model.add(glow);
+    }
+    return model;
+  }
   const c = new THREE.Color(color);
   const m = stdMat(`#${c.getHexString()}`, 0.5, 0.4, `#${c.clone().multiplyScalar(0.25).getHexString()}`, 1);
   const metal = stdMat('#a8a8b0', 0.35, 0.8);
@@ -387,6 +508,10 @@ export function makeGroundItem(item: Item | null, color: string): THREE.Group {
     case 'mace':
       add(g, new THREE.BoxGeometry(0.07, 0.03, 0.75), metal, 0, 0.03, 0.05, 0, 0.6, 0);
       add(g, new THREE.BoxGeometry(0.22, 0.04, 0.05), m, 0.18, 0.04, -0.2, 0, 0.6, 0);
+      break;
+    case 'staff':
+      add(g, new THREE.CylinderGeometry(0.025, 0.03, 1.1, 6), stdMat('#5a3a1c', 0.85), 0, 0.03, 0, Math.PI / 2, 0.6, 0);
+      add(g, new THREE.SphereGeometry(0.06, 8, 6), m, Math.sin(0.6) * 0.55, 0.05, Math.cos(0.6) * 0.55);
       break;
     case 'shield':
       add(g, new THREE.CylinderGeometry(0.25, 0.25, 0.05, 10), m, 0, 0.03, 0);

@@ -24,7 +24,17 @@ export type FxKind =
   | 'aura_switch'
   | 'shield_buff'
   | 'gold'
-  | 'unique_drop';
+  | 'unique_drop'
+  // sorceress
+  | 'nova'
+  | 'chain'
+  | 'static'
+  | 'teleport'
+  | 'flame'
+  | 'meteor_mark'
+  | 'meteor'
+  | 'ice_shatter'
+  | 'hail';
 
 /** Visual effect sink implemented by the renderer. Sim code only talks to this. */
 export interface Fx {

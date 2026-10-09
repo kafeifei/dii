@@ -1,4 +1,5 @@
 import { clamp, type P2 } from '../core/math';
+import { CLASSES, type PlayerClass } from '../data/classes';
 import { EQUIP_SLOTS, ITEM_BASES, type EquipSlot } from '../data/items';
 import { SET_ITEMS } from '../data/legendary';
 import { SKILL_BY_ID, SKILLS, type SkillDef } from '../data/skills';
@@ -65,6 +66,7 @@ export type Equipment = Partial<Record<EquipSlot, Item>>;
 export class Player extends Actor {
   faction = 'player' as const;
   name = '无名者';
+  cls: PlayerClass = 'paladin';
   xp = 0;
   base = { str: 25, dex: 20, vit: 25, ene: 15 };
   statPoints = 0;
@@ -80,6 +82,8 @@ export class Player extends Actor {
   mana = 1;
   activeAura: string | null = null;
   holyShield = 0;
+  /** seconds left on the sorceress's Frozen Armor */
+  frozenArmor = 0;
   /** skills bound to slots: lmb, rmb, q, w, e, r */
   binds: (string | null)[] = ['attack', null, null, null, null, null];
   d!: Derived;
@@ -148,6 +152,7 @@ export class Player extends Actor {
   }
 
   canLearn(def: SkillDef): boolean {
+    if (def.cls !== this.cls) return false;
     if (this.skillPoints <= 0) return false;
     if (this.level < def.reqLevel) return false;
     if ((this.skills[def.id] ?? 0) >= 20) return false;
@@ -233,6 +238,11 @@ export class Player extends Actor {
       addStat(bag, 'block', p.block);
       addStat(bag, 'dr', p.dr);
     }
+    if (this.frozenArmor > 0 && lvlOf('frozen_armor') > 0) {
+      shieldDefPct += SKILL_BY_ID.frozen_armor.params(lvlOf('frozen_armor'), 0).def;
+    }
+    // passives
+    if (lvlOf('warmth') > 0) addStat(bag, 'manaRegen', SKILL_BY_ID.warmth.params(lvlOf('warmth'), 0).regen);
 
     const allAttr = bag.allAttr ?? 0;
     const str = this.base.str + (bag.str ?? 0) + allAttr;
@@ -241,9 +251,10 @@ export class Player extends Actor {
     const ene = this.base.ene + (bag.ene ?? 0) + allAttr;
 
     const L = this.level;
-    let maxLife = 30 + 3 * (L - 1) + 2 * vit + (bag.life ?? 0);
+    const cd = CLASSES[this.cls];
+    let maxLife = cd.life0 + cd.lifePerLvl * (L - 1) + 2 * vit + (bag.life ?? 0);
     maxLife *= 1 + (bag.lifePct ?? 0) / 100;
-    let maxMana = 10 + 1.5 * (L - 1) + 2 * ene + (bag.mana ?? 0);
+    let maxMana = cd.mana0 + cd.manaPerLvl * (L - 1) + 2 * ene + (bag.mana ?? 0);
     maxMana *= 1 + (bag.manaPct ?? 0) / 100;
 
     // weapon

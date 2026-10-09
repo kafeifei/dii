@@ -2,6 +2,7 @@ export type ItemType =
   | 'sword'
   | 'axe'
   | 'mace'
+  | 'staff'
   | 'shield'
   | 'helm'
   | 'armor'
@@ -54,6 +55,7 @@ export function categoryOf(type: ItemType): Category | null {
     case 'sword':
     case 'axe':
     case 'mace':
+    case 'staff':
       return 'weapon';
     case 'shield':
       return 'shield';
@@ -123,6 +125,13 @@ const B: ItemBase[] = [
   { id: 'maul', name: '巨槌', type: 'mace', w: 2, h: 4, qlvl: 20, dmg: [20, 42], speed: 1.05, twoHanded: true, reqStr: 100, maxSockets: 4, price: 340 },
   { id: 'sacredmace', name: '圣徒锤', type: 'mace', w: 1, h: 3, qlvl: 34, dmg: [18, 40], speed: 1.55, reqStr: 110, maxSockets: 3, price: 560 },
   // ── shields ──
+  // ── staves (two-handed; the sorceress's weapon) ──
+  { id: 'shortstaff', name: '短杖', type: 'staff', w: 1, h: 3, qlvl: 1, dmg: [1, 5], speed: 1.3, twoHanded: true, maxSockets: 2, price: 20 },
+  { id: 'longstaff', name: '长杖', type: 'staff', w: 1, h: 4, qlvl: 8, dmg: [2, 8], speed: 1.25, twoHanded: true, maxSockets: 3, price: 60 },
+  { id: 'gnarledstaff', name: '多节杖', type: 'staff', w: 1, h: 4, qlvl: 14, dmg: [4, 12], speed: 1.3, twoHanded: true, reqStr: 20, maxSockets: 3, price: 120 },
+  { id: 'battlestaff', name: '战杖', type: 'staff', w: 1, h: 4, qlvl: 22, dmg: [6, 18], speed: 1.25, twoHanded: true, reqStr: 30, maxSockets: 4, price: 240 },
+  { id: 'warstaff', name: '战争法杖', type: 'staff', w: 2, h: 4, qlvl: 32, dmg: [12, 28], speed: 1.2, twoHanded: true, reqStr: 45, maxSockets: 4, price: 480 },
+
   { id: 'buckler', name: '小圆盾', type: 'shield', w: 2, h: 2, qlvl: 1, def: [4, 6], block: 25, maxSockets: 1, price: 30 },
   { id: 'roundshield', name: '圆盾', type: 'shield', w: 2, h: 2, qlvl: 5, def: [8, 12], block: 30, reqStr: 22, maxSockets: 2, price: 60 },
   { id: 'kiteshield', name: '鸢盾', type: 'shield', w: 2, h: 3, qlvl: 12, def: [16, 24], block: 35, reqStr: 47, maxSockets: 3, price: 140 },

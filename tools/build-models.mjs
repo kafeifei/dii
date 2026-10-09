@@ -4,12 +4,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
-import { dedup, prune, quantize, resample, weld } from '@gltf-transform/functions';
+import { dedup, meshopt, prune, quantize, resample, weld } from '@gltf-transform/functions';
+import { MeshoptEncoder } from 'meshoptimizer';
 
 const SRC = path.resolve('models-src');
 const OUT = path.resolve('public/models');
 fs.mkdirSync(OUT, { recursive: true });
-const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
+await MeshoptEncoder.ready;
+const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.encoder': MeshoptEncoder });
 for (const f of fs.readdirSync(OUT)) if (f.endsWith('.glb')) fs.rmSync(path.join(OUT, f));
 const built = [];
 
@@ -30,6 +32,8 @@ function dropAnim(anim) {
 }
 
 async function build(src, out, opts = {}) {
+  // an AI-generated replacement (tools/ai-props.mjs) takes over the pack model's key
+  if (fs.existsSync(path.join(SRC, 'ai-props', out))) src = `ai-props/${out}`;
   const doc = await io.read(path.join(SRC, src));
   const root = doc.getRoot();
   for (const anim of root.listAnimations()) {
@@ -47,29 +51,22 @@ async function build(src, out, opts = {}) {
       anim.setName(short);
     }
   }
-  await doc.transform(dedup(), prune(), weld(), resample(), quantize({ quantizeNormal: 10, quantizePosition: 14 }));
+  // meshopt-compressed (the runtime loader decodes it): a quarter to a half of the plain size
+  await doc.transform(dedup(), prune(), weld(), resample(), quantize({ quantizeNormal: 10, quantizePosition: 14 }), meshopt({ encoder: MeshoptEncoder, level: 'medium' }));
   await io.write(path.join(OUT, out), doc);
   built.push(out.replace('.glb', ''));
   const kb = Math.round(fs.statSync(path.join(OUT, out)).size / 1024);
   console.log(`${out.padEnd(28)} ${String(kb).padStart(5)} KB  anims=${root.listAnimations().length}`);
 }
 
-// KayKit characters: only the minion carries the shared animation library
+// KayKit characters are all replaced by AI ones; the knight (?knight) and the minion carrying the
+// shared animation library stay for comparison
 await build('kaykit/Skeleton_Minion.glb', 'skeleton_minion.glb', { keepAnims: (n) => KAYKIT_CLIPS.has(n) });
-for (const [s, o] of [
-  ['kaykit/Knight.glb', 'knight.glb'],
-  ['kaykit/Barbarian.glb', 'barbarian.glb'],
-  ['kaykit/Mage.glb', 'mage.glb'],
-  ['kaykit/Rogue.glb', 'rogue.glb'],
-  ['kaykit/Rogue_Hooded.glb', 'rogue_hooded.glb'],
-  ['kaykit/Skeleton_Warrior.glb', 'skeleton_warrior.glb'],
-  ['kaykit/Skeleton_Rogue.glb', 'skeleton_rogue.glb'],
-  ['kaykit/Skeleton_Mage.glb', 'skeleton_mage.glb'],
-]) await build(s, o);
+await build('kaykit/Knight.glb', 'knight.glb');
 for (const n of ['axe_1handed', 'axe_2handed', 'Skeleton_Blade', 'Skeleton_Axe', 'Skeleton_Crossbow', 'Skeleton_Staff', 'Skeleton_Shield_Small_A', 'Skeleton_Shield_Large_A']) {
   await build(`kaykit/${n}.gltf`, `${n.toLowerCase()}.glb`);
 }
-for (const f of fs.readdirSync(path.join(SRC, 'quaternius'))) await build(`quaternius/${f}`, `q_${f}`, { keepAnims: 'all' });
+// Quaternius monsters: all replaced by AI ones (models-src/ai/mon_*)
 for (const f of fs.readdirSync(path.join(SRC, 'dungeon'))) await build(`dungeon/${f}`, `d_${f}`, { keepAnims: f.startsWith('chest') ? 'all' : undefined });
 // AI-generated characters (tools/ai-*.mjs pipeline writes finished glb into models-src/ai)
 if (fs.existsSync(path.join(SRC, 'ai'))) {
@@ -78,6 +75,11 @@ if (fs.existsSync(path.join(SRC, 'ai'))) {
 const gltfs = (dir) => fs.readdirSync(path.join(SRC, dir)).filter((f) => f.endsWith('.gltf'));
 for (const f of gltfs('halloween')) await build(`halloween/${f}`, `h_${f.replace('.gltf', '.glb')}`);
 for (const f of gltfs('hexagon')) await build(`hexagon/${f}`, `x_${f.replace('.gltf', '.glb').replace('building_', '').replace('_red', '')}`);
+
+// AI models that don't stand in for a pack model (new monsters and the like)
+if (fs.existsSync(path.join(SRC, 'ai-props'))) {
+  for (const f of fs.readdirSync(path.join(SRC, 'ai-props'))) if (f.endsWith('.glb') && !built.includes(f.replace('.glb', ''))) await build(`ai-props/${f}`, f);
+}
 
 // the runtime preloads exactly what was built
 built.sort();

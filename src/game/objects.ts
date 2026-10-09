@@ -2,6 +2,7 @@ import type { P2 } from '../core/math';
 import type { ProjectileKind } from '../data/monsters';
 import type { Item } from '../items/item';
 import type { Actor, DamagePacket, Faction } from './actor';
+import type { FxKind } from './fx';
 
 let objIds = 0;
 
@@ -63,6 +64,7 @@ export class Projectile {
   wobble = 0;
   /** explodes for AoE on impact */
   splash = 0;
+  splashKind: 'fire' | 'cold' = 'fire';
   constructor(kind: ProjKind, pos: P2, vel: P2, owner: Actor | null, faction: Faction, dmg: DamagePacket, life = 2, radius = 0.25, pierce = false) {
     this.kind = kind;
     this.pos = { ...pos };
@@ -121,4 +123,6 @@ export class DelayedBlast {
     public source: Actor | null,
   ) {}
   done = false;
+  /** effect shown when it goes off (spells laid out ahead of time: fire wall, blizzard, meteor) */
+  fx: FxKind | null = null;
 }

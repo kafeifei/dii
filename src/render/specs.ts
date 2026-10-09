@@ -3,7 +3,9 @@ import { ITEM_BASES } from '../data/items';
 import type { Monster } from '../game/monster';
 import type { Player } from '../game/player';
 import type { Item } from '../items/item';
+import { assets } from './assets';
 import type { Attachment, ModelSpec, MoveClip } from './models';
+import { assetProp, glowSprite, topCentroid } from './props';
 
 // ── KayKit clip sets (shared rig) ──
 const KK_MOVE: MoveClip[] = [
@@ -15,24 +17,31 @@ const KK_1H = ['1H_Melee_Attack_Chop', '1H_Melee_Attack_Slice_Diagonal', '1H_Mel
 const KK_2H = ['2H_Melee_Attack_Chop', '2H_Melee_Attack_Slice'];
 const KK_CHARGE: MoveClip = { clip: 'Running_B', ref: 7 };
 
-/** Quaternius creatures share clip names; scale stride refs with body size */
-function quatClips(h: number, attack: string[]): ModelSpec['clips'] {
-  const k = h / 1.7;
+/** blades and hafts point forward and up out of a Meshy fist; shields strap to the forearm, face out */
+const MESHY_AIM = { dir: [0, 0.75, 0.66] as [number, number, number] };
+const MESHY_SHIELD_AIM = { dir: [0, 1, 0] as [number, number, number], grip: [0, 0, -0.16] as [number, number, number], slide: -0.12 };
+
+/**
+ * AI (Meshy) creatures carry their own clips; `walk` / `run` are the strides tools/meshy-merge.mjs
+ * prints, measured at the 1.7 m height Meshy rigs at
+ */
+function meshyClips(h: number, walk: number, run: number, attack: string[], extra: Partial<ModelSpec['clips']> = {}): ModelSpec['clips'] {
+  const k = (h * 0.9) / 1.7;
   return {
-    idle: ['Idle', 'Flying_Idle', 'Spider_Idle'],
+    idle: ['Idle'],
     move: [
-      { clip: 'Walk', ref: 1.5 * k },
-      { clip: 'Run', ref: 3.8 * k },
-      { clip: 'Flying_Idle', ref: 1.0 * k },
-      { clip: 'Fast_Flying', ref: 3.0 * k },
-      { clip: 'Spider_Walk', ref: 3.0 * k },
+      { clip: 'Walk', ref: walk * k },
+      { clip: 'Run', ref: run * k },
     ],
     attack,
-    hit: ['HitReact'],
-    charge: { clip: 'Run', ref: 4 * k },
-    death: ['Death', 'Spider_Death'],
+    hit: ['Hit'],
+    death: ['Death'],
+    ...extra,
   };
 }
+
+/** one-piece AI creatures (ModelSpec.motion) have no clips at all */
+const NO_CLIPS: ModelSpec['clips'] = { idle: [], move: [], attack: [], death: [] };
 
 const RANK_TINT = {
   champion: { tint: '#5a7aff', emissive: '#14206a' },
@@ -45,108 +54,129 @@ export function monsterSpec(m: Monster): ModelSpec {
   const sc = d.scale * (m.rank === 'champion' ? 1.1 : m.rank === 'unique' ? 1.18 : 1);
   const ranked = (s: ModelSpec): ModelSpec => (rank ? { ...s, tint: rank.tint, tintAmount: 0.4, emissive: rank.emissive } : s);
   switch (d.model) {
-    case 'zombie':
-      return ranked({ model: 'q_zombie', rig: 'quat', height: 1.75 * sc, clips: quatClips(1.75 * sc, ['Punch']) });
+    case 'zombie': {
+      const h = 1.75 * sc;
+      return ranked({ model: 'mon_zombie', rig: 'quat', height: h, clips: meshyClips(h, 0.72, 4.26, ['Attack']) });
+    }
     case 'skeleton': {
       const elite = m.rank !== 'normal' || m.id % 3 === 0;
+      const h = 1.7 * sc;
       return ranked({
-        model: elite ? 'skeleton_warrior' : 'skeleton_minion',
-        rig: 'kaykit',
-        height: 1.7 * sc,
+        model: elite ? 'mon_skeleton_elite' : 'mon_skeleton',
+        rig: 'quat',
+        height: h,
         attach: [
-          { model: m.id % 4 === 1 ? 'skeleton_axe' : 'skeleton_blade', hand: 'r' },
-          { model: elite ? 'skeleton_shield_large_a' : 'skeleton_shield_small_a', hand: 'l' },
+          m.id % 4 === 1 ? { model: 'skeleton_axe', hand: 'r', scale: 0.7, aim: MESHY_AIM } : { model: 'skeleton_blade', hand: 'r', scale: 0.65, aim: MESHY_AIM },
+          { model: elite ? 'skeleton_shield_large_a' : 'skeleton_shield_small_a', hand: 'l', scale: 0.7, aim: MESHY_SHIELD_AIM },
         ],
-        clips: { idle: ['Idle'], move: KK_MOVE, attack: KK_1H, hit: KK_HIT, block: ['Block_Hit'], death: ['Death_C_Skeletons'], revive: 'Death_C_Skeletons_Resurrect' },
+        clips: meshyClips(h, 1.42, 4.34, ['Attack', 'Attack2'], { block: ['Block'], revive: 'Revive' }),
       });
     }
-    case 'skelarcher':
+    case 'skelarcher': {
+      const h = 1.7 * sc;
       return ranked({
-        model: 'skeleton_rogue',
-        rig: 'kaykit',
-        height: 1.7 * sc,
-        attach: [{ model: 'skeleton_crossbow', hand: 'r' }],
-        clips: { idle: ['Idle'], move: KK_MOVE, attack: ['1H_Ranged_Shoot'], hit: KK_HIT, death: ['Death_C_Skeletons'], revive: 'Death_C_Skeletons_Resurrect' },
+        model: 'mon_skelarcher',
+        rig: 'quat',
+        height: h,
+        attach: [{ model: 'skeleton_crossbow', hand: 'r', scale: 0.7, aim: MESHY_AIM }],
+        clips: meshyClips(h, 1.39, 4.22, ['Attack'], { revive: 'Revive' }),
       });
+    }
     case 'imp': {
       const hell = d.id === 'hellimp';
-      const base: ModelSpec = { model: 'q_demon_small', rig: 'quat', height: 1.85 * sc, clips: quatClips(1.85 * sc, ['Weapon', 'Punch']) };
+      const h = 1.85 * sc;
+      const base: ModelSpec = {
+        model: 'mon_imp',
+        rig: 'quat',
+        height: h,
+        attach: [{ model: 'skeleton_blade', hand: 'r', scale: 0.45, aim: MESHY_AIM }],
+        clips: meshyClips(h, 1.42, 4.09, ['Attack', 'Attack2']),
+      };
       if (hell && !rank) return { ...base, tint: '#ff7a20', tintAmount: 0.45, emissive: '#3a0c00' };
       return ranked(base);
     }
-    case 'shaman':
-      return ranked({ model: 'q_tribal', rig: 'quat', height: 1.5 * sc, float: 0.45, clips: { ...quatClips(1.5 * sc, ['Headbutt', 'Punch']), cast: ['Yes'] } });
-    case 'ghoul':
-      return ranked({ model: 'q_orc', rig: 'quat', height: 1.75 * sc, tint: '#7a8a50', tintAmount: 0.3, clips: quatClips(1.75 * sc, ['Weapon', 'Punch']) });
-    case 'spider':
-      return ranked({ model: 'q_spider', rig: 'quat', height: 1.5 * sc, fitWidth: true, clips: { ...quatClips(1.5 * sc, ['Spider_Attack']), hit: [] } });
-    case 'wraith':
+    case 'shaman': {
+      const h = 1.5 * sc;
       return ranked({
-        model: 'q_ghost',
+        model: 'mon_shaman',
         rig: 'quat',
-        height: 1.55 * sc,
-        float: 0.35,
-        tint: '#9ad8ff',
-        tintAmount: 0.5,
-        emissive: '#0c2a48',
-        opacity: 0.82,
-        clips: quatClips(1.55 * sc, ['Punch', 'Headbutt']),
+        height: h,
+        attach: [{ model: 'skeleton_staff', hand: 'r', glow: '#ff7a30', scale: 0.7, aim: MESHY_AIM }],
+        clips: meshyClips(h, 1.25, 4.04, ['Attack'], { cast: ['Cast'] }),
       });
-    case 'demon':
-      return ranked({ model: 'q_demon_winged', rig: 'quat', height: 1.45 * sc, float: 0.3, emissive: '#2a0800', clips: quatClips(1.45 * sc, ['Punch', 'Headbutt']) });
-    case 'skullfly':
-      return ranked({ model: 'q_ghost_skull', rig: 'quat', height: 1.45 * sc, float: 0.5, clips: quatClips(1.2 * sc, ['Headbutt', 'Punch']) });
-    case 'skelmage':
+    }
+    case 'ghoul':
+      return ranked({ model: 'mon_ghoul', rig: 'quat', height: 1.75 * sc, clips: meshyClips(1.75 * sc, 1.43, 4.69, ['Attack', 'Attack2']) });
+    case 'spider':
+      return ranked({ model: 'mon_spider', rig: 'quat', height: 1.5 * sc, fitWidth: true, motion: 'crawl', clips: NO_CLIPS });
+    case 'wraith': {
+      const h = 1.55 * sc;
       return ranked({
-        model: 'skeleton_mage',
-        rig: 'kaykit',
-        height: 1.7 * sc,
-        attach: [{ model: 'skeleton_staff', hand: 'r', glow: '#80c0ff' }],
-        clips: { idle: ['Idle'], move: KK_MOVE, attack: ['Spellcast_Shoot'], hit: KK_HIT, death: ['Death_C_Skeletons'], revive: 'Death_C_Skeletons_Resurrect' },
+        model: 'mon_wraith',
+        rig: 'quat',
+        height: h,
+        float: 0.25,
+        tint: '#9ad8ff',
+        tintAmount: 0.25,
+        emissive: '#0c2a48',
+        opacity: 0.85,
+        clips: meshyClips(h, 1.49, 4.61, ['Attack']),
       });
+    }
+    case 'demon':
+      return ranked({ model: 'mon_demon', rig: 'quat', height: 1.45 * sc, emissive: '#2a0800', clips: meshyClips(1.45 * sc, 1.48, 4.83, ['Attack', 'Attack2']) });
+    case 'skullfly':
+      return ranked({ model: 'mon_skullfly', rig: 'quat', height: 0.95 * sc, float: 1.0, motion: 'hover', emissive: '#1a0c04', clips: NO_CLIPS });
+    case 'skelmage': {
+      const h = 1.7 * sc;
+      return ranked({
+        model: 'mon_skelmage',
+        rig: 'quat',
+        height: h,
+        attach: [{ model: 'skeleton_staff', hand: 'r', glow: '#80c0ff', scale: 0.8, aim: MESHY_AIM }],
+        clips: meshyClips(h, 1.42, 4.34, ['Attack'], { cast: ['Cast'], revive: 'Revive' }),
+      });
+    }
     case 'bat':
       // wide wings: size by wingspan
-      return ranked({ model: m.rank === 'normal' || m.rank === 'minion' ? 'q_goleling' : 'q_goleling_evolved', rig: 'quat', height: 2.5 * sc, fitWidth: true, float: 0.7, clips: quatClips(1.4 * sc, ['Headbutt', 'Punch']) });
-    case 'mushroom':
-      return ranked({ model: 'q_mushroom_king', rig: 'quat', height: 1.75 * sc, clips: quatClips(1.75 * sc, ['Weapon', 'Punch']) });
-    case 'yeti':
-      return ranked({ model: 'q_yeti_b', rig: 'quat', height: 1.75 * sc, clips: quatClips(1.75 * sc, ['Punch', 'Weapon']) });
+      return ranked({ model: 'mon_bat', rig: 'quat', height: 2.5 * sc, fitWidth: true, float: 0.9, motion: 'flap', clips: NO_CLIPS });
+    case 'mushroom': {
+      const h = 1.75 * sc;
+      return ranked({ model: 'mon_mushroom', rig: 'quat', height: h, clips: meshyClips(h, 1.33, 3.98, ['Attack']) });
+    }
+    case 'yeti': {
+      const h = 1.75 * sc;
+      return ranked({ model: 'mon_yeti', rig: 'quat', height: h, clips: meshyClips(h, 1.42, 4.68, ['Attack', 'Attack2']) });
+    }
     case 'dragon':
-      return ranked({ model: 'q_dragon_evolved', rig: 'quat', height: 2.2 * sc, fitWidth: true, float: 0.5, emissive: '#200800', clips: quatClips(1.6 * sc, ['Headbutt', 'Punch']) });
-    case 'butcher':
+      return ranked({ model: 'mon_dragon', rig: 'quat', height: 2.2 * sc, fitWidth: true, float: 0.5, motion: 'flap', emissive: '#200800', clips: NO_CLIPS });
+    case 'butcher': {
+      const h = 1.65 * sc;
       return {
-        model: 'barbarian',
-        rig: 'kaykit',
-        height: 1.65 * sc,
-        show: ['2H_Axe'],
-        tint: '#c05040',
-        tintAmount: 0.3,
-        clips: { idle: ['2H_Melee_Idle'], move: KK_MOVE, attack: [...KK_2H, '2H_Melee_Attack_Spin'], hit: KK_HIT, charge: KK_CHARGE, death: ['Death_B'] },
-      };
-    case 'lich':
-      return {
-        model: 'skeleton_mage',
-        rig: 'kaykit',
-        height: 1.7 * sc,
-        show: [],
-        attach: [{ model: 'skeleton_staff', hand: 'r', glow: '#80d0ff' }],
-        tint: '#a8d8ff',
-        tintAmount: 0.55,
-        emissive: '#0a1830',
-        clips: { idle: ['Idle'], move: KK_MOVE, attack: ['Spellcast_Shoot'], cast: ['Spellcast_Raise', 'Spellcast_Shoot'], hit: KK_HIT, death: ['Death_C_Skeletons'] },
-      };
-    case 'overlord':
-      return {
-        model: 'q_demon_blue',
+        model: 'mon_butcher',
         rig: 'quat',
-        height: 1.55 * sc,
-        tint: '#b02818',
-        tintAmount: 0.55,
-        emissive: '#2a0600',
-        clips: quatClips(1.55 * sc, ['Weapon', 'Punch']),
+        height: h,
+        attach: [{ model: 'w_cleaver', hand: 'r', scale: 0.9, aim: MESHY_AIM }],
+        clips: meshyClips(h, 1.4, 4.15, ['Attack', 'Attack2', 'Attack3'], { charge: { clip: 'Charge', ref: (5 * h * 0.9) / 1.7 } }),
       };
+    }
+    case 'lich': {
+      const h = 1.7 * sc;
+      return {
+        model: 'mon_lich',
+        rig: 'quat',
+        height: h,
+        attach: [{ model: 'skeleton_staff', hand: 'r', glow: '#80d0ff', scale: 0.85, aim: MESHY_AIM }],
+        emissive: '#0a1830',
+        clips: meshyClips(h, 1.38, 4.28, ['Attack'], { cast: ['Cast'] }),
+      };
+    }
+    case 'overlord': {
+      const h = 1.55 * sc;
+      return { model: 'mon_overlord', rig: 'quat', height: h, emissive: '#2a0600', clips: meshyClips(h, 1.37, 4.24, ['Attack', 'Attack2']) };
+    }
   }
-  return { model: 'q_zombie', rig: 'quat', height: 1.7 * sc, clips: quatClips(1.7 * sc, ['Punch']) };
+  return { model: 'mon_zombie', rig: 'quat', height: 1.7 * sc, clips: meshyClips(1.7 * sc, 0.72, 4.26, ['Attack']) };
 }
 
 function weaponGlow(w: Item | undefined): string | null {
@@ -167,8 +197,15 @@ const SHIELD_MESH: Record<string, string> = {
   gothicshield: 'Spike_Shield',
 };
 
-/** procedural mace / maul in world units, handle along +Y from the grip */
+/** mace / maul in world units, handle along +Y from the grip */
 function makeMace(twoHanded: boolean, glow: string | null): THREE.Object3D {
+  // the AI pieces were fitted over KayKit axes, so their grip sits at the origin like those
+  const t = assets.get(twoHanded ? 'w_maul' : 'w_mace');
+  if (t) {
+    const o = t.gltf.scene.clone(true);
+    o.scale.setScalar(twoHanded ? 0.75 : 0.65);
+    return o;
+  }
   const g = new THREE.Group();
   const wood = new THREE.MeshStandardMaterial({ color: '#4a3020', roughness: 0.9 });
   const metal = new THREE.MeshStandardMaterial({ color: '#a8a8b0', metalness: 0.75, roughness: 0.35, emissive: glow ?? '#000000', emissiveIntensity: glow ? 0.6 : 0 });
@@ -195,8 +232,110 @@ function makeMace(twoHanded: boolean, glow: string | null): THREE.Object3D {
   return g;
 }
 
-/** AI-generated hero (tools/ai-*.mjs pipeline) is the default; ?knight falls back to the KayKit knight */
-const AI_HERO = typeof location !== 'undefined' && !location.search.includes('knight');
+const STAFF_GEM: Record<string, string> = { shortstaff: '#ff8a3a', longstaff: '#a0c0ff', gnarledstaff: '#80e090', battlestaff: '#60a0ff', warstaff: '#ff5a10' };
+
+/** staff in world units, foot at the origin, haft along +Y */
+function makeStaff(baseId: string | undefined, glow: string | null): THREE.Object3D {
+  const model = assetProp('w_staff', 0.8);
+  if (model) {
+    // a gem of the staff's colour glowing in its head
+    const gem = glowSprite(glow ?? STAFF_GEM[baseId ?? ''] ?? '#ff8a3a', 0.4, 0.9);
+    gem.position.copy(topCentroid(model, 0.1));
+    model.add(gem);
+    return model;
+  }
+  const g = new THREE.Group();
+  const len = 1.7;
+  const wood = new THREE.MeshStandardMaterial({ color: '#4a2c14', roughness: 0.85 });
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.03, len, 7), wood);
+  shaft.position.y = len / 2;
+  g.add(shaft);
+  const claw = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.013, 6, 12), new THREE.MeshStandardMaterial({ color: '#8a6a2a', metalness: 0.7, roughness: 0.4 }));
+  claw.position.y = len + 0.03;
+  claw.rotation.x = Math.PI / 2;
+  g.add(claw);
+  const color = glow ?? STAFF_GEM[baseId ?? ''] ?? '#ff8a3a';
+  const gem = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 8), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 2.2 }));
+  gem.position.y = len + 0.06;
+  g.add(gem);
+  return g;
+}
+
+/** Meshy-generated sorceress (tools/meshy-sorceress.mjs); her own rig, staff held upright */
+function sorceressSpec(p: Player): ModelSpec {
+  return {
+    model: 'sorceress',
+    rig: 'quat',
+    height: 1.8,
+    attach: meshyGear(p),
+    clips: {
+      idle: ['Idle'],
+      // stride speeds measured on the clips, scaled to the in-game body height (1.8 × 0.9)
+      move: [
+        { clip: 'Walk', ref: 1.31 },
+        { clip: 'Run', ref: 3.95 },
+      ],
+      attack: ['Attack'],
+      cast: ['Cast'],
+      hit: ['Hit'],
+      charge: { clip: 'Run', ref: 7 },
+      death: ['Death'],
+    },
+  };
+}
+
+/**
+ * Meshy-generated paladin (tools/meshy-merge.mjs) is the default; ?aihero shows the earlier
+ * AI hero (tools/ai-*.mjs pipeline), ?knight the KayKit knight
+ */
+const QUERY = typeof location !== 'undefined' ? location.search : '';
+const AI_HERO = QUERY.includes('aihero');
+const KNIGHT = QUERY.includes('knight');
+
+/** in-game body height over the height Meshy rigs at (1.7 m): scales measured stride speeds */
+const MESHY_K = (1.8 * 0.9) / 1.7;
+
+/** gear for Meshy rigs, which have plain hands and no weapon slots: everything is aimed (see Attachment.aim) */
+function meshyGear(p: Player): Attachment[] {
+  const eq = p.equipment;
+  const wb = eq.weapon ? ITEM_BASES[eq.weapon.baseId] : null;
+  const glow = weaponGlow(eq.weapon);
+  const twoHanded = !!wb?.twoHanded;
+  const aim = MESHY_AIM;
+  const attach: Attachment[] = [];
+  if (wb?.type === 'staff') attach.push({ model: () => makeStaff(wb.id, glow), hand: 'r', upright: 0.9 });
+  else if (wb?.type === 'sword') attach.push(twoHanded ? { model: 'w_greatsword', hand: 'r', glow, scale: 0.7, aim } : { model: 'skeleton_blade', hand: 'r', glow, scale: 0.65, aim });
+  else if (wb?.type === 'axe') attach.push({ model: twoHanded ? 'axe_2handed' : 'axe_1handed', hand: 'r', glow, scale: 0.75, aim });
+  else if (wb) attach.push({ model: () => makeMace(twoHanded, glow), hand: 'r', aim });
+  if (eq.offhand) {
+    const large = eq.offhand.baseId === 'towershield' || eq.offhand.baseId === 'gothicshield';
+    attach.push({ model: large ? 'skeleton_shield_large_a' : 'skeleton_shield_small_a', hand: 'l', scale: 0.7, aim: MESHY_SHIELD_AIM });
+  }
+  return attach;
+}
+
+function paladinSpec(p: Player): ModelSpec {
+  const wb = p.equipment.weapon ? ITEM_BASES[p.equipment.weapon.baseId] : null;
+  return {
+    model: 'paladin',
+    rig: 'quat',
+    height: 1.8,
+    attach: meshyGear(p),
+    clips: {
+      idle: ['Idle'],
+      move: [
+        { clip: 'Walk', ref: 0.7 * MESHY_K },
+        { clip: 'Run', ref: 4.3 * MESHY_K },
+      ],
+      attack: wb?.twoHanded ? ['Attack2H', 'Attack2H2'] : ['Attack'],
+      cast: ['Cast'],
+      hit: ['Hit'],
+      block: ['Block'],
+      charge: { clip: 'Run', ref: 4.3 * MESHY_K },
+      death: ['Death'],
+    },
+  };
+}
 
 /** own rig + embedded clips; gear shows as hand attachments only (no body submeshes to toggle) */
 function aiPlayerSpec(p: Player): ModelSpec {
@@ -233,7 +372,9 @@ function aiPlayerSpec(p: Player): ModelSpec {
 }
 
 export function playerSpec(p: Player): ModelSpec {
+  if (p.cls === 'sorceress') return sorceressSpec(p);
   if (AI_HERO) return aiPlayerSpec(p);
+  if (!KNIGHT) return paladinSpec(p);
   const eq = p.equipment;
   const wb = eq.weapon ? ITEM_BASES[eq.weapon.baseId] : null;
   const glow = weaponGlow(eq.weapon);
@@ -270,42 +411,29 @@ export function playerSpec(p: Player): ModelSpec {
   };
 }
 
-export function vendorSpec(): ModelSpec {
+/** Meshy-generated camp folk: they stand around; walk / run come free with the rig */
+function npcModel(model: ModelSpec['model'], height: number, walk: number, run: number): ModelSpec {
+  const k = (height * 0.9) / 1.7;
   return {
-    model: 'mage',
-    rig: 'kaykit',
-    height: 1.75,
-    show: ['Mage_Hat', 'Mage_Cape', 'Spellbook'],
-    clips: { idle: ['Idle'], move: KK_MOVE, attack: [], death: ['Death_A'] },
+    model,
+    rig: 'quat',
+    height,
+    clips: { idle: ['Idle'], move: [{ clip: 'Walk', ref: walk * k }, { clip: 'Run', ref: run * k }], attack: [], death: [] },
   };
+}
+
+export function vendorSpec(): ModelSpec {
+  return npcModel('npc_vendor', 1.7, 1.47, 4.78);
 }
 
 /** decorative townsfolk */
 export function npcSpec(model: string): ModelSpec {
   switch (model) {
     case 'barbarian':
-      return {
-        model: 'barbarian',
-        rig: 'kaykit',
-        height: 1.85,
-        show: ['Barbarian_Hat', 'Barbarian_Cape', '2H_Axe'],
-        clips: { idle: ['2H_Melee_Idle'], move: KK_MOVE, attack: [], death: ['Death_A'] },
-      };
+      return npcModel('npc_mercenary', 1.95, 1.4, 4.23);
     case 'rogue_hooded':
-      return {
-        model: 'rogue_hooded',
-        rig: 'kaykit',
-        height: 1.75,
-        show: ['Rogue_Cape', '2H_Crossbow'],
-        clips: { idle: ['Idle_Combat', 'Idle'], move: KK_MOVE, attack: [], death: ['Death_A'] },
-      };
+      return npcModel('npc_warden', 1.8, 1.39, 4.18);
     default:
-      return {
-        model: 'rogue',
-        rig: 'kaykit',
-        height: 1.75,
-        show: ['Rogue_Cape', '1H_Crossbow'],
-        clips: { idle: ['Idle_B', 'Idle'], move: KK_MOVE, attack: [], death: ['Death_A'] },
-      };
+      return npcModel('npc_rogue', 1.75, 1.4, 4.56);
   }
 }

@@ -1,12 +1,13 @@
 import type { Sfx } from '../audio/sfx';
 import { ITEM_BASES, slotsFor, type EquipSlot } from '../data/items';
 import { RUNE_BY_ID } from '../data/legendary';
-import { SKILLS, SKILL_BY_ID, TREE_NAMES, type SkillDef } from '../data/skills';
+import { CLASSES, CLASS_IDS, type PlayerClass } from '../data/classes';
+import { SKILLS, SKILL_BY_ID, classSkills, type SkillDef } from '../data/skills';
 import { MOD_NAMES } from '../data/monsters';
 import type { Game, GameHooks } from '../game/game';
 import type { Level } from '../game/level';
 import { xpForLevel } from '../game/player';
-import { deleteSave, hasSave, markInGame } from '../game/save';
+import { deleteSave, freeSlot, listSaves, markInGame, MAX_SLOTS, setSlot } from '../game/save';
 import { skillCost } from '../game/playerctl';
 import { createItem, findRuneword, applyRuneword } from '../items/gen';
 import type { Grid } from '../items/grid';
@@ -238,13 +239,20 @@ export class UI implements GameHooks {
   private buildTitle() {
     const t = h('div', 'overlay open ui-block');
     t.innerHTML = `
-      <h1 class="title-logo">DII</h1>
+      <h1 class="title-logo">暗黑5</h1>
       <div class="title-sub">暗 夜 深 渊</div>
-      <div class="menu">
-        <input class="name" maxlength="12" placeholder="角色名字" value="无名骑士" />
-        <button class="btn new">新的冒险</button>
-        <button class="btn cont">继续</button>
-        <div class="loading">载入模型…</div>
+      <div class="title-cols">
+        <div class="menu saves-col">
+          <div class="menu-head">选择角色</div>
+          <div class="saves"></div>
+        </div>
+        <div class="menu">
+          <div class="menu-head">创建角色</div>
+          <div class="classes">${CLASS_IDS.map((c) => `<button class="cls" data-cls="${c}"><b>${CLASSES[c].name}</b><span>${CLASSES[c].desc}</span></button>`).join('')}</div>
+          <input class="name" maxlength="12" placeholder="角色名字" value="${CLASSES.paladin.defaultName}" />
+          <button class="btn new">新的冒险</button>
+          <div class="loading">载入模型…</div>
+        </div>
       </div>
       <div class="help">
         <b>左键</b> 移动 / 攻击 / 拾取 · <b>Shift+左键</b> 原地攻击 · <b>右键</b> 释放右键技能 · <b>Q W E R</b> 技能快捷键<br/>
@@ -252,27 +260,58 @@ export class UI implements GameHooks {
         背包内 <b>右键</b> 使用/装备 · <b>Ctrl+左键</b> 快速出售或存取 · 把符文放到有孔装备上即可镶嵌
       </div>`;
     const name = t.querySelector('.name') as HTMLInputElement;
-    const cont = t.querySelector('.cont') as HTMLButtonElement;
-    const refresh = () => {
-      const s = hasSave();
-      cont.style.display = s ? '' : 'none';
-      if (s) cont.textContent = `继续 · ${s.name}（${s.level} 级）`;
+    const newBtn = t.querySelector('.new') as HTMLButtonElement;
+    const savesCol = t.querySelector('.saves-col') as HTMLElement;
+    const savesEl = t.querySelector('.saves') as HTMLElement;
+    let cls: PlayerClass = 'paladin';
+    const clsBtns = [...t.querySelectorAll<HTMLButtonElement>('.cls')];
+    const pickClass = (c: PlayerClass) => {
+      // keep a typed name, swap the placeholder one
+      if (!name.value.trim() || name.value === CLASSES[cls].defaultName) name.value = CLASSES[c].defaultName;
+      cls = c;
+      for (const b of clsBtns) b.classList.toggle('on', b.dataset.cls === c);
     };
-    refresh();
-    (t.querySelector('.new') as HTMLButtonElement).onclick = () => {
+    for (const b of clsBtns) b.onclick = () => pickClass(b.dataset.cls as PlayerClass);
+    pickClass('paladin');
+    const start = (run: () => boolean | void) => {
       this.sfx.ensure();
-      if (hasSave() && !confirm('开始新冒险会覆盖现有存档，确定吗？')) return;
-      deleteSave();
-      this.game.newGame(name.value.trim());
+      if (run() === false) return;
       t.classList.remove('open');
       this.dirty = true;
     };
-    cont.onclick = () => {
-      this.sfx.ensure();
-      if (this.game.continueGame()) {
-        t.classList.remove('open');
-        this.dirty = true;
+    const refresh = () => {
+      name.value = CLASSES[cls].defaultName;
+      const saves = listSaves();
+      savesCol.style.display = saves.length ? '' : 'none';
+      savesEl.innerHTML = '';
+      for (const sv of saves) {
+        const row = h('div', 'save');
+        const pick = h('button', 'btn pick');
+        pick.innerHTML = `<b></b><span>${CLASSES[sv.cls].name} · ${sv.level} 级 · ${sv.depth ? `第 ${sv.depth} 层` : '营地'}</span>`;
+        pick.querySelector('b')!.textContent = sv.name;
+        pick.onclick = () => start(() => this.game.continueGame(sv.slot));
+        const del = h('button', 'btn del', '✕');
+        del.title = '删除角色';
+        del.onclick = () => {
+          if (!confirm(`删除角色「${sv.name}」？此操作无法撤销。`)) return;
+          deleteSave(sv.slot);
+          refresh();
+        };
+        row.append(pick, del);
+        savesEl.appendChild(row);
       }
+      const full = freeSlot() === null;
+      newBtn.disabled = full;
+      newBtn.textContent = full ? `角色已满（${MAX_SLOTS} 个）` : '新的冒险';
+    };
+    refresh();
+    newBtn.onclick = () => {
+      const free = freeSlot();
+      if (free === null) return;
+      start(() => {
+        setSlot(free);
+        this.game.newGame(name.value.trim(), cls);
+      });
     };
     this.titleEl = t;
     t.classList.add('is-loading');
@@ -296,7 +335,8 @@ export class UI implements GameHooks {
   }
 
   devStart() {
-    this.game.newGame('测试骑士');
+    const sorc = location.search.includes('sorc');
+    this.game.newGame(sorc ? '测试法师' : '测试骑士', sorc ? 'sorceress' : 'paladin');
     this.titleEl.classList.remove('open');
     this.dirty = true;
   }
@@ -921,7 +961,7 @@ export class UI implements GameHooks {
     };
     row('等级', p.level);
     row('经验值', `${p.xp} / ${xpForLevel(p.level + 1)}`);
-    row('职业', '圣殿骑士');
+    row('职业', CLASSES[p.cls].name);
     sheet.appendChild(h('div', 'head', '属性'));
     if (p.statPoints > 0) sheet.appendChild(h('div', 'points', `剩余属性点：${p.statPoints}`));
     const add = (k: keyof typeof p.base) => () => {
@@ -965,7 +1005,7 @@ export class UI implements GameHooks {
     R.appendChild(h('h2', '', '技 能'));
     this.addClose(R, 'right');
     const tabs = h('div', 'tabs');
-    TREE_NAMES.forEach((n, i) => {
+    CLASSES[p.cls].trees.forEach((n, i) => {
       const t = h('div', `tab${i === this.skillTab ? ' on' : ''}`, n);
       t.onclick = () => {
         this.skillTab = i;
@@ -975,7 +1015,7 @@ export class UI implements GameHooks {
     });
     R.appendChild(tabs);
     const tree = h('div', 'tree');
-    const skills = SKILLS.filter((s) => s.tree === this.skillTab);
+    const skills = classSkills(p.cls).filter((s) => s.tree === this.skillTab);
     const pos = (s: SkillDef) => ({ x: 40 + s.col * 120, y: 12 + s.row * 82 });
     let svg = '<svg>';
     for (const s of skills) {
@@ -1020,7 +1060,7 @@ export class UI implements GameHooks {
     p.skillPoints--;
     p.markDirty();
     this.sfx.play('levelup', 0.4);
-    if (first) {
+    if (first && s.kind !== 'passive') {
       const idx = p.binds.findIndex((b, i) => i >= 1 && !b);
       if (idx >= 0) {
         p.binds[idx] = s.id;
@@ -1072,7 +1112,7 @@ export class UI implements GameHooks {
     const p = this.game.player;
     const el = this.pickerEl;
     el.innerHTML = '';
-    const ids = ['attack', ...SKILLS.filter((s) => p.skillBase(s.id) > 0).map((s) => s.id)];
+    const ids = ['attack', ...SKILLS.filter((s) => s.kind !== 'passive' && p.skillBase(s.id) > 0).map((s) => s.id)];
     for (const id of ids) {
       const s = h('div', 'slot');
       s.innerHTML = `<img src="${skillIcon(id)}" />`;
@@ -1348,7 +1388,17 @@ export class UI implements GameHooks {
       ctx.fill();
     };
     for (const o of g.level.objects) {
-      if (!map.explored[Math.floor(o.pos.z) * map.w + Math.floor(o.pos.x)]) continue;
+      // the way down from the camp is always marked, explored or not
+      const campExit = o.kind === 'stairs' && g.level.depth === 0;
+      if (!campExit && !map.explored[Math.floor(o.pos.z) * map.w + Math.floor(o.pos.x)]) continue;
+      if (campExit) {
+        const k = (performance.now() / 1200) % 1;
+        ctx.strokeStyle = `rgba(255, 120, 40, ${1 - k})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(ox + o.pos.x * scale, oy + o.pos.z * scale, scale * (1.6 + k * 3), 0, Math.PI * 2);
+        ctx.stroke();
+      }
       if (o.kind === 'stairs') dot(o.pos.x, o.pos.z, '#ffd040', scale * 1.4);
       else if (o.kind === 'waypoint') dot(o.pos.x, o.pos.z, '#40a0ff', scale * 1.4);
       else if (o.kind === 'portal') dot(o.pos.x, o.pos.z, '#ff4040', scale * 1.2);

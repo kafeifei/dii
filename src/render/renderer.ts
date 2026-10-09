@@ -13,11 +13,11 @@ import { assets } from './assets';
 import { monsterLook, playerLook, playerLookKey, vendorLook } from './looks';
 import { ModelRig, type ModelSpec } from './models';
 import {
-  glowSprite, makeBarrel, makeHouse, makeChest, makeDecor, makeGroundItem, makeHammer, makePortal, makeProjectile, makeStairs, makeTorch, makeTree, makeWaypoint, topCentroid,
+  glowSprite, makeBarrel, makeBrazier, makeHouse, makeChest, makeDecor, makeGroundItem, makeHammer, makePortal, makeProjectile, makeStairs, makeTorch, makeTree, makeWaypoint, topCentroid,
 } from './props';
 import { Rig, type AnimInput, type RigLook } from './rig';
 import { monsterSpec, npcSpec, playerSpec, vendorSpec } from './specs';
-import { floorTexture, runeCircleTexture, shadowTexture, wallTexture } from './textures';
+import { runeCircleTexture, shadowTexture, tileTexture } from './textures';
 
 const CAM_YAW = Math.PI / 4;
 const CAM_PITCH = 0.68; // ~39°
@@ -75,6 +75,39 @@ function applyOcclusionFade(mat: THREE.Material, u: OccUniforms) {
       );
   };
   mat.customProgramCacheKey = () => 'occ-fade';
+}
+
+/**
+ * Map the texture by world position so one painted image spans several tiles: floors across x/z
+ * (`size` metres per image), walls along each face and up from the floor.
+ */
+function applyWorldUv(mat: THREE.Material, mode: 'floor' | 'wall', size: number) {
+  const prev = mat.onBeforeCompile;
+  const prevKey = mat.customProgramCacheKey();
+  mat.onBeforeCompile = (shader, r) => {
+    prev.call(mat, shader, r);
+    const uv =
+      mode === 'floor'
+        ? 'vMapUv = wuvP.xz;'
+        : `vec3 wuvW = normalize((modelMatrix * wuvN).xyz);
+          vMapUv = vec2(abs(wuvW.x) > 0.5 ? -wuvP.z * sign(wuvW.x) : wuvP.x * sign(wuvW.z), wuvP.y);`;
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <uv_vertex>',
+      `#include <uv_vertex>
+      {
+        vec4 wuvP = vec4(position, 1.0);
+        vec4 wuvN = vec4(normal, 0.0);
+        #ifdef USE_INSTANCING
+          wuvP = instanceMatrix * wuvP;
+          wuvN = instanceMatrix * wuvN;
+        #endif
+        wuvP = modelMatrix * wuvP;
+        ${uv}
+        vMapUv /= ${size.toFixed(2)};
+      }`,
+    );
+  };
+  mat.customProgramCacheKey = () => `${prevKey}|world-uv-${mode}`;
 }
 
 /** theme tint for prop materials: [colour, amount] */
@@ -287,7 +320,8 @@ export class Renderer implements Picker {
         }
       }
     }
-    const floorMat = new THREE.MeshStandardMaterial({ map: floorTexture(theme.texture, theme.floor), roughness: 0.95, metalness: 0 });
+    const floorMat = new THREE.MeshStandardMaterial({ map: tileTexture(`${theme.key}_floor`), roughness: 0.95, metalness: 0 });
+    applyWorldUv(floorMat, 'floor', 4);
     const floorGeo = new THREE.PlaneGeometry(1, 1);
     floorGeo.rotateX(-Math.PI / 2);
     const floor = new THREE.InstancedMesh(floorGeo, floorMat, floorTiles.length + pillarTiles.length);
@@ -295,21 +329,15 @@ export class Renderer implements Picker {
     const q = new THREE.Quaternion();
     const one = new THREE.Vector3(1, 1, 1);
     const col = new THREE.Color();
-    const base = new THREE.Color(theme.floor);
-    const alt = new THREE.Color(theme.floorAlt);
     let i = 0;
     for (const [x, y] of [...floorTiles, ...pillarTiles]) {
-      q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), (Math.floor(Math.random() * 4) * Math.PI) / 2);
       m4.compose(new THREE.Vector3(x + 0.5, 0, y + 0.5), q, one);
       floor.setMatrixAt(i, m4);
-      // ambient occlusion near walls
+      // ambient occlusion near walls, and a faint per-tile variation
       let walls = 0;
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (map.get(x + dx, y + dy) === T_WALL) walls++;
-      const ao = 1 - walls * 0.12;
-      const v = 0.82 + Math.random() * 0.3;
-      col.copy(base).lerp(alt, Math.random()).multiplyScalar((v * ao) / Math.max(0.2, base.r * 0 + 1));
-      col.setRGB(v * ao, v * ao, v * ao);
-      floor.setColorAt(i, col);
+      const v = (0.95 + Math.random() * 0.1) * (1 - walls * 0.12);
+      floor.setColorAt(i, col.setRGB(v, v, v));
       i++;
     }
     floor.instanceMatrix.needsUpdate = true;
@@ -317,10 +345,10 @@ export class Renderer implements Picker {
     this.levelGroup.add(floor);
 
     // walls
-    const sideTex = wallTexture(theme.wallTexture, theme.wall);
-    const sideMat = new THREE.MeshStandardMaterial({ map: sideTex, roughness: 0.92 });
+    const sideMat = new THREE.MeshStandardMaterial({ map: tileTexture(`${theme.key}_wall`), roughness: 0.92 });
     const topMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(theme.wall).lerp(new THREE.Color(theme.wallDark), 0.35), roughness: 1 });
     applyOcclusionFade(sideMat, this.occ);
+    applyWorldUv(sideMat, 'wall', 2);
     applyOcclusionFade(topMat, this.occ);
     const wallGeo = new THREE.BoxGeometry(1, WALL_H, 1);
     wallGeo.translate(0, WALL_H / 2, 0);
@@ -462,9 +490,46 @@ export class Renderer implements Picker {
           },
         };
       }
-      case 'stairs':
-        g.add(makeStairs(this.level?.depth === 0));
-        return { group: g };
+      case 'stairs': {
+        const town = this.level?.depth === 0;
+        // the stairway opens toward +z: turn it to face the camera
+        const site = new THREE.Group();
+        site.rotation.y = CAM_YAW;
+        g.add(site);
+        site.add(makeStairs(town));
+        if (!town) {
+          // further down: a dim glow from the stairwell, so the way on shows in a dark room
+          const glow = glowSprite('#ff4a18', 2.2, 0.35);
+          glow.position.set(0, 0.5, 0.25);
+          site.add(glow);
+          return { group: g, lightColor: '#ff5a28', lightIntensity: 8 };
+        }
+        // the way down from the camp: a red glow from the stairwell, rising embers and a brazier on
+        // each side of the arch, all drawn without lights so they show from across the camp
+        const glow = glowSprite('#ff4a18', 3.2, 0.55);
+        glow.position.set(0, 0.6, 0.3);
+        site.add(glow);
+        const braziers = [-1.65, 1.65].map((x) => {
+          const b = makeBrazier();
+          b.position.set(x, 0, 1.0);
+          site.add(b);
+          return b.position.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), CAM_YAW);
+        });
+        return {
+          group: g,
+          update: () => {
+            (glow.material as THREE.SpriteMaterial).opacity = 0.45 + Math.sin(this.time * 2.2) * 0.12;
+            if (Math.random() < 0.6) {
+              this.fx.add.spawn({ x: o.pos.x + (Math.random() - 0.5) * 1.2, y: 0.1, z: o.pos.z + (Math.random() - 0.5) * 1.2, vy: 0.9 + Math.random() * 0.8, color: '#ff6a20', size: 0.09, life: 1.6 });
+            }
+            for (const b of braziers) {
+              this.fx.add.spawn({ x: o.pos.x + b.x + (Math.random() - 0.5) * 0.18, y: 1.05, z: o.pos.z + b.z + (Math.random() - 0.5) * 0.18, vy: 1.2, color: Math.random() < 0.5 ? '#ffb040' : '#ff6020', size: 0.16, life: 0.45 });
+            }
+          },
+          lightColor: '#ff6a30',
+          lightIntensity: 26,
+        };
+      }
       case 'waypoint': {
         const { group, rune } = makeWaypoint();
         g.add(group);

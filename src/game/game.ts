@@ -1,6 +1,7 @@
 import type { Input } from '../core/input';
 import { chance, dist, rand, randInt, type P2 } from '../core/math';
 import type { Sfx } from '../audio/sfx';
+import { CLASSES, type PlayerClass } from '../data/classes';
 import { ITEM_BASES } from '../data/items';
 import { SKILL_BY_ID } from '../data/skills';
 import { Grid } from '../items/grid';
@@ -16,7 +17,7 @@ import { DelayedBlast, GroundItem, Projectile, WorldObject } from './objects';
 import { Player } from './player';
 import { startCast, toggleAura, updatePlayer, type PlayerAction } from './playerctl';
 import type { Elem } from '../data/monsters';
-import { loadSave, markInGame, writeSave } from './save';
+import { loadSave, markInGame, setSlot, writeSave } from './save';
 
 export interface GameHooks {
   message(text: string, color?: string, dur?: number): void;
@@ -69,13 +70,14 @@ export class Game {
 
   // ───────────────────────── lifecycle ─────────────────────────
 
-  newGame(name: string) {
+  newGame(name: string, cls: PlayerClass = 'paladin') {
+    const cd = CLASSES[cls];
     const p = new Player({ x: 0, z: 0 });
-    p.name = name || '无名者';
-    const w = createItem('shortsword');
-    const s = createItem('buckler');
-    p.equipment.weapon = w;
-    p.equipment.offhand = s;
+    p.name = name || cd.defaultName;
+    p.cls = cls;
+    p.base = { ...cd.base };
+    p.equipment.weapon = createItem(cd.weapon);
+    if (cd.offhand) p.equipment.offhand = createItem(cd.offhand);
     p.belt[0].push(createItem('hp1'));
     p.belt[1].push(createItem('hp1'));
     p.belt[2].push(createItem('mp1'));
@@ -83,9 +85,9 @@ export class Game {
     p.inventory.add(createItem('hp1'));
     p.inventory.add(createItem('mp1'));
     p.gold = 50;
-    p.skills.sacred_strike = 1;
+    p.skills[cd.firstSkill] = 1;
     p.skillPoints = 0;
-    p.binds = ['attack', 'sacred_strike', null, null, null, null];
+    p.binds = ['attack', cd.firstSkill, null, null, null, null];
     p.markDirty();
     p.recalc();
     p.life = p.d.maxLife;
@@ -98,7 +100,9 @@ export class Game {
     this.enterLevel(0, 'start');
   }
 
-  continueGame(): boolean {
+  /** resume a saved character (the current slot when none is given) */
+  continueGame(slot?: number): boolean {
+    if (slot !== undefined) setSlot(slot);
     const s = loadSave();
     if (!s) return false;
     this.player = s.player;
@@ -234,6 +238,7 @@ export class Game {
       b.delay -= dt;
       if (b.delay <= 0 && !b.done) {
         b.done = true;
+        if (b.fx) this.fx.burst(b.fx, b.pos, { radius: b.radius });
         blastDamage(this, b);
       }
     }
@@ -351,6 +356,7 @@ export class Game {
       if (isPress) toggleAura(this, p, skill);
       return;
     }
+    if (def.kind === 'passive') return;
     // spells & buffs
     if (!isPress && busy) return;
     if (!busy) {
@@ -484,11 +490,17 @@ export class Game {
   private projectileImpact(pr: Projectile) {
     pr.dead = true;
     if (pr.splash > 0) {
-      this.fx.burst('fireblast', pr.pos, { radius: pr.splash });
-      this.sfx.play('fire', 0.6);
+      const cold = pr.splashKind === 'cold';
+      this.fx.burst(cold ? 'ice_shatter' : 'fireblast', pr.pos, { radius: pr.splash });
+      this.sfx.play(cold ? 'cold' : 'fire', 0.6);
       const p = this.player;
       if (pr.faction === 'monster' && !p.dead && dist(pr.pos, p.pos) < pr.splash + p.radius && !pr.hit.has(p.id)) {
         applyDamage(this, p, { ...pr.dmg, spell: true }, pr.pos);
+      } else if (pr.faction === 'player') {
+        // the monster hit head-on already took the full packet
+        for (const m of this.level.monsters) {
+          if (!m.dead && !pr.hit.has(m.id) && dist(pr.pos, m.pos) < pr.splash + m.radius) applyDamage(this, m, { ...pr.dmg, spell: true }, pr.pos);
+        }
       }
     }
   }

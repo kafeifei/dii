@@ -883,6 +883,97 @@ body {
   padding: 10px;
   letter-spacing: 4px;
 }
+.title-cols {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.menu-head {
+  font-size: 13px;
+  letter-spacing: 6px;
+  color: var(--gold-dim);
+  text-align: center;
+}
+.menu .saves {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.menu .save {
+  display: flex;
+  gap: 4px;
+}
+.menu .save .pick {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 7px 12px;
+  letter-spacing: 1px;
+  text-align: left;
+}
+.menu .save .pick b {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+.menu .save .pick span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.menu .save .del {
+  width: 34px;
+  padding: 0;
+  font-size: 13px;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+.menu .save .del:hover {
+  color: #ff6060;
+}
+.menu .classes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.menu .cls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 8px;
+  background: var(--panel2);
+  border: 1px solid var(--edge);
+  color: var(--muted);
+  font-family: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+.menu .cls b {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 3px;
+}
+.menu .cls span {
+  font-size: 11px;
+  line-height: 1.5;
+}
+.menu .cls:hover {
+  border-color: var(--gold-dim);
+}
+.menu .cls.on {
+  border-color: var(--gold);
+  box-shadow: inset 0 0 14px rgba(200, 168, 106, 0.3);
+}
+.menu .cls.on b {
+  color: var(--gold);
+}
 .menu input {
   background: #0a0806;
   border: 1px solid #6a5a40;

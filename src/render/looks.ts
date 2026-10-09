@@ -60,6 +60,8 @@ function weaponShape(baseId: string | undefined): WeaponShape {
       return b.twoHanded ? 'greataxe' : 'axe';
     case 'mace':
       return b.twoHanded ? 'maul' : 'mace';
+    case 'staff':
+      return 'staff';
     default:
       return 'none';
   }
@@ -120,6 +122,13 @@ const RARITY_TINT: Record<string, string | undefined> = {
 };
 
 export function playerLook(p: Player): RigLook {
+  const look = paladinLook(p);
+  if (p.cls !== 'sorceress') return look;
+  // procedural fallback when the sorceress model can't load: crimson robe, no tabard
+  return { ...look, cloth: '#5a1a28', pants: '#3a2418', hair: '#140c08', tabard: undefined, robe: '#4a1430', armor: null, metal: 0, cape: null };
+}
+
+function paladinLook(p: Player): RigLook {
   const eq = p.equipment;
   const body = eq.body;
   const armorInfo = body ? ARMOR_COLORS[body.baseId] : undefined;
@@ -159,7 +168,7 @@ export function playerLook(p: Player): RigLook {
 /** fingerprint used to rebuild the player rig when gear changes */
 export function playerLookKey(p: Player): string {
   const e = p.equipment;
-  return [e.weapon?.uid, e.offhand?.uid, e.head?.uid, e.body?.uid].join('|');
+  return [p.cls, e.weapon?.uid, e.offhand?.uid, e.head?.uid, e.body?.uid].join('|');
 }
 
 export function vendorLook(): RigLook {

@@ -74,6 +74,40 @@ function drawAxe(ctx: CanvasRenderingContext2D, w: number, h: number, big: boole
   }
 }
 
+const STAFF_GEM: Record<string, string> = { longstaff: '#a0c0ff', gnarledstaff: '#80e090', battlestaff: '#60a0ff', warstaff: '#ff6a20' };
+
+function drawStaff(ctx: CanvasRenderingContext2D, w: number, h: number, kind: string) {
+  const cx = w / 2;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#2a180a';
+  ctx.lineWidth = Math.max(4, w * 0.16);
+  ctx.beginPath();
+  ctx.moveTo(cx - w * 0.06, h * 0.97);
+  ctx.quadraticCurveTo(cx + w * 0.12, h * 0.55, cx, h * 0.16);
+  ctx.stroke();
+  ctx.strokeStyle = kind === 'gnarledstaff' ? '#6a5030' : '#7a5230';
+  ctx.lineWidth = Math.max(2, w * 0.09);
+  ctx.stroke();
+  const gem = STAFF_GEM[kind];
+  if (gem) {
+    ctx.fillStyle = '#8a6a2a';
+    ctx.beginPath();
+    ctx.arc(cx, h * 0.12, w * 0.17, 0, Math.PI * 2);
+    ctx.fill();
+    outline(ctx);
+    ctx.fillStyle = gem;
+    ctx.beginPath();
+    ctx.arc(cx, h * 0.12, w * 0.1, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.fillStyle = '#5a3a1c';
+    ctx.beginPath();
+    ctx.arc(cx, h * 0.14, w * 0.12, 0, Math.PI * 2);
+    ctx.fill();
+    outline(ctx);
+  }
+}
+
 function drawMace(ctx: CanvasRenderingContext2D, w: number, h: number, kind: string, base: string) {
   const cx = w / 2;
   ctx.fillStyle = '#5a3a20';
@@ -375,6 +409,9 @@ export function itemIcon(item: Item): string {
       break;
     case 'mace':
       drawMace(ctx, W, H, b.id, metal);
+      break;
+    case 'staff':
+      drawStaff(ctx, W, H, b.id);
       break;
     case 'shield':
       drawShield(ctx, W, H, b.id, item.rarity === 'unique' ? '#7a5a20' : item.rarity === 'set' ? '#2a5a2a' : '#6a3a1e');

@@ -125,7 +125,7 @@ export const PROP_DEFS: Record<string, PropDef> = {
 };
 
 /** wall-mounted pieces: [scale, height of the model origin] */
-const WALL_DEFS: Record<string, { s: number; y: number; light?: string }> = {
+export const WALL_DEFS: Record<string, { s: number; y: number; light?: string }> = {
   d_banner_patternA_red: { s: 0.45, y: 0 },
   d_banner_patternB_red: { s: 0.45, y: 0 },
   d_banner_shield_red: { s: 0.42, y: 0 },

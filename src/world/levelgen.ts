@@ -1,5 +1,5 @@
 import { RNG, type P2 } from '../core/math';
-import { dressRooms, Furnisher, type Prop, type WallDecor } from './furnish';
+import { dressRooms, Furnisher, PROP_DEFS, WALL_DEFS, type Prop, type WallDecor } from './furnish';
 import { TileMap, T_FLOOR, T_PROP, T_VOID, T_WALL } from './tilemap';
 
 export type { Prop, WallDecor } from './furnish';
@@ -47,8 +47,6 @@ export interface Torch {
 export interface Theme {
   key: string;
   name: string;
-  floor: string;
-  floorAlt: string;
   wall: string;
   wallDark: string;
   ambient: string;
@@ -56,30 +54,28 @@ export interface Theme {
   torch: string;
   /** background clear colour */
   bg: string;
-  texture: 'flagstone' | 'cave' | 'grass' | 'ice' | 'hell';
-  wallTexture: 'brick' | 'rock' | 'palisade' | 'ice' | 'hell';
 }
 
 export const THEMES: Record<string, Theme> = {
   town: {
-    key: 'town', name: '流亡者营地', floor: '#4a4a34', floorAlt: '#3d3f2b', wall: '#5a4630', wallDark: '#33281b',
-    ambient: '#6f7aa8', ambientIntensity: 0.55, torch: '#ffa040', bg: '#07080c', texture: 'grass', wallTexture: 'palisade',
+    key: 'town', name: '流亡者营地', wall: '#5a4630', wallDark: '#33281b',
+    ambient: '#6f7aa8', ambientIntensity: 0.55, torch: '#ffa040', bg: '#07080c',
   },
   crypt: {
-    key: 'crypt', name: '遗忘墓穴', floor: '#56524c', floorAlt: '#4a4741', wall: '#5e5850', wallDark: '#2e2a26',
-    ambient: '#46506e', ambientIntensity: 0.18, torch: '#ff9a3c', bg: '#030304', texture: 'flagstone', wallTexture: 'brick',
+    key: 'crypt', name: '遗忘墓穴', wall: '#5e5850', wallDark: '#2e2a26',
+    ambient: '#46506e', ambientIntensity: 0.18, torch: '#ff9a3c', bg: '#030304',
   },
   cave: {
-    key: 'cave', name: '血岩洞窟', floor: '#5a4436', floorAlt: '#4c392c', wall: '#5c4030', wallDark: '#2c1d15',
-    ambient: '#5e3a3a', ambientIntensity: 0.16, torch: '#ff7a2c', bg: '#040202', texture: 'cave', wallTexture: 'rock',
+    key: 'cave', name: '血岩洞窟', wall: '#5c4030', wallDark: '#2c1d15',
+    ambient: '#5e3a3a', ambientIntensity: 0.16, torch: '#ff7a2c', bg: '#040202',
   },
   ice: {
-    key: 'ice', name: '霜寂地窖', floor: '#55606c', floorAlt: '#4a5460', wall: '#6a7888', wallDark: '#2a323c',
-    ambient: '#5070a0', ambientIntensity: 0.2, torch: '#9ad0ff', bg: '#020306', texture: 'ice', wallTexture: 'ice',
+    key: 'ice', name: '霜寂地窖', wall: '#6a7888', wallDark: '#2a323c',
+    ambient: '#5070a0', ambientIntensity: 0.2, torch: '#9ad0ff', bg: '#020306',
   },
   hell: {
-    key: 'hell', name: '燃烬深渊', floor: '#4a2a22', floorAlt: '#3a1e18', wall: '#4c2620', wallDark: '#200c0a',
-    ambient: '#8a2a1a', ambientIntensity: 0.22, torch: '#ff5a20', bg: '#060100', texture: 'hell', wallTexture: 'hell',
+    key: 'hell', name: '燃烬深渊', wall: '#4c2620', wallDark: '#200c0a',
+    ambient: '#8a2a1a', ambientIntensity: 0.22, torch: '#ff5a20', bg: '#060100',
   },
 };
 
@@ -379,6 +375,48 @@ export function generateDungeon(depth: number, seed: number): Layout {
   };
 }
 
+/**
+ * Dev showroom (?dev&gallery): every furniture model in rows under the camp lighting, wall pieces
+ * along the north wall and the procedural decor in the last row, for reviewing art side by side.
+ */
+export function generateGallery(): Layout {
+  const rng = new RNG(7);
+  const size = 64;
+  const map = new TileMap(size, size);
+  carveRect(map, 3, 3, size - 6, size - 6);
+  buildWalls(map);
+  const start = { x: 5.5, z: 5.5 };
+  const furn = new Furnisher(map, rng, start, [start]);
+  let x = 5;
+  let y = 9;
+  let rowD = 0;
+  for (const model of Object.keys(PROP_DEFS)) {
+    const def = PROP_DEFS[model];
+    if (x + def.w > size - 4) {
+      x = 5;
+      y += rowD + 1;
+      rowD = 0;
+    }
+    furn.place(model, x, y, 0);
+    x += def.w + 1;
+    rowD = Math.max(rowD, def.d);
+  }
+  const torches: Torch[] = [];
+  Object.keys(WALL_DEFS).forEach((model, i) => furn.hang(model, 6.5 + i * 2, 3, 0, 1));
+  for (let tx = 4; tx < size - 4; tx += 6) torches.push({ x: tx + 0.5 + 1, z: 3, nx: 0, nz: 1 });
+  const decor: Decor[] = (['campfire', 'tent', 'skullpile', 'cage', 'banner', 'stalagmite', 'crystal', 'bones', 'rubble', 'rock'] as DecorKind[]).map((kind, i) => ({
+    kind,
+    x: 6 + i * 3,
+    z: y + rowD + 3,
+    rot: 0,
+    scale: 1,
+  }));
+  return {
+    map, theme: THEMES.town, depth: 0, start, rooms: [], spawnRooms: [], torches, decor, chests: [{ x: 6, z: y + rowD + 6 }], barrels: [{ x: 9, z: y + rowD + 6 }],
+    pillars: new Set(), stash: { x: 12, z: y + rowD + 6 }, waypoint: { x: 40, z: y + rowD + 6 }, stairs: { x: 46, z: y + rowD + 6 }, props: furn.props, wallDecor: furn.wall, npcs: [],
+  };
+}
+
 export function generateTown(): Layout {
   const rng = new RNG(1337);
   const theme = THEMES.town;
@@ -444,6 +482,8 @@ export function generateTown(): Layout {
     const off = rng.int(3, 6);
     const x = edge === 0 ? t : edge === 1 ? t : edge === 2 ? off : size - 1 - off;
     const y = edge === 0 ? off : edge === 1 ? size - 1 - off : t;
+    // keep the way down in view: nothing tall between it and the camera
+    if (Math.hypot(x + 0.5 - stairs.x, y + 0.5 - stairs.z) < 4.5) continue;
     furn.place(rng.chance(0.82) ? rng.pick(trees) : rng.pick(rocks), x, y, rng.int(0, 3), 1.2);
   }
 

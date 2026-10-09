@@ -1,7 +1,12 @@
 import { RNG, type P2 } from '../core/math';
 import { ALL_MODS, MONSTERS, UNIQUE_FIRST, UNIQUE_SECOND, bossForDepth, monsterLevel, type MonsterDef, type MonsterMod } from '../data/monsters';
-import { bfsDistances, generateDungeon, generateTown, type Layout, type Room } from '../world/levelgen';
+import { bfsDistances, generateDungeon, generateGallery, generateTown, type Layout, type Room } from '../world/levelgen';
+
+/** dev showroom instead of the camp (see generateGallery) */
+const GALLERY = typeof location !== 'undefined' && location.search.includes('gallery');
 import { Monster, type MonsterRank } from './monster';
+import { ITEM_BASES } from '../data/items';
+import { createItem } from '../items/gen';
 import { DelayedBlast, GroundItem, Hammer, Projectile, WorldObject } from './objects';
 
 export class Level {
@@ -20,7 +25,7 @@ export class Level {
 
   constructor(depth: number, seed: number) {
     this.depth = depth;
-    this.layout = depth === 0 ? generateTown() : generateDungeon(depth, seed);
+    this.layout = depth === 0 ? (GALLERY ? generateGallery() : generateTown()) : generateDungeon(depth, seed);
     this.name = depth === 0 ? this.layout.theme.name : `${this.layout.theme.name} · 第 ${depth} 层`;
     const L = this.layout;
     if (L.stairs) this.objects.push(new WorldObject('stairs', L.stairs, depth === 0 ? '通往墓穴' : `下行至第 ${depth + 1} 层`, 0.9));
@@ -30,6 +35,18 @@ export class Level {
     for (const c of L.chests) this.objects.push(new WorldObject('chest', c, '宝箱', 0.45));
     for (const b of L.barrels) this.objects.push(new WorldObject('barrel', b, '木桶', 0.35));
     if (depth > 0) this.populate(seed);
+    else if (GALLERY) {
+      // every monster in a row, held still (the stun never wears off)
+      Object.values(MONSTERS).forEach((def, i) => {
+        const m = new Monster(def, 1, 'normal', { x: 6 + (i % 9) * 5, z: 46 + Math.floor(i / 9) * 6 });
+        m.stunTime = 1e9;
+        this.monsters.push(m);
+      });
+      // and one of every item base lying on the floor
+      Object.keys(ITEM_BASES).forEach((id, i) => {
+        this.ground.push(new GroundItem({ x: 6 + (i % 36) * 1.5, z: 38 + Math.floor(i / 36) * 2 }, createItem(id)));
+      });
+    }
   }
 
   get map() {
