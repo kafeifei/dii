@@ -2,6 +2,7 @@ import './data/legendary';
 import { Sfx } from './audio/sfx';
 import { Input } from './core/input';
 import { Game } from './game/game';
+import { assets } from './render/assets';
 import { Renderer } from './render/renderer';
 import { UI } from './ui/ui';
 
@@ -56,7 +57,12 @@ if (location.search.includes('dev')) {
 
 window.addEventListener('beforeunload', () => game.save());
 
-if (location.search.includes('dev')) ui.devStart();
+assets
+  .load((done, total) => ui.loadProgress(done, total))
+  .then(() => {
+    ui.loadProgress(1, 1);
+    if (location.search.includes('dev')) ui.devStart();
+  });
 
 // debug handle
 (window as unknown as { game: Game }).game = game;

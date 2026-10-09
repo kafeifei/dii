@@ -244,6 +244,7 @@ export class UI implements GameHooks {
         <input class="name" maxlength="12" placeholder="角色名字" value="无名骑士" />
         <button class="btn new">新的冒险</button>
         <button class="btn cont">继续</button>
+        <div class="loading">载入模型…</div>
       </div>
       <div class="help">
         <b>左键</b> 移动 / 攻击 / 拾取 · <b>Shift+左键</b> 原地攻击 · <b>右键</b> 释放右键技能 · <b>Q W E R</b> 技能快捷键<br/>
@@ -274,8 +275,17 @@ export class UI implements GameHooks {
       }
     };
     this.titleEl = t;
+    t.classList.add('is-loading');
     (this.titleEl as HTMLElement & { refresh?: () => void }).refresh = refresh;
     this.root.appendChild(t);
+  }
+
+  loadProgress(done: number, total: number) {
+    const el = this.titleEl.querySelector('.loading') as HTMLElement;
+    if (done >= total) {
+      this.titleEl.classList.remove('is-loading');
+      el.textContent = '';
+    } else el.textContent = `载入模型 ${Math.round((done / total) * 100)}%`;
   }
 
   devStart() {

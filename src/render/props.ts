@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { ITEM_BASES } from '../data/items';
 import type { DecorKind } from '../world/levelgen';
 import type { Item } from '../items/item';
+import { assets, type ModelKey } from './assets';
 import { glowTexture, runeCircleTexture } from './textures';
 
 const matCache = new Map<string, THREE.Material>();
@@ -27,6 +28,34 @@ function add(parent: THREE.Object3D, geo: THREE.BufferGeometry, mat: THREE.Mater
   return m;
 }
 
+/**
+ * Instance of a CC0 prop model, standing on y=0. `center` recentres it on x/z (otherwise the
+ * model's own origin is kept, e.g. a torch's wall mount). Returns null if the packs aren't loaded.
+ */
+export function assetProp(key: ModelKey, scale: number | [number, number, number], opts: { center?: boolean; ownMaterials?: boolean } = {}): THREE.Group | null {
+  if (!assets.ready || assets.failed) return null;
+  const t = assets.get(key);
+  if (!t) return null;
+  const sv = typeof scale === 'number' ? new THREE.Vector3(scale, scale, scale) : new THREE.Vector3(...scale);
+  const o = t.gltf.scene.clone(true);
+  o.scale.copy(sv);
+  const center = opts.center ?? true;
+  o.position.set(center ? -t.center.x * sv.x : 0, -t.min.y * sv.y, center ? -t.center.z * sv.z : 0);
+  if (opts.ownMaterials) {
+    o.traverse((c) => {
+      const m = c as THREE.Mesh;
+      if (m.isMesh) m.material = (m.material as THREE.Material).clone();
+    });
+  }
+  const g = new THREE.Group();
+  g.add(o);
+  return g;
+}
+
+function pickKey<T>(list: T[]): T {
+  return list[Math.floor(Math.random() * list.length)];
+}
+
 export function glowSprite(color: string, size: number, opacity = 1): THREE.Sprite {
   const s = new THREE.Sprite(
     new THREE.SpriteMaterial({ map: glowTexture(), color, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity }),
@@ -35,7 +64,49 @@ export function glowSprite(color: string, size: number, opacity = 1): THREE.Spri
   return s;
 }
 
+function topCentroid(root: THREE.Object3D, band: number): THREE.Vector3 {
+  root.updateMatrixWorld(true);
+  const pts: THREE.Vector3[] = [];
+  root.traverse((c) => {
+    const m = c as THREE.Mesh;
+    if (!m.isMesh) return;
+    const pos = m.geometry.getAttribute('position');
+    for (let i = 0; i < pos.count; i++) pts.push(new THREE.Vector3().fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld));
+  });
+  const top = Math.max(...pts.map((p) => p.y));
+  const sel = pts.filter((p) => p.y > top - band);
+  const c = new THREE.Vector3();
+  for (const p of sel) c.add(p);
+  return c.divideScalar(Math.max(1, sel.length)).setY(top - band * 0.5);
+}
+
+let torchMatCache: THREE.MeshBasicMaterial | null = null;
+function torchMat(map: THREE.Texture | null): THREE.MeshBasicMaterial {
+  if (!torchMatCache) torchMatCache = new THREE.MeshBasicMaterial({ map, color: '#c8b8a8' });
+  return torchMatCache;
+}
+
 export function makeTorch(color: string): { group: THREE.Group; flame: THREE.Sprite } {
+  const model = assetProp('d_torch_mounted', 0.8, { center: false });
+  if (model) {
+    // the model's own flame sits right next to the torch light and blows out to white; draw it unlit
+    model.traverse((c) => {
+      const m = c as THREE.Mesh;
+      if (m.isMesh) m.material = torchMat((m.material as THREE.MeshStandardMaterial).map);
+    });
+    const g = new THREE.Group();
+    model.position.y = 1.3;
+    g.add(model);
+    // sit the glow on the model's own flame: centroid of its topmost vertices
+    const fx = topCentroid(model, 0.12);
+    const flame = glowSprite(color, 0.9);
+    flame.position.copy(fx);
+    g.add(flame);
+    const core = glowSprite('#fff0c0', 0.35);
+    core.position.copy(fx).setY(fx.y - 0.04);
+    g.add(core);
+    return { group: g, flame };
+  }
   const g = new THREE.Group();
   const iron = stdMat('#2a2420', 0.6, 0.6);
   add(g, new THREE.BoxGeometry(0.08, 0.08, 0.25), iron, 0, 1.45, 0.12);
@@ -51,6 +122,12 @@ export function makeTorch(color: string): { group: THREE.Group; flame: THREE.Spr
 }
 
 export function makeChest(big = false): { group: THREE.Group; lid: THREE.Group } {
+  const model = big ? assetProp('d_trunk_large_A', 0.72, { ownMaterials: true }) : assetProp('d_trunk_medium_A', 0.82, { ownMaterials: true });
+  if (model) {
+    // single-mesh trunk: no lid to swing, the renderer dims it once looted
+    model.userData.looted = false;
+    return { group: model, lid: new THREE.Group() };
+  }
   const g = new THREE.Group();
   const s = big ? 1.4 : 1;
   const wood = stdMat('#5a3a1e');
@@ -69,6 +146,8 @@ export function makeChest(big = false): { group: THREE.Group; lid: THREE.Group }
 }
 
 export function makeBarrel(): THREE.Group {
+  const model = assetProp('d_barrel_large', 0.36);
+  if (model) return model;
   const g = new THREE.Group();
   const wood = stdMat('#6a4a2a');
   const iron = stdMat('#3a3a3a', 0.5, 0.6);
@@ -164,7 +243,31 @@ export function makeTree(scale: number, dead: boolean): THREE.Group {
   return g;
 }
 
+const DECOR_MODELS: Partial<Record<DecorKind, [ModelKey, number][]>> = {
+  crate: [
+    ['d_box_large', 0.4],
+    ['d_crates_stacked', 0.36],
+    ['d_table_long_broken', 0.3],
+  ],
+  barrel: [
+    ['d_barrel_small_stack', 0.38],
+    ['d_keg', 0.34],
+  ],
+  rubble: [
+    ['d_rubble_half', 0.2],
+    ['d_rubble_large', 0.13],
+  ],
+  bones: [['d_sword_shield_broken', 0.45]],
+};
+
 export function makeDecor(kind: DecorKind, themeKey: string): THREE.Group {
+  const opts = DECOR_MODELS[kind];
+  // bones stay mostly procedural; now and then a broken sword & shield instead
+  if (opts && (kind !== 'bones' || Math.random() < 0.3)) {
+    const [key, sc] = pickKey(opts);
+    const model = assetProp(key, sc);
+    if (model) return model;
+  }
   const g = new THREE.Group();
   const bone = stdMat('#d8d0bc');
   switch (kind) {
@@ -242,6 +345,8 @@ export function makeDecor(kind: DecorKind, themeKey: string): THREE.Group {
 export function makeGroundItem(item: Item | null, color: string): THREE.Group {
   const g = new THREE.Group();
   if (!item) {
+    const coins = assetProp('d_coin_stack_small', 0.32);
+    if (coins) return coins;
     const gold = stdMat('#e8c040', 0.35, 0.9, '#5a4008', 0.6);
     for (let i = 0; i < 5; i++) add(g, new THREE.CylinderGeometry(0.07, 0.07, 0.025, 8), gold, (Math.random() - 0.5) * 0.18, 0.02 + i * 0.02, (Math.random() - 0.5) * 0.18);
     return g;

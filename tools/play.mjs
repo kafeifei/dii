@@ -36,6 +36,7 @@ page.on('console', (m) => {
 });
 page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`));
 await page.goto(url);
+if (url.includes('dev')) await page.waitForFunction(() => window.game?.started, null, { timeout: 30000 });
 await page.waitForTimeout(1200);
 let n = 0;
 const shot = async (name) => {

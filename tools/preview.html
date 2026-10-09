@@ -1,0 +1,56 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>body{margin:0;background:#111;overflow:hidden}#l{position:fixed;inset:0;pointer-events:none;font:12px sans-serif;color:#fff}</style></head>
+<body><div id="l"></div>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+const params = new URLSearchParams(location.search);
+const names = (params.get('m') || '').split(',').filter(Boolean);
+const clipWant = params.get('clip') || 'idle';
+const r = new THREE.WebGLRenderer({ antialias: true });
+r.setSize(innerWidth, innerHeight);
+r.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(r.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#2a2622');
+scene.add(new THREE.HemisphereLight('#ffffff', '#443322', 1.6));
+const d = new THREE.DirectionalLight('#ffffff', 2); d.position.set(5, 10, 7); scene.add(d);
+const cols = Math.ceil(Math.sqrt(names.length * 1.6));
+const rows = Math.ceil(names.length / cols);
+const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 200);
+const W = cols * 2.4, H = rows * 2.8;
+const aspect = innerWidth / innerHeight;
+const half = Math.max(H / 2, W / 2 / aspect) + 0.3;
+cam.left = -half * aspect; cam.right = half * aspect; cam.top = half; cam.bottom = -half; cam.updateProjectionMatrix();
+cam.position.set(0, 3, 20); cam.lookAt(0, 0, 0);
+const loader = new GLTFLoader();
+const mixers = [];
+const labels = document.getElementById('l');
+const info = [];
+await Promise.all(names.map(async (n, i) => {
+  const g = await loader.loadAsync(`/models/${n}.glb`);
+  const obj = g.scene;
+  obj.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(obj, true);
+  const size = box.getSize(new THREE.Vector3());
+  const s = 1.8 / Math.max(size.y, 0.001);
+  obj.scale.multiplyScalar(s);
+  const cx = (i % cols - (cols - 1) / 2) * 2.4;
+  const cy = ((rows - 1) / 2 - Math.floor(i / cols)) * 2.8 - 0.9;
+  obj.position.set(cx - (box.min.x + size.x / 2) * s, cy - box.min.y * s, 0);
+  obj.rotation.y = 0.5;
+  scene.add(obj);
+  const clip = g.animations.find((a) => a.name.toLowerCase().includes(clipWant)) || g.animations[0];
+  if (clip) { const m = new THREE.AnimationMixer(obj); m.clipAction(clip).play(); m.update(0.4); mixers.push(m); }
+  const v = new THREE.Vector3(cx, cy - 0.15, 0).project(cam);
+  const el = document.createElement('div');
+  el.style.cssText = `position:absolute;left:${(v.x * 0.5 + 0.5) * innerWidth}px;top:${(-v.y * 0.5 + 0.5) * innerHeight}px;transform:translateX(-50%)`;
+  el.textContent = `${n} (${clip ? clip.name.split('|').pop() : '-'})`;
+  labels.appendChild(el);
+  info.push({ n, size: size.toArray().map((x) => +x.toFixed(3)), clips: g.animations.length });
+}));
+const clock = new THREE.Clock();
+function tick() { const dt = clock.getDelta(); for (const m of mixers) m.update(dt); r.render(scene, cam); requestAnimationFrame(tick); }
+tick();
+window.__ready = info;
+</script></body></html>

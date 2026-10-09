@@ -8,11 +8,14 @@ import type { GroundItem, Hammer, Projectile, WorldObject } from '../game/object
 import { itemColor } from '../items/item';
 import { T_FLOOR, T_WALL } from '../world/tilemap';
 import { Effects } from './effects';
+import { assets } from './assets';
 import { monsterLook, playerLook, playerLookKey, vendorLook } from './looks';
+import { ModelRig, type ModelSpec } from './models';
 import {
   glowSprite, makeBarrel, makeHouse, makeChest, makeDecor, makeGroundItem, makeHammer, makePortal, makeProjectile, makeStairs, makeTorch, makeTree, makeWaypoint,
 } from './props';
-import { Rig, type AnimInput } from './rig';
+import { Rig, type AnimInput, type RigLook } from './rig';
+import { monsterSpec, playerSpec, vendorSpec } from './specs';
 import { floorTexture, runeCircleTexture, shadowTexture, wallTexture } from './textures';
 
 const CAM_YAW = Math.PI / 4;
@@ -73,8 +76,23 @@ function applyOcclusionFade(mat: THREE.Material, u: OccUniforms) {
   mat.customProgramCacheKey = () => 'occ-fade';
 }
 
+interface CharRig {
+  root: THREE.Group;
+  update(dt: number, a: AnimInput): void;
+  dispose(): void;
+}
+
+/** CC0 model when the packs loaded, procedural rig otherwise */
+function makeCharRig(spec: () => ModelSpec, look: () => RigLook): CharRig {
+  if (assets.ready && !assets.failed) {
+    const s = spec();
+    if (assets.get(s.model)) return new ModelRig(s);
+  }
+  return new Rig(look());
+}
+
 interface ActorView {
-  rig: Rig;
+  rig: CharRig;
   shadow: THREE.Mesh;
   key?: string;
 }
@@ -104,6 +122,7 @@ export class Renderer implements Picker {
   private fxLights: THREE.PointLight[] = [];
   private staticLights: { pos: THREE.Vector3; color: THREE.Color; intensity: number; flicker: number; distance: number }[] = [];
   private flames: THREE.Sprite[] = [];
+  private flameSpots: THREE.Vector3[] = [];
   private monsterViews = new Map<Monster, ActorView>();
   private playerView: ActorView | null = null;
   private vendorView: ActorView | null = null;
@@ -216,6 +235,7 @@ export class Renderer implements Picker {
     this.dynGroup.clear();
     this.fx.clearLevel();
     this.flames = [];
+    this.flameSpots = [];
     this.staticLights = [];
 
     const L = level.layout;
@@ -298,9 +318,23 @@ export class Renderer implements Picker {
     this.levelGroup.add(walls);
 
     if (pillarTiles.length) {
-      const pGeo = new THREE.CylinderGeometry(0.36, 0.42, WALL_H + 0.3, 8);
-      pGeo.translate(0, (WALL_H + 0.3) / 2, 0);
-      const pillars = new THREE.InstancedMesh(pGeo, sideMat, pillarTiles.length);
+      let pGeo: THREE.BufferGeometry;
+      let pMat: THREE.Material = sideMat;
+      const tpl = assets.ready ? assets.get('d_pillar_decorated') : undefined;
+      const pMesh = tpl ? (tpl.gltf.scene.getObjectByProperty('isMesh', true) as THREE.Mesh | undefined) : undefined;
+      if (tpl && pMesh) {
+        // bake the node transform + fit to one tile, ~WALL_H+0.3 tall
+        pMesh.updateWorldMatrix(true, false);
+        pGeo = pMesh.geometry.clone().applyMatrix4(pMesh.matrixWorld);
+        pGeo.translate(-tpl.center.x, -tpl.min.y, -tpl.center.z);
+        pGeo.scale(0.95 / tpl.size.x, (WALL_H + 0.3) / tpl.size.y, 0.95 / tpl.size.x);
+        pMat = (pMesh.material as THREE.Material).clone();
+        applyOcclusionFade(pMat, this.occ);
+      } else {
+        pGeo = new THREE.CylinderGeometry(0.36, 0.42, WALL_H + 0.3, 8);
+        pGeo.translate(0, (WALL_H + 0.3) / 2, 0);
+      }
+      const pillars = new THREE.InstancedMesh(pGeo, pMat, pillarTiles.length);
       i = 0;
       for (const [x, y] of pillarTiles) {
         m4.compose(new THREE.Vector3(x + 0.5, 0, y + 0.5), new THREE.Quaternion(), one);
@@ -319,6 +353,8 @@ export class Renderer implements Picker {
       group.rotation.y = Math.atan2(t.nx, t.nz);
       this.levelGroup.add(group);
       this.flames.push(flame);
+      group.updateMatrixWorld(true);
+      this.flameSpots.push(flame.getWorldPosition(new THREE.Vector3()));
       this.staticLights.push({ pos: new THREE.Vector3(t.x + t.nx * 0.5, 1.9, t.z + t.nz * 0.5), color: new THREE.Color(theme.torch), intensity: 16, flicker: 1, distance: 8 });
     }
     // decor
@@ -363,7 +399,15 @@ export class Renderer implements Picker {
         return {
           group: g,
           update: (dt, ob) => {
-            if (ob.used) lid.rotation.x = Math.max(-1.9, lid.rotation.x - dt * 6);
+            if (!ob.used) return;
+            lid.rotation.x = Math.max(-1.9, lid.rotation.x - dt * 6);
+            if (group.userData.looted === false) {
+              group.userData.looted = true;
+              group.traverse((c) => {
+                const m = (c as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
+                if (m?.color) m.color.multiplyScalar(0.45);
+              });
+            }
           },
         };
       }
@@ -421,7 +465,7 @@ export class Renderer implements Picker {
         };
       }
       case 'vendor': {
-        const rig = new Rig(vendorLook());
+        const rig = makeCharRig(vendorSpec, vendorLook);
         g.add(rig.root);
         const shadow = this.makeShadow(0.5);
         this.dynGroup.add(shadow);
@@ -527,7 +571,7 @@ export class Renderer implements Picker {
         this.playerView.rig.dispose();
         this.playerView.shadow.removeFromParent();
       }
-      const rig = new Rig(playerLook(p));
+      const rig = makeCharRig(() => playerSpec(p), () => playerLook(p));
       this.scene.add(rig.root);
       const shadow = this.makeShadow(p.radius);
       this.scene.add(shadow);
@@ -570,7 +614,7 @@ export class Renderer implements Picker {
       let v = this.monsterViews.get(m);
       if (!v) {
         if (d2 > 30 * 30) continue;
-        const rig = new Rig(monsterLook(m));
+        const rig = makeCharRig(() => monsterSpec(m), () => monsterLook(m));
         this.dynGroup.add(rig.root);
         const shadow = this.makeShadow(m.radius);
         this.dynGroup.add(shadow);
@@ -686,8 +730,8 @@ export class Renderer implements Picker {
 
     // torch flames flicker
     for (const f of this.flames) f.scale.setScalar(0.8 + Math.random() * 0.25);
-    for (const t of level.layout.torches) {
-      if (Math.random() < dt * 6) this.fx.add.spawn({ x: t.x + t.nx * 0.33 + (Math.random() - 0.5) * 0.08, y: 1.95, z: t.z + t.nz * 0.33 + (Math.random() - 0.5) * 0.08, vy: 0.7, color: '#ffa040', size: 0.14, life: 0.5 });
+    for (const f of this.flameSpots) {
+      if (Math.random() < dt * 6) this.fx.add.spawn({ x: f.x + (Math.random() - 0.5) * 0.08, y: f.y + 0.05, z: f.z + (Math.random() - 0.5) * 0.08, vy: 0.7, color: '#ffa040', size: 0.14, life: 0.5 });
     }
     if (level.layout.campfire) {
       const c = level.layout.campfire;

@@ -1,6 +1,6 @@
 # DII · 暗夜深渊
 
-浏览器里跑的单机 ARPG，玩法向《暗黑破坏神 2》看齐。TypeScript + Three.js，画面是低多边形 3D 加固定斜俯视正交相机。所有模型、贴图、图标、音效都是代码实时生成的，没有外部美术资源。
+浏览器里跑的单机 ARPG，玩法向《暗黑破坏神 2》看齐。TypeScript + Three.js，画面是低多边形 3D 加固定斜俯视正交相机。角色、怪物和地牢道具用的是 KayKit 与 Quaternius 的 CC0 免费模型包（来源见 `public/models/CREDITS.md`）；地形、特效、图标和音效仍是代码实时生成的。模型加载失败时会自动退回程序化角色。
 
 ## 运行
 
@@ -46,10 +46,14 @@ src/
   items/    装备生成、格子背包、提示框
   world/    瓦片地图、A* 寻路、地牢与营地生成
   game/     模拟层：角色、怪物 AI、战斗结算、技能、关卡、存档（不依赖渲染）
-  render/   Three.js 渲染：程序化角色骨骼、道具、贴图、粒子与特效
+  render/   Three.js 渲染：模型加载与动画驱动、程序化后备角色、道具、贴图、粒子与特效
   ui/       DOM 界面：HUD、各面板、图标绘制、小地图
   audio/    WebAudio 合成音效
+public/models/  优化后的 CC0 模型（glb）
 tools/
+  fetch-models.mjs  下载原始模型包到 models-src/（不入库）
+  build-models.mjs  裁剪动画、压缩顶点，输出到 public/models/
+  preview.html      模型预览网格（?m=knight,q_orc&clip=Idle）
   play.mjs  无头 Chromium 剧本运行器（截图、读取游戏状态）
   bot.mjs   数值平衡机器人：自动打怪下楼，统计每层耗时、等级和死因
 ```
