@@ -1205,6 +1205,11 @@ export class UI implements GameHooks {
     const a = town ? 0.4 : 0.85;
     this.vignette.style.background = `radial-gradient(circle at ${ps.x}px ${ps.y}px, rgba(0,0,0,0) ${radius * 0.55}px, rgba(0,0,0,${a * 0.6}) ${radius}px, rgba(0,0,0,${a}) ${radius * 1.6}px)`;
 
+    // drop a stale tooltip when the element under the cursor went away (panel closed, item moved)
+    if (this.tooltipEl.style.display === 'block') {
+      const under = document.elementFromPoint(this.game.input.mx, this.game.input.my) as HTMLElement | null;
+      if (!under?.closest('[data-uid],[data-skill],[data-tip],.glabel')) this.hideTooltip();
+    }
     this.updateLabels();
     this.updateExplored();
     this.mapTimer -= dt;

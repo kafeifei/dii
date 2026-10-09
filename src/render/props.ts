@@ -343,3 +343,57 @@ export function makeHammer(): THREE.Group {
   g.add(glowSprite('#7090ff', 1.0, 0.8));
   return g;
 }
+
+/** a timber cottage occupying a w×d tile block whose corner is at (x, z) */
+export function makeHouse(w: number, d: number, x: number, z: number): THREE.Group {
+  const g = new THREE.Group();
+  g.position.set(x + w / 2, 0, z + d / 2);
+  const wallH = 1.9;
+  const plaster = stdMat('#8a7a62');
+  const timber = stdMat('#3a2616');
+  const roofMat = stdMat('#4a2a1e');
+  add(g, new THREE.BoxGeometry(w - 0.1, wallH, d - 0.1), plaster, 0, wallH / 2, 0);
+  // timber frame
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(g, new THREE.BoxGeometry(0.18, wallH, 0.18), timber, (sx * (w - 0.1)) / 2, wallH / 2, (sz * (d - 0.1)) / 2);
+  add(g, new THREE.BoxGeometry(w, 0.14, d), timber, 0, wallH, 0);
+  add(g, new THREE.BoxGeometry(w - 0.05, 0.12, d - 0.05), timber, 0, 0.9, 0);
+  // gabled roof along the longer side
+  const long = w >= d;
+  const span = long ? d : w;
+  const len = (long ? w : d) + 0.5;
+  const rise = span * 0.45;
+  const slope = Math.hypot(span / 2 + 0.25, rise);
+  const ang = Math.atan2(rise, span / 2 + 0.25);
+  for (const s of [-1, 1]) {
+    const m = add(g, new THREE.BoxGeometry(long ? len : slope, 0.12, long ? slope : len), roofMat, 0, wallH + rise / 2, 0);
+    if (long) {
+      m.position.z = (s * (span / 2 + 0.25)) / 2;
+      m.rotation.x = s * ang;
+    } else {
+      m.position.x = (s * (span / 2 + 0.25)) / 2;
+      m.rotation.z = -s * ang;
+    }
+  }
+  // gable ends
+  const tri = new THREE.Shape();
+  tri.moveTo(-span / 2, 0);
+  tri.lineTo(span / 2, 0);
+  tri.lineTo(0, rise);
+  tri.closePath();
+  const tg = new THREE.ShapeGeometry(tri);
+  for (const s of [-1, 1]) {
+    const m = new THREE.Mesh(tg, plaster);
+    m.material = new THREE.MeshStandardMaterial({ color: '#7a6a52', side: THREE.DoubleSide, flatShading: true });
+    m.position.y = wallH;
+    if (long) {
+      m.rotation.y = Math.PI / 2;
+      m.position.x = (s * (w - 0.1)) / 2;
+    } else m.position.z = (s * (d - 0.1)) / 2;
+    g.add(m);
+  }
+  // door and a lit window facing the camera side
+  add(g, new THREE.BoxGeometry(0.6, 1.1, 0.06), stdMat('#2a1a0e'), 0.3, 0.55, d / 2);
+  add(g, new THREE.BoxGeometry(0.45, 0.4, 0.06), stdMat('#000', 1, 0, '#ffb050', 1.4), -w / 4, 1.2, d / 2);
+  add(g, new THREE.BoxGeometry(0.06, 0.4, 0.45), stdMat('#000', 1, 0, '#ffb050', 1.4), w / 2, 1.2, 0);
+  return g;
+}

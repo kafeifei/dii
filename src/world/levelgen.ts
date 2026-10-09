@@ -91,6 +91,8 @@ export interface Layout {
   stash?: P2;
   campfire?: P2;
   bossRoom?: Room;
+  /** solid buildings (town only); their tiles are walls but render as houses */
+  houses?: Room[];
 }
 
 function roomCenter(r: Room): P2 {
@@ -386,6 +388,6 @@ export function generateTown(): Layout {
   const torches: Torch[] = [];
   return {
     map, theme, depth: 0, start, stairs, waypoint, rooms: [], spawnRooms: [], torches, decor, chests: [], barrels: [],
-    pillars: new Set(), vendor, stash, campfire,
+    pillars: new Set(), vendor, stash, campfire, houses,
   };
 }

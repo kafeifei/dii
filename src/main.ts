@@ -60,3 +60,4 @@ if (location.search.includes('dev')) ui.devStart();
 
 // debug handle
 (window as unknown as { game: Game }).game = game;
+(window as unknown as { renderer: Renderer }).renderer = renderer;

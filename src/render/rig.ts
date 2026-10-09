@@ -31,6 +31,9 @@ export interface RigLook {
   horns?: boolean;
   eyes?: string | null;
   cape?: string | null;
+  /** tabard over the chest: [cloth, emblem] */
+  tabard?: [string, string] | null;
+  hair?: string;
   robe?: string | null;
   floating?: boolean;
   ghost?: boolean;
@@ -236,6 +239,15 @@ export class Rig {
       this.mesh(box(0.55 * bulk, 0.42, 0.35 * bulk), armor, 0, 0.36, 0);
       this.mesh(box(0.47 * bulk, 0.09, 0.32 * bulk), this.mat('#3a2a1a'), 0, 0.06, 0);
     }
+    if (L.tabard) {
+      const tb = this.mat(L.tabard[0]);
+      const em = this.mat(L.tabard[1], { emissive: L.tabard[1], emissiveIntensity: 0.25 });
+      const front = armor ? 0.18 * bulk : 0.16 * bulk;
+      this.mesh(box(0.34 * bulk, 0.62, 0.02), tb, 0, 0.18, front);
+      this.mesh(box(0.06, 0.34, 0.025), em, 0, 0.3, front + 0.005);
+      this.mesh(box(0.22, 0.06, 0.025), em, 0, 0.36, front + 0.005);
+      this.mesh(box(0.47 * bulk, 0.07, 0.33 * bulk), this.mat('#3a2412'), 0, 0.02, 0);
+    }
     if (L.cape) {
       const capeMat = this.mat(L.cape);
       capeMat.side = THREE.DoubleSide;
@@ -288,7 +300,8 @@ export class Rig {
     switch (L.head) {
       case 'human': {
         this.mesh(box(0.22, 0.25, 0.23), skin, 0, 0.14, 0, n);
-        this.mesh(box(0.23, 0.08, 0.24), this.mat('#2a1c12'), 0, 0.27, -0.01, n);
+        this.mesh(box(0.23, 0.08, 0.24), this.mat(L.hair ?? '#2a1c12'), 0, 0.27, -0.01, n);
+        this.mesh(box(0.23, 0.14, 0.06), this.mat(L.hair ?? '#2a1c12'), 0, 0.2, -0.1, n);
         this.mesh(box(0.04, 0.025, 0.02), eyeMat, 0.05, 0.16, 0.115, n);
         this.mesh(box(0.04, 0.025, 0.02), eyeMat, -0.05, 0.16, 0.115, n);
         break;

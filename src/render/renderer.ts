@@ -10,7 +10,7 @@ import { T_FLOOR, T_WALL } from '../world/tilemap';
 import { Effects } from './effects';
 import { monsterLook, playerLook, playerLookKey, vendorLook } from './looks';
 import {
-  glowSprite, makeBarrel, makeChest, makeDecor, makeGroundItem, makeHammer, makePortal, makeProjectile, makeStairs, makeTorch, makeTree, makeWaypoint,
+  glowSprite, makeBarrel, makeHouse, makeChest, makeDecor, makeGroundItem, makeHammer, makePortal, makeProjectile, makeStairs, makeTorch, makeTree, makeWaypoint,
 } from './props';
 import { Rig, type AnimInput } from './rig';
 import { floorTexture, runeCircleTexture, shadowTexture, wallTexture } from './textures';
@@ -234,10 +234,12 @@ export class Renderer implements Picker {
     const floorTiles: [number, number][] = [];
     const wallTiles: [number, number][] = [];
     const pillarTiles: [number, number][] = [];
+    const inHouse = (x: number, y: number) => (L.houses ?? []).some((h) => x >= h.x && x < h.x + h.w && y >= h.y && y < h.y + h.h);
     for (let y = 0; y < map.h; y++) {
       for (let x = 0; x < map.w; x++) {
         const t = map.get(x, y);
         if (t === T_FLOOR) floorTiles.push([x, y]);
+        else if (t === T_WALL && inHouse(x, y)) floorTiles.push([x, y]);
         else if (t === T_WALL) {
           if (L.pillars.has(y * map.w + x)) pillarTiles.push([x, y]);
           else wallTiles.push([x, y]);
@@ -306,6 +308,9 @@ export class Renderer implements Picker {
       }
       this.levelGroup.add(pillars);
     }
+
+    // houses (town)
+    for (const hs of L.houses ?? []) this.levelGroup.add(makeHouse(hs.w, hs.h, hs.x, hs.y));
 
     // torches
     for (const t of L.torches) {
@@ -511,7 +516,8 @@ export class Renderer implements Picker {
 
     // player light
     const lr = p.stats.lightRadius;
-    this.playerLight.position.set(p.pos.x, 2.6, p.pos.z);
+    // offset toward the camera so the faces we actually see are lit
+    this.playerLight.position.set(p.pos.x + 1.1, 2.6, p.pos.z + 1.1);
     this.playerLight.distance = (level.depth === 0 ? 11 : 14) + lr * 1.2;
 
     // player rig
