@@ -38,7 +38,7 @@ await Promise.all(names.map(async (n, i) => {
   const cx = (i % cols - (cols - 1) / 2) * 2.4;
   const cy = ((rows - 1) / 2 - Math.floor(i / cols)) * 2.8 - 0.9;
   obj.position.set(cx - (box.min.x + size.x / 2) * s, cy - box.min.y * s, 0);
-  obj.rotation.y = 0.5;
+  obj.rotation.y = params.has('rot') ? +params.get('rot') : 0.5;
   scene.add(obj);
   const clip = g.animations.find((a) => a.name.toLowerCase().includes(clipWant)) || g.animations[0];
   if (clip) { const m = new THREE.AnimationMixer(obj); m.clipAction(clip).play(); m.update(0.4); mixers.push(m); }

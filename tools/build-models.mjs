@@ -71,6 +71,10 @@ for (const n of ['axe_1handed', 'axe_2handed', 'Skeleton_Blade', 'Skeleton_Axe',
 }
 for (const f of fs.readdirSync(path.join(SRC, 'quaternius'))) await build(`quaternius/${f}`, `q_${f}`, { keepAnims: 'all' });
 for (const f of fs.readdirSync(path.join(SRC, 'dungeon'))) await build(`dungeon/${f}`, `d_${f}`, { keepAnims: f.startsWith('chest') ? 'all' : undefined });
+// AI-generated characters (tools/ai-*.mjs pipeline writes finished glb into models-src/ai)
+if (fs.existsSync(path.join(SRC, 'ai'))) {
+  for (const f of fs.readdirSync(path.join(SRC, 'ai'))) if (f.endsWith('.glb')) await build(`ai/${f}`, f, { keepAnims: 'all' });
+}
 const gltfs = (dir) => fs.readdirSync(path.join(SRC, dir)).filter((f) => f.endsWith('.gltf'));
 for (const f of gltfs('halloween')) await build(`halloween/${f}`, `h_${f.replace('.gltf', '.glb')}`);
 for (const f of gltfs('hexagon')) await build(`hexagon/${f}`, `x_${f.replace('.gltf', '.glb').replace('building_', '').replace('_red', '')}`);

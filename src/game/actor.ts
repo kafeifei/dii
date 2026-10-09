@@ -45,6 +45,8 @@ let actorIds = 0;
 export abstract class Actor {
   readonly id = ++actorIds;
   pos: P2;
+  /** position before the current sim step; the renderer draws between the two */
+  prevPos: P2;
   facing = 0;
   radius = 0.4;
   abstract faction: Faction;
@@ -76,6 +78,7 @@ export abstract class Actor {
 
   constructor(pos: P2) {
     this.pos = { ...pos };
+    this.prevPos = { ...pos };
   }
 
   get alive() {

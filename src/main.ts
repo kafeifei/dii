@@ -40,7 +40,8 @@ function frame(now: number) {
       input.rmbPressed = false;
       input.pressed.clear();
     }
-    renderer.render(dt);
+    // draw between the last two sim steps so motion stays smooth at any refresh rate
+    renderer.render(dt, Math.min(1, acc / STEP));
   }
   ui.update(dt);
   input.wheel = 0;

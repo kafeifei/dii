@@ -195,7 +195,45 @@ function makeMace(twoHanded: boolean, glow: string | null): THREE.Object3D {
   return g;
 }
 
+/** AI-generated hero (tools/ai-*.mjs pipeline) is the default; ?knight falls back to the KayKit knight */
+const AI_HERO = typeof location !== 'undefined' && !location.search.includes('knight');
+
+/** own rig + embedded clips; gear shows as hand attachments only (no body submeshes to toggle) */
+function aiPlayerSpec(p: Player): ModelSpec {
+  const eq = p.equipment;
+  const wb = eq.weapon ? ITEM_BASES[eq.weapon.baseId] : null;
+  const glow = weaponGlow(eq.weapon);
+  const twoHanded = !!wb?.twoHanded;
+  const attach: Attachment[] = [];
+  if (wb?.type === 'sword') attach.push({ model: 'skeleton_blade', hand: 'r', glow, scale: twoHanded ? 0.95 : 0.7 });
+  else if (wb?.type === 'axe') attach.push({ model: twoHanded ? 'axe_2handed' : 'axe_1handed', hand: 'r', glow, scale: 0.75 });
+  else if (wb) attach.push({ model: () => makeMace(twoHanded, glow), hand: 'r' });
+  if (eq.offhand) {
+    const large = eq.offhand.baseId === 'towershield' || eq.offhand.baseId === 'gothicshield';
+    attach.push({ model: large ? 'skeleton_shield_large_a' : 'skeleton_shield_small_a', hand: 'l', scale: 0.75 });
+  }
+  return {
+    model: 'ai_hero',
+    rig: 'quat',
+    height: 1.8,
+    attach,
+    clips: {
+      idle: ['Idle'],
+      move: [
+        { clip: 'Walk', ref: 1.9 },
+        { clip: 'Run', ref: 4.6 },
+      ],
+      attack: wb ? ['Attack', 'Attack2'] : ['Attack'],
+      cast: ['Cast'],
+      hit: ['Hit'],
+      charge: { clip: 'Run', ref: 7 },
+      death: ['Death'],
+    },
+  };
+}
+
 export function playerSpec(p: Player): ModelSpec {
+  if (AI_HERO) return aiPlayerSpec(p);
   const eq = p.equipment;
   const wb = eq.weapon ? ITEM_BASES[eq.weapon.baseId] : null;
   const glow = weaponGlow(eq.weapon);

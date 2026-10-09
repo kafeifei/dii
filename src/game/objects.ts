@@ -46,6 +46,8 @@ export type ProjKind = ProjectileKind | 'holybolt' | 'chargedbolt';
 export class Projectile {
   readonly id = ++objIds;
   pos: P2;
+  /** position before the current sim step; the renderer draws between the two */
+  prevPos: P2;
   vel: P2;
   owner: Actor | null;
   faction: Faction;
@@ -64,6 +66,7 @@ export class Projectile {
   constructor(kind: ProjKind, pos: P2, vel: P2, owner: Actor | null, faction: Faction, dmg: DamagePacket, life = 2, radius = 0.25, pierce = false) {
     this.kind = kind;
     this.pos = { ...pos };
+    this.prevPos = { ...pos };
     this.vel = { ...vel };
     this.owner = owner;
     this.faction = faction;

@@ -122,6 +122,8 @@ export class Renderer implements Picker {
   zoom = 7.2;
   private zoomTarget = 7.2;
   private camTarget = new THREE.Vector3();
+  /** progress between the last two sim steps, for interpolated drawing */
+  private alpha = 1;
   private levelGroup = new THREE.Group();
   private dynGroup = new THREE.Group();
   private occ: OccUniforms = { uPlayer: { value: new THREE.Vector3() }, uCamDir: { value: new THREE.Vector2(Math.sin(CAM_YAW), Math.cos(CAM_YAW)) } };
@@ -672,12 +674,23 @@ export class Renderer implements Picker {
     };
   }
 
-  render(dt: number) {
+  /** where to draw a sim object this frame: between its last two sim steps */
+  private at(o: { pos: P2; prevPos: P2 }): P2 {
+    const dx = o.pos.x - o.prevPos.x;
+    const dz = o.pos.z - o.prevPos.z;
+    // a jump (teleport, level change) snaps instead of sliding across the map
+    if (dx * dx + dz * dz > 4) return o.pos;
+    return { x: o.prevPos.x + dx * this.alpha, z: o.prevPos.z + dz * this.alpha };
+  }
+
+  render(dt: number, alpha = 1) {
     const g = this.game;
     const level = g.level;
     if (!level) return;
     this.time += dt;
+    this.alpha = alpha;
     const p = g.player;
+    const pp = this.at(p);
 
     // zoom
     if (g.input.wheel && !g.input.overUI) this.zoomTarget = Math.min(11, Math.max(4.5, this.zoomTarget + g.input.wheel * 0.6));
@@ -687,8 +700,8 @@ export class Renderer implements Picker {
     }
 
     // camera follow
-    this.camTarget.x += (p.pos.x - this.camTarget.x) * Math.min(1, dt * 10);
-    this.camTarget.z += (p.pos.z - this.camTarget.z) * Math.min(1, dt * 10);
+    this.camTarget.x += (pp.x - this.camTarget.x) * Math.min(1, dt * 10);
+    this.camTarget.z += (pp.z - this.camTarget.z) * Math.min(1, dt * 10);
     const sh = this.fx.shakeAmount;
     const sx = sh > 0 ? (Math.random() - 0.5) * sh * 0.5 : 0;
     const sz = sh > 0 ? (Math.random() - 0.5) * sh * 0.5 : 0;
@@ -697,12 +710,12 @@ export class Renderer implements Picker {
     this.camera.lookAt(this.camTarget.x + sx, 0, this.camTarget.z + sz);
     this.dir.position.set(this.camTarget.x - 8, 20, this.camTarget.z + 4);
     this.dir.target.position.set(this.camTarget.x, 0, this.camTarget.z);
-    this.occ.uPlayer.value.set(p.pos.x, 0, p.pos.z);
+    this.occ.uPlayer.value.set(pp.x, 0, pp.z);
 
     // player light
     const lr = p.stats.lightRadius;
     // offset toward the camera so the faces we actually see are lit
-    this.playerLight.position.set(p.pos.x + 1.1, 2.6, p.pos.z + 1.1);
+    this.playerLight.position.set(pp.x + 1.1, 2.6, pp.z + 1.1);
     this.playerLight.distance = (level.depth === 0 ? 11 : 14) + lr * 1.2;
 
     // player rig
@@ -719,12 +732,12 @@ export class Renderer implements Picker {
       this.playerView = { rig, shadow, key };
     }
     const pv = this.playerView;
-    pv.rig.root.position.x = p.pos.x;
-    pv.rig.root.position.z = p.pos.z;
+    pv.rig.root.position.x = pp.x;
+    pv.rig.root.position.z = pp.z;
     if (!p.dead) pv.rig.root.position.y = 0;
     pv.rig.root.rotation.y = smoothAngle(pv.rig.root.rotation.y, p.facing, dt * 18);
     pv.rig.update(dt, this.anim(p, p.stats.moveSpeed * p.slowFactor() * (p.state === 'charge' ? 2.5 : 1), 'red'));
-    pv.shadow.position.set(p.pos.x, 0.02, p.pos.z);
+    pv.shadow.position.set(pp.x, 0.02, pp.z);
 
     for (const n of this.npcViews) n.rig.update(dt, IDLE_ANIM);
 
@@ -735,7 +748,7 @@ export class Renderer implements Picker {
       (this.auraDecal.material as THREE.MeshBasicMaterial).color.set(def.color);
       const r = p.skillParams(p.activeAura).radius ?? 2.2;
       this.auraDecal.scale.setScalar(Math.min(r, 4) * 2 * 0.9);
-      this.auraDecal.position.set(p.pos.x, 0.03, p.pos.z);
+      this.auraDecal.position.set(pp.x, 0.03, pp.z);
       this.auraDecal.rotation.z += dt * 0.4;
       (this.auraDecal.material as THREE.MeshBasicMaterial).opacity = 0.28 + Math.sin(this.time * 2) * 0.06;
       if (Math.random() < dt * 14) {
@@ -746,7 +759,7 @@ export class Renderer implements Picker {
     } else this.auraDecal.visible = false;
     this.shieldGlow.visible = p.holyShield > 0 && !p.dead;
     if (this.shieldGlow.visible) {
-      this.shieldGlow.position.set(p.pos.x, 1.0, p.pos.z);
+      this.shieldGlow.position.set(pp.x, 1.0, pp.z);
       this.shieldGlow.material.opacity = 0.2 + Math.sin(this.time * 3) * 0.05;
     }
 
@@ -770,12 +783,13 @@ export class Renderer implements Picker {
       v.rig.root.visible = visible;
       v.shadow.visible = visible && !m.dead;
       if (!visible) continue;
-      v.rig.root.position.x = m.pos.x;
-      v.rig.root.position.z = m.pos.z;
+      const mp = this.at(m);
+      v.rig.root.position.x = mp.x;
+      v.rig.root.position.z = mp.z;
       if (!m.dead) v.rig.root.rotation.y = smoothAngle(v.rig.root.rotation.y, m.facing, dt * 12);
       const hover = g.hover.monster === m;
       v.rig.update(dt, this.anim({ ...m, hitFlash: Math.max(m.hitFlash, hover ? 0.12 : 0) }, m.speed * m.slowFactor(), m.def.blood));
-      v.shadow.position.set(m.pos.x, 0.02, m.pos.z);
+      v.shadow.position.set(mp.x, 0.02, mp.z);
       // elemental enchant auras
       if (!m.dead && m.mods.length && Math.random() < dt * 10) {
         const c = m.mods.includes('fireench') ? '#ff6010' : m.mods.includes('coldench') ? '#80c8ff' : m.mods.includes('lightench') ? '#ffff80' : null;
@@ -832,7 +846,8 @@ export class Renderer implements Picker {
         this.dynGroup.add(v.group);
         this.projViews.set(pr, v);
       }
-      v.group.position.set(pr.pos.x, 1.0, pr.pos.z);
+      const prp = this.at(pr);
+      v.group.position.set(prp.x, 1.0, prp.z);
       v.group.rotation.y = Math.atan2(pr.vel.x, pr.vel.z);
       const trail = pr.kind === 'firebolt' || pr.kind === 'fireball' ? '#ff6010' : pr.kind === 'iceshard' ? '#80c8ff' : pr.kind === 'holybolt' ? '#fff0b0' : pr.kind === 'chargedbolt' ? '#a0b0ff' : null;
       if (trail && Math.random() < 0.8) this.fx.add.spawn({ x: pr.pos.x, y: 1.0, z: pr.pos.z, vy: 0.3, color: trail, size: pr.kind === 'fireball' ? 0.5 : 0.25, life: 0.3 });

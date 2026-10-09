@@ -205,6 +205,11 @@ export class Game {
   update(dt: number) {
     if (!this.started || this.paused) return;
     this.time += dt;
+    const L = this.level;
+    for (const a of [this.player, ...L.monsters, ...L.projectiles]) {
+      a.prevPos.x = a.pos.x;
+      a.prevPos.z = a.pos.z;
+    }
     this.updateHover();
     this.handleInput();
     if (this.hitstop > 0) {
@@ -213,7 +218,6 @@ export class Game {
     }
     const p = this.player;
     updatePlayer(this, p, dt);
-    const L = this.level;
     for (const m of L.monsters) {
       if (dist(m.pos, p.pos) > ACTIVE_RADIUS && !m.dead) continue;
       m.hitFlash = Math.max(0, m.hitFlash - dt * 6);
