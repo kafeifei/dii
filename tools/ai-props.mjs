@@ -116,6 +116,61 @@ function keepLargest(doc) {
   }
 }
 
+/** every vertex of the scene in scene space */
+function scenePoints(scene) {
+  const pts = [];
+  scene.traverse((node) => {
+    const mesh = node.getMesh();
+    if (!mesh) return;
+    const m = node.getWorldMatrix();
+    for (const prim of mesh.listPrimitives()) {
+      const pos = prim.getAttribute('POSITION');
+      const v = [];
+      for (let i = 0; i < pos.getCount(); i++) {
+        const [x, y, z] = pos.getElement(i, v);
+        pts.push([m[0] * x + m[4] * y + m[8] * z + m[12], m[1] * x + m[5] * y + m[9] * z + m[13], m[2] * x + m[6] * y + m[10] * z + m[14]]);
+      }
+    }
+  });
+  return pts;
+}
+
+/**
+ * Re-origin a held piece on the spot the hand takes, under a new top node:
+ * - `grip: { at, axis }`: `at` of the way along its long axis (y, or z for a crossbow), centred on
+ *   the haft there (a centred axe has its haft off to one side); the heavier side of the head is
+ *   turned to +x, so the edge or bit leads a swing
+ * - `strap`: the middle of a shield's back (it faces +z)
+ */
+function reOrigin(doc, scene, p) {
+  const pts = scenePoints(scene);
+  const lo = [0, 1, 2].map((i) => Math.min(...pts.map((q) => q[i])));
+  const hi = [0, 1, 2].map((i) => Math.max(...pts.map((q) => q[i])));
+  let c;
+  let flip = false;
+  if (p.grip) {
+    const ax = p.grip.axis === 'z' ? 2 : 1;
+    const len = hi[ax] - lo[ax];
+    const level = lo[ax] + len * p.grip.at;
+    const band = pts.filter((q) => Math.abs(q[ax] - level) < len * 0.025);
+    c = [0, 1, 2].map((i) => band.reduce((sum, q) => sum + q[i], 0) / band.length);
+    c[ax] = level;
+    if (ax === 1) {
+      const head = pts.filter((q) => q[1] > lo[1] + len * 0.6);
+      flip = head.reduce((sum, q) => sum + q[0], 0) / head.length - c[0] < -0.02 * len;
+    }
+  } else c = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, lo[2]];
+  const top = doc.createNode(`${p.key}_held`);
+  for (const child of scene.listChildren()) {
+    scene.removeChild(child);
+    top.addChild(child);
+  }
+  scene.addChild(top);
+  // a half turn about y, then the hold point to the origin
+  top.setRotation(flip ? [0, 1, 0, 0] : [0, 0, 0, 1]);
+  top.setTranslation(flip ? [c[0], -c[1], c[2]] : c.map((x) => -x));
+}
+
 const only = process.argv.slice(2);
 const todo = PROPS.filter((p) => !only.length || only.includes(p.key));
 if (only.length && todo.length !== only.length) throw new Error(`unknown keys: ${only.filter((k) => !PROPS.some((p) => p.key === k))}`);
@@ -173,6 +228,7 @@ for (const p of todo) {
     if (count() > p.tris) await doc.transform(weld(), simplify({ simplifier: MeshoptSimplifier, ratio: p.tris / count(), error: 0.01 }));
   }
   if (p.split) splitTop(doc, holder, p.split);
+  if (p.grip || p.strap) reOrigin(doc, scene, p);
 
   // flat, rough, dielectric: the game lights props with torches and no environment map
   for (const m of root.listMaterials()) m.setMetallicFactor(0).setRoughnessFactor(p.roughness ?? 0.85).setMetallicRoughnessTexture(null);

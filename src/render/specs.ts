@@ -5,7 +5,7 @@ import type { Player } from '../game/player';
 import type { Item } from '../items/item';
 import { assets } from './assets';
 import type { Attachment, ModelSpec, MoveClip } from './models';
-import { assetProp, glowSprite, topCentroid } from './props';
+import { glowSprite, topCentroid } from './props';
 
 // ── KayKit clip sets (shared rig) ──
 const KK_MOVE: MoveClip[] = [
@@ -17,9 +17,6 @@ const KK_1H = ['1H_Melee_Attack_Chop', '1H_Melee_Attack_Slice_Diagonal', '1H_Mel
 const KK_2H = ['2H_Melee_Attack_Chop', '2H_Melee_Attack_Slice'];
 const KK_CHARGE: MoveClip = { clip: 'Running_B', ref: 7 };
 
-/** blades and hafts point forward and up out of a Meshy fist; shields strap to the forearm, face out */
-const MESHY_AIM = { dir: [0, 0.75, 0.66] as [number, number, number] };
-const MESHY_SHIELD_AIM = { dir: [0, 1, 0] as [number, number, number], grip: [0, 0, -0.16] as [number, number, number], slide: -0.12 };
 
 /**
  * AI (Meshy) creatures carry their own clips; `walk` / `run` are the strides tools/meshy-merge.mjs
@@ -66,8 +63,8 @@ export function monsterSpec(m: Monster): ModelSpec {
         rig: 'quat',
         height: h,
         attach: [
-          m.id % 4 === 1 ? { model: 'skeleton_axe', hand: 'r', scale: 0.7, aim: MESHY_AIM } : { model: 'skeleton_blade', hand: 'r', scale: 0.65, aim: MESHY_AIM },
-          { model: elite ? 'skeleton_shield_large_a' : 'skeleton_shield_small_a', hand: 'l', scale: 0.7, aim: MESHY_SHIELD_AIM },
+          m.id % 4 === 1 ? { model: 'skeleton_axe', hand: 'r', scale: 0.7, hold: 'grip' } : { model: 'skeleton_blade', hand: 'r', scale: 0.65, hold: 'grip' },
+          { model: elite ? 'skeleton_shield_large_a' : 'skeleton_shield_small_a', hand: 'l', scale: 0.7, hold: 'shield' },
         ],
         clips: meshyClips(h, 1.42, 4.34, ['Attack', 'Attack2'], { block: ['Block'], revive: 'Revive' }),
       });
@@ -78,7 +75,7 @@ export function monsterSpec(m: Monster): ModelSpec {
         model: 'mon_skelarcher',
         rig: 'quat',
         height: h,
-        attach: [{ model: 'skeleton_crossbow', hand: 'r', scale: 0.7, aim: MESHY_AIM }],
+        attach: [{ model: 'skeleton_crossbow', hand: 'r', scale: 0.7, hold: 'pistol' }],
         clips: meshyClips(h, 1.39, 4.22, ['Attack'], { revive: 'Revive' }),
       });
     }
@@ -89,7 +86,7 @@ export function monsterSpec(m: Monster): ModelSpec {
         model: 'mon_imp',
         rig: 'quat',
         height: h,
-        attach: [{ model: 'skeleton_blade', hand: 'r', scale: 0.45, aim: MESHY_AIM }],
+        attach: [{ model: 'skeleton_blade', hand: 'r', scale: 0.45, hold: 'grip' }],
         clips: meshyClips(h, 1.42, 4.09, ['Attack', 'Attack2']),
       };
       if (hell && !rank) return { ...base, tint: '#ff7a20', tintAmount: 0.45, emissive: '#3a0c00' };
@@ -101,7 +98,7 @@ export function monsterSpec(m: Monster): ModelSpec {
         model: 'mon_shaman',
         rig: 'quat',
         height: h,
-        attach: [{ model: 'skeleton_staff', hand: 'r', glow: '#ff7a30', scale: 0.7, aim: MESHY_AIM }],
+        attach: [{ model: 'skeleton_staff', hand: 'r', glow: '#ff7a30', scale: 0.7, hold: 'upright' }],
         clips: meshyClips(h, 1.25, 4.04, ['Attack'], { cast: ['Cast'] }),
       });
     }
@@ -133,7 +130,7 @@ export function monsterSpec(m: Monster): ModelSpec {
         model: 'mon_skelmage',
         rig: 'quat',
         height: h,
-        attach: [{ model: 'skeleton_staff', hand: 'r', glow: '#80c0ff', scale: 0.8, aim: MESHY_AIM }],
+        attach: [{ model: 'skeleton_staff', hand: 'r', glow: '#80c0ff', scale: 0.8, hold: 'upright' }],
         clips: meshyClips(h, 1.42, 4.34, ['Attack'], { cast: ['Cast'], revive: 'Revive' }),
       });
     }
@@ -156,7 +153,7 @@ export function monsterSpec(m: Monster): ModelSpec {
         model: 'mon_butcher',
         rig: 'quat',
         height: h,
-        attach: [{ model: 'w_cleaver', hand: 'r', scale: 0.9, aim: MESHY_AIM }],
+        attach: [{ model: 'w_cleaver', hand: 'r', scale: 0.9, hold: 'grip' }],
         clips: meshyClips(h, 1.4, 4.15, ['Attack', 'Attack2', 'Attack3'], { charge: { clip: 'Charge', ref: (5 * h * 0.9) / 1.7 } }),
       };
     }
@@ -166,7 +163,7 @@ export function monsterSpec(m: Monster): ModelSpec {
         model: 'mon_lich',
         rig: 'quat',
         height: h,
-        attach: [{ model: 'skeleton_staff', hand: 'r', glow: '#80d0ff', scale: 0.85, aim: MESHY_AIM }],
+        attach: [{ model: 'skeleton_staff', hand: 'r', glow: '#80d0ff', scale: 0.85, hold: 'upright' }],
         emissive: '#0a1830',
         clips: meshyClips(h, 1.38, 4.28, ['Attack'], { cast: ['Cast'] }),
       };
@@ -234,15 +231,19 @@ function makeMace(twoHanded: boolean, glow: string | null): THREE.Object3D {
 
 const STAFF_GEM: Record<string, string> = { shortstaff: '#ff8a3a', longstaff: '#a0c0ff', gnarledstaff: '#80e090', battlestaff: '#60a0ff', warstaff: '#ff5a10' };
 
-/** staff in world units, foot at the origin, haft along +Y */
+/** staff in world units, haft along +Y, the origin where the hand takes it */
 function makeStaff(baseId: string | undefined, glow: string | null): THREE.Object3D {
-  const model = assetProp('w_staff', 0.8);
-  if (model) {
+  const t = assets.get('w_staff');
+  if (t) {
+    const g = new THREE.Group();
+    const o = t.gltf.scene.clone(true);
+    o.scale.setScalar(0.8);
+    g.add(o);
     // a gem of the staff's colour glowing in its head
     const gem = glowSprite(glow ?? STAFF_GEM[baseId ?? ''] ?? '#ff8a3a', 0.4, 0.9);
-    gem.position.copy(topCentroid(model, 0.1));
-    model.add(gem);
-    return model;
+    gem.position.copy(topCentroid(g, 0.1));
+    g.add(gem);
+    return g;
   }
   const g = new THREE.Group();
   const len = 1.7;
@@ -258,6 +259,8 @@ function makeStaff(baseId: string | undefined, glow: string | null): THREE.Objec
   const gem = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 8), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 2.2 }));
   gem.position.y = len + 0.06;
   g.add(gem);
+  // held a little above the middle
+  for (const c of g.children) c.position.y -= 0.9;
   return g;
 }
 
@@ -295,21 +298,20 @@ const KNIGHT = QUERY.includes('knight');
 /** in-game body height over the height Meshy rigs at (1.7 m): scales measured stride speeds */
 const MESHY_K = (1.8 * 0.9) / 1.7;
 
-/** gear for Meshy rigs, which have plain hands and no weapon slots: everything is aimed (see Attachment.aim) */
+/** gear for Meshy rigs, which have plain hands and no weapon slots (see Attachment.hold) */
 function meshyGear(p: Player): Attachment[] {
   const eq = p.equipment;
   const wb = eq.weapon ? ITEM_BASES[eq.weapon.baseId] : null;
   const glow = weaponGlow(eq.weapon);
   const twoHanded = !!wb?.twoHanded;
-  const aim = MESHY_AIM;
   const attach: Attachment[] = [];
-  if (wb?.type === 'staff') attach.push({ model: () => makeStaff(wb.id, glow), hand: 'r', upright: 0.9 });
-  else if (wb?.type === 'sword') attach.push(twoHanded ? { model: 'w_greatsword', hand: 'r', glow, scale: 0.7, aim } : { model: 'skeleton_blade', hand: 'r', glow, scale: 0.65, aim });
-  else if (wb?.type === 'axe') attach.push({ model: twoHanded ? 'axe_2handed' : 'axe_1handed', hand: 'r', glow, scale: 0.75, aim });
-  else if (wb) attach.push({ model: () => makeMace(twoHanded, glow), hand: 'r', aim });
+  if (wb?.type === 'staff') attach.push({ model: () => makeStaff(wb.id, glow), hand: 'r', hold: 'upright' });
+  else if (wb?.type === 'sword') attach.push(twoHanded ? { model: 'w_greatsword', hand: 'r', glow, scale: 0.7, hold: 'grip' } : { model: 'skeleton_blade', hand: 'r', glow, scale: 0.65, hold: 'grip' });
+  else if (wb?.type === 'axe') attach.push({ model: twoHanded ? 'axe_2handed' : 'axe_1handed', hand: 'r', glow, scale: 0.75, hold: 'grip' });
+  else if (wb) attach.push({ model: () => makeMace(twoHanded, glow), hand: 'r', hold: 'grip' });
   if (eq.offhand) {
     const large = eq.offhand.baseId === 'towershield' || eq.offhand.baseId === 'gothicshield';
-    attach.push({ model: large ? 'skeleton_shield_large_a' : 'skeleton_shield_small_a', hand: 'l', scale: 0.7, aim: MESHY_SHIELD_AIM });
+    attach.push({ model: large ? 'skeleton_shield_large_a' : 'skeleton_shield_small_a', hand: 'l', scale: 0.7, hold: 'shield' });
   }
   return attach;
 }

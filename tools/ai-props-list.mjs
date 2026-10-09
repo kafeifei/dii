@@ -93,22 +93,23 @@ export const PROPS = [
   { key: 'p_banner', src: 'decor/banner', box: [0.9, 2.6, 0.6], fit: 'height' },
   { key: 'p_stalagmite', src: 'decor/stalagmite', box: [0.9, 1.6, 0.9] },
   { key: 'p_crystal', src: 'decor/crystal', box: [0.8, 1.2, 0.8] },
-  // held weapons and shields: KayKit pieces, plus new ones fitted to a KayKit piece of their size
-  // so the grip lands in the hand the same way (blades up +Y, flat side facing z)
+  // held weapons and shields: KayKit pieces, plus new ones fitted to a KayKit piece of their size.
+  // Each is re-origined on where the hand takes it (`grip`: that far up the haft, the edge or bit
+  // turned to +x; `strap`: the middle of a shield's back) — src/render/models.ts holds them there.
   // Meshy builds the one-handed sword twice side by side, however often it's asked; the greatsword is the same blade
-  { key: 'skeleton_blade', orig: 'kaykit/Skeleton_Blade.gltf', src: 'gear/greatsword', fit: 'height' },
-  { key: 'skeleton_axe', orig: 'kaykit/Skeleton_Axe.gltf', src: 'gear/skeleton_axe', fit: 'height' },
-  { key: 'axe_1handed', orig: 'kaykit/axe_1handed.gltf', src: 'gear/axe', fit: 'height' },
-  { key: 'axe_2handed', orig: 'kaykit/axe_2handed.gltf', src: 'gear/greataxe', fit: 'height' },
-  { key: 'skeleton_staff', orig: 'kaykit/Skeleton_Staff.gltf', src: 'gear/bone_staff', fit: 'height', largest: true },
-  { key: 'skeleton_crossbow', orig: 'kaykit/Skeleton_Crossbow.gltf', src: 'gear/crossbow', pitch: 90 },
-  { key: 'skeleton_shield_small_a', orig: 'kaykit/Skeleton_Shield_Small_A.gltf', src: 'gear/shield_round' },
-  { key: 'skeleton_shield_large_a', orig: 'kaykit/Skeleton_Shield_Large_A.gltf', src: 'gear/shield_tower' },
-  { key: 'w_greatsword', orig: 'kaykit/Skeleton_Blade.gltf', src: 'gear/greatsword', fit: 'height', scale: 1.3 },
-  { key: 'w_mace', orig: 'kaykit/Skeleton_Axe.gltf', src: 'gear/mace', fit: 'height' },
-  { key: 'w_maul', orig: 'kaykit/axe_2handed.gltf', src: 'gear/maul', fit: 'height' },
-  { key: 'w_staff', orig: 'kaykit/Skeleton_Staff.gltf', src: 'gear/staff', fit: 'height', largest: true },
-  { key: 'w_cleaver', orig: 'kaykit/axe_2handed.gltf', src: 'gear/cleaver', fit: 'height' },
+  { key: 'skeleton_blade', orig: 'kaykit/Skeleton_Blade.gltf', src: 'gear/greatsword', fit: 'height', grip: { at: 0.19 } },
+  { key: 'skeleton_axe', orig: 'kaykit/Skeleton_Axe.gltf', src: 'gear/skeleton_axe', fit: 'height', grip: { at: 0.1 } },
+  { key: 'axe_1handed', orig: 'kaykit/axe_1handed.gltf', src: 'gear/axe', fit: 'height', grip: { at: 0.08 } },
+  { key: 'axe_2handed', orig: 'kaykit/axe_2handed.gltf', src: 'gear/greataxe', fit: 'height', grip: { at: 0.14 } },
+  { key: 'skeleton_staff', orig: 'kaykit/Skeleton_Staff.gltf', src: 'gear/bone_staff', fit: 'height', largest: true, grip: { at: 0.5 } },
+  { key: 'skeleton_crossbow', orig: 'kaykit/Skeleton_Crossbow.gltf', src: 'gear/crossbow', pitch: 90, grip: { at: 0.3, axis: 'z' } },
+  { key: 'skeleton_shield_small_a', orig: 'kaykit/Skeleton_Shield_Small_A.gltf', src: 'gear/shield_round', fit: 'width', strap: true },
+  { key: 'skeleton_shield_large_a', orig: 'kaykit/Skeleton_Shield_Large_A.gltf', src: 'gear/shield_tower', strap: true },
+  { key: 'w_greatsword', orig: 'kaykit/Skeleton_Blade.gltf', src: 'gear/greatsword', fit: 'height', scale: 1.3, grip: { at: 0.19 } },
+  { key: 'w_mace', orig: 'kaykit/Skeleton_Axe.gltf', src: 'gear/mace', fit: 'height', grip: { at: 0.15 } },
+  { key: 'w_maul', orig: 'kaykit/axe_2handed.gltf', src: 'gear/maul', fit: 'height', grip: { at: 0.1 } },
+  { key: 'w_staff', orig: 'kaykit/Skeleton_Staff.gltf', src: 'gear/staff', fit: 'height', largest: true, grip: { at: 0.5 } },
+  { key: 'w_cleaver', orig: 'kaykit/axe_2handed.gltf', src: 'gear/cleaver', fit: 'height', grip: { at: 0.2 } },
   // items lying on the ground (g_*), metres
   { key: 'g_helm', src: 'gear/helm', box: [0.34, 0.34, 0.34] },
   { key: 'g_armor', src: 'gear/armor', box: [0.6, 0.22, 0.75], pitch: -90 },

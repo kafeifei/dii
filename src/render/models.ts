@@ -11,36 +11,147 @@ export interface Attachment {
   scale?: number;
   glow?: string | null;
   /**
-   * Long hafts (staves) held loosely upright, built along +Y from the foot: the grip follows the
-   * palm but the haft only tilts with the wrist while attacking — welded to a rolling wrist, a
-   * staff taller than its bearer swings wildly. The value is the grip height along the haft.
+   * How a rig without weapon slots (Meshy) holds it. The piece has its origin where the hand takes
+   * it (tools/ai-props.mjs `grip` / `strap`), and that sits in the palm, measured off the skinned
+   * hand mesh (palmGrip) since the rig has no finger bones. In the idle pose it is posed in the
+   * actor's frame, then carried by the forearm: Meshy's clips are made for empty hands and let the
+   * wrists flop, which would swing a held blade about — a fist round a haft locks the wrist.
+   * - 'grip': up and forward out of the fist, the +X edge or bit leading
+   * - 'pistol': level and pointing ahead (a crossbow)
+   * - 'shield': the fist behind its middle, the face turned forward and out
+   * - 'upright': a staff kept upright, tilting with the wrist only while attacking — welded to a
+   *   rolling wrist, a staff taller than its bearer swings wildly
    */
-  upright?: number;
-  /**
-   * For rigs without weapon slots (Meshy): the object is held at the hand, its +Y aimed along
-   * `dir` (actor space, +Z forward) in the idle pose, and carried rigidly by the wrist from
-   * there — so it doesn't matter how the hand bone's axes happen to point.
-   * `grip` is the hand's position in the object's own frame, `slide` moves the hold point along
-   * the forearm (+ toward the fingers, − toward the elbow; shields sit on the forearm).
-   */
-  aim?: { dir: [number, number, number]; grip?: [number, number, number]; slide?: number };
+  hold?: 'grip' | 'pistol' | 'shield' | 'upright';
 }
 
-/** an object held in the actor's frame and placed from the hand bone every frame */
+/** an object held in the actor's frame and placed from the hand and forearm bones every frame */
 interface Held {
   obj: THREE.Object3D;
-  bone: THREE.Object3D;
-  /** hand position in the object's frame */
-  grip: THREE.Vector3;
-  slide: number;
-  /** orientation in the idle pose (actor space) */
+  hand: THREE.Object3D;
+  /** the palm grip in the hand's frame */
+  pos: THREE.Vector3;
+  /** carries the orientation: the forearm, or the hand for a staff */
+  turn: THREE.Object3D;
+  /** pose in the idle stance (actor frame), and the `turn` rotation that gives it */
   rest: THREE.Quaternion;
-  /** wrist rotation that maps to `rest` in the idle pose */
-  offset: THREE.Quaternion;
-  /** upright hafts drift toward the wrist only while attacking; aimed ones always follow it */
+  rot: THREE.Quaternion;
+  /** distance out along the piece's +Z from the palm (a shield's back clears the fist) */
+  push: number;
+  /** upright staves follow the wrist's tilt only while attacking */
   loose: boolean;
-  /** 0 = rest orientation, 1 = follows the wrist */
+  /** 0 = rest pose, 1 = follows the bone */
   follow: number;
+}
+
+/** idle poses in the actor frame (+Z ahead, +X to the left), for the right hand */
+const REST: Record<NonNullable<Attachment['hold']>, THREE.Quaternion> = (() => {
+  const pose = (x: THREE.Vector3, y: THREE.Vector3) => {
+    y.normalize();
+    x.addScaledVector(y, -x.dot(y)).normalize();
+    const z = new THREE.Vector3().crossVectors(x, y);
+    return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
+  };
+  const up = 0.6; // radians above level
+  return {
+    grip: pose(new THREE.Vector3(0, -Math.cos(up), Math.sin(up)), new THREE.Vector3(-0.15, Math.sin(up), Math.cos(up))),
+    pistol: pose(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0)),
+    // carried on the left arm: face (+Z) forward and out to the left
+    shield: pose(new THREE.Vector3(0.9, 0, -0.45), new THREE.Vector3(0, 1, 0)),
+    upright: new THREE.Quaternion(),
+  };
+})();
+
+/** the palm grip of each hand of a Meshy model, in the hand's frame; the same for every instance */
+const gripCache = new Map<string, THREE.Vector3 | null>();
+
+/**
+ * Where a fist would close on a Meshy hand, from the bind pose: the hand-weighted vertices give the
+ * finger direction (their long axis) and the palm normal (the thin one, toward the body — Meshy
+ * binds an A-pose with the palms in). The grip sits across the palm at the knuckle line, just off
+ * its surface, in the middle of the hand's width.
+ */
+function palmGrip(sk: THREE.SkinnedMesh, hand: THREE.Bone): THREE.Vector3 | null {
+  const bones = sk.skeleton.bones;
+  const hi = bones.indexOf(hand);
+  if (hi < 0) return null;
+  const bindPos = (i: number) => new THREE.Vector3().setFromMatrixPosition(new THREE.Matrix4().copy(sk.skeleton.boneInverses[i]).invert());
+  const W = bindPos(hi);
+  const H = bindPos(0);
+  const pos = sk.geometry.getAttribute('position');
+  const si = sk.geometry.getAttribute('skinIndex');
+  const sw = sk.geometry.getAttribute('skinWeight');
+  const pts: THREE.Vector3[] = [];
+  for (let i = 0; i < pos.count; i++) {
+    let w = 0;
+    for (let k = 0; k < 4; k++) if (si.getComponent(i, k) === hi) w += sw.getComponent(i, k);
+    if (w > 0.6) pts.push(new THREE.Vector3().fromBufferAttribute(pos, i).applyMatrix4(sk.bindMatrix));
+  }
+  if (pts.length < 20) return null;
+  const [f, t, n] = principalAxes(pts);
+  const C = pts.reduce((a, p) => a.add(p), new THREE.Vector3()).divideScalar(pts.length);
+  if (f.dot(_v1.subVectors(C, W)) < 0) f.negate();
+  if (n.dot(_v1.subVectors(H, W)) < 0) n.negate();
+  const along = (p: THREE.Vector3, axis: THREE.Vector3) => _v1.subVectors(p, W).dot(axis);
+  const L = Math.max(...pts.map((p) => along(p, f)));
+  const band = pts.filter((p) => Math.abs(along(p, f) - L * 0.42) < L * 0.12);
+  const palm = band.map((p) => along(p, n)).sort((a, b) => a - b)[Math.floor(band.length * 0.75)] ?? 0;
+  const across = band.reduce((a, p) => a + along(p, t), 0) / Math.max(1, band.length);
+  return W.addScaledVector(f, L * 0.42).addScaledVector(n, palm + 0.012).addScaledVector(t, across).applyMatrix4(sk.skeleton.boneInverses[hi]);
+}
+
+/** unit principal axes of a point cloud, largest spread first */
+function principalAxes(pts: THREE.Vector3[]): THREE.Vector3[] {
+  const c = pts.reduce((a, p) => a.add(p), new THREE.Vector3()).divideScalar(pts.length);
+  const A = [
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0],
+  ];
+  for (const p of pts) {
+    const d = [p.x - c.x, p.y - c.y, p.z - c.z];
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) A[i][j] += d[i] * d[j];
+  }
+  // Jacobi rotations
+  const V = [
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1],
+  ];
+  for (let it = 0; it < 30; it++) {
+    let p = 0;
+    let q = 1;
+    for (const [i, j] of [
+      [0, 2],
+      [1, 2],
+    ])
+      if (Math.abs(A[i][j]) > Math.abs(A[p][q])) [p, q] = [i, j];
+    if (Math.abs(A[p][q]) < 1e-12) break;
+    const th = 0.5 * Math.atan2(2 * A[p][q], A[q][q] - A[p][p]);
+    const c1 = Math.cos(th);
+    const s1 = Math.sin(th);
+    for (let k = 0; k < 3; k++) {
+      const akp = A[k][p];
+      const akq = A[k][q];
+      A[k][p] = c1 * akp - s1 * akq;
+      A[k][q] = s1 * akp + c1 * akq;
+    }
+    for (let k = 0; k < 3; k++) {
+      const apk = A[p][k];
+      const aqk = A[q][k];
+      A[p][k] = c1 * apk - s1 * aqk;
+      A[q][k] = s1 * apk + c1 * aqk;
+    }
+    for (let k = 0; k < 3; k++) {
+      const vkp = V[k][p];
+      const vkq = V[k][q];
+      V[k][p] = c1 * vkp - s1 * vkq;
+      V[k][q] = s1 * vkp + c1 * vkq;
+    }
+  }
+  return [0, 1, 2]
+    .sort((a, b) => A[b][b] - A[a][a])
+    .map((i) => new THREE.Vector3(V[0][i], V[1][i], V[2][i]).normalize());
 }
 
 const _v1 = new THREE.Vector3();
@@ -182,8 +293,19 @@ export class ModelRig {
       const bone = this.findBone(HAND_BONES[a.hand]);
       if (!bone) continue;
       let obj: THREE.Object3D;
-      if (a.upright !== undefined || a.aim) {
+      if (a.hold) {
         // lives in the actor's frame (world units), placed every frame in updateHeld
+        const key = `${spec.model}|${a.hand}`;
+        if (!gripCache.has(key)) {
+          let sk: THREE.SkinnedMesh | null = null;
+          this.body.traverse((o) => {
+            const m = o as THREE.SkinnedMesh;
+            if (m.isSkinnedMesh && m.skeleton.bones.includes(bone as THREE.Bone) && (!sk || m.geometry.getAttribute('position').count > sk.geometry.getAttribute('position').count)) sk = m;
+          });
+          gripCache.set(key, sk ? palmGrip(sk, bone as THREE.Bone) : null);
+        }
+        const grip = gripCache.get(key);
+        if (!grip) continue;
         if (typeof a.model === 'function') obj = a.model();
         else {
           const t = assets.get(a.model);
@@ -191,11 +313,12 @@ export class ModelRig {
           obj = t.gltf.scene.clone(true);
         }
         if (a.scale) obj.scale.multiplyScalar(a.scale);
-        const rest = new THREE.Quaternion();
-        if (a.aim) rest.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(...a.aim.dir).normalize());
-        const grip = a.aim ? new THREE.Vector3(...(a.aim.grip ?? [0, 0, 0])).multiplyScalar(a.scale ?? 1) : new THREE.Vector3(0, a.upright, 0);
         this.root.add(obj);
-        this.held.push({ obj, bone, grip, slide: a.aim?.slide ?? 0.07, rest, offset: new THREE.Quaternion(), loose: !a.aim, follow: a.aim ? 1 : 0.2 });
+        const loose = a.hold === 'upright';
+        // the left hand mirrors the right-hand poses across the body
+        const rest = REST[a.hold].clone();
+        if (a.hand === 'l' && a.hold !== 'shield') rest.set(rest.x, -rest.y, -rest.z, rest.w);
+        this.held.push({ obj, hand: bone, pos: grip, turn: loose ? bone : bone.parent!, rest, rot: new THREE.Quaternion(), push: a.hold === 'shield' ? 0.05 : 0, loose, follow: loose ? 0.2 : 1 });
         if (a.glow) obj.traverse((o) => glowSet.add(o));
         continue;
       } else if (typeof a.model === 'function') {
@@ -267,10 +390,11 @@ export class ModelRig {
     for (const c of lib) this.clips.set(c.name, c);
     this.play(this.pick(spec.clips.idle), true, 1, 0);
     if (this.held.length) {
+      // the forearm (or wrist) rotation that gives each piece its rest pose in the idle stance
       this.mixer.setTime(0);
       this.root.updateMatrixWorld(true);
       const rootQ = this.root.getWorldQuaternion(_q1);
-      for (const h of this.held) h.offset.copy(h.bone.getWorldQuaternion(_q2).invert().multiply(rootQ).multiply(h.rest));
+      for (const h of this.held) h.rot.copy(h.turn.getWorldQuaternion(_q2).invert().multiply(rootQ).multiply(h.rest));
     }
     this.mixer.setTime(Math.random() * 2);
     this.updateHeld(1, false);
@@ -282,15 +406,12 @@ export class ModelRig {
     const rootInv = this.root.getWorldQuaternion(_q1).invert();
     for (const h of this.held) {
       if (h.loose) h.follow += ((attacking ? 1 : 0.2) - h.follow) * (1 - Math.exp(-10 * dt));
-      // hold point: along the forearm → hand line, past the wrist for the palm (the rig has no
-      // finger bones), behind it for something strapped to the forearm
-      const at = h.bone.getWorldPosition(_v1);
-      const fore = h.bone.parent!.getWorldPosition(_v2);
-      at.addScaledVector(fore.sub(at).normalize(), -h.slide);
-      this.root.worldToLocal(at);
-      const wrist = _q2.copy(rootInv).multiply(h.bone.getWorldQuaternion(_q3)).multiply(h.offset);
-      h.obj.quaternion.copy(h.rest).slerp(wrist, h.follow);
-      h.obj.position.copy(at).sub(_v2.copy(h.grip).applyQuaternion(h.obj.quaternion));
+      const q = _q2.copy(rootInv).multiply(h.turn.getWorldQuaternion(_q3)).multiply(h.rot);
+      if (h.loose) h.obj.quaternion.copy(h.rest).slerp(q, h.follow);
+      else h.obj.quaternion.copy(q);
+      // the piece's origin is where the hand takes it
+      h.obj.position.copy(this.root.worldToLocal(h.hand.localToWorld(_v1.copy(h.pos))));
+      if (h.push) h.obj.position.add(_v2.set(0, 0, h.push).applyQuaternion(h.obj.quaternion));
     }
   }
 
