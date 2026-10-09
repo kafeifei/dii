@@ -3,19 +3,20 @@ import type { P2 } from '../core/math';
 import { SKILL_BY_ID } from '../data/skills';
 import type { Game, Picker } from '../game/game';
 import type { Level } from '../game/level';
+import type { Layout } from '../world/levelgen';
 import type { Monster } from '../game/monster';
 import type { GroundItem, Hammer, Projectile, WorldObject } from '../game/objects';
 import { itemColor } from '../items/item';
-import { T_FLOOR, T_WALL } from '../world/tilemap';
+import { T_FLOOR, T_PROP, T_WALL } from '../world/tilemap';
 import { Effects } from './effects';
 import { assets } from './assets';
 import { monsterLook, playerLook, playerLookKey, vendorLook } from './looks';
 import { ModelRig, type ModelSpec } from './models';
 import {
-  glowSprite, makeBarrel, makeHouse, makeChest, makeDecor, makeGroundItem, makeHammer, makePortal, makeProjectile, makeStairs, makeTorch, makeTree, makeWaypoint,
+  glowSprite, makeBarrel, makeHouse, makeChest, makeDecor, makeGroundItem, makeHammer, makePortal, makeProjectile, makeStairs, makeTorch, makeTree, makeWaypoint, topCentroid,
 } from './props';
 import { Rig, type AnimInput, type RigLook } from './rig';
-import { monsterSpec, playerSpec, vendorSpec } from './specs';
+import { monsterSpec, npcSpec, playerSpec, vendorSpec } from './specs';
 import { floorTexture, runeCircleTexture, shadowTexture, wallTexture } from './textures';
 
 const CAM_YAW = Math.PI / 4;
@@ -76,6 +77,15 @@ function applyOcclusionFade(mat: THREE.Material, u: OccUniforms) {
   mat.customProgramCacheKey = () => 'occ-fade';
 }
 
+/** theme tint for prop materials: [colour, amount] */
+const PROP_TINT: Record<string, [string, number]> = {
+  ice: ['#a8d0ff', 0.4],
+  hell: ['#ff8a6a', 0.22],
+  cave: ['#c8a088', 0.12],
+};
+
+const IDLE_ANIM: AnimInput = { state: 'idle', stateTime: 0, stateDur: 0, speed: 0, dead: false, deathTime: 0, hitFlash: 0, chilled: false, poisoned: false, blood: 'red', killedBy: 'phys' };
+
 interface CharRig {
   root: THREE.Group;
   update(dt: number, a: AnimInput): void;
@@ -126,6 +136,9 @@ export class Renderer implements Picker {
   private monsterViews = new Map<Monster, ActorView>();
   private playerView: ActorView | null = null;
   private vendorView: ActorView | null = null;
+  private npcViews: ActorView[] = [];
+  private propMats = new Map<string, THREE.Material>();
+  private flameSpots2 = new Map<string, THREE.Vector3>();
   private groundViews = new Map<GroundItem, THREE.Group>();
   private projViews = new Map<Projectile, { group: THREE.Group; light: string | null }>();
   private hammerViews = new Map<Hammer, THREE.Group>();
@@ -229,8 +242,14 @@ export class Renderer implements Picker {
     }
     this.levelGroup.traverse((o) => {
       const m = o as THREE.Mesh;
-      if (m.isMesh && (m as THREE.InstancedMesh).isInstancedMesh) m.geometry.dispose();
+      // prop instances borrow the model templates' geometry: keep it
+      if (m.isMesh && (m as THREE.InstancedMesh).isInstancedMesh && !m.userData.sharedGeometry) m.geometry.dispose();
     });
+    for (const n of this.npcViews) {
+      n.rig.dispose();
+      n.shadow.removeFromParent();
+    }
+    this.npcViews = [];
     this.levelGroup.clear();
     this.dynGroup.clear();
     this.fx.clearLevel();
@@ -258,7 +277,7 @@ export class Renderer implements Picker {
     for (let y = 0; y < map.h; y++) {
       for (let x = 0; x < map.w; x++) {
         const t = map.get(x, y);
-        if (t === T_FLOOR) floorTiles.push([x, y]);
+        if (t === T_FLOOR || t === T_PROP) floorTiles.push([x, y]);
         else if (t === T_WALL && inHouse(x, y)) floorTiles.push([x, y]);
         else if (t === T_WALL) {
           if (L.pillars.has(y * map.w + x)) pillarTiles.push([x, y]);
@@ -343,8 +362,19 @@ export class Renderer implements Picker {
       this.levelGroup.add(pillars);
     }
 
-    // houses (town)
-    for (const hs of L.houses ?? []) this.levelGroup.add(makeHouse(hs.w, hs.h, hs.x, hs.y));
+    // furniture, wall hangings and town buildings (instanced CC0 models)
+    this.buildProps(L);
+    // townsfolk
+    for (const n of L.npcs ?? []) {
+      const rig = makeCharRig(() => npcSpec(n.model), vendorLook);
+      rig.root.position.set(n.x, 0, n.z);
+      rig.root.rotation.y = n.rot;
+      this.scene.add(rig.root);
+      const shadow = this.makeShadow(0.4);
+      shadow.position.set(n.x, 0.02, n.z);
+      this.scene.add(shadow);
+      this.npcViews.push({ rig, shadow });
+    }
 
     // torches
     for (const t of L.torches) {
@@ -405,7 +435,7 @@ export class Renderer implements Picker {
               group.userData.looted = true;
               group.traverse((c) => {
                 const m = (c as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
-                if (m?.color) m.color.multiplyScalar(0.45);
+                if (m?.color) m.color.multiplyScalar(0.7);
               });
             }
           },
@@ -483,6 +513,117 @@ export class Renderer implements Picker {
       }
     }
     return { group: g };
+  }
+
+  /** occlusion-faded, theme-tinted copy of a model material (cached) */
+  private propMat(src: THREE.Material, theme: string): THREE.Material {
+    const key = `${src.uuid}|${theme}`;
+    let m = this.propMats.get(key);
+    if (!m) {
+      const c = (src as THREE.MeshStandardMaterial).clone();
+      // KayKit atlases are pale; tone them into the dungeon light
+      c.roughness = Math.max(c.roughness, 0.85);
+      c.color.multiplyScalar(0.85);
+      const tint = PROP_TINT[theme];
+      if (tint) c.color.lerp(new THREE.Color(tint[0]), tint[1]);
+      applyOcclusionFade(c, this.occ);
+      m = c;
+      this.propMats.set(key, m);
+    }
+    return m;
+  }
+
+  /** where a lit prop's flame sits, in the model's own space (cached per model) */
+  private flameSpot(key: string): THREE.Vector3 | null {
+    if (this.flameSpots2.has(key)) return this.flameSpots2.get(key)!;
+    const t = assets.get(key);
+    if (!t) return null;
+    const meshes: THREE.Mesh[] = [];
+    t.gltf.scene.traverse((o) => {
+      if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh);
+    });
+    let spot: THREE.Vector3;
+    if (key.includes('lantern')) {
+      // the glass: the smallest part of a multi-mesh model, else the middle of the lamp
+      const boxes = meshes.map((m) => new THREE.Box3().setFromObject(m));
+      const vol = (b: THREE.Box3) => b.getSize(new THREE.Vector3()).toArray().reduce((a, v) => a * v, 1);
+      const b = boxes.length > 1 ? boxes.sort((a, c) => vol(a) - vol(c))[0] : boxes[0];
+      spot = b.getCenter(new THREE.Vector3());
+    } else spot = topCentroid(t.gltf.scene, t.size.y * 0.06);
+    this.flameSpots2.set(key, spot);
+    return spot;
+  }
+
+  private buildProps(L: Layout) {
+    const theme = L.theme.key;
+    const insts = new Map<string, THREE.Matrix4[]>();
+    const add = (key: string, m: THREE.Matrix4) => {
+      let l = insts.get(key);
+      if (!l) insts.set(key, (l = []));
+      l.push(m);
+    };
+    const yAxis = new THREE.Vector3(0, 1, 0);
+    const light = (key: string, m: THREE.Matrix4, color: string, s: number) => {
+      const spot = this.flameSpot(key);
+      if (!spot) return;
+      const pos = spot.clone().applyMatrix4(m);
+      this.staticLights.push({ pos: pos.clone().setY(pos.y + 0.1), color: new THREE.Color(color), intensity: 7, flicker: 0.6, distance: 4.5 });
+      const glow = glowSprite(color, 0.5 * Math.min(1.4, s / 0.5), 0.85);
+      glow.position.copy(pos);
+      glow.userData.base = glow.scale.x;
+      this.levelGroup.add(glow);
+      this.flames.push(glow);
+    };
+    for (const p of L.props) {
+      const t = assets.get(p.model);
+      if (!t) continue;
+      const m = new THREE.Matrix4().compose(new THREE.Vector3(p.x, 0, p.z), new THREE.Quaternion().setFromAxisAngle(yAxis, p.rot), new THREE.Vector3(p.scale, p.scale, p.scale));
+      m.multiply(new THREE.Matrix4().makeTranslation(-t.center.x, -t.min.y, -t.center.z));
+      add(p.model, m);
+      if (p.light) light(p.model, m, p.light, p.scale);
+    }
+    for (const w of L.wallDecor) {
+      const t = assets.get(w.model);
+      if (!t) continue;
+      // back of the piece against the wall face, centred on the spot
+      const off = -t.min.z * w.scale + 0.02;
+      const m = new THREE.Matrix4().compose(
+        new THREE.Vector3(w.x + w.nx * off, w.y, w.z + w.nz * off),
+        new THREE.Quaternion().setFromAxisAngle(yAxis, Math.atan2(w.nx, w.nz)),
+        new THREE.Vector3(w.scale, w.scale, w.scale),
+      );
+      m.multiply(new THREE.Matrix4().makeTranslation(-t.center.x, 0, 0));
+      add(w.model, m);
+      if (w.light) light(w.model, m, w.light, w.scale);
+    }
+    for (const hs of L.houses ?? []) {
+      const t = hs.model ? assets.get(hs.model) : undefined;
+      if (!t || !hs.model) {
+        this.levelGroup.add(makeHouse(hs.w, hs.h, hs.x, hs.y));
+        continue;
+      }
+      const rot = hs.rot ?? 0;
+      const turned = Math.abs(Math.sin(rot)) > 0.5;
+      const s = Math.min(hs.w / (turned ? t.size.z : t.size.x), hs.h / (turned ? t.size.x : t.size.z)) * 1.08;
+      const m = new THREE.Matrix4().compose(new THREE.Vector3(hs.x + hs.w / 2, 0, hs.y + hs.h / 2), new THREE.Quaternion().setFromAxisAngle(yAxis, rot), new THREE.Vector3(s, s, s));
+      m.multiply(new THREE.Matrix4().makeTranslation(-t.center.x, -t.min.y, -t.center.z));
+      add(hs.model, m);
+    }
+    const tmp = new THREE.Matrix4();
+    for (const [key, list] of insts) {
+      const t = assets.get(key)!;
+      t.gltf.scene.traverse((o) => {
+        const mesh = o as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        const mat = Array.isArray(mesh.material) ? mesh.material.map((x) => this.propMat(x, theme)) : this.propMat(mesh.material, theme);
+        const im = new THREE.InstancedMesh(mesh.geometry, mat, list.length);
+        list.forEach((pm, i) => im.setMatrixAt(i, tmp.multiplyMatrices(pm, mesh.matrixWorld)));
+        im.instanceMatrix.needsUpdate = true;
+        im.userData.sharedGeometry = true;
+        im.computeBoundingSphere();
+        this.levelGroup.add(im);
+      });
+    }
   }
 
   private makeShadow(r: number): THREE.Mesh {
@@ -584,6 +725,8 @@ export class Renderer implements Picker {
     pv.rig.root.rotation.y = smoothAngle(pv.rig.root.rotation.y, p.facing, dt * 18);
     pv.rig.update(dt, this.anim(p, p.stats.moveSpeed * p.slowFactor() * (p.state === 'charge' ? 2.5 : 1), 'red'));
     pv.shadow.position.set(p.pos.x, 0.02, p.pos.z);
+
+    for (const n of this.npcViews) n.rig.update(dt, IDLE_ANIM);
 
     // aura decal
     if (p.activeAura && !p.dead && p.skillLevel(p.activeAura) > 0) {
@@ -729,7 +872,7 @@ export class Renderer implements Picker {
     this.syncObjects(level, dt);
 
     // torch flames flicker
-    for (const f of this.flames) f.scale.setScalar(0.8 + Math.random() * 0.25);
+    for (const f of this.flames) f.scale.setScalar((f.userData.base ?? 1) * (0.8 + Math.random() * 0.25));
     for (const f of this.flameSpots) {
       if (Math.random() < dt * 6) this.fx.add.spawn({ x: f.x + (Math.random() - 0.5) * 0.08, y: f.y + 0.05, z: f.z + (Math.random() - 0.5) * 0.08, vy: 0.7, color: '#ffa040', size: 0.14, life: 0.5 });
     }

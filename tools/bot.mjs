@@ -83,7 +83,8 @@ export default async function (page, shot, log) {
         }
       }
     };
-    const attackSkill = () => (p().skillBase('zeal') ? 'zeal' : p().skillBase('sacred_strike') ? 'sacred_strike' : 'attack');
+    // out of mana: plain swings, like a player would
+    const attackSkill = () => (p().mana < 8 ? 'attack' : p().skillBase('zeal') ? 'zeal' : p().skillBase('sacred_strike') ? 'sacred_strike' : 'attack');
     const drink = (kind) => {
       const pl = p();
       for (let i = 0; i < 4; i++) if (pl.belt[i].length && (kind === 'hp' ? (pl.belt[i][0].baseId.startsWith('hp') || pl.belt[i][0].baseId.startsWith('rejuv')) : pl.belt[i][0].baseId.startsWith('mp'))) { g.useBelt(i); stats.potionsUsed++; return true; }
@@ -96,6 +97,11 @@ export default async function (page, shot, log) {
     let stuck = 0;
     let lastPos = { x: 0, z: 0 };
     let simTime = 0;
+    // stall diagnostics: no real progress for 30s of sim time
+    let stallAnchor = { x: 0, z: 0 };
+    let stallSince = 0;
+    let stallsLogged = 0;
+    let lastPick = '';
     const runChunk = (seconds) => {
       const steps = Math.floor(seconds / STEP);
       for (let i = 0; i < steps; i++) {
@@ -123,7 +129,11 @@ export default async function (page, shot, log) {
             const it = pi.item;
             const b = baseOf(it);
             if (b.type === 'potion') { if (g.beltInsert(it)) pl.inventory.remove(it); continue; }
-            if (b.type === 'rune') continue;
+            // keep a few runes for runewords; sell the rest so the bag never clogs
+            if (b.type === 'rune') {
+              if (pl.inventory.items.filter((x) => baseOf(x.item).type === 'rune').length > 6) { pl.inventory.remove(it); pl.gold += sellPrice(it); }
+              continue;
+            }
             if (!tryEquip(it) && pl.inventory.items.length > 8) { pl.inventory.remove(it); pl.gold += sellPrice(it); }
           }
           if (pl.state === 'idle' || pl.state === 'move') {
@@ -131,16 +141,21 @@ export default async function (page, shot, log) {
             const loot = g.level.ground.filter((gi) => !gi.gold && gi.item && Math.hypot(gi.pos.x - pl.pos.x, gi.pos.z - pl.pos.z) < 8).sort((a, b) => Math.hypot(a.pos.x - pl.pos.x, a.pos.z - pl.pos.z) - Math.hypot(b.pos.x - pl.pos.x, b.pos.z - pl.pos.z))[0];
             if (near.length && near[0].d < 7 && !(pl.intent && pl.intent.kind === 'attack' && !pl.intent.target.dead)) {
               pl.intent = { kind: 'attack', target: near[0].m, skill: attackSkill(), hold: true };
-            } else if (!pl.intent && loot && (!near.length || near[0].d > 6)) {
+              lastPick = 'near-attack:' + pl.intent.skill;
+            } else if (!pl.intent && loot && pl.inventory.items.length < 24 && (!near.length || near[0].d > 6)) {
               const it = loot.item;
               if (it.rarity === 'unique') stats.uniques++;
               if (it.rarity === 'set') stats.sets++;
               if (it.rarity === 'rare') stats.rares++;
               if (baseOf(it).type === 'rune') stats.runes++;
               pl.intent = { kind: 'pickup', ground: loot };
+              lastPick = `pickup ${it.name} @${loot.pos.x.toFixed(1)},${loot.pos.z.toFixed(1)} tile=${g.level.map.get(Math.floor(loot.pos.x), Math.floor(loot.pos.z))} inv=${pl.inventory.items.length}`;
             } else if (!pl.intent) {
-              if (near.length && near[0].d < 40) pl.intent = { kind: 'attack', target: near[0].m, skill: attackSkill(), hold: true };
-              else {
+              if (near.length && near[0].d < 40) {
+                pl.intent = { kind: 'attack', target: near[0].m, skill: attackSkill(), hold: true };
+                lastPick = 'far-attack:' + pl.intent.skill;
+              } else {
+                lastPick = 'stairs';
                 const st = g.level.objects.find((o) => o.kind === 'stairs');
                 pl.intent = { kind: 'interact', obj: st };
               }
@@ -152,6 +167,27 @@ export default async function (page, shot, log) {
           }
         }
         g.update(STEP);
+        if (Math.hypot(pl.pos.x - stallAnchor.x, pl.pos.z - stallAnchor.z) > 2) {
+          stallAnchor = { ...pl.pos };
+          stallSince = simTime;
+        } else if (simTime - stallSince > 30 && stallsLogged < 4) {
+          stallsLogged++;
+          stallSince = simTime;
+          const map = g.level.map;
+          const it = pl.intent;
+          const tgt = it?.target?.pos ?? it?.ground?.pos ?? it?.obj?.pos ?? null;
+          const grid = [];
+          for (let y = Math.floor(pl.pos.z) - 3; y <= Math.floor(pl.pos.z) + 3; y++) {
+            let row = '';
+            for (let x = Math.floor(pl.pos.x) - 3; x <= Math.floor(pl.pos.x) + 3; x++) {
+              const isP = x === Math.floor(pl.pos.x) && y === Math.floor(pl.pos.z);
+              const isT = tgt && x === Math.floor(tgt.x) && y === Math.floor(tgt.z);
+              row += isP ? '@' : isT ? 'T' : '.#P'[map.get(x, y) - 1] ?? ' ';
+            }
+            grid.push(row);
+          }
+          stats.timeline.push(`STALL depth ${depth} t=${Math.round(simTime)} pos=${pl.pos.x.toFixed(1)},${pl.pos.z.toFixed(1)} state=${pl.state} intent=${it?.kind}${it?.target ? '(' + it.target.def.id + (it.target.dead ? ',dead' : '') + ')' : ''} tgt=${tgt ? tgt.x.toFixed(1) + ',' + tgt.z.toFixed(1) : '-'} path=${pl.path?.length ?? 0} mana=${Math.round(pl.mana)} lastPick=${lastPick}\n      near: ${g.level.monsters.filter((m) => !m.dead).map((m) => ({ m, d: Math.hypot(m.pos.x - pl.pos.x, m.pos.z - pl.pos.z) })).sort((a, b) => a.d - b.d).slice(0, 3).map(({ m, d }) => `${m.def.id}@${d.toFixed(1)} los=${map.los(pl.pos, m.pos)} st=${m.state} tile=${map.get(Math.floor(m.pos.x), Math.floor(m.pos.z))}`).join(' | ')}\n      ${grid.join('\n      ')}`);
+        }
         if (g.level.depth !== depth && g.level.depth > 0) {
           stats.levels.push({ depth, lvl: pl.level, secs: Math.round(simTime - levelStart), deaths: stats.deaths, gold: pl.gold, kills: stats.kills });
           depth = g.level.depth;

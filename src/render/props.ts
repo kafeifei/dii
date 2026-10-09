@@ -64,7 +64,7 @@ export function glowSprite(color: string, size: number, opacity = 1): THREE.Spri
   return s;
 }
 
-function topCentroid(root: THREE.Object3D, band: number): THREE.Vector3 {
+export function topCentroid(root: THREE.Object3D, band: number): THREE.Vector3 {
   root.updateMatrixWorld(true);
   const pts: THREE.Vector3[] = [];
   root.traverse((c) => {
@@ -122,6 +122,23 @@ export function makeTorch(color: string): { group: THREE.Group; flame: THREE.Spr
 }
 
 export function makeChest(big = false): { group: THREE.Group; lid: THREE.Group } {
+  if (!big) {
+    const model = assetProp('d_chest_gold', 0.5, { ownMaterials: true });
+    const lidMesh = model?.getObjectByName('chest_gold_lid');
+    if (model && lidMesh?.parent) {
+      // the lid's own origin is its middle: hinge it on the back edge instead
+      model.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(lidMesh);
+      const hinge = new THREE.Vector3((box.min.x + box.max.x) / 2, box.min.y, box.min.z);
+      const pivot = new THREE.Group();
+      lidMesh.parent.add(pivot);
+      pivot.position.copy(lidMesh.parent.worldToLocal(hinge));
+      pivot.updateMatrixWorld(true);
+      pivot.attach(lidMesh);
+      model.userData.looted = false;
+      return { group: model, lid: pivot };
+    }
+  }
   const model = big ? assetProp('d_trunk_large_A', 0.72, { ownMaterials: true }) : assetProp('d_trunk_medium_A', 0.82, { ownMaterials: true });
   if (model) {
     // single-mesh trunk: no lid to swing, the renderer dims it once looted
@@ -257,13 +274,22 @@ const DECOR_MODELS: Partial<Record<DecorKind, [ModelKey, number][]>> = {
     ['d_rubble_half', 0.2],
     ['d_rubble_large', 0.13],
   ],
-  bones: [['d_sword_shield_broken', 0.45]],
+  bones: [
+    ['d_sword_shield_broken', 0.45],
+    ['h_ribcage', 0.6],
+    ['h_bone_C', 0.6],
+  ],
+  rock: [
+    ['x_rock_single_A', 3.2],
+    ['x_rock_single_C', 2.8],
+    ['x_rock_single_D', 3.2],
+  ],
 };
 
 export function makeDecor(kind: DecorKind, themeKey: string): THREE.Group {
   const opts = DECOR_MODELS[kind];
-  // bones stay mostly procedural; now and then a broken sword & shield instead
-  if (opts && (kind !== 'bones' || Math.random() < 0.3)) {
+  // bones are a mix of procedural scatter and CC0 pieces
+  if (opts && (kind !== 'bones' || Math.random() < 0.6)) {
     const [key, sc] = pickKey(opts);
     const model = assetProp(key, sc);
     if (model) return model;

@@ -37,7 +37,8 @@ export function stepToward(g: Game, a: Actor, target: P2, speed: number, dt: num
   const map = g.level.map;
   a.pathAge += dt;
   let waypoint: P2 = target;
-  const direct = d < 2.5 || map.los(a.pos, target, a.radius * 0.7);
+  // steer straight only with a clear line: furniture can sit between nearby actors
+  const direct = map.los(a.pos, target, a.radius * 0.7);
   if (!direct) {
     const needRepath =
       !a.path || a.path.length === 0 || a.pathAge > 0.6 || !a.pathTarget || dist(a.pathTarget, target) > 1.2;

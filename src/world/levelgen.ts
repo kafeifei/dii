@@ -1,5 +1,23 @@
 import { RNG, type P2 } from '../core/math';
-import { TileMap, T_FLOOR, T_VOID, T_WALL } from './tilemap';
+import { dressRooms, Furnisher, type Prop, type WallDecor } from './furnish';
+import { TileMap, T_FLOOR, T_PROP, T_VOID, T_WALL } from './tilemap';
+
+export type { Prop, WallDecor } from './furnish';
+
+/** decorative townsfolk (not interactive) */
+export interface Npc {
+  model: string;
+  x: number;
+  z: number;
+  rot: number;
+  name: string;
+}
+
+export interface House extends Room {
+  /** CC0 building model drawn over the solid block */
+  model?: string;
+  rot?: number;
+}
 
 export interface Room {
   x: number;
@@ -92,7 +110,11 @@ export interface Layout {
   campfire?: P2;
   bossRoom?: Room;
   /** solid buildings (town only); their tiles are walls but render as houses */
-  houses?: Room[];
+  houses?: House[];
+  /** furniture and other placed models */
+  props: Prop[];
+  wallDecor: WallDecor[];
+  npcs?: Npc[];
 }
 
 function roomCenter(r: Room): P2 {
@@ -315,7 +337,7 @@ export function generateDungeon(depth: number, seed: number): Layout {
     theme.key === 'ice' ? ['crystal', 'bones', 'rock', 'skullpile'] :
     ['stalagmite', 'skullpile', 'bones', 'rock'];
   for (const r of rooms) {
-    const n = rng.int(1, 4);
+    const n = rng.int(0, 2);
     for (let k = 0; k < n; k++) {
       const x = rng.range(r.x + 0.8, r.x + r.w - 0.8);
       const z = rng.range(r.y + 0.8, r.y + r.h - 0.8);
@@ -344,8 +366,16 @@ export function generateDungeon(depth: number, seed: number): Layout {
   const spawnRooms = rooms.filter((r) => r !== startRoom);
   const bossRoom = depth % 4 === 0 ? stairsRoom : undefined;
 
+  // furniture: themed room layouts (solid pieces become T_PROP, level stays connected)
+  const furn = new Furnisher(map, rng, start, [start, stairs, waypoint]);
+  for (const p of [...chests, ...barrels]) furn.reserveAround(p, 1);
+  for (const d of decor) furn.reserveAround(d, 0);
+  dressRooms(furn, map, rng, theme, rooms, cave, { sparse: new Set(bossRoom ? [startRoom, bossRoom] : [startRoom]), torches });
+  decor.push(...furn.decor);
+
   return {
     map, theme, depth, start, stairs, waypoint, rooms, spawnRooms, torches, decor, chests, barrels, pillars, bossRoom,
+    props: furn.props, wallDecor: furn.wall,
   };
 }
 
@@ -355,11 +385,12 @@ export function generateTown(): Layout {
   const size = 46;
   const map = new TileMap(size, size);
   carveRect(map, 3, 3, size - 6, size - 6);
-  // houses (solid blocks)
-  const houses: Room[] = [
-    { x: 7, y: 7, w: 6, h: 4 },
-    { x: 31, y: 8, w: 5, h: 5 },
-    { x: 8, y: 31, w: 5, h: 6 },
+  // buildings (solid blocks; drawn with CC0 models, procedural cottages as fallback)
+  const houses: House[] = [
+    { x: 6, y: 6, w: 5, h: 6, model: 'x_tavern', rot: 0 },
+    { x: 31, y: 6, w: 4, h: 4, model: 'x_home_A', rot: 0 },
+    { x: 6, y: 31, w: 4, h: 5, model: 'x_home_B', rot: Math.PI / 2 },
+    { x: 35, y: 15, w: 6, h: 5, model: 'x_blacksmith', rot: -Math.PI / 2 },
   ];
   for (const h of houses) for (let y = h.y; y < h.y + h.h; y++) for (let x = h.x; x < h.x + h.w; x++) map.set(x, y, T_WALL);
   buildWalls(map);
@@ -370,24 +401,69 @@ export function generateTown(): Layout {
   const waypoint = { x: 26, z: 28 };
   const stairs = { x: 38.5, z: 38.5 };
   const decor: Decor[] = [{ kind: 'campfire', x: campfire.x, z: campfire.z, rot: 0, scale: 1 }];
-  decor.push({ kind: 'tent', x: 16, z: 18, rot: 0.6, scale: 1 });
-  decor.push({ kind: 'tent', x: 30, z: 16, rot: -0.4, scale: 1.1 });
-  decor.push({ kind: 'crate', x: 20.5, z: 19.5, rot: 0.2, scale: 1 });
-  decor.push({ kind: 'crate', x: 21.3, z: 19.2, rot: 0.9, scale: 0.8 });
-  decor.push({ kind: 'banner', x: 36.5, z: 36.5, rot: 0, scale: 1 });
-  for (let k = 0; k < 30; k++) {
+  decor.push({ kind: 'tent', x: 15.5, z: 16.5, rot: 0.6, scale: 1 });
+  decor.push({ kind: 'tent', x: 28.5, z: 14.5, rot: -0.4, scale: 1.1 });
+
+  const furn = new Furnisher(map, rng, start, [start, waypoint, stairs, vendor, stash, campfire]);
+  // supplies by the vendor and the stash
+  furn.place('d_crates_stacked', 20, 18, 0);
+  furn.place('d_barrel_small', 21, 18, 1);
+  furn.place('d_keg', 17, 19, 1);
+  furn.place('d_barrel_large_decorated', 29, 19, 0);
+  furn.place('d_box_large', 29, 21, 2);
+  furn.place('x_well', 15, 26, 0);
+  // lantern posts along the paths
+  for (const [x, y] of [
+    [19, 25],
+    [28, 25],
+    [23, 31],
+    [31, 23],
+    [13, 22],
+    [34, 31],
+  ]) furn.place('h_post_lantern', x, y, rng.int(0, 3));
+
+  // graveyard in the south-east, by the way down; the crypt marks the dungeon entrance
+  furn.place('h_crypt', 37, 31, 0);
+  for (let x = 28; x <= 34; x += 2) furn.place(x === 30 ? 'h_fence_broken' : 'h_fence', x, 33, 0);
+  for (let y = 35; y <= 40; y += 2) if (y !== 37) furn.place('h_fence', 27, y, 1);
+  furn.place('h_fence_pillar', 27, 33, 0);
+  furn.place('h_arch_gate', 27, 37, 1);
+  const graves = ['h_grave_A', 'h_grave_B', 'h_gravestone', 'h_gravemarker_A', 'h_gravemarker_B', 'h_grave_A_destroyed'];
+  for (let y = 35; y <= 40; y += 2) for (let x = 29; x <= 34; x += 2) if (rng.chance(0.8)) furn.place(rng.pick(graves), x, y, 0);
+  furn.place('h_tree_dead_large', 35, 35, 1);
+  furn.place('h_tree_dead_medium', 29, 40, 2);
+  furn.scatter('h_lantern_standing', 33.5, 36.5);
+  furn.scatter('h_skull_candle', 31.5, 38.6);
+
+  // woods along the palisade
+  const trees = ['x_tree_single_A', 'x_tree_single_B', 'x_tree_single_A', 'h_tree_pine_orange_medium', 'h_tree_pine_yellow_large', 'h_tree_dead_small'];
+  const rocks = ['x_rock_single_A', 'x_rock_single_C', 'x_rock_single_E'];
+  for (let k = 0; k < 70; k++) {
     const edge = rng.int(0, 3);
-    const t = rng.range(5, size - 5);
-    const off = rng.range(4, 6.5);
-    const x = edge === 0 ? t : edge === 1 ? t : edge === 2 ? off : size - off;
-    const z = edge === 0 ? off : edge === 1 ? size - off : t;
-    if (!map.walkableAt(x, z)) continue;
-    if (Math.hypot(x - stairs.x, z - stairs.z) < 4) continue;
-    decor.push({ kind: rng.chance(0.75) ? 'tree' : 'rock', x, z, rot: rng.range(0, 6.28), scale: rng.range(0.8, 1.4) });
+    const t = rng.int(4, size - 6);
+    const off = rng.int(3, 6);
+    const x = edge === 0 ? t : edge === 1 ? t : edge === 2 ? off : size - 1 - off;
+    const y = edge === 0 ? off : edge === 1 ? size - 1 - off : t;
+    furn.place(rng.chance(0.82) ? rng.pick(trees) : rng.pick(rocks), x, y, rng.int(0, 3), 1.2);
   }
+
+  // townsfolk
+  const npcs: Npc[] = [
+    { model: 'barbarian', x: 25.5, z: 21.5, rot: 0, name: '流浪佣兵' },
+    { model: 'rogue', x: 20.5, z: 24.5, rot: 0, name: '女游侠' },
+    { model: 'rogue_hooded', x: 35.5, z: 34.5, rot: 0, name: '墓园守卫' },
+  ];
+  for (const n of npcs) {
+    // face the campfire (the graveyard guard watches the crypt)
+    const tx = n.model === 'rogue_hooded' ? stairs.x : campfire.x;
+    const tz = n.model === 'rogue_hooded' ? stairs.z : campfire.z;
+    n.rot = Math.atan2(tx - n.x, tz - n.z);
+    if (map.get(Math.floor(n.x), Math.floor(n.z)) === T_FLOOR) map.set(Math.floor(n.x), Math.floor(n.z), T_PROP);
+  }
+
   const torches: Torch[] = [];
   return {
     map, theme, depth: 0, start, stairs, waypoint, rooms: [], spawnRooms: [], torches, decor, chests: [], barrels: [],
-    pillars: new Set(), vendor, stash, campfire, houses,
+    pillars: new Set(), vendor, stash, campfire, houses, props: furn.props, wallDecor: [], npcs,
   };
 }

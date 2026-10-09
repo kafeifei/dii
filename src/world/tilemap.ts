@@ -3,6 +3,8 @@ import type { P2 } from '../core/math';
 export const T_VOID = 0;
 export const T_FLOOR = 1;
 export const T_WALL = 2;
+/** floor occupied by solid furniture: drawn as floor, blocks movement */
+export const T_PROP = 3;
 
 export class TileMap {
   readonly tiles: Uint8Array;

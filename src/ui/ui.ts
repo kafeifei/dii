@@ -12,7 +12,7 @@ import { createItem, findRuneword, applyRuneword } from '../items/gen';
 import type { Grid } from '../items/grid';
 import { baseOf, buyPrice, canSocket, itemColor, sellPrice, tooltip, type Item, type TooltipLine } from '../items/item';
 import type { Renderer } from '../render/renderer';
-import { T_FLOOR, T_WALL } from '../world/tilemap';
+import { T_FLOOR, T_PROP, T_WALL } from '../world/tilemap';
 import { CELL, itemIcon, skillIcon } from './icons';
 
 type LeftPanel = 'char' | 'stash' | 'shop' | 'waypoint' | null;
@@ -1332,8 +1332,8 @@ export class UI implements GameHooks {
         const i = y * map.w + x;
         if (!map.explored[i]) continue;
         const t = map.tiles[i];
-        if (t === T_FLOOR) {
-          ctx.fillStyle = 'rgba(120,110,90,0.28)';
+        if (t === T_FLOOR || t === T_PROP) {
+          ctx.fillStyle = t === T_PROP ? 'rgba(150,130,100,0.45)' : 'rgba(120,110,90,0.28)';
           ctx.fillRect(ox + x * scale, oy + y * scale, scale, scale);
         } else if (t === T_WALL) {
           ctx.fillStyle = 'rgba(200,180,140,0.85)';

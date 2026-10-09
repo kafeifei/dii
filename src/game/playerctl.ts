@@ -358,14 +358,16 @@ export function updatePlayer(g: Game, p: Player, dt: number) {
         else if (!it.hold) p.intent = null;
         break;
       }
-      if (dd <= reachTo(p, t)) {
+      // no swinging across furniture: in reach but blocked means walk around it
+      const clear = dd < 0.9 || g.level.map.los(p.pos, t.pos);
+      if (dd <= reachTo(p, t) && clear) {
         face(p, t.pos, dt, 20);
         // charge needs a run-up; adjacent targets just get a normal swing
         const skill = it.skill === 'charge' ? 'attack' : it.skill;
         const ok = startAttack(g, p, skill === 'attack' || p.skillLevel(skill) > 0 ? skill : 'attack', t, t.pos);
         if (!ok || !it.hold) p.intent = null;
       } else {
-        stepToward(g, p, t.pos, speed, dt, reachTo(p, t) * 0.95, 6000);
+        stepToward(g, p, t.pos, speed, dt, clear ? reachTo(p, t) * 0.95 : 0.3, 6000);
         if (p.state !== 'move') p.setState('move');
       }
       break;

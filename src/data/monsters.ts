@@ -1,4 +1,6 @@
-export type MonsterModel = 'zombie' | 'skeleton' | 'skelarcher' | 'imp' | 'shaman' | 'ghoul' | 'wraith' | 'spider' | 'demon' | 'butcher' | 'lich' | 'overlord';
+export type MonsterModel =
+  | 'zombie' | 'skeleton' | 'skelarcher' | 'imp' | 'shaman' | 'ghoul' | 'wraith' | 'spider' | 'demon' | 'butcher' | 'lich' | 'overlord'
+  | 'skullfly' | 'skelmage' | 'bat' | 'mushroom' | 'yeti' | 'dragon';
 export type Blood = 'red' | 'bone' | 'green' | 'ghost' | 'black' | 'fire';
 export type Elem = 'phys' | 'fire' | 'cold' | 'light' | 'poison' | 'magic';
 export type ProjectileKind = 'arrow' | 'firebolt' | 'iceshard' | 'poisonspit' | 'lightning' | 'fireball';
@@ -88,6 +90,36 @@ export const MONSTERS: Record<string, MonsterDef> = {
     flee: true, res: { fire: 60 }, color: '#d8501a', color2: '#2a0a04',
   },
   // ── bosses ──
+  skullfly: {
+    id: 'skullfly', name: '飞颅', model: 'skullfly', life: 6, dmg: [1, 4], def: 6, ar: 30, speed: 3.6, attackSpeed: 1.3, range: 1.0,
+    radius: 0.32, scale: 0.8, xp: 11, ai: 'melee', blood: 'bone', minDepth: 2, maxDepth: 11, weight: 5, pack: [3, 5], undead: true,
+    res: { poison: 100, cold: 30 }, color: '#d8d0bc', color2: '#3a2a4a',
+  },
+  skelmage: {
+    id: 'skelmage', name: '骷髅法师', model: 'skelmage', life: 9, dmg: [2, 5], def: 5, ar: 30, speed: 2.3, attackSpeed: 0.6, range: 7.5,
+    radius: 0.36, scale: 1.0, xp: 17, ai: 'ranged', projectile: 'iceshard', projectileElem: 'cold', blood: 'bone', minDepth: 3, maxDepth: 12,
+    weight: 5, pack: [2, 3], undead: true, res: { poison: 50, cold: 50 }, color: '#c8c0b0', color2: '#3a4a6a',
+  },
+  bat: {
+    id: 'bat', name: '洞穴巨蝠', model: 'bat', life: 9, dmg: [2, 3], def: 9, ar: 38, speed: 4.0, attackSpeed: 1.4, range: 1.1,
+    radius: 0.38, scale: 0.9, xp: 13, ai: 'melee', blood: 'red', minDepth: 5, maxDepth: 10, weight: 7, pack: [3, 6],
+    color: '#6a7a30', color2: '#3a1a2a',
+  },
+  mushroom: {
+    id: 'mushroom', name: '孢子魔', model: 'mushroom', life: 18, dmg: [3, 6], def: 10, ar: 38, speed: 1.9, attackSpeed: 0.7, range: 6.5,
+    radius: 0.45, scale: 1.0, xp: 22, ai: 'ranged', projectile: 'poisonspit', projectileElem: 'poison', blood: 'green', minDepth: 5, maxDepth: 11,
+    weight: 5, pack: [2, 4], res: { poison: 75 }, color: '#3a6aa0', color2: '#c8b090',
+  },
+  yeti: {
+    id: 'yeti', name: '霜原雪人', model: 'yeti', life: 28, dmg: [4, 8], def: 14, ar: 48, speed: 2.2, attackSpeed: 0.8, range: 1.4,
+    radius: 0.6, scale: 1.4, xp: 32, ai: 'melee', meleeElem: 'cold', blood: 'red', minDepth: 9, maxDepth: 14, weight: 7, pack: [2, 3],
+    res: { cold: 75 }, color: '#c8d8e8', color2: '#4a7a9a',
+  },
+  dragon: {
+    id: 'dragon', name: '炼狱幼龙', model: 'dragon', life: 22, dmg: [4, 8], def: 15, ar: 52, speed: 2.8, attackSpeed: 0.8, range: 7,
+    radius: 0.55, scale: 1.3, xp: 30, ai: 'ranged', projectile: 'firebolt', projectileElem: 'fire', blood: 'fire', minDepth: 13, maxDepth: 99,
+    weight: 6, pack: [2, 3], res: { fire: 75 }, color: '#8a4a20', color2: '#ff8030',
+  },
   butcher: {
     id: 'butcher', name: '血屠夫', model: 'butcher', life: 60, dmg: [5, 11], def: 20, ar: 90, speed: 2.9, attackSpeed: 1.0, range: 1.7,
     radius: 0.75, scale: 1.6, xp: 400, ai: 'boss', blood: 'red', minDepth: 99, maxDepth: 99, weight: 0, pack: [1, 1], boss: true,

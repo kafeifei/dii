@@ -94,6 +94,25 @@ export function monsterSpec(m: Monster): ModelSpec {
       });
     case 'demon':
       return ranked({ model: 'q_demon_winged', rig: 'quat', height: 1.45 * sc, float: 0.3, emissive: '#2a0800', clips: quatClips(1.45 * sc, ['Punch', 'Headbutt']) });
+    case 'skullfly':
+      return ranked({ model: 'q_ghost_skull', rig: 'quat', height: 1.45 * sc, float: 0.5, clips: quatClips(1.2 * sc, ['Headbutt', 'Punch']) });
+    case 'skelmage':
+      return ranked({
+        model: 'skeleton_mage',
+        rig: 'kaykit',
+        height: 1.7 * sc,
+        attach: [{ model: 'skeleton_staff', hand: 'r', glow: '#80c0ff' }],
+        clips: { idle: ['Idle'], move: KK_MOVE, attack: ['Spellcast_Shoot'], hit: KK_HIT, death: ['Death_C_Skeletons'], revive: 'Death_C_Skeletons_Resurrect' },
+      });
+    case 'bat':
+      // wide wings: size by wingspan
+      return ranked({ model: m.rank === 'normal' || m.rank === 'minion' ? 'q_goleling' : 'q_goleling_evolved', rig: 'quat', height: 2.5 * sc, fitWidth: true, float: 0.7, clips: quatClips(1.4 * sc, ['Headbutt', 'Punch']) });
+    case 'mushroom':
+      return ranked({ model: 'q_mushroom_king', rig: 'quat', height: 1.75 * sc, clips: quatClips(1.75 * sc, ['Weapon', 'Punch']) });
+    case 'yeti':
+      return ranked({ model: 'q_yeti_b', rig: 'quat', height: 1.75 * sc, clips: quatClips(1.75 * sc, ['Punch', 'Weapon']) });
+    case 'dragon':
+      return ranked({ model: 'q_dragon_evolved', rig: 'quat', height: 2.2 * sc, fitWidth: true, float: 0.5, emissive: '#200800', clips: quatClips(1.6 * sc, ['Headbutt', 'Punch']) });
     case 'butcher':
       return {
         model: 'barbarian',
@@ -221,4 +240,34 @@ export function vendorSpec(): ModelSpec {
     show: ['Mage_Hat', 'Mage_Cape', 'Spellbook'],
     clips: { idle: ['Idle'], move: KK_MOVE, attack: [], death: ['Death_A'] },
   };
+}
+
+/** decorative townsfolk */
+export function npcSpec(model: string): ModelSpec {
+  switch (model) {
+    case 'barbarian':
+      return {
+        model: 'barbarian',
+        rig: 'kaykit',
+        height: 1.85,
+        show: ['Barbarian_Hat', 'Barbarian_Cape', '2H_Axe'],
+        clips: { idle: ['2H_Melee_Idle'], move: KK_MOVE, attack: [], death: ['Death_A'] },
+      };
+    case 'rogue_hooded':
+      return {
+        model: 'rogue_hooded',
+        rig: 'kaykit',
+        height: 1.75,
+        show: ['Rogue_Cape', '2H_Crossbow'],
+        clips: { idle: ['Idle_Combat', 'Idle'], move: KK_MOVE, attack: [], death: ['Death_A'] },
+      };
+    default:
+      return {
+        model: 'rogue',
+        rig: 'kaykit',
+        height: 1.75,
+        show: ['Rogue_Cape', '1H_Crossbow'],
+        clips: { idle: ['Idle_B', 'Idle'], move: KK_MOVE, attack: [], death: ['Death_A'] },
+      };
+  }
 }

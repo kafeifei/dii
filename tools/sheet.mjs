@@ -9,6 +9,8 @@ export default async function (page, shot, log) {
     game.enterLevel(0, 'stairs');
     window.__M = (await import('/src/data/monsters.ts')).MONSTERS;
     game.level.monsters.length = 0;
+    // townsfolk would stand in the shot
+    for (const n of renderer.npcViews ?? []) n.rig.root.visible = false;
     renderer.zoomTarget = 4.5; renderer.zoom = 4.5; renderer.updateFrustum();
   });
   const cells = [];

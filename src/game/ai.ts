@@ -178,12 +178,13 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
     case 'melee':
     case 'boss': {
       if (m.def.ai === 'boss' && bossSpecial(g, m, dP)) return;
-      if (dP <= meleeReach) {
+      // no swinging across furniture: within reach but blocked means walk around
+      if (dP <= meleeReach && m.hasLos) {
         face(m, p.pos, dt, 10);
         if (m.attackCd <= 0) m.setState('attack', 1 / (m.attackSpeed * slow));
         else if (m.state !== 'idle') m.setState('idle');
       } else {
-        stepToward(g, m, p.pos, m.speed * slow, dt, meleeReach * 0.9);
+        stepToward(g, m, p.pos, m.speed * slow, dt, m.hasLos ? meleeReach * 0.9 : 0.3);
         if (m.state !== 'move') m.setState('move');
       }
       break;
