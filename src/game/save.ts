@@ -1,6 +1,8 @@
 import { CLASSES, type PlayerClass } from '../data/classes';
-import { ITEM_BASES } from '../data/items';
+import { randInt } from '../core/math';
+import { categoryOf, ITEM_BASES, type Category } from '../data/items';
 import { RUNEWORD_BY_ID } from '../data/legendary';
+import type { StatKey } from '../data/stats';
 import type { Item } from '../items/item';
 import type { Grid, Placed } from '../items/grid';
 import { Player, xpForLevel } from './player';
@@ -61,7 +63,8 @@ export function wasInGame(): boolean {
 }
 
 interface SaveData {
-  v: 1;
+  /** 2: made with the Diablo II items; 1 (or none): before them, or by their first release */
+  v: 1 | 2;
   name: string;
   /** missing in saves from before classes existed: those are paladins */
   cls?: PlayerClass;
@@ -77,6 +80,8 @@ interface SaveData {
   /** the Horadric Cube's contents, and whether it has been found */
   cube?: Placed[];
   cubeFound?: boolean;
+  /** items that fit nowhere, waiting by the camp stash */
+  unplaced?: Item[];
   belt: Item[][];
   gold: number;
   stashGold: number;
@@ -94,7 +99,7 @@ interface SaveData {
 export function writeSave(p: Player, depth: number) {
   const KEY = keyFor(slot);
   const data: SaveData = {
-    v: 1,
+    v: 2,
     name: p.name,
     cls: p.cls,
     level: p.level,
@@ -108,6 +113,7 @@ export function writeSave(p: Player, depth: number) {
     stash: p.stash.items,
     cube: p.cube.items,
     cubeFound: p.cubeFound,
+    unplaced: p.unplaced,
     belt: p.belt,
     gold: p.gold,
     stashGold: p.stashGold,
@@ -135,9 +141,47 @@ const OLD_RUNES: Record<string, string> = {
   r_dawn: 'r01', r_ember: 'r08', r_frost: 'r10', r_thunder: 'r09', r_venom: 'r07', r_stone: 'r05',
   r_wind: 'r13', r_blood: 'r11', r_shadow: 'r06', r_star: 'r12', r_oath: 'r17', r_abyss: 'r22',
 };
+/** old bases that need more strength / dexterity as D2 bases: what they needed before */
+const OLD_REQ: Record<string, [number, number]> = { longsword: [40, 20], greatsword: [75, 0], greataxe: [84, 0], runeblade: [104, 72] };
+type ModRange = [StatKey, number, number];
+/** the old invented runewords: items made from them stay as they are, but can't be made any more */
+const OLD_RUNEWORDS: { id: string; name: string; runes: string[]; cats: Category[]; reqLvl: number; mods: ModRange[] }[] = [
+  { id: 'rw_emberoath', name: '余烬誓言', runes: ['r_ember', 'r_dawn'], cats: ['weapon'], reqLvl: 6,
+    mods: [['dmgPct', 60, 80], ['fireMin', 8, 8], ['fireMax', 18, 18], ['ias', 20, 20], ['lifeSteal', 3, 3]] },
+  { id: 'rw_longnight', name: '长夜', runes: ['r_frost', 'r_shadow', 'r_dawn'], cats: ['body'], reqLvl: 22,
+    mods: [['defPct', 80, 100], ['resCold', 30, 30], ['frw', 20, 20], ['fhr', 30, 30], ['life', 40, 40]] },
+  { id: 'rw_thunderwrath', name: '雷霆之怒', runes: ['r_thunder', 'r_blood', 'r_thunder'], cats: ['weapon'], reqLvl: 18,
+    mods: [['dmgPct', 120, 160], ['lightMin', 5, 5], ['lightMax', 80, 80], ['ias', 30, 30], ['crit', 20, 20]] },
+  { id: 'rw_ironheart', name: '钢铁之心', runes: ['r_stone', 'r_oath'], cats: ['shield', 'body'], reqLvl: 30,
+    mods: [['defPct', 120, 150], ['resAll', 25, 25], ['block', 20, 20], ['skillsAll', 1, 1], ['vit', 15, 15]] },
+  { id: 'rw_starlight', name: '星辉', runes: ['r_star', 'r_dawn'], cats: ['helm'], reqLvl: 26,
+    mods: [['defPct', 60, 80], ['skillsAll', 1, 1], ['mf', 30, 40], ['lightRadius', 3, 3], ['mana', 40, 40]] },
+  { id: 'rw_windrunner', name: '逐风', runes: ['r_wind', 'r_venom'], cats: ['weapon'], reqLvl: 16,
+    mods: [['dmgPct', 80, 110], ['ias', 40, 40], ['poisonDmg', 120, 120], ['frw', 25, 25]] },
+  { id: 'rw_abyssking', name: '冥王', runes: ['r_abyss', 'r_blood', 'r_oath', 'r_shadow'], cats: ['weapon'], reqLvl: 38,
+    mods: [['dmgPct', 250, 320], ['skillsAll', 2, 2], ['pierceRes', 20, 25], ['lifeSteal', 8, 8], ['crit', 30, 30], ['ias', 30, 30]] },
+];
+const OLD_RUNEWORD_IDS = new Set(OLD_RUNEWORDS.map((r) => r.id));
+
+interface MigrateOpts {
+  /** the save is from before the D2 items: its items keep their old requirements */
+  legacy: boolean;
+  /**
+   * the first D2 release already loaded it and turned the old runewords back into plain items with
+   * their runes in: make them runewords again
+   */
+  damaged: boolean;
+}
+
+/** an old runeword the first D2 release took apart: its (now D2) runes, in a base it fits */
+function strippedRuneword(it: Item) {
+  if ((it.rarity !== 'normal' && it.rarity !== 'superior') || !it.sockets || it.socketed.length !== it.sockets) return undefined;
+  const cat = categoryOf(ITEM_BASES[it.baseId].type);
+  return OLD_RUNEWORDS.find((rw) => cat && rw.cats.includes(cat) && rw.runes.length === it.socketed.length && rw.runes.every((r, i) => OLD_RUNES[r] === it.socketed[i]));
+}
 
 /** bring an item from an older save up to date; false when it can't be */
-function migrate(it: Item | undefined | null): it is Item {
+function migrate(it: Item | undefined | null, opts: MigrateOpts): it is Item {
   if (!it) return false;
   const was = it.baseId;
   it.baseId = OLD_BASES[it.baseId] ?? OLD_RUNES[it.baseId] ?? it.baseId;
@@ -147,15 +191,32 @@ function migrate(it: Item | undefined | null): it is Item {
     it.name = `${it.sockets > 0 ? '有孔的' : ''}${it.rarity === 'superior' ? '优质的' : ''}${ITEM_BASES[it.baseId].name}`;
   }
   it.socketed = (it.socketed ?? []).map((r) => OLD_RUNES[r] ?? r).filter((r) => !!ITEM_BASES[r]);
-  // a runeword that no longer exists goes back to the socketed white item it was made on
-  if (it.runewordId && !RUNEWORD_BY_ID[it.runewordId]) {
+  const b = ITEM_BASES[it.baseId];
+  if (b.code && (it.rarity === 'normal' || it.rarity === 'superior')) it.reqLvl = Math.max(b.reqLvl ?? 1, 1);
+  const rw = opts.damaged ? strippedRuneword(it) : undefined;
+  if (rw) {
+    it.rarity = 'runeword';
+    it.runewordId = rw.id;
+    it.name = rw.name;
+    it.mods = it.mods.concat(rw.mods.map(([stat, lo, hi]) => ({ stat, value: randInt(lo, hi) })));
+    it.reqLvl = Math.max(it.reqLvl, rw.reqLvl);
+  }
+  // a runeword that exists in neither list goes back to the socketed white item it was made on
+  if (it.runewordId && !RUNEWORD_BY_ID[it.runewordId] && !OLD_RUNEWORD_IDS.has(it.runewordId)) {
     delete it.runewordId;
     it.rarity = 'normal';
     it.mods = [];
-    it.name = ITEM_BASES[it.baseId].name;
+    it.name = b.name;
   }
-  const b = ITEM_BASES[it.baseId];
-  if (b.code && (it.rarity === 'normal' || it.rarity === 'superior')) it.reqLvl = Math.max(b.reqLvl ?? 1, 1);
+  if (opts.legacy && !it.legacy && categoryOf(b.type)) {
+    const old = OLD_REQ[was] ?? OLD_REQ[it.baseId];
+    it.legacy = {
+      lvl: it.reqLvl,
+      str: Math.min(b.reqStr ?? 0, old?.[0] ?? Infinity),
+      dex: Math.min(b.reqDex ?? 0, old?.[1] ?? Infinity),
+      runes: it.socketed.length,
+    };
+  }
   return true;
 }
 
@@ -171,18 +232,14 @@ function migrateXp(level: number, xp: number): number {
 }
 
 /** put saved items back where they were, or anywhere they fit if their size changed */
-function restore(grid: Grid, placed: Placed[] | undefined, overflow: Item[]) {
+function restore(grid: Grid, placed: Placed[] | undefined, overflow: Item[], opts: MigrateOpts) {
   const later: Item[] = [];
   for (const pl of placed ?? []) {
-    if (!migrate(pl.item)) continue;
+    if (!migrate(pl.item, opts)) continue;
     if (grid.canPlace(pl.item, pl.x, pl.y)) grid.place(pl.item, pl.x, pl.y);
     else later.push(pl.item);
   }
   for (const it of later) if (!grid.add(it)) overflow.push(it);
-}
-
-function validItem(it: Item | undefined | null): it is Item {
-  return migrate(it);
 }
 
 export interface SaveSummary {
@@ -234,6 +291,8 @@ export function loadSave(): { player: Player; depth: number } | null {
   } catch {
     return null;
   }
+  const opts: MigrateOpts = { legacy: (d.v ?? 1) < 2, damaged: (d.v ?? 1) < 2 && 'cube' in d };
+  const valid = (it: Item | undefined | null): it is Item => migrate(it, opts);
   const p = new Player({ x: 0, z: 0 });
   p.name = d.name;
   p.cls = d.cls && CLASSES[d.cls] ? d.cls : 'paladin';
@@ -244,15 +303,17 @@ export function loadSave(): { player: Player; depth: number } | null {
   p.skillPoints = d.skillPoints;
   p.skills = d.skills ?? {};
   p.equipment = {};
-  for (const [slot, it] of Object.entries(d.equipment ?? {})) if (validItem(it)) p.equipment[slot as keyof Player['equipment']] = it;
+  for (const [slot, it] of Object.entries(d.equipment ?? {})) if (valid(it)) p.equipment[slot as keyof Player['equipment']] = it;
   const overflow: Item[] = [];
-  restore(p.inventory, d.inventory, overflow);
-  restore(p.stash, d.stash, overflow);
-  restore(p.cube, d.cube, overflow);
-  // anything that no longer fits where it was goes to the stash, then the inventory
-  for (const it of overflow) if (!p.stash.add(it)) p.inventory.add(it);
+  restore(p.inventory, d.inventory, overflow, opts);
+  restore(p.stash, d.stash, overflow, opts);
+  restore(p.cube, d.cube, overflow, opts);
+  // anything that no longer fits where it was goes to the stash, then the inventory, and failing
+  // both waits on the ground by the camp stash (never thrown away)
+  p.unplaced = (d.unplaced ?? []).filter(valid);
+  for (const it of overflow) if (!p.stash.add(it) && !p.inventory.add(it)) p.unplaced.push(it);
   p.cubeFound = d.cubeFound ?? false;
-  p.belt = (d.belt ?? [[], [], [], []]).map((col) => col.filter(validItem));
+  p.belt = (d.belt ?? [[], [], [], []]).map((col) => col.filter(valid));
   while (p.belt.length < 4) p.belt.push([]);
   p.gold = d.gold ?? 0;
   p.stashGold = d.stashGold ?? 0;

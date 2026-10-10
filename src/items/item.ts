@@ -34,6 +34,11 @@ export interface Item {
   reqLvl: number;
   /** charges left, by skill, for "level N skill (X/Y charges)" */
   charges?: Record<string, number>;
+  /**
+   * An item from a save made before the Diablo II items keeps the requirements it had: the level
+   * (its D2 runes don't raise it, only runes socketed since), and its old base's strength / dexterity
+   */
+  legacy?: { lvl: number; str: number; dex: number; runes: number };
 }
 
 export const RARITY_COLOR: Record<Rarity, string> = {
@@ -138,8 +143,10 @@ export function globalItemStats(item: Item, clvl = 1): StatBag {
 
 /** the level an item needs: its own, raised by any rune or gem in it (D2) */
 export function itemReqLvl(item: Item): number {
-  let r = item.reqLvl;
-  for (const id of item.socketed) r = Math.max(r, SOCKETABLE_BY_ID[id]?.reqLvl ?? 1);
+  let r = item.legacy ? item.legacy.lvl : item.reqLvl;
+  item.socketed.forEach((id, i) => {
+    if (!item.legacy || i >= item.legacy.runes) r = Math.max(r, SOCKETABLE_BY_ID[id]?.reqLvl ?? 1);
+  });
   return r;
 }
 
@@ -147,7 +154,9 @@ export function itemReqLvl(item: Item): number {
 export function itemReqStats(item: Item): { str: number; dex: number } {
   const b = baseOf(item);
   const ease = 1 + (itemMods(item).ease ?? 0) / 100;
-  return { str: Math.floor((b.reqStr ?? 0) * ease), dex: Math.floor((b.reqDex ?? 0) * ease) };
+  const str = item.legacy ? item.legacy.str : (b.reqStr ?? 0);
+  const dex = item.legacy ? item.legacy.dex : (b.reqDex ?? 0);
+  return { str: Math.floor(str * ease), dex: Math.floor(dex * ease) };
 }
 
 export function itemTypeName(item: Item): string {
@@ -251,6 +260,7 @@ export function tooltip(item: Item, ctx?: ReqContext, priceLine?: string): Toolt
     lines.push({ text: item.name, color });
     lines.push({ text: `'${item.socketed.map((r) => RUNE_BY_ID[r]?.letter ?? '?').join('')}'`, color: RARITY_COLOR.unique });
     lines.push({ text: b.name, color: SOCKETED_COLOR });
+    if (!RUNEWORD_BY_ID[item.runewordId ?? '']) lines.push({ text: '旧版符文之语（已不能再制作）', small: true, color: '#8a8278' });
   } else if (item.rarity === 'unique' || item.rarity === 'set' || item.rarity === 'rare') {
     lines.push({ text: item.name, color });
     lines.push({ text: b.name, color });

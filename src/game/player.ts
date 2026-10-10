@@ -111,9 +111,12 @@ export class Player extends Actor {
   skills: Record<string, number> = {};
   equipment: Equipment = {};
   inventory = new Grid(10, 4);
-  stash = new Grid(10, 8);
+  /** Diablo II: Resurrected's personal stash */
+  stash = new Grid(10, 10);
   /** the Horadric Cube's own 3×4 space */
   cube = new Grid(3, 4);
+  /** items from an old save that fit nowhere: they wait on the ground by the camp stash */
+  unplaced: Item[] = [];
   /** has the cube turned up yet (it is found once) */
   cubeFound = false;
   /** belt[col] = stack of potions (index 0 is the bottom / next to use) */

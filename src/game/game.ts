@@ -173,11 +173,27 @@ export class Game {
       }
     } else {
       this.refreshShop();
+      this.layOutUnplaced(level);
     }
     this.sfx.ambience(depth === 0 ? 'town' : 'dungeon');
     this.hooks.levelChanged(level);
     this.hooks.message(level.name, '#d8c8a0', 3);
     this.save();
+  }
+
+  /** put the items that fit nowhere (old saves, bigger D2 items) on the ground around the stash */
+  private layOutUnplaced(level: Level) {
+    const p = this.player;
+    if (!p.unplaced.length) return;
+    const stash = level.objects.find((o) => o.kind === 'stash');
+    const at = stash ? stash.pos : level.layout.start;
+    p.unplaced.forEach((it, i) => {
+      const a = (i / p.unplaced.length) * Math.PI * 2;
+      const r = 1.6 + (i % 2) * 0.7;
+      const spot = level.map.nearestWalkable(at.x + Math.sin(a) * r, at.z + Math.cos(a) * r) ?? at;
+      level.ground.push(new GroundItem(spot, it, 0));
+    });
+    this.hooks.message(`${p.unplaced.length} 件物品背包和储物箱都放不下，放在了储物箱旁边`, '#c8a86a', 5);
   }
 
   refreshShop() {
@@ -727,6 +743,8 @@ export class Game {
     const item = gi.item!;
     if (this.beltInsert(item) || p.inventory.add(item)) {
       L.ground.splice(idx, 1);
+      const k = p.unplaced.indexOf(item);
+      if (k >= 0) p.unplaced.splice(k, 1);
       this.sfx.play('pickup');
       this.hooks.inventoryChanged();
     } else {
