@@ -298,8 +298,8 @@ export class UI implements GameHooks {
   private buildTitle() {
     const t = h('div', 'overlay open ui-block');
     t.innerHTML = `
-      <h1 class="title-logo">暗黑5</h1>
-      <div class="title-sub">暗 夜 深 渊</div>
+      <h1 class="title-logo">烬渊</h1>
+      <div class="title-sub">EMBER · ABYSS</div>
       <div class="title-cols">
         <div class="menu saves-col">
           <div class="menu-head">选择角色</div>
