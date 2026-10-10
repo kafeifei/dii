@@ -12,6 +12,8 @@ import { Effects } from './effects';
 import { assets } from './assets';
 import { monsterLook, playerLook, playerLookKey, vendorLook } from './looks';
 import { ModelRig, type ModelSpec } from './models';
+import { GRADES, Post } from './post';
+import { ambientMotes, applyLavaGlow, Mist } from './atmosphere';
 import {
   glowSprite, makeBarrel, makeBrazier, makeHouse, makeChest, makeDecor, makeGroundItem, makeHammer, makePortal, makeProjectile, makeStairs, makeTorch, makeTree, makeWaypoint, topCentroid,
 } from './props';
@@ -131,6 +133,21 @@ interface CharRig {
   dispose(): void;
 }
 
+/**
+ * Opaque lit meshes cast the hero light's shadows and everything lit receives them; glows, decals
+ * and other unlit or see-through things do neither.
+ */
+function castShadows(root: THREE.Object3D, cast = true) {
+  root.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh) return;
+    const mats = Array.isArray(m.material) ? m.material : [m.material];
+    const lit = mats.every((x) => !(x as THREE.MeshBasicMaterial).isMeshBasicMaterial && !x.transparent);
+    m.castShadow = cast && lit;
+    m.receiveShadow = lit;
+  });
+}
+
 /** CC0 model when the packs loaded, procedural rig otherwise */
 function makeCharRig(spec: () => ModelSpec, look: () => RigLook): CharRig {
   if (assets.ready && !assets.failed) {
@@ -158,6 +175,7 @@ export class Renderer implements Picker {
   readonly scene = new THREE.Scene();
   readonly camera: THREE.OrthographicCamera;
   fx: Effects;
+  private post: Post;
   zoom = 7.2;
   private zoomTarget = 7.2;
   private camTarget = new THREE.Vector3();
@@ -168,7 +186,16 @@ export class Renderer implements Picker {
   private occ: OccUniforms = { uPlayer: { value: new THREE.Vector3() }, uCamDir: { value: new THREE.Vector2(Math.sin(CAM_YAW), Math.cos(CAM_YAW)) } };
   private hemi = new THREE.HemisphereLight('#4a5070', '#100808', 0.4);
   private dir = new THREE.DirectionalLight('#8090c0', 0.3);
+  /** fill on the camera side of the hero, so the faces we see are lit */
   private playerLight = new THREE.PointLight('#ffd0a0', 30, 13, 1.4);
+  /**
+   * Right above the hero, the one light that casts shadows: whatever stands around throws its shadow
+   * outward, away from the hero. Not on the camera side, where a wall in front would shade the hero.
+   */
+  private heroLight = new THREE.PointLight('#ffd0a0', 30, 13, 1.4);
+  private shadows = true;
+  private mist: Mist | null = null;
+  private lavaTime = { value: 0 };
   private torchLights: THREE.PointLight[] = [];
   private fxLights: THREE.PointLight[] = [];
   private staticLights: { pos: THREE.Vector3; color: THREE.Color; intensity: number; flicker: number; distance: number }[] = [];
@@ -210,7 +237,24 @@ export class Renderer implements Picker {
     this.webgl.toneMapping = THREE.ACESFilmicToneMapping;
     this.webgl.toneMappingExposure = 1.15;
     this.camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 200);
-    this.scene.add(this.levelGroup, this.dynGroup, this.hemi, this.dir, this.dir.target, this.playerLight);
+    this.post = new Post(this.webgl, this.scene, this.camera, antialias);
+    this.webgl.shadowMap.enabled = true;
+    this.webgl.shadowMap.type = THREE.PCFShadowMap;
+    const hs = this.heroLight.shadow;
+    hs.mapSize.set(1024, 1024);
+    hs.camera.near = 0.2;
+    hs.bias = -0.004;
+    hs.normalBias = 0.02;
+    hs.radius = 3;
+    // moonlight over the camp
+    const ds = this.dir.shadow;
+    ds.mapSize.set(2048, 2048);
+    Object.assign(ds.camera, { left: -24, right: 24, top: 24, bottom: -24, near: 1, far: 60 });
+    ds.camera.updateProjectionMatrix();
+    ds.bias = -0.0008;
+    ds.normalBias = 0.03;
+    ds.radius = 2;
+    this.scene.add(this.levelGroup, this.dynGroup, this.hemi, this.dir, this.dir.target, this.playerLight, this.heroLight);
     this.setLights('mid');
     this.fx = new Effects(this.scene, textLayer, (v) => this.project(v));
     this.auraDecal = new THREE.Mesh(
@@ -226,6 +270,25 @@ export class Renderer implements Picker {
     this.scene.add(this.shieldGlow);
     this.resize();
     window.addEventListener('resize', () => this.resize());
+  }
+
+  /** bloom, tone mapping after it, and the theme's colour grade (the post effects setting) */
+  setPost(on: boolean) {
+    this.post.enabled = on;
+    if (this.mist) this.mist.group.visible = on;
+  }
+
+  /** the hero light's shadows, and the moon's in the camp (the shadows setting) */
+  setShadows(on: boolean) {
+    this.shadows = on;
+    this.applyShadows();
+  }
+
+  /** in the camp the moon throws the shadows; the hero's light there is faint */
+  private applyShadows() {
+    const town = this.level?.depth === 0;
+    this.heroLight.castShadow = this.shadows && !town;
+    this.dir.castShadow = this.shadows && town;
   }
 
   /** the pools of point lights (the lighting setting); the shaders recompile for the new count */
@@ -273,6 +336,7 @@ export class Renderer implements Picker {
     this.width = w;
     this.height = h;
     this.webgl.setSize(w, h, false);
+    this.post.setSize(w, h, this.webgl.getPixelRatio());
     this.canvas.style.width = `${w}px`;
     this.canvas.style.height = `${h}px`;
     this.updateFrustum();
@@ -333,13 +397,16 @@ export class Renderer implements Picker {
     const theme = L.theme;
     const map = L.map;
     this.scene.background = new THREE.Color(theme.bg);
+    this.post.setGrade(GRADES[theme.key] ?? GRADES.crypt);
     this.hemi.color.set(theme.ambient);
     this.hemi.groundColor.set('#0a0606');
     this.hemi.intensity = theme.ambientIntensity * 2.8;
     this.dir.color.set(level.depth === 0 ? '#8aa0d8' : theme.ambient);
     this.dir.intensity = level.depth === 0 ? 0.9 : 0.25;
-    this.playerLight.intensity = level.depth === 0 ? 16 : 42;
-    this.playerLight.distance = level.depth === 0 ? 10 : 13;
+    this.applyShadows();
+    // the hero's light, split between the shadow-casting light overhead and the camera-side fill
+    this.heroLight.intensity = level.depth === 0 ? 11 : 25;
+    this.playerLight.intensity = level.depth === 0 ? 7 : 15;
 
     // floor
     const floorTiles: [number, number][] = [];
@@ -359,6 +426,7 @@ export class Renderer implements Picker {
     }
     const floorMat = new THREE.MeshStandardMaterial({ map: tileTexture(`${theme.key}_floor`), roughness: 0.95, metalness: 0 });
     applyWorldUv(floorMat, 'floor', 4);
+    if (theme.key === 'hell') applyLavaGlow(floorMat, this.lavaTime);
     const floorGeo = new THREE.PlaneGeometry(1, 1);
     floorGeo.rotateX(-Math.PI / 2);
     const floor = new THREE.InstancedMesh(floorGeo, floorMat, floorTiles.length + pillarTiles.length);
@@ -437,6 +505,7 @@ export class Renderer implements Picker {
       rig.root.position.set(n.x, 0, n.z);
       rig.root.rotation.y = n.rot;
       this.scene.add(rig.root);
+      castShadows(rig.root);
       const shadow = this.makeShadow(0.4);
       shadow.position.set(n.x, 0.02, n.z);
       this.scene.add(shadow);
@@ -478,6 +547,13 @@ export class Renderer implements Picker {
       applyOcclusionFade(cloned, this.occ);
       cloned.needsUpdate = true;
     }
+    castShadows(this.levelGroup);
+    floor.castShadow = false;
+    // ground mist, part of the post effects
+    this.mist?.dispose();
+    this.mist = new Mist(map.w, map.h, theme.key, (x, y) => map.get(x, y) === T_FLOOR || map.get(x, y) === T_PROP);
+    this.mist.group.visible = this.post.enabled;
+    this.levelGroup.add(this.mist.group);
     // static objects get views lazily in sync()
     this.syncObjects(level, 0);
     // snap camera
@@ -592,6 +668,8 @@ export class Renderer implements Picker {
       }
       case 'waypoint': {
         const { group, rune } = makeWaypoint();
+        // bright enough to stay a blue glow over the lit stone once the frame is tone mapped
+        (rune.material as THREE.MeshBasicMaterial).color.multiplyScalar(2.2);
         g.add(group);
         return {
           group: g,
@@ -600,7 +678,7 @@ export class Renderer implements Picker {
             (rune.material as THREE.MeshBasicMaterial).opacity = 0.7 + Math.sin(this.time * 2) * 0.2;
           },
           lightColor: '#4a90ff',
-          lightIntensity: 14,
+          lightIntensity: 7,
         };
       }
       case 'portal': {
@@ -777,6 +855,7 @@ export class Renderer implements Picker {
       let v = this.objViews.get(o);
       if (!v) {
         v = this.makeObjectView(o);
+        castShadows(v.group);
         this.objViews.set(o, v);
         this.dynGroup.add(v.group);
       }
@@ -852,6 +931,8 @@ export class Renderer implements Picker {
     // offset toward the camera so the faces we actually see are lit
     this.playerLight.position.set(pp.x + 1.1, 2.6, pp.z + 1.1);
     this.playerLight.distance = (level.depth === 0 ? 11 : 14) + lr * 1.2;
+    this.heroLight.position.set(pp.x, 3.4, pp.z);
+    this.heroLight.distance = this.playerLight.distance;
 
     // player rig
     const key = playerLookKey(p);
@@ -861,6 +942,8 @@ export class Renderer implements Picker {
         this.playerView.shadow.removeFromParent();
       }
       const rig = makeCharRig(() => playerSpec(p), () => playerLook(p));
+      // the light is overhead: the hero's own shadow would be a dark disc around the feet
+      castShadows(rig.root, false);
       this.scene.add(rig.root);
       const shadow = this.makeShadow(p.radius);
       this.scene.add(shadow);
@@ -906,6 +989,7 @@ export class Renderer implements Picker {
       if (!v) {
         if (d2 > 30 * 30) continue;
         const rig = makeCharRig(() => monsterSpec(m), () => monsterLook(m));
+        castShadows(rig.root);
         this.dynGroup.add(rig.root);
         const shadow = this.makeShadow(m.radius);
         this.dynGroup.add(shadow);
@@ -1033,10 +1117,13 @@ export class Renderer implements Picker {
       }
     }
 
+    this.lavaTime.value += dt;
+    this.mist?.update(dt);
+    if (this.post.enabled) ambientMotes(this.fx, level.layout.theme.key, dt, pp, this.camTarget);
     this.assignLights();
     this.fx.update(dt);
 
-    this.webgl.render(this.scene, this.camera);
+    this.post.render(dt);
     const ps = this.project(new THREE.Vector3(p.pos.x, 1.0, p.pos.z));
     this.playerScreen = ps;
   }

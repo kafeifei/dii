@@ -8,6 +8,10 @@ export interface Settings {
   /** multisampling; the WebGL context has to be made again, so it applies after a reload */
   antialias: boolean;
   lights: LightLevel;
+  /** the hero light's shadows in the dungeon, the moon's in the camp */
+  shadows: boolean;
+  /** bloom, colour grade, ground mist and drifting specks */
+  effects: boolean;
   particles: 'few' | 'many';
   showFps: boolean;
   volume: number;
@@ -15,14 +19,14 @@ export interface Settings {
   shake: boolean;
 }
 
-type GraphicsKey = 'resolution' | 'antialias' | 'lights' | 'particles';
+type GraphicsKey = 'resolution' | 'antialias' | 'lights' | 'shadows' | 'effects' | 'particles';
 export type Preset = 'low' | 'mid' | 'high';
 
 /** the graphics settings each quality preset sets */
 export const PRESETS: Record<Preset, Pick<Settings, GraphicsKey>> = {
-  low: { resolution: 0.5, antialias: false, lights: 'low', particles: 'few' },
-  mid: { resolution: 'auto', antialias: true, lights: 'mid', particles: 'many' },
-  high: { resolution: 1, antialias: true, lights: 'high', particles: 'many' },
+  low: { resolution: 0.5, antialias: false, lights: 'low', shadows: false, effects: false, particles: 'few' },
+  mid: { resolution: 'auto', antialias: true, lights: 'mid', shadows: true, effects: true, particles: 'many' },
+  high: { resolution: 1, antialias: true, lights: 'high', shadows: true, effects: true, particles: 'many' },
 };
 
 const DEFAULTS: Settings = { ...PRESETS.mid, showFps: false, volume: 0.7, muted: false, shake: true };
@@ -31,7 +35,13 @@ const KEY = 'dii-settings';
 export function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return { ...DEFAULTS, ...JSON.parse(raw) };
+    if (raw) {
+      const saved = JSON.parse(raw) as Partial<Settings>;
+      const s = { ...DEFAULTS, ...saved };
+      // saved before shadows and effects existed: whoever chose the light preset keeps a light load
+      if (saved.shadows === undefined && saved.lights === 'low') s.shadows = s.effects = false;
+      return s;
+    }
   } catch {
     // storage blocked or unreadable: defaults
   }
@@ -55,6 +65,8 @@ export function presetOf(s: Settings): Preset | null {
 export function applySettings(s: Settings, renderer: Renderer, sfx: Sfx) {
   renderer.setResolution(s.resolution);
   renderer.setLights(s.lights);
+  renderer.setShadows(s.shadows);
+  renderer.setPost(s.effects);
   renderer.fx.setParticleDensity(s.particles === 'few' ? 0.4 : 1);
   renderer.fx.shakeEnabled = s.shake;
   sfx.setVolume(s.volume);
@@ -87,6 +99,8 @@ export class SettingsPanel {
     this.choice(gfx, '渲染分辨率', [['auto', '自动'], [0.5, '50%'], [0.75, '75%'], [1, '100%']] as Choice<Settings['resolution']>[], () => this.s.resolution, (v) => (this.s.resolution = v), undefined, '相对屏幕原生分辨率；自动最高 1.5 倍，掉帧时自己降低');
     this.choice(gfx, '抗锯齿', [[true, '开'], [false, '关']] as Choice<boolean>[], () => this.s.antialias, (v) => (this.s.antialias = v), undefined, '切换后会重新载入页面');
     this.choice(gfx, '动态光照', [['low', '低'], ['mid', '中'], ['high', '高']] as Choice<LightLevel>[], () => this.s.lights, (v) => (this.s.lights = v), undefined, '同时被火把和法术照亮的光源数');
+    this.choice(gfx, '阴影', [[true, '开'], [false, '关']] as Choice<boolean>[], () => this.s.shadows, (v) => (this.s.shadows = v), undefined, '主角光源在地下城、月光在营地投下的影子');
+    this.choice(gfx, '画面特效', [[true, '开'], [false, '关']] as Choice<boolean>[], () => this.s.effects, (v) => (this.s.effects = v), undefined, '泛光、调色、地面雾气和空中飘尘');
     this.choice(gfx, '粒子特效', [['few', '少'], ['many', '多']] as Choice<Settings['particles']>[], () => this.s.particles, (v) => (this.s.particles = v));
     this.choice(gfx, '显示帧率', [[true, '开'], [false, '关']] as Choice<boolean>[], () => this.s.showFps, (v) => (this.s.showFps = v));
 

@@ -18,6 +18,8 @@ export interface ParticleOpts {
   alpha?: number;
   /** stop on the floor */
   floor?: boolean;
+  /** share of the life spent fading in (0: appear at full strength) */
+  fadeIn?: number;
 }
 
 const tmpColor = new THREE.Color();
@@ -39,6 +41,7 @@ export class Particles {
   private drag: Float32Array;
   private alpha: Float32Array;
   private floor: Uint8Array;
+  private fadeIn: Float32Array;
   private geo: THREE.BufferGeometry;
   readonly material: THREE.ShaderMaterial;
 
@@ -57,6 +60,7 @@ export class Particles {
     this.drag = new Float32Array(max);
     this.alpha = new Float32Array(max);
     this.floor = new Uint8Array(max);
+    this.fadeIn = new Float32Array(max);
     this.geo = new THREE.BufferGeometry();
     this.geo.setAttribute('position', new THREE.BufferAttribute(this.pos, 3).setUsage(THREE.DynamicDrawUsage));
     this.geo.setAttribute('aColor', new THREE.BufferAttribute(this.col, 4).setUsage(THREE.DynamicDrawUsage));
@@ -123,6 +127,7 @@ export class Particles {
     this.drag[i] = o.drag ?? 0;
     this.alpha[i] = o.alpha ?? 1;
     this.floor[i] = o.floor ? 1 : 0;
+    this.fadeIn[i] = o.fadeIn ?? 0;
   }
 
   clear() {
@@ -160,7 +165,8 @@ export class Particles {
       this.col[i4] = this.baseCol[i3];
       this.col[i4 + 1] = this.baseCol[i3 + 1];
       this.col[i4 + 2] = this.baseCol[i3 + 2];
-      this.col[i4 + 3] = this.alpha[i] * Math.min(1, t * 2.5);
+      const fi = this.fadeIn[i];
+      this.col[i4 + 3] = this.alpha[i] * Math.min(1, t * 2.5) * (fi > 0 ? Math.min(1, (1 - t) / fi) : 1);
       i++;
     }
     this.geo.setDrawRange(0, this.count);
@@ -187,5 +193,6 @@ export class Particles {
     this.drag[to] = this.drag[from];
     this.alpha[to] = this.alpha[from];
     this.floor[to] = this.floor[from];
+    this.fadeIn[to] = this.fadeIn[from];
   }
 }
