@@ -4,13 +4,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
-import { dedup, meshopt, prune, quantize, resample, weld } from '@gltf-transform/functions';
-import { MeshoptEncoder } from 'meshoptimizer';
+import { dedup, meshopt, prune, quantize, resample, simplify, textureCompress, weld } from '@gltf-transform/functions';
+import { MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer';
+import sharp from 'sharp';
 
 const SRC = path.resolve('models-src');
 const OUT = path.resolve('public/models');
 fs.mkdirSync(OUT, { recursive: true });
 await MeshoptEncoder.ready;
+await MeshoptSimplifier.ready;
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.encoder': MeshoptEncoder });
 for (const f of fs.readdirSync(OUT)) if (f.endsWith('.glb')) fs.rmSync(path.join(OUT, f));
 const built = [];
@@ -23,6 +25,25 @@ const KAYKIT_CLIPS = new Set([
   'Spellcast_Shoot', 'Spellcast_Raise', 'Spellcast_Long', 'Spellcast_Summon', 'Block', 'Block_Hit', 'Hit_A', 'Hit_B',
   'Death_A', 'Death_B', 'Death_C_Skeletons', 'Death_C_Skeletons_Resurrect', 'Skeletons_Awaken_Standing', 'Cheer', 'Taunt', 'PickUp',
 ]);
+
+/**
+ * Triangles and texture size a model needs at the isometric camera's distance (Meshy delivers far
+ * more): the player's own character is looked at most, small things least. `error` caps how far
+ * simplification may move the surface (fraction of the model's size), so detail that matters stays.
+ */
+const SMALL = /^(g_|w_|axe_|skeleton_(blade|axe|staff|crossbow|shield)|h_(bone|skull|candle)|d_(candle|bottle|coin|keyring)|x_rock)/;
+const LARGE = /^(x_(tavern|blacksmith|home_|well)|h_crypt|h_arch_gate|p_entrance)/;
+function budget(name) {
+  if (name === 'paladin' || name === 'sorceress') return { tris: 20000, error: 0.006 };
+  if (name.startsWith('npc_')) return { tris: 9000, error: 0.012, texture: 512 };
+  if (name.startsWith('mon_')) return { tris: 7000, error: 0.015 };
+  if (SMALL.test(name)) return { tris: 1500, error: 0.02, texture: 256 };
+  if (LARGE.test(name)) return { tris: 6000, error: 0.015 };
+  if (/^[dhxpw]_/.test(name)) return { tris: 3000, error: 0.015 };
+  return null;
+}
+
+const triangles = (root) => root.listMeshes().reduce((n, m) => n + m.listPrimitives().reduce((k, p) => k + (p.getIndices()?.getCount() ?? 0) / 3, 0), 0);
 
 function dropAnim(anim) {
   // disposing an Animation alone leaves its samplers (and their accessors) behind
@@ -51,12 +72,21 @@ async function build(src, out, opts = {}) {
       anim.setName(short);
     }
   }
+  const b = budget(out.replace('.glb', ''));
+  const before = triangles(root);
+  await doc.transform(dedup(), prune(), weld(), resample());
+  // lockBorder keeps a chest lid cut from its body from pulling apart along the cut
+  if (b && before > b.tris) await doc.transform(simplify({ simplifier: MeshoptSimplifier, ratio: b.tris / before, error: b.error, lockBorder: out === 'd_chest_gold.glb' }), prune());
+  if (b?.texture && root.listTextures().some((t) => (t.getSize()?.[0] ?? 0) > b.texture)) {
+    await doc.transform(textureCompress({ encoder: sharp, targetFormat: 'webp', quality: 85, resize: [b.texture, b.texture] }));
+  }
   // meshopt-compressed (the runtime loader decodes it): a quarter to a half of the plain size
-  await doc.transform(dedup(), prune(), weld(), resample(), quantize({ quantizeNormal: 10, quantizePosition: 14 }), meshopt({ encoder: MeshoptEncoder, level: 'medium' }));
+  await doc.transform(quantize({ quantizeNormal: 10, quantizePosition: 14 }), meshopt({ encoder: MeshoptEncoder, level: 'high' }));
   await io.write(path.join(OUT, out), doc);
   built.push(out.replace('.glb', ''));
   const kb = Math.round(fs.statSync(path.join(OUT, out)).size / 1024);
-  console.log(`${out.padEnd(28)} ${String(kb).padStart(5)} KB  anims=${root.listAnimations().length}`);
+  const after = triangles(root);
+  console.log(`${out.padEnd(28)} ${String(kb).padStart(5)} KB  anims=${root.listAnimations().length}${after < before ? `  tris ${Math.round(before)} → ${Math.round(after)}` : ''}`);
 }
 
 // KayKit characters are all replaced by AI ones; the knight (?knight) and the minion carrying the

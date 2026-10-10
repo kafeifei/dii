@@ -98,8 +98,11 @@ export class Particles {
     this.material.uniforms.uScale.value = pxPerUnit;
   }
 
+  /** share of spawns kept (the particle-effects setting) */
+  density = 1;
+
   spawn(o: ParticleOpts) {
-    if (this.count >= this.max) return;
+    if (this.count >= this.max || (this.density < 1 && Math.random() > this.density)) return;
     const i = this.count++;
     const i3 = i * 3;
     this.pos[i3] = o.x;

@@ -15,6 +15,7 @@ import { baseOf, buyPrice, canSocket, itemColor, sellPrice, tooltip, type Item, 
 import type { Renderer } from '../render/renderer';
 import { T_FLOOR, T_PROP, T_WALL } from '../world/tilemap';
 import { CELL, itemIcon, skillIcon } from './icons';
+import { applySettings, saveSettings, SettingsPanel, type Settings } from './settings';
 
 type LeftPanel = 'char' | 'stash' | 'shop' | 'waypoint' | null;
 type RightPanel = 'inv' | 'skills' | null;
@@ -82,6 +83,10 @@ export class UI implements GameHooks {
   private titleEl!: HTMLElement;
   private deathEl!: HTMLElement;
   private menuEl!: HTMLElement;
+  private settingsPanel!: SettingsPanel;
+  private fpsEl!: HTMLElement;
+  private fpsFrames = 0;
+  private fpsTime = 0;
   private pickerEl!: HTMLElement;
   private hintEl!: HTMLElement;
 
@@ -89,11 +94,13 @@ export class UI implements GameHooks {
     private game: Game,
     private renderer: Renderer,
     private sfx: Sfx,
+    private settings: Settings,
   ) {
     this.root = document.getElementById('ui')!;
     this.labelsLayer = document.getElementById('labels')!;
     this.vignette = document.getElementById('vignette')!;
     this.build();
+    this.applySettings();
     window.addEventListener('keydown', (e) => this.onKey(e));
     window.addEventListener('pointermove', (e) => this.onPointerMove(e));
   }
@@ -231,9 +238,31 @@ export class UI implements GameHooks {
     this.cursorEl.id = 'cursorItem';
     document.body.appendChild(this.cursorEl);
 
+    this.fpsEl = h('div');
+    this.fpsEl.id = 'fps';
+    r.appendChild(this.fpsEl);
+
     this.buildTitle();
     this.buildDeath();
     this.buildMenu();
+    this.settingsPanel = new SettingsPanel(
+      this.settings,
+      () => this.applySettings(),
+      () => {
+        if (this.game.started) this.game.save();
+      },
+    );
+    this.root.appendChild(this.settingsPanel.el);
+  }
+
+  private applySettings() {
+    applySettings(this.settings, this.renderer, this.sfx);
+    this.fpsEl.style.display = this.settings.showFps ? '' : 'none';
+  }
+
+  private openSettings() {
+    this.sfx.play('click');
+    this.settingsPanel.open();
   }
 
   private buildTitle() {
@@ -254,11 +283,13 @@ export class UI implements GameHooks {
           <div class="loading">载入模型…</div>
         </div>
       </div>
+      <button class="btn title-settings">设置</button>
       <div class="help">
         <b>左键</b> 移动 / 攻击 / 拾取 · <b>Shift+左键</b> 原地攻击 · <b>右键</b> 释放右键技能 · <b>Q W E R</b> 技能快捷键<br/>
         <b>1-4</b> 腰带药剂 · <b>I</b> 背包 · <b>C</b> 角色 · <b>T</b> 技能树 · <b>P</b> 回城传送门 · <b>Tab</b> 地图 · <b>滚轮</b> 缩放 · <b>Esc</b> 菜单<br/>
         背包内 <b>右键</b> 使用/装备 · <b>Ctrl+左键</b> 快速出售或存取 · 把符文放到有孔装备上即可镶嵌
       </div>`;
+    (t.querySelector('.title-settings') as HTMLButtonElement).onclick = () => this.openSettings();
     const name = t.querySelector('.name') as HTMLInputElement;
     const newBtn = t.querySelector('.new') as HTMLButtonElement;
     const savesCol = t.querySelector('.saves-col') as HTMLElement;
@@ -358,7 +389,7 @@ export class UI implements GameHooks {
       <div class="title-sub" style="margin-bottom:24px">暂 停</div>
       <div class="menu">
         <button class="btn resume">继续游戏</button>
-        <div class="vol">音量 <input type="range" min="0" max="100" value="70" class="volr"/></div>
+        <button class="btn open-settings">设置</button>
         <button class="btn quit">保存并返回标题</button>
       </div>
       <div class="help">
@@ -367,7 +398,7 @@ export class UI implements GameHooks {
         光环同一时间只能开启一个 · 第 4、8、12… 层有首领 · 暗金/套装/符文掉落时会有特殊音效
       </div>`;
     (m.querySelector('.resume') as HTMLButtonElement).onclick = () => this.toggleMenu(false);
-    (m.querySelector('.volr') as HTMLInputElement).oninput = (e) => this.sfx.setVolume(+(e.target as HTMLInputElement).value / 100);
+    (m.querySelector('.open-settings') as HTMLButtonElement).onclick = () => this.openSettings();
     (m.querySelector('.quit') as HTMLButtonElement).onclick = () => {
       this.game.save();
       markInGame(false);
@@ -415,6 +446,11 @@ export class UI implements GameHooks {
   }
 
   private onKey(e: KeyboardEvent) {
+    // settings sit over the title or the pause menu: Esc goes back to whichever
+    if (e.key === 'Escape' && this.settingsPanel.isOpen) {
+      this.settingsPanel.close();
+      return;
+    }
     if (!this.game.started) return;
     const tag = (e.target as HTMLElement)?.tagName;
     if (tag === 'INPUT') return;
@@ -460,6 +496,9 @@ export class UI implements GameHooks {
         break;
       case 'm':
         this.sfx.toggleMute();
+        this.settings.muted = this.sfx.muted;
+        saveSettings(this.settings);
+        this.settingsPanel.refresh();
         this.message(this.sfx.muted ? '声音：关' : '声音：开', '#aaa', 1);
         break;
     }
@@ -1176,6 +1215,15 @@ export class UI implements GameHooks {
   // ─────────────────────────── per-frame ───────────────────────────
   update(dt: number) {
     const g = this.game;
+    if (this.settings.showFps) {
+      this.fpsFrames++;
+      this.fpsTime += dt;
+      if (this.fpsTime >= 0.5) {
+        this.fpsEl.textContent = `${Math.round(this.fpsFrames / this.fpsTime)} FPS · 渲染 ${Math.round(this.renderer.renderScale * 100)}%`;
+        this.fpsFrames = 0;
+        this.fpsTime = 0;
+      }
+    }
     if (!g.started) {
       this.vignette.style.background = '';
       return;

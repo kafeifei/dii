@@ -463,8 +463,16 @@ export class Effects implements Fx {
     }
   }
 
+  /** screen shake on hits and blasts (a setting) */
+  shakeEnabled = true;
   shake(amount: number) {
-    this.shakeAmount = Math.min(1, this.shakeAmount + amount);
+    if (this.shakeEnabled) this.shakeAmount = Math.min(1, this.shakeAmount + amount);
+  }
+
+  /** share of particles spawned, 0–1 (a setting) */
+  setParticleDensity(d: number) {
+    this.add.density = d;
+    this.norm.density = d;
   }
 
   text(pos: P2, text: string, color: string, big = false) {

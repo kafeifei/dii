@@ -23,8 +23,14 @@ const CAM_YAW = Math.PI / 4;
 const CAM_PITCH = 0.68; // ~39°
 const CAM_DIST = 40;
 const WALL_H = 1.9;
-const TORCH_LIGHTS = 5;
-const FX_LIGHTS = 6;
+/**
+ * Point lights for the nearest torches and for effects, per lighting setting: every point light
+ * costs every lit pixel a pass, so only the nearest few get one.
+ */
+export const LIGHT_POOLS = { low: [2, 1], mid: [4, 3], high: [6, 5] } as const;
+export type LightLevel = keyof typeof LIGHT_POOLS;
+/** static props are batched per model per block this many tiles square, so blocks off screen are culled */
+const PROP_BLOCK = 16;
 
 interface OccUniforms {
   uPlayer: { value: THREE.Vector3 };
@@ -196,24 +202,16 @@ export class Renderer implements Picker {
     private canvas: HTMLCanvasElement,
     textLayer: HTMLElement,
     private game: Game,
+    antialias = true,
   ) {
-    this.webgl = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    this.webgl.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.webgl = new THREE.WebGLRenderer({ canvas, antialias, powerPreference: 'high-performance' });
+    this.webgl.setPixelRatio(this.pixelRatio);
     this.webgl.outputColorSpace = THREE.SRGBColorSpace;
     this.webgl.toneMapping = THREE.ACESFilmicToneMapping;
     this.webgl.toneMappingExposure = 1.15;
     this.camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 200);
     this.scene.add(this.levelGroup, this.dynGroup, this.hemi, this.dir, this.dir.target, this.playerLight);
-    for (let i = 0; i < TORCH_LIGHTS; i++) {
-      const l = new THREE.PointLight('#ff9040', 0, 9, 1.6);
-      this.torchLights.push(l);
-      this.scene.add(l);
-    }
-    for (let i = 0; i < FX_LIGHTS; i++) {
-      const l = new THREE.PointLight('#ffffff', 0, 8, 1.6);
-      this.fxLights.push(l);
-      this.scene.add(l);
-    }
+    this.setLights('mid');
     this.fx = new Effects(this.scene, textLayer, (v) => this.project(v));
     this.auraDecal = new THREE.Mesh(
       new THREE.PlaneGeometry(1, 1),
@@ -228,6 +226,45 @@ export class Renderer implements Picker {
     this.scene.add(this.shieldGlow);
     this.resize();
     window.addEventListener('resize', () => this.resize());
+  }
+
+  /** the pools of point lights (the lighting setting); the shaders recompile for the new count */
+  setLights(level: LightLevel) {
+    for (const l of [...this.torchLights, ...this.fxLights]) this.scene.remove(l);
+    const [torches, fx] = LIGHT_POOLS[level];
+    this.torchLights = Array.from({ length: torches }, () => new THREE.PointLight('#ff9040', 0, 9, 1.6));
+    this.fxLights = Array.from({ length: fx }, () => new THREE.PointLight('#ffffff', 0, 8, 1.6));
+    this.scene.add(...this.torchLights, ...this.fxLights);
+  }
+
+  /**
+   * Device pixels per CSS pixel. 'auto': at most 1.5 — the fixed isometric view gains little from
+   * more, and shading is most of the frame — stepped down (to 1:1) when frames keep running long.
+   * Otherwise a fixed share of the screen's own resolution (the resolution setting).
+   */
+  private resolution: 'auto' | number = 'auto';
+  private pixelRatio = Math.min(window.devicePixelRatio, 1.5);
+  private slowTime = 0;
+  get renderScale() {
+    return this.pixelRatio / window.devicePixelRatio;
+  }
+  setResolution(r: 'auto' | number) {
+    this.resolution = r;
+    this.pixelRatio = r === 'auto' ? Math.min(window.devicePixelRatio, 1.5) : Math.max(0.5, window.devicePixelRatio * r);
+    this.slowTime = 0;
+    this.webgl.setPixelRatio(this.pixelRatio);
+    this.resize();
+  }
+  private adaptResolution(dt: number) {
+    if (this.resolution !== 'auto' || document.visibilityState !== 'visible' || dt >= 0.1) return;
+    // under ~45 fps for two seconds: one step down
+    this.slowTime = dt > 1 / 45 ? this.slowTime + dt : Math.max(0, this.slowTime - dt * 0.5);
+    if (this.slowTime > 2 && this.pixelRatio > 1) {
+      this.pixelRatio = Math.max(1, this.pixelRatio - 0.25);
+      this.slowTime = 0;
+      this.webgl.setPixelRatio(this.pixelRatio);
+      this.resize();
+    }
   }
 
   resize() {
@@ -677,19 +714,28 @@ export class Renderer implements Picker {
       add(hs.model, m);
     }
     const tmp = new THREE.Matrix4();
-    for (const [key, list] of insts) {
+    for (const [key, all] of insts) {
       const t = assets.get(key)!;
-      t.gltf.scene.traverse((o) => {
-        const mesh = o as THREE.Mesh;
-        if (!mesh.isMesh) return;
-        const mat = Array.isArray(mesh.material) ? mesh.material.map((x) => this.propMat(x, theme)) : this.propMat(mesh.material, theme);
-        const im = new THREE.InstancedMesh(mesh.geometry, mat, list.length);
-        list.forEach((pm, i) => im.setMatrixAt(i, tmp.multiplyMatrices(pm, mesh.matrixWorld)));
-        im.instanceMatrix.needsUpdate = true;
-        im.userData.sharedGeometry = true;
-        im.computeBoundingSphere();
-        this.levelGroup.add(im);
-      });
+      const blocks = new Map<string, THREE.Matrix4[]>();
+      for (const pm of all) {
+        const b = `${Math.floor(pm.elements[12] / PROP_BLOCK)},${Math.floor(pm.elements[14] / PROP_BLOCK)}`;
+        const list = blocks.get(b);
+        if (list) list.push(pm);
+        else blocks.set(b, [pm]);
+      }
+      for (const list of blocks.values()) {
+        t.gltf.scene.traverse((o) => {
+          const mesh = o as THREE.Mesh;
+          if (!mesh.isMesh) return;
+          const mat = Array.isArray(mesh.material) ? mesh.material.map((x) => this.propMat(x, theme)) : this.propMat(mesh.material, theme);
+          const im = new THREE.InstancedMesh(mesh.geometry, mat, list.length);
+          list.forEach((pm, i) => im.setMatrixAt(i, tmp.multiplyMatrices(pm, mesh.matrixWorld)));
+          im.instanceMatrix.needsUpdate = true;
+          im.userData.sharedGeometry = true;
+          im.computeBoundingSphere();
+          this.levelGroup.add(im);
+        });
+      }
     }
   }
 
@@ -754,6 +800,7 @@ export class Renderer implements Picker {
     if (!level) return;
     this.time += dt;
     this.alpha = alpha;
+    this.adaptResolution(dt);
     const p = g.player;
     const pp = this.at(p);
 
@@ -981,7 +1028,7 @@ export class Renderer implements Picker {
       if (v.lightColor) cands.push({ pos: new THREE.Vector3(o.pos.x, 1.2, o.pos.z), color: new THREE.Color(v.lightColor), intensity: v.lightIntensity ?? 10, distance: 7, flicker: 0.3, d: (o.pos.x - p.pos.x) ** 2 + (o.pos.z - p.pos.z) ** 2 });
     }
     cands.sort((a, b) => a.d - b.d);
-    for (let i = 0; i < TORCH_LIGHTS; i++) {
+    for (let i = 0; i < this.torchLights.length; i++) {
       const l = this.torchLights[i];
       const c = cands[i];
       if (c && c.d < 22 * 22) {
@@ -1003,7 +1050,7 @@ export class Renderer implements Picker {
     }
     for (const h of level.hammers) fx.push({ pos: new THREE.Vector3(h.pos.x, 1, h.pos.z), color: new THREE.Color('#6080ff'), intensity: 14, distance: 5, d: (h.pos.x - p.pos.x) ** 2 + (h.pos.z - p.pos.z) ** 2 });
     fx.sort((a, b) => a.d - b.d);
-    for (let i = 0; i < FX_LIGHTS; i++) {
+    for (let i = 0; i < this.fxLights.length; i++) {
       const l = this.fxLights[i];
       const c = fx[i];
       if (c) {
