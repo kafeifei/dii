@@ -57,6 +57,10 @@ export class Game {
   auraPulse = 0;
   saveTimer = 0;
   lmbMode: 'none' | 'move' | 'attack' | 'other' = 'none';
+  /** the enemy the touch skill buttons last aimed at */
+  private touchFoe: Monster | null = null;
+  /** a touch skill button was held last frame */
+  private touchFighting = false;
   shop = new Grid(10, 10);
   paused = false;
   /** driven externally (balance bot): the page loop neither steps nor renders */
@@ -302,6 +306,21 @@ export class Game {
     // number keys: belt
     for (let i = 0; i < 4; i++) if (inp.pressed.has(String(i + 1))) this.useBelt(i);
 
+    // touch: a held skill button wins over the stick, so pressing attack while walking stops to fight
+    if (inp.touchHeld.size || inp.touchPressed.size) {
+      for (let i = 0; i < 6; i++) {
+        const sk = p.binds[i] ?? (i === 0 ? 'attack' : undefined);
+        if (sk && (inp.touchHeld.has(i) || inp.touchPressed.has(i))) this.touchSkill(sk, inp.touchPressed.has(i));
+      }
+    } else {
+      // let go of the button: finish the swing, don't keep attacking
+      if (this.touchFighting && p.intent?.kind === 'attack') p.intent.hold = false;
+      this.touchFighting = false;
+      const dir = inp.stick ? this.stickDir(inp.stick) : null;
+      if (dir) p.intent = { kind: 'steer', dir };
+      else if (p.intent?.kind === 'steer') p.intent = null;
+    }
+
     // left mouse
     if (inp.lmbPressed) {
       const cursor = this.hooks.getCursorItem();
@@ -351,6 +370,44 @@ export class Game {
       const k = keys[i];
       if (inp.pressed.has(k) || (inp.keys.has(k) && !inp.overUI)) this.useSkillAt(sk, h.monster, point, inp.pressed.has(k));
     }
+  }
+
+  /** the stick's push on screen as a direction on the ground; null inside the dead zone */
+  private stickDir(s: { x: number; y: number }): P2 | null {
+    if (Math.hypot(s.x, s.y) < 0.2) return null;
+    // the view is orthographic, so any two screen points give the same ground direction
+    const a = this.picker.screenToGround(400, 400);
+    const b = this.picker.screenToGround(400 + s.x * 100, 400 - s.y * 100);
+    if (!a || !b) return null;
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+    const l = Math.hypot(dx, dz) || 1;
+    return { x: dx / l, z: dz / l };
+  }
+
+  /**
+   * A touch skill button: aimed at the enemy it was used on while still close and in sight, else at
+   * the nearest one in sight; with nobody around, straight ahead.
+   */
+  private touchSkill(skill: string, isPress: boolean) {
+    const p = this.player;
+    const map = this.level.map;
+    const ok = (m: Monster | null, range: number): m is Monster => !!m && !m.dead && dist(m.pos, p.pos) < range && map.los(p.pos, m.pos);
+    let foe = ok(this.touchFoe, 12) ? this.touchFoe : null;
+    if (!foe) {
+      let best = 10;
+      for (const m of this.level.monsters) {
+        const d = dist(m.pos, p.pos);
+        if (!m.dead && d < best && map.los(p.pos, m.pos)) {
+          foe = m;
+          best = d;
+        }
+      }
+    }
+    this.touchFoe = foe;
+    this.touchFighting = true;
+    const point = foe ? foe.pos : { x: p.pos.x + Math.sin(p.facing) * 5, z: p.pos.z + Math.cos(p.facing) * 5 };
+    this.useSkillAt(skill, foe, point, isPress);
   }
 
   useSkillAt(skill: string, monster: Monster | null, point: P2, isPress: boolean) {

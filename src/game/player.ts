@@ -529,6 +529,8 @@ export class Player extends Actor {
 
 export type Intent =
   | { kind: 'move'; point: P2 }
+  /** the touch stick: walk this way (unit length) for as long as it is held */
+  | { kind: 'steer'; dir: P2 }
   | { kind: 'attack'; target: Monster; skill: string; hold?: boolean }
   | { kind: 'cast'; skill: string; point: P2; target: Monster | null; charge?: ChargeUse }
   | { kind: 'pickup'; ground: { pos: P2 } & object }

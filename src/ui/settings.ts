@@ -1,5 +1,6 @@
 import type { Sfx } from '../audio/sfx';
 import type { LightLevel, Renderer } from '../render/renderer';
+import { isTouchDevice } from './touch';
 
 /** player preferences, kept in this browser (not part of a save) */
 export interface Settings {
@@ -29,7 +30,15 @@ export const PRESETS: Record<Preset, Pick<Settings, GraphicsKey>> = {
   high: { resolution: 1, antialias: true, lights: 'high', shadows: true, effects: true, particles: 'many' },
 };
 
-const DEFAULTS: Settings = { ...PRESETS.mid, showFps: false, volume: 0.7, muted: false, shake: true };
+const DEFAULTS: Settings = {
+  ...PRESETS.mid,
+  // phones: multisampling is costly on their GPUs, and their screens are dense enough without it
+  ...(isTouchDevice() ? { antialias: false } : {}),
+  showFps: false,
+  volume: 0.7,
+  muted: false,
+  shake: true,
+};
 const KEY = 'dii-settings';
 
 export function loadSettings(): Settings {

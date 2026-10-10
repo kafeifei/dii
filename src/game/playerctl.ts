@@ -612,6 +612,13 @@ export function updatePlayer(g: Game, p: Player, dt: number) {
   }
   const speed = d.moveSpeed * p.slowFactor();
   switch (it.kind) {
+    case 'steer': {
+      // no path finding: walk where the stick points and slide along walls
+      moveBy(g, p, it.dir.x * speed * dt, it.dir.z * speed * dt);
+      face(p, { x: p.pos.x + it.dir.x, z: p.pos.z + it.dir.z }, dt);
+      if (p.state !== 'move') p.setState('move');
+      break;
+    }
     case 'move': {
       if (stepToward(g, p, it.point, speed, dt, 0.12, 6000)) {
         p.intent = null;

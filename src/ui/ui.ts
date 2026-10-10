@@ -17,6 +17,7 @@ import type { Renderer } from '../render/renderer';
 import { T_FLOOR, T_PROP, T_WALL } from '../world/tilemap';
 import { CELL, itemIcon, skillIcon } from './icons';
 import { applySettings, saveSettings, SettingsPanel, type Settings } from './settings';
+import { isTouchDevice, TouchControls } from './touch';
 
 type LeftPanel = 'char' | 'stash' | 'shop' | 'waypoint' | 'cube' | null;
 type RightPanel = 'inv' | 'skills' | null;
@@ -37,6 +38,10 @@ function h<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, html?: s
 }
 
 const SLOT_KEYS = ['左键', '右键', 'Q', 'W', 'E', 'R'];
+/** the controls as a phone has them (TouchControls) */
+const TOUCH_HELP = `<b>左半屏按住拖动</b> 移动 · <b>右下按钮</b> 攻击和技能，自动瞄准最近的敌人 · <b>换</b> 再点一个按钮可更换技能<br/>
+  <b>点地面</b> 走过去 · <b>点物品 / 人物 / 传送点</b> 拾取或交互 · <b>⛶</b> 全屏<br/>
+  背包里 <b>点一下</b> 看说明，<b>再点</b> 拿起 · <b>长按</b> 使用或装备 · 拿着物品时点格子放下，点地面丢弃`;
 
 // paper doll layout (x, y, w, h in px)
 const DOLL: Record<EquipSlot, [number, number, number, number, string]> = {
@@ -119,6 +124,8 @@ export class UI implements GameHooks {
   private fpsTime = 0;
   private pickerEl!: HTMLElement;
   private hintEl!: HTMLElement;
+  /** phone controls, on touch screens */
+  private touch: TouchControls | null = null;
 
   constructor(
     private game: Game,
@@ -130,6 +137,15 @@ export class UI implements GameHooks {
     this.labelsLayer = document.getElementById('labels')!;
     this.vignette = document.getElementById('vignette')!;
     this.build();
+    if (isTouchDevice()) {
+      this.touch = new TouchControls(game.input, document.getElementById('world')!, this.skillsEl, this.root, {
+        carrying: () => !!this.cursorItem,
+        hideTooltip: () => this.hideTooltip(),
+        pickSkill: (slot, anchor) => this.openPicker(slot, anchor),
+      });
+      const hint = this.touch.iosHint();
+      if (hint) this.titleEl.querySelector('.title-sub')!.after(h('div', 'ios-hint', hint));
+    }
     this.applySettings();
     window.addEventListener('keydown', (e) => this.onKey(e));
     window.addEventListener('pointermove', (e) => this.onPointerMove(e));
@@ -314,7 +330,7 @@ export class UI implements GameHooks {
         </div>
       </div>
       <button class="btn title-settings">设置</button>
-      <div class="help">
+      <div class="help title-help">
         <b>左键</b> 移动 / 攻击 / 拾取 · <b>Shift+左键</b> 原地攻击 · <b>右键</b> 释放右键技能 · <b>Q W E R</b> 技能快捷键<br/>
         <b>1-4</b> 腰带药剂 · <b>I</b> 背包 · <b>C</b> 角色 · <b>T</b> 技能树 · <b>P</b> 回城传送门 · <b>Tab</b> 地图 · <b>滚轮</b> 缩放 · <b>Esc</b> 菜单<br/>
         背包内 <b>右键</b> 使用/装备 · <b>Ctrl+左键</b> 快速出售或存取 · 把符文放到有孔装备上即可镶嵌
@@ -336,6 +352,7 @@ export class UI implements GameHooks {
     pickClass('paladin');
     const start = (run: () => boolean | void) => {
       this.sfx.ensure();
+      this.touch?.enterFullscreen();
       if (run() === false) return;
       t.classList.remove('open');
       this.dirty = true;
@@ -423,8 +440,12 @@ export class UI implements GameHooks {
         <button class="btn quit">保存并返回标题</button>
       </div>
       <div class="help">
-        <b>左键</b> 移动 / 攻击 / 拾取 · <b>Shift+左键</b> 原地攻击 · <b>右键</b> 右键技能 · <b>Q W E R</b> 技能快捷键（点击技能栏可更换）<br/>
-        <b>1-4</b> 腰带药剂 · <b>I</b> 背包 · <b>C</b> 角色 · <b>T</b> 技能树 · <b>P</b> 回城 · <b>Tab</b> 地图 · <b>滚轮</b> 缩放<br/>
+        ${
+          isTouchDevice()
+            ? TOUCH_HELP
+            : `<b>左键</b> 移动 / 攻击 / 拾取 · <b>Shift+左键</b> 原地攻击 · <b>右键</b> 右键技能 · <b>Q W E R</b> 技能快捷键（点击技能栏可更换）<br/>
+        <b>1-4</b> 腰带药剂 · <b>I</b> 背包 · <b>C</b> 角色 · <b>T</b> 技能树 · <b>P</b> 回城 · <b>Tab</b> 地图 · <b>滚轮</b> 缩放`
+        }<br/>
         光环同一时间只能开启一个 · 第 4、8、12… 层有首领 · 暗金/套装/符文掉落时会有特殊音效
       </div>`;
     (m.querySelector('.resume') as HTMLButtonElement).onclick = () => this.toggleMenu(false);
@@ -567,12 +588,13 @@ export class UI implements GameHooks {
     const p = this.game.player;
     let price: string | undefined;
     if (holder.dataset.src === 'shop') price = `购买价格：${buyPrice(item)} 金币`;
-    else if (this.left === 'shop' && (holder.dataset.src === 'inv')) price = `出售价格：${sellPrice(item)} 金币（Ctrl+点击出售）`;
+    else if (this.left === 'shop' && (holder.dataset.src === 'inv')) price = `出售价格：${sellPrice(item)} 金币（${this.touch ? '拿起后放进商店出售' : 'Ctrl+点击出售'}）`;
     this.showTooltip(tooltip(item, { level: p.level, str: p.stats.str, dex: p.stats.dex, cls: p.cls }, price), e.clientX, e.clientY);
   }
 
   private showTooltip(lines: TooltipLine[], x: number, y: number) {
     const el = this.tooltipEl;
+    if (this.touch) lines = lines.map((l) => (l.text.startsWith('右键点击') ? { ...l, text: l.text.replace('右键点击', '长按') } : l));
     el.innerHTML = lines.map((l, i) => `<div class="l${l.small ? ' small' : ''}${i === 0 ? ' title' : ''}" style="${l.color ? `color:${l.color}` : ''}">${escapeHtml(l.text) || '&nbsp;'}</div>`).join('');
     el.style.display = 'block';
     const r = el.getBoundingClientRect();
@@ -658,8 +680,10 @@ export class UI implements GameHooks {
     const p = this.game.player;
     const grid = this.gridOf(kind);
     const rect = gridEl.getBoundingClientRect();
-    const px = e.clientX - rect.left;
-    const py = e.clientY - rect.top;
+    // the panel may be drawn scaled (phones): measure in the grid's own pixels
+    const k = gridEl.offsetWidth ? rect.width / gridEl.offsetWidth : 1;
+    const px = (e.clientX - rect.left) / k;
+    const py = (e.clientY - rect.top) / k;
     const cx = Math.floor(px / CELL);
     const cy = Math.floor(py / CELL);
     const under = grid.at(cx, cy);
@@ -962,7 +986,7 @@ export class UI implements GameHooks {
     }
     R.appendChild(doll);
     R.appendChild(this.renderGrid('inv', p.inventory));
-    const gl = h('div', 'goldline', `<span>金币：${p.gold}</span><span style="color:#8a8278;font-size:12px">右键使用/装备 · Ctrl+点击快捷操作</span>`);
+    const gl = h('div', 'goldline', `<span>金币：${p.gold}</span><span style="color:#8a8278;font-size:12px">${this.touch ? '点一下看说明，再点拿起 · 长按使用/装备' : '右键使用/装备 · Ctrl+点击快捷操作'}</span>`);
     R.appendChild(gl);
   }
 
@@ -1243,7 +1267,8 @@ export class UI implements GameHooks {
         if (SKILL_BY_ID[id]?.cooldown) s.appendChild(Object.assign(h('div', 'cd'), { dataset: { cd: id } }));
       }
       s.appendChild(h('span', 'key', SLOT_KEYS[i]));
-      s.onclick = () => this.openPicker(i, s);
+      // on a touch screen the slot is a skill button (TouchControls): a long press picks the skill
+      if (!this.touch) s.onclick = () => this.openPicker(i, s);
       this.skillsEl.appendChild(s);
     }
     this.btns.char.classList.toggle('notify', p.statPoints > 0);

@@ -16,6 +16,11 @@ export class Input {
   /** set once the pointer went down on the world (not the UI) */
   worldDown = false;
   worldRDown = false;
+  /** the touch stick's push on screen (x right, y up, length up to 1); null when let go */
+  stick: { x: number; y: number } | null = null;
+  /** touch skill buttons held, by bind slot (0 left, 1 right, 2–5 Q W E R), and those pressed this frame */
+  touchHeld = new Set<number>();
+  touchPressed = new Set<number>();
   private onFirstGesture: (() => void) | null;
 
   constructor(world: HTMLElement, onFirstGesture: () => void) {
@@ -96,6 +101,7 @@ export class Input {
     this.lmbPressed = false;
     this.rmbPressed = false;
     this.pressed.clear();
+    this.touchPressed.clear();
     this.wheel = 0;
   }
 }

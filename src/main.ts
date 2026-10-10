@@ -41,6 +41,7 @@ function frame(now: number) {
       input.lmbPressed = false;
       input.rmbPressed = false;
       input.pressed.clear();
+      input.touchPressed.clear();
     }
     // draw between the last two sim steps so motion stays smooth at any refresh rate
     renderer.render(dt, Math.min(1, acc / STEP));
