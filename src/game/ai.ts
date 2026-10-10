@@ -83,6 +83,16 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
   // statuses
   if (m.chillTime > 0) m.chillTime -= dt;
   if (m.stunTime > 0) m.stunTime -= dt;
+  if (m.slowTime > 0) m.slowTime -= dt;
+  if (m.noHealTime > 0) m.noHealTime -= dt;
+  if (m.bleedTime > 0) {
+    m.bleedTime -= dt;
+    m.life -= m.bleedDps * dt;
+    if (m.life <= 0) {
+      g.killMonster(m, 'phys');
+      return;
+    }
+  }
   if (m.poisonTime > 0) {
     m.poisonTime -= dt;
     m.life -= m.poisonDps * dt;
@@ -165,6 +175,14 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
     return;
   }
 
+  if (m.blindTime > 0) {
+    // blinded: it only finds the player within arm's reach
+    m.blindTime -= dt;
+    if (dP > m.def.range + p.radius + 0.6) {
+      if (m.state !== 'idle') m.setState('idle');
+      return;
+    }
+  }
   if (m.fleeTime > 0) {
     m.fleeTime -= dt;
     const away = { x: m.pos.x + (m.pos.x - p.pos.x) * 2, z: m.pos.z + (m.pos.z - p.pos.z) * 2 };

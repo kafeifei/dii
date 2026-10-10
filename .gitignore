@@ -4,3 +4,4 @@ dist
 public/models/_cand
 models-src/*
 !models-src/ai
+tools/.d2cache

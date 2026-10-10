@@ -55,13 +55,21 @@ function weaponShape(baseId: string | undefined): WeaponShape {
   const b = ITEM_BASES[baseId];
   switch (b.type) {
     case 'sword':
+    case 'dagger':
       return b.twoHanded ? 'greatsword' : 'sword';
     case 'axe':
       return b.twoHanded ? 'greataxe' : 'axe';
+    case 'club':
     case 'mace':
+    case 'scepter':
+    case 'hammer':
+    case 'wand':
       return b.twoHanded ? 'maul' : 'mace';
     case 'staff':
       return 'staff';
+    case 'spear':
+    case 'polearm':
+      return 'spear';
     default:
       return 'none';
   }

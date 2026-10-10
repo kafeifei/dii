@@ -1,5 +1,5 @@
-import { ITEM_BASES } from '../data/items';
-import { RUNE_BY_ID } from '../data/legendary';
+import { ITEM_BASES, staffGem } from '../data/items';
+import { GEMS as GEM_DEFS, RUNE_BY_ID } from '../data/legendary';
 import { SKILL_BY_ID } from '../data/skills';
 import type { Item } from '../items/item';
 
@@ -74,8 +74,6 @@ function drawAxe(ctx: CanvasRenderingContext2D, w: number, h: number, big: boole
   }
 }
 
-const STAFF_GEM: Record<string, string> = { longstaff: '#a0c0ff', gnarledstaff: '#80e090', battlestaff: '#60a0ff', warstaff: '#ff6a20' };
-
 function drawStaff(ctx: CanvasRenderingContext2D, w: number, h: number, kind: string) {
   const cx = w / 2;
   ctx.lineCap = 'round';
@@ -85,10 +83,10 @@ function drawStaff(ctx: CanvasRenderingContext2D, w: number, h: number, kind: st
   ctx.moveTo(cx - w * 0.06, h * 0.97);
   ctx.quadraticCurveTo(cx + w * 0.12, h * 0.55, cx, h * 0.16);
   ctx.stroke();
-  ctx.strokeStyle = kind === 'gnarledstaff' ? '#6a5030' : '#7a5230';
+  ctx.strokeStyle = ITEM_BASES[kind]?.tiers?.[0] === 'gnarledstaff' ? '#6a5030' : '#7a5230';
   ctx.lineWidth = Math.max(2, w * 0.09);
   ctx.stroke();
-  const gem = STAFF_GEM[kind];
+  const gem = staffGem(kind);
   if (gem) {
     ctx.fillStyle = '#8a6a2a';
     ctx.beginPath();
@@ -372,14 +370,190 @@ function drawRune(ctx: CanvasRenderingContext2D, w: number, h: number, glyph: st
   ctx.fillStyle = color;
   ctx.shadowColor = color;
   ctx.shadowBlur = 6;
-  ctx.font = `bold ${Math.floor(h * 0.55)}px serif`;
+  // a rune's name is one to three characters ("艾尔", "乔")
+  ctx.font = `bold ${Math.floor((h * 0.55) / Math.max(1, glyph.length * 0.72))}px "Noto Serif SC", serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(glyph, w / 2, h * 0.52);
   ctx.shadowBlur = 0;
 }
 
+/** a long haft with a head at the top: spears (a leaf blade), polearms (an axe blade and spike) */
+function drawPole(ctx: CanvasRenderingContext2D, w: number, h: number, kind: 'spear' | 'polearm', base: string) {
+  const cx = w / 2;
+  ctx.fillStyle = '#5a3a20';
+  ctx.fillRect(cx - w * 0.06, h * 0.12, w * 0.12, h * 0.86);
+  ctx.strokeRect(cx - w * 0.06, h * 0.12, w * 0.12, h * 0.86);
+  ctx.fillStyle = metalGrad(ctx, cx - w * 0.3, 0, cx + w * 0.3, h * 0.25, base);
+  ctx.beginPath();
+  if (kind === 'spear') {
+    ctx.moveTo(cx, h * 0.01);
+    ctx.quadraticCurveTo(cx + w * 0.3, h * 0.1, cx + w * 0.08, h * 0.2);
+    ctx.lineTo(cx - w * 0.08, h * 0.2);
+    ctx.quadraticCurveTo(cx - w * 0.3, h * 0.1, cx, h * 0.01);
+  } else {
+    ctx.moveTo(cx, h * 0.01);
+    ctx.lineTo(cx + w * 0.06, h * 0.08);
+    ctx.lineTo(cx + w * 0.06, h * 0.1);
+    ctx.quadraticCurveTo(cx + w * 0.5, h * 0.08, cx + w * 0.46, h * 0.26);
+    ctx.quadraticCurveTo(cx + w * 0.26, h * 0.22, cx + w * 0.06, h * 0.26);
+    ctx.lineTo(cx - w * 0.06, h * 0.26);
+    ctx.lineTo(cx - w * 0.06, h * 0.08);
+  }
+  ctx.closePath();
+  ctx.fill();
+  outline(ctx);
+}
+
+/** a short rod with a head: wands (a bone tip), scepters (a gilded crown and gem) */
+function drawRod(ctx: CanvasRenderingContext2D, w: number, h: number, kind: 'wand' | 'scepter', gem: string) {
+  const cx = w / 2;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#2a180a';
+  ctx.lineWidth = Math.max(4, w * 0.16);
+  ctx.beginPath();
+  ctx.moveTo(cx, h * 0.96);
+  ctx.lineTo(cx, h * 0.24);
+  ctx.stroke();
+  ctx.strokeStyle = kind === 'wand' ? '#d8ccb0' : '#8a6a30';
+  ctx.lineWidth = Math.max(2, w * 0.09);
+  ctx.stroke();
+  if (kind === 'wand') {
+    ctx.fillStyle = '#e8dcc0';
+    ctx.beginPath();
+    ctx.arc(cx, h * 0.17, w * 0.16, 0, Math.PI * 2);
+    ctx.fill();
+    outline(ctx);
+    ctx.fillStyle = '#1a1008';
+    ctx.fillRect(cx - w * 0.09, h * 0.15, w * 0.06, h * 0.03);
+    ctx.fillRect(cx + w * 0.03, h * 0.15, w * 0.06, h * 0.03);
+  } else {
+    ctx.fillStyle = metalGrad(ctx, cx - w * 0.3, 0, cx + w * 0.3, h * 0.3, '#d8b860');
+    ctx.beginPath();
+    ctx.moveTo(cx - w * 0.3, h * 0.28);
+    ctx.lineTo(cx - w * 0.34, h * 0.08);
+    ctx.lineTo(cx - w * 0.12, h * 0.16);
+    ctx.lineTo(cx, h * 0.02);
+    ctx.lineTo(cx + w * 0.12, h * 0.16);
+    ctx.lineTo(cx + w * 0.34, h * 0.08);
+    ctx.lineTo(cx + w * 0.3, h * 0.28);
+    ctx.closePath();
+    ctx.fill();
+    outline(ctx);
+    ctx.fillStyle = gem;
+    ctx.beginPath();
+    ctx.arc(cx, h * 0.19, w * 0.09, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+/** a sorceress's orb: a glowing sphere */
+function drawOrb(ctx: CanvasRenderingContext2D, w: number, h: number, color: string) {
+  const cx = w / 2;
+  const cy = h * 0.48;
+  const r = Math.min(w, h) * 0.36;
+  const g = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.35, r * 0.1, cx, cy, r);
+  g.addColorStop(0, '#ffffff');
+  g.addColorStop(0.35, color);
+  g.addColorStop(1, '#0a0a18');
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 10;
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  outline(ctx);
+}
+
+/** a cut gem; the grade sets its size and how many facets show */
+function drawGem(ctx: CanvasRenderingContext2D, w: number, h: number, color: string, grade: number, skull: boolean) {
+  const cx = w / 2;
+  const cy = h / 2;
+  const r = w * (0.2 + grade * 0.05);
+  if (skull) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(cx, cy - r * 0.15, r, Math.PI, 0);
+    ctx.lineTo(cx + r * 0.6, cy + r * 0.8);
+    ctx.lineTo(cx - r * 0.6, cy + r * 0.8);
+    ctx.closePath();
+    ctx.fill();
+    outline(ctx);
+    ctx.fillStyle = '#1a1008';
+    ctx.beginPath();
+    ctx.arc(cx - r * 0.38, cy, r * 0.22, 0, Math.PI * 2);
+    ctx.arc(cx + r * 0.38, cy, r * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    return;
+  }
+  const n = 5 + grade;
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+    ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+  }
+  ctx.closePath();
+  const g = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, 1, cx, cy, r);
+  g.addColorStop(0, '#ffffff');
+  g.addColorStop(0.4, color);
+  g.addColorStop(1, shadeHex(color, 0.35));
+  ctx.shadowColor = color;
+  ctx.shadowBlur = grade * 3;
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  outline(ctx);
+}
+
+/** the Horadric Cube: a dark box with gold edges and a rune on its face */
+function drawCube(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  const s = Math.min(w, h) * 0.78;
+  const x = (w - s) / 2;
+  const y = (h - s) / 2 + s * 0.06;
+  const d = s * 0.22;
+  ctx.fillStyle = '#3a2a1a';
+  ctx.beginPath();
+  ctx.moveTo(x, y + d);
+  ctx.lineTo(x + d, y);
+  ctx.lineTo(x + s, y);
+  ctx.lineTo(x + s - d, y + d);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#2a1c10';
+  ctx.beginPath();
+  ctx.moveTo(x + s - d, y + d);
+  ctx.lineTo(x + s, y);
+  ctx.lineTo(x + s, y + s - d);
+  ctx.lineTo(x + s - d, y + s);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#4a3624';
+  ctx.fillRect(x, y + d, s - d, s - d);
+  ctx.strokeStyle = '#c8a040';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y + d, s - d, s - d);
+  ctx.beginPath();
+  ctx.moveTo(x, y + d);
+  ctx.lineTo(x + d, y);
+  ctx.lineTo(x + s, y);
+  ctx.lineTo(x + s, y + s - d);
+  ctx.lineTo(x + s - d, y + s);
+  ctx.moveTo(x + s - d, y + d);
+  ctx.lineTo(x + s, y);
+  ctx.stroke();
+  ctx.fillStyle = '#ffd060';
+  ctx.shadowColor = '#ffb020';
+  ctx.shadowBlur = 8;
+  ctx.font = `bold ${Math.floor(s * 0.45)}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('ᚺ', x + (s - d) / 2, y + d + (s - d) / 2);
+  ctx.shadowBlur = 0;
+}
+
 const GEMS = ['#3080ff', '#ff3030', '#30d040', '#d040ff', '#ffd030', '#30e0e0'];
+const GEM_BY_ID = Object.fromEntries(GEM_DEFS.map((g) => [g.id, g]));
 
 export function itemIcon(item: Item): string {
   const b = ITEM_BASES[item.baseId];
@@ -399,16 +573,44 @@ export function itemIcon(item: Item): string {
   const H = b.h * CELL;
   ctx.translate(W * 0.08, H * 0.06);
   ctx.scale(0.84, 0.88);
-  const metal = item.rarity === 'unique' || item.rarity === 'runeword' ? '#d8c088' : item.rarity === 'set' ? '#a8d8a0' : '#c8c8d0';
+  // exceptional bases are a darker steel, elite ones a blued steel (D2 draws them as new art)
+  const tierMetal = b.tier === 2 ? '#98a8c8' : b.tier === 1 ? '#a8a0a0' : '#c8c8d0';
+  const metal = item.rarity === 'unique' || item.rarity === 'runeword' ? '#d8c088' : item.rarity === 'set' ? '#a8d8a0' : tierMetal;
   switch (b.type) {
     case 'sword':
+    case 'dagger':
       drawSword(ctx, W, H, b.w > 1 || !!b.twoHanded, metal);
       break;
     case 'axe':
-      drawAxe(ctx, W, H, !!b.twoHanded || b.id === 'cleaver', metal);
+      drawAxe(ctx, W, H, !!b.twoHanded, metal);
+      break;
+    case 'club':
+      drawMace(ctx, W, H, 'club', metal);
       break;
     case 'mace':
-      drawMace(ctx, W, H, b.id, metal);
+      drawMace(ctx, W, H, b.tiers?.[0] ?? b.id, metal);
+      break;
+    case 'hammer':
+      drawMace(ctx, W, H, 'warhammer', metal);
+      break;
+    case 'spear':
+    case 'polearm':
+      drawPole(ctx, W, H, b.type, metal);
+      break;
+    case 'wand':
+    case 'scepter':
+      drawRod(ctx, W, H, b.type, gem);
+      break;
+    case 'orb':
+      drawOrb(ctx, W, H, staffGem(b.tiers?.[1] ?? 'longstaff') ?? '#a0c0ff');
+      break;
+    case 'gem': {
+      const g = GEM_BY_ID[b.id];
+      drawGem(ctx, W, H, b.tint ?? '#fff', g?.grade ?? 2, g?.gem === 'skull');
+      break;
+    }
+    case 'cube':
+      drawCube(ctx, W, H);
       break;
     case 'staff':
       drawStaff(ctx, W, H, b.id);
@@ -442,7 +644,7 @@ export function itemIcon(item: Item): string {
       break;
     case 'rune': {
       const r = RUNE_BY_ID[b.id];
-      drawRune(ctx, W, H, r?.glyph ?? '?', r?.color ?? '#ffa31a');
+      drawRune(ctx, W, H, r?.letter ?? '?', '#ffa31a');
       break;
     }
   }

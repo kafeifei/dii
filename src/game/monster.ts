@@ -1,6 +1,19 @@
 import type { P2 } from '../core/math';
+import { D2_MON_XP } from '../data/d2/progression';
 import { MOD_NAMES, type MonsterDef, type MonsterMod } from '../data/monsters';
 import { Actor, type Resists } from './actor';
+
+/**
+ * Diablo II's experience for a monster level (MonLvl.txt), scaled by the monster's own share (its
+ * xp × 7.5 is about D2's Exp%: a zombie gives 90, D2's 111). This game has no difficulties, so
+ * the columns blend where D2's overlap: normal to 36, nightmare from 43, hell from 72.
+ */
+function monsterXp(mlvl: number): number {
+  const [n, nm, h] = D2_MON_XP[Math.max(1, Math.min(D2_MON_XP.length, mlvl)) - 1];
+  const mix = (a: number, b: number, t: number) => a + (b - a) * Math.max(0, Math.min(1, t));
+  if (mlvl < 43) return mix(n, nm, (mlvl - 36) / 7);
+  return mix(nm, h, (mlvl - 67) / 5);
+}
 
 export type MonsterRank = 'normal' | 'champion' | 'unique' | 'minion' | 'boss';
 
@@ -28,6 +41,12 @@ export class Monster extends Actor {
   /** debuffs from player auras (reapplied each tick) */
   convictRes = 0;
   convictDef = 0;
+  /** defense knocked off by "-X to monster defense per hit" */
+  defLoss = 0;
+  /** blinded: loses track of the player beyond arm's reach */
+  blindTime = 0;
+  /** "prevent monster heal" */
+  noHealTime = 0;
   corpseRaisable = true;
   /** the pack leader (for minions) */
   leader: Monster | null = null;
@@ -54,7 +73,7 @@ export class Monster extends Actor {
     this.ar = Math.floor(def.ar + mlvl * 7);
     this.speed = def.speed;
     this.attackSpeed = def.attackSpeed;
-    let xp = def.xp * (1 + l * 0.38);
+    let xp = monsterXp(mlvl) * def.xp * 7.5 / 100;
     this.res = {
       fire: def.res?.fire ?? 0,
       cold: def.res?.cold ?? 0,
@@ -129,7 +148,7 @@ export class Monster extends Actor {
   }
 
   effectiveDefense(): number {
-    return Math.floor(this.defense * (1 - this.convictDef / 100));
+    return Math.max(0, Math.floor(this.defense * (1 - this.convictDef / 100)) - this.defLoss);
   }
 
   modText(): string {

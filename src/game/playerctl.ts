@@ -2,17 +2,25 @@ import { angleTo, dist, rand, randInt, type P2 } from '../core/math';
 import { ITEM_BASES } from '../data/items';
 import { SKILL_BY_ID } from '../data/skills';
 import { emptyPacket, type DamagePacket } from './actor';
-import { applyDamage, playerStrike, playerWeaponPacket } from './combat';
+import { applyDamage, playerPierce, playerStrike, playerWeaponPacket } from './combat';
 import type { Game } from './game';
 import type { Monster } from './monster';
 import { DelayedBlast, Hammer, Projectile, type ProjKind } from './objects';
 import { face, faceNow, moveBy, stepToward } from './movement';
-import type { Player } from './player';
+import type { ChargeUse, Player } from './player';
+
+/** set while an item casts a skill (chance to cast, charges): the level it casts at */
+let castLvl: number | undefined;
+function sp_(p: Player, id: string) {
+  return p.skillParams(id, castLvl);
+}
 
 export interface PlayerAction {
   skill: string;
   target: Monster | null;
   point: P2;
+  /** cast from an item's charges: at this level */
+  lvl?: number;
 }
 
 export function weaponReach(p: Player): number {
@@ -73,18 +81,24 @@ export function startAttack(g: Game, p: Player, skill: string, target: Monster |
   p.setState('attack', dur);
   g.playerAction = { skill, target, point: { ...point } };
   faceNow(p, target ? target.pos : point);
-  if (skill === 'zeal' && !free) p.zealHitsLeft = p.skillParams('zeal').hits - 1;
+  if (skill === 'zeal' && !free) p.zealHitsLeft = sp_(p, 'zeal').hits - 1;
   return true;
 }
 
-export function startCast(g: Game, p: Player, skill: string, point: P2, target: Monster | null): boolean {
+export function startCast(g: Game, p: Player, skill: string, point: P2, target: Monster | null, charge?: ChargeUse): boolean {
   const def = SKILL_BY_ID[skill];
   if (!def) return false;
   if ((p.cooldowns[skill] ?? 0) > 0) return false;
-  if (!payMana(g, p, skill)) return false;
+  // a charged skill costs a charge, not mana
+  if (charge) {
+    if (!p.useCharge(charge)) {
+      g.hooks.message('充能已经用完了', '#aaa', 1);
+      return false;
+    }
+  } else if (!payMana(g, p, skill)) return false;
   if (def.cooldown) p.cooldowns[skill] = def.cooldown;
   p.setState('cast', p.stats.castTime);
-  g.playerAction = { skill, target, point: { ...point } };
+  g.playerAction = { skill, target, point: { ...point }, lvl: charge?.lvl };
   faceNow(p, point);
   return true;
 }
@@ -125,7 +139,7 @@ function fireAttack(g: Game, p: Player) {
   let heavy = false;
   switch (act.skill) {
     case 'sacred_strike': {
-      const sp = p.skillParams('sacred_strike');
+      const sp = sp_(p, 'sacred_strike');
       ed = sp.ed;
       ar = sp.ar;
       knock = 6;
@@ -134,14 +148,14 @@ function fireAttack(g: Game, p: Player) {
       break;
     }
     case 'zeal': {
-      const sp = p.skillParams('zeal');
+      const sp = sp_(p, 'zeal');
       ed = sp.ed;
       ar = sp.ar;
       knock = 1.2;
       break;
     }
     case 'charge': {
-      const sp = p.skillParams('charge');
+      const sp = sp_(p, 'charge');
       ed = sp.ed;
       ar = sp.ar;
       knock = 11;
@@ -152,15 +166,16 @@ function fireAttack(g: Game, p: Player) {
       knock = 1.5;
   }
   const pk = playerWeaponPacket(p, ed);
-  pk.knockback = knock;
+  pk.knockback = Math.max(knock, p.stats.bag.knock ? 6 : 0);
   pk.heavy = heavy;
+  g.onProc('procAttack', target);
   playerStrike(g, p, target, pk, ar);
 }
 
 function hammerPacket(p: Player) {
-  const hp = p.skillParams('blessed_hammer');
+  const hp = sp_(p, 'blessed_hammer');
   let mult = 1;
-  if (p.activeAura === 'concentration') mult += p.skillParams('concentration').hammer / 100;
+  if (p.activeAura === 'concentration') mult += sp_(p, 'concentration').hammer / 100;
   const pk = emptyPacket();
   pk.magic = randInt(hp.min, hp.max) * mult;
   pk.spell = true;
@@ -171,12 +186,16 @@ function hammerPacket(p: Player) {
 
 // ───────────────────────── sorceress ─────────────────────────
 
+const EXTRA = { fire: 'extraFire', cold: 'extraCold', light: 'extraLight', magic: 'extraMagic' } as const;
+
+/** a spell's damage, raised by "+X% fire/cold/lightning skill damage" and carrying "-X% enemy resistance" */
 function spellPacket(p: Player, elem: 'fire' | 'cold' | 'light' | 'magic', min: number, max: number): DamagePacket {
   const pk = emptyPacket();
-  pk[elem] = randInt(min, max);
+  pk[elem] = randInt(min, max) * (1 + (p.stats.bag[EXTRA[elem]] ?? 0) / 100);
   pk.source = p;
   pk.spell = true;
   pk.pierceRes = p.stats.pierceRes;
+  pk.pierce = playerPierce(p);
   return pk;
 }
 
@@ -215,20 +234,20 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
   const L = g.level;
   switch (act.skill) {
     case 'fire_bolt': {
-      const sp = p.skillParams('fire_bolt');
+      const sp = sp_(p, 'fire_bolt');
       shootSpell(g, p, 'firebolt', 15, 13, spellPacket(p, 'fire', sp.min, sp.max));
       g.sfx.play('fire', 0.5);
       return true;
     }
     case 'fire_ball': {
-      const sp = p.skillParams('fire_ball');
+      const sp = sp_(p, 'fire_ball');
       const pr = shootSpell(g, p, 'fireball', 12, 13, spellPacket(p, 'fire', sp.min, sp.max), p.facing, 0.35);
       pr.splash = sp.radius;
       g.sfx.play('fire', 0.6);
       return true;
     }
     case 'fire_wall': {
-      const sp = p.skillParams('fire_wall');
+      const sp = sp_(p, 'fire_wall');
       const c = clampedPoint(p, act.point, 12);
       const a = angleTo(p.pos, c);
       const side = { x: Math.cos(a), z: -Math.sin(a) };
@@ -241,10 +260,11 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
         if (!L.map.walkableAt(pos.x, pos.z)) continue;
         for (let t = 0; t < sp.dur; t += tick) {
           const pk = emptyPacket();
-          pk.fire = Math.max(1, Math.round(sp.dps * tick));
+          pk.fire = Math.max(1, Math.round(sp.dps * tick * (1 + (p.stats.bag.extraFire ?? 0) / 100)));
           pk.source = p;
           pk.spell = true;
           pk.pierceRes = p.stats.pierceRes;
+          pk.pierce = playerPierce(p);
           const b = new DelayedBlast(pos, 0.55, 0.05 + t, pk, 'player', 'fire', p);
           b.fx = 'flame';
           L.blasts.push(b);
@@ -254,7 +274,7 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
       return true;
     }
     case 'meteor': {
-      const sp = p.skillParams('meteor');
+      const sp = sp_(p, 'meteor');
       const c = clampedPoint(p, act.target && !act.target.dead ? act.target.pos : act.point, 14);
       const b = new DelayedBlast(c, sp.radius, 1.0, spellPacket(p, 'fire', sp.min, sp.max), 'player', 'fire', p);
       b.dmg.heavy = true;
@@ -265,7 +285,7 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
       return true;
     }
     case 'charged_bolt': {
-      const sp = p.skillParams('charged_bolt');
+      const sp = sp_(p, 'charged_bolt');
       for (let i = 0; i < sp.bolts; i++) {
         const a = p.facing + (sp.bolts > 1 ? (i / (sp.bolts - 1) - 0.5) * 1.1 : 0) + rand(-0.08, 0.08);
         shootSpell(g, p, 'chargedbolt', rand(6.5, 8.5), 9, spellPacket(p, 'light', sp.min, sp.max), a, 0.28);
@@ -274,7 +294,7 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
       return true;
     }
     case 'static_field': {
-      const sp = p.skillParams('static_field');
+      const sp = sp_(p, 'static_field');
       for (const m of L.monsters) {
         if (m.dead || dist(m.pos, p.pos) > sp.radius + m.radius) continue;
         const pk = emptyPacket();
@@ -289,14 +309,14 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
       return true;
     }
     case 'nova': {
-      const sp = p.skillParams('nova');
+      const sp = sp_(p, 'nova');
       L.blasts.push(new DelayedBlast(p.pos, sp.radius, 0.08, spellPacket(p, 'light', sp.min, sp.max), 'player', 'lightning', p));
       g.fx.burst('nova', p.pos, { radius: sp.radius });
       g.sfx.play('lightning', 0.8);
       return true;
     }
     case 'teleport': {
-      const sp = p.skillParams('teleport');
+      const sp = sp_(p, 'teleport');
       const want = clampedPoint(p, act.point, sp.range);
       let dest = L.map.walkableAt(want.x, want.z) ? want : L.map.nearestWalkable(want.x, want.z, 2);
       // aimed into a wall: land at the last open spot on the way there
@@ -315,7 +335,7 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
       return true;
     }
     case 'chain_lightning': {
-      const sp = p.skillParams('chain_lightning');
+      const sp = sp_(p, 'chain_lightning');
       const reach = 14;
       let cur: Monster | null = act.target && !act.target.dead ? act.target : nearestMonster(g, act.point, 2.5);
       if (cur && dist(cur.pos, p.pos) > reach) cur = null;
@@ -337,7 +357,7 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
       return true;
     }
     case 'ice_bolt': {
-      const sp = p.skillParams('ice_bolt');
+      const sp = sp_(p, 'ice_bolt');
       const pk = spellPacket(p, 'cold', sp.min, sp.max);
       pk.chill = sp.chill;
       shootSpell(g, p, 'iceshard', 14, 13, pk);
@@ -345,14 +365,14 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
       return true;
     }
     case 'frozen_armor': {
-      p.frozenArmor = p.skillParams('frozen_armor').dur;
+      p.frozenArmor = sp_(p, 'frozen_armor').dur;
       p.markDirty();
       g.fx.burst('freeze', p.pos, { radius: 1.6 });
       g.sfx.play('cold', 0.7);
       return true;
     }
     case 'frost_nova': {
-      const sp = p.skillParams('frost_nova');
+      const sp = sp_(p, 'frost_nova');
       const pk = spellPacket(p, 'cold', sp.min, sp.max);
       pk.chill = sp.chill;
       L.blasts.push(new DelayedBlast(p.pos, sp.radius, 0.08, pk, 'player', 'frost', p));
@@ -361,7 +381,7 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
       return true;
     }
     case 'glacial_spike': {
-      const sp = p.skillParams('glacial_spike');
+      const sp = sp_(p, 'glacial_spike');
       const pk = spellPacket(p, 'cold', sp.min, sp.max);
       pk.chill = sp.chill;
       const pr = shootSpell(g, p, 'iceshard', 12, 13, pk, p.facing, 0.35);
@@ -371,7 +391,7 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
       return true;
     }
     case 'blizzard': {
-      const sp = p.skillParams('blizzard');
+      const sp = sp_(p, 'blizzard');
       const c = clampedPoint(p, act.target && !act.target.dead ? act.target.pos : act.point, 14);
       for (let i = 0; i < sp.shards; i++) {
         const a = Math.random() * Math.PI * 2;
@@ -390,9 +410,19 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
   return false;
 }
 
-function fireSpell(g: Game, p: Player) {
-  const act = g.playerAction;
+function fireSpell(g: Game, p: Player, act = g.playerAction) {
   if (!act) return;
+  if (act.lvl && castLvl === undefined) {
+    castLvl = act.lvl;
+    try {
+      fireSpellNow(g, p, act);
+    } finally {
+      castLvl = undefined;
+    }
+  } else fireSpellNow(g, p, act);
+}
+
+function fireSpellNow(g: Game, p: Player, act: PlayerAction) {
   if (fireSorceressSpell(g, p, act)) return;
   switch (act.skill) {
     case 'blessed_hammer': {
@@ -401,7 +431,7 @@ function fireSpell(g: Game, p: Player) {
       break;
     }
     case 'heavens_wrath': {
-      const hp = p.skillParams('heavens_wrath');
+      const hp = sp_(p, 'heavens_wrath');
       const pt = act.target && !act.target.dead ? act.target.pos : act.point;
       const target = { ...pt };
       const pk = emptyPacket();
@@ -427,7 +457,7 @@ function fireSpell(g: Game, p: Player) {
       break;
     }
     case 'holy_shield': {
-      const hp = p.skillParams('holy_shield');
+      const hp = sp_(p, 'holy_shield');
       p.holyShield = hp.dur;
       p.markDirty();
       g.fx.burst('shield_buff', p.pos);
@@ -438,6 +468,26 @@ function fireSpell(g: Game, p: Player) {
       g.openTownPortal();
       break;
     }
+  }
+}
+
+/**
+ * An item casting a skill at its own level: "X% chance to cast level N skill on striking / when
+ * struck / on attack / when you kill / when you die / when you level up". Only spells and buffs
+ * this game has can be cast; the rest show greyed on the item.
+ */
+export function castItemSkill(g: Game, p: Player, skill: string, lvl: number, target: Monster | null) {
+  const def = SKILL_BY_ID[skill];
+  if (!def || (def.kind !== 'spell' && def.kind !== 'buff')) return;
+  const facing = p.facing;
+  const point = target ? { ...target.pos } : { x: p.pos.x + Math.sin(p.facing) * 4, z: p.pos.z + Math.cos(p.facing) * 4 };
+  if (target) p.facing = angleTo(p.pos, target.pos);
+  castLvl = Math.max(1, lvl);
+  try {
+    fireSpell(g, p, { skill, target, point });
+  } finally {
+    castLvl = undefined;
+    p.facing = facing;
   }
 }
 
@@ -609,7 +659,7 @@ export function updatePlayer(g: Game, p: Player, dt: number) {
         faceNow(p, it.point);
         startAttack(g, p, it.skill === 'charge' ? 'attack' : it.skill, null, it.point);
       } else {
-        startCast(g, p, it.skill, it.point, it.target as Monster | null);
+        startCast(g, p, it.skill, it.point, it.target as Monster | null, it.charge);
       }
       p.intent = null;
       break;

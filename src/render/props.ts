@@ -439,6 +439,7 @@ export function makeDecor(kind: DecorKind, themeKey: string): THREE.Group {
 /** drops lying on the ground, modelled at size */
 const GROUND_MODELS: Partial<Record<string, ModelKey>> = {
   helm: 'g_helm', armor: 'g_armor', gloves: 'g_gloves', boots: 'g_boots', belt: 'g_belt', ring: 'g_ring', amulet: 'g_amulet', potion: 'g_potion', rune: 'g_rune',
+  gem: 'g_gem', cube: 'g_cube',
 };
 
 /** the model a weapon or shield is held as (see specs.ts meshyGear), and its scale */
@@ -446,12 +447,28 @@ export function heldModel(b: (typeof ITEM_BASES)[string]): [ModelKey, number] | 
   switch (b.type) {
     case 'sword':
       return b.twoHanded ? ['w_greatsword', 0.7] : ['skeleton_blade', 0.65];
+    case 'dagger':
+      return ['w_dagger', 0.65];
     case 'axe':
       return b.twoHanded ? ['axe_2handed', 0.75] : ['axe_1handed', 0.75];
     case 'mace':
       return b.twoHanded ? ['w_maul', 0.75] : ['w_mace', 0.65];
+    case 'club':
+      return b.twoHanded ? ['w_maul', 0.75] : ['w_club', 0.62];
+    case 'hammer':
+      return b.twoHanded ? ['w_maul', 0.75] : ['w_hammer', 0.62];
+    case 'scepter':
+      return ['w_scepter', 0.62];
+    case 'wand':
+      return ['w_wand', 0.75];
+    case 'orb':
+      return ['w_orb', 0.75];
     case 'staff':
       return ['w_staff', 0.8];
+    case 'spear':
+      return ['w_spear', 0.85];
+    case 'polearm':
+      return ['w_halberd', 0.85];
     case 'shield':
       return [b.id === 'towershield' || b.id === 'gothicshield' ? 'skeleton_shield_large_a' : 'skeleton_shield_small_a', 0.7];
   }
@@ -483,17 +500,23 @@ export function makeGroundItem(item: Item | null, color: string): THREE.Group {
   const b = ITEM_BASES[item.baseId];
   const held = heldModel(b);
   // weapons on the floor are drawn a size up, or a blade seen from above is a hairline
-  const model = held ? lyingFlat(held[0], held[1] * 1.3) : GROUND_MODELS[b.type] ? assetProp(GROUND_MODELS[b.type]!, 1, { ownMaterials: b.type === 'potion' }) : null;
+  const tinted = b.type === 'potion' || b.type === 'gem';
+  const model = held ? lyingFlat(held[0], held[1] * 1.3) : GROUND_MODELS[b.type] ? assetProp(GROUND_MODELS[b.type]!, 1, { ownMaterials: tinted }) : null;
   if (model) {
-    // potions and runes show their colour: a tinted bottle, and a glow around it
-    if (b.type === 'potion') {
+    // potions, gems and runes show their colour: a tinted bottle or stone, and a glow around it
+    if (tinted) {
+      const tint = new THREE.Color(b.tint ?? '#c01010');
       model.traverse((o) => {
         const mm = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
-        mm?.color?.set('#ffffff').lerp(new THREE.Color(b.tint ?? '#c01010'), 0.55);
+        mm?.color?.set('#ffffff').lerp(tint, b.type === 'gem' ? 0.85 : 0.55);
+        if (b.type === 'gem' && mm?.emissive) {
+          mm.emissive.copy(tint);
+          mm.emissiveIntensity = 0.35;
+        }
       });
     }
-    if (b.type === 'potion' || b.type === 'rune') {
-      const glow = glowSprite(b.tint ?? (b.type === 'rune' ? '#ff9020' : '#c01010'), b.type === 'potion' ? 0.32 : 0.28, 0.75);
+    if (tinted || b.type === 'rune') {
+      const glow = glowSprite(b.tint ?? (b.type === 'rune' ? '#ff9020' : '#c01010'), b.type === 'potion' ? 0.32 : b.type === 'gem' ? 0.24 : 0.28, 0.75);
       glow.position.y = b.type === 'potion' ? 0.1 : 0.05;
       model.add(glow);
     }
@@ -508,6 +531,19 @@ export function makeGroundItem(item: Item | null, color: string): THREE.Group {
     case 'mace':
       add(g, new THREE.BoxGeometry(0.07, 0.03, 0.75), metal, 0, 0.03, 0.05, 0, 0.6, 0);
       add(g, new THREE.BoxGeometry(0.22, 0.04, 0.05), m, 0.18, 0.04, -0.2, 0, 0.6, 0);
+      break;
+    case 'orb':
+    case 'gem': {
+      const s = b.type === 'orb' ? 0.1 : 0.05;
+      const tint = b.tint ?? color;
+      add(g, new THREE.SphereGeometry(s, 12, 8), stdMat(tint, 0.2, 0.1, tint, 1.2), 0, s, 0);
+      const glow = glowSprite(tint, s * 5, 0.7);
+      glow.position.y = s;
+      g.add(glow);
+      break;
+    }
+    case 'cube':
+      add(g, new THREE.BoxGeometry(0.3, 0.3, 0.3), stdMat('#4a3624', 0.6, 0.3, '#2a1a08', 0.4), 0, 0.15, 0, 0, 0.5, 0);
       break;
     case 'staff':
       add(g, new THREE.CylinderGeometry(0.025, 0.03, 1.1, 6), stdMat('#5a3a1c', 0.85), 0, 0.03, 0, Math.PI / 2, 0.6, 0);

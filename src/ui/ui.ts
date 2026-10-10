@@ -1,14 +1,15 @@
 import type { Sfx } from '../audio/sfx';
 import { ITEM_BASES, slotsFor, type EquipSlot } from '../data/items';
-import { RUNE_BY_ID } from '../data/legendary';
+import { GEMS, RUNE_BY_ID } from '../data/legendary';
 import { CLASSES, CLASS_IDS, type PlayerClass } from '../data/classes';
 import { SKILLS, SKILL_BY_ID, classSkills, type SkillDef } from '../data/skills';
 import { MOD_NAMES } from '../data/monsters';
 import type { Game, GameHooks } from '../game/game';
 import type { Level } from '../game/level';
-import { xpForLevel } from '../game/player';
+import { CHARGE_PREFIX, xpForLevel, type Player } from '../game/player';
 import { deleteSave, freeSlot, listSaves, markInGame, MAX_SLOTS, setSlot } from '../game/save';
 import { skillCost } from '../game/playerctl';
+import { transmute } from '../items/cube';
 import { createItem, findRuneword, applyRuneword } from '../items/gen';
 import type { Grid } from '../items/grid';
 import { baseOf, buyPrice, canSocket, itemColor, sellPrice, tooltip, type Item, type TooltipLine } from '../items/item';
@@ -17,9 +18,16 @@ import { T_FLOOR, T_PROP, T_WALL } from '../world/tilemap';
 import { CELL, itemIcon, skillIcon } from './icons';
 import { applySettings, saveSettings, SettingsPanel, type Settings } from './settings';
 
-type LeftPanel = 'char' | 'stash' | 'shop' | 'waypoint' | null;
+type LeftPanel = 'char' | 'stash' | 'shop' | 'waypoint' | 'cube' | null;
 type RightPanel = 'inv' | 'skills' | null;
-type GridKind = 'inv' | 'stash' | 'shop';
+type GridKind = 'inv' | 'stash' | 'shop' | 'cube';
+
+/** runes and gems go into sockets */
+const socketable = (it: Item) => {
+  const t = baseOf(it).type;
+  return t === 'rune' || t === 'gem';
+};
+const GEM_COLOR: Record<string, string> = Object.fromEntries(GEMS.map((g) => [g.id, ITEM_BASES[g.id].tint ?? '#fff']));
 
 function h<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, html?: string): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -43,6 +51,28 @@ const DOLL: Record<EquipSlot, [number, number, number, number, string]> = {
   ring2: [213, 190, 34, 34, '戒指'],
   feet: [272, 180, 68, 68, '足部'],
 };
+
+/** the skill a skill bar entry casts (`chg:<id>` casts <id> from charges) */
+function bindSkill(id: string): string {
+  return id.startsWith(CHARGE_PREFIX) ? id.slice(CHARGE_PREFIX.length) : id;
+}
+
+function bindName(id: string): string {
+  if (id === 'attack') return '攻击';
+  const name = SKILL_BY_ID[bindSkill(id)]?.name ?? id;
+  return id.startsWith(CHARGE_PREFIX) ? `${name}（充能）` : name;
+}
+
+function bindUsable(p: Player, id: string): boolean {
+  if (id === 'attack') return true;
+  if (id.startsWith(CHARGE_PREFIX)) return !!p.chargeFor(bindSkill(id));
+  return p.skillLevel(id) > 0;
+}
+
+/** gold to refill charges: Diablo II charges by skill level per missing charge */
+function rechargeCost(missing: number, lvl: number): number {
+  return missing * (10 + lvl * 6);
+}
 
 export class UI implements GameHooks {
   cursorItem: Item | null = null;
@@ -471,7 +501,7 @@ export class UI implements GameHooks {
     if (this.hoverSkill && ['q', 'w', 'e', 'r'].includes(k)) {
       const idx = 2 + ['q', 'w', 'e', 'r'].indexOf(k);
       this.game.player.binds[idx] = this.hoverSkill;
-      this.message(`${SKILL_BY_ID[this.hoverSkill]?.name ?? '攻击'} → ${SLOT_KEYS[idx]}`, '#c8a86a', 1.2);
+      this.message(`${bindName(this.hoverSkill)} → ${SLOT_KEYS[idx]}`, '#c8a86a', 1.2);
       this.dirty = true;
       return;
     }
@@ -538,7 +568,7 @@ export class UI implements GameHooks {
     let price: string | undefined;
     if (holder.dataset.src === 'shop') price = `购买价格：${buyPrice(item)} 金币`;
     else if (this.left === 'shop' && (holder.dataset.src === 'inv')) price = `出售价格：${sellPrice(item)} 金币（Ctrl+点击出售）`;
-    this.showTooltip(tooltip(item, { level: p.level, str: p.stats.str, dex: p.stats.dex }, price), e.clientX, e.clientY);
+    this.showTooltip(tooltip(item, { level: p.level, str: p.stats.str, dex: p.stats.dex, cls: p.cls }, price), e.clientX, e.clientY);
   }
 
   private showTooltip(lines: TooltipLine[], x: number, y: number) {
@@ -564,13 +594,28 @@ export class UI implements GameHooks {
       this.showTooltip([{ text: '普通攻击', color: '#c8a86a' }, { text: '用手中的武器攻击' }], x, y);
       return;
     }
+    if (id.startsWith(CHARGE_PREFIX)) {
+      const sid = id.slice(CHARGE_PREFIX.length);
+      const c = p.chargeFor(sid);
+      const def = SKILL_BY_ID[sid];
+      const lines: TooltipLine[] = [{ text: `${def.name}（充能）`, color: '#c8a86a' }, { text: def.desc, small: true }];
+      if (c) {
+        lines.push({ text: `技能等级：${c.lvl}（来自${c.item.name}）`, color: '#e8e0d0' });
+        for (const l of def.describe(p.skillParams(sid, c.lvl))) lines.push({ text: l, color: '#7a7aff' });
+        lines.push({ text: `剩余充能：${c.left}/${c.max}`, color: c.left > 0 ? '#6a8aff' : '#ff4040' });
+      } else lines.push({ text: '没有装备带这项充能的物品', color: '#ff4040' });
+      lines.push({ text: '每次施放消耗一次充能，不耗法力。找商人可以补充', small: true, color: '#888' });
+      lines.push({ text: '悬停时按 Q/W/E/R 绑定快捷键', small: true, color: '#888' });
+      this.showTooltip(lines, x, y);
+      return;
+    }
     const def = SKILL_BY_ID[id];
     const base = p.skillBase(id);
     const eff = p.skillLevel(id);
     const lines: TooltipLine[] = [{ text: def.name, color: '#c8a86a' }, { text: def.desc, small: true }];
     lines.push({ text: `需要等级：${def.reqLevel}`, color: p.level < def.reqLevel ? '#ff4040' : '#aaa', small: true });
     if (def.prereqs.length) lines.push({ text: `前置技能：${def.prereqs.map((x) => SKILL_BY_ID[x].name).join('、')}`, color: def.prereqs.every((x) => p.skillBase(x) > 0) ? '#aaa' : '#ff4040', small: true });
-    if (base > 0) {
+    if (eff > 0) {
       lines.push({ text: `当前等级：${eff}${eff > base ? `（+${eff - base}）` : ''}`, color: '#e8e0d0' });
       for (const l of def.describe(p.skillParams(id))) lines.push({ text: l, color: '#7a7aff' });
       const mana = def.mana(eff);
@@ -591,9 +636,8 @@ export class UI implements GameHooks {
 
   // ─────────────────────────── item ops ───────────────────────────
   private socketInto(target: Item, rune: Item): boolean {
-    if (!canSocket(target) || baseOf(rune).type !== 'rune') return false;
+    if (!canSocket(target) || !socketable(rune)) return false;
     target.socketed.push(rune.baseId);
-    target.reqLvl = Math.max(target.reqLvl, RUNE_BY_ID[rune.baseId]?.level ?? 1);
     const rw = findRuneword(target);
     if (rw) {
       applyRuneword(target, rw);
@@ -606,7 +650,7 @@ export class UI implements GameHooks {
 
   private gridOf(kind: GridKind): Grid {
     const p = this.game.player;
-    return kind === 'inv' ? p.inventory : kind === 'stash' ? p.stash : this.game.shop;
+    return kind === 'inv' ? p.inventory : kind === 'stash' ? p.stash : kind === 'cube' ? p.cube : this.game.shop;
   }
 
   private onGridDown(kind: GridKind, gridEl: HTMLElement, e: PointerEvent) {
@@ -625,6 +669,10 @@ export class UI implements GameHooks {
       const it = under.item;
       if (kind === 'shop') return this.buy(it);
       const b = baseOf(it);
+      if (b.type === 'cube') {
+        this.openCube();
+        return;
+      }
       if (b.type === 'potion') {
         grid.remove(it);
         this.game.drink(it);
@@ -644,7 +692,8 @@ export class UI implements GameHooks {
         this.dirty = true;
         return;
       }
-      if (under && baseOf(c).type === 'rune' && canSocket(under.item)) {
+      if (kind === 'cube' && baseOf(c).type === 'cube') return;
+      if (under && socketable(c) && canSocket(under.item)) {
         if (this.socketInto(under.item, c)) {
           this.cursorItem = null;
           this.dirty = true;
@@ -677,10 +726,12 @@ export class UI implements GameHooks {
       if (this.left === 'shop' && kind === 'inv') {
         grid.remove(it);
         this.sell(it);
-      } else if (this.left === 'stash') {
-        const dest = kind === 'inv' ? p.stash : p.inventory;
+      } else if (this.left === 'stash' || this.left === 'cube') {
+        const other = this.left === 'stash' ? p.stash : p.cube;
+        if (kind === 'inv' && baseOf(it).type === 'cube') return;
+        const dest = kind === 'inv' ? other : p.inventory;
         if (dest.add(it)) grid.remove(it);
-        else this.message(kind === 'inv' ? '储物箱已满' : '背包已满', '#ff6060');
+        else this.message(kind === 'inv' ? (this.left === 'stash' ? '储物箱已满' : '魔盒已满') : '背包已满', '#ff6060');
       } else if (baseOf(it).type === 'potion' && kind === 'inv') {
         if (this.game.beltInsert(it)) grid.remove(it);
       }
@@ -716,6 +767,11 @@ export class UI implements GameHooks {
 
   private sell(it: Item) {
     const p = this.game.player;
+    if (baseOf(it).noSell) {
+      this.message('商人不收这个', '#ff6060');
+      this.cursorItem = it;
+      return;
+    }
     const v = sellPrice(it);
     p.gold += v;
     if (baseOf(it).type !== 'potion') this.game.shop.add(it);
@@ -796,7 +852,7 @@ export class UI implements GameHooks {
     }
     if (this.cursorItem) {
       const c = this.cursorItem;
-      if (cur && baseOf(c).type === 'rune' && canSocket(cur)) {
+      if (cur && socketable(c) && canSocket(cur)) {
         if (this.socketInto(cur, c)) this.cursorItem = null;
         this.dirty = true;
         return;
@@ -848,7 +904,7 @@ export class UI implements GameHooks {
     for (const pl of grid.items) {
       const it = pl.item;
       const b = baseOf(it);
-      const d = h('div', `gitem ${it.rarity}${b.type !== 'potion' && b.type !== 'rune' && kind !== 'shop' && !p.meetsReq(it) ? ' unusable' : ''}`);
+      const d = h('div', `gitem ${it.rarity}${b.type !== 'potion' && b.type !== 'cube' && !socketable(it) && kind !== 'shop' && !p.meetsReq(it) ? ' unusable' : ''}`);
       d.style.left = `${pl.x * CELL + 1}px`;
       d.style.top = `${pl.y * CELL + 1}px`;
       d.style.width = `${b.w * CELL}px`;
@@ -859,8 +915,11 @@ export class UI implements GameHooks {
       if (it.sockets > 0) {
         const s = h('div', 'sockets');
         for (let i = 0; i < it.sockets; i++) {
-          const r = it.socketed[i] ? RUNE_BY_ID[it.socketed[i]] : null;
-          s.appendChild(h('div', 'sock', r ? r.glyph : ''));
+          const id = it.socketed[i];
+          const r = id ? RUNE_BY_ID[id] : null;
+          const sk = h('div', 'sock', r ? r.letter.slice(0, 1) : '');
+          if (id && GEM_COLOR[id]) sk.style.background = `radial-gradient(circle at 40% 35%, #fff 0, ${GEM_COLOR[id]} 35%, #000 100%)`;
+          s.appendChild(sk);
         }
         d.appendChild(s);
       }
@@ -938,6 +997,35 @@ export class UI implements GameHooks {
     L.appendChild(gl);
   }
 
+  private openCube() {
+    this.left = 'cube';
+    this.right = 'inv';
+    this.dirty = true;
+    this.sfx.play('click');
+  }
+
+  /** the Horadric Cube: its 3×4 space and the Transmute button */
+  private renderCube() {
+    const p = this.game.player;
+    const L = this.leftEl;
+    L.innerHTML = '';
+    L.appendChild(h('h2', '', '赫拉迪姆魔盒'));
+    this.addClose(L, 'left');
+    const wrap = h('div', 'cube-wrap');
+    wrap.appendChild(this.renderGrid('cube', p.cube));
+    const go = h('button', 'btn cube-go', '转 化');
+    go.onclick = () => {
+      if (this.cursorItem) return;
+      const r = transmute(p.cube, p.level);
+      this.message(r.message, r.ok ? '#c8a86a' : '#ff6060', 2.5);
+      this.sfx.play(r.ok ? 'socket' : 'nomana');
+      this.dirty = true;
+    };
+    wrap.appendChild(go);
+    L.appendChild(wrap);
+    L.appendChild(h('div', 'goldline', '<span style="color:#8a8278;font-size:12px">放进配方所需的物品，按"转化"。Ctrl+点击在背包与魔盒间移动</span>'));
+  }
+
   private renderShop() {
     const L = this.leftEl;
     L.innerHTML = '';
@@ -945,6 +1033,22 @@ export class UI implements GameHooks {
     this.addClose(L, 'left');
     L.appendChild(this.renderGrid('shop', this.game.shop));
     L.appendChild(h('div', 'goldline', `<span>你的金币：${this.game.player.gold}</span><span style="color:#8a8278;font-size:12px">点击购买 · 把物品放进来出售</span>`));
+    // like Diablo II's repair: refill the charges on worn and carried items
+    const p = this.game.player;
+    const spent = p.spentCharges();
+    if (spent.length) {
+      const cost = spent.reduce((n, c) => n + rechargeCost(c.missing, c.lvl), 0);
+      const btn = h('button', 'cube-go', `补充充能（${cost} 金币）`);
+      btn.onclick = () => {
+        if (p.gold < cost) return this.message('金币不够', '#ff4040', 1);
+        p.gold -= cost;
+        for (const c of spent) (c.item.charges ??= {})[c.param] = (c.item.charges[c.param] ?? 0) + c.missing;
+        this.sfx.play('gold');
+        this.message('充能已补满', '#c8a86a', 1);
+        this.dirty = true;
+      };
+      L.appendChild(btn);
+    }
   }
 
   private renderWaypoints() {
@@ -1074,7 +1178,7 @@ export class UI implements GameHooks {
       const base = p.skillBase(s.id);
       const eff = p.skillLevel(s.id);
       const avail = p.canLearn(s);
-      const el = h('div', `sk${base === 0 ? ' locked' : ''}${avail ? ' avail' : ''}`);
+      const el = h('div', `sk${eff === 0 ? ' locked' : ''}${avail ? ' avail' : ''}`);
       el.style.left = `${x}px`;
       el.style.top = `${y}px`;
       el.dataset.skill = s.id;
@@ -1131,8 +1235,9 @@ export class UI implements GameHooks {
     for (let i = 0; i < 6; i++) {
       const id = p.binds[i];
       const s = h('div', `slot${id ? '' : ' empty'}`);
-      if (id && (id === 'attack' || p.skillLevel(id) > 0)) {
-        s.innerHTML = `<img src="${skillIcon(id)}" />`;
+      if (id && bindUsable(p, id)) {
+        s.innerHTML = `<img src="${skillIcon(bindSkill(id))}" />`;
+        if (id.startsWith(CHARGE_PREFIX)) s.appendChild(Object.assign(h('span', 'charges'), { dataset: { chg: bindSkill(id) } }));
         s.dataset.skill = id;
         if (p.activeAura === id) s.classList.add('active-aura');
         if (SKILL_BY_ID[id]?.cooldown) s.appendChild(Object.assign(h('div', 'cd'), { dataset: { cd: id } }));
@@ -1151,10 +1256,13 @@ export class UI implements GameHooks {
     const p = this.game.player;
     const el = this.pickerEl;
     el.innerHTML = '';
-    const ids = ['attack', ...SKILLS.filter((s) => s.kind !== 'passive' && p.skillBase(s.id) > 0).map((s) => s.id)];
+    // skills with points, any an item grants (a staff's +3 Teleport, Enigma's Teleport), and charged ones
+    const ids = ['attack', ...SKILLS.filter((s) => s.kind !== 'passive' && p.skillLevel(s.id) > 0).map((s) => s.id)];
+    for (const c of p.chargedSkills()) if (!ids.includes(CHARGE_PREFIX + c.id)) ids.push(CHARGE_PREFIX + c.id);
     for (const id of ids) {
       const s = h('div', 'slot');
-      s.innerHTML = `<img src="${skillIcon(id)}" />`;
+      s.innerHTML = `<img src="${skillIcon(bindSkill(id))}" />`;
+      if (id.startsWith(CHARGE_PREFIX)) s.appendChild(h('span', 'charges', String(p.chargeFor(bindSkill(id))?.left ?? 0)));
       s.dataset.skill = id;
       s.onclick = () => {
         p.binds[slot] = id;
@@ -1197,6 +1305,9 @@ export class UI implements GameHooks {
         break;
       case 'waypoint':
         this.renderWaypoints();
+        break;
+      case 'cube':
+        this.renderCube();
         break;
     }
     if (this.right === 'inv') this.renderInventory();
@@ -1266,8 +1377,10 @@ export class UI implements GameHooks {
     // insufficient mana tint
     for (const el of this.skillsEl.querySelectorAll<HTMLElement>('[data-skill]')) {
       const id = el.dataset.skill!;
-      el.style.filter = id !== 'attack' && p.mana < skillCost(p, id) ? 'saturate(0.2) brightness(0.6)' : '';
+      const out = id.startsWith(CHARGE_PREFIX) ? !(p.chargeFor(bindSkill(id))?.left ?? 0) : id !== 'attack' && p.mana < skillCost(p, id);
+      el.style.filter = out ? 'saturate(0.2) brightness(0.6)' : '';
     }
+    for (const el of this.skillsEl.querySelectorAll<HTMLElement>('[data-chg]')) el.textContent = String(p.chargeFor(el.dataset.chg!)?.left ?? 0);
     this.hintEl.textContent = p.statPoints > 0 || p.skillPoints > 0 ? `${p.statPoints > 0 ? `有 ${p.statPoints} 点属性点（C）` : ''}${p.statPoints > 0 && p.skillPoints > 0 ? ' · ' : ''}${p.skillPoints > 0 ? `有 ${p.skillPoints} 点技能点（T）` : ''}` : '';
 
     // target bar

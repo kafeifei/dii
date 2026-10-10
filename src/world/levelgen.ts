@@ -443,12 +443,12 @@ export function generateTown(): Layout {
   decor.push({ kind: 'tent', x: 28.5, z: 14.5, rot: -0.4, scale: 1.1 });
 
   const furn = new Furnisher(map, rng, start, [start, waypoint, stairs, vendor, stash, campfire]);
-  // supplies by the vendor and the stash
-  furn.place('d_crates_stacked', 20, 18, 0);
-  furn.place('d_barrel_small', 21, 18, 1);
-  furn.place('d_keg', 17, 19, 1);
-  furn.place('d_barrel_large_decorated', 29, 19, 0);
-  furn.place('d_box_large', 29, 21, 2);
+  // the vendor's table; no crates or barrels in the camp, since they look like things to open.
+  // Lanterns either side of the stash, so it reads from across the camp
+  furn.place('d_table_long_decorated_A', 20, 17, 1);
+  furn.place('d_stool', 22, 17, 1);
+  furn.place('h_lantern_standing', 24, 20, 0);
+  furn.place('h_lantern_standing', 30, 20, 0);
   furn.place('x_well', 15, 26, 0);
   // lantern posts along the paths
   for (const [x, y] of [

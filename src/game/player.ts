@@ -1,20 +1,45 @@
 import { clamp, type P2 } from '../core/math';
 import { CLASSES, type PlayerClass } from '../data/classes';
+import { D2_CLASS, D2_TO_GAME, skillTab } from '../data/d2/skillmap';
+import { D2_XP, D2_XP_RATIO } from '../data/d2/progression';
 import { EQUIP_SLOTS, ITEM_BASES, type EquipSlot } from '../data/items';
 import { SET_ITEMS } from '../data/legendary';
 import { SKILL_BY_ID, SKILLS, type SkillDef } from '../data/skills';
-import { addStat, type StatBag, type StatKey } from '../data/stats';
+import { addStat, poisonSeconds, type StatBag, type StatKey } from '../data/stats';
 import { Grid } from '../items/grid';
-import { baseOf, globalItemStats, itemDefense, weaponDamage, type Item } from '../items/item';
+import { baseOf, globalItemStats, itemDefense, itemReqLvl, itemReqStats, paramMods, weaponDamage, type Item, type ItemMod } from '../items/item';
 import { Actor, type Resists } from './actor';
 import type { Monster } from './monster';
 
-export const MAX_LEVEL = 60;
+export const MAX_LEVEL = 99;
 
-/** cumulative xp needed to reach level L */
+/** a skill bar entry that casts from an item's charges: `chg:<skill id>` */
+export const CHARGE_PREFIX = 'chg:';
+
+/** one charged skill on equipped gear */
+export interface ChargeUse {
+  id: string;
+  item: Item;
+  /** the mod's param (the Diablo II skill name), which keys item.charges */
+  param: string;
+  lvl: number;
+  max: number;
+  left: number;
+}
+
+/** cumulative xp needed to reach level L (Diablo II's experience table) */
 export function xpForLevel(L: number): number {
   if (L <= 1) return 0;
-  return Math.floor(60 * Math.pow(L - 1, 2.3) + 100 * (L - 1));
+  return D2_XP[Math.min(L, MAX_LEVEL) - 1];
+}
+
+/** fire skills, for "+X to fire skills": the sorceress's fire tree and Holy Fire */
+const FIRE_SKILLS = new Set([...SKILLS.filter((s) => s.cls === 'sorceress' && s.tree === 0).map((s) => s.id), 'holy_fire']);
+
+/** an aura in effect: the one the player switched on, or one an item gives */
+export interface ActiveAura {
+  id: string;
+  lvl: number;
 }
 
 export interface Derived {
@@ -50,11 +75,23 @@ export interface Derived {
   dr: number;
   pierceRes: number;
   chillOnHit: boolean;
+  /** every summed stat, for the Diablo II properties read where they act (combat, vendors…) */
+  bag: StatBag;
+  /** % damage per point of strength and dexterity, from the weapon */
+  strBonus: number;
+  dexBonus: number;
+  /** auras from items, beside the one switched on */
+  itemAuras: ActiveAura[];
+  /** chance-to-cast mods and charged skills on equipped items */
+  procs: ItemMod[];
+  charged: { item: Item; mod: ItemMod }[];
   fire: [number, number];
   cold: [number, number];
   light: [number, number];
   magic: [number, number];
   poison: number;
+  /** seconds the weapon's poison lasts */
+  poisonLen: number;
   attacksPerSec: number;
   moveSpeed: number;
   castTime: number;
@@ -75,6 +112,10 @@ export class Player extends Actor {
   equipment: Equipment = {};
   inventory = new Grid(10, 4);
   stash = new Grid(10, 8);
+  /** the Horadric Cube's own 3×4 space */
+  cube = new Grid(3, 4);
+  /** has the cube turned up yet (it is found once) */
+  cubeFound = false;
   /** belt[col] = stack of potions (index 0 is the bottom / next to use) */
   belt: Item[][] = [[], [], [], []];
   gold = 0;
@@ -132,10 +173,22 @@ export class Player extends Actor {
     return this.skills[id] ?? 0;
   }
 
+  /** item bonuses to skills, worked out in recalc */
+  private skillBonus: { one: Record<string, number>; other: Record<string, number>; all: number; cls: number; tab: number[]; fire: number } = { one: {}, other: {}, all: 0, cls: 0, tab: [0, 0, 0], fire: 0 };
+
+  /**
+   * A skill's level with gear. As in Diablo II: a bonus to one skill grants it even with no points
+   * spent; +all, +class, +tree and +fire skills only add to skills that have a level already; a
+   * skill of another class given by an item ("oskill") gets nothing else.
+   */
   skillLevel(id: string): number {
-    const b = this.skills[id] ?? 0;
+    if (this.dirty) this.recalc();
+    const def = SKILL_BY_ID[id];
+    const sb = this.skillBonus;
+    if (def && def.cls !== this.cls) return sb.other[id] ?? 0;
+    const b = (this.skills[id] ?? 0) + (sb.one[id] ?? 0);
     if (b <= 0) return 0;
-    return b + (this.d?.skillsAll ?? 0);
+    return b + sb.all + sb.cls + (def ? sb.tab[def.tree] : 0) + (FIRE_SKILLS.has(id) ? sb.fire : 0);
   }
 
   synergy(def: SkillDef): number {
@@ -151,6 +204,47 @@ export class Player extends Actor {
     return def.params(Math.max(1, lvl), this.synergy(def));
   }
 
+  /** charged skills on equipped gear that this game can cast (Holy Thunder's Chain Lightning…) */
+  chargedSkills(): ChargeUse[] {
+    if (this.dirty) this.recalc();
+    const out: ChargeUse[] = [];
+    for (const { item, mod } of this.stats.charged) {
+      const param = mod.param ?? '';
+      const id = SKILL_BY_ID[param] ? param : D2_TO_GAME[param];
+      const kind = id ? SKILL_BY_ID[id].kind : null;
+      if (!id || (kind !== 'spell' && kind !== 'buff')) continue;
+      out.push({ id, item, param, lvl: mod.lvl ?? 1, max: mod.value, left: item.charges?.[param] ?? mod.value });
+    }
+    return out;
+  }
+
+  /** the charges a skill bar entry casts from: the highest level that has some left */
+  chargeFor(id: string): ChargeUse | undefined {
+    const all = this.chargedSkills().filter((c) => c.id === id);
+    return all.filter((c) => c.left > 0).sort((a, b) => b.lvl - a.lvl)[0] ?? all[0];
+  }
+
+  useCharge(c: ChargeUse): boolean {
+    const left = c.item.charges?.[c.param] ?? c.max;
+    if (left <= 0) return false;
+    (c.item.charges ??= {})[c.param] = left - 1;
+    return true;
+  }
+
+  /** items carried or worn whose charges are not full, with how many each is missing */
+  spentCharges(): { item: Item; param: string; missing: number; lvl: number }[] {
+    const items = [...Object.values(this.equipment), ...this.inventory.items.map((x) => x.item)].filter((x): x is Item => !!x);
+    const out: { item: Item; param: string; missing: number; lvl: number }[] = [];
+    for (const item of items) {
+      for (const m of item.mods) {
+        if (m.stat !== 'charged' || !m.param) continue;
+        const missing = m.value - (item.charges?.[m.param] ?? m.value);
+        if (missing > 0) out.push({ item, param: m.param, missing, lvl: m.lvl ?? 1 });
+      }
+    }
+    return out;
+  }
+
   canLearn(def: SkillDef): boolean {
     if (def.cls !== this.cls) return false;
     if (this.skillPoints <= 0) return false;
@@ -162,7 +256,9 @@ export class Player extends Actor {
   meetsReq(item: Item): boolean {
     const b = baseOf(item);
     const d = this.stats;
-    return this.level >= item.reqLvl && d.str >= (b.reqStr ?? 0) && d.dex >= (b.reqDex ?? 0);
+    const req = itemReqStats(item);
+    if (b.cls && b.cls !== this.cls) return false;
+    return this.level >= itemReqLvl(item) && d.str >= req.str && d.dex >= req.dex;
   }
 
   recalc() {
@@ -171,11 +267,13 @@ export class Player extends Actor {
     const eq = this.equipment;
     // items
     const setCounts: Record<string, number> = {};
+    const params: { item: Item; mod: ItemMod }[] = [];
     for (const slot of EQUIP_SLOTS) {
       const it = eq[slot];
       if (!it) continue;
-      const g = globalItemStats(it);
+      const g = globalItemStats(it, this.level);
       for (const k in g) addStat(bag, k as StatKey, g[k as StatKey]!);
+      for (const mod of paramMods(it)) params.push({ item: it, mod });
       if (it.setItemId) {
         const s = SET_ITEMS[it.setItemId];
         if (s) setCounts[s.set.id] = (setCounts[s.set.id] ?? 0) + 1;
@@ -188,17 +286,56 @@ export class Player extends Actor {
       }
     }
     const skillsAll = bag.skillsAll ?? 0;
-    const lvlOf = (id: string) => {
-      const b = this.skills[id] ?? 0;
-      return b > 0 ? b + skillsAll : 0;
-    };
-    // auras & buffs
-    if (this.activeAura) {
-      const al = lvlOf(this.activeAura);
-      if (al > 0) {
-        const def = SKILL_BY_ID[this.activeAura];
+    // skill bonuses from items
+    const myCls = this.cls === 'sorceress' ? 'sor' : 'pal';
+    const sb = { one: {} as Record<string, number>, other: {} as Record<string, number>, all: skillsAll, cls: 0, tab: [0, 0, 0], fire: bag.fireSkills ?? 0 };
+    const itemAuras: ActiveAura[] = [];
+    const procs: ItemMod[] = [];
+    const charged: { item: Item; mod: ItemMod }[] = [];
+    for (const { item, mod } of params) {
+      const id = SKILL_BY_ID[mod.param ?? ''] ? mod.param! : D2_TO_GAME[mod.param ?? ''];
+      const own = id && SKILL_BY_ID[id].cls === this.cls;
+      switch (mod.stat) {
+        case 'skill':
+          if (id && own) sb.one[id] = (sb.one[id] ?? 0) + mod.value;
+          break;
+        case 'oskill':
+          if (id) (own ? sb.one : sb.other)[id] = ((own ? sb.one : sb.other)[id] ?? 0) + mod.value;
+          break;
+        case 'clsSkills':
+          if (D2_CLASS[mod.param ?? ''] === this.cls) sb.cls += mod.value;
+          break;
+        case 'skillTab': {
+          const t = skillTab(Number(mod.param));
+          if (t.cls === myCls) sb.tab[t.tree] += mod.value;
+          break;
+        }
+        case 'aura':
+          if (id && SKILL_BY_ID[id].kind === 'aura') itemAuras.push({ id, lvl: mod.value });
+          break;
+        case 'charged':
+          if (id) charged.push({ item, mod });
+          break;
+        default:
+          if (id) procs.push(mod);
+      }
+    }
+    this.skillBonus = sb;
+    const lvlOf = (id: string) => this.skillLevel(id);
+    // auras & buffs: the one switched on, and any an item gives (the same aura twice keeps the higher)
+    const auras: ActiveAura[] = [];
+    if (this.activeAura && lvlOf(this.activeAura) > 0) auras.push({ id: this.activeAura, lvl: lvlOf(this.activeAura) });
+    for (const a of itemAuras) {
+      const same = auras.find((x) => x.id === a.id);
+      if (!same) auras.push(a);
+      else same.lvl = Math.max(same.lvl, a.lvl);
+    }
+    for (const aura of auras) {
+      {
+        const al = aura.lvl;
+        const def = SKILL_BY_ID[aura.id];
         const p = def.params(al, this.synergy(def));
-        switch (this.activeAura) {
+        switch (aura.id) {
           case 'might':
             addStat(bag, 'dmgPctGlobal', p.dmg);
             break;
@@ -262,13 +399,21 @@ export class Player extends Actor {
     let wMin = 1;
     let wMax = 3;
     let apsBase = 1.5;
+    let strBonus = 100;
+    let dexBonus = 0;
     if (w) {
-      [wMin, wMax] = weaponDamage(w);
-      apsBase = baseOf(w).speed ?? 1.4;
+      const wb = baseOf(w);
+      [wMin, wMax] = weaponDamage(w, L);
+      apsBase = wb.speed ?? 1.4;
+      // D2: most weapons gain 1% damage per strength point, daggers 0.75% per strength and dexterity
+      if (wb.strBonus !== undefined) {
+        strBonus = wb.strBonus;
+        dexBonus = wb.dexBonus ?? 0;
+      }
     }
     wMin += bag.dmgMin ?? 0;
     wMax += bag.dmgMax ?? 0;
-    const dmgPct = str + (bag.dmgPctGlobal ?? 0); // 1% per strength point, D2 style
+    const dmgPct = (str * strBonus) / 100 + (dex * dexBonus) / 100 + (bag.dmgPctGlobal ?? 0);
 
     const ar = Math.floor((dex * 5 - 35 + (bag.ar ?? 0)) * (1 + (bag.arPct ?? 0) / 100) + 20);
     let def = Math.floor(dex / 4);
@@ -287,11 +432,13 @@ export class Player extends Actor {
     }
 
     const resAll = bag.resAll ?? 0;
+    // the cap is 75%, raised by "+X% maximum resistance" (at most 95%)
+    const cap = (k: StatKey) => Math.min(95, 75 + (bag[k] ?? 0));
     const res: Resists = {
-      fire: clamp((bag.resFire ?? 0) + resAll, -100, 75),
-      cold: clamp((bag.resCold ?? 0) + resAll, -100, 75),
-      light: clamp((bag.resLight ?? 0) + resAll, -100, 75),
-      poison: clamp((bag.resPoison ?? 0) + resAll, -100, 75),
+      fire: clamp((bag.resFire ?? 0) + resAll, -100, cap('maxResFire')),
+      cold: clamp((bag.resCold ?? 0) + resAll, -100, cap('maxResCold')),
+      light: clamp((bag.resLight ?? 0) + resAll, -100, cap('maxResLight')),
+      poison: clamp((bag.resPoison ?? 0) + resAll, -100, cap('maxResPoison')),
       phys: 0,
     };
 
@@ -326,11 +473,18 @@ export class Player extends Actor {
       dr: Math.min(50, bag.dr ?? 0),
       pierceRes: bag.pierceRes ?? 0,
       chillOnHit: (bag.chillOnHit ?? 0) > 0,
+      bag,
+      strBonus,
+      dexBonus,
+      itemAuras,
+      procs,
+      charged,
       fire: [bag.fireMin ?? 0, bag.fireMax ?? 0],
       cold: [bag.coldMin ?? 0, bag.coldMax ?? 0],
       light: [bag.lightMin ?? 0, bag.lightMax ?? 0],
       magic: [bag.magicMin ?? 0, bag.magicMax ?? 0],
       poison: bag.poisonDmg ?? 0,
+      poisonLen: poisonSeconds(bag),
       attacksPerSec,
       moveSpeed,
       castTime,
@@ -351,7 +505,8 @@ export class Player extends Actor {
   /** returns number of levels gained */
   gainXp(amount: number): number {
     if (this.level >= MAX_LEVEL) return 0;
-    this.xp += amount;
+    // D2 keeps less of the experience earned from level 70 on (ExpRatio, out of 1024)
+    this.xp += Math.floor((amount * (D2_XP_RATIO[this.level] ?? 1024)) / 1024);
     let gained = 0;
     while (this.level < MAX_LEVEL && this.xp >= xpForLevel(this.level + 1)) {
       this.level++;
@@ -372,6 +527,6 @@ export class Player extends Actor {
 export type Intent =
   | { kind: 'move'; point: P2 }
   | { kind: 'attack'; target: Monster; skill: string; hold?: boolean }
-  | { kind: 'cast'; skill: string; point: P2; target: Monster | null }
+  | { kind: 'cast'; skill: string; point: P2; target: Monster | null; charge?: ChargeUse }
   | { kind: 'pickup'; ground: { pos: P2 } & object }
   | { kind: 'interact'; obj: { pos: P2 } & object };

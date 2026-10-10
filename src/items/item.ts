@@ -1,12 +1,21 @@
 import { ITEM_BASES, categoryOf, type ItemBase, type Category } from '../data/items';
-import { RUNE_BY_ID, RUNEWORD_BY_ID, SET_ITEMS, UNIQUE_BY_ID } from '../data/legendary';
-import { addStat, describeStats, type StatBag, type StatKey } from '../data/stats';
+import { className, skillRef, skillTab } from '../data/d2/skillmap';
+import { SKILL_BY_ID } from '../data/skills';
+import { RUNE_BY_ID, RUNEWORD_BY_ID, SET_ITEMS, SOCKETABLE_BY_ID, UNIQUE_BY_ID, type Socketable } from '../data/legendary';
+import { addStat, describeStats, INERT_STATS, PARAM_STATS, type StatBag, type StatKey } from '../data/stats';
+import { propMods, rollMax } from './props';
 
 export type Rarity = 'normal' | 'superior' | 'magic' | 'rare' | 'unique' | 'set' | 'runeword';
 
 export interface ItemMod {
   stat: StatKey;
   value: number;
+  /** a skill (D2 name or this game's id), a D2 class code or a skill tab number */
+  param?: string;
+  /** skill level for procs and charges */
+  lvl?: number;
+  /** value is in eighths of a point per character level */
+  perLvl?: boolean;
 }
 
 export interface Item {
@@ -23,6 +32,8 @@ export interface Item {
   setItemId?: string;
   runewordId?: string;
   reqLvl: number;
+  /** charges left, by skill, for "level N skill (X/Y charges)" */
+  charges?: Record<string, number>;
 }
 
 export const RARITY_COLOR: Record<Rarity, string> = {
@@ -38,6 +49,7 @@ export const RARITY_COLOR: Record<Rarity, string> = {
 export const SOCKETED_COLOR = '#8a8a8a';
 export const RUNE_COLOR = '#ffa31a';
 export const MOD_COLOR = '#7a7aff';
+const INERT_COLOR = '#6a6a78';
 
 export function baseOf(item: Item): ItemBase {
   return ITEM_BASES[item.baseId];
@@ -54,26 +66,41 @@ export function itemColor(item: Item): string {
   return RARITY_COLOR[item.rarity];
 }
 
-/** mods contributed by socketed runes (when not a runeword: runewords include runes too) */
-export function runeStats(item: Item): StatBag {
-  const bag: StatBag = {};
+/** which of a rune's or gem's three lists applies in this item */
+export function socketList(s: Socketable, item: Item) {
   const cat = itemCategory(item);
-  for (const rid of item.socketed) {
-    const r = RUNE_BY_ID[rid];
-    if (!r) continue;
-    const list = cat === 'weapon' ? r.weapon : r.armor;
-    for (const [k, v] of list) addStat(bag, k, v);
+  return cat === 'weapon' ? s.weapon : cat === 'shield' ? s.shield : s.armor;
+}
+
+/** mods from the runes and gems in an item's sockets */
+export function socketMods(item: Item): ItemMod[] {
+  const out: ItemMod[] = [];
+  const onWeapon = itemCategory(item) === 'weapon';
+  for (const id of item.socketed) {
+    const s = SOCKETABLE_BY_ID[id];
+    if (s) out.push(...propMods(socketList(s, item), onWeapon, rollMax));
   }
+  return out;
+}
+
+/** a mod's value at a character level ("+X per level" mods grow with it) */
+export function modValue(m: ItemMod, clvl: number): number {
+  return m.perLvl ? Math.floor((m.value * clvl) / 8) : m.value;
+}
+
+function sumMods(mods: ItemMod[], clvl: number, bag: StatBag = {}): StatBag {
+  for (const m of mods) if (!PARAM_STATS.has(m.stat)) addStat(bag, m.stat, modValue(m, clvl));
   return bag;
 }
 
-/** All mods on the item (explicit + runes), unmerged with base properties */
-export function itemMods(item: Item): StatBag {
-  const bag: StatBag = {};
-  for (const m of item.mods) addStat(bag, m.stat, m.value);
-  const rb = runeStats(item);
-  for (const k in rb) addStat(bag, k as StatKey, rb[k as StatKey]!);
-  return bag;
+/** All numeric mods on the item (its own and its sockets'), at a character level */
+export function itemMods(item: Item, clvl = 1): StatBag {
+  return sumMods(socketMods(item), clvl, sumMods(item.mods, clvl));
+}
+
+/** the mods that carry a skill or class: skill bonuses, auras, procs, charges */
+export function paramMods(item: Item): ItemMod[] {
+  return [...item.mods, ...socketMods(item)].filter((m) => PARAM_STATS.has(m.stat));
 }
 
 export function itemDefense(item: Item): number {
@@ -82,10 +109,10 @@ export function itemDefense(item: Item): number {
   return Math.floor(item.defense * (1 + (m.defPct ?? 0) / 100) + (m.defLocal ?? 0));
 }
 
-export function weaponDamage(item: Item): [number, number] {
+export function weaponDamage(item: Item, clvl = 1): [number, number] {
   const b = baseOf(item);
   if (!b.dmg) return [0, 0];
-  const m = itemMods(item);
+  const m = itemMods(item, clvl);
   const ed = 1 + (m.dmgPct ?? 0) / 100;
   const min = Math.floor(b.dmg[0] * ed + (m.dmgMin ?? 0));
   const max = Math.max(min + 1, Math.floor(b.dmg[1] * ed + (m.dmgMax ?? 0)));
@@ -93,8 +120,9 @@ export function weaponDamage(item: Item): [number, number] {
 }
 
 /** Stats that apply globally to the wearer (local ones handled separately) */
-export function globalItemStats(item: Item): StatBag {
-  const m = itemMods(item);
+export function globalItemStats(item: Item, clvl = 1): StatBag {
+  const m = itemMods(item, clvl);
+  const raw = { ...m };
   delete m.dmgPct;
   delete m.dmgMin;
   delete m.dmgMax;
@@ -102,11 +130,24 @@ export function globalItemStats(item: Item): StatBag {
   delete m.defLocal;
   if (itemCategory(item) !== 'weapon') {
     // jewelry/armor flat damage adds to weapon damage globally
-    const raw = itemMods(item);
     if (raw.dmgMin) m.dmgMin = raw.dmgMin;
     if (raw.dmgMax) m.dmgMax = raw.dmgMax;
   }
   return m;
+}
+
+/** the level an item needs: its own, raised by any rune or gem in it (D2) */
+export function itemReqLvl(item: Item): number {
+  let r = item.reqLvl;
+  for (const id of item.socketed) r = Math.max(r, SOCKETABLE_BY_ID[id]?.reqLvl ?? 1);
+  return r;
+}
+
+/** strength and dexterity an item needs, after "requirements -X%" */
+export function itemReqStats(item: Item): { str: number; dex: number } {
+  const b = baseOf(item);
+  const ease = 1 + (itemMods(item).ease ?? 0) / 100;
+  return { str: Math.floor((b.reqStr ?? 0) * ease), dex: Math.floor((b.reqDex ?? 0) * ease) };
 }
 
 export function itemTypeName(item: Item): string {
@@ -123,15 +164,92 @@ export interface ReqContext {
   level: number;
   str: number;
   dex: number;
+  cls?: string;
+}
+
+const PROC_TEXT: Partial<Record<StatKey, string>> = {
+  procHit: '击中时',
+  procStruck: '被击中时',
+  procAttack: '攻击时',
+  procKill: '消灭一名敌人时',
+  procDeath: '死亡时',
+  procLevelUp: '升级时',
+};
+
+/** a mod with a skill or class, as a tooltip line; `live` is false when it can't work in this game */
+export function describeParamMod(m: ItemMod, item: Item | null): { text: string; live: boolean } {
+  const p = m.param ?? '';
+  switch (m.stat) {
+    case 'skill': {
+      const s = skillRef(p);
+      return { text: `+${m.value} ${s.name}（仅限${className(s.cls ?? '')}）`, live: !!s.id };
+    }
+    case 'oskill': {
+      const s = skillRef(p);
+      return { text: `+${m.value} ${s.name}`, live: !!s.id };
+    }
+    case 'skillTab': {
+      const t = skillTab(Number(p));
+      return { text: `+${m.value} ${t.name}（仅限${className(t.cls)}）`, live: t.cls === 'sor' || t.cls === 'pal' };
+    }
+    case 'clsSkills':
+      return { text: `+${m.value} ${className(p)}技能等级`, live: p === 'sor' || p === 'pal' };
+    case 'aura': {
+      const s = skillRef(p);
+      const aura = s.name.endsWith('光环') ? s.name : `${s.name}光环`;
+      return { text: `装备时获得 ${m.value} 级${aura}`, live: !!s.id };
+    }
+    case 'charged': {
+      const s = skillRef(p);
+      const left = item?.charges?.[p] ?? m.value;
+      const kind = s.id ? SKILL_BY_ID[s.id]?.kind : undefined;
+      return { text: `${m.lvl} 级${s.name}（${left}/${m.value} 次充能）`, live: kind === 'spell' || kind === 'buff' };
+    }
+    default: {
+      const s = skillRef(p);
+      return { text: `${m.value}% 几率在${PROC_TEXT[m.stat] ?? ''}施放 ${m.lvl} 级${s.name}`, live: !!s.id };
+    }
+  }
+}
+
+/** tooltip lines for a bag of mods plus the parametric ones, greying what does nothing here */
+export function modLines(mods: ItemMod[], clvl: number, item: Item | null, skip: StatKey[] = []): TooltipLine[] {
+  const lines: TooltipLine[] = [];
+  for (const m of mods) {
+    if (!PARAM_STATS.has(m.stat)) continue;
+    const d = describeParamMod(m, item);
+    lines.push({ text: d.text, color: d.live ? MOD_COLOR : INERT_COLOR });
+  }
+  const bag = sumMods(mods, clvl);
+  const inert: StatBag = {};
+  for (const k of Object.keys(bag) as StatKey[]) {
+    if (INERT_STATS.has(k)) {
+      inert[k] = bag[k];
+      delete bag[k];
+    }
+  }
+  const perLvl = new Set(mods.filter((m) => m.perLvl).map((m) => m.stat));
+  for (const l of describeStats(bag, skip)) lines.push({ text: l, color: MOD_COLOR });
+  // "+X (based on character level)" for the per-level ones
+  if (perLvl.size) {
+    for (const ln of lines) for (const k of perLvl) if (statLine(k, bag) === ln.text) ln.text += '（基于角色等级）';
+  }
+  for (const l of describeStats(inert)) lines.push({ text: l, color: INERT_COLOR });
+  return lines;
+}
+
+function statLine(k: StatKey, bag: StatBag): string | undefined {
+  return bag[k] ? describeStats({ [k]: bag[k] })[0] : undefined;
 }
 
 export function tooltip(item: Item, ctx?: ReqContext, priceLine?: string): TooltipLine[] {
   const b = baseOf(item);
   const lines: TooltipLine[] = [];
   const color = itemColor(item);
+  const clvl = ctx?.level ?? 1;
   if (item.rarity === 'runeword') {
     lines.push({ text: item.name, color });
-    lines.push({ text: `'${item.socketed.map((r) => RUNE_BY_ID[r]?.name ?? '?').join('')}'`, color: RARITY_COLOR.unique });
+    lines.push({ text: `'${item.socketed.map((r) => RUNE_BY_ID[r]?.letter ?? '?').join('')}'`, color: RARITY_COLOR.unique });
     lines.push({ text: b.name, color: SOCKETED_COLOR });
   } else if (item.rarity === 'unique' || item.rarity === 'set' || item.rarity === 'rare') {
     lines.push({ text: item.name, color });
@@ -148,21 +266,32 @@ export function tooltip(item: Item, ctx?: ReqContext, priceLine?: string): Toolt
     if (priceLine) lines.push({ text: priceLine, small: true });
     return lines;
   }
-  if (b.type === 'rune') {
-    const r = RUNE_BY_ID[b.id];
+  if (b.type === 'cube') {
+    lines.push({ text: '右键点击打开', small: true, color: '#999' });
+    lines.push({ text: '放入物品后按"转化"，按赫拉迪姆的配方合成', small: true, color: '#aaa' });
+    return lines;
+  }
+  if (b.type === 'rune' || b.type === 'gem') {
+    const s = SOCKETABLE_BY_ID[b.id];
     lines.push({ text: '可镶嵌于有孔的物品中', color: '#aaa', small: true });
-    lines.push({ text: '武器：' + describeStats(Object.fromEntries(r.weapon)).join('，') });
-    lines.push({ text: '头盔/铠甲/盾牌：' + describeStats(Object.fromEntries(r.armor)).join('，') });
-    lines.push({ text: `需要等级：${r.level}`, color: ctx && ctx.level < r.level ? '#ff4040' : undefined });
+    const part = (label: string, props: typeof s.weapon, onWeapon: boolean) => {
+      const ls = modLines(propMods(props, onWeapon, rollMax), clvl, null).map((l) => l.text);
+      lines.push({ text: `${label}：${ls.join('，') || '—'}` });
+    };
+    part('武器', s.weapon, true);
+    part('头盔/铠甲', s.armor, false);
+    part('盾牌', s.shield, false);
+    lines.push({ text: `需要等级：${s.reqLvl}`, color: ctx && ctx.level < s.reqLvl ? '#ff4040' : undefined });
     if (priceLine) lines.push({ text: priceLine, small: true });
     return lines;
   }
 
   if (b.dmg) {
-    const [mn, mx] = weaponDamage(item);
+    const [mn, mx] = weaponDamage(item, clvl);
     const enhanced = mn !== b.dmg[0] || mx !== b.dmg[1];
     lines.push({ text: `${b.twoHanded ? '双手' : '单手'}伤害：${mn} - ${mx}`, color: enhanced ? MOD_COLOR : undefined });
-    lines.push({ text: `攻击速度：${b.speed! >= 1.6 ? '非常快' : b.speed! >= 1.45 ? '快' : b.speed! >= 1.25 ? '普通' : '慢'}`, small: true });
+    const ws = b.wsm ?? 0;
+    lines.push({ text: `攻击速度：${ws <= -20 ? '非常快' : ws < 0 ? '快' : ws === 0 ? '普通' : ws <= 10 ? '慢' : '非常慢'}`, small: true });
   }
   if (item.defense !== undefined) {
     const d = itemDefense(item);
@@ -171,24 +300,27 @@ export function tooltip(item: Item, ctx?: ReqContext, priceLine?: string): Toolt
   if (b.block) lines.push({ text: `格挡几率：${b.block}%` });
   if (b.beltRows) lines.push({ text: `腰带格数：${(b.beltRows + 1) * 4}` });
   if (ctx) {
-    if (b.reqDex) lines.push({ text: `需要敏捷：${b.reqDex}`, color: ctx.dex < b.reqDex ? '#ff4040' : undefined });
-    if (b.reqStr) lines.push({ text: `需要力量：${b.reqStr}`, color: ctx.str < b.reqStr ? '#ff4040' : undefined });
-    if (item.reqLvl > 1) lines.push({ text: `需要等级：${item.reqLvl}`, color: ctx.level < item.reqLvl ? '#ff4040' : undefined });
+    const req = itemReqStats(item);
+    const lvl = itemReqLvl(item);
+    if (b.cls) lines.push({ text: `（仅限${className(b.cls === 'sorceress' ? 'sor' : 'pal')}）`, color: ctx.cls && ctx.cls !== b.cls ? '#ff4040' : undefined });
+    if (req.dex) lines.push({ text: `需要敏捷：${req.dex}`, color: ctx.dex < req.dex ? '#ff4040' : undefined });
+    if (req.str) lines.push({ text: `需要力量：${req.str}`, color: ctx.str < req.str ? '#ff4040' : undefined });
+    if (lvl > 1) lines.push({ text: `需要等级：${lvl}`, color: ctx.level < lvl ? '#ff4040' : undefined });
   }
+  if (b.tier) lines.push({ text: b.tier === 2 ? '精英' : '扩展', color: '#aaa', small: true });
 
-  const mods = itemMods(item);
+  const all = [...item.mods, ...socketMods(item)];
   const skip: StatKey[] = [];
-  if (b.dmg) skip.push('dmgPct', 'dmgMin', 'dmgMax');
+  if (b.dmg) skip.push('dmgMin', 'dmgMax');
   if (item.defense !== undefined) skip.push('defLocal');
-  const descLines = describeStats(mods, skip);
-  // still show enhanced damage % as a property line
-  if (b.dmg && mods.dmgPct) descLines.unshift(`+${Math.round(mods.dmgPct)}% 增强伤害`);
-  for (const l of descLines) lines.push({ text: l, color: MOD_COLOR });
+  const ml = modLines(all, clvl, item, skip);
+  for (const l of ml) lines.push(l);
 
   if (item.sockets > 0) {
     lines.push({ text: `镶孔（${item.socketed.length}/${item.sockets}）`, color: MOD_COLOR });
   }
   if (item.rarity === 'superior') lines.push({ text: '优质', color: '#aaa', small: true });
+  if (ml.some((l) => l.color === INERT_COLOR)) lines.push({ text: '灰色属性在本作中没有效果', color: INERT_COLOR, small: true });
 
   if (item.uniqueId) {
     const u = UNIQUE_BY_ID[item.uniqueId];
@@ -213,6 +345,7 @@ export function tooltip(item: Item, ctx?: ReqContext, priceLine?: string): Toolt
 
 export function sellPrice(item: Item): number {
   const b = baseOf(item);
+  if (b.noSell) return 0;
   const mult: Record<Rarity, number> = { normal: 1, superior: 1.3, magic: 2, rare: 3.5, unique: 5, set: 5, runeword: 6 };
   return Math.max(1, Math.floor((b.price * mult[item.rarity] * (1 + item.mods.length * 0.15)) / 4));
 }
@@ -222,7 +355,7 @@ export function buyPrice(item: Item): number {
 }
 
 export function canSocket(item: Item): boolean {
-  return item.sockets > item.socketed.length && (item.rarity !== 'runeword');
+  return item.sockets > item.socketed.length && item.rarity !== 'runeword';
 }
 
 export function isRuneword(item: Item): boolean {

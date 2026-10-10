@@ -1,4 +1,6 @@
-import { ITEM_BASES, type Category } from './items';
+import { D2_RUNEWORDS } from './d2/runewords';
+import { D2_GEMS, D2_RUNES } from './d2/socketables';
+import type { D2Gem, D2Rune, D2Runeword } from './d2/types';
 import type { StatKey } from './stats';
 
 type ModRange = [StatKey, number, number];
@@ -103,73 +105,18 @@ export const SETS: SetDef[] = [
 export const SET_ITEMS: Record<string, { set: SetDef; item: SetItemDef }> = {};
 for (const s of SETS) for (const it of s.items) SET_ITEMS[it.id] = { set: s, item: it };
 
-// ─────────── runes ───────────
+// ─────────── runes, gems and runewords: Diablo II's own (src/data/d2) ───────────
 
-export interface RuneDef {
-  id: string;
-  name: string;
-  glyph: string;
-  level: number;
-  weapon: [StatKey, number][];
-  armor: [StatKey, number][]; // helm, body, shield
-  color: string;
-}
+/** a rune or gem: what it gives in a weapon, in a helm or body armor, and in a shield */
+export type Socketable = D2Rune | D2Gem;
 
-export const RUNES: RuneDef[] = [
-  { id: 'r_dawn', name: '晨', glyph: 'ᚠ', level: 1, weapon: [['ar', 50], ['lightRadius', 1]], armor: [['def', 15], ['lightRadius', 1]], color: '#e8d9a0' },
-  { id: 'r_ember', name: '烬', glyph: 'ᚢ', level: 3, weapon: [['fireMin', 3], ['fireMax', 9]], armor: [['resFire', 20]], color: '#ff7a30' },
-  { id: 'r_frost', name: '霜', glyph: 'ᚦ', level: 5, weapon: [['coldMin', 3], ['coldMax', 6]], armor: [['resCold', 20]], color: '#8ad8ff' },
-  { id: 'r_thunder', name: '雷', glyph: 'ᚨ', level: 7, weapon: [['lightMin', 1], ['lightMax', 14]], armor: [['resLight', 20]], color: '#fff27a' },
-  { id: 'r_venom', name: '蚀', glyph: 'ᚱ', level: 9, weapon: [['poisonDmg', 30]], armor: [['resPoison', 25]], color: '#7cff6a' },
-  { id: 'r_stone', name: '岩', glyph: 'ᚲ', level: 12, weapon: [['dmgPct', 15]], armor: [['defPct', 15]], color: '#b6aa98' },
-  { id: 'r_wind', name: '风', glyph: 'ᚷ', level: 15, weapon: [['ias', 15]], armor: [['frw', 10]], color: '#c8ffe8' },
-  { id: 'r_blood', name: '血', glyph: 'ᚹ', level: 18, weapon: [['lifeSteal', 5]], armor: [['life', 25]], color: '#ff3040' },
-  { id: 'r_shadow', name: '影', glyph: 'ᚺ', level: 22, weapon: [['crit', 15]], armor: [['dr', 5]], color: '#9a7cff' },
-  { id: 'r_star', name: '星', glyph: 'ᚾ', level: 26, weapon: [['dmgPct', 30], ['ar', 100]], armor: [['resAll', 10]], color: '#fff8d0' },
-  { id: 'r_oath', name: '誓', glyph: 'ᛁ', level: 30, weapon: [['skillsAll', 1]], armor: [['mf', 25]], color: '#ffd24a' },
-  { id: 'r_abyss', name: '冥', glyph: 'ᛃ', level: 36, weapon: [['pierceRes', 15], ['dmgPct', 20]], armor: [['life', 60], ['dr', 8]], color: '#c040ff' },
-];
+export const RUNES: D2Rune[] = D2_RUNES;
+export const GEMS: D2Gem[] = D2_GEMS;
+export const RUNE_BY_ID: Record<string, D2Rune> = Object.fromEntries(D2_RUNES.map((r) => [r.id, r]));
+export const SOCKETABLE_BY_ID: Record<string, Socketable> = Object.fromEntries([...D2_RUNES, ...D2_GEMS].map((r) => [r.id, r]));
 
-export const RUNE_BY_ID: Record<string, RuneDef> = Object.fromEntries(RUNES.map((r) => [r.id, r]));
-
-for (const r of RUNES) {
-  ITEM_BASES[r.id] = {
-    id: r.id,
-    name: `「${r.name}」符文`,
-    type: 'rune',
-    w: 1,
-    h: 1,
-    qlvl: r.level,
-    price: 50 + r.level * 30,
-    tint: r.color,
-  };
-}
-
-export interface RunewordDef {
-  id: string;
-  name: string;
-  runes: string[];
-  cats: Category[];
-  reqLvl: number;
-  mods: ModRange[];
-}
-
-export const RUNEWORDS: RunewordDef[] = [
-  { id: 'rw_emberoath', name: '余烬誓言', runes: ['r_ember', 'r_dawn'], cats: ['weapon'], reqLvl: 6,
-    mods: [['dmgPct', 60, 80], ['fireMin', 8, 8], ['fireMax', 18, 18], ['ias', 20, 20], ['lifeSteal', 3, 3]] },
-  { id: 'rw_longnight', name: '长夜', runes: ['r_frost', 'r_shadow', 'r_dawn'], cats: ['body'], reqLvl: 22,
-    mods: [['defPct', 80, 100], ['resCold', 30, 30], ['frw', 20, 20], ['fhr', 30, 30], ['life', 40, 40]] },
-  { id: 'rw_thunderwrath', name: '雷霆之怒', runes: ['r_thunder', 'r_blood', 'r_thunder'], cats: ['weapon'], reqLvl: 18,
-    mods: [['dmgPct', 120, 160], ['lightMin', 5, 5], ['lightMax', 80, 80], ['ias', 30, 30], ['crit', 20, 20]] },
-  { id: 'rw_ironheart', name: '钢铁之心', runes: ['r_stone', 'r_oath'], cats: ['shield', 'body'], reqLvl: 30,
-    mods: [['defPct', 120, 150], ['resAll', 25, 25], ['block', 20, 20], ['skillsAll', 1, 1], ['vit', 15, 15]] },
-  { id: 'rw_starlight', name: '星辉', runes: ['r_star', 'r_dawn'], cats: ['helm'], reqLvl: 26,
-    mods: [['defPct', 60, 80], ['skillsAll', 1, 1], ['mf', 30, 40], ['lightRadius', 3, 3], ['mana', 40, 40]] },
-  { id: 'rw_windrunner', name: '逐风', runes: ['r_wind', 'r_venom'], cats: ['weapon'], reqLvl: 16,
-    mods: [['dmgPct', 80, 110], ['ias', 40, 40], ['poisonDmg', 120, 120], ['frw', 25, 25]] },
-  { id: 'rw_abyssking', name: '冥王', runes: ['r_abyss', 'r_blood', 'r_oath', 'r_shadow'], cats: ['weapon'], reqLvl: 38,
-    mods: [['dmgPct', 250, 320], ['skillsAll', 2, 2], ['pierceRes', 20, 25], ['lifeSteal', 8, 8], ['crit', 30, 30], ['ias', 30, 30]] },
-];
+export type RunewordDef = D2Runeword;
+export const RUNEWORDS: D2Runeword[] = D2_RUNEWORDS;
 
 export const UNIQUE_BY_ID: Record<string, UniqueDef> = Object.fromEntries(UNIQUES.map((u) => [u.id, u]));
 export const RUNEWORD_BY_ID: Record<string, RunewordDef> = Object.fromEntries(RUNEWORDS.map((r) => [r.id, r]));

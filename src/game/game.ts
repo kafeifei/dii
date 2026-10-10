@@ -4,6 +4,7 @@ import type { Sfx } from '../audio/sfx';
 import { CLASSES, type PlayerClass } from '../data/classes';
 import { ITEM_BASES } from '../data/items';
 import { SKILL_BY_ID } from '../data/skills';
+import { D2_TO_GAME } from '../data/d2/skillmap';
 import { Grid } from '../items/grid';
 import { createItem, rollEquipment, rollMonsterDrops, type Drop } from '../items/gen';
 import { baseOf, type Item } from '../items/item';
@@ -14,8 +15,9 @@ import { nullFx, type Fx } from './fx';
 import { Level } from './level';
 import type { Monster } from './monster';
 import { DelayedBlast, GroundItem, Projectile, WorldObject } from './objects';
-import { Player } from './player';
-import { startCast, toggleAura, updatePlayer, type PlayerAction } from './playerctl';
+import { CHARGE_PREFIX, Player } from './player';
+import { castItemSkill, startCast, toggleAura, updatePlayer, type PlayerAction } from './playerctl';
+import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
 import { loadSave, markInGame, setSlot, writeSave } from './save';
 
@@ -336,6 +338,7 @@ export class Game {
   }
 
   useSkillAt(skill: string, monster: Monster | null, point: P2, isPress: boolean) {
+    if (skill.startsWith(CHARGE_PREFIX)) return this.useChargeAt(skill.slice(CHARGE_PREFIX.length), monster, point, isPress);
     const p = this.player;
     const def = SKILL_BY_ID[skill];
     if (skill !== 'attack' && (!def || p.skillLevel(skill) <= 0)) return;
@@ -367,15 +370,43 @@ export class Game {
     }
   }
 
+  /** cast a skill from an item's charges (no mana; one charge per cast) */
+  private useChargeAt(skill: string, monster: Monster | null, point: P2, isPress: boolean) {
+    const p = this.player;
+    const charge = p.chargeFor(skill);
+    if (!charge) return;
+    if (charge.left <= 0) {
+      if (isPress) this.hooks.message('充能已经用完了，找商人补充', '#aaa', 1.2);
+      return;
+    }
+    const busy = !(p.state === 'idle' || p.state === 'move');
+    if (!isPress && busy) return;
+    if (!busy) {
+      startCast(this, p, skill, monster ? monster.pos : point, monster, charge);
+      p.intent = null;
+    } else if (isPress) {
+      p.intent = { kind: 'cast', skill, point, target: monster, charge };
+    }
+  }
+
   // ───────────────────────── combat helpers ─────────────────────────
 
   private updateAuras(dt: number) {
     const p = this.player;
-    if (p.dead || !p.activeAura) return;
-    const aura = p.activeAura;
-    const lvl = p.skillLevel(aura);
-    if (lvl <= 0) return;
-    const sp = p.skillParams(aura);
+    if (p.dead) return;
+    // the aura switched on, and any from items (Insight's Meditation, Infinity's Conviction…)
+    const auras: { id: string; lvl: number }[] = [];
+    if (p.activeAura && p.skillLevel(p.activeAura) > 0) auras.push({ id: p.activeAura, lvl: p.skillLevel(p.activeAura) });
+    for (const a of p.stats.itemAuras) if (!auras.some((x) => x.id === a.id)) auras.push(a);
+    this.auraPulse -= dt;
+    const pulse = this.auraPulse <= 0;
+    if (pulse) this.auraPulse = 1;
+    for (const a of auras) this.updateAura(a.id, a.lvl, pulse);
+  }
+
+  private updateAura(aura: string, lvl: number, pulse: boolean) {
+    const p = this.player;
+    const sp = p.skillParams(aura, lvl);
     const radius = sp.radius ?? 5;
     const inRange = this.level.monsters.filter((m) => !m.dead && dist(m.pos, p.pos) <= radius + m.radius);
     if (aura === 'holy_freeze') {
@@ -390,9 +421,7 @@ export class Game {
         m.convictDef = sp.def;
       }
     }
-    this.auraPulse -= dt;
-    if (this.auraPulse > 0) return;
-    this.auraPulse = 1;
+    if (!pulse) return;
     if (aura === 'prayer') {
       if (p.life < p.stats.maxLife) p.life = Math.min(p.stats.maxLife, p.life + sp.heal);
     } else if (aura === 'holy_fire' || aura === 'holy_freeze') {
@@ -543,11 +572,14 @@ export class Game {
     m.killedBy = elem;
     m.setState('dead');
     m.path = null;
-    // xp
+    // xp, as Diablo II scales it by the level gap: monsters more than 5 levels below give
+    // 81/62/43/24/5%, more than 5 above give character level / monster level
     let xp = m.xp;
     const diff = p.level - m.level;
-    if (diff > 5) xp *= Math.max(0.05, 1 - (diff - 5) * 0.12);
+    if (diff > 5) xp *= [0.81, 0.62, 0.43, 0.24][diff - 6] ?? 0.05;
+    else if (diff < -5) xp *= p.level / m.level;
     const gained = p.gainXp(Math.floor(xp));
+    if (gained > 0) this.onProc('procLevelUp', null);
     if (gained > 0) {
       this.fx.burst('levelup', p.pos);
       this.sfx.play('levelup');
@@ -555,6 +587,8 @@ export class Game {
       this.hooks.levelUp();
     }
     const d = p.stats;
+    this.onProc('procKill', m);
+    if (m.def.demon && d.bag.demonHeal) p.life = Math.min(d.maxLife, p.life + d.bag.demonHeal);
     if (d.lifePerKill) p.life = Math.min(d.maxLife, p.life + d.lifePerKill);
     if (d.manaPerKill) p.mana = Math.min(d.maxMana, p.mana + d.manaPerKill);
     // loot
@@ -596,9 +630,19 @@ export class Game {
     }
   }
 
+  /** chance-to-cast mods on the player's gear, for one kind of event */
+  onProc(kind: StatKey, target: Monster | null) {
+    const p = this.player;
+    for (const m of p.stats.procs) {
+      if (m.stat !== kind || !chance(m.value / 100)) continue;
+      castItemSkill(this, p, (SKILL_BY_ID[m.param ?? ''] ? m.param : D2_TO_GAME[m.param ?? ''])!, m.lvl ?? 1, target && !target.dead ? target : null);
+    }
+  }
+
   killPlayer() {
     const p = this.player;
     if (p.dead) return;
+    this.onProc('procDeath', null);
     p.dead = true;
     p.life = 0;
     p.setState('dead');
@@ -732,6 +776,12 @@ export class Game {
         const lvl = Math.max(1, this.level.depth * 2);
         const drops = rollMonsterDrops(lvl, 1, p.stats.mf, p.stats.gf);
         drops.push({ kind: 'gold', amount: randInt(lvl * 5, lvl * 15) });
+        // the Horadric Cube waits in the first chest opened from floor 4 down (D2: the Halls of the Dead)
+        if (this.level.depth >= 4 && !p.cubeFound) {
+          p.cubeFound = true;
+          drops.push({ kind: 'item', item: createItem('cube') });
+          this.hooks.message('你找到了赫拉迪姆魔盒！', '#c8a86a', 4);
+        }
         this.spawnDrops(obj.pos, drops);
         break;
       }

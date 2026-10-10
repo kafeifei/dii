@@ -18,7 +18,8 @@ export interface DamagePacket {
   cold: number;
   light: number;
   magic: number;
-  poison: number; // total over 3s
+  poison: number; // total over poisonLen seconds (3 if unset)
+  poisonLen?: number;
   crit?: boolean;
   knockback?: number;
   chill?: number; // seconds
@@ -28,8 +29,27 @@ export interface DamagePacket {
   lifeSteal?: number;
   manaSteal?: number;
   pierceRes?: number;
+  /** "-X% to enemy fire/cold/lightning/poison resistance" */
+  pierce?: Partial<Record<'fire' | 'cold' | 'light' | 'poison', number>>;
   /** whether to stagger */
   heavy?: boolean;
+  // ── Diablo II weapon properties, carried by the player's strikes ──
+  /** crushing blow and open wounds chances, % */
+  cb?: number;
+  ow?: number;
+  /** extra % physical damage against undead and demons */
+  vsUndead?: number;
+  vsDemon?: number;
+  /** freeze length bonus, slow %, blind, chance to make it flee %, stop it healing */
+  freeze?: number;
+  slow?: number;
+  blind?: boolean;
+  flee?: number;
+  noHeal?: boolean;
+  /** monster defense taken away per hit */
+  defDown?: number;
+  /** the attacker's level, for open wounds */
+  alvl?: number;
 }
 
 export function emptyPacket(): DamagePacket {
@@ -67,6 +87,12 @@ export abstract class Actor {
   poisonTime = 0;
   poisonDps = 0;
   stunTime = 0;
+  /** open wounds */
+  bleedTime = 0;
+  bleedDps = 0;
+  /** "slows target by X%" */
+  slowTime = 0;
+  slowAmount = 0;
   knockVel: P2 = { x: 0, z: 0 };
   /** visual: seconds since last hit (for flash) */
   hitFlash = 0;
@@ -94,7 +120,9 @@ export abstract class Actor {
 
   /** movement multiplier from chill etc. */
   slowFactor(): number {
-    return this.chillTime > 0 ? 1 - this.chillAmount : 1;
+    const chill = this.chillTime > 0 ? 1 - this.chillAmount : 1;
+    const slow = this.slowTime > 0 ? 1 - this.slowAmount : 1;
+    return Math.min(chill, slow);
   }
 
   abstract resists(): Resists;

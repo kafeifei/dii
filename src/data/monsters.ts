@@ -30,6 +30,8 @@ export interface MonsterDef {
   weight: number;
   pack: [number, number];
   undead?: boolean;
+  /** Diablo II's demon flag: what "+X% damage to demons" counts */
+  demon?: boolean;
   flee?: boolean;
   /** companion monsters spawned with the pack */
   escort?: { id: string; count: [number, number] };
@@ -55,12 +57,12 @@ export const MONSTERS: Record<string, MonsterDef> = {
     weight: 6, pack: [2, 4], undead: true, res: { poison: 50 }, color: '#cfc6b0', color2: '#4a3a28',
   },
   imp: {
-    id: 'imp', name: '堕落小鬼', model: 'imp', life: 6, dmg: [1, 3], def: 3, ar: 22, speed: 3.1, attackSpeed: 1.0, range: 1.0,
+    id: 'imp', demon: true, name: '堕落小鬼', model: 'imp', life: 6, dmg: [1, 3], def: 3, ar: 22, speed: 3.1, attackSpeed: 1.0, range: 1.0,
     radius: 0.33, scale: 0.72, xp: 8, ai: 'melee', blood: 'red', minDepth: 1, maxDepth: 9, weight: 9, pack: [3, 6], flee: true,
     escort: { id: 'shaman', count: [0, 1] }, color: '#a83a24', color2: '#3a1a10',
   },
   shaman: {
-    id: 'shaman', name: '小鬼萨满', model: 'shaman', life: 11, dmg: [2, 6], def: 4, ar: 25, speed: 2.6, attackSpeed: 0.6, range: 7,
+    id: 'shaman', demon: true, name: '小鬼萨满', model: 'shaman', life: 11, dmg: [2, 6], def: 4, ar: 25, speed: 2.6, attackSpeed: 0.6, range: 7,
     radius: 0.34, scale: 0.8, xp: 26, ai: 'shaman', projectile: 'firebolt', projectileElem: 'fire', blood: 'red', minDepth: 3, maxDepth: 10,
     weight: 0, pack: [1, 1], res: { fire: 50 }, color: '#8a2a5a', color2: '#d8b040',
   },
@@ -80,12 +82,12 @@ export const MONSTERS: Record<string, MonsterDef> = {
     weight: 8, pack: [2, 4], undead: true, res: { cold: 75, phys: 30, poison: 100 }, color: '#9ad0ff', color2: '#2a4060',
   },
   demon: {
-    id: 'demon', name: '炎魔', model: 'demon', life: 24, dmg: [4, 8], def: 14, ar: 50, speed: 2.4, attackSpeed: 0.9, range: 1.5,
+    id: 'demon', demon: true, name: '炎魔', model: 'demon', life: 24, dmg: [4, 8], def: 14, ar: 50, speed: 2.4, attackSpeed: 0.9, range: 1.5,
     radius: 0.6, scale: 1.35, xp: 28, ai: 'melee', meleeElem: 'fire', blood: 'fire', minDepth: 12, maxDepth: 99, weight: 8, pack: [2, 4],
     res: { fire: 75, light: 30 }, color: '#7a2214', color2: '#ff6a20',
   },
   hellimp: {
-    id: 'hellimp', name: '炼狱小鬼', model: 'imp', life: 8, dmg: [2, 4], def: 8, ar: 40, speed: 3.6, attackSpeed: 1.4, range: 1.0,
+    id: 'hellimp', demon: true, name: '炼狱小鬼', model: 'imp', life: 8, dmg: [2, 4], def: 8, ar: 40, speed: 3.6, attackSpeed: 1.4, range: 1.0,
     radius: 0.33, scale: 0.78, xp: 10, ai: 'melee', meleeElem: 'fire', blood: 'fire', minDepth: 13, maxDepth: 99, weight: 8, pack: [4, 7],
     flee: true, res: { fire: 60 }, color: '#d8501a', color2: '#2a0a04',
   },
@@ -116,7 +118,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
     res: { cold: 75 }, color: '#c8d8e8', color2: '#4a7a9a',
   },
   dragon: {
-    id: 'dragon', name: '炼狱幼龙', model: 'dragon', life: 22, dmg: [4, 8], def: 15, ar: 52, speed: 2.8, attackSpeed: 0.8, range: 7,
+    id: 'dragon', demon: true, name: '炼狱幼龙', model: 'dragon', life: 22, dmg: [4, 8], def: 15, ar: 52, speed: 2.8, attackSpeed: 0.8, range: 7,
     radius: 0.55, scale: 1.3, xp: 30, ai: 'ranged', projectile: 'firebolt', projectileElem: 'fire', blood: 'fire', minDepth: 13, maxDepth: 99,
     weight: 6, pack: [2, 3], res: { fire: 75 }, color: '#8a4a20', color2: '#ff8030',
   },
@@ -131,7 +133,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
     weight: 0, pack: [1, 1], boss: true, undead: true, res: { cold: 75, fire: 20, light: 40, poison: 100 }, color: '#6a8aaa', color2: '#c0e8ff',
   },
   overlord: {
-    id: 'overlord', name: '深渊领主', model: 'overlord', life: 56, dmg: [6, 13], def: 30, ar: 110, speed: 2.7, attackSpeed: 0.9, range: 2.0,
+    id: 'overlord', demon: true, name: '深渊领主', model: 'overlord', life: 56, dmg: [6, 13], def: 30, ar: 110, speed: 2.7, attackSpeed: 0.9, range: 2.0,
     radius: 0.85, scale: 1.9, xp: 900, ai: 'boss', projectile: 'fireball', projectileElem: 'fire', blood: 'fire', minDepth: 99, maxDepth: 99,
     weight: 0, pack: [1, 1], boss: true, res: { fire: 75, cold: 30, light: 30, poison: 40 }, color: '#4a1410', color2: '#ff8030',
   },

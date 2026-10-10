@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { ITEM_BASES } from '../data/items';
+import { ITEM_BASES, staffGem } from '../data/items';
 import type { Monster } from '../game/monster';
 import type { Player } from '../game/player';
 import type { Item } from '../items/item';
 import { assets } from './assets';
 import type { Attachment, ModelSpec, MoveClip } from './models';
-import { glowSprite, topCentroid } from './props';
+import { glowSprite, heldModel, topCentroid } from './props';
 
 // ── KayKit clip sets (shared rig) ──
 const KK_MOVE: MoveClip[] = [
@@ -229,8 +229,6 @@ function makeMace(twoHanded: boolean, glow: string | null): THREE.Object3D {
   return g;
 }
 
-const STAFF_GEM: Record<string, string> = { shortstaff: '#ff8a3a', longstaff: '#a0c0ff', gnarledstaff: '#80e090', battlestaff: '#60a0ff', warstaff: '#ff5a10' };
-
 /** staff in world units, haft along +Y, the origin where the hand takes it */
 function makeStaff(baseId: string | undefined, glow: string | null): THREE.Object3D {
   const t = assets.get('w_staff');
@@ -240,9 +238,12 @@ function makeStaff(baseId: string | undefined, glow: string | null): THREE.Objec
     o.scale.setScalar(0.8);
     g.add(o);
     // a gem of the staff's colour glowing in its head
-    const gem = glowSprite(glow ?? STAFF_GEM[baseId ?? ''] ?? '#ff8a3a', 0.4, 0.9);
-    gem.position.copy(topCentroid(g, 0.1));
-    g.add(gem);
+    const color = glow ?? staffGem(baseId ?? '');
+    if (color) {
+      const gem = glowSprite(color, 0.4, 0.9);
+      gem.position.copy(topCentroid(g, 0.1));
+      g.add(gem);
+    }
     return g;
   }
   const g = new THREE.Group();
@@ -255,7 +256,7 @@ function makeStaff(baseId: string | undefined, glow: string | null): THREE.Objec
   claw.position.y = len + 0.03;
   claw.rotation.x = Math.PI / 2;
   g.add(claw);
-  const color = glow ?? STAFF_GEM[baseId ?? ''] ?? '#ff8a3a';
+  const color = glow ?? staffGem(baseId ?? '') ?? '#ff8a3a';
   const gem = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 8), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 2.2 }));
   gem.position.y = len + 0.06;
   g.add(gem);
@@ -263,6 +264,29 @@ function makeStaff(baseId: string | undefined, glow: string | null): THREE.Objec
   for (const c of g.children) c.position.y -= 0.9;
   return g;
 }
+/** a sorceress's orb: the crystal glows in its tier's colour */
+function makeOrb(baseId: string, glow: string | null): THREE.Object3D {
+  const color = glow ?? staffGem(ITEM_BASES[baseId]?.tiers?.[1] ?? 'longstaff') ?? '#a0c0ff';
+  const g = new THREE.Group();
+  const t = assets.get('w_orb');
+  if (t) {
+    const o = t.gltf.scene.clone(true);
+    o.scale.setScalar(0.75);
+    g.add(o);
+    const halo = glowSprite(color, 0.4, 0.75);
+    halo.position.copy(topCentroid(g, 0.2));
+    g.add(halo);
+    return g;
+  }
+  const orb = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 12), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.4, roughness: 0.2 }));
+  orb.position.y = 0.09;
+  g.add(orb);
+  const halo = glowSprite(color, 0.45, 0.8);
+  halo.position.y = 0.09;
+  g.add(halo);
+  return g;
+}
+
 
 /** Meshy-generated sorceress (tools/meshy-sorceress.mjs); her own rig, staff held upright */
 function sorceressSpec(p: Player): ModelSpec {
@@ -303,12 +327,12 @@ function meshyGear(p: Player): Attachment[] {
   const eq = p.equipment;
   const wb = eq.weapon ? ITEM_BASES[eq.weapon.baseId] : null;
   const glow = weaponGlow(eq.weapon);
-  const twoHanded = !!wb?.twoHanded;
   const attach: Attachment[] = [];
+  const held = wb ? heldModel(wb) : null;
   if (wb?.type === 'staff') attach.push({ model: () => makeStaff(wb.id, glow), hand: 'r', hold: 'upright' });
-  else if (wb?.type === 'sword') attach.push(twoHanded ? { model: 'w_greatsword', hand: 'r', glow, scale: 0.7, hold: 'grip' } : { model: 'skeleton_blade', hand: 'r', glow, scale: 0.65, hold: 'grip' });
-  else if (wb?.type === 'axe') attach.push({ model: twoHanded ? 'axe_2handed' : 'axe_1handed', hand: 'r', glow, scale: 0.75, hold: 'grip' });
-  else if (wb) attach.push({ model: () => makeMace(twoHanded, glow), hand: 'r', hold: 'grip' });
+  else if (wb?.type === 'orb') attach.push({ model: () => makeOrb(wb.id, glow), hand: 'r', hold: 'grip' });
+  // spears and polearms are taller than their bearer: kept upright like a staff
+  else if (held) attach.push({ model: held[0], hand: 'r', glow, scale: held[1], hold: wb!.type === 'spear' || wb!.type === 'polearm' ? 'upright' : 'grip' });
   if (eq.offhand) {
     const large = eq.offhand.baseId === 'towershield' || eq.offhand.baseId === 'gothicshield';
     attach.push({ model: large ? 'skeleton_shield_large_a' : 'skeleton_shield_small_a', hand: 'l', scale: 0.7, hold: 'shield' });

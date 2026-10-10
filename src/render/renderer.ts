@@ -17,7 +17,7 @@ import {
 } from './props';
 import { Rig, type AnimInput, type RigLook } from './rig';
 import { monsterSpec, npcSpec, playerSpec, vendorSpec } from './specs';
-import { runeCircleTexture, shadowTexture, tileTexture } from './textures';
+import { glowTexture, runeCircleTexture, shadowTexture, tileTexture } from './textures';
 
 const CAM_YAW = Math.PI / 4;
 const CAM_PITCH = 0.68; // ~39°
@@ -509,10 +509,33 @@ export class Renderer implements Picker {
         };
       }
       case 'stash': {
-        const { group, lid } = makeChest(true);
+        // the one chest in the camp, the gold-bound kind that opens in the dungeon too, made big and
+        // set on a pool of warm light so it is easy to find
+        const { group } = makeChest(false);
         group.rotation.y = Math.PI / 4 + Math.PI;
+        group.scale.multiplyScalar(1.8);
+        // lit from within, not by the camp's pooled lights, which go to whatever is nearest
+        group.traverse((c) => {
+          const m = (c as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
+          if (!m?.color) return;
+          m.color.multiplyScalar(1.5);
+          m.emissive = new THREE.Color('#6a4210');
+          m.emissiveIntensity = 0.55;
+        });
         g.add(group);
-        return { group: g, update: () => void lid };
+        // and a pool of warm light on the ground around it, drawn without lights
+        const pool = new THREE.Mesh(
+          new THREE.PlaneGeometry(3.6, 3.6).rotateX(-Math.PI / 2),
+          new THREE.MeshBasicMaterial({ map: glowTexture(), color: '#ffa040', transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }),
+        );
+        pool.position.y = 0.03;
+        g.add(pool);
+        return {
+          group: g,
+          update: () => void ((pool.material as THREE.MeshBasicMaterial).opacity = 0.5 + Math.sin(this.time * 1.6) * 0.08),
+          lightColor: '#ffb060',
+          lightIntensity: 10,
+        };
       }
       case 'barrel': {
         const b = makeBarrel();

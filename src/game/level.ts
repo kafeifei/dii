@@ -31,20 +31,20 @@ export class Level {
     if (L.stairs) this.objects.push(new WorldObject('stairs', L.stairs, depth === 0 ? '通往墓穴' : `下行至第 ${depth + 1} 层`, 0.9));
     if (L.waypoint) this.objects.push(new WorldObject('waypoint', L.waypoint, '传送点', 0.8));
     if (L.vendor) this.objects.push(new WorldObject('vendor', L.vendor, '商人 · 艾莉娜', 0.5));
-    if (L.stash) this.objects.push(new WorldObject('stash', L.stash, '储物箱', 0.6));
+    if (L.stash) this.objects.push(new WorldObject('stash', L.stash, '储物箱', 0.8));
     for (const c of L.chests) this.objects.push(new WorldObject('chest', c, '宝箱', 0.45));
     for (const b of L.barrels) this.objects.push(new WorldObject('barrel', b, '木桶', 0.35));
     if (depth > 0) this.populate(seed);
     else if (GALLERY) {
       // every monster in a row, held still (the stun never wears off)
       Object.values(MONSTERS).forEach((def, i) => {
-        const m = new Monster(def, 1, 'normal', { x: 6 + (i % 9) * 5, z: 46 + Math.floor(i / 9) * 6 });
+        const m = new Monster(def, 1, 'normal', { x: 6 + (i % 9) * 5, z: 51 + Math.floor(i / 9) * 3.4 });
         m.stunTime = 1e9;
         this.monsters.push(m);
       });
       // and one of every item base lying on the floor
       Object.keys(ITEM_BASES).forEach((id, i) => {
-        this.ground.push(new GroundItem({ x: 6 + (i % 36) * 1.5, z: 38 + Math.floor(i / 36) * 2 }, createItem(id)));
+        this.ground.push(new GroundItem({ x: 5.5 + (i % 40) * 1.3, z: 36 + Math.floor(i / 40) * 1.6 }, createItem(id)));
       });
     }
   }

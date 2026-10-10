@@ -1,8 +1,21 @@
+import type { PlayerClass } from './classes';
+import { D2_ITYPES } from './d2/itypes';
+import { D2_GEMS, D2_RUNES } from './d2/socketables';
+import { D2_WEAPONS } from './d2/weapons';
+
 export type ItemType =
   | 'sword'
   | 'axe'
+  | 'club'
   | 'mace'
+  | 'hammer'
+  | 'scepter'
+  | 'wand'
+  | 'dagger'
+  | 'spear'
+  | 'polearm'
   | 'staff'
+  | 'orb'
   | 'shield'
   | 'helm'
   | 'armor'
@@ -12,7 +25,9 @@ export type ItemType =
   | 'ring'
   | 'amulet'
   | 'potion'
-  | 'rune';
+  | 'rune'
+  | 'gem'
+  | 'cube';
 
 export type EquipSlot = 'head' | 'neck' | 'body' | 'weapon' | 'offhand' | 'hands' | 'waist' | 'feet' | 'ring1' | 'ring2';
 
@@ -24,6 +39,11 @@ export interface ItemBase {
   id: string;
   name: string;
   type: ItemType;
+  /** Diablo II's item code and English name, for bases taken from its tables */
+  code?: string;
+  en?: string;
+  /** Diablo II item type (Weapons.txt `type`), what affixes, runewords and recipes test */
+  itype?: string;
   w: number;
   h: number;
   /** quality level: minimum item level to drop */
@@ -35,6 +55,21 @@ export interface ItemBase {
   twoHanded?: boolean;
   /** attacks per second */
   speed?: number;
+  /** Diablo II weapon speed modifier (negative is faster) */
+  wsm?: number;
+  /** 0 normal, 1 exceptional, 2 elite */
+  tier?: number;
+  /** the normal, exceptional and elite versions of this base */
+  tiers?: [string, string, string];
+  /** % damage per point of strength / dexterity (Weapons.txt StrBonus / DexBonus) */
+  strBonus?: number;
+  dexBonus?: number;
+  /** added to the item level when picking affixes (wands, staves, orbs) */
+  magicLvl?: number;
+  /** rolls skill bonuses for this class when found (D2 "staff mods") */
+  staffMods?: PlayerClass;
+  /** only this class can use it */
+  cls?: PlayerClass;
   def?: [number, number];
   block?: number;
   maxSockets?: number;
@@ -48,14 +83,24 @@ export interface ItemBase {
   tint?: string;
   stackable?: boolean;
   noDrop?: boolean;
+  /** vendors won't buy it */
+  noSell?: boolean;
 }
 
 export function categoryOf(type: ItemType): Category | null {
   switch (type) {
     case 'sword':
     case 'axe':
+    case 'club':
     case 'mace':
+    case 'hammer':
+    case 'scepter':
+    case 'wand':
+    case 'dagger':
+    case 'spear':
+    case 'polearm':
     case 'staff':
+    case 'orb':
       return 'weapon';
     case 'shield':
       return 'shield';
@@ -103,35 +148,10 @@ export function slotsFor(type: ItemType): EquipSlot[] {
   }
 }
 
+// weapons come from Diablo II's Weapons.txt (src/data/d2, made by tools/d2-import.mjs)
 const B: ItemBase[] = [
-  // ── swords ──
-  { id: 'shortsword', name: '短剑', type: 'sword', w: 1, h: 3, qlvl: 1, dmg: [2, 7], speed: 1.6, reqStr: 0, maxSockets: 2, price: 30 },
-  { id: 'scimitar', name: '弯刀', type: 'sword', w: 1, h: 3, qlvl: 3, dmg: [2, 9], speed: 1.75, reqDex: 21, maxSockets: 2, price: 45 },
-  { id: 'longsword', name: '长剑', type: 'sword', w: 1, h: 3, qlvl: 8, dmg: [3, 16], speed: 1.45, reqStr: 40, reqDex: 20, maxSockets: 3, price: 90 },
-  { id: 'broadsword', name: '阔剑', type: 'sword', w: 2, h: 3, qlvl: 14, dmg: [7, 18], speed: 1.45, reqStr: 48, maxSockets: 3, price: 140 },
-  { id: 'warsword', name: '战剑', type: 'sword', w: 1, h: 3, qlvl: 22, dmg: [9, 26], speed: 1.55, reqStr: 71, reqDex: 45, maxSockets: 3, price: 260 },
-  { id: 'runeblade', name: '符文剑', type: 'sword', w: 1, h: 4, qlvl: 32, dmg: [15, 38], speed: 1.6, reqStr: 104, reqDex: 72, maxSockets: 4, price: 520 },
-  { id: 'greatsword', name: '巨剑', type: 'sword', w: 2, h: 4, qlvl: 18, dmg: [16, 40], speed: 1.15, twoHanded: true, reqStr: 75, maxSockets: 4, price: 300 },
-  // ── axes ──
-  { id: 'handaxe', name: '手斧', type: 'axe', w: 1, h: 3, qlvl: 1, dmg: [3, 6], speed: 1.55, maxSockets: 2, price: 30 },
-  { id: 'waraxe', name: '战斧', type: 'axe', w: 2, h: 3, qlvl: 10, dmg: [10, 18], speed: 1.35, reqStr: 67, maxSockets: 3, price: 150 },
-  { id: 'cleaver', name: '劈刀', type: 'axe', w: 2, h: 3, qlvl: 26, dmg: [16, 32], speed: 1.4, reqStr: 95, maxSockets: 3, price: 380 },
-  { id: 'greataxe', name: '巨斧', type: 'axe', w: 2, h: 4, qlvl: 16, dmg: [14, 46], speed: 1.05, twoHanded: true, reqStr: 84, maxSockets: 4, price: 320 },
-  // ── maces ──
-  { id: 'club', name: '棍棒', type: 'mace', w: 1, h: 3, qlvl: 1, dmg: [1, 7], speed: 1.6, maxSockets: 2, price: 25 },
-  { id: 'mace', name: '钉锤', type: 'mace', w: 1, h: 3, qlvl: 6, dmg: [3, 12], speed: 1.5, reqStr: 27, maxSockets: 2, price: 70 },
-  { id: 'flail', name: '链枷', type: 'mace', w: 2, h: 3, qlvl: 14, dmg: [2, 26], speed: 1.4, reqStr: 41, reqDex: 35, maxSockets: 3, price: 160 },
-  { id: 'warhammer', name: '战锤', type: 'mace', w: 2, h: 3, qlvl: 24, dmg: [12, 32], speed: 1.35, reqStr: 90, maxSockets: 3, price: 330 },
-  { id: 'maul', name: '巨槌', type: 'mace', w: 2, h: 4, qlvl: 20, dmg: [20, 42], speed: 1.05, twoHanded: true, reqStr: 100, maxSockets: 4, price: 340 },
-  { id: 'sacredmace', name: '圣徒锤', type: 'mace', w: 1, h: 3, qlvl: 34, dmg: [18, 40], speed: 1.55, reqStr: 110, maxSockets: 3, price: 560 },
+  ...D2_WEAPONS,
   // ── shields ──
-  // ── staves (two-handed; the sorceress's weapon) ──
-  { id: 'shortstaff', name: '短杖', type: 'staff', w: 1, h: 3, qlvl: 1, dmg: [1, 5], speed: 1.3, twoHanded: true, maxSockets: 2, price: 20 },
-  { id: 'longstaff', name: '长杖', type: 'staff', w: 1, h: 4, qlvl: 8, dmg: [2, 8], speed: 1.25, twoHanded: true, maxSockets: 3, price: 60 },
-  { id: 'gnarledstaff', name: '多节杖', type: 'staff', w: 1, h: 4, qlvl: 14, dmg: [4, 12], speed: 1.3, twoHanded: true, reqStr: 20, maxSockets: 3, price: 120 },
-  { id: 'battlestaff', name: '战杖', type: 'staff', w: 1, h: 4, qlvl: 22, dmg: [6, 18], speed: 1.25, twoHanded: true, reqStr: 30, maxSockets: 4, price: 240 },
-  { id: 'warstaff', name: '战争法杖', type: 'staff', w: 2, h: 4, qlvl: 32, dmg: [12, 28], speed: 1.2, twoHanded: true, reqStr: 45, maxSockets: 4, price: 480 },
-
   { id: 'buckler', name: '小圆盾', type: 'shield', w: 2, h: 2, qlvl: 1, def: [4, 6], block: 25, maxSockets: 1, price: 30 },
   { id: 'roundshield', name: '圆盾', type: 'shield', w: 2, h: 2, qlvl: 5, def: [8, 12], block: 30, reqStr: 22, maxSockets: 2, price: 60 },
   { id: 'kiteshield', name: '鸢盾', type: 'shield', w: 2, h: 3, qlvl: 12, def: [16, 24], block: 35, reqStr: 47, maxSockets: 3, price: 140 },
@@ -185,7 +205,75 @@ const B: ItemBase[] = [
   { id: 'rejuvfull', name: '全效回复药剂', type: 'potion', w: 1, h: 1, qlvl: 28, rejuv: 1, price: 1500, tint: '#c040ff' },
 ];
 
+// ── runes and gems (Diablo II's Gems.txt / Misc.txt) ──
+const GEM_TINT: Record<string, string> = { amethyst: '#b05cff', topaz: '#ffd23a', sapphire: '#3a7aff', emerald: '#2ad06a', ruby: '#ff2a3a', diamond: '#e8f0ff', skull: '#d8d0c0' };
+for (const r of D2_RUNES) B.push({ id: r.id, code: r.id, name: r.name, en: r.en, type: 'rune', itype: 'rune', w: 1, h: 1, qlvl: r.qlvl, reqLvl: r.reqLvl, price: r.price, tint: '#ffa31a' });
+for (const g of D2_GEMS) B.push({ id: g.id, code: g.id, name: g.name, en: g.en, type: 'gem', itype: 'gem', w: 1, h: 1, qlvl: g.qlvl, reqLvl: g.reqLvl, price: g.price, tint: GEM_TINT[g.gem] });
+// ── the Horadric Cube: found once, never sold ──
+B.push({ id: 'cube', code: 'box', name: '赫拉迪姆魔盒', en: 'Horadric Cube', type: 'cube', w: 2, h: 2, qlvl: 0, price: 0, noDrop: true, noSell: true, tint: '#c8a86a' });
+
 export const ITEM_BASES: Record<string, ItemBase> = Object.fromEntries(B.map((b) => [b.id, b]));
 export const ALL_BASES = B;
 
 export const EQUIPPABLE_BASES = B.filter((b) => categoryOf(b.type) !== null);
+
+/** the Diablo II item type of a base: its own for D2 bases, the matching one for this game's armor */
+const GAME_ITYPE: Partial<Record<ItemType, string>> = {
+  shield: 'shld', helm: 'helm', armor: 'tors', gloves: 'glov', boots: 'boot', belt: 'belt', ring: 'ring', amulet: 'amul', rune: 'rune', gem: 'gem',
+};
+export function itypeOf(b: ItemBase): string | undefined {
+  return b.itype ?? GAME_ITYPE[b.type];
+}
+
+const itypeCache = new Map<string, Set<string>>();
+/** a D2 item type with all the types it counts as (Sword → Blade → Melee Weapon → Weapon) */
+export function itypeSet(code: string | undefined): Set<string> {
+  if (!code) return new Set();
+  let s = itypeCache.get(code);
+  if (!s) {
+    s = new Set();
+    const walk = (c: string) => {
+      if (s!.has(c)) return;
+      s!.add(c);
+      for (const p of D2_ITYPES[c]?.up ?? []) walk(p);
+    };
+    walk(code);
+    itypeCache.set(code, s);
+  }
+  return s;
+}
+
+/** does this base count as any of `inc` and none of `exc` (affix and runeword item types) */
+export function itypeMatches(b: ItemBase, inc: string[], exc?: string[]): boolean {
+  const s = itypeSet(itypeOf(b));
+  return inc.some((t) => s.has(t)) && !(exc ?? []).some((t) => s.has(t));
+}
+
+/** most sockets a base can have at an item level (ItemTypes.txt MaxSockets1/2/3 for 1-25/26-40/41+) */
+export function maxSocketsAt(b: ItemBase, ilvl: number): number {
+  const cap = b.maxSockets ?? 0;
+  const t = D2_ITYPES[itypeOf(b) ?? ''];
+  if (!t) return cap;
+  return Math.min(cap, t.sockets[ilvl <= 25 ? 0 : ilvl <= 40 ? 1 : 2]);
+}
+
+/** blunt weapons do +50% damage to the undead (D2) */
+export function isBlunt(b: ItemBase): boolean {
+  return itypeSet(itypeOf(b)).has('blun');
+}
+
+/** a staff's gem: none on the plainest of each family, then by family and tier */
+export function staffGem(id: string): string | undefined {
+  const b = ITEM_BASES[id];
+  const fam = b?.tiers?.[0] ?? id;
+  const tier = b?.tier ?? 0;
+  if (fam === 'shortstaff' && tier === 0) return undefined;
+  const hues: Record<string, string[]> = {
+    shortstaff: ['', '#c0a0ff', '#e0c0ff'],
+    longstaff: ['#a0c0ff', '#70a8ff', '#4a90ff'],
+    gnarledstaff: ['#80e090', '#50d070', '#30c050'],
+    battlestaff: ['#60a0ff', '#ff4060', '#ff2040'],
+    warstaff: ['#ff6a20', '#ff8a10', '#ffd040'],
+  };
+  return hues[fam]?.[tier] || '#a0c0ff';
+}

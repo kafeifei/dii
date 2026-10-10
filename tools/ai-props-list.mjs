@@ -110,6 +110,15 @@ export const PROPS = [
   { key: 'w_maul', orig: 'kaykit/axe_2handed.gltf', src: 'gear/maul', fit: 'height', grip: { at: 0.1 } },
   { key: 'w_staff', orig: 'kaykit/Skeleton_Staff.gltf', src: 'gear/staff', fit: 'height', largest: true, grip: { at: 0.5 } },
   { key: 'w_cleaver', orig: 'kaykit/axe_2handed.gltf', src: 'gear/cleaver', fit: 'height', grip: { at: 0.2 } },
+  // the Diablo II weapon classes (dii's D2 item tables)
+  { key: 'w_dagger', orig: 'kaykit/Skeleton_Blade.gltf', src: 'gear/dagger', fit: 'height', scale: 0.62, grip: { at: 0.2 } },
+  { key: 'w_spear', orig: 'kaykit/Skeleton_Staff.gltf', src: 'gear/spear', fit: 'height', scale: 1.05, largest: true, grip: { at: 0.42 } },
+  { key: 'w_halberd', orig: 'kaykit/Skeleton_Staff.gltf', src: 'gear/halberd', fit: 'height', scale: 1.05, largest: true, grip: { at: 0.42 } },
+  { key: 'w_wand', orig: 'kaykit/Skeleton_Blade.gltf', src: 'gear/wand', fit: 'height', scale: 0.55, largest: true, grip: { at: 0.15 } },
+  { key: 'w_scepter', orig: 'kaykit/Skeleton_Axe.gltf', src: 'gear/scepter', fit: 'height', grip: { at: 0.18 } },
+  { key: 'w_orb', orig: 'kaykit/Skeleton_Blade.gltf', src: 'gear/orb', fit: 'height', scale: 0.55, largest: true, grip: { at: 0.25 } },
+  { key: 'w_club', orig: 'kaykit/Skeleton_Axe.gltf', src: 'gear/club', fit: 'height', grip: { at: 0.12 } },
+  { key: 'w_hammer', orig: 'kaykit/Skeleton_Axe.gltf', src: 'gear/warhammer', fit: 'height', grip: { at: 0.12 } },
   // items lying on the ground (g_*), metres
   { key: 'g_helm', src: 'gear/helm', box: [0.34, 0.34, 0.34] },
   { key: 'g_armor', src: 'gear/armor', box: [0.6, 0.22, 0.75], pitch: -90 },
@@ -120,6 +129,8 @@ export const PROPS = [
   { key: 'g_amulet', src: 'gear/amulet', box: [0.28, 0.06, 0.32], pitch: -90 },
   { key: 'g_potion', src: 'gear/potion', box: [0.2, 0.3, 0.2] },
   { key: 'g_rune', src: 'gear/rune', box: [0.2, 0.06, 0.24], pitch: -90 },
+  { key: 'g_gem', src: 'gear/gem', box: [0.13, 0.1, 0.13] },
+  { key: 'g_cube', src: 'gear/horadric_cube', box: [0.3, 0.3, 0.3] },
   // monsters that aren't humanoid: one piece, moved in code (ModelSpec.motion)
   { key: 'mon_spider', file: '../viewer/public/models/spider/model.glb', tris: 8000 },
   { key: 'mon_bat', file: '../viewer/public/models/bat/model.glb', tris: 8000 },
