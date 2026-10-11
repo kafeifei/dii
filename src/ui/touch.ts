@@ -70,6 +70,10 @@ export class TouchControls {
   /** the 换 button is on: the next skill button tapped gets a new skill */
   private editing = false;
   private editBtn: HTMLButtonElement;
+  private editHint: HTMLElement;
+  /** the last tap, to tell a quick second one (which iOS takes for a zoom) */
+  private tapStart: { x: number; y: number; t: number } | null = null;
+  private lastTapEnd = 0;
   /** spans the screen inside the safe-area margins, to measure them */
   private probe: HTMLElement;
   private root: HTMLElement;
@@ -93,6 +97,8 @@ export class TouchControls {
     this.editBtn.title = '换技能：再点一个技能按钮';
     this.editBtn.onclick = () => this.setEditing(!this.editing);
     root.appendChild(this.editBtn);
+    this.editHint = div('skill-edit-hint', '点要换的技能键');
+    root.appendChild(this.editHint);
 
     if (document.fullscreenEnabled) {
       const fs = document.createElement('button');
@@ -122,6 +128,8 @@ export class TouchControls {
       },
       { capture: true },
     );
+    document.addEventListener('touchstart', (e) => this.onTouchStart(e), { passive: true });
+    document.addEventListener('touchend', (e) => this.onTouchEnd(e), { passive: false });
     this.fitLayout();
     // iOS ignores user-scalable=no: a pinch across the stick and a button would zoom the page
     document.addEventListener('gesturestart', (e) => e.preventDefault());
@@ -175,7 +183,35 @@ export class TouchControls {
   private setEditing(on: boolean) {
     this.editing = on;
     this.editBtn.classList.toggle('on', on);
+    this.editHint.classList.toggle('on', on);
     this.skillsEl.classList.toggle('editing', on);
+  }
+
+  private onTouchStart(e: TouchEvent) {
+    const t = e.touches.length === 1 ? e.touches[0] : null;
+    this.tapStart = t && { x: t.clientX, y: t.clientY, t: performance.now() };
+  }
+
+  /**
+   * iOS zooms in on a quick second tap whatever touch-action and user-scalable say. Cancelling that
+   * tap's touchend stops it; the pointer events have come already, but its click is lost, so hand
+   * that over ourselves.
+   */
+  private onTouchEnd(e: TouchEvent) {
+    const now = performance.now();
+    const s = this.tapStart;
+    const t = e.changedTouches[0];
+    this.tapStart = null;
+    if (!s || !t || now - s.t > 400 || Math.hypot(t.clientX - s.x, t.clientY - s.y) > 12) return;
+    const second = now - this.lastTapEnd < 400;
+    this.lastTapEnd = now;
+    if (!second || !e.cancelable) return;
+    e.preventDefault();
+    const el = e.target as HTMLElement;
+    // the world, the skill buttons and what's in the panels go by pointer events, no clicks
+    if (el === this.canvas || el.closest?.('.skills, .panel [data-uid], .panel [data-skill]')) return;
+    if (el instanceof HTMLInputElement) el.focus();
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: t.clientX, clientY: t.clientY }));
   }
 
   /**

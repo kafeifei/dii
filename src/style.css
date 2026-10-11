@@ -1304,6 +1304,22 @@ html {
   color: var(--gold);
   box-shadow: 0 0 10px rgba(200, 168, 106, 0.6);
 }
+.skill-edit-hint {
+  display: none;
+  position: fixed;
+  right: calc(10px + var(--sar) + 152px * var(--hs) + 40px);
+  bottom: calc(10px + var(--sab) + 196px * var(--hs) + 3px);
+  padding: 4px 8px;
+  font-size: 13px;
+  white-space: nowrap;
+  color: var(--gold);
+  background: rgba(8, 6, 4, 0.85);
+  border: 1px solid #5a4a34;
+  pointer-events: none;
+}
+.touch .skill-edit-hint.on {
+  display: block;
+}
 .touch .skills.editing .slot {
   border-color: var(--gold);
   box-shadow: 0 0 12px rgba(200, 168, 106, 0.7);
