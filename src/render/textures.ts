@@ -155,3 +155,45 @@ export function ringTexture(): THREE.Texture {
   cache.set(key, t);
   return t;
 }
+
+/**
+ * A touch skill's aiming line, drawn along the texture from the top (at the hero) down: a soft band
+ * with chevrons pointing away.
+ */
+export function aimLineTexture(): THREE.Texture {
+  const key = 'aimline';
+  if (cache.has(key)) return cache.get(key)!;
+  const W = 64;
+  const H = 384;
+  const [c, ctx] = canvas(W, H);
+  const band = ctx.createLinearGradient(0, 0, W, 0);
+  band.addColorStop(0, 'rgba(255,255,255,0)');
+  band.addColorStop(0.5, 'rgba(255,255,255,0.35)');
+  band.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = band;
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+  ctx.lineWidth = 7;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (let i = 1; i <= 5; i++) {
+    const y = (i / 6) * H;
+    ctx.beginPath();
+    ctx.moveTo(W * 0.18, y - 20);
+    ctx.lineTo(W * 0.5, y + 4);
+    ctx.lineTo(W * 0.82, y - 20);
+    ctx.stroke();
+  }
+  // fade in from the hero's feet
+  ctx.globalCompositeOperation = 'destination-in';
+  const fade = ctx.createLinearGradient(0, 0, 0, H);
+  fade.addColorStop(0, 'rgba(0,0,0,0)');
+  fade.addColorStop(0.12, 'rgba(0,0,0,1)');
+  fade.addColorStop(1, 'rgba(0,0,0,1)');
+  ctx.fillStyle = fade;
+  ctx.fillRect(0, 0, W, H);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  cache.set(key, t);
+  return t;
+}

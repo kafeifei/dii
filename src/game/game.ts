@@ -41,6 +41,27 @@ export interface Picker {
 
 const ACTIVE_RADIUS = 30;
 
+/** spells a dragged touch button lays on a spot of ground */
+const AIM_SPOT = new Set(['meteor', 'blizzard', 'fire_wall', 'heavens_wrath', 'teleport']);
+/** spells that go off around the caster: their touch button casts at once, there's nothing to aim */
+const AIM_SELF = new Set(['static_field', 'nova', 'frost_nova']);
+/** how far a touch aim reaches: a missile's line, a spot at full drag (about the edge of a phone's view) */
+const AIM_LINE = 9;
+
+/** where a dragged touch skill button would land (Game.aimPreview) */
+export interface AimPreview {
+  shape: 'line' | 'spot';
+  /** the end of the line, or the middle of the spot */
+  point: P2;
+  /** the spot's size */
+  radius: number;
+  /** the enemy a line snaps to */
+  target: Monster | null;
+}
+
+/** what the touch interact button would use */
+export type TouchNear = { ground: GroundItem; obj?: undefined } | { obj: WorldObject; ground?: undefined };
+
 export class Game {
   player: Player;
   level!: Level;
@@ -61,6 +82,14 @@ export class Game {
   private touchFoe: Monster | null = null;
   /** a touch skill button was held last frame */
   private touchFighting = false;
+  /** phones: the touch controls are on (aimed casts, the target ring, the interact button) */
+  touchMode = false;
+  /** the dragged skill button's aim, for the renderer to draw */
+  aimPreview: AimPreview | null = null;
+  /** the enemy the skill buttons would go for now, ringed on the ground */
+  touchTarget: Monster | null = null;
+  /** what the interact button would use: the nearest item, chest, door or person in reach */
+  touchNear: TouchNear | null = null;
   shop = new Grid(10, 10);
   paused = false;
   /** driven externally (balance bot): the page loop neither steps nor renders */
@@ -329,6 +358,7 @@ export class Game {
       this.touchFighting = false;
       if (p.intent?.kind === 'steer') p.intent = null;
     }
+    if (this.touchMode) this.touchExtras();
 
     // left mouse
     if (inp.lmbPressed) {
@@ -341,6 +371,8 @@ export class Game {
         p.intent = { kind: 'pickup', ground: h.ground };
         this.lmbMode = 'other';
       } else if (h.monster) {
+        // on a phone, the tapped enemy is the one the skill buttons go for from now on
+        this.touchFoe = h.monster;
         this.useSkillAt(p.binds[0] ?? 'attack', h.monster, point, true);
         this.lmbMode = 'attack';
       } else if (h.object) {
@@ -384,9 +416,14 @@ export class Game {
   /** the stick's push on screen as a direction on the ground; null inside the dead zone */
   private stickDir(s: { x: number; y: number }): P2 | null {
     if (Math.hypot(s.x, s.y) < 0.2) return null;
+    return this.screenDir(s.x, s.y);
+  }
+
+  /** a way on screen (x right, y up) as a direction on the ground */
+  private screenDir(x: number, y: number): P2 | null {
     // the view is orthographic, so any two screen points give the same ground direction
     const a = this.picker.screenToGround(400, 400);
-    const b = this.picker.screenToGround(400 + s.x * 100, 400 - s.y * 100);
+    const b = this.picker.screenToGround(400 + x * 100, 400 - y * 100);
     if (!a || !b) return null;
     const dx = b.x - a.x;
     const dz = b.z - a.z;
@@ -395,34 +432,130 @@ export class Game {
   }
 
   /**
-   * A touch skill button: aimed at the enemy it was used on while still close and in sight, else at
-   * the nearest one in sight; with nobody around, straight ahead.
+   * The enemy the touch skill buttons go for: the one they last went for (or that was tapped) while
+   * still close and in sight, else the nearest in sight within 10m, one ahead counting as up to a
+   * third nearer than one behind.
    */
-  private touchSkill(skill: string, isPress: boolean) {
+  private autoFoe(): Monster | null {
     const p = this.player;
     const map = this.level.map;
-    const ok = (m: Monster | null, range: number): m is Monster => !!m && !m.dead && dist(m.pos, p.pos) < range && map.los(p.pos, m.pos);
-    let foe = ok(this.touchFoe, 12) ? this.touchFoe : null;
-    if (!foe) {
-      // the nearest within 10m, counting one ahead as up to a third nearer than one behind
-      const fx = Math.sin(p.facing);
-      const fz = Math.cos(p.facing);
-      let best = Infinity;
-      for (const m of this.level.monsters) {
-        const d = dist(m.pos, p.pos);
-        if (m.dead || d >= 10) continue;
-        const ahead = d > 0.01 ? ((m.pos.x - p.pos.x) * fx + (m.pos.z - p.pos.z) * fz) / d : 1;
-        const score = d * (1.3 - 0.3 * ahead);
-        if (score < best && map.los(p.pos, m.pos)) {
-          foe = m;
-          best = score;
-        }
+    const f = this.touchFoe;
+    if (f && !f.dead && dist(f.pos, p.pos) < 12 && map.los(p.pos, f.pos)) return f;
+    const fx = Math.sin(p.facing);
+    const fz = Math.cos(p.facing);
+    let foe: Monster | null = null;
+    let best = Infinity;
+    for (const m of this.level.monsters) {
+      const d = dist(m.pos, p.pos);
+      if (m.dead || d >= 10) continue;
+      const ahead = d > 0.01 ? ((m.pos.x - p.pos.x) * fx + (m.pos.z - p.pos.z) * fz) / d : 1;
+      const score = d * (1.3 - 0.3 * ahead);
+      if (score < best && map.los(p.pos, m.pos)) {
+        foe = m;
+        best = score;
       }
     }
+    return foe;
+  }
+
+  /** whether the ringed enemy is one the buttons are already fighting (or that was tapped) */
+  get touchLocked() {
+    return !!this.touchTarget && this.touchTarget === this.touchFoe;
+  }
+
+  /** a touch skill button tapped or held: at that enemy, or straight ahead with nobody around */
+  private touchSkill(skill: string, isPress: boolean) {
+    const p = this.player;
+    const foe = this.autoFoe();
     this.touchFoe = foe;
     this.touchFighting = true;
     const point = foe ? foe.pos : { x: p.pos.x + Math.sin(p.facing) * 5, z: p.pos.z + Math.cos(p.facing) * 5 };
     this.useSkillAt(skill, foe, point, isPress);
+  }
+
+  /** phones: casts aimed by dragging a button, the interact button, and what the renderer marks */
+  private touchExtras() {
+    const inp = this.input;
+    const p = this.player;
+    const skillOf = (i: number) => p.binds[i] ?? (i === 0 ? 'attack' : undefined);
+    const aim = inp.touchAim;
+    const aiming = aim && !aim.cancel ? skillOf(aim.slot) : undefined;
+    this.aimPreview = aiming ? this.aimAt(aiming, aim!) : null;
+    const done = inp.touchAimed;
+    const cast = done ? skillOf(done.slot) : undefined;
+    const a = cast ? this.aimAt(cast, done!) : null;
+    if (cast && a) {
+      if (a.target) this.touchFoe = a.target;
+      this.useSkillAt(cast, a.target, a.point, true);
+    }
+    const near = this.touchNear;
+    if (inp.touchInteract && near) p.intent = near.ground ? { kind: 'pickup', ground: near.ground } : { kind: 'interact', obj: near.obj };
+    this.touchTarget = this.aimPreview ? this.aimPreview.target : this.autoFoe();
+    this.touchNear = this.nearestUsable();
+  }
+
+  /** whether a touch button's skill is aimed by dragging it: a spell that isn't cast around the caster */
+  aimable(skill: string): boolean {
+    const id = skill.startsWith(CHARGE_PREFIX) ? skill.slice(CHARGE_PREFIX.length) : skill;
+    return SKILL_BY_ID[id]?.kind === 'spell' && !AIM_SELF.has(id);
+  }
+
+  /**
+   * A dragged skill button's aim: the drag's way from the hero, and for a spell laid on the ground,
+   * as far out as the drag is long. A missile's line snaps to the enemy closest to it.
+   */
+  aimAt(skill: string, v: { x: number; y: number }): AimPreview | null {
+    if (!this.aimable(skill)) return null;
+    const id = skill.startsWith(CHARGE_PREFIX) ? skill.slice(CHARGE_PREFIX.length) : skill;
+    const dir = this.screenDir(v.x, v.y);
+    if (!dir) return null;
+    const p = this.player;
+    if (AIM_SPOT.has(id)) {
+      const sp = p.skillParams(id);
+      const d = Math.max(1.5, Math.min(1, Math.hypot(v.x, v.y)) * Math.min(AIM_LINE, sp.range ?? AIM_LINE));
+      const radius = sp.radius ?? (id === 'heavens_wrath' ? 2.6 : 1);
+      return { shape: 'spot', point: { x: p.pos.x + dir.x * d, z: p.pos.z + dir.z * d }, radius, target: null };
+    }
+    let target: Monster | null = null;
+    let best = Infinity;
+    for (const m of this.level.monsters) {
+      const dx = m.pos.x - p.pos.x;
+      const dz = m.pos.z - p.pos.z;
+      const d = Math.hypot(dx, dz);
+      if (m.dead || d > AIM_LINE + 2 || d < 0.01) continue;
+      // within about 25° of the line, the nearer the line the better
+      const off = Math.acos(Math.max(-1, Math.min(1, (dx * dir.x + dz * dir.z) / d)));
+      if (off > 0.45) continue;
+      const score = off * 6 + d / AIM_LINE;
+      if (score < best && this.level.map.los(p.pos, m.pos)) {
+        best = score;
+        target = m;
+      }
+    }
+    return { shape: 'line', point: { x: p.pos.x + dir.x * AIM_LINE, z: p.pos.z + dir.z * AIM_LINE }, radius: 0, target };
+  }
+
+  /** the nearest thing in reach to pick up or use: an item, a chest or barrel not yet opened, stairs, a waypoint, the stash, a portal, the merchant */
+  private nearestUsable(): TouchNear | null {
+    const p = this.player;
+    let best: TouchNear | null = null;
+    let bd = 2.4;
+    for (const gi of this.level.ground) {
+      const d = dist(gi.pos, p.pos);
+      if (gi.item && d < bd) {
+        bd = d;
+        best = { ground: gi };
+      }
+    }
+    for (const o of this.level.objects) {
+      if (o.used && (o.kind === 'chest' || o.kind === 'barrel')) continue;
+      const d = dist(o.pos, p.pos) - o.radius;
+      if (d < bd) {
+        bd = d;
+        best = { obj: o };
+      }
+    }
+    return best;
   }
 
   useSkillAt(skill: string, monster: Monster | null, point: P2, isPress: boolean) {

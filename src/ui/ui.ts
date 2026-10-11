@@ -6,6 +6,7 @@ import { SKILLS, SKILL_BY_ID, classSkills, type SkillDef } from '../data/skills'
 import { MOD_NAMES } from '../data/monsters';
 import type { Game, GameHooks } from '../game/game';
 import type { Level } from '../game/level';
+import type { ObjKind } from '../game/objects';
 import { CHARGE_PREFIX, xpForLevel, type Player } from '../game/player';
 import { deleteSave, freeSlot, listSaves, markInGame, MAX_SLOTS, setSlot } from '../game/save';
 import { skillCost } from '../game/playerctl';
@@ -39,9 +40,11 @@ function h<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, html?: s
 
 const SLOT_KEYS = ['左键', '右键', 'Q', 'W', 'E', 'R'];
 /** the controls as a phone has them (TouchControls) */
-const TOUCH_HELP = `<b>左半屏按住拖动</b> 移动 · <b>右下按钮</b> 攻击和技能，自动瞄准最近的敌人 · <b>换</b> 再点一个按钮可更换技能<br/>
-  <b>点地面</b> 走过去 · <b>点物品 / 人物 / 传送点</b> 拾取或交互 · <b>⛶</b> 全屏<br/>
-  背包里 <b>点一下</b> 看说明，<b>再点</b> 拿起 · <b>长按</b> 使用或装备 · 拿着物品时点格子放下，点地面丢弃`;
+const TOUCH_HELP = `<b>左半屏按住拖动</b> 移动 · <b>右下按钮</b> 点按或按住，打脚下有圈的敌人 · <b>点怪物</b> 锁定它<br/>
+  法术按钮 <b>按住拖动</b> 手动瞄准，松手施放，拖回按钮上松手取消 · 靠近物品、宝箱、商人时出现 <b>交互按钮</b><br/>
+  换技能：打开 <b>技</b>，点一个技能，再点下面的技能键 · 背包里 <b>点一下</b> 看说明，<b>再点</b> 拿起，<b>长按</b> 使用或装备 · <b>⛶</b> 全屏`;
+/** what the touch interact button says it does to each kind of thing */
+const USE_VERB: Record<ObjKind, string> = { chest: '打开', barrel: '打碎', stairs: '进入', waypoint: '使用', vendor: '交谈', stash: '打开', portal: '进入' };
 
 // paper doll layout (x, y, w, h in px)
 const DOLL: Record<EquipSlot, [number, number, number, number, string]> = {
@@ -142,7 +145,13 @@ export class UI implements GameHooks {
         carrying: () => !!this.cursorItem,
         hideTooltip: () => this.hideTooltip(),
         pickSkill: (slot, anchor) => this.openPicker(slot, anchor),
+        aimable: (slot) => {
+          const id = this.game.player.binds[slot] ?? (slot === 0 ? 'attack' : null);
+          return !!id && this.game.aimable(id);
+        },
+        bindSlot: (slot, skill, anchor) => this.bindFromPanel(slot, skill, anchor),
       });
+      game.touchMode = true;
       const hint = this.touch.iosHint();
       if (hint) this.titleEl.querySelector('.title-sub')!.after(h('div', 'ios-hint', hint));
       renderer.setTouchView(true);
@@ -631,7 +640,7 @@ export class UI implements GameHooks {
         lines.push({ text: `剩余充能：${c.left}/${c.max}`, color: c.left > 0 ? '#6a8aff' : '#ff4040' });
       } else lines.push({ text: '没有装备带这项充能的物品', color: '#ff4040' });
       lines.push({ text: '每次施放消耗一次充能，不耗法力。找商人可以补充', small: true, color: '#888' });
-      lines.push({ text: '悬停时按 Q/W/E/R 绑定快捷键', small: true, color: '#888' });
+      lines.push({ text: this.touch ? '点右边的技能键装上' : '悬停时按 Q/W/E/R 绑定快捷键', small: true, color: '#888' });
       this.showTooltip(lines, x, y);
       return;
     }
@@ -656,7 +665,9 @@ export class UI implements GameHooks {
       for (const s of def.synergies) lines.push({ text: `${SKILL_BY_ID[s.skill].name}：每级 +${s.pct}% 伤害`, small: true, color: '#aaa' });
     }
     if (def.kind === 'aura') lines.push({ text: '光环：同一时间只能开启一个', small: true, color: '#888' });
-    lines.push({ text: '悬停时按 Q/W/E/R 绑定快捷键', small: true, color: '#888' });
+    if (!this.touch) lines.push({ text: '悬停时按 Q/W/E/R 绑定快捷键', small: true, color: '#888' });
+    else if (def.kind === 'passive') lines.push({ text: '再点一下学习 · 被动技能学会就生效', small: true, color: '#888' });
+    else lines.push({ text: '再点一下学习 · 点右边的技能键装上', small: true, color: '#888' });
     this.showTooltip(lines, x, y);
   }
 
@@ -1187,7 +1198,9 @@ export class UI implements GameHooks {
     R.appendChild(tabs);
     const tree = h('div', 'tree');
     const skills = classSkills(p.cls).filter((s) => s.tree === this.skillTab);
-    const pos = (s: SkillDef) => ({ x: 40 + s.col * 120, y: 12 + s.row * 82 });
+    // phones lay the tree on its side, so the tree and the skill keys fit one screen
+    const flat = !!this.touch;
+    const pos = (s: SkillDef) => (flat ? { x: 6 + s.row * 76, y: 6 + s.col * 72 } : { x: 40 + s.col * 120, y: 12 + s.row * 82 });
     let svg = '<svg>';
     for (const s of skills) {
       for (const pre of s.prereqs) {
@@ -1196,7 +1209,8 @@ export class UI implements GameHooks {
         const a = pos(ps);
         const b = pos(s);
         const on = p.skillBase(pre) > 0;
-        svg += `<line x1="${a.x + 28}" y1="${a.y + 56}" x2="${b.x + 28}" y2="${b.y}" stroke="${on ? '#c8a040' : '#3a2e20'}" stroke-width="3"/>`;
+        const [x1, y1, x2, y2] = flat ? [a.x + 56, a.y + 28, b.x, b.y + 28] : [a.x + 28, a.y + 56, b.x + 28, b.y];
+        svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${on ? '#c8a040' : '#3a2e20'}" stroke-width="3"/>`;
       }
     }
     svg += '</svg>';
@@ -1216,6 +1230,50 @@ export class UI implements GameHooks {
     }
     R.appendChild(tree);
     R.appendChild(h('div', 'skillpoints', `剩余技能点：${p.skillPoints}`));
+    if (this.touch) R.appendChild(this.renderBindPad());
+  }
+
+  /** phones: the skill buttons as the right thumb has them; a skill tapped in the tree, then one of these, binds it */
+  private renderBindPad(): HTMLElement {
+    const p = this.game.player;
+    const wrap = h('div', 'bindpad');
+    wrap.appendChild(h('div', 'bindhint', '点一个技能，再点这里的按键装上<br/>直接点按键：从列表里挑'));
+    const pad = h('div', 'pad');
+    for (let i = 0; i < 6; i++) {
+      const id = p.binds[i] ?? (i === 0 ? 'attack' : null);
+      const s = h('div', `bslot${id && bindUsable(p, id) ? '' : ' empty'}`);
+      if (id && bindUsable(p, id)) s.innerHTML = `<img src="${skillIcon(bindSkill(id))}" />`;
+      s.dataset.bind = String(i);
+      pad.appendChild(s);
+    }
+    wrap.appendChild(pad);
+    return wrap;
+  }
+
+  /** a skill key in the skills panel tapped (touch): give it the skill picked in the tree, or with none, open the list */
+  private bindFromPanel(slot: number, skill: string | null, anchor: HTMLElement) {
+    if (!skill) return this.openPicker(slot, anchor);
+    const p = this.game.player;
+    const def = SKILL_BY_ID[skill];
+    if (!def) return;
+    if (def.kind === 'passive') return this.message('被动技能学会就生效，不用装上', '#aaa', 1.6);
+    if (p.skillLevel(skill) <= 0) return this.message('还没学会这个技能', '#ff6060', 1.4);
+    // already on another key: the two swap
+    const other = p.binds.indexOf(skill);
+    if (other >= 0 && other !== slot) p.binds[other] = p.binds[slot] ?? (other === 0 ? 'attack' : null);
+    p.binds[slot] = skill;
+    this.sfx.play('click');
+    this.message(`${def.name} 已装上`, '#c8a86a', 1.4);
+    this.dirty = true;
+  }
+
+  /** the touch interact button: what's in reach to pick up or use (hidden while a panel is open) */
+  private updateInteract() {
+    const n = this.game.touchNear;
+    const t = this.touch!;
+    if (!n || this.game.player.dead || this.left || this.right) t.setInteract(null);
+    else if (n.ground) t.setInteract('拾取', n.ground.item!.name, itemColor(n.ground.item!));
+    else t.setInteract(USE_VERB[n.obj.kind], n.obj.name);
   }
 
   private learn(s: SkillDef) {
@@ -1265,13 +1323,21 @@ export class UI implements GameHooks {
       const s = h('div', `slot${id ? '' : ' empty'}`);
       if (id && bindUsable(p, id)) {
         s.innerHTML = `<img src="${skillIcon(bindSkill(id))}" />`;
-        if (id.startsWith(CHARGE_PREFIX)) s.appendChild(Object.assign(h('span', 'charges'), { dataset: { chg: bindSkill(id) } }));
+        if (id.startsWith(CHARGE_PREFIX)) {
+          const c = h('span', 'charges');
+          c.dataset.chg = bindSkill(id);
+          s.appendChild(c);
+        }
         s.dataset.skill = id;
         if (p.activeAura === id) s.classList.add('active-aura');
-        if (SKILL_BY_ID[id]?.cooldown) s.appendChild(Object.assign(h('div', 'cd'), { dataset: { cd: id } }));
+        if (SKILL_BY_ID[id]?.cooldown) {
+          const cd = h('div', 'cd');
+          cd.dataset.cd = id;
+          s.appendChild(cd);
+        }
       }
       s.appendChild(h('span', 'key', SLOT_KEYS[i]));
-      // on a touch screen the slot is a skill button (TouchControls): a long press picks the skill
+      // on a touch screen the slot is a skill button (TouchControls); skills are bound in the skills panel
       if (!this.touch) s.onclick = () => this.openPicker(i, s);
       this.skillsEl.appendChild(s);
     }
@@ -1322,10 +1388,12 @@ export class UI implements GameHooks {
     this.itemByUid.clear();
     this.leftEl.classList.toggle('open', !!this.left);
     this.rightEl.classList.toggle('open', !!this.right);
-    // phones: the bag on its own lays equipment and bag side by side; beside another panel the bag
-    // comes first, as that's what goes back and forth with a stash or a shop
+    // phones: the bag or the skills on their own spread out to one screen (equipment beside the bag,
+    // the skill keys beside the tree); beside another panel the bag comes first, as that's what goes
+    // back and forth with a stash or a shop
     this.rightEl.classList.toggle('inv', this.right === 'inv');
-    this.rightEl.classList.toggle('wide', !!this.touch && this.right === 'inv' && !this.left);
+    this.rightEl.classList.toggle('skillsp', this.right === 'skills');
+    this.rightEl.classList.toggle('wide', !!this.touch && (this.right === 'inv' || this.right === 'skills') && !this.left);
     switch (this.left) {
       case 'char':
         this.renderChar();
@@ -1373,6 +1441,7 @@ export class UI implements GameHooks {
       return;
     }
     const p = g.player;
+    if (this.touch) this.updateInteract();
     // close shop/stash when walking away
     if ((this.left === 'shop' || this.left === 'stash' || this.left === 'waypoint') && g.level) {
       const kind = this.left === 'shop' ? 'vendor' : this.left;

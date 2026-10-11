@@ -21,6 +21,15 @@ export class Input {
   /** touch skill buttons held, by bind slot (0 left, 1 right, 2–5 Q W E R), and those pressed this frame */
   touchHeld = new Set<number>();
   touchPressed = new Set<number>();
+  /**
+   * A spell's button dragged to aim: its slot and the drag (x right, y up, length up to 1 = full
+   * reach). `cancel`: back on the button, where letting go casts nothing.
+   */
+  touchAim: { slot: number; x: number; y: number; cancel: boolean } | null = null;
+  /** an aimed button let go this frame: cast there */
+  touchAimed: { slot: number; x: number; y: number } | null = null;
+  /** the interact button tapped this frame */
+  touchInteract = false;
   private onFirstGesture: (() => void) | null;
 
   constructor(world: HTMLElement, onFirstGesture: () => void) {
@@ -102,6 +111,8 @@ export class Input {
     this.rmbPressed = false;
     this.pressed.clear();
     this.touchPressed.clear();
+    this.touchAimed = null;
+    this.touchInteract = false;
     this.wheel = 0;
   }
 }

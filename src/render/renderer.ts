@@ -19,7 +19,7 @@ import {
 } from './props';
 import { Rig, type AnimInput, type RigLook } from './rig';
 import { monsterSpec, npcSpec, playerSpec, vendorSpec } from './specs';
-import { glowTexture, runeCircleTexture, shadowTexture, tileTexture } from './textures';
+import { aimLineTexture, glowTexture, ringTexture, runeCircleTexture, shadowTexture, tileTexture } from './textures';
 
 const CAM_YAW = Math.PI / 4;
 const CAM_PITCH = 0.68; // ~39°
@@ -215,6 +215,10 @@ export class Renderer implements Picker {
   private objViews = new Map<WorldObject, ObjView>();
   private auraDecal: THREE.Mesh;
   private shieldGlow: THREE.Sprite;
+  /** phones: the ring under the enemy the skill buttons go for, and a dragged button's aim */
+  private targetRing: THREE.Mesh;
+  private aimLine: THREE.Mesh;
+  private aimSpot: THREE.Mesh;
   private shadowGeo = new THREE.PlaneGeometry(1, 1);
   private shadowMat = new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent: true, depthWrite: false });
   private raycaster = new THREE.Raycaster();
@@ -270,6 +274,17 @@ export class Renderer implements Picker {
     this.shieldGlow = glowSprite('#fff8d0', 1.8, 0.35);
     this.shieldGlow.visible = false;
     this.scene.add(this.shieldGlow);
+    const decal = (geo: THREE.BufferGeometry, map: THREE.Texture) => {
+      const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+      m.renderOrder = 6;
+      m.visible = false;
+      this.scene.add(m);
+      return m;
+    };
+    this.targetRing = decal(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), ringTexture());
+    // from the hero (z = 0) out along +z, one unit long: scaled to the reach, turned to the aim
+    this.aimLine = decal(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate(0, 0, 0.5), aimLineTexture());
+    this.aimSpot = decal(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), ringTexture());
     this.resize();
     window.addEventListener('resize', () => this.resize());
   }
@@ -897,6 +912,41 @@ export class Renderer implements Picker {
   }
 
   /** where to draw a sim object this frame: between its last two sim steps */
+  /** phones: a ring under the enemy the skill buttons go for (red once fighting it), and a dragged button's aim */
+  private updateTouchMarks(pp: P2) {
+    const g = this.game;
+    const tgt = g.player.dead ? null : g.touchTarget;
+    this.targetRing.visible = !!tgt && !tgt.dead;
+    if (tgt && !tgt.dead) {
+      const at = this.at(tgt);
+      const mat = this.targetRing.material as THREE.MeshBasicMaterial;
+      const locked = g.touchLocked;
+      mat.color.set(locked ? '#ff4a2a' : '#ffb060');
+      mat.opacity = (locked ? 0.85 : 0.5) + Math.sin(this.time * 6) * 0.1;
+      this.targetRing.position.set(at.x, 0.04, at.z);
+      this.targetRing.scale.setScalar((tgt.radius + 0.3) * 2.2);
+    }
+    const aim = g.player.dead ? null : g.aimPreview;
+    this.aimLine.visible = !!aim;
+    this.aimSpot.visible = aim?.shape === 'spot';
+    if (!aim) return;
+    const dx = aim.point.x - pp.x;
+    const dz = aim.point.z - pp.z;
+    const lineMat = this.aimLine.material as THREE.MeshBasicMaterial;
+    lineMat.color.set('#ffd27a');
+    lineMat.opacity = aim.shape === 'spot' ? 0.45 : 0.75;
+    this.aimLine.position.set(pp.x, 0.05, pp.z);
+    this.aimLine.rotation.y = Math.atan2(dx, dz);
+    this.aimLine.scale.set(aim.shape === 'spot' ? 0.4 : 0.8, 1, Math.max(0.01, Math.hypot(dx, dz)));
+    if (aim.shape === 'spot') {
+      const spotMat = this.aimSpot.material as THREE.MeshBasicMaterial;
+      spotMat.color.set('#ffd27a');
+      spotMat.opacity = 0.8 + Math.sin(this.time * 8) * 0.15;
+      this.aimSpot.position.set(aim.point.x, 0.05, aim.point.z);
+      this.aimSpot.scale.setScalar(aim.radius * 2.2);
+    }
+  }
+
   private at(o: { pos: P2; prevPos: P2 }): P2 {
     const dx = o.pos.x - o.prevPos.x;
     const dz = o.pos.z - o.prevPos.z;
@@ -989,6 +1039,8 @@ export class Renderer implements Picker {
       this.shieldGlow.position.set(pp.x, 1.0, pp.z);
       this.shieldGlow.material.opacity = 0.2 + Math.sin(this.time * 3) * 0.05;
     }
+
+    this.updateTouchMarks(pp);
 
     // monsters
     const seen = new Set<Monster>();

@@ -10,20 +10,38 @@ const STICK_R = 56;
 /** the stick starts on a touch in this share of the screen, from the left */
 const STICK_ZONE = 0.45;
 const LONG_PRESS_MS = 450;
+/** a spell's button waits this long for a drag (aiming) before it casts at the nearest enemy */
+const AIM_WAIT_MS = 110;
+/** a drag this long (CSS px) on a spell's button aims it; this long is its full reach */
+const AIM_START = 22;
+const AIM_R = 80;
+/** back this close to where the drag began, letting go casts nothing */
+const CANCEL_R = 18;
 
 export interface TouchHooks {
   /** an item is being carried: taps in the panels then place or socket it straight away */
   carrying(): boolean;
   hideTooltip(): void;
-  /** choose the skill for a bind slot (the 换 button then a skill button, or a tap on an empty one) */
+  /** choose the skill for a bind slot from a list (a tap on an empty skill button) */
   pickSkill(slot: number, anchor: HTMLElement): void;
+  /** whether that skill button's skill is aimed by dragging (a spell not cast around the caster) */
+  aimable(slot: number): boolean;
+  /** a skill key tapped in the skills panel: give it the skill picked there, or with none, a list */
+  bindSlot(slot: number, skill: string | null, anchor: HTMLElement): void;
 }
 
 interface ButtonPress {
   slot: number;
   el: HTMLElement;
-  /** a tap picks this slot's skill instead of using it (empty slot, or the 换 button was on) */
+  /** a tap picks this slot's skill instead of using it (an empty slot) */
   pick: boolean;
+  /** where the finger went down */
+  x: number;
+  y: number;
+  /** 'wait': a spell's button just pressed, not yet cast or dragged; 'auto': casting at the nearest enemy; 'aim': dragged to aim */
+  mode: 'wait' | 'auto' | 'aim';
+  aimable: boolean;
+  timer: number;
 }
 
 interface PanelPress {
@@ -46,13 +64,17 @@ function div(cls: string, html = ''): HTMLDivElement {
 }
 
 /**
- * Phone controls, laid over the desktop ones:
+ * Phone controls, laid over the desktop ones, the way Diablo Immortal has them:
  * - a floating stick: a touch on open ground in the left part of the screen walks; a quick tap
- *   there is a tap on the world instead (pick up, talk, attack what was tapped)
- * - the skill bar becomes round buttons by the right thumb; holding one uses its skill on the
- *   nearest enemy (the game aims, see Game.touchSkill); 换 then a button picks that button's skill
+ *   there is a tap on the world instead (pick up, talk, attack what was tapped; an enemy tapped is
+ *   the one the buttons go for from then on)
+ * - the skill bar becomes round buttons by the right thumb. A tap or a hold uses the skill on the
+ *   enemy the game picks (Game.touchSkill), ringed on the ground; a spell's button dragged aims it
+ *   instead (a line, or a spot as far out as the drag), cast on letting go, or not if dragged back
+ * - an interact button by them when something to pick up or use is in reach
  * - in the panels, a first tap shows an item's or skill's tooltip and a second acts (take the item,
- *   buy it, learn the skill); a long press is the right click (equip, use, buy)
+ *   buy it, learn the skill); a long press is the right click (equip, use, buy). In the skills
+ *   panel, a skill picked then a skill key binds it
  * - fullscreen where the browser allows it, and a hint to turn the phone sideways
  */
 export class TouchControls {
@@ -67,10 +89,10 @@ export class TouchControls {
   /** the item or skill whose tooltip a first tap showed */
   private selected: string | null = null;
   private swallowClick = false;
-  /** the 换 button is on: the next skill button tapped gets a new skill */
-  private editing = false;
-  private editBtn: HTMLButtonElement;
-  private editHint: HTMLElement;
+  /** a skill key in the skills panel, pressed */
+  private bindPress: { id: number; el: HTMLElement } | null = null;
+  private actBtn: HTMLButtonElement;
+  private actLabel = '';
   /** the last tap, to tell a quick second one (which iOS takes for a zoom) */
   private tapStart: { x: number; y: number; t: number } | null = null;
   private lastTapEnd = 0;
@@ -91,14 +113,13 @@ export class TouchControls {
     this.base.appendChild(this.knob);
     root.appendChild(this.base);
 
-    this.editBtn = document.createElement('button');
-    this.editBtn.className = 'skill-edit ui-block';
-    this.editBtn.textContent = '换';
-    this.editBtn.title = '换技能：再点一个技能按钮';
-    this.editBtn.onclick = () => this.setEditing(!this.editing);
-    root.appendChild(this.editBtn);
-    this.editHint = div('skill-edit-hint', '点要换的技能键');
-    root.appendChild(this.editHint);
+    this.actBtn = document.createElement('button');
+    this.actBtn.className = 'act-btn ui-block';
+    this.actBtn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      this.input.touchInteract = true;
+    });
+    root.appendChild(this.actBtn);
 
     if (document.fullscreenEnabled) {
       const fs = document.createElement('button');
@@ -180,11 +201,26 @@ export class TouchControls {
     return ios && !standalone && !document.fullscreenEnabled ? '想全屏玩：点 Safari 的分享按钮，选「添加到主屏幕」，再从主屏幕打开' : null;
   }
 
-  private setEditing(on: boolean) {
-    this.editing = on;
-    this.editBtn.classList.toggle('on', on);
-    this.editHint.classList.toggle('on', on);
-    this.skillsEl.classList.toggle('editing', on);
+  /** the interact button: what it would do (verb, and what to, in the colour given), or hidden */
+  setInteract(verb: string | null, what = '', color = '') {
+    const label = verb ? `${verb}|${what}|${color}` : '';
+    if (label === this.actLabel) return;
+    this.actLabel = label;
+    this.actBtn.classList.toggle('on', !!verb);
+    this.actBtn.innerHTML = '';
+    if (!verb) return;
+    const v = div('verb');
+    v.textContent = verb;
+    const w = div('what');
+    w.textContent = what;
+    w.style.color = color;
+    this.actBtn.append(v, w);
+  }
+
+  /** the item or skill a first tap showed the tooltip of; a skill picked lights up the skill keys */
+  private setSelected(key: string | null) {
+    this.selected = key;
+    document.body.classList.toggle('skill-picked', !!key?.startsWith('s:'));
   }
 
   private onTouchStart(e: TouchEvent) {
@@ -225,10 +261,13 @@ export class TouchControls {
     const h = r.height || window.innerHeight;
     const pz = Math.min(1, (w / 2 - 6) / 404);
     const hs = Math.max(0.6, Math.min(1, (h - 30) / 336));
-    // the bag on its own, equipment beside it (.panel.wide): about 730 × 316
+    // the bag on its own, equipment beside it (.panel.inv.wide): about 730 × 316; the skills, the
+    // keys beside the tree (.panel.skillsp.wide): about 606 × 342
     const pzw = Math.min(1, (w - 8) / 730, (h - 8) / 316);
+    const pzs = Math.min(1, (w - 8) / 606, (h - 8) / 342);
     document.documentElement.style.setProperty('--pz', pz.toFixed(3));
     document.documentElement.style.setProperty('--pzw', pzw.toFixed(3));
+    document.documentElement.style.setProperty('--pzs', pzs.toFixed(3));
     document.documentElement.style.setProperty('--hs', hs.toFixed(3));
   }
 
@@ -261,14 +300,34 @@ export class TouchControls {
       e.preventDefault();
       this.swallowClick = true;
       const slot = Array.prototype.indexOf.call(this.skillsEl.children, slotEl);
-      const pick = this.editing || !slotEl.dataset.skill;
+      const pick = !slotEl.dataset.skill;
       slotEl.classList.add('pressed');
       this.hooks.hideTooltip();
-      if (!pick) {
+      const press: ButtonPress = { slot, el: slotEl, pick, x: e.clientX, y: e.clientY, mode: 'auto', aimable: !pick && this.hooks.aimable(slot), timer: 0 };
+      if (press.aimable) {
+        // a spell: a moment to see whether it gets dragged to aim, else it goes at the nearest enemy
+        press.mode = 'wait';
+        press.timer = window.setTimeout(() => {
+          if (press.mode !== 'wait') return;
+          press.mode = 'auto';
+          this.input.touchHeld.add(slot);
+          this.input.touchPressed.add(slot);
+        }, AIM_WAIT_MS);
+      } else if (!pick) {
         this.input.touchHeld.add(slot);
         this.input.touchPressed.add(slot);
       }
-      this.presses.set(e.pointerId, { slot, el: slotEl, pick });
+      this.presses.set(e.pointerId, press);
+      return;
+    }
+
+    // a skill key in the skills panel
+    const bindEl = t.closest?.('.panel [data-bind]') as HTMLElement | null;
+    if (bindEl) {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      this.swallowClick = true;
+      this.bindPress = { id: e.pointerId, el: bindEl };
       return;
     }
 
@@ -283,7 +342,7 @@ export class TouchControls {
       if (holder.dataset.uid) {
         press.timer = window.setTimeout(() => {
           press.long = true;
-          this.selected = null;
+          this.setSelected(null);
           this.hooks.hideTooltip();
           navigator.vibrate?.(12);
           this.forward(holder, 'pointerdown', 2, press.x, press.y);
@@ -293,7 +352,7 @@ export class TouchControls {
       return;
     }
     if (this.selected) {
-      this.selected = null;
+      this.setSelected(null);
       this.hooks.hideTooltip();
     }
   }
@@ -318,9 +377,25 @@ export class TouchControls {
       this.input.stick = { x: dx / STICK_R, y: -dy / STICK_R };
       return;
     }
-    // a finger on a skill button is no mouse hovering it: no tooltip over the fight
-    if (this.presses.has(e.pointerId)) {
+    const press = this.presses.get(e.pointerId);
+    if (press) {
+      // a finger on a skill button is no mouse hovering it: no tooltip over the fight
       e.stopImmediatePropagation();
+      if (!press.aimable) return;
+      const dx = e.clientX - press.x;
+      const dy = e.clientY - press.y;
+      const len = Math.hypot(dx, dy);
+      if (press.mode !== 'aim') {
+        if (len < AIM_START) return;
+        // dragged: aim it, and stop casting it at the nearest enemy
+        clearTimeout(press.timer);
+        press.mode = 'aim';
+        this.input.touchHeld.delete(press.slot);
+        press.el.classList.add('aiming');
+      }
+      const k = Math.min(len, AIM_R) / AIM_R / (len || 1);
+      this.input.touchAim = { slot: press.slot, x: dx * k, y: -dy * k, cancel: len < CANCEL_R };
+      press.el.classList.toggle('cancel', len < CANCEL_R);
       return;
     }
     const pp = this.panelPress;
@@ -345,12 +420,32 @@ export class TouchControls {
     if (press) {
       e.stopImmediatePropagation();
       this.presses.delete(e.pointerId);
+      clearTimeout(press.timer);
       this.input.touchHeld.delete(press.slot);
-      press.el.classList.remove('pressed');
-      if (press.pick && !cancelled) {
-        this.setEditing(false);
-        this.hooks.pickSkill(press.slot, press.el);
+      press.el.classList.remove('pressed', 'aiming', 'cancel');
+      if (press.pick) {
+        if (!cancelled) this.hooks.pickSkill(press.slot, press.el);
+      } else if (press.mode === 'wait') {
+        // a tap on a spell's button: once, at the nearest enemy
+        if (!cancelled) this.input.touchPressed.add(press.slot);
+      } else if (press.mode === 'aim') {
+        const a = this.input.touchAim;
+        if (a?.slot === press.slot) {
+          if (!cancelled && !a.cancel) this.input.touchAimed = { slot: a.slot, x: a.x, y: a.y };
+          this.input.touchAim = null;
+        }
       }
+      return;
+    }
+    const bp = this.bindPress;
+    if (bp && e.pointerId === bp.id) {
+      e.stopImmediatePropagation();
+      this.bindPress = null;
+      if (cancelled) return;
+      const skill = this.selected?.startsWith('s:') ? this.selected.slice(2) : null;
+      this.setSelected(null);
+      this.hooks.hideTooltip();
+      this.hooks.bindSlot(Number(bp.el.dataset.bind), skill, bp.el);
       return;
     }
     const pp = this.panelPress;
@@ -360,7 +455,7 @@ export class TouchControls {
       if (pp.long || cancelled) return;
       if (pp.second) {
         // second tap: act as a click would (take the item, buy it, learn the skill)
-        this.selected = null;
+        this.setSelected(null);
         this.hooks.hideTooltip();
         this.forward(pp.holder, 'pointerdown', 0, pp.x, pp.y);
         this.forward(pp.holder, 'click', 0, pp.x, pp.y);
@@ -368,7 +463,7 @@ export class TouchControls {
         this.forward(pp.holder, 'pointermove', 0, pp.x, pp.y);
       } else {
         // first tap: show its tooltip
-        this.selected = pp.key;
+        this.setSelected(pp.key);
         this.forward(pp.holder, 'pointermove', 0, pp.x, pp.y);
       }
     }
