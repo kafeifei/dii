@@ -145,6 +145,7 @@ export class UI implements GameHooks {
       });
       const hint = this.touch.iosHint();
       if (hint) this.titleEl.querySelector('.title-sub')!.after(h('div', 'ios-hint', hint));
+      renderer.setTouchView(true);
     }
     this.applySettings();
     window.addEventListener('keydown', (e) => this.onKey(e));
@@ -354,6 +355,7 @@ export class UI implements GameHooks {
       this.sfx.ensure();
       this.touch?.enterFullscreen();
       if (run() === false) return;
+      this.touch?.gameStarted();
       t.classList.remove('open');
       this.dirty = true;
     };
@@ -408,6 +410,7 @@ export class UI implements GameHooks {
   /** continue the saved run without going through the title screen */
   resume() {
     if (!this.game.continueGame()) return;
+    this.touch?.gameStarted();
     this.titleEl.classList.remove('open');
     this.dirty = true;
   }
@@ -415,6 +418,7 @@ export class UI implements GameHooks {
   devStart() {
     const sorc = location.search.includes('sorc');
     this.game.newGame(sorc ? '测试法师' : '测试骑士', sorc ? 'sorceress' : 'paladin');
+    this.touch?.gameStarted();
     this.titleEl.classList.remove('open');
     this.dirty = true;
   }

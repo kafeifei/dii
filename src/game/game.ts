@@ -306,19 +306,28 @@ export class Game {
     // number keys: belt
     for (let i = 0; i < 4; i++) if (inp.pressed.has(String(i + 1))) this.useBelt(i);
 
-    // touch: a held skill button wins over the stick, so pressing attack while walking stops to fight
-    if (inp.touchHeld.size || inp.touchPressed.size) {
+    // touch: the stick wins, so walking away from a fight works while a button is still held; a
+    // button pressed while walking still casts a spell, but doesn't start a melee chase
+    const touchSkill = (i: number) => p.binds[i] ?? (i === 0 ? 'attack' : undefined);
+    const dir = inp.stick ? this.stickDir(inp.stick) : null;
+    if (dir) {
+      if (this.touchFighting && p.intent?.kind === 'attack') p.intent.hold = false;
+      p.intent = { kind: 'steer', dir };
+      for (const i of inp.touchPressed) {
+        const sk = touchSkill(i);
+        if (sk && (sk.startsWith(CHARGE_PREFIX) || SKILL_BY_ID[sk]?.kind === 'spell')) this.touchSkill(sk, true);
+      }
+      this.touchFighting = false;
+    } else if (inp.touchHeld.size || inp.touchPressed.size) {
       for (let i = 0; i < 6; i++) {
-        const sk = p.binds[i] ?? (i === 0 ? 'attack' : undefined);
+        const sk = touchSkill(i);
         if (sk && (inp.touchHeld.has(i) || inp.touchPressed.has(i))) this.touchSkill(sk, inp.touchPressed.has(i));
       }
     } else {
       // let go of the button: finish the swing, don't keep attacking
       if (this.touchFighting && p.intent?.kind === 'attack') p.intent.hold = false;
       this.touchFighting = false;
-      const dir = inp.stick ? this.stickDir(inp.stick) : null;
-      if (dir) p.intent = { kind: 'steer', dir };
-      else if (p.intent?.kind === 'steer') p.intent = null;
+      if (p.intent?.kind === 'steer') p.intent = null;
     }
 
     // left mouse
@@ -395,12 +404,18 @@ export class Game {
     const ok = (m: Monster | null, range: number): m is Monster => !!m && !m.dead && dist(m.pos, p.pos) < range && map.los(p.pos, m.pos);
     let foe = ok(this.touchFoe, 12) ? this.touchFoe : null;
     if (!foe) {
-      let best = 10;
+      // the nearest within 10m, counting one ahead as up to a third nearer than one behind
+      const fx = Math.sin(p.facing);
+      const fz = Math.cos(p.facing);
+      let best = Infinity;
       for (const m of this.level.monsters) {
         const d = dist(m.pos, p.pos);
-        if (!m.dead && d < best && map.los(p.pos, m.pos)) {
+        if (m.dead || d >= 10) continue;
+        const ahead = d > 0.01 ? ((m.pos.x - p.pos.x) * fx + (m.pos.z - p.pos.z) * fz) / d : 1;
+        const score = d * (1.3 - 0.3 * ahead);
+        if (score < best && map.los(p.pos, m.pos)) {
           foe = m;
-          best = d;
+          best = score;
         }
       }
     }

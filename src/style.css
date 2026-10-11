@@ -1166,6 +1166,15 @@ body {
 }
 
 /* ───────── touch screens (TouchControls adds body.touch) ───────── */
+:root {
+  /* the notch / Dynamic Island and home-indicator margins, as variables so a test can fake them */
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  /* touch HUD scale, from the screen's height (TouchControls.fitLayout) */
+  --hs: 1;
+}
 html,
 body {
   overscroll-behavior: none;
@@ -1177,24 +1186,44 @@ html {
 #world {
   touch-action: none;
 }
+.touch,
+.touch * {
+  /* no iOS callout (save image, look up) or selection loupe on a long press */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.touch input {
+  -webkit-user-select: text;
+  user-select: text;
+}
+.touch img {
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
 
 .touch .hud-bar {
   transform: none;
   left: 0;
   right: 0;
-  bottom: env(safe-area-inset-bottom, 0px);
+  bottom: var(--sab);
   margin: 0 auto;
   width: max-content;
   height: auto;
-  padding: 0 0 10px;
+  padding: 0 0 8px;
   background: none;
   border: 0;
   box-shadow: none;
   touch-action: none;
 }
 .touch .belt .slot {
-  width: 44px;
-  height: 44px;
+  width: calc(42px * var(--hs));
+  height: calc(42px * var(--hs));
+}
+.touch .belt .slot img {
+  width: 80%;
+  height: 80%;
 }
 .touch .xpbar {
   position: fixed;
@@ -1208,11 +1237,13 @@ html {
 /* the skill bar as round buttons by the right thumb: left-click skill biggest, the rest in an arc */
 .touch .skills {
   position: fixed;
-  right: calc(12px + env(safe-area-inset-right, 0px));
-  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  right: calc(10px + var(--sar));
+  bottom: calc(10px + var(--sab));
   width: 230px;
   height: 230px;
   pointer-events: none;
+  transform: scale(var(--hs));
+  transform-origin: bottom right;
 }
 .touch .skills .slot {
   position: absolute;
@@ -1231,18 +1262,19 @@ html {
   border-radius: 50%;
 }
 .touch .skills .slot.empty {
-  opacity: 0.4;
+  opacity: 0.45;
+}
+.touch .skills .slot.empty::before {
+  content: '+';
+  color: #a08a6a;
+  font-size: 24px;
 }
 .touch .skills .slot.pressed {
   transform: scale(0.9);
   border-color: var(--gold);
 }
 .touch .skills .slot .key {
-  right: 50%;
-  transform: translateX(50%);
-  bottom: 2px;
-  font-size: 9px;
-  opacity: 0.8;
+  display: none;
 }
 .touch .skills .slot:nth-child(1) { right: 0; bottom: 0; width: 84px; height: 84px; }
 .touch .skills .slot:nth-child(2) { right: 113px; bottom: 13px; width: 58px; height: 58px; }
@@ -1250,50 +1282,11 @@ html {
 .touch .skills .slot:nth-child(4) { right: 15px; bottom: 115px; width: 54px; height: 54px; }
 .touch .skills .slot:nth-child(5) { right: 173px; bottom: 83px; width: 50px; height: 50px; }
 .touch .skills .slot:nth-child(6) { right: 81px; bottom: 175px; width: 50px; height: 50px; }
-
-/* top: life and mana at the left, the panel buttons left of the minimap */
-.touch .orb {
-  position: fixed;
-  top: calc(8px + env(safe-area-inset-top, 0px));
-  bottom: auto;
-  width: 62px;
-  height: 62px;
-}
-.touch .orb.life {
-  left: calc(10px + env(safe-area-inset-left, 0px));
-}
-.touch .orb.mana {
-  left: calc(80px + env(safe-area-inset-left, 0px));
-  right: auto;
-}
-.touch .orb .val {
-  font-size: 10px;
-}
-.touch .hud-buttons {
-  position: fixed;
-  top: calc(8px + env(safe-area-inset-top, 0px));
-  right: calc(124px + env(safe-area-inset-right, 0px));
-  grid-template-columns: repeat(3, 38px);
-}
-.touch .hbtn {
-  width: 38px;
-  height: 34px;
-  font-size: 15px;
-}
-.touch #minimap {
-  top: calc(8px + env(safe-area-inset-top, 0px));
-  right: calc(8px + env(safe-area-inset-right, 0px));
-  width: 108px;
-  height: 108px;
-}
-.touch #minimap canvas {
-  transform: translate(-50%, -50%) rotate(45deg) scale(0.62);
-}
 .skill-edit {
   display: none;
   position: fixed;
-  right: calc(150px + env(safe-area-inset-right, 0px));
-  bottom: calc(206px + env(safe-area-inset-bottom, 0px));
+  right: calc(10px + var(--sar) + 152px * var(--hs));
+  bottom: calc(10px + var(--sab) + 196px * var(--hs));
   width: 34px;
   height: 30px;
   padding: 0;
@@ -1316,12 +1309,56 @@ html {
   box-shadow: 0 0 12px rgba(200, 168, 106, 0.7);
   opacity: 1;
 }
-.fs-btn {
+
+/* top: life and mana at the left, the panel buttons left of the minimap */
+.touch .orb {
   position: fixed;
-  top: calc(8px + env(safe-area-inset-top, 0px));
-  left: calc(150px + env(safe-area-inset-left, 0px));
+  top: calc(6px + var(--sat));
+  bottom: auto;
+  width: calc(60px * var(--hs));
+  height: calc(60px * var(--hs));
+}
+.touch .orb.life {
+  left: calc(8px + var(--sal));
+}
+.touch .orb.mana {
+  left: calc(14px + var(--sal) + 60px * var(--hs));
+  right: auto;
+}
+.touch .orb .val {
+  font-size: 10px;
+}
+.touch .hud-buttons {
+  position: fixed;
+  top: calc(6px + var(--sat));
+  right: calc(14px + var(--sar) + 100px * var(--hs));
+  grid-template-columns: repeat(3, 38px);
+  transform: scale(var(--hs));
+  transform-origin: top right;
+}
+.touch .hbtn {
   width: 38px;
   height: 34px;
+  font-size: 15px;
+}
+.touch #minimap {
+  top: calc(6px + var(--sat));
+  right: calc(6px + var(--sar));
+  width: calc(100px * var(--hs));
+  height: calc(100px * var(--hs));
+}
+.touch #minimap canvas {
+  transform: translate(-50%, -50%) rotate(45deg) scale(calc(0.58 * var(--hs)));
+}
+.touch #minimap .lvl {
+  font-size: 10px;
+}
+.fs-btn {
+  position: fixed;
+  top: calc(6px + var(--sat));
+  left: calc(22px + var(--sal) + 120px * var(--hs));
+  width: 36px;
+  height: 32px;
   padding: 0;
   font-size: 18px;
   color: #d8c8a0;
@@ -1329,13 +1366,44 @@ html {
   border: 1px solid #5a4a34;
 }
 .touch .lvlup-hint {
-  bottom: 70px;
+  bottom: calc(60px + var(--sab));
 }
 .touch .title-help {
   display: none;
 }
-.touch .skills .slot:nth-child(-n + 2) .key {
-  display: none;
+.touch #target {
+  top: calc(4px + var(--sat));
+}
+.touch #messages {
+  top: calc(56px + var(--sat));
+}
+
+/* iPhone Safari keeps its bars: say how to get rid of them (TouchControls.iosBanner) */
+.ios-banner {
+  position: fixed;
+  left: 50%;
+  top: calc(44px + var(--sat));
+  transform: translateX(-50%);
+  max-width: min(520px, 70vw);
+  padding: 8px 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #e8dcc0;
+  background: rgba(20, 14, 10, 0.94);
+  border: 1px solid var(--gold-dim, #8a7448);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+  z-index: 35;
+}
+.ios-banner button {
+  flex: none;
+  padding: 4px 10px;
+  font-family: inherit;
+  color: #d8c8a0;
+  background: linear-gradient(180deg, #3a2e22, #1a140e);
+  border: 1px solid #5a4a34;
 }
 
 /* the floating stick */
@@ -1366,29 +1434,33 @@ html {
   border: 1px solid rgba(255, 220, 160, 0.5);
 }
 
-/* panels: full height and scrolling, shrunk to fit two side by side (--pz, TouchControls.fitPanels) */
+/* panels: full height and scrolling, shrunk to fit two side by side (--pz, TouchControls.fitLayout) */
 .touch .panel {
-  top: calc(4px + env(safe-area-inset-top, 0px));
+  top: calc(4px + var(--sat));
   bottom: auto;
-  height: calc((100dvh - 8px) / var(--pz, 1));
+  height: calc((100dvh - 8px - var(--sat) - var(--sab)) / var(--pz, 1));
   transform: scale(var(--pz, 1));
   overflow-y: auto;
   touch-action: pan-y;
   z-index: 20;
 }
+/* Safari squeezes a column's children when the panel is shorter than them: scroll instead */
+.touch .panel > * {
+  flex-shrink: 0;
+}
 .touch .panel.left {
-  left: calc(4px + env(safe-area-inset-left, 0px));
+  left: calc(4px + var(--sal));
   transform-origin: top left;
 }
 .touch .panel.right {
-  right: calc(4px + env(safe-area-inset-right, 0px));
+  right: calc(4px + var(--sar));
   transform-origin: top right;
 }
 .touch .picker {
   left: auto !important;
-  right: calc(8px + env(safe-area-inset-right, 0px));
-  bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-  max-width: calc(100vw - 16px);
+  right: calc(8px + var(--sar));
+  bottom: calc(8px + var(--sab));
+  max-width: calc(100vw - 16px - var(--sal) - var(--sar));
   max-height: calc(100dvh - 16px);
   overflow-y: auto;
   z-index: 30;
@@ -1439,19 +1511,19 @@ html {
   .overlay {
     justify-content: flex-start;
     overflow-y: auto;
-    padding: 14px 0;
+    padding: calc(12px + var(--sat)) var(--sar) calc(12px + var(--sab)) var(--sal);
     box-sizing: border-box;
   }
   .title-logo {
-    font-size: 52px;
+    font-size: 48px;
     letter-spacing: 10px;
   }
   .title-sub {
     font-size: 13px;
-    margin: 0 0 14px;
+    margin: 0 0 12px;
   }
   .ios-hint {
-    margin: -8px 0 10px;
+    margin: -6px 0 10px;
   }
   .title-help {
     display: none;

@@ -178,6 +178,8 @@ export class Renderer implements Picker {
   private post: Post;
   zoom = 7.2;
   private zoomTarget = 7.2;
+  /** phones: the view is zoomed by screen height, so heroes stay a fair size on a small screen */
+  private touchView = false;
   private camTarget = new THREE.Vector3();
   /** progress between the last two sim steps, for interpolated drawing */
   private alpha = 1;
@@ -330,9 +332,16 @@ export class Renderer implements Picker {
     }
   }
 
+  setTouchView(on: boolean) {
+    this.touchView = on;
+    this.resize();
+  }
+
   resize() {
     const w = window.innerWidth;
     const h = window.innerHeight;
+    // about 42 px a metre (a desktop at 800px tall gets 55): a phone on its side shows less ground
+    if (this.touchView) this.zoom = this.zoomTarget = Math.max(3.4, Math.min(7.2, h / 84));
     this.width = w;
     this.height = h;
     this.webgl.setSize(w, h, false);

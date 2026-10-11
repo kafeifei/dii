@@ -70,6 +70,9 @@ export class TouchControls {
   /** the 换 button is on: the next skill button tapped gets a new skill */
   private editing = false;
   private editBtn: HTMLButtonElement;
+  /** spans the screen inside the safe-area margins, to measure them */
+  private probe: HTMLElement;
+  private root: HTMLElement;
 
   constructor(
     private input: Input,
@@ -100,6 +103,10 @@ export class TouchControls {
       root.appendChild(fs);
     }
     root.appendChild(div('rotate-hint', '<div class="phone"></div><div>把手机横过来玩</div>'));
+    this.probe = div('safe-probe');
+    this.probe.style.cssText = 'position:fixed;left:var(--sal);right:var(--sar);top:var(--sat);bottom:var(--sab);visibility:hidden;pointer-events:none';
+    root.appendChild(this.probe);
+    this.root = root;
 
     window.addEventListener('pointerdown', (e) => this.onDown(e), { capture: true });
     window.addEventListener('pointermove', (e) => this.onMove(e), { capture: true });
@@ -115,8 +122,36 @@ export class TouchControls {
       },
       { capture: true },
     );
-    this.fitPanels();
-    window.addEventListener('resize', () => this.fitPanels());
+    this.fitLayout();
+    // iOS ignores user-scalable=no: a pinch across the stick and a button would zoom the page
+    document.addEventListener('gesturestart', (e) => e.preventDefault());
+    window.addEventListener('resize', () => this.fitLayout());
+    window.visualViewport?.addEventListener('resize', () => this.fitLayout());
+  }
+
+  /** called when a game starts: on iPhone Safari, say once how to get rid of its bars */
+  gameStarted() {
+    const hint = this.iosHint();
+    let seen = false;
+    try {
+      seen = localStorage.getItem('dii-ios-banner') === '1';
+    } catch {
+      // storage blocked: show it
+    }
+    if (!hint || seen || this.root.querySelector('.ios-banner')) return;
+    const b = div('ios-banner ui-block', `<span>Safari 的地址栏会占掉一块屏幕。${hint.replace('想全屏玩：', '')}，就是全屏。</span>`);
+    const ok = document.createElement('button');
+    ok.textContent = '知道了';
+    ok.onclick = () => {
+      b.remove();
+      try {
+        localStorage.setItem('dii-ios-banner', '1');
+      } catch {
+        // storage blocked: it shows again next time
+      }
+    };
+    b.appendChild(ok);
+    this.root.appendChild(b);
   }
 
   /** fullscreen and landscape, where the browser allows it (not iPhone Safari: see iosHint) */
@@ -143,10 +178,19 @@ export class TouchControls {
     this.skillsEl.classList.toggle('editing', on);
   }
 
-  /** the side panels are 404px wide: on a narrow screen two side by side are shrunk to fit */
-  private fitPanels() {
-    const z = Math.min(1, (window.innerWidth / 2 - 6) / 404);
-    document.documentElement.style.setProperty('--pz', z.toFixed(3));
+  /**
+   * Fit to the screen inside the safe-area margins: the side panels (404px wide) shrink so two fit
+   * side by side, and the HUD shrinks with the height, so the minimap above and the skill buttons
+   * below (336px together at full size) never meet. A phone on its side in Safari can be under 300px.
+   */
+  private fitLayout() {
+    const r = this.probe.getBoundingClientRect();
+    const w = r.width || window.innerWidth;
+    const h = r.height || window.innerHeight;
+    const pz = Math.min(1, (w / 2 - 6) / 404);
+    const hs = Math.max(0.6, Math.min(1, (h - 30) / 336));
+    document.documentElement.style.setProperty('--pz', pz.toFixed(3));
+    document.documentElement.style.setProperty('--hs', hs.toFixed(3));
   }
 
   private onDown(e: PointerEvent) {
@@ -180,6 +224,7 @@ export class TouchControls {
       const slot = Array.prototype.indexOf.call(this.skillsEl.children, slotEl);
       const pick = this.editing || !slotEl.dataset.skill;
       slotEl.classList.add('pressed');
+      this.hooks.hideTooltip();
       if (!pick) {
         this.input.touchHeld.add(slot);
         this.input.touchPressed.add(slot);
@@ -232,6 +277,11 @@ export class TouchControls {
       }
       this.knob.style.transform = `translate(${dx}px, ${dy}px)`;
       this.input.stick = { x: dx / STICK_R, y: -dy / STICK_R };
+      return;
+    }
+    // a finger on a skill button is no mouse hovering it: no tooltip over the fight
+    if (this.presses.has(e.pointerId)) {
+      e.stopImmediatePropagation();
       return;
     }
     const pp = this.panelPress;

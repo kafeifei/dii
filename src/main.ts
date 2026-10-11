@@ -74,7 +74,12 @@ assets
   .load((done, total) => ui.loadProgress(done, total))
   .then(() => {
     ui.loadProgress(1, 1);
-    if (DEV) ui.devStart();
+    if (DEV) {
+      ui.devStart();
+      // ?dev&lvl=3: start in that dungeon level (for testing on devices without a console)
+      const lvl = Number(new URLSearchParams(location.search).get('lvl'));
+      if (lvl > 0) game.enterLevel(lvl, 'stairs');
+    }
     // a reload mid-run goes straight back into the game
     else if (wasInGame()) ui.resume();
   });
