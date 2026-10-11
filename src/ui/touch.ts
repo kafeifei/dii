@@ -189,7 +189,10 @@ export class TouchControls {
     const h = r.height || window.innerHeight;
     const pz = Math.min(1, (w / 2 - 6) / 404);
     const hs = Math.max(0.6, Math.min(1, (h - 30) / 336));
+    // the bag on its own, equipment beside it (.panel.wide): about 730 × 316
+    const pzw = Math.min(1, (w - 8) / 730, (h - 8) / 316);
     document.documentElement.style.setProperty('--pz', pz.toFixed(3));
+    document.documentElement.style.setProperty('--pzw', pzw.toFixed(3));
     document.documentElement.style.setProperty('--hs', hs.toFixed(3));
   }
 

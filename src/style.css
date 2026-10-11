@@ -1456,6 +1456,47 @@ html {
   right: calc(4px + var(--sar));
   transform-origin: top right;
 }
+/* the bag on its own: equipment on the left, bag and gold on the right, all on one screen */
+.touch .panel.wide.open {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto 1fr auto auto 1fr;
+  column-gap: 16px;
+  width: auto;
+  height: auto;
+  max-height: calc((100dvh - 8px - var(--sat) - var(--sab)) / var(--pzw, 1));
+  transform: scale(var(--pzw, 1));
+}
+.touch .panel.wide > h2 {
+  grid-column: 1 / -1;
+}
+.touch .panel.wide > .paperdoll {
+  grid-column: 1;
+  grid-row: 2 / -1;
+  margin: 0;
+}
+.touch .panel.wide > .grid {
+  grid-column: 2;
+  grid-row: 3;
+}
+.touch .panel.wide > .goldline {
+  grid-column: 2;
+  grid-row: 4;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+/* the bag beside a stash, a shop or the cube: bag first, equipment below */
+.touch .panel.inv:not(.wide) > h2 {
+  order: -2;
+}
+.touch .panel.inv:not(.wide) > .grid,
+.touch .panel.inv:not(.wide) > .goldline {
+  order: -1;
+}
+.touch .panel.inv:not(.wide) > .goldline {
+  margin-bottom: 12px;
+}
 .touch .picker {
   left: auto !important;
   right: calc(8px + var(--sar));

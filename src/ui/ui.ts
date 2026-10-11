@@ -1322,6 +1322,10 @@ export class UI implements GameHooks {
     this.itemByUid.clear();
     this.leftEl.classList.toggle('open', !!this.left);
     this.rightEl.classList.toggle('open', !!this.right);
+    // phones: the bag on its own lays equipment and bag side by side; beside another panel the bag
+    // comes first, as that's what goes back and forth with a stash or a shop
+    this.rightEl.classList.toggle('inv', this.right === 'inv');
+    this.rightEl.classList.toggle('wide', !!this.touch && this.right === 'inv' && !this.left);
     switch (this.left) {
       case 'char':
         this.renderChar();
