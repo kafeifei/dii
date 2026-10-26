@@ -16,6 +16,8 @@ import type { Grid } from '../items/grid';
 import { baseOf, buyPrice, canSocket, itemColor, sellPrice, tooltip, type Item, type TooltipLine } from '../items/item';
 import type { Renderer } from '../render/renderer';
 import { T_FLOOR, T_PROP, T_WALL } from '../world/tilemap';
+import { levelLabel } from '../world/levelgen';
+import { SHRINE_BY_ID } from '../data/shrines';
 import { CELL, itemIcon, skillIcon } from './icons';
 import { applySettings, saveSettings, SettingsPanel, type Settings } from './settings';
 import { DebugPanel } from './debug';
@@ -46,7 +48,7 @@ const TOUCH_HELP = `<b>左半屏按住拖动</b> 移动 · <b>右下按钮</b> �
   法术按钮 <b>按住拖动</b> 手动瞄准，松手施放，拖回按钮上松手取消 · 靠近物品、宝箱、商人时出现 <b>交互按钮</b><br/>
   换技能：打开 <b>技</b>，点一个技能，再点下面的技能键 · 背包里 <b>点一下</b> 看说明，<b>再点</b> 拿起，<b>长按</b> 使用或装备 · <b>⛶</b> 全屏`;
 /** what the touch interact button says it does to each kind of thing */
-const USE_VERB: Record<ObjKind, string> = { chest: '打开', barrel: '打碎', stairs: '进入', waypoint: '使用', vendor: '交谈', stash: '打开', portal: '进入' };
+const USE_VERB: Record<ObjKind, string> = { chest: '打开', barrel: '打碎', stairs: '进入', waypoint: '使用', vendor: '交谈', stash: '打开', portal: '进入', exit: '前往', shrine: '触摸' };
 
 // paper doll layout (x, y, w, h in px)
 const DOLL: Record<EquipSlot, [number, number, number, number, string]> = {
@@ -118,6 +120,7 @@ export class UI implements GameHooks {
   private cursorEl!: HTMLElement;
   private minimap!: HTMLCanvasElement;
   private minimapLabel!: HTMLElement;
+  private blessingEl!: HTMLElement;
   private automap!: HTMLElement;
   private automapCanvas!: HTMLCanvasElement;
   private titleEl!: HTMLElement;
@@ -275,6 +278,10 @@ export class UI implements GameHooks {
     this.minimapLabel = h('div', 'lvl');
     mm.append(this.minimap, this.minimapLabel);
     r.appendChild(mm);
+    // a shrine's blessing and the seconds it has left, under the minimap
+    this.blessingEl = h('div');
+    this.blessingEl.id = 'blessing';
+    r.appendChild(this.blessingEl);
 
     this.automap = h('div');
     this.automap.id = 'automap';
@@ -395,7 +402,7 @@ export class UI implements GameHooks {
       for (const sv of saves) {
         const row = h('div', 'save');
         const pick = h('button', 'btn pick');
-        pick.innerHTML = `<b></b><span>${CLASSES[sv.cls].name} · ${sv.level} 级 · ${sv.depth ? `第 ${sv.depth} 层` : '营地'}</span>`;
+        pick.innerHTML = `<b></b><span>${CLASSES[sv.cls].name} · ${sv.level} 级 · ${levelLabel(sv.depth)}</span>`;
         pick.querySelector('b')!.textContent = sv.name;
         pick.onclick = () => start(() => this.game.continueGame(sv.slot));
         const del = h('button', 'btn del', '✕');
@@ -626,6 +633,7 @@ export class UI implements GameHooks {
     const item = this.itemByUid.get(holder.dataset.uid!);
     if (!item) return this.hideTooltip();
     if (this.cursorItem && holder.dataset.src !== 'shop') {
+      if (baseOf(item).type === 'cube') return this.showTooltip([{ text: '放进魔盒', color: '#c8a86a' }], e.clientX, e.clientY);
       // still show the target's tooltip when socketing
       if (!(baseOf(this.cursorItem).type === 'rune' && canSocket(item))) return this.hideTooltip();
     }
@@ -763,6 +771,16 @@ export class UI implements GameHooks {
         return;
       }
       if (kind === 'cube' && baseOf(c).type === 'cube') return;
+      // dropped on the cube (in the bag or the stash): straight in, wherever it fits
+      if (under && baseOf(under.item).type === 'cube') {
+        if (p.cube.add(c)) {
+          this.cursorItem = null;
+          this.message(`${c.name} 放进了魔盒`, '#c8a86a', 1.2);
+          this.sfx.play('pickup');
+        } else this.message('魔盒里放不下了', '#ff6060');
+        this.dirty = true;
+        return;
+      }
       if (under && socketable(c) && canSocket(under.item)) {
         if (this.socketInto(under.item, c)) {
           this.cursorItem = null;
@@ -982,6 +1000,8 @@ export class UI implements GameHooks {
       d.dataset.uid = it.uid;
       d.dataset.src = kind;
       d.innerHTML = `<img src="${itemIcon(it)}" />`;
+      // carrying something: the cube lights up, it can go straight in
+      if (this.cursorItem && b.type === 'cube') d.classList.add('hl');
       if (it.sockets > 0) {
         const s = h('div', 'sockets');
         for (let i = 0; i < it.sockets; i++) {
@@ -1129,7 +1149,7 @@ export class UI implements GameHooks {
     const list = h('div', 'wplist');
     const p = this.game.player;
     for (const d of p.waypoints) {
-      const name = d === 0 ? '流亡者营地' : `第 ${d} 层`;
+      const name = levelLabel(d, '流亡者营地');
       const w = h('div', `wp${this.game.level.depth === d ? ' cur' : ''}`, name);
       w.onclick = () => {
         if (this.game.level.depth === d) return;
@@ -1552,9 +1572,12 @@ export class UI implements GameHooks {
     // vignette (light radius)
     const r = this.renderer;
     const ps = r.playerScreen;
-    const town = g.level.depth === 0;
-    const radius = (town ? 10 : 7 + d.lightRadius * 0.7) * r.pxPerUnit;
-    const a = town ? 0.4 : 0.85;
+    // under the sky the dark past the hero's light comes with the night: deepest in the wilderness
+    const outdoor = !!g.level.layout.theme.outdoor;
+    const day = outdoor ? 1 - r.night : 0;
+    const dark = (outdoor ? (g.level.depth === 0 ? 10 : 8 + d.lightRadius * 0.7) : 7 + d.lightRadius * 0.7) * r.pxPerUnit;
+    const radius = dark + day * 9 * r.pxPerUnit;
+    const a = (outdoor ? (g.level.depth === 0 ? 0.4 : 0.6) : 0.85) * (1 - day * 0.8);
     this.vignette.style.background = `radial-gradient(circle at ${ps.x}px ${ps.y}px, rgba(0,0,0,0) ${radius * 0.55}px, rgba(0,0,0,${a * 0.6}) ${radius}px, rgba(0,0,0,${a}) ${radius * 1.6}px)`;
 
     // drop a stale tooltip when the element under the cursor went away (panel closed, item moved)
@@ -1564,6 +1587,12 @@ export class UI implements GameHooks {
     }
     this.updateLabels();
     this.updateExplored();
+    const bl = p.shrine && SHRINE_BY_ID[p.shrine.id];
+    const blText = bl ? `${bl.name} ${Math.ceil(p.shrine!.left)}` : '';
+    if (this.blessingEl.textContent !== blText) {
+      this.blessingEl.textContent = blText;
+      if (bl) this.blessingEl.style.color = bl.color;
+    }
     this.mapTimer -= dt;
     if (this.mapTimer <= 0) {
       this.mapTimer = 0.2;
@@ -1682,8 +1711,8 @@ export class UI implements GameHooks {
       ctx.fill();
     };
     for (const o of g.level.objects) {
-      // the way down from the camp is always marked, explored or not
-      const campExit = o.kind === 'stairs' && g.level.depth === 0;
+      // the way out of the camp is always marked, explored or not
+      const campExit = o.kind === 'exit' && g.level.depth === 0;
       if (!campExit && !map.explored[Math.floor(o.pos.z) * map.w + Math.floor(o.pos.x)]) continue;
       if (campExit) {
         const k = (performance.now() / 1200) % 1;
@@ -1693,10 +1722,11 @@ export class UI implements GameHooks {
         ctx.arc(ox + o.pos.x * scale, oy + o.pos.z * scale, scale * (1.6 + k * 3), 0, Math.PI * 2);
         ctx.stroke();
       }
-      if (o.kind === 'stairs') dot(o.pos.x, o.pos.z, '#ffd040', scale * 1.4);
+      if (o.kind === 'stairs' || o.kind === 'exit') dot(o.pos.x, o.pos.z, '#ffd040', scale * 1.4);
       else if (o.kind === 'waypoint') dot(o.pos.x, o.pos.z, '#40a0ff', scale * 1.4);
       else if (o.kind === 'portal') dot(o.pos.x, o.pos.z, '#ff4040', scale * 1.2);
       else if (o.kind === 'vendor' || o.kind === 'stash') dot(o.pos.x, o.pos.z, '#40ff60', scale);
+      else if (o.kind === 'shrine' && !o.used) dot(o.pos.x, o.pos.z, '#80e0ff', scale * 1.2);
     }
     const p = g.player;
     for (const m of g.level.monsters) {
@@ -1710,7 +1740,7 @@ export class UI implements GameHooks {
     const ctx = this.minimap.getContext('2d')!;
     const p = this.game.player;
     this.drawMapTo(ctx, 4, p.pos.x, p.pos.z, 32, 240, 240);
-    this.minimapLabel.textContent = this.game.level.depth === 0 ? '营地' : `第 ${this.game.level.depth} 层`;
+    this.minimapLabel.textContent = levelLabel(this.game.level.depth);
   }
 
   private drawAutomap() {

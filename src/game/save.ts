@@ -6,6 +6,7 @@ import type { StatKey } from '../data/stats';
 import type { Item } from '../items/item';
 import type { Grid, Placed } from '../items/grid';
 import { Player, xpForLevel } from './player';
+import { WILD_MAPS } from '../world/levelgen';
 
 const BASE_KEY = 'dii-save-v1';
 export const MAX_SLOTS = 8;
@@ -63,8 +64,11 @@ export function wasInGame(): boolean {
 }
 
 interface SaveData {
-  /** 2: made with the Diablo II items; 1 (or none): before them, or by their first release */
-  v: 1 | 2;
+  /**
+   * 3: depths count the wilderness outside the camp; 2: made with the Diablo II items; 1 (or none):
+   * before them, or by their first release
+   */
+  v: 1 | 2 | 3;
   name: string;
   /** missing in saves from before classes existed: those are paladins */
   cls?: PlayerClass;
@@ -99,7 +103,7 @@ interface SaveData {
 export function writeSave(p: Player, depth: number) {
   const KEY = keyFor(slot);
   const data: SaveData = {
-    v: 2,
+    v: 3,
     name: p.name,
     cls: p.cls,
     level: p.level,
@@ -242,6 +246,16 @@ function restore(grid: Grid, placed: Placed[] | undefined, overflow: Item[], opt
   for (const it of later) if (!grid.add(it)) overflow.push(it);
 }
 
+/** saves from before the wilderness: their dungeon floors move one level deeper, behind it */
+function migrateDepths(d: SaveData) {
+  if ((d.v ?? 1) >= 3) return;
+  const shift = (n: number) => (n > 0 ? n + WILD_MAPS : n);
+  d.depth = shift(d.depth ?? 0);
+  d.depthReached = shift(d.depthReached ?? 0);
+  d.waypoints = (d.waypoints ?? [0]).map(shift);
+  d.v = 3;
+}
+
 export interface SaveSummary {
   slot: number;
   name: string;
@@ -259,6 +273,7 @@ export function listSaves(): SaveSummary[] {
       const raw = localStorage.getItem(keyFor(n));
       if (!raw) continue;
       const d = JSON.parse(raw) as SaveData;
+      migrateDepths(d);
       out.push({ slot: n, name: d.name, level: d.level, cls: d.cls && CLASSES[d.cls] ? d.cls : 'paladin', depth: d.depth ?? 0, time: d.time ?? 0 });
     } catch {
       /* unreadable slot: treat as empty */
@@ -292,6 +307,7 @@ export function loadSave(): { player: Player; depth: number } | null {
     return null;
   }
   const opts: MigrateOpts = { legacy: (d.v ?? 1) < 2, damaged: (d.v ?? 1) < 2 && 'cube' in d };
+  migrateDepths(d);
   const valid = (it: Item | undefined | null): it is Item => migrate(it, opts);
   const p = new Player({ x: 0, z: 0 });
   p.name = d.name;

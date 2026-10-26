@@ -79,8 +79,14 @@ assets
     if (DEV) {
       ui.devStart();
       // ?dev&lvl=3: start in that dungeon level (for testing on devices without a console)
-      const lvl = Number(new URLSearchParams(location.search).get('lvl'));
+      const q = new URLSearchParams(location.search);
+      const lvl = Number(q.get('lvl'));
       if (lvl > 0) game.enterLevel(lvl, 'stairs');
+      // ?dev&tod=0.5: hold the time of day there (0 midnight, 0.25 dawn, 0.5 noon, 0.75 dusk)
+      if (q.has('tod')) {
+        game.clock = Number(q.get('tod')) || 0;
+        game.clockRate = 0;
+      }
     }
     // a reload mid-run goes straight back into the game
     else if (wasInGame()) ui.resume();

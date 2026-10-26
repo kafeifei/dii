@@ -4,6 +4,7 @@ import type { Game } from '../game/game';
 import { MAX_LEVEL, xpForLevel } from '../game/player';
 import { rollEquipment, rollGem, rollRune, type Drop } from '../items/gen';
 import type { Item, Rarity } from '../items/item';
+import { levelLabel } from '../world/levelgen';
 
 type Choice<T> = [T, string];
 type Action = [string, () => void];
@@ -49,7 +50,7 @@ export class DebugPanel {
     this.choice(rate, '掉落', [[1, '×1'], [2, '×2'], [5, '×5'], [10, '×10']] as Choice<number>[], () => debugOpts.loot, (v) => (debugOpts.loot = v), '怪物和箱子的掉落重复掷几次');
 
     const map = this.group(panel, '地图');
-    this.actions(map, '前往', [['下一层', () => this.go(this.depth + 1)], ['往下 5 层', () => this.go(this.depth + 5)], ['回营地', () => this.go(0)]], '沿途的传送点不会激活，只激活到达的那层');
+    this.actions(map, '前往', [['下一张图', () => this.go(this.depth + 1)], ['往下 5 张', () => this.go(this.depth + 5)], ['回营地', () => this.go(0)]], '沿途的传送点不会激活，只激活到达的那张图');
 
     this.el = el;
   }
@@ -74,7 +75,7 @@ export class DebugPanel {
 
   /** the level loot is rolled at */
   private get ilvl() {
-    return Math.max(this.game.player.level, monsterLevel(Math.max(1, this.depth)));
+    return Math.max(this.game.player.level, monsterLevel(Math.max(1, this.game.level?.floor ?? 1)));
   }
 
   private levels(n: number) {
@@ -136,7 +137,7 @@ export class DebugPanel {
 
   private note(text: string) {
     const p = this.game.player;
-    const status = `${p.name} · ${p.level} 级 · 第 ${this.depth} 层 · 金币 ${p.gold}`;
+    const status = `${p.name} · ${p.level} 级 · ${levelLabel(this.depth)} · 金币 ${p.gold}`;
     this.noteEl.textContent = text ? `${text}\n${status}` : status;
   }
 

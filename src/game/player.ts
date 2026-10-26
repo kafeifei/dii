@@ -4,6 +4,7 @@ import { D2_CLASS, D2_TO_GAME, skillTab } from '../data/d2/skillmap';
 import { D2_XP, D2_XP_RATIO } from '../data/d2/progression';
 import { EQUIP_SLOTS, ITEM_BASES, type EquipSlot } from '../data/items';
 import { SET_ITEMS } from '../data/legendary';
+import { SHRINE_BY_ID } from '../data/shrines';
 import { SKILL_BY_ID, SKILLS, type SkillDef } from '../data/skills';
 import { addStat, poisonSeconds, type StatBag, type StatKey } from '../data/stats';
 import { Grid } from '../items/grid';
@@ -138,6 +139,8 @@ export class Player extends Actor {
   manaQueue: { perSec: number; left: number }[] = [];
   depthReached = 0;
   waypoints: number[] = [0];
+  /** a shrine's blessing (one at a time) and its seconds left */
+  shrine: { id: string; left: number } | null = null;
   // movement / action target
   intent: Intent | null = null;
   /** queued attack while animating */
@@ -288,6 +291,9 @@ export class Player extends Actor {
         if (setCounts[sid] >= +cnt) for (const [k, v] of bonus) addStat(bag, k, v);
       }
     }
+    // a shrine's blessing
+    const blessing = this.shrine ? SHRINE_BY_ID[this.shrine.id] : undefined;
+    for (const [k, v] of Object.entries(blessing?.stats ?? {})) addStat(bag, k as StatKey, v);
     const skillsAll = bag.skillsAll ?? 0;
     // skill bonuses from items
     const myCls = this.cls === 'sorceress' ? 'sor' : 'pal';
@@ -425,7 +431,7 @@ export class Player extends Actor {
       if (it && it.defense !== undefined) def += itemDefense(it);
     }
     def += bag.def ?? 0;
-    def = Math.floor(def * (1 + shieldDefPct / 100));
+    def = Math.floor(def * (1 + (shieldDefPct + (blessing?.defPct ?? 0)) / 100));
 
     const sh = eq.offhand;
     let block = 0;

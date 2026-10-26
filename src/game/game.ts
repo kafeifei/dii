@@ -21,6 +21,8 @@ import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
 import { loadSave, markInGame, setSlot, writeSave } from './save';
 import { debugOpts } from './debug';
+import { isWild, levelLabel } from '../world/levelgen';
+import { SHRINE_BY_ID } from '../data/shrines';
 
 export interface GameHooks {
   message(text: string, color?: string, dur?: number): void;
@@ -41,6 +43,9 @@ export interface Picker {
 }
 
 const ACTIVE_RADIUS = 30;
+
+/** seconds from one midnight to the next under the sky */
+const DAY_LENGTH = 16 * 60;
 
 /** spells a dragged touch button lays on a spot of ground */
 const AIM_SPOT = new Set(['meteor', 'blizzard', 'fire_wall', 'heavens_wrath', 'teleport']);
@@ -69,6 +74,8 @@ export class Game {
   portalLevel: Level | null = null;
   /** the dungeon floor visited last, kept so waypoint trips and deaths don't reroll it */
   lastDungeon: Level | null = null;
+  /** the wilderness maps as they were left: like an area of a Diablo II game, each stays for the session */
+  private wilds = new Map<number, Level>();
   fx: Fx = nullFx;
   hooks!: GameHooks;
   picker!: Picker;
@@ -92,6 +99,10 @@ export class Game {
   /** what the interact button would use: the nearest item, chest, door or person in reach */
   touchNear: TouchNear | null = null;
   shop = new Grid(10, 10);
+  /** the time of day under the sky, 0 → 1 from midnight (src/render/sky.ts); it starts in the morning */
+  clock = 0.3;
+  /** how fast the day goes by (0 holds it, for screenshots: ?tod=) */
+  clockRate = 1;
   paused = false;
   /** driven externally (balance bot): the page loop neither steps nor renders */
   headless = false;
@@ -132,6 +143,7 @@ export class Game {
     this.started = true;
     this.lastDungeon = null;
     this.portalLevel = null;
+    this.wilds.clear();
     markInGame(true);
     this.enterLevel(0, 'start');
   }
@@ -145,6 +157,7 @@ export class Game {
     this.started = true;
     this.lastDungeon = null;
     this.portalLevel = null;
+    this.wilds.clear();
     markInGame(true);
     // floors are regenerated; you arrive at the entrance of the floor you were on
     this.enterLevel(s.depth, 'start');
@@ -155,11 +168,17 @@ export class Game {
     if (this.started && this.level) writeSave(this.player, this.level.depth);
   }
 
-  enterLevel(depth: number, how: 'start' | 'stairs' | 'waypoint' | 'portal' | 'respawn') {
+  /** `exit`: walked off the last level through an exit; you arrive by the one leading back */
+  enterLevel(depth: number, how: 'start' | 'stairs' | 'waypoint' | 'portal' | 'respawn' | 'exit') {
     const p = this.player;
+    const from = this.level?.depth ?? 0;
     let level: Level;
+    const wild = this.wilds.get(depth);
     if (how === 'portal' && depth > 0 && this.portalLevel && this.portalLevel.depth === depth) {
       level = this.portalLevel;
+    } else if (wild) {
+      level = wild;
+      level.reenter();
     } else if (how !== 'stairs' && depth > 0 && this.lastDungeon?.depth === depth) {
       // like D2: going back to the floor you left (waypoint, after dying) finds it as you left it;
       // the dead stay dead, survivors have healed
@@ -168,14 +187,22 @@ export class Game {
     } else {
       level = new Level(depth, (Math.random() * 2 ** 31) | 0);
     }
-    if (depth > 0) this.lastDungeon = level;
+    if (isWild(depth)) this.wilds.set(depth, level);
+    else if (depth > 0) this.lastDungeon = level;
     this.level = level;
     let spawn: P2 = level.layout.start;
+    let facing = p.facing;
+    const back = how === 'exit' ? level.objects.find((o) => o.kind === 'exit' && o.dest === from) : undefined;
+    if (back?.inward) {
+      const d = back.radius + 1.6;
+      spawn = { x: back.pos.x + back.inward.x * d, z: back.pos.z + back.inward.z * d };
+      facing = Math.atan2(back.inward.x, back.inward.z);
+    }
     if (how === 'portal') {
       if (depth === 0) {
         // create the return portal in town
         const pt = { x: level.layout.start.x - 2.5, z: level.layout.start.z + 0.5 };
-        const portal = new WorldObject('portal', pt, `传送门 · 第 ${this.portalLevel?.depth ?? 1} 层`, 0.6);
+        const portal = new WorldObject('portal', pt, `传送门 · ${levelLabel(this.portalLevel?.depth ?? 1)}`, 0.6);
         portal.dest = this.portalLevel?.depth ?? 1;
         level.objects.push(portal);
         spawn = { x: pt.x + 1.2, z: pt.z + 0.6 };
@@ -190,6 +217,7 @@ export class Game {
     }
     const safe = level.map.nearestWalkable(spawn.x, spawn.z) ?? spawn;
     p.pos = { ...safe };
+    p.facing = facing;
     p.intent = null;
     p.path = null;
     p.setState('idle');
@@ -200,7 +228,8 @@ export class Game {
     this.lmbMode = 'none';
     if (depth > 0) {
       p.depthReached = Math.max(p.depthReached, depth);
-      if (!p.waypoints.includes(depth)) {
+      // the wilderness has no waypoint: the camp is a walk away
+      if (!isWild(depth) && !p.waypoints.includes(depth)) {
         p.waypoints.push(depth);
         p.waypoints.sort((a, b) => a - b);
         if (how !== 'start') this.hooks.message('传送点已激活', '#c8a86a', 2);
@@ -209,7 +238,7 @@ export class Game {
       this.refreshShop();
       this.layOutUnplaced(level);
     }
-    this.sfx.ambience(depth === 0 ? 'town' : 'dungeon');
+    this.sfx.ambience(depth === 0 || isWild(depth) ? 'town' : 'dungeon');
     this.hooks.levelChanged(level);
     this.hooks.message(level.name, '#d8c8a0', 3);
     this.save();
@@ -261,6 +290,7 @@ export class Game {
   update(dt: number) {
     if (!this.started || this.paused) return;
     this.time += dt;
+    this.clock = (this.clock + (dt * this.clockRate) / DAY_LENGTH) % 1;
     const L = this.level;
     for (const a of [this.player, ...L.monsters, ...L.projectiles]) {
       a.prevPos.x = a.pos.x;
@@ -273,6 +303,11 @@ export class Game {
       return;
     }
     const p = this.player;
+    if (p.shrine && (p.shrine.left -= dt) <= 0) {
+      p.shrine = null;
+      p.markDirty();
+      this.hooks.message('神殿的祝福消失了', '#9a9080', 2);
+    }
     updatePlayer(this, p, dt);
     for (const m of L.monsters) {
       if (dist(m.pos, p.pos) > ACTIVE_RADIUS && !m.dead) continue;
@@ -301,6 +336,14 @@ export class Game {
       if (gi.gold > 0 && gi.age > 0.5 && !p.dead && dist(gi.pos, p.pos) < 1.1) this.pickupGround(gi);
     }
     for (const o of L.objects) if (o.used) o.usedTime += dt;
+    // exits are walked through
+    if (!p.dead) {
+      const exit = L.objects.find((o) => o.kind === 'exit' && dist(o.pos, p.pos) < o.radius);
+      if (exit) {
+        this.enterLevel(exit.dest, 'exit');
+        return;
+      }
+    }
     // corpse cleanup
     if (L.monsters.length > 0 && Math.random() < 0.02) {
       L.monsters = L.monsters.filter((m) => !m.dead || m.deathTime < 40);
@@ -321,7 +364,7 @@ export class Game {
     if (!ground && !inp.overUI) {
       const near = this.level.monsters.filter((m) => !m.dead && dist(m.pos, this.player.pos) < 22);
       monster = this.picker.pickMonster(inp.mx, inp.my, near);
-      if (!monster) object = this.picker.pickObject(inp.mx, inp.my, this.level.objects.filter((o) => !(o.used && (o.kind === 'chest' || o.kind === 'barrel'))));
+      if (!monster) object = this.picker.pickObject(inp.mx, inp.my, this.level.objects.filter((o) => !(o.used && (o.kind === 'chest' || o.kind === 'barrel' || o.kind === 'shrine'))));
     }
     this.hover = { monster, object, ground };
   }
@@ -549,7 +592,7 @@ export class Game {
       }
     }
     for (const o of this.level.objects) {
-      if (o.used && (o.kind === 'chest' || o.kind === 'barrel')) continue;
+      if (o.used && (o.kind === 'chest' || o.kind === 'barrel' || o.kind === 'shrine')) continue;
       const d = dist(o.pos, p.pos) - o.radius;
       if (d < bd) {
         bd = d;
@@ -800,6 +843,7 @@ export class Game {
     const diff = p.level - m.level;
     if (diff > 5) xp *= [0.81, 0.62, 0.43, 0.24][diff - 6] ?? 0.05;
     else if (diff < -5) xp *= p.level / m.level;
+    xp *= 1 + (p.shrine ? (SHRINE_BY_ID[p.shrine.id].xpPct ?? 0) : 0) / 100;
     const gained = p.gainXp(Math.floor(xp * debugOpts.xp));
     if (gained > 0) {
       this.onProc('procLevelUp', null);
@@ -1014,11 +1058,11 @@ export class Game {
         obj.used = true;
         this.sfx.play('chest');
         this.fx.burst('chest', obj.pos);
-        const lvl = Math.max(1, this.level.depth * 2);
+        const lvl = Math.max(1, this.level.floor * 2);
         const drops = this.rollLoot(lvl, 1);
         drops.push({ kind: 'gold', amount: randInt(lvl * 5, lvl * 15) });
         // the Horadric Cube waits in the first chest opened from floor 4 down (D2: the Halls of the Dead)
-        if (this.level.depth >= 4 && !p.cubeFound) {
+        if (this.level.floor >= 4 && !p.cubeFound) {
           p.cubeFound = true;
           drops.push({ kind: 'item', item: createItem('cube') });
           this.hooks.message('你找到了赫拉迪姆魔盒！', '#c8a86a', 4);
@@ -1031,7 +1075,7 @@ export class Game {
         obj.used = true;
         this.sfx.play('barrel');
         this.fx.burst('barrel', obj.pos);
-        if (chance(0.35)) this.spawnDrops(obj.pos, this.rollLoot(Math.max(1, this.level.depth * 2 - 1), 0));
+        if (chance(0.35)) this.spawnDrops(obj.pos, this.rollLoot(Math.max(1, this.level.floor * 2 - 1), 0));
         break;
       }
       case 'stairs':
@@ -1041,17 +1085,52 @@ export class Game {
         this.hooks.openPanel('waypoint');
         break;
       case 'vendor':
+        this.vendorHeal();
         this.hooks.openPanel('shop');
         break;
       case 'stash':
         this.hooks.openPanel('stash');
         break;
+      case 'exit':
+        this.enterLevel(obj.dest, 'exit');
+        break;
+      case 'shrine': {
+        if (obj.used) return;
+        obj.used = true;
+        const def = SHRINE_BY_ID[obj.shrine ?? ''];
+        if (!def) return;
+        if (def.refill) {
+          p.life = p.stats.maxLife;
+          p.mana = p.stats.maxMana;
+        } else {
+          p.shrine = { id: def.id, left: def.secs };
+          p.markDirty();
+        }
+        this.fx.burst('aura_switch', p.pos, { color: def.color });
+        this.sfx.play('holy');
+        this.hooks.message(`${def.name}：${def.desc}`, def.color, 3);
+        break;
+      }
       case 'portal':
         this.sfx.play('portal');
         if (this.level.depth === 0) this.enterLevel(obj.dest, 'portal');
         else this.enterLevel(0, 'portal');
         break;
     }
+  }
+
+  /** like Akara in Diablo II: talking to the merchant puts life and mana back to full and cures poison, chill and the rest */
+  private vendorHeal() {
+    const p = this.player;
+    const s = p.stats;
+    if (p.life >= s.maxLife && p.mana >= s.maxMana && p.poisonTime <= 0 && p.chillTime <= 0 && p.bleedTime <= 0 && p.slowTime <= 0) return;
+    p.life = s.maxLife;
+    p.mana = s.maxMana;
+    p.poisonTime = p.chillTime = p.bleedTime = p.slowTime = p.stunTime = 0;
+    this.fx.burst('potion_hp', p.pos);
+    this.fx.burst('potion_mp', p.pos);
+    this.sfx.play('holy');
+    this.hooks.message('艾莉娜为你恢复了生命与法力', '#c8a86a', 2);
   }
 
   openTownPortal() {

@@ -20,6 +20,7 @@ export interface Grade {
 
 export const GRADES: Record<string, Grade> = {
   town: { shadow: '#2a3c66', light: '#ffd6a0', split: 0.45, saturation: 0.92, gamma: 1.04, vignette: 0.55, grain: 0.03, bloom: 0.35 },
+  wild: { shadow: '#2a3c66', light: '#ffd6a0', split: 0.45, saturation: 0.92, gamma: 1.04, vignette: 0.55, grain: 0.03, bloom: 0.35 },
   crypt: { shadow: '#3a3030', light: '#ffc890', split: 0.3, saturation: 0.9, gamma: 1.06, vignette: 0.6, grain: 0.035, bloom: 0.4 },
   cave: { shadow: '#40261e', light: '#ffbe8a', split: 0.3, saturation: 0.92, gamma: 1.06, vignette: 0.6, grain: 0.035, bloom: 0.4 },
   ice: { shadow: '#1c3058', light: '#d8eeff', split: 0.45, saturation: 0.9, gamma: 1.04, vignette: 0.55, grain: 0.03, bloom: 0.4 },
