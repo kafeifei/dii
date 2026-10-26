@@ -464,6 +464,10 @@ body {
 .gitem.set {
   background: rgba(30, 130, 30, 0.28);
 }
+.gitem.hl {
+  outline: 1px solid #c8a86a;
+  box-shadow: 0 0 8px rgba(200, 168, 106, 0.7);
+}
 .gitem.unusable {
   background: rgba(160, 20, 20, 0.35);
 }

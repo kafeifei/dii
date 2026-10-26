@@ -279,6 +279,7 @@ export function tooltip(item: Item, ctx?: ReqContext, priceLine?: string): Toolt
   if (b.type === 'cube') {
     lines.push({ text: '右键点击打开', small: true, color: '#999' });
     lines.push({ text: '放入物品后按"转化"，按赫拉迪姆的配方合成', small: true, color: '#aaa' });
+    lines.push({ text: '拿着物品点魔盒，不用打开就能放进去', small: true, color: '#aaa' });
     return lines;
   }
   if (b.type === 'rune' || b.type === 'gem') {

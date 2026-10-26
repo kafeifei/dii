@@ -595,6 +595,7 @@ export class UI implements GameHooks {
     const item = this.itemByUid.get(holder.dataset.uid!);
     if (!item) return this.hideTooltip();
     if (this.cursorItem && holder.dataset.src !== 'shop') {
+      if (baseOf(item).type === 'cube') return this.showTooltip([{ text: '放进魔盒', color: '#c8a86a' }], e.clientX, e.clientY);
       // still show the target's tooltip when socketing
       if (!(baseOf(this.cursorItem).type === 'rune' && canSocket(item))) return this.hideTooltip();
     }
@@ -732,6 +733,16 @@ export class UI implements GameHooks {
         return;
       }
       if (kind === 'cube' && baseOf(c).type === 'cube') return;
+      // dropped on the cube (in the bag or the stash): straight in, wherever it fits
+      if (under && baseOf(under.item).type === 'cube') {
+        if (p.cube.add(c)) {
+          this.cursorItem = null;
+          this.message(`${c.name} 放进了魔盒`, '#c8a86a', 1.2);
+          this.sfx.play('pickup');
+        } else this.message('魔盒里放不下了', '#ff6060');
+        this.dirty = true;
+        return;
+      }
       if (under && socketable(c) && canSocket(under.item)) {
         if (this.socketInto(under.item, c)) {
           this.cursorItem = null;
@@ -951,6 +962,8 @@ export class UI implements GameHooks {
       d.dataset.uid = it.uid;
       d.dataset.src = kind;
       d.innerHTML = `<img src="${itemIcon(it)}" />`;
+      // carrying something: the cube lights up, it can go straight in
+      if (this.cursorItem && b.type === 'cube') d.classList.add('hl');
       if (it.sockets > 0) {
         const s = h('div', 'sockets');
         for (let i = 0; i < it.sockets; i++) {

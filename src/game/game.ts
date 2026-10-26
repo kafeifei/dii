@@ -1023,6 +1023,7 @@ export class Game {
         this.hooks.openPanel('waypoint');
         break;
       case 'vendor':
+        this.vendorHeal();
         this.hooks.openPanel('shop');
         break;
       case 'stash':
@@ -1034,6 +1035,20 @@ export class Game {
         else this.enterLevel(0, 'portal');
         break;
     }
+  }
+
+  /** like Akara in Diablo II: talking to the merchant puts life and mana back to full and cures poison, chill and the rest */
+  private vendorHeal() {
+    const p = this.player;
+    const s = p.stats;
+    if (p.life >= s.maxLife && p.mana >= s.maxMana && p.poisonTime <= 0 && p.chillTime <= 0 && p.bleedTime <= 0 && p.slowTime <= 0) return;
+    p.life = s.maxLife;
+    p.mana = s.maxMana;
+    p.poisonTime = p.chillTime = p.bleedTime = p.slowTime = p.stunTime = 0;
+    this.fx.burst('potion_hp', p.pos);
+    this.fx.burst('potion_mp', p.pos);
+    this.sfx.play('holy');
+    this.hooks.message('艾莉娜为你恢复了生命与法力', '#c8a86a', 2);
   }
 
   openTownPortal() {
