@@ -18,6 +18,8 @@ import type { Renderer } from '../render/renderer';
 import { T_FLOOR, T_PROP, T_WALL } from '../world/tilemap';
 import { CELL, itemIcon, skillIcon } from './icons';
 import { applySettings, saveSettings, SettingsPanel, type Settings } from './settings';
+import { DebugPanel } from './debug';
+import { debugEnabled } from '../game/debug';
 import { isTouchDevice, TouchControls } from './touch';
 
 type LeftPanel = 'char' | 'stash' | 'shop' | 'waypoint' | 'cube' | null;
@@ -122,6 +124,7 @@ export class UI implements GameHooks {
   private deathEl!: HTMLElement;
   private menuEl!: HTMLElement;
   private settingsPanel!: SettingsPanel;
+  private debugPanel: DebugPanel | null = null;
   private fpsEl!: HTMLElement;
   private fpsFrames = 0;
   private fpsTime = 0;
@@ -309,6 +312,14 @@ export class UI implements GameHooks {
       },
     );
     this.root.appendChild(this.settingsPanel.el);
+    if (debugEnabled) {
+      this.debugPanel = new DebugPanel(
+        this.game,
+        () => (this.dirty = true),
+        () => this.toggleMenu(false),
+      );
+      this.root.appendChild(this.debugPanel.el);
+    }
   }
 
   private applySettings() {
@@ -319,6 +330,14 @@ export class UI implements GameHooks {
   private openSettings() {
     this.sfx.play('click');
     this.settingsPanel.open();
+  }
+
+  /** over the pause menu, so closing it leaves the game paused there */
+  private openDebug() {
+    if (!this.debugPanel) return;
+    this.sfx.play('click');
+    this.toggleMenu(true);
+    this.debugPanel.open();
   }
 
   private buildTitle() {
@@ -450,6 +469,7 @@ export class UI implements GameHooks {
       <div class="menu">
         <button class="btn resume">继续游戏</button>
         <button class="btn open-settings">设置</button>
+        ${debugEnabled ? '<button class="btn open-debug">调试</button>' : ''}
         <button class="btn quit">保存并返回标题</button>
       </div>
       <div class="help">
@@ -463,6 +483,8 @@ export class UI implements GameHooks {
       </div>`;
     (m.querySelector('.resume') as HTMLButtonElement).onclick = () => this.toggleMenu(false);
     (m.querySelector('.open-settings') as HTMLButtonElement).onclick = () => this.openSettings();
+    const dbg = m.querySelector('.open-debug') as HTMLButtonElement | null;
+    if (dbg) dbg.onclick = () => this.openDebug();
     (m.querySelector('.quit') as HTMLButtonElement).onclick = () => {
       this.game.save();
       markInGame(false);
@@ -515,10 +537,18 @@ export class UI implements GameHooks {
       this.settingsPanel.close();
       return;
     }
+    if (this.debugPanel?.isOpen && (e.key === 'Escape' || e.key === '`')) {
+      this.debugPanel.close();
+      return;
+    }
     if (!this.game.started) return;
     const tag = (e.target as HTMLElement)?.tagName;
     if (tag === 'INPUT') return;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    if (k === '`' && this.debugPanel && !this.game.player.dead) {
+      this.openDebug();
+      return;
+    }
     if (k === 'Escape') {
       if (this.pickerSlot >= 0) {
         this.closePicker();

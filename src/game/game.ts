@@ -20,6 +20,7 @@ import { castItemSkill, startCast, toggleAura, updatePlayer, type PlayerAction }
 import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
 import { loadSave, markInGame, setSlot, writeSave } from './save';
+import { debugOpts } from './debug';
 
 export interface GameHooks {
   message(text: string, color?: string, dur?: number): void;
@@ -799,13 +800,10 @@ export class Game {
     const diff = p.level - m.level;
     if (diff > 5) xp *= [0.81, 0.62, 0.43, 0.24][diff - 6] ?? 0.05;
     else if (diff < -5) xp *= p.level / m.level;
-    const gained = p.gainXp(Math.floor(xp));
-    if (gained > 0) this.onProc('procLevelUp', null);
+    const gained = p.gainXp(Math.floor(xp * debugOpts.xp));
     if (gained > 0) {
-      this.fx.burst('levelup', p.pos);
-      this.sfx.play('levelup');
-      this.hooks.message(`等级提升！你现在是 ${p.level} 级`, '#ffd24a', 3);
-      this.hooks.levelUp();
+      this.onProc('procLevelUp', null);
+      this.celebrateLevelUp();
     }
     const d = p.stats;
     this.onProc('procKill', m);
@@ -813,8 +811,7 @@ export class Game {
     if (d.lifePerKill) p.life = Math.min(d.maxLife, p.life + d.lifePerKill);
     if (d.manaPerKill) p.mana = Math.min(d.maxMana, p.mana + d.manaPerKill);
     // loot
-    const drops = rollMonsterDrops(m.level, m.lootQuality(), d.mf, d.gf);
-    this.spawnDrops(m.pos, drops);
+    this.spawnDrops(m.pos, this.rollLoot(m.level, m.lootQuality()));
     // fx
     this.fx.death(m, m.def.blood, elem);
     const snd = m.def.blood === 'bone' ? 'diebone' : m.def.model === 'imp' || m.def.model === 'shaman' ? 'impdie' : 'die';
@@ -852,6 +849,23 @@ export class Game {
   }
 
   /** chance-to-cast mods on the player's gear, for one kind of event */
+  /** the burst, sound and message of a level gained */
+  celebrateLevelUp() {
+    const p = this.player;
+    this.fx.burst('levelup', p.pos);
+    this.sfx.play('levelup');
+    this.hooks.message(`等级提升！你现在是 ${p.level} 级`, '#ffd24a', 3);
+    this.hooks.levelUp();
+  }
+
+  /** loot from a monster or a container, rolled once more for each extra pass the debug panel asks for */
+  private rollLoot(mlvl: number, quality: number): Drop[] {
+    const s = this.player.stats;
+    const drops: Drop[] = [];
+    for (let i = 0; i < debugOpts.loot; i++) drops.push(...rollMonsterDrops(mlvl, quality, s.mf, s.gf));
+    return drops;
+  }
+
   onProc(kind: StatKey, target: Monster | null) {
     const p = this.player;
     for (const m of p.stats.procs) {
@@ -863,6 +877,10 @@ export class Game {
   killPlayer() {
     const p = this.player;
     if (p.dead) return;
+    if (debugOpts.god) {
+      p.life = p.d.maxLife;
+      return;
+    }
     this.onProc('procDeath', null);
     p.dead = true;
     p.life = 0;
@@ -997,7 +1015,7 @@ export class Game {
         this.sfx.play('chest');
         this.fx.burst('chest', obj.pos);
         const lvl = Math.max(1, this.level.depth * 2);
-        const drops = rollMonsterDrops(lvl, 1, p.stats.mf, p.stats.gf);
+        const drops = this.rollLoot(lvl, 1);
         drops.push({ kind: 'gold', amount: randInt(lvl * 5, lvl * 15) });
         // the Horadric Cube waits in the first chest opened from floor 4 down (D2: the Halls of the Dead)
         if (this.level.depth >= 4 && !p.cubeFound) {
@@ -1013,7 +1031,7 @@ export class Game {
         obj.used = true;
         this.sfx.play('barrel');
         this.fx.burst('barrel', obj.pos);
-        if (chance(0.35)) this.spawnDrops(obj.pos, rollMonsterDrops(Math.max(1, this.level.depth * 2 - 1), 0, p.stats.mf, p.stats.gf));
+        if (chance(0.35)) this.spawnDrops(obj.pos, this.rollLoot(Math.max(1, this.level.depth * 2 - 1), 0));
         break;
       }
       case 'stairs':

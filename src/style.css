@@ -1136,6 +1136,17 @@ body {
   width: 220px;
   accent-color: var(--gold);
 }
+/* debug panel: what the last button did, and where the character stands */
+.debug-note {
+  margin-top: 12px;
+  max-width: calc(100vw - 32px);
+  min-height: 2.8em;
+  white-space: pre-line;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--gold-dim);
+}
 #fps {
   position: absolute;
   top: 8px;
