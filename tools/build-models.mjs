@@ -54,7 +54,7 @@ function dropAnim(anim) {
 
 async function build(src, out, opts = {}) {
   // an AI-generated replacement (tools/ai-props.mjs) takes over the pack model's key
-  if (fs.existsSync(path.join(SRC, 'ai-props', out))) src = `ai-props/${out}`;
+  if (!src.startsWith('ai/') && fs.existsSync(path.join(SRC, 'ai-props', out))) src = `ai-props/${out}`;
   const doc = await io.read(path.join(SRC, src));
   const root = doc.getRoot();
   for (const anim of root.listAnimations()) {

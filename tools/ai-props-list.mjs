@@ -131,8 +131,8 @@ export const PROPS = [
   { key: 'g_rune', src: 'gear/rune', box: [0.2, 0.06, 0.24], pitch: -90 },
   { key: 'g_gem', src: 'gear/gem', box: [0.13, 0.1, 0.13] },
   { key: 'g_cube', src: 'gear/horadric_cube', box: [0.3, 0.3, 0.3] },
-  // monsters that aren't humanoid: one piece, moved in code (ModelSpec.motion)
-  { key: 'mon_spider', file: '../viewer/public/models/spider/model.glb', tris: 8000 },
+  // monsters that aren't humanoid: one piece, moved in code (ModelSpec.motion); the spider is a
+  // rigged Tripo model now (tools/tripo-merge.mjs)
   { key: 'mon_bat', file: '../viewer/public/models/bat/model.glb', tris: 8000 },
   { key: 'mon_dragon', file: '../viewer/public/models/dragon/model.glb', tris: 8000 },
   { key: 'mon_skullfly', src: 'monsters/skullfly' },

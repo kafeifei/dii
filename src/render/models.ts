@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { ActorState } from '../game/actor';
 import { assets, type ModelKey } from './assets';
+import { LegRig } from './legs';
 import type { AnimInput } from './rig';
 
 /** something carried in a hand slot: another model file, or a procedural mesh built in body units */
@@ -186,9 +187,11 @@ export interface ModelSpec {
   float?: number;
   /**
    * one-piece creatures without a skeleton, moved in the vertex shader: 'flap' beats wings spread
-   * along x, 'crawl' lifts legs splayed around the body in turn, 'hover' only bobs and sways
+   * along x, 'hover' only bobs and sways
    */
-  motion?: 'flap' | 'crawl' | 'hover';
+  motion?: 'flap' | 'hover';
+  /** a many-legged Tripo rig: its legs are bent in code on top of the clips (src/render/legs.ts) */
+  legs?: boolean;
   clips: {
     idle: string[];
     move: MoveClip[];
@@ -216,27 +219,17 @@ interface MatInfo {
 }
 
 /**
- * Vertex motion for one-piece creatures (see ModelSpec.motion), in the mesh's own space:
- * 'flap' lifts everything beyond the body along x on a sine (wings), 'crawl' raises the outer
- * part of each leg in a wave running round the body.
+ * Vertex motion for one-piece creatures (see ModelSpec.motion), in the mesh's own space: 'flap'
+ * lifts everything beyond the body along x on a sine (wings).
  */
-function addMotion(mat: THREE.Material, kind: 'flap' | 'crawl', u: Record<string, THREE.IUniform>) {
+function addMotion(mat: THREE.Material, kind: 'flap', u: Record<string, THREE.IUniform>) {
   mat.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, u);
-    const move =
-      kind === 'flap'
-        ? `float span = (uBoxMax.x - uBoxMin.x) * 0.5;
+    const move = `float span = (uBoxMax.x - uBoxMin.x) * 0.5;
           float side = transformed.x - (uBoxMax.x + uBoxMin.x) * 0.5;
           float w = clamp((abs(side) - span * 0.2) / (span * 0.8), 0.0, 1.0);
           transformed.y += sin(uMoveT) * w * w * span * 0.6 * uMoveK;
-          transformed.x -= sign(side) * (1.0 - cos(sin(uMoveT) * w)) * span * 0.25 * uMoveK;`
-        : `vec2 c = (uBoxMax.xz + uBoxMin.xz) * 0.5;
-          vec2 d = transformed.xz - c;
-          float reach = max(uBoxMax.x - uBoxMin.x, uBoxMax.z - uBoxMin.z) * 0.5;
-          float w = clamp((length(d) - reach * 0.3) / (reach * 0.7), 0.0, 1.0);
-          float a = atan(d.y, d.x);
-          float lift = max(0.0, sin(uMoveT + a * 4.0));
-          transformed.y += lift * w * (uBoxMax.y - uBoxMin.y) * 0.35 * uMoveK;`;
+          transformed.x -= sign(side) * (1.0 - cos(sin(uMoveT) * w)) * span * 0.25 * uMoveK;`;
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nuniform float uMoveT;\nuniform float uMoveK;\nuniform vec3 uBoxMin;\nuniform vec3 uBoxMax;')
       .replace('#include <begin_vertex>', `#include <begin_vertex>\n{\n${move}\n}`);
@@ -264,6 +257,7 @@ export class ModelRig {
   private baseY = 0;
   private baseCenterZ = 0;
   private time = Math.random() * 10;
+  private legs: LegRig | null = null;
   private flash = new THREE.Color();
   /** shared by every material of a `motion` creature */
   private moveU = { uMoveT: { value: Math.random() * 10 }, uMoveK: { value: 1 }, uBoxMin: { value: new THREE.Vector3() }, uBoxMax: { value: new THREE.Vector3() } };
@@ -279,6 +273,8 @@ export class ModelRig {
     this.baseCenterZ = tpl.center.z * s;
     this.inner.add(this.body);
     this.root.add(this.inner);
+    // hinge axes come from the rest pose, before any clip has moved a bone
+    if (spec.legs) this.legs = LegRig.find(this.body);
 
     // accessories
     if (spec.show) {
@@ -484,7 +480,7 @@ export class ModelRig {
 
     if (a.dead) {
       this.updateDeath(dt, a);
-      this.mixer.update(dt);
+      this.advance(dt, a);
       this.updateHeld(dt, false);
       return;
     }
@@ -507,7 +503,7 @@ export class ModelRig {
     }
     if (this.reviving > 0) {
       this.reviving -= dt;
-      this.mixer.update(dt);
+      this.advance(dt, a);
       this.updateHeld(dt, false);
       return;
     }
@@ -554,19 +550,34 @@ export class ModelRig {
     }
     if (this.spec.float) this.inner.position.y = this.baseY + Math.sin(this.time * 2.2) * 0.08;
     if (this.spec.motion) this.updateMotion(dt, a);
-    this.mixer.update(dt);
+    this.advance(dt, a);
     this.updateHeld(dt, a.state === 'attack');
   }
 
-  /** wing beats / leg cycle speed by state, a lunge on attacks, a sway for hovering skulls */
+  /** run the clips, then let code bend a many-legged rig's legs and carry its body on top */
+  private advance(dt: number, a: AnimInput) {
+    this.legs?.reset();
+    this.mixer.update(dt);
+    if (!this.legs) return;
+    const clip = this.curClip;
+    const walking = !a.dead && (a.state === 'move' || a.state === 'charge') && this.cur && clip && this.spec.clips.move.some((m) => m.clip === clip.name);
+    this.legs.pose(dt, a, walking ? (this.cur!.time % clip!.duration) / clip!.duration : null);
+    const b = this.legs.body;
+    this.inner.position.z = -this.baseCenterZ + b.lunge;
+    this.inner.position.y = this.baseY + b.rise;
+    this.inner.rotation.x = b.pitch;
+    this.inner.rotation.z = b.roll;
+  }
+
+  /** wing beat speed by state, a lunge on attacks, a sway for hovering skulls */
   private updateMotion(dt: number, a: AnimInput) {
     const attacking = a.state === 'attack' || a.state === 'cast';
     const moving = a.state === 'move' || a.state === 'charge';
-    const rate = this.spec.motion === 'crawl' ? (attacking ? 14 : moving ? 4 + a.speed * 3 : 1.5) : attacking ? 18 : moving ? 11 : 8;
+    const rate = attacking ? 18 : moving ? 11 : 8;
     this.moveU.uMoveT.value += dt * rate;
     const k = attacking ? Math.sin(Math.min(1, a.stateTime / Math.max(0.1, a.stateDur)) * Math.PI) : 0;
     this.inner.position.z = -this.baseCenterZ + k * 0.35;
-    this.inner.rotation.x = k * (this.spec.motion === 'crawl' ? -0.25 : 0.35);
+    this.inner.rotation.x = k * 0.35;
     if (this.spec.motion === 'hover') this.inner.rotation.z = Math.sin(this.time * 1.7) * 0.12;
     if (this.spec.motion === 'flap' && this.spec.float) this.inner.position.y += Math.sin(this.moveU.uMoveT.value) * 0.06;
   }

@@ -51,7 +51,7 @@
 
 ### 还没走通的
 
-- 蜘蛛、蝙蝠、幼龙这类非人形怪还不能自动绑骨，只能用顶点着色器做简单动作。
+- 蝙蝠、幼龙这类非人形怪还没有绑骨，只能用顶点着色器做简单动作。蜘蛛已经换成 Tripo 绑好骨的模型，但它只带走路，咬和死是代码摆的。
 - 动作库是给空手做的，持武器的动作和技能专属动作还不够。
 - 音效和图标还是代码合成的，没有用 AI 生成。
 - 内容量：目前只有两个职业；防具、暗金和套装还是项目自己编的；没有任务和剧情。
@@ -139,6 +139,7 @@ tools/
   fetch-models.mjs  下载原始模型包到 models-src/（不入库）
   build-models.mjs  裁剪动画、压缩顶点，输出到 public/models/
   meshy-merge.mjs   合成 AI 角色和怪物（清单在 meshy-chars.mjs）
+  tripo-merge.mjs   导入 Tripo 绑好骨的多足怪（目前是蜘蛛）
   ai-props.mjs      导入 AI 道具、建筑、武器和掉落物（清单在 ai-props-list.mjs）
   ai-textures.mjs   导入 AI 地面和墙面贴图
   d2-import.mjs     从 D2R 数据表生成 src/data/d2/
@@ -165,7 +166,14 @@ node tools/meshy-merge.mjs sorceress paladin npc_vendor npc_mercenary npc_rogue 
 node tools/build-models.mjs
 ```
 
-怪物也用同一个合并工具：`mon(dir, clips)` 默认把动作原地化，并补上基础的走和跑。不是人形的怪（蜘蛛、蝙蝠、幼龙、飞颅）不能自动绑骨，是一整块静态模型，由顶点着色器做动作（`ModelSpec.motion`：扇翅、爬行、悬浮）。
+怪物也用同一个合并工具：`mon(dir, clips)` 默认把动作原地化，并补上基础的走和跑。蝙蝠、幼龙、飞颅这几种不是人形的怪 Meshy 绑不了骨，是一整块静态模型，由顶点着色器做动作（`ModelSpec.motion`：扇翅、悬浮）。
+
+蜘蛛用的是 [Tripo](https://www.tripo3d.ai)：同一张设定图生成模型，按八足骨架自动绑骨（62 根骨头，每条腿分 3 到 5 节），套它的八足走路预设，用 `@tripo3d/cli` 下载到 `models-src/tripo/`。`tools/tripo-merge.mjs` 把它转成游戏的朝向（Tripo 朝 +X）、改成非金属材质、走路提速 6 倍、用走路第一帧做一个静止的 `Idle`，写到 `models-src/ai/mon_spider.glb`。Tripo 的走路只有后两对腿在迈步，也没有攻击和死亡，所以 `src/render/legs.ts` 在动作之上用代码弯腿骨：走路时前两对腿按对角交替补上迈步；咬的时候前腿高举、毒牙张开，在动作一半处扑下去（正好是模拟结算伤害的时刻）；受击时腿一缩；死的时候腿收到身子底下、身子塌下去。
+
+```
+node tools/tripo-merge.mjs
+node tools/build-models.mjs
+```
 
 Meshy 的骨骼没有手指，也没有挂武器的骨头，手里的东西由 `src/render/models.ts` 的 `hold` 摆放：
 - 握点从手部网格量出来（绑定姿势下手部顶点的主轴给出手指方向和掌心朝向），落在掌心指根处；武器导入时就把原点放在握柄上（`ai-props.mjs` 的 `grip`），斧头、刀刃统一转到 +X 一侧。

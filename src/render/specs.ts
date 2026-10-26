@@ -104,8 +104,20 @@ export function monsterSpec(m: Monster): ModelSpec {
     }
     case 'ghoul':
       return ranked({ model: 'mon_ghoul', rig: 'quat', height: 1.75 * sc, clips: meshyClips(1.75 * sc, 1.43, 4.69, ['Attack', 'Attack2']) });
-    case 'spider':
-      return ranked({ model: 'mon_spider', rig: 'quat', height: 1.5 * sc, fitWidth: true, motion: 'crawl', clips: NO_CLIPS });
+    case 'spider': {
+      // Tripo rig (tools/tripo-merge.mjs): its walk, everything else bent in code (src/render/legs.ts),
+      // over a still pose. The back legs sweep 0.44 of the body's width per 0.42 s walk cycle.
+      const w = 1.5 * sc;
+      const still = ['Idle'];
+      return ranked({
+        model: 'mon_spider',
+        rig: 'quat',
+        height: w,
+        fitWidth: true,
+        legs: true,
+        clips: { idle: still, move: [{ clip: 'Walk', ref: (0.44 * w * 0.9) / 0.42 }], attack: still, hit: [], death: still },
+      });
+    }
     case 'wraith': {
       const h = 1.55 * sc;
       return ranked({
