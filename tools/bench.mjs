@@ -1,8 +1,9 @@
-// Render benchmark on the real GPU: node tools/bench.mjs [--url http://localhost:5174/?dev] [--dpr 2] [--scenes camp,stairs,2,6,10,14]
+// Render benchmark on the real GPU: node tools/bench.mjs [--url http://localhost:5174/?dev] [--dpr 2] [--scenes camp,gate,1,3,7,11,15]
 // Needs the dev server. Each scene is drawn 40 times with a pixel read after every draw, so the time
-// is what the GPU really takes per frame (rAF would hide it behind vsync). Scenes: 'camp', 'stairs'
-// (the camp's way down), or a dungeon depth. Dungeons are generated afresh each run, so numbers vary
-// a little between runs.
+// is what the GPU really takes per frame (rAF would hide it behind vsync). Scenes: 'camp', 'gate'
+// (the camp's way out), or a depth: 1 is the wilderness, the dungeon's floors follow. Levels are
+// generated afresh each run, so numbers vary a little between runs. Add &tod=0.5 to the url to
+// bench the camp and the wilderness by day (shadows from the sun) rather than by the clock.
 import { chromium } from 'playwright-core';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -33,10 +34,10 @@ const gpu = await page.evaluate(() => {
 });
 console.log(`${gpu.name}, device pixel ratio ${dpr}, drawn at ${gpu.ratio}`);
 
-for (const s of opt('scenes', 'camp,stairs,2,6,10,14').split(',')) {
+for (const s of opt('scenes', 'camp,gate,1,3,7,11,15').split(',')) {
   const r = await page.evaluate(async (s) => {
-    if (s === 'stairs') {
-      const st = game.level.objects.find((o) => o.kind === 'stairs');
+    if (s === 'gate') {
+      const st = game.level.objects.find((o) => o.kind === 'exit');
       game.player.pos.x = st.pos.x - 4;
       game.player.pos.z = st.pos.z - 3;
     } else if (s !== 'camp') game.enterLevel(+s, 'stairs');

@@ -116,6 +116,11 @@ export const PROP_DEFS: Record<string, PropDef> = {
   d_rubble_large: { s: 0.25, w: 2, d: 1, solid: true },
   x_tree_single_A: { s: 2.6, w: 1, d: 1, solid: true },
   x_tree_single_B: { s: 2.4, w: 1, d: 1, solid: true },
+  // camp pieces, built to size in metres (tools/ai-props-list.mjs): the wilderness's monster camps
+  p_tent: { s: 0.8, w: 2, d: 2, solid: true },
+  p_banner: { s: 0.9, w: 1, d: 1, solid: false },
+  p_cage: { s: 1, w: 1, d: 1, solid: true },
+  p_skullpile: { s: 1, w: 1, d: 1, solid: false },
   // town buildings
   x_home_A: { s: 5.6, w: 4, d: 4, solid: true },
   x_home_B: { s: 4.8, w: 4, d: 5, solid: true },

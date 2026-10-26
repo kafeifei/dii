@@ -14,8 +14,11 @@ import { monsterLook, playerLook, playerLookKey, vendorLook } from './looks';
 import { ModelRig, type ModelSpec } from './models';
 import { GRADES, Post } from './post';
 import { ambientMotes, applyLavaGlow, Mist } from './atmosphere';
+import { makeGround } from './ground';
+import { skyAt, type SkyLook } from './sky';
+import { SHRINE_BY_ID } from '../data/shrines';
 import {
-  glowSprite, makeBarrel, makeBrazier, makeHouse, makeChest, makeDecor, makeGroundItem, makeHammer, makePortal, makeProjectile, makeStairs, makeTorch, makeTree, makeWaypoint, topCentroid,
+  assetProp, glowSprite, makeBarrel, makeBrazier, makeHouse, makeChest, makeDecor, makeGroundItem, makeHammer, makePortal, makeProjectile, makeStairs, makeTorch, makeTree, makeWaypoint, topCentroid,
 } from './props';
 import { Rig, type AnimInput, type RigLook } from './rig';
 import { monsterSpec, npcSpec, playerSpec, vendorSpec } from './specs';
@@ -223,6 +226,14 @@ export class Renderer implements Picker {
   private shadowMat = new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent: true, depthWrite: false });
   private raycaster = new THREE.Raycaster();
   private groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  /** an outdoor map's blended ground */
+  private ground: ReturnType<typeof makeGround> | null = null;
+  /** where the shadow-casting light stands from the view's centre: the sun or the moon outdoors */
+  private sunOffset = new THREE.Vector3(-8, 20, 4);
+  /** how much lanterns, fires and the hero's light count: all of it below ground and by night */
+  private lamps = 1;
+  /** 1 by night under the sky (or below ground), 0 by day: how dark past the hero's light */
+  night = 1;
   private time = 0;
   private level: Level | null = null;
   pxPerUnit = 40;
@@ -303,9 +314,9 @@ export class Renderer implements Picker {
 
   /** in the camp the moon throws the shadows; the hero's light there is faint */
   private applyShadows() {
-    const town = this.level?.depth === 0;
-    this.heroLight.castShadow = this.shadows && !town;
-    this.dir.castShadow = this.shadows && town;
+    const outdoor = !!this.level?.layout.theme.outdoor;
+    this.heroLight.castShadow = this.shadows && !outdoor;
+    this.dir.castShadow = this.shadows && outdoor;
   }
 
   /** the pools of point lights (the lighting setting); the shaders recompile for the new count */
@@ -421,16 +432,20 @@ export class Renderer implements Picker {
     const theme = L.theme;
     const map = L.map;
     this.scene.background = new THREE.Color(theme.bg);
+    this.sunOffset.set(-8, 20, 4);
+    this.lamps = 1;
+    this.night = 1;
     this.post.setGrade(GRADES[theme.key] ?? GRADES.crypt);
     this.hemi.color.set(theme.ambient);
     this.hemi.groundColor.set('#0a0606');
     this.hemi.intensity = theme.ambientIntensity * 2.8;
-    this.dir.color.set(level.depth === 0 ? '#8aa0d8' : theme.ambient);
-    this.dir.intensity = level.depth === 0 ? 0.9 : 0.25;
+    const outdoor = !!theme.outdoor;
+    this.dir.color.set(outdoor ? '#8aa0d8' : theme.ambient);
+    this.dir.intensity = outdoor ? 0.9 : 0.25;
     this.applyShadows();
     // the hero's light, split between the shadow-casting light overhead and the camera-side fill
-    this.heroLight.intensity = level.depth === 0 ? 11 : 25;
-    this.playerLight.intensity = level.depth === 0 ? 7 : 15;
+    this.heroLight.intensity = outdoor ? 11 : 25;
+    this.playerLight.intensity = outdoor ? 7 : 15;
 
     // floor
     const floorTiles: [number, number][] = [];
@@ -448,34 +463,49 @@ export class Renderer implements Picker {
         }
       }
     }
-    const floorMat = new THREE.MeshStandardMaterial({ map: tileTexture(`${theme.key}_floor`), roughness: 0.95, metalness: 0 });
-    applyWorldUv(floorMat, 'floor', 4);
-    if (theme.key === 'hell') applyLavaGlow(floorMat, this.lavaTime);
-    const floorGeo = new THREE.PlaneGeometry(1, 1);
-    floorGeo.rotateX(-Math.PI / 2);
-    const floor = new THREE.InstancedMesh(floorGeo, floorMat, floorTiles.length + pillarTiles.length);
+    // outdoor maps: one blended ground for the whole map; elsewhere a tile for each floor square
+    this.ground?.dispose();
+    this.ground = L.ground ? makeGround(map.w, map.h, L.ground, theme.key) : null;
+    if (this.ground) {
+      this.ground.edge.set(theme.bg);
+      this.levelGroup.add(this.ground.mesh);
+    }
     const m4 = new THREE.Matrix4();
-    const q = new THREE.Quaternion();
     const one = new THREE.Vector3(1, 1, 1);
     const col = new THREE.Color();
     let i = 0;
-    for (const [x, y] of [...floorTiles, ...pillarTiles]) {
-      m4.compose(new THREE.Vector3(x + 0.5, 0, y + 0.5), q, one);
-      floor.setMatrixAt(i, m4);
-      // ambient occlusion near walls, and a faint per-tile variation
-      let walls = 0;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (map.get(x + dx, y + dy) === T_WALL) walls++;
-      const v = (0.95 + Math.random() * 0.1) * (1 - walls * 0.12);
-      floor.setColorAt(i, col.setRGB(v, v, v));
-      i++;
+    let floor: THREE.InstancedMesh | null = null;
+    if (!this.ground) {
+      const floorMat = new THREE.MeshStandardMaterial({ map: tileTexture(`${theme.key}_floor`), roughness: 0.95, metalness: 0 });
+      applyWorldUv(floorMat, 'floor', 4);
+      if (theme.key === 'hell') applyLavaGlow(floorMat, this.lavaTime);
+      const floorGeo = new THREE.PlaneGeometry(1, 1);
+      floorGeo.rotateX(-Math.PI / 2);
+      floor = new THREE.InstancedMesh(floorGeo, floorMat, floorTiles.length + pillarTiles.length);
+      const q = new THREE.Quaternion();
+      for (const [x, y] of [...floorTiles, ...pillarTiles]) {
+        m4.compose(new THREE.Vector3(x + 0.5, 0, y + 0.5), q, one);
+        floor.setMatrixAt(i, m4);
+        // ambient occlusion near walls, and a faint per-tile variation
+        let walls = 0;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (map.get(x + dx, y + dy) === T_WALL) walls++;
+        const v = (0.95 + Math.random() * 0.1) * (1 - walls * 0.12);
+        floor.setColorAt(i, col.setRGB(v, v, v));
+        i++;
+      }
+      floor.instanceMatrix.needsUpdate = true;
+      if (floor.instanceColor) floor.instanceColor.needsUpdate = true;
+      this.levelGroup.add(floor);
     }
-    floor.instanceMatrix.needsUpdate = true;
-    if (floor.instanceColor) floor.instanceColor.needsUpdate = true;
-    this.levelGroup.add(floor);
 
     // walls
-    const sideMat = new THREE.MeshStandardMaterial({ map: tileTexture(`${theme.key}_wall`), roughness: 0.92 });
-    const topMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(theme.wall).lerp(new THREE.Color(theme.wallDark), 0.35), roughness: 1 });
+    const sideMat = new THREE.MeshStandardMaterial({ map: tileTexture(`${theme.key === 'wild' ? 'crypt' : theme.key}_wall`), roughness: 0.92 });
+    // the wilderness's ruins are broken off low, so their tops show stone; other walls are capped in shadow
+    const topMat =
+      theme.key === 'wild'
+        ? new THREE.MeshStandardMaterial({ map: tileTexture('crypt_wall'), roughness: 0.95 })
+        : new THREE.MeshStandardMaterial({ color: new THREE.Color(theme.wall).lerp(new THREE.Color(theme.wallDark), 0.35), roughness: 1 });
+    if (theme.key === 'wild') applyWorldUv(topMat, 'floor', 2);
     applyOcclusionFade(sideMat, this.occ);
     applyWorldUv(sideMat, 'wall', 2);
     applyOcclusionFade(topMat, this.occ);
@@ -484,7 +514,8 @@ export class Renderer implements Picker {
     const walls = new THREE.InstancedMesh(wallGeo, [sideMat, sideMat, topMat, topMat, sideMat, sideMat], wallTiles.length);
     i = 0;
     for (const [x, y] of wallTiles) {
-      const hJ = level.depth === 0 ? 0.85 + Math.random() * 0.25 : 0.96 + Math.random() * 0.08;
+      // the camp's palisade is uneven; the wilderness's walls are ruins, broken down low
+      const hJ = theme.key === 'wild' ? 0.2 + Math.random() * 0.4 : level.depth === 0 ? 0.85 + Math.random() * 0.25 : 0.96 + Math.random() * 0.08;
       m4.compose(new THREE.Vector3(x + 0.5, 0, y + 0.5), new THREE.Quaternion(), new THREE.Vector3(1, hJ, 1));
       walls.setMatrixAt(i, m4);
       const v = 0.8 + Math.random() * 0.25;
@@ -572,7 +603,8 @@ export class Renderer implements Picker {
       cloned.needsUpdate = true;
     }
     castShadows(this.levelGroup);
-    floor.castShadow = false;
+    if (floor) floor.castShadow = false;
+    if (this.ground) this.ground.mesh.castShadow = false;
     // ground mist, part of the post effects
     this.mist?.dispose();
     this.mist = new Mist(map.w, map.h, theme.key, (x, y) => map.get(x, y) === T_FLOOR || map.get(x, y) === T_PROP);
@@ -651,7 +683,8 @@ export class Renderer implements Picker {
         };
       }
       case 'stairs': {
-        const town = this.level?.depth === 0;
+        // the way into the dungeon from under the sky is the big one, with braziers
+        const town = !!this.level?.layout.theme.outdoor;
         // the stairway opens toward +z: turn it to face the camera
         const site = new THREE.Group();
         site.rotation.y = CAM_YAW;
@@ -722,6 +755,37 @@ export class Renderer implements Picker {
           lightColor: color,
           lightIntensity: 22,
         };
+      }
+      case 'shrine': {
+        // the shrine stone, lit by its own colour until it has been touched
+        const color = SHRINE_BY_ID[o.shrine ?? '']?.color ?? '#ffffff';
+        const model = assetProp('h_shrine', 0.6);
+        if (model) {
+          model.rotation.y = CAM_YAW;
+          g.add(model);
+        }
+        const glow = glowSprite(color, 1.8, 0.7);
+        glow.position.y = 1.2;
+        g.add(glow);
+        const view: ObjView = {
+          group: g,
+          lightColor: color,
+          lightIntensity: 9,
+          update: (dt, ob) => {
+            if (ob.used) {
+              if (glow.visible) {
+                glow.visible = false;
+                view.lightColor = undefined;
+              }
+              return;
+            }
+            (glow.material as THREE.SpriteMaterial).opacity = 0.55 + Math.sin(this.time * 2.4) * 0.15;
+            if (Math.random() < dt * 5) {
+              this.fx.add.spawn({ x: o.pos.x + (Math.random() - 0.5) * 0.7, y: 0.3 + Math.random() * 0.9, z: o.pos.z + (Math.random() - 0.5) * 0.7, vy: 0.6, color, size: 0.1, life: 1.2 });
+            }
+          },
+        };
+        return view;
       }
       case 'vendor': {
         const rig = makeCharRig(vendorSpec, vendorLook);
@@ -947,6 +1011,25 @@ export class Renderer implements Picker {
     }
   }
 
+  /** the camp's and the wilderness's light at this time of day */
+  private applySky(s: SkyLook) {
+    this.dir.color.copy(s.sun);
+    this.dir.intensity = s.sunIntensity;
+    this.sunOffset.copy(s.dir).multiplyScalar(22);
+    this.hemi.color.copy(s.sky);
+    this.hemi.groundColor.copy(s.bounce);
+    this.hemi.intensity = s.skyIntensity;
+    (this.scene.background as THREE.Color).copy(s.bg);
+    this.ground?.edge.copy(s.bg);
+    if (this.post.enabled) this.post.setGrade(s.grade);
+    this.mist?.setSky(s.sky, s.mist);
+    this.lamps = s.lamps;
+    this.night = 1 - s.day;
+    // the hero's light is a lantern's: it matters by night, barely by day
+    this.heroLight.intensity = 11 * (0.3 + 0.7 * s.lamps);
+    this.playerLight.intensity = 7 * (0.3 + 0.7 * s.lamps);
+  }
+
   private at(o: { pos: P2; prevPos: P2 }): P2 {
     const dx = o.pos.x - o.prevPos.x;
     const dz = o.pos.z - o.prevPos.z;
@@ -981,7 +1064,8 @@ export class Renderer implements Picker {
     const off = new THREE.Vector3(Math.sin(CAM_YAW) * Math.cos(CAM_PITCH), Math.sin(CAM_PITCH), Math.cos(CAM_YAW) * Math.cos(CAM_PITCH)).multiplyScalar(CAM_DIST);
     this.camera.position.set(this.camTarget.x + off.x + sx, off.y, this.camTarget.z + off.z + sz);
     this.camera.lookAt(this.camTarget.x + sx, 0, this.camTarget.z + sz);
-    this.dir.position.set(this.camTarget.x - 8, 20, this.camTarget.z + 4);
+    if (level.layout.theme.outdoor) this.applySky(skyAt(g.clock));
+    this.dir.position.set(this.camTarget.x + this.sunOffset.x, this.sunOffset.y, this.camTarget.z + this.sunOffset.z);
     this.dir.target.position.set(this.camTarget.x, 0, this.camTarget.z);
     this.occ.uPlayer.value.set(pp.x, 0, pp.z);
 
@@ -989,7 +1073,7 @@ export class Renderer implements Picker {
     const lr = p.stats.lightRadius;
     // offset toward the camera so the faces we actually see are lit
     this.playerLight.position.set(pp.x + 1.1, 2.6, pp.z + 1.1);
-    this.playerLight.distance = (level.depth === 0 ? 11 : 14) + lr * 1.2;
+    this.playerLight.distance = (level.layout.theme.outdoor ? 11 : 14) + lr * 1.2;
     this.heroLight.position.set(pp.x, 3.4, pp.z);
     this.heroLight.distance = this.playerLight.distance;
 
@@ -1180,7 +1264,7 @@ export class Renderer implements Picker {
 
     this.lavaTime.value += dt;
     this.mist?.update(dt);
-    if (this.post.enabled) ambientMotes(this.fx, level.layout.theme.key, dt, pp, this.camTarget);
+    if (this.post.enabled) ambientMotes(this.fx, level.layout.theme.key, dt, pp, this.camTarget, this.night);
     this.assignLights();
     this.fx.update(dt);
 
@@ -1206,7 +1290,7 @@ export class Renderer implements Picker {
         l.position.copy(c.pos);
         l.color.copy(c.color);
         l.distance = c.distance;
-        l.intensity = c.intensity * (1 + (Math.random() - 0.5) * 0.25 * c.flicker);
+        l.intensity = c.intensity * this.lamps * (1 + (Math.random() - 0.5) * 0.25 * c.flicker);
       } else l.intensity = 0;
     }
     // fx: projectiles, hammers, flashes

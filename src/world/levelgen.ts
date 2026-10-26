@@ -1,5 +1,6 @@
 import { RNG, type P2 } from '../core/math';
 import { dressRooms, Furnisher, PROP_DEFS, WALL_DEFS, type Prop, type WallDecor } from './furnish';
+import { clamp01, fbm, growWoods, valueNoise } from './outdoors';
 import { TileMap, T_FLOOR, T_PROP, T_VOID, T_WALL } from './tilemap';
 
 export type { Prop, WallDecor } from './furnish';
@@ -54,12 +55,18 @@ export interface Theme {
   torch: string;
   /** background clear colour */
   bg: string;
+  /** under the sky: lit by the moon (or the sun), which throws the shadows */
+  outdoor?: boolean;
 }
 
 export const THEMES: Record<string, Theme> = {
   town: {
     key: 'town', name: '流亡者营地', wall: '#5a4630', wallDark: '#33281b',
-    ambient: '#6f7aa8', ambientIntensity: 0.55, torch: '#ffa040', bg: '#07080c',
+    ambient: '#6f7aa8', ambientIntensity: 0.55, torch: '#ffa040', bg: '#07080c', outdoor: true,
+  },
+  wild: {
+    key: 'wild', name: '寒鸦荒野', wall: '#4a4436', wallDark: '#2a261e',
+    ambient: '#6f7aa8', ambientIntensity: 0.55, torch: '#ffa040', bg: '#07080c', outdoor: true,
   },
   crypt: {
     key: 'crypt', name: '遗忘墓穴', wall: '#5e5850', wallDark: '#2e2a26',
@@ -79,18 +86,52 @@ export const THEMES: Record<string, Theme> = {
   },
 };
 
-export function themeForDepth(depth: number): Theme {
-  if (depth <= 0) return THEMES.town;
-  if (depth <= 4) return THEMES.crypt;
-  if (depth <= 8) return THEMES.cave;
-  if (depth <= 12) return THEMES.ice;
+/**
+ * The wilderness maps between the camp and the crypt (Diablo II's Blood Moor). Depth counts every
+ * level from the camp, so the crypt's first floor is depth WILD_MAPS + 1.
+ */
+export const WILD_MAPS = 1;
+
+export function isWild(depth: number): boolean {
+  return depth > 0 && depth <= WILD_MAPS;
+}
+
+/** a dungeon level's own floor number (the crypt's first is 1): its size, monsters, bosses and loot go by it */
+export function dungeonFloor(depth: number): number {
+  return depth - WILD_MAPS;
+}
+
+/** what the map, the waypoints and the character list call a level */
+export function levelLabel(depth: number, camp = '营地'): string {
+  if (depth <= 0) return camp;
+  if (isWild(depth)) return THEMES.wild.name;
+  return `第 ${dungeonFloor(depth)} 层`;
+}
+
+/** a dungeon floor's theme, by its floor number */
+export function themeForFloor(floor: number): Theme {
+  if (floor <= 0) return THEMES.town;
+  if (floor <= 4) return THEMES.crypt;
+  if (floor <= 8) return THEMES.cave;
+  if (floor <= 12) return THEMES.ice;
   return THEMES.hell;
+}
+
+/** a way off the map that is walked through, not clicked: the camp's gate, the wilderness's edges */
+export interface Exit {
+  x: number;
+  z: number;
+  /** the level it leads to */
+  dest: number;
+  name: string;
+  /** into the map from the exit: where someone coming the other way appears */
+  nx: number;
+  nz: number;
 }
 
 export interface Layout {
   map: TileMap;
   theme: Theme;
-  depth: number;
   start: P2;
   stairs?: P2;
   waypoint?: P2;
@@ -104,6 +145,13 @@ export interface Layout {
   vendor?: P2;
   stash?: P2;
   campfire?: P2;
+  exits?: Exit[];
+  /** outdoor maps: per tile, how much grass, dirt, road and stone (four bytes, 0-255); the renderer blends their textures */
+  ground?: Uint8Array;
+  /** the wilderness's shrines */
+  shrines?: P2[];
+  /** monster camps: an elite pack waits by each */
+  elites?: P2[];
   bossRoom?: Room;
   /** solid buildings (town only); their tiles are walls but render as houses */
   houses?: House[];
@@ -211,13 +259,14 @@ function torchSpots(map: TileMap, room: Room): Torch[] {
   return spots;
 }
 
-export function generateDungeon(depth: number, seed: number): Layout {
+/** `floor` is the dungeon's own floor number (dungeonFloor) */
+export function generateDungeon(floor: number, seed: number): Layout {
   const rng = new RNG(seed);
-  const theme = themeForDepth(depth);
-  const size = 60 + Math.min(depth * 2, 30);
+  const theme = themeForFloor(floor);
+  const size = 60 + Math.min(floor * 2, 30);
   const map = new TileMap(size, size);
   const rooms: Room[] = [];
-  const target = Math.min(9 + Math.floor(depth / 2), 17);
+  const target = Math.min(9 + Math.floor(floor / 2), 17);
   const cave = theme.key === 'cave' || theme.key === 'hell';
   for (let attempt = 0; attempt < 400 && rooms.length < target; attempt++) {
     const big = rng.chance(0.2);
@@ -360,7 +409,7 @@ export function generateDungeon(depth: number, seed: number): Layout {
   }
 
   const spawnRooms = rooms.filter((r) => r !== startRoom);
-  const bossRoom = depth % 4 === 0 ? stairsRoom : undefined;
+  const bossRoom = floor % 4 === 0 ? stairsRoom : undefined;
 
   // furniture: themed room layouts (solid pieces become T_PROP, level stays connected)
   const furn = new Furnisher(map, rng, start, [start, stairs, waypoint]);
@@ -370,7 +419,7 @@ export function generateDungeon(depth: number, seed: number): Layout {
   decor.push(...furn.decor);
 
   return {
-    map, theme, depth, start, stairs, waypoint, rooms, spawnRooms, torches, decor, chests, barrels, pillars, bossRoom,
+    map, theme, start, stairs, waypoint, rooms, spawnRooms, torches, decor, chests, barrels, pillars, bossRoom,
     props: furn.props, wallDecor: furn.wall,
   };
 }
@@ -412,7 +461,7 @@ export function generateGallery(): Layout {
     scale: 1,
   }));
   return {
-    map, theme: THEMES.town, depth: 0, start, rooms: [], spawnRooms: [], torches, decor, chests: [{ x: 6, z: y + rowD + 6 }], barrels: [{ x: 9, z: y + rowD + 6 }],
+    map, theme: THEMES.town, start, rooms: [], spawnRooms: [], torches, decor, chests: [{ x: 6, z: y + rowD + 6 }], barrels: [{ x: 9, z: y + rowD + 6 }],
     pillars: new Set(), stash: { x: 12, z: y + rowD + 6 }, waypoint: { x: 40, z: y + rowD + 6 }, stairs: { x: 46, z: y + rowD + 6 }, props: furn.props, wallDecor: furn.wall, npcs: [],
   };
 }
@@ -431,18 +480,21 @@ export function generateTown(): Layout {
     { x: 35, y: 15, w: 6, h: 5, model: 'x_blacksmith', rot: -Math.PI / 2 },
   ];
   for (const h of houses) for (let y = h.y; y < h.y + h.h; y++) for (let x = h.x; x < h.x + h.w; x++) map.set(x, y, T_WALL);
+  // the gate in the east palisade, out to the wilderness
+  carveRect(map, size - 3, 26, 3, 2);
   buildWalls(map);
+  const gate: Exit = { x: size - 1.2, z: 27, dest: 1, name: THEMES.wild.name, nx: -1, nz: 0 };
   const campfire = { x: 23, z: 23 };
   const start = { x: 23, z: 26.5 };
   const vendor = { x: 19, z: 21 };
   const stash = { x: 27, z: 20.5 };
   const waypoint = { x: 26, z: 28 };
-  const stairs = { x: 38.5, z: 38.5 };
+  const crypt = { x: 38.5, z: 33 };
   const decor: Decor[] = [{ kind: 'campfire', x: campfire.x, z: campfire.z, rot: 0, scale: 1 }];
   decor.push({ kind: 'tent', x: 15.5, z: 16.5, rot: 0.6, scale: 1 });
   decor.push({ kind: 'tent', x: 28.5, z: 14.5, rot: -0.4, scale: 1.1 });
 
-  const furn = new Furnisher(map, rng, start, [start, waypoint, stairs, vendor, stash, campfire]);
+  const furn = new Furnisher(map, rng, start, [start, waypoint, vendor, stash, campfire]);
   // the vendor's table; no crates or barrels in the camp, since they look like things to open.
   // Lanterns either side of the stash, so it reads from across the camp
   furn.place('d_table_long_decorated_A', 20, 17, 1);
@@ -459,8 +511,12 @@ export function generateTown(): Layout {
     [13, 22],
     [34, 31],
   ]) furn.place('h_post_lantern', x, y, rng.int(0, 3));
+  // lanterns either side of the gate out
+  furn.place('h_arch_gate', size - 3, 26, 1);
+  furn.place('h_post_lantern', size - 4, 25, 0);
+  furn.place('h_post_lantern', size - 4, 28, 0);
 
-  // graveyard in the south-east, by the way down; the crypt marks the dungeon entrance
+  // the camp's graveyard in the south-east, round an old crypt
   furn.place('h_crypt', 37, 31, 0);
   for (let x = 28; x <= 34; x += 2) furn.place(x === 30 ? 'h_fence_broken' : 'h_fence', x, 33, 0);
   for (let y = 35; y <= 40; y += 2) if (y !== 37) furn.place('h_fence', 27, y, 1);
@@ -482,8 +538,8 @@ export function generateTown(): Layout {
     const off = rng.int(3, 6);
     const x = edge === 0 ? t : edge === 1 ? t : edge === 2 ? off : size - 1 - off;
     const y = edge === 0 ? off : edge === 1 ? size - 1 - off : t;
-    // keep the way down in view: nothing tall between it and the camera
-    if (Math.hypot(x + 0.5 - stairs.x, y + 0.5 - stairs.z) < 4.5) continue;
+    // keep the way to the gate open
+    if (Math.abs(y + 0.5 - gate.z) < 4 && x > size - 10) continue;
     furn.place(rng.chance(0.82) ? rng.pick(trees) : rng.pick(rocks), x, y, rng.int(0, 3), 1.2);
   }
 
@@ -495,15 +551,59 @@ export function generateTown(): Layout {
   ];
   for (const n of npcs) {
     // face the campfire (the graveyard guard watches the crypt)
-    const tx = n.model === 'rogue_hooded' ? stairs.x : campfire.x;
-    const tz = n.model === 'rogue_hooded' ? stairs.z : campfire.z;
+    const tx = n.model === 'rogue_hooded' ? crypt.x : campfire.x;
+    const tz = n.model === 'rogue_hooded' ? crypt.z : campfire.z;
     n.rot = Math.atan2(tx - n.x, tz - n.z);
     if (map.get(Math.floor(n.x), Math.floor(n.z)) === T_FLOOR) map.set(Math.floor(n.x), Math.floor(n.z), T_PROP);
   }
 
+  // ── under the sky: earth worn bare inside the palisade, tracks from the fire (one out of the gate),
+  // grass outside and the woods round it all, on past the map's edge where they are only to look at ──
+  const inside = (x: number, z: number) => x >= 2 && x <= size - 3 && z >= 2 && z <= size - 3;
+  const woods = growWoods(
+    rng,
+    { x0: -22, z0: -22, x1: size + 22, z1: size + 22 },
+    (x, z) => inside(x, z) || map.walkable(x, z),
+    (x, z) => x >= size - 3 && Math.abs(z + 0.5 - gate.z) < 2.6,
+  );
+  const tracks: [P2, P2][] = [
+    [campfire, { x: size, z: gate.z }],
+    [campfire, vendor],
+    [campfire, stash],
+    [campfire, waypoint],
+    [campfire, { x: 16, z: 27 }],
+  ];
+  const toSeg = (x: number, z: number, a: P2, b: P2) => {
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+    const t = clamp01(((x - a.x) * dx + (z - a.z) * dz) / (dx * dx + dz * dz));
+    return Math.hypot(x - a.x - dx * t, z - a.z - dz * t);
+  };
+  const grassNoise = valueNoise(rng);
+  const ground = new Uint8Array(size * size * 4);
+  for (let z = 0; z < size; z++) {
+    for (let x = 0; x < size; x++) {
+      const cx = x + 0.5;
+      const cz = z + 0.5;
+      const n = fbm(grassNoise, x / 9, z / 9);
+      // the middle is worn to earth; grass comes back toward the palisade, and is everywhere outside it
+      const edge = Math.min(x - 2, size - 3 - x, z - 2, size - 3 - z);
+      const grass = inside(x, z) ? clamp01(0.6 - edge * 0.07 + n * 0.7) : clamp01(0.8 + n * 0.5);
+      let track = Math.max(0, ...tracks.map(([a, b]) => clamp01((1.7 - toSeg(cx, cz, a, b)) / 0.9)));
+      const fire = Math.hypot(cx - campfire.x, cz - campfire.z);
+      if (fire < 4.5) track = Math.max(track, clamp01((4.5 - fire) / 2) * 0.8);
+      const stone = clamp01((2.4 - Math.hypot(cx - waypoint.x, cz - waypoint.z)) / 1.2) * 0.7;
+      const i = (z * size + x) * 4;
+      ground[i] = Math.round((1 - stone) * grass * (1 - track) * 255);
+      ground[i + 1] = Math.round((1 - stone) * (1 - grass) * (1 - track) * 255);
+      ground[i + 2] = Math.round(track * 255);
+      ground[i + 3] = Math.round(stone * (1 - track) * 255);
+    }
+  }
+
   const torches: Torch[] = [];
   return {
-    map, theme, depth: 0, start, stairs, waypoint, rooms: [], spawnRooms: [], torches, decor, chests: [], barrels: [],
-    pillars: new Set(), vendor, stash, campfire, houses, props: furn.props, wallDecor: [], npcs,
+    map, theme, start, waypoint, rooms: [], spawnRooms: [], torches, decor, chests: [], barrels: [],
+    pillars: new Set(), vendor, stash, campfire, exits: [gate], ground, houses, props: [...furn.props, ...woods.props], wallDecor: [], npcs,
   };
 }

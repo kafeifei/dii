@@ -833,6 +833,17 @@ body {
   color: #c8b890;
   text-shadow: 0 1px 2px #000;
 }
+/* a shrine's blessing, under the minimap */
+#blessing {
+  position: absolute;
+  top: 200px;
+  right: 14px;
+  width: 184px;
+  text-align: center;
+  font-size: 12px;
+  text-shadow: 0 1px 2px #000, 0 0 6px #000;
+  pointer-events: none;
+}
 #automap {
   position: absolute;
   inset: 0;
@@ -1374,6 +1385,12 @@ html {
   transform: translate(-50%, -50%) rotate(45deg) scale(calc(0.58 * var(--hs)));
 }
 .touch #minimap .lvl {
+  font-size: 10px;
+}
+.touch #blessing {
+  top: calc(10px + var(--sat) + 100px * var(--hs));
+  right: calc(6px + var(--sar));
+  width: calc(104px * var(--hs));
   font-size: 10px;
 }
 .fs-btn {

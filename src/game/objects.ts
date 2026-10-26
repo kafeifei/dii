@@ -22,7 +22,7 @@ export class GroundItem {
   }
 }
 
-export type ObjKind = 'chest' | 'barrel' | 'stairs' | 'waypoint' | 'vendor' | 'stash' | 'portal';
+export type ObjKind = 'chest' | 'barrel' | 'stairs' | 'waypoint' | 'vendor' | 'stash' | 'portal' | 'exit' | 'shrine';
 
 export class WorldObject {
   readonly id = ++objIds;
@@ -32,8 +32,12 @@ export class WorldObject {
   name: string;
   radius: number;
   usedTime = 0;
-  /** portal destination depth */
+  /** where a portal or an exit leads (a depth) */
   dest = 0;
+  /** exits: into the map, the way someone arriving through it faces */
+  inward?: P2;
+  /** shrines: which (src/data/shrines.ts) */
+  shrine?: string;
   constructor(kind: ObjKind, pos: P2, name: string, radius = 0.5) {
     this.kind = kind;
     this.pos = { ...pos };

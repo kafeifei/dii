@@ -11,6 +11,7 @@ interface MistLook {
 
 const MIST: Record<string, MistLook> = {
   town: { color: '#7a86a0', opacity: 0.2 },
+  wild: { color: '#7a86a0', opacity: 0.24 },
   crypt: { color: '#a89a88', opacity: 0.3 },
   cave: { color: '#a87a68', opacity: 0.24 },
   ice: { color: '#c8dcf4', opacity: 0.42 },
@@ -75,6 +76,11 @@ function noiseTexture(): THREE.Texture {
 
 let noise: THREE.Texture | null = null;
 
+/** the mist's tileable fractal noise (grey, 128²), shared with the ground's blending */
+export function sharedNoise(): THREE.Texture {
+  return (noise ??= noiseTexture());
+}
+
 /**
  * Drifting ground mist over the level: two see-through layers at different heights scrolling apart,
  * which reads as depth from the camera's angle. Lit like everything else, so it glows around the
@@ -85,11 +91,13 @@ export class Mist {
   private time = { value: 0 };
 
   private mask: THREE.DataTexture;
+  private look: MistLook;
+  private layers: { mat: THREE.MeshLambertMaterial; opacity: number }[] = [];
 
   /** `open(x, y)`: whether mist lies on that tile (the floor, not the rock between rooms) */
   constructor(w: number, h: number, theme: string, open: (x: number, y: number) => boolean) {
     noise ??= noiseTexture();
-    const look = MIST[theme] ?? MIST.crypt;
+    const look = (this.look = MIST[theme] ?? MIST.crypt);
     const m = new Uint8Array(w * h * 4);
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (open(x, y)) m.fill(255, (y * w + x) * 4, (y * w + x) * 4 + 4);
     this.mask = new THREE.DataTexture(m, w, h);
@@ -110,6 +118,7 @@ export class Mist {
         opacity: look.opacity * share,
         depthWrite: false,
       });
+      this.layers.push({ mat, opacity: look.opacity * share });
       const size = { value: new THREE.Vector2(w, h) };
       mat.onBeforeCompile = (shader) => {
         shader.uniforms.uTime = this.time;
@@ -145,6 +154,14 @@ export class Mist {
     this.time.value += dt;
   }
 
+  /** under the sky: tinted toward the sky's light, `thick` times the theme's thickness */
+  setSky(sky: THREE.Color, thick: number) {
+    for (const l of this.layers) {
+      l.mat.color.set(this.look.color).lerp(sky, 0.3);
+      l.mat.opacity = l.opacity * thick;
+    }
+  }
+
   dispose() {
     this.mask.dispose();
     this.group.traverse((o) => {
@@ -161,7 +178,8 @@ export class Mist {
  * in the ice cellars, embers rising and ash falling in hell, fireflies over the camp. Dust and frost
  * only show near the hero, where the light would catch them.
  */
-export function ambientMotes(fx: Effects, theme: string, dt: number, hero: P2, view: P2) {
+/** `night`: 1 by night (and below ground), 0 by day */
+export function ambientMotes(fx: Effects, theme: string, dt: number, hero: P2, view: P2, night = 1) {
   const r = Math.random;
   const around = (c: P2, rad: number) => {
     const a = r() * Math.PI * 2;
@@ -211,8 +229,10 @@ export function ambientMotes(fx: Effects, theme: string, dt: number, hero: P2, v
       }
       return;
     }
-    case 'town': {
-      if (!chance(2.5)) return;
+    case 'town':
+    case 'wild': {
+      // fireflies, by night
+      if (!chance(2.5 * night)) return;
       const p = around(view, 13);
       fx.add.spawn({
         x: p.x, y: 0.4 + r() * 1.2, z: p.z,
