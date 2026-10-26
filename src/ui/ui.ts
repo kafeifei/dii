@@ -537,7 +537,8 @@ export class UI implements GameHooks {
       this.settingsPanel.close();
       return;
     }
-    if (this.debugPanel?.isOpen && (e.key === 'Escape' || e.key === '`')) {
+    // the ` key by where it sits, so a Chinese input method (which turns it into ·) doesn't hide it
+    if (this.debugPanel?.isOpen && (e.key === 'Escape' || e.code === 'Backquote')) {
       this.debugPanel.close();
       return;
     }
@@ -545,7 +546,7 @@ export class UI implements GameHooks {
     const tag = (e.target as HTMLElement)?.tagName;
     if (tag === 'INPUT') return;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-    if (k === '`' && this.debugPanel && !this.game.player.dead) {
+    if (e.code === 'Backquote' && this.debugPanel && !this.game.player.dead) {
       this.openDebug();
       return;
     }
