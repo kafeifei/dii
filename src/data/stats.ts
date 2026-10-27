@@ -106,13 +106,14 @@ export type StatKey =
   | 'dmgMaxPct' // enhanced maximum damage, local to weapon (dmg%/lvl)
   | 'xpPct' // experience gained %
   | 'lightThorns' // attacker takes lightning damage
-  // stored on items but with no effect in this game (no durability, stamina or ranged attacks)
-  | 'indestructible'
-  | 'repDur'
-  | 'ethereal'
+  // stamina: maximum, "slower stamina drain %" and "heal stamina plus %" (Player.recalc, updatePlayer)
   | 'stamina'
   | 'staminaDrain'
   | 'staminaRegen'
+  // durability's (src/items/d2/durability.ts), and some stored on items with no effect in this game (no ranged attacks)
+  | 'indestructible'
+  | 'repDur'
+  | 'ethereal'
   | 'pierceArrow'
   | 'explosiveArrow'
   | 'chargeNoConsume'
@@ -144,7 +145,7 @@ export const PARAM_STATS = new Set<StatKey>(['skill', 'oskill', 'skillTab', 'cls
 
 /** stats this game records but that do nothing here, shown greyed in tooltips */
 export const INERT_STATS = new Set<StatKey>([
-  'defMissile', 'ethereal', 'stamina', 'staminaDrain', 'staminaRegen', 'pierceArrow', 'explosiveArrow', 'chargeNoConsume', 'rip',
+  'defMissile', 'ethereal', 'pierceArrow', 'explosiveArrow', 'chargeNoConsume', 'rip',
   'defMelee', 'resMagic', 'reanimate', 'repQuant', 'extraStack', 'magicArrow', 'sunder',
   // no poison skills here
   'extraPoison',

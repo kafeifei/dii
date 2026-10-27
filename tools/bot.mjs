@@ -59,6 +59,7 @@ export default async function (page, shot, log) {
     const { CLASS_IDS } = await import('/src/data/classes.ts');
     const { createItem, rollEquipment } = await import('/src/items/gen.ts');
     const { xpForLevel } = await import('/src/game/player.ts');
+    const { bodyItems, takeBody } = await import('/src/game/corpse.ts');
     const { areaByKey, nextArea } = await import('/src/world/areas.ts');
     const g = game;
     const cls = o.cls || g.player.cls;
@@ -262,6 +263,14 @@ export default async function (page, shot, log) {
           stats.timeline.push(`death in ${cur.key} lvl ${pl.level} t=${Math.round(simTime)} by ${JSON.stringify(desc)} proj=${g.level.projectiles.length}`);
           stats.deathList.push({ area: cur.key, lvl: pl.level, causes: desc, proj: g.level.projectiles.length });
           g.respawn();
+          // a player walks back for the body (D2: it keeps the gear and some experience); the bot takes it at once
+          for (const c of pl.corpses) {
+            if (c.xp) pl.gainXp(c.xp);
+            c.xp = 0;
+            takeBody(pl, c, (it) => g.beltInsert(it));
+          }
+          pl.corpses = pl.corpses.filter((c) => bodyItems(c).length);
+          pl.markDirty();
           areaDeaths++;
           // stuck on a floor: do what a player does and start a fresh game of it (a new layout)
           if (areaDeaths % 4 === 0) g.lastDungeon = null;

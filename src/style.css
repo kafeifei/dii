@@ -147,6 +147,34 @@ body {
   width: 0;
   transition: width 0.3s;
 }
+/* the stamina bar along the top of the panel, its run/walk switch at the left end */
+.stambar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 5px;
+  background: #050403;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.stambar .fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8a5a10, #e8b040);
+  width: 100%;
+}
+.stambar .run {
+  position: absolute;
+  left: 6px;
+  top: -15px;
+  padding: 0 4px;
+  font-size: 10px;
+  line-height: 13px;
+  color: #e8c878;
+  background: #1a140e;
+  border: 1px solid #5a4a34;
+  border-bottom: 0;
+}
 
 .orb {
   position: absolute;
@@ -1297,6 +1325,16 @@ html {
   bottom: 0;
   height: 3px;
   border: 0;
+}
+.touch .stambar {
+  position: fixed;
+  top: auto;
+  bottom: 3px;
+  height: 2px;
+  pointer-events: none;
+}
+.touch .stambar .run {
+  display: none;
 }
 
 /* the skill bar as round buttons by the right thumb: left-click skill biggest, the rest in an arc */

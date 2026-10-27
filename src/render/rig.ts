@@ -54,6 +54,8 @@ export interface AnimInput {
   blood: Blood;
   killedBy: Elem;
   bow?: boolean;
+  /** the state lasts D2's frames (the hero's): one-shot clips play over exactly stateDur, however short or long */
+  exact?: boolean;
 }
 
 // ── shared geometry cache ──

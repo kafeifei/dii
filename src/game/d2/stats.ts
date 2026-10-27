@@ -1,6 +1,7 @@
 // Diablo II's character formulas: attributes, life/mana/stamina, potions, movement, attack rating,
 // defense, chance to hit and block and resistances, from CharStats.txt (src/data/d2x/classes.ts) and
-// DifficultyLevels.txt; experience is in xp.ts. Pure functions, nothing wired.
+// DifficultyLevels.txt; experience is in xp.ts. Pure functions, which Player.recalc, combat.ts and
+// playerctl.ts go by.
 // D2MOO references are to github.com/ThePhrozenKeep/D2MOO at commit d9d394f. D2 keeps life, mana
 // and stamina in 256ths of a point and everything else here in integers; the integer steps are kept
 // where they change a result (C division truncates toward zero, hence Math.trunc).
@@ -145,6 +146,23 @@ export function runDrainPerSec(cs: D2xClass, o: { torsoSpeed?: number; drainPct?
   let lost = Math.round((cs.runDrain * 256) / 25) * (Math.trunc((o.torsoSpeed ?? 0) / 10) + 1);
   if (o.drainPct) lost += Math.trunc((lost * o.drainPct) / -100);
   return (Math.max(1, lost) * 25) / 256;
+}
+
+/** what the hero is doing, as stamina recovery tells D2's modes apart */
+export type StaminaMode = 'stand' | 'walk' | 'townWalk' | 'busy';
+
+/**
+ * Stamina recovered a second (EVENTS_StaminaRegen, D2MOO PlrModes.cpp:1139-1186): each frame
+ * maxStamina / 256 standing, / 512 walking (nothing walking out of town with under a point left),
+ * none running, attacking or casting (`busy`) unless a stamina potion's recovery bonus (1000 %) is
+ * on; "heal stamina plus X %" adds its share. Worked in 256ths as D2 does, then a second's worth.
+ */
+export function staminaRegenPerSec(maxStamina: number, mode: StaminaMode, stamina: number, recoveryPct = 0): number {
+  if (mode === 'walk' && stamina < 1) return 0;
+  if (mode === 'busy' && recoveryPct < 1000) return 0;
+  let per = Math.trunc(maxStamina * 256) >> (mode === 'walk' || mode === 'townWalk' ? 9 : 8);
+  if (recoveryPct) per += Math.trunc((recoveryPct * per) / 100);
+  return (per * 25) / 256;
 }
 
 // ───────────────────────── attack, defense, hit and block ─────────────────────────

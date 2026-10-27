@@ -1,8 +1,8 @@
 // Diablo II's experience: what a kill gives a hero and the level it makes, from experience.txt
-// (src/data/d2x/experience.ts). Pure functions, nothing wired: Game.killMonster would pass
-// killXp(m.xp, p.level, m.level, addXpPct) to Player.gainXp, and gainXp would take addXp's total
-// and level (its own ExpRatio step goes, killXp has it). One hero and no party: D2 gives a hero in
-// no party the whole kill (D2MOO SUnitDmg.cpp:2993-2996); the hireling's share comes with hirelings.
+// (src/data/d2x/experience.ts). Pure functions: Game.killMonster passes killXp(m.xp, p.level,
+// m.level, addXpPct) to Player.gainXp, which takes addXp's total and level. One hero and no party:
+// D2 gives a hero in no party the whole kill (D2MOO SUnitDmg.cpp:2993-2996); the hireling's share
+// comes with hirelings.
 // D2MOO references are to github.com/ThePhrozenKeep/D2MOO at commit d9d394f. Integer steps are D2's
 // (C division truncates toward zero, hence Math.trunc).
 import { D2X_MAX_LEVEL, D2X_XP, D2X_XP_LEVEL_DIFF, D2X_XP_RATIO } from '../../data/d2x/experience';

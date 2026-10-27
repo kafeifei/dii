@@ -1,9 +1,7 @@
-import { clamp, type P2 } from '../core/math';
-import { CLASSES, type PlayerClass } from '../data/classes';
+import type { P2 } from '../core/math';
+import type { PlayerClass } from '../data/classes';
 import { D2_CLASS, D2_TO_GAME, skillTab } from '../data/d2/skillmap';
-import { D2_XP, D2_XP_RATIO } from '../data/d2/progression';
 import { EQUIP_SLOTS, ITEM_BASES, type EquipSlot } from '../data/items';
-import { D2X_CLASSES } from '../data/d2x/classes';
 import { SET_ITEMS } from '../data/legendary';
 import { SHRINE_BY_ID } from '../data/shrines';
 import { SKILL_BY_ID, SKILLS, type SkillDef } from '../data/skills';
@@ -15,11 +13,30 @@ import { setBonuses } from '../items/d2/legendary';
 import type { TradeCtx } from '../items/vendor';
 import { propMods, rollMax } from '../items/props';
 import { baseOf, classCode, globalItemStats, isIdentified, itemCategory, itemDefense, itemReqLvl, meetsReqs, paramMods, weaponDamage, type Item, type ItemMod } from '../items/item';
-import { Actor, type Resists } from './actor';
+import { Actor, type ActorState, type Resists } from './actor';
+import type { Corpse } from './corpse';
+import { attackAnim, blockFrames, castAnim, FRAMES_PER_SEC, hitRecoveryFrames, toSeconds, weaponClass, type AnimFrames, type AttackSpeed, type WeaponClass } from './d2/frames';
+import { attackRating, baseLife, baseMana, baseStamina, blockChance, charStats, defense, difficulty, levelUpPoints, moveVelocity, resistance } from './d2/stats';
+import { addXp, MAX_LEVEL, xpForLevel } from './d2/xp';
 import type { Monster } from './monster';
 import type { Difficulty } from './save';
 
-export const MAX_LEVEL = 99;
+export { MAX_LEVEL, xpForLevel };
+
+/**
+ * metres a second for one point of D2's velocity: the game's run, 4.6 m/s from before D2's
+ * movement, is CharStats RunVelocity 9 (walk 6 is then 3.07 m/s)
+ */
+const MPS_PER_VELOCITY = 4.6 / 9;
+
+/** a normal attack's frames, with a weapon class the table lacks (a claw) swung as hand to hand */
+function attackFrames(cls: PlayerClass, wclass: WeaponClass, o: AttackSpeed): AnimFrames {
+  try {
+    return attackAnim(cls, wclass, o);
+  } catch {
+    return attackAnim(cls, 'hth', o);
+  }
+}
 
 /** a skill bar entry that casts from an item's charges: `chg:<skill id>` */
 export const CHARGE_PREFIX = 'chg:';
@@ -33,12 +50,6 @@ export interface ChargeUse {
   lvl: number;
   max: number;
   left: number;
-}
-
-/** cumulative xp needed to reach level L (Diablo II's experience table) */
-export function xpForLevel(L: number): number {
-  if (L <= 1) return 0;
-  return D2_XP[Math.min(L, MAX_LEVEL) - 1];
 }
 
 /** fire skills, for "+X to fire skills": the sorceress's fire tree and Holy Fire */
@@ -57,6 +68,7 @@ export interface Derived {
   ene: number;
   maxLife: number;
   maxMana: number;
+  maxStamina: number;
   wMin: number;
   wMax: number;
   dmgPct: number;
@@ -100,10 +112,21 @@ export interface Derived {
   poison: number;
   /** seconds the weapon's poison lasts */
   poisonLen: number;
+  /** Diablo II's frames (25 a second, game/d2/frames.ts) as seconds: a normal attack and when it lands */
+  attackTime: number;
+  attackAction: number;
+  /** normal attacks a second, for the character sheet */
   attacksPerSec: number;
-  moveSpeed: number;
+  /** a cast and when its spell goes off */
   castTime: number;
+  castAction: number;
   hitRecovery: number;
+  blockTime: number;
+  /** the weapon's animation class, which the attack and the Paladin's hit recovery go by */
+  wclass: WeaponClass;
+  /** metres a second walking and running (D2's velocity: game/d2/stats.ts moveVelocity) */
+  walkSpeed: number;
+  runSpeed: number;
 }
 
 export type Equipment = Partial<Record<EquipSlot, Item>>;
@@ -135,6 +158,17 @@ export class Player extends Actor {
   gold = 0;
   stashGold = 0;
   mana = 1;
+  stamina = 1;
+  /** D2's run/walk switch: on, the hero runs (Ctrl held does the other) */
+  runMode = true;
+  /** running rather than walking when moving: wanted, and stamina left or in town (updatePlayer) */
+  running = true;
+  /** seconds into an attack or cast that its blow or spell goes off; below 0, half way */
+  actionAt = -1;
+  /** when the last block's animation played (game time), for D2's gap between them (frames.ts blockAnimGap) */
+  lastBlockTime = -Infinity;
+  /** the bodies left on dying, with the gear on them (src/game/corpse.ts) */
+  corpses: Corpse[] = [];
   activeAura: string | null = null;
   holyShield = 0;
   /** seconds left on the sorceress's Frozen Armor */
@@ -162,7 +196,6 @@ export class Player extends Actor {
   zealHitsLeft = 0;
   chargeTarget: Monster | null = null;
   lastDamageTime = 0;
-  poiseUntil = 0;
 
   constructor(pos: P2) {
     super(pos);
@@ -170,6 +203,22 @@ export class Player extends Actor {
     this.recalc();
     this.life = this.d.maxLife;
     this.mana = this.d.maxMana;
+    this.stamina = this.d.maxStamina;
+  }
+
+  setState(s: ActorState, dur = 0) {
+    super.setState(s, dur);
+    this.actionAt = -1;
+  }
+
+  /** metres a second the hero moves at now, walking or running, before any slow */
+  moveSpeed(): number {
+    return this.running ? this.stats.runSpeed : this.stats.walkSpeed;
+  }
+
+  /** moving at a run: D2's PLRMODE_RUN, which every melee blow hits and which blocks a third as often (SUnitDmg.cpp:2589-2595, 2716-2723) */
+  runningNow(): boolean {
+    return this.running && this.state === 'move';
   }
 
   markDirty() {
@@ -507,23 +556,24 @@ export class Player extends Actor {
     const ene = this.base.ene + (bag.ene ?? 0) + allAttr;
 
     const L = this.level;
-    const cd = CLASSES[this.cls];
-    let maxLife = cd.life0 + cd.lifePerLvl * (L - 1) + 2 * vit + (bag.life ?? 0);
+    // Diablo II's vitals: CharStats.txt by level and the attributes, items' vitality and energy
+    // counting as spent points do (game/d2/stats.ts), then the flat and % bonuses
+    const cs = charStats(this.cls);
+    let maxLife = baseLife(cs, L, vit) + (bag.life ?? 0);
     maxLife *= 1 + (bag.lifePct ?? 0) / 100;
-    let maxMana = cd.mana0 + cd.manaPerLvl * (L - 1) + 2 * ene + (bag.mana ?? 0);
+    let maxMana = baseMana(cs, L, ene) + (bag.mana ?? 0);
     maxMana *= 1 + (bag.manaPct ?? 0) / 100;
+    const maxStamina = baseStamina(cs, L, vit) + (bag.stamina ?? 0);
 
     // weapon
     const w = eq.weapon;
     let wMin = 1;
     let wMax = 3;
-    let apsBase = 1.5;
     let strBonus = 100;
     let dexBonus = 0;
     if (w) {
       const wb = baseOf(w);
       [wMin, wMax] = weaponDamage(w, L, false, localPct.get(w)?.dmg ?? 0);
-      apsBase = wb.speed ?? 1.4;
       // D2: most weapons gain 1% damage per strength point, daggers 0.75% per strength and dexterity
       if (wb.strBonus !== undefined) {
         strBonus = wb.strBonus;
@@ -534,48 +584,53 @@ export class Player extends Actor {
     wMax += bag.dmgMax ?? 0;
     const dmgPct = (str * strBonus) / 100 + (dex * dexBonus) / 100 + (bag.dmgPctGlobal ?? 0);
 
-    const ar = Math.floor((dex * 5 - 35 + (bag.ar ?? 0)) * (1 + (bag.arPct ?? 0) / 100) + 20);
-    let def = Math.floor(dex / 4);
+    // attack rating and defense (D2MOO Units.cpp:2349-2430): the class's ToHitFactor and dexterity,
+    // the items' flat values, then the % bonuses on all of it
+    const ar = attackRating(cs, dex, bag.ar ?? 0, bag.arPct ?? 0);
+    let armor = 0;
     for (const slot of EQUIP_SLOTS) {
       const it = eq[slot];
-      if (it && it.defense !== undefined) def += itemDefense(it, L, localPct.get(it)?.def ?? 0);
+      if (it && it.defense !== undefined) armor += itemDefense(it, L, localPct.get(it)?.def ?? 0);
     }
-    def += bag.def ?? 0;
-    def = Math.floor(def * (1 + (shieldDefPct + (blessing?.defPct ?? 0)) / 100));
+    armor += bag.def ?? 0;
+    const def = defense(dex, armor, shieldDefPct + (blessing?.defPct ?? 0));
 
+    // block with a shield: (BlockFactor + block) × (dex − 15) / (2 × level), at most 75 (Units.cpp:2462-2478)
     const sh = eq.offhand;
-    let block = 0;
-    if (sh && baseOf(sh).type === 'shield') {
-      // the shield's block with the class's BlockFactor (CharStats.txt), into the game's own curve
-      const bb = (baseOf(sh).block ?? 0) + (D2X_CLASSES[classCode(this.cls) ?? '']?.blockFactor ?? 0);
-      block = clamp(((bb + (bag.block ?? 0)) * (dex + 15)) / (L * 2 + 20) * 0.9, 0, 75);
-    }
+    const block = sh && baseOf(sh).type === 'shield' ? blockChance(cs, (baseOf(sh).block ?? 0) + (bag.block ?? 0), dex, L) : 0;
 
+    // resistances with the difficulty's penalty, capped at 75 + "+X% maximum resistance" (95 at most)
     const resAll = bag.resAll ?? 0;
-    // the cap is 75%, raised by "+X% maximum resistance" (at most 95%)
-    const cap = (k: StatKey) => Math.min(95, 75 + (bag[k] ?? 0));
+    const diff = difficulty(this.difficulty);
+    const resOf = (k: 'fire' | 'cold' | 'light' | 'poison', raw: number, max: StatKey) => resistance(k, raw + resAll, { maxBonus: bag[max] ?? 0, diff });
     const res: Resists = {
-      fire: clamp((bag.resFire ?? 0) + resAll, -100, cap('maxResFire')),
-      cold: clamp((bag.resCold ?? 0) + resAll, -100, cap('maxResCold')),
-      light: clamp((bag.resLight ?? 0) + resAll, -100, cap('maxResLight')),
-      poison: clamp((bag.resPoison ?? 0) + resAll, -100, cap('maxResPoison')),
+      fire: resOf('fire', bag.resFire ?? 0, 'maxResFire'),
+      cold: resOf('cold', bag.resCold ?? 0, 'maxResCold'),
+      light: resOf('light', bag.resLight ?? 0, 'maxResLight'),
+      poison: resOf('poison', bag.resPoison ?? 0, 'maxResPoison'),
       phys: 0,
     };
 
+    // speeds: D2's frames for the class and the weapon's animation class (game/d2/frames.ts); the
+    // worn weapon sets the class even when it gives nothing, as D2 animates whatever is held
     const ias = bag.ias ?? 0;
-    const effIas = (120 * ias) / (120 + ias);
-    const attacksPerSec = apsBase * (1 + effIas / 100);
-    const frw = bag.frw ?? 0;
-    const moveSpeed = 4.6 * (1 + ((150 * frw) / (150 + frw)) / 100);
     const fcr = bag.fcr ?? 0;
-    const castTime = 0.62 / (1 + ((120 * fcr) / (120 + fcr)) / 100);
     const fhr = bag.fhr ?? 0;
-    const hitRecovery = 0.32 / (1 + fhr / 100);
+    const held = this.equipment.weapon ? baseOf(this.equipment.weapon) : null;
+    const wclass = weaponClass(held ? { wclass: held.wclass ?? 'hth', wclass2: held.wclass2, twoHanded: held.twoHanded } : null);
+    const attack = attackFrames(this.cls, wclass, { ias, wsm: held?.wsm ?? 0 });
+    const cast = castAnim(this.cls, fcr);
+    const holy = this.holyShield > 0 && lvlOf('holy_shield') > 0;
+    const frw = bag.frw ?? 0;
+    // walking and running (Units.cpp:1678-1702): faster run/walk, and the body armor's and shield's Speed
+    const armorSpeed = (eq.body ? (baseOf(eq.body).armorSpeed ?? 0) : 0) + (sh ? (baseOf(sh).armorSpeed ?? 0) : 0);
+    const speedAt = (running: boolean) => moveVelocity(cs, { running, frw, armorSpeed }) * MPS_PER_VELOCITY;
 
     this.d = {
       str, dex, vit, ene,
       maxLife: Math.floor(maxLife),
       maxMana: Math.floor(maxMana),
+      maxStamina: Math.floor(maxStamina),
       wMin, wMax, dmgPct, ar, def, block, res,
       ias, frw, fcr, fhr,
       lifeSteal: bag.lifeSteal ?? 0,
@@ -605,13 +660,20 @@ export class Player extends Actor {
       magic: [bag.magicMin ?? 0, bag.magicMax ?? 0],
       poison: bag.poisonDmg ?? 0,
       poisonLen: poisonSeconds(bag),
-      attacksPerSec,
-      moveSpeed,
-      castTime,
-      hitRecovery,
+      attackTime: toSeconds(attack.frames),
+      attackAction: toSeconds(attack.action ?? attack.frames / 2),
+      attacksPerSec: FRAMES_PER_SEC / attack.frames,
+      castTime: toSeconds(cast.frames),
+      castAction: toSeconds(cast.action ?? cast.frames / 2),
+      hitRecovery: toSeconds(hitRecoveryFrames(this.cls, fhr, wclass)),
+      blockTime: toSeconds(blockFrames(this.cls, bag.fbr ?? 0, holy)),
+      wclass,
+      walkSpeed: speedAt(false),
+      runSpeed: speedAt(true),
     };
     if (this.life > this.d.maxLife) this.life = this.d.maxLife;
     if (this.mana > this.d.maxMana) this.mana = this.d.maxMana;
+    if (this.stamina > this.d.maxStamina) this.stamina = this.d.maxStamina;
   }
 
   resists(): Resists {
@@ -622,23 +684,26 @@ export class Player extends Actor {
     return SKILLS.filter((s) => this.canLearn(s));
   }
 
-  /** returns number of levels gained */
+  /**
+   * Experience added as D2 adds it (SUNITDMG_AddExperienceForPlayer: game/d2/xp.ts addXp), already
+   * after the level gap and ExpRatio of a kill (xp.ts killXp). Each level gained gives CharStats'
+   * StatPerLevel attribute points and a skill point, and refills life (alive), mana and stamina
+   * (PLAYERSTATS_LevelUp, PlayerStats.cpp:75-113). Returns the levels gained.
+   */
   gainXp(amount: number): number {
-    if (this.level >= MAX_LEVEL) return 0;
-    // D2 keeps less of the experience earned from level 70 on (ExpRatio, out of 1024)
-    this.xp += Math.floor((amount * (D2_XP_RATIO[this.level] ?? 1024)) / 1024);
-    let gained = 0;
-    while (this.level < MAX_LEVEL && this.xp >= xpForLevel(this.level + 1)) {
-      this.level++;
-      gained++;
-      this.statPoints += 5;
-      this.skillPoints += 1;
-    }
+    const r = addXp(this.xp, Math.max(0, Math.floor(amount)));
+    this.xp = r.xp;
+    const gained = Math.max(0, r.level - this.level);
     if (gained) {
+      this.level += gained;
+      const pts = levelUpPoints(charStats(this.cls), gained);
+      this.statPoints += pts.stat;
+      this.skillPoints += pts.skill;
       this.markDirty();
       this.recalc();
-      this.life = this.d.maxLife;
+      if (!this.dead) this.life = this.d.maxLife;
       this.mana = this.d.maxMana;
+      this.stamina = this.d.maxStamina;
     }
     return gained;
   }

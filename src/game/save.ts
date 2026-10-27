@@ -9,6 +9,7 @@ import { isUnknown, type Item } from '../items/item';
 import { OLD_BASES, toD2Item } from '../items/legacy';
 import type { Grid, Placed } from '../items/grid';
 import { Player, xpForLevel } from './player';
+import { bodyItems, type Corpse } from './corpse';
 import { WILD_MAPS } from '../world/levelgen';
 import { CAMP_AREA, areaForDepth, depthForArea } from '../world/areas';
 
@@ -123,12 +124,18 @@ export interface MercSave {
   dead: boolean;
 }
 
-/** the body a hero leaves on dying, with all they wore, until they walk back over it */
+/**
+ * the body a hero leaves on dying, with all they wore, until they walk back over it: as Diablo II
+ * saves one (PlrSave2.cpp:404-450), the first that holds items, without the experience on it;
+ * loaded, it waits in the camp (src/game/corpse.ts)
+ */
 export interface CorpseSave {
   area: number;
   pos: P2;
   difficulty: Difficulty;
   equipment: Player['equipment'];
+  /** the item that was on the cursor */
+  items?: Item[];
 }
 
 /** how many of each line's migrations a save has had (MIGRATIONS): each line bumps only its own */
@@ -197,7 +204,7 @@ export const MIGRATIONS: Record<keyof MigrationCounts, ((d: SaveV4) => void)[]> 
     // the D2 base asks more, its old requirements
     (d) => {
       mapItems(d, toD2Item);
-      for (const eq of [d.merc?.equipment, d.corpse?.equipment]) {
+      for (const eq of [d.merc?.equipment]) {
         if (!eq || typeof eq !== 'object') continue;
         for (const k of Object.keys(eq) as (keyof typeof eq)[]) {
           const it = eq[k];
@@ -386,12 +393,15 @@ function runMigrations(d: SaveV4) {
   }
 }
 
-/** each of the hero's items replaced by what `f` makes of it (not the mercenary's or the corpse's: this build doesn't play them) */
+/** each of the hero's items, the body's too, replaced by what `f` makes of it (not the mercenary's: this build doesn't play it) */
 function mapItems(d: SaveV4, f: (it: Item) => Item) {
   // a save is read as it is: anything may be in a place an item should be
   const m = (it: Item): Item => (it && typeof it === 'object' ? f(it) : it);
-  const eq = d.equipment ?? {};
-  for (const k of Object.keys(eq) as (keyof typeof eq)[]) eq[k] = m(eq[k]!);
+  const body = d.corpse && typeof d.corpse === 'object' ? d.corpse : null;
+  for (const eq of [d.equipment ?? {}, body?.equipment ?? {}]) {
+    if (eq && typeof eq === 'object') for (const k of Object.keys(eq) as (keyof typeof eq)[]) eq[k] = m(eq[k]!);
+  }
+  if (body && Array.isArray(body.items)) body.items = body.items.map(m);
   for (const list of [d.inventory, d.stash, d.cube]) {
     if (Array.isArray(list)) for (const pl of list) if (pl && typeof pl === 'object') pl.item = m(pl.item);
   }
@@ -432,7 +442,7 @@ function restored(raw: NonNullable<Item['raw']>, d: SaveV4): Item | null {
   if (isUnknown(it) || !knownBase(it.baseId, from.items)) return null;
   if (LINES.every((k) => from[k] >= d.mig[k])) return it;
   // the steps it missed, on a copy of the save holding only it
-  const shell: SaveV4 = { ...structuredClone({ ...d, equipment: {}, inventory: [], stash: [], cube: [], unplaced: [], belt: [] }), unplaced: [it] };
+  const shell: SaveV4 = { ...structuredClone({ ...d, equipment: {}, inventory: [], stash: [], cube: [], unplaced: [], belt: [], corpse: null }), unplaced: [it] };
   for (const k of LINES) for (let i = from[k]; i < Math.min(d.mig[k], MIGRATIONS[k].length); i++) MIGRATIONS[k][i](shell);
   // found again by its uid: a step may add items, or remake this one (not found, it stays unknown)
   let out: Item | null = null;
@@ -455,7 +465,7 @@ const readOnly = new WeakSet<Player>();
 export function writeSave(p: Player, area: number) {
   if (readOnly.has(p)) return;
   const KEY = keyFor(slot);
-  // what this build doesn't play yet (progress, the mercenary, the corpse) is written from the save
+  // what this build doesn't play yet (progress, the mercenary) is written from the save
   // loaded or last written: a line that moves one onto Player or Game must write it from there instead
   const prev = loaded.get(p);
   const difficulty = p.difficulty;
@@ -493,7 +503,7 @@ export function writeSave(p: Player, area: number) {
     unlocked: Math.max(prev?.unlocked ?? 0, difficulty) as Difficulty,
     progress,
     merc: prev?.merc ?? null,
-    corpse: prev?.corpse ?? null,
+    corpse: corpseSave(p),
     life: p.dead ? undefined : p.life,
     mana: p.dead ? undefined : p.mana,
     time: Date.now(),
@@ -505,6 +515,15 @@ export function writeSave(p: Player, area: number) {
   } catch {
     /* storage unavailable */
   }
+}
+
+/** the body the save keeps: the first that holds items, as Diablo II keeps one (PlrSave2.cpp:404-450) */
+function corpseSave(p: Player): CorpseSave | null {
+  const c = p.corpses.find((x) => bodyItems(x).length);
+  if (!c) return null;
+  const out: CorpseSave = { area: c.area, pos: c.pos ? { ...c.pos } : { x: 0, z: 0 }, difficulty: c.difficulty, equipment: c.equipment };
+  if (c.items.length) out.items = c.items;
+  return out;
 }
 
 // ── saves from before the Diablo II items (2026-10) ──
@@ -751,10 +770,27 @@ export function loadSave(): { player: Player; depth: number; readOnly: string | 
   p.depthReached = d.depthReached ?? 0;
   p.difficulty = DIFFICULTIES.includes(d.difficulty) ? d.difficulty : 0;
   p.waypoints = waypointDepths(d.progress?.[p.difficulty]);
+  // the body left on dying waits in the camp, with no experience on it (src/game/corpse.ts)
+  p.corpses = [];
+  const body = d.corpse && typeof d.corpse === 'object' ? d.corpse : null;
+  if (body) {
+    const c: Corpse = { level: null, pos: null, area: body.area ?? CAMP_AREA, difficulty: DIFFICULTIES.includes(body.difficulty) ? body.difficulty : p.difficulty, cls: p.cls, equipment: {}, items: [], xp: 0 };
+    for (const [slot, it] of Object.entries(body.equipment ?? {})) {
+      const m = keep(it);
+      if (m) c.equipment[slot as keyof Player['equipment']] = m;
+    }
+    for (const it of Array.isArray(body.items) ? body.items : []) {
+      const m = keep(it);
+      if (m) c.items.push(m);
+    }
+    if (bodyItems(c).length) p.corpses.push(c);
+  }
+  // what follows from the level and attributes is worked out anew (Diablo II's CharStats: Player.recalc)
   p.markDirty();
   p.recalc();
   p.life = Math.min(p.d.maxLife, Math.max(1, d.life ?? p.d.maxLife));
   p.mana = Math.min(p.d.maxMana, Math.max(0, d.mana ?? p.d.maxMana));
+  p.stamina = p.d.maxStamina;
   loaded.set(p, d);
   if (why) readOnly.add(p);
   return { player: p, depth: depthForArea(d.area) ?? 0, readOnly: why };

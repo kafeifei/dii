@@ -47,10 +47,15 @@ export function renderChar(ui: UIContext, L: HTMLElement) {
   row('伤害', `${Math.floor(Math.max(1, d.wMin) * mult)} - ${Math.floor(Math.max(1, d.wMax) * mult)}`);
   row('准确率', d.ar);
   row('防御', d.def);
-  row('攻击速度', `${d.attacksPerSec.toFixed(2)} 次/秒`);
-  if (p.equipment.offhand) row('格挡几率', `${Math.round(d.block)}%`);
+  // Diablo II's frames, 25 a second (game/d2/frames.ts)
+  const frames = (s: number) => `${Math.round(s * 25)} 帧`;
+  row('攻击速度', `${d.attacksPerSec.toFixed(2)} 次/秒（${frames(d.attackTime)}）`);
+  row('施法速度', frames(d.castTime));
+  row('受击恢复', frames(d.hitRecovery));
+  if (p.equipment.offhand) row('格挡几率', `${Math.round(d.block)}%（跑动时 ${Math.trunc(d.block / 3)}%）`);
   row('生命', `${Math.ceil(p.life)} / ${d.maxLife}`);
   row('法力', `${Math.ceil(p.mana)} / ${d.maxMana}`);
+  row('耐力', `${Math.ceil(p.stamina)} / ${d.maxStamina}`);
   sheet.appendChild(h('div', 'head', '抗性'));
   row('火焰抗性', `${d.res.fire}%`, 'res-fire');
   row('冰冷抗性', `${d.res.cold}%`, 'res-cold');

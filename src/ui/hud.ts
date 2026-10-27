@@ -17,6 +17,8 @@ export class Hud {
   private manaOrb: HTMLElement;
   private beltEl: HTMLElement;
   private xpFill: HTMLElement;
+  private stamFill: HTMLElement;
+  private runEl: HTMLElement;
   private btns: Record<string, HTMLButtonElement> = {};
   private target: HTMLElement;
   private messagesEl: HTMLElement;
@@ -56,6 +58,18 @@ export class Hud {
     this.xpFill = h('div');
     xp.appendChild(this.xpFill);
     bar.appendChild(xp);
+    // Diablo II's stamina bar, with its run/walk switch: running spends it out of town
+    const stam = h('div', 'stambar');
+    stam.title = '耐力：在营地外跑步会消耗（点击切换跑步/行走，按住 Ctrl 临时反过来）';
+    this.stamFill = h('div', 'fill');
+    this.runEl = h('span', 'run');
+    stam.append(this.stamFill, this.runEl);
+    stam.onclick = () => {
+      const p = ui.game.player;
+      p.runMode = !p.runMode;
+      ui.sfx.play('ui.click');
+    };
+    bar.appendChild(stam);
     this.lifeOrb = h('div', 'orb life ui-block', '<div class="fill"></div><div class="gloss"></div><div class="val"></div>');
     this.manaOrb = h('div', 'orb mana ui-block', '<div class="fill"></div><div class="gloss"></div><div class="val"></div>');
     hud.append(bar, this.lifeOrb, this.manaOrb);
@@ -174,6 +188,8 @@ export class Hud {
     const cur = xpForLevel(p.level);
     const next = xpForLevel(p.level + 1);
     this.xpFill.style.width = `${Math.min(100, ((p.xp - cur) / Math.max(1, next - cur)) * 100)}%`;
+    this.stamFill.style.width = `${Math.max(0, Math.min(100, (p.stamina / Math.max(1, d.maxStamina)) * 100))}%`;
+    this.runEl.textContent = p.runMode ? '跑' : '走';
     // cooldown overlays
     for (const el of this.skillsEl.querySelectorAll<HTMLElement>('[data-cd]')) {
       const id = el.dataset.cd!;

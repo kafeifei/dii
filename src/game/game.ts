@@ -8,6 +8,9 @@ import { createItem, isGold, makeGold, newGameDrops, rollMonsterDrops, type Drop
 import { CAMP_VENDORS, fillStore, Store } from '../items/vendor';
 import { baseOf, displayName, isUnknown, type Item } from '../items/item';
 import { charStats, potionHeal } from './d2/stats';
+import { deathPenalty, type DeathPenalty } from './d2/death';
+import { killXp } from './d2/xp';
+import { bodyItems, leaveBody, takeBody } from './corpse';
 import { emptyPacket } from './actor';
 import { blastDamage, updateMonster } from './ai';
 import { applyDamage, monsterStrike } from './combat';
@@ -120,6 +123,8 @@ export class Game {
   touchTarget: Monster | null = null;
   /** what the interact button would use: the nearest item, chest, door or person in reach */
   touchNear: TouchNear | null = null;
+  /** what the hero's last death cost (Diablo II's death penalty, game/d2/death.ts), for the death screen */
+  lastDeath: DeathPenalty | null = null;
   /** the camp merchant's shelves (src/items/vendor.ts), stocked anew on each way into the camp */
   shop = new Store(CAMP_VENDORS);
   /** the time of day under the sky, 0 → 1 from midnight (src/render/sky.ts); it starts in the morning */
@@ -162,8 +167,10 @@ export class Game {
     p.recalc();
     p.life = p.d.maxLife;
     p.mana = p.d.maxMana;
+    p.stamina = p.d.maxStamina;
     this.player = p;
     this.started = true;
+    this.lastDeath = null;
     this.lastDungeon = null;
     this.portalLevel = null;
     this.wilds.clear();
@@ -181,6 +188,7 @@ export class Game {
     if (!s) return false;
     this.player = s.player;
     this.started = true;
+    this.lastDeath = null;
     this.lastDungeon = null;
     this.portalLevel = null;
     this.wilds.clear();
@@ -391,10 +399,13 @@ export class Game {
 
   respawn() {
     const p = this.player;
+    // the body stays where the hero fell, with the gear, as the death plays out (game/corpse.ts)
+    if (p.dead) this.leaveCorpse();
     p.dead = false;
     p.recalc();
     p.life = p.stats.maxLife;
     p.mana = p.stats.maxMana;
+    p.stamina = p.stats.maxStamina;
     p.poisonTime = 0;
     p.chillTime = 0;
     p.healQueue = [];
@@ -466,6 +477,7 @@ export class Game {
       }
     }
     this.updateArea();
+    this.layOutCorpses();
     // corpse cleanup
     if (L.monsters.length > 0 && Math.random() < 0.02) {
       L.monsters = L.monsters.filter((m) => !m.dead || m.deathTime < 40);
@@ -959,16 +971,10 @@ export class Game {
     m.killedBy = elem;
     m.setState('dead');
     m.path = null;
-    // xp, as Diablo II scales it by the level gap: monsters more than 5 levels below give
-    // 81/62/43/24/5%, more than 5 above give character level / monster level
-    let xp = m.xp;
-    const diff = p.level - m.level;
-    if (diff > 5) xp *= [0.81, 0.62, 0.43, 0.24][diff - 6] ?? 0.05;
-    else if (diff < -5) xp *= p.level / m.level;
-    xp *= 1 + (p.shrine ? (SHRINE_BY_ID[p.shrine.id].xpPct ?? 0) : 0) / 100;
-    // "+X% experience gained" (ItemStatCost item_addexperience: D2Game adds it to each kill's experience)
-    xp *= 1 + (p.stats.bag.xpPct ?? 0) / 100;
-    const gained = p.gainXp(Math.floor(xp * debugOpts.xp));
+    // Diablo II's experience for the kill (SUNITDMG_ComputeExperienceGain: game/d2/xp.ts killXp):
+    // the level gap's two tables, ExpRatio, then "+X% experience gained" and the shrine's on top
+    const addPct = (p.shrine ? (SHRINE_BY_ID[p.shrine.id].xpPct ?? 0) : 0) + (p.stats.bag.xpPct ?? 0);
+    const gained = p.gainXp(Math.floor(killXp(m.xp, p.level, m.level, addPct) * debugOpts.xp));
     if (gained > 0) {
       this.onProc('procLevelUp', null);
       this.celebrateLevelUp();
@@ -1054,11 +1060,99 @@ export class Game {
     p.life = 0;
     p.setState('dead');
     p.intent = null;
-    const lost = Math.floor(p.gold * 0.1);
-    p.gold -= lost;
+    // Diablo II's death penalty as the death starts (PLAYER_ApplyDeathPenalty: game/d2/death.ts):
+    // min(level, 20) % of all the gold, the inventory's first, and in nightmare and hell some of
+    // the level's experience; the gold left in the inventory drops by the body (leaveCorpse)
+    const pen = deathPenalty({ level: p.level, xp: p.xp, gold: p.gold, stashGold: p.stashGold, diff: p.difficulty });
+    p.gold = pen.goldDropped;
+    p.stashGold = pen.stashGold;
+    p.xp = pen.xp;
+    this.lastDeath = pen;
     this.sfx.play('player.death', { pos: p.pos });
     this.fx.death(p, 'red', 'phys');
     this.hooks.playerDied();
+  }
+
+  /**
+   * The body left where the hero fell once the death has played out (D2GAME_CORPSE_Handler,
+   * PlrModes.cpp:429-650): all that was worn and the cursor's item on it (game/corpse.ts), the belt's
+   * potions past its first row into the inventory or onto the ground, the inventory's gold in a
+   * pile beside it
+   */
+  private leaveCorpse() {
+    const p = this.player;
+    const L = this.level;
+    const cursor = this.hooks.getCursorItem();
+    if (cursor) this.hooks.setCursorItem(null);
+    const r = leaveBody(p, cursor, { level: L, pos: p.pos, area: L.areaAt(p.pos.x, p.pos.z).id }, this.lastDeath?.corpseXp ?? 0);
+    const ground = [...r.dropped, ...r.loose.filter((it) => !p.inventory.add(it))];
+    if (ground.length) this.spawnDrops(p.pos, ground.map((item): Drop => ({ kind: 'item', item })));
+    if (p.gold > 0) {
+      L.ground.push(new GroundItem(p.pos, null, p.gold, p.pos));
+      p.gold = 0;
+    }
+    this.layOutCorpses();
+    this.hooks.inventoryChanged();
+  }
+
+  /**
+   * Each body on the map it lies on. One whose map this game has let go of (a dungeon floor two
+   * floors back), and one read from a save, waits in the camp by the way in, as D2 sets a saved body
+   * down in town (PLRSAVE2_ReadCorpses, PlrSave2.cpp:1104-1203). Cheap enough to run every frame.
+   */
+  private layOutCorpses() {
+    const p = this.player;
+    if (!p.corpses.length) return;
+    const L = this.level;
+    const live = new Set<object>([L, ...this.wilds.values()]);
+    for (const l of [this.lastDungeon, this.portalLevel, this.west]) if (l) live.add(l);
+    const camp = L.inTown(L.layout.start);
+    p.corpses.forEach((c, i) => {
+      if (c.level && !live.has(c.level)) {
+        c.level = null;
+        c.pos = null;
+      }
+      if (!(c.level === L || (!c.level && camp)) || L.objects.some((o) => o.corpse === c)) return;
+      let pos = c.level ? c.pos : null;
+      if (!pos) {
+        const a = 2.4 + i * 0.9;
+        pos = L.map.nearestWalkable(L.layout.start.x + Math.sin(a) * 2.2, L.layout.start.z + Math.cos(a) * 2.2) ?? L.layout.start;
+      }
+      const o = new WorldObject('corpse', pos, `${p.name}的尸体`, 0.7);
+      o.corpse = c;
+      L.objects.push(o);
+    });
+  }
+
+  /**
+   * The hero takes a body back: the experience it holds, given back as it is (PlrModes.cpp:713-722),
+   * then its items (game/corpse.ts takeBody). What fits nowhere stays on it.
+   */
+  private takeCorpse(o: WorldObject) {
+    const p = this.player;
+    const c = o.corpse;
+    if (!c) return;
+    if (c.xp > 0) {
+      const gained = p.gainXp(c.xp);
+      c.xp = 0;
+      if (gained) {
+        this.onProc('procLevelUp', null);
+        this.celebrateLevelUp();
+      }
+    }
+    const taken = takeBody(p, c, (it) => this.beltInsert(it));
+    if (bodyItems(c).length) {
+      this.hooks.message('背包放不下尸体上剩下的物品', '#ff6060', 2);
+      this.sfx.play('ui.no_room');
+    } else {
+      this.level.objects = this.level.objects.filter((x) => x !== o);
+      p.corpses = p.corpses.filter((x) => x !== c);
+      this.sfx.play('item.equip', { pos: p.pos });
+    }
+    if (taken) {
+      p.markDirty();
+      this.hooks.inventoryChanged();
+    }
   }
 
   spawnDrops(pos: P2, drops: Drop[]) {
@@ -1228,6 +1322,9 @@ export class Game {
       case 'stash':
         this.hooks.openPanel('stash');
         break;
+      case 'corpse':
+        this.takeCorpse(obj);
+        break;
       case 'exit':
         this.enterLevel(obj.dest, 'exit');
         break;
@@ -1327,6 +1424,8 @@ export class Game {
     // the waypoints so far stay with the difficulty they were touched in
     this.save();
     p.difficulty = d;
+    // the resistances take the new difficulty's penalty
+    p.markDirty();
     p.waypoints = savedWaypoints(p, d);
     this.save();
   }

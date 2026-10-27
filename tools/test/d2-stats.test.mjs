@@ -62,6 +62,14 @@ export default async (load) => {
   assert.equal(s.runDrainPerSec(pal, { drainPct: 50 }), (20 * 25) / 256);
   assert.equal(s.runDrainPerSec(pal, { inTown: true }), 0);
   assert.equal(s.runDrainPerSec(ass), 2.9296875);
+  // stamina back: 89 stamina is 22784 256ths, >> 8 = 89 a frame standing, >> 9 = 44 walking
+  assert.equal(s.staminaRegenPerSec(89, 'stand', 0), (89 * 25) / 256);
+  assert.equal(s.staminaRegenPerSec(89, 'walk', 10), (44 * 25) / 256);
+  assert.equal(s.staminaRegenPerSec(89, 'walk', 0.5), 0, 'walking with under a point left out of town');
+  assert.equal(s.staminaRegenPerSec(89, 'townWalk', 0), (44 * 25) / 256);
+  assert.equal(s.staminaRegenPerSec(89, 'busy', 50), 0);
+  assert.equal(s.staminaRegenPerSec(89, 'stand', 0, 50), ((89 + 44) * 25) / 256);
+  assert.equal(s.staminaRegenPerSec(89, 'busy', 50, 1000), ((89 + 890) * 25) / 256, 'a stamina potion works running');
 
   // attack rating: 5 × (dex − 7) + ToHitFactor (pal +20, sor −15), then the % on all of it
   assert.equal(s.attackRating(pal, 20), 85);

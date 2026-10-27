@@ -81,6 +81,19 @@ export default async (load) => {
   // speeds 350, 384 and 427, the least for 10, 9 and 8 frames; EIAS 7, 20 and 37 take IAS 8, 24, 54
   assert.deepEqual(bp((x) => f.attackAnim('pal', '1hs', { ias: x, wsm: -30 }).frames), [[0, 11], [8, 10], [24, 9], [54, 8]]);
 
+  // hit recovery odds by the blow's share of life: under 1/16 never, then 3/8, 3/4, from 1/4 always;
+  // a two-handed swing at a small target (32) needs half that; nothing under a point
+  assert.equal(f.hitRecoveryOdds(5, 100), 0);
+  assert.equal(f.hitRecoveryOdds(6.25, 100), 0.375);
+  assert.equal(f.hitRecoveryOdds(12.5, 100), 0.75);
+  assert.equal(f.hitRecoveryOdds(25, 100), 1);
+  assert.equal(f.hitRecoveryOdds(5, 100, 32), 0.375);
+  assert.equal(f.hitRecoveryOdds(7, 100, 32), 0.75);
+  assert.equal(f.hitRecoveryOdds(0.9, 10), 0);
+  // the gap before a block animates again: 15 frames, FBR / 8 more
+  assert.equal(f.blockAnimGap(0), 15 / 25);
+  assert.equal(f.blockAnimGap(86), 25 / 25);
+
   // weapon classes: two hands take 2handedwclass (D2Composit.cpp:343-353), no weapon is hand to hand
   assert.equal(f.weaponClass(), 'hth');
   assert.equal(f.weaponClass({ wclass: '1hs', wclass2: '2hs', twoHanded: true }), '2hs');

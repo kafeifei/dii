@@ -1,8 +1,8 @@
 // Diablo II's speed breakpoints: how many frames (25 a second) an attack, a cast, a hit recovery and
-// a block take for a class, its weapon class and its IAS, FCR, FHR and FBR. Pure functions, nothing
-// wired: Player.recalc would set attacksPerSec = 1 / toSeconds(attackAnim(…).frames), castTime from
-// castAnim, hitRecovery from hitRecoveryFrames, and Combat's block state from blockFrames; the 3D
-// clips play at playbackRate(clip length, frames), skills too (plan A3).
+// a block take for a class, its weapon class and its IAS, FCR, FHR and FBR. Pure functions:
+// Player.recalc turns attackAnim, castAnim, hitRecoveryFrames and blockFrames into the seconds the
+// hero's attack, cast, hit and block states last (toSeconds), and the 3D clips play over exactly
+// that (playbackRate's clip length / seconds, src/render/models.ts), skills too (plan A3).
 // The speed rules are D2MOO's (github.com/ThePhrozenKeep/D2MOO at commit d9d394f, D2Common
 // Units/Units.cpp). The frame counts per class and weapon class are in the game's AnimData.d2, which
 // d2data does not carry, so they are hand-entered from community tables: attacks from the Amazon
@@ -201,6 +201,33 @@ export function hitRecoveryFrames(cls: PlayerClass | FrameClass, fhr: number, wc
   const c = code(cls);
   const a = c === 'pal' && (wclass === '2ht' || wclass === 'stf') ? PAL_GETHIT_SPEAR : GETHIT[c];
   return animFrames(a.frames, animSpeedAt(a.speed, 50 + effectiveSpeed(fhr)));
+}
+
+/**
+ * The odds a blow puts a hero into hit recovery (SUNITDMG_ShouldSkipHitRecovery, D2Game
+ * SUnitDmg.cpp:2161-2230): never under a point, nor under maxLife / divisor; under twice that it is
+ * skipped half the time, and under four times that a further quarter of the time. The divisor is
+ * the attack's hit class's: 8 for one-handed swings at small targets, thrusts, bows and
+ * crossbows, 32 for two-handed swings at small targets and clubs, 64 for two-handed swings at
+ * large ones, 16 for the rest. A frozen hero, and poison alone, never get hit (2163-2172).
+ */
+export function hitRecoveryOdds(dmg: number, maxLife: number, divisor = 16): number {
+  const d = Math.trunc(dmg * 256);
+  const max = Math.trunc(maxLife * 256);
+  if (d < 256 || d < Math.trunc(max / divisor)) return 0;
+  let odds = 1;
+  if (d < Math.trunc(max / (divisor / 2))) odds *= 0.5;
+  if (d < Math.trunc(max / (divisor / 4))) odds *= 0.75;
+  return odds;
+}
+
+/**
+ * Seconds before a block plays its animation again: blocks keep stopping blows, but the hero only
+ * goes back into the block mode once FBR / 8 + 15 frames have passed since the last one
+ * (SUnitDmg.cpp:2003-2008, STAT_LASTBLOCKFRAME); `fbr` is the item total, before diminishing returns.
+ */
+export function blockAnimGap(fbr: number): number {
+  return toSeconds(Math.trunc(fbr / 8) + 15);
 }
 
 /** a block: rate 50 + EFBR, 100 + EFBR under Holy Shield, no cap (Units.cpp:1448-1471) */

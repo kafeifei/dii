@@ -1,8 +1,8 @@
 // What dying costs a Diablo II hero and what the corpse keeps: D2MOO PLAYER_ApplyDeathPenalty
 // (Player.cpp:679-795), run as the death starts (PlrModes.cpp:741-749), and the corpse made where the
 // hero fell once the death animation ends (D2GAME_CORPSE_Handler, PlrModes.cpp:429-650, called at
-// PlrModes.cpp:791-794). Pure functions, nothing wired: Game.killPlayer would apply deathPenalty
-// and corpseSplit, drop the gold and leave the corpse; the respawn in town keeps the rest.
+// PlrModes.cpp:791-794). Pure functions: Game.killPlayer applies deathPenalty, and the respawn
+// leaves the body with corpseSplit's share (src/game/corpse.ts) and the gold by it.
 // Single player only: the rules for a hero killed by a player or a player's minion (the gold drops
 // for the killer, no experience is lost; Player.cpp:690-733, 760-772) and game type 3's (a floor of
 // 500 × level, inventory gold only; Player.cpp:707-715) are left out.

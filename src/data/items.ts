@@ -78,10 +78,13 @@ export interface ItemBase {
   dmg1?: [number, number];
   throwDmg?: [number, number];
   twoHanded?: boolean;
-  /** attacks per second */
+  /** the old bases' attacks per second (src/items/legacy.ts): attacks follow D2's frames now (wclass, wsm) */
   speed?: number;
   /** Diablo II weapon speed modifier (negative is faster) */
   wsm?: number;
+  /** the animation class it attacks with (Weapons.txt wclass), and wielded in two hands (2handedwclass): game/d2/frames.ts */
+  wclass?: string;
+  wclass2?: string;
   /** 0 normal, 1 exceptional, 2 elite */
   tier?: number;
   /** the normal, exceptional and elite versions of this base (codes) */
@@ -216,8 +219,6 @@ const NO_USE: Partial<Record<ItemType, string>> = {
   bow: '本游戏没有射击', crossbow: '本游戏没有射击', javelin: '本游戏没有投掷', throwing: '本游戏没有投掷',
 };
 
-// attacks per second at weapon speed modifier 0, by animation class (the game's own scale, as before)
-const BASE_APS: Record<string, number> = { '1hs': 1.6, '1ht': 1.6, ht1: 1.6, '2hs': 1.45, stf: 1.35, '2ht': 1.25 };
 
 const idOf = (en: string) => en.toLowerCase().replace(/[^a-z0-9]/g, '');
 
@@ -284,8 +285,8 @@ function weaponBase(b: D2xWeapon): ItemBase {
   if (b.oneOrTwo && b.dmg1) out.dmg1 = b.dmg1;
   if (b.throwDmg) out.throwDmg = b.throwDmg;
   out.wsm = b.wsm;
-  const wclass = b.twoHanded && b.oneOrTwo && b.wclass2 ? b.wclass2 : b.wclass;
-  out.speed = +((BASE_APS[wclass] ?? 1.4) * (1 - b.wsm / 100)).toFixed(3);
+  out.wclass = b.wclass;
+  if (b.wclass2) out.wclass2 = b.wclass2;
   out.strBonus = b.strBonus ?? 0;
   if (b.dexBonus) out.dexBonus = b.dexBonus;
   if (NO_USE[type]) out.noUse = NO_USE[type];
