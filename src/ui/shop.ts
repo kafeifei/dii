@@ -1,13 +1,10 @@
+import { repairAllList, pay } from '../items/vendor';
+import { repairItem } from '../items/d2/durability';
 import { levelLabel } from '../world/levelgen';
 import { addClose, h, type UIContext } from './common';
-import { renderGrid } from './inventory';
+import { isRepairing, renderGrid, toggleRepair } from './inventory';
 
 // The camp's services, on the left with the bag beside them: the stash, the merchant, the waypoint.
-
-/** gold to refill charges: Diablo II charges by skill level per missing charge */
-function rechargeCost(missing: number, lvl: number): number {
-  return missing * (10 + lvl * 6);
-}
 
 export function renderStash(ui: UIContext, L: HTMLElement) {
   const p = ui.game.player;
@@ -39,30 +36,55 @@ export function renderStash(ui: UIContext, L: HTMLElement) {
   L.appendChild(gl);
 }
 
+/**
+ * The merchant: Diablo II's camp shelves by page (src/items/vendor.ts), buying and selling at D2's
+ * prices, and repairs (one item with the repair cursor, or everything worn)
+ */
 export function renderShop(ui: UIContext, L: HTMLElement) {
   L.innerHTML = '';
   // titled with the merchant's object, which the layout's vendor service names
   const vendor = ui.game.level.objects.find((o) => o.kind === 'vendor');
   L.appendChild(h('h2', '', vendor?.name ?? '商人'));
   addClose(ui, L, 'left');
-  L.appendChild(renderGrid(ui, 'shop', ui.game.shop));
-  L.appendChild(h('div', 'goldline', `<span>你的金币：${ui.game.player.gold}</span><span style="color:#8a8278;font-size:12px">点击购买 · 把物品放进来出售</span>`));
-  // like Diablo II's repair: refill the charges on worn and carried items
-  const p = ui.game.player;
-  const spent = p.spentCharges();
-  if (spent.length) {
-    const cost = spent.reduce((n, c) => n + rechargeCost(c.missing, c.lvl), 0);
-    const btn = h('button', 'cube-go', `补充充能（${cost} 金币）`);
-    btn.onclick = () => {
-      if (p.gold < cost) return ui.message('金币不够', '#ff4040', 1);
-      p.gold -= cost;
-      for (const c of spent) (c.item.charges ??= {})[c.param] = (c.item.charges[c.param] ?? 0) + c.missing;
-      ui.sfx.play('ui.coins');
-      ui.message('充能已补满', '#c8a86a', 1);
+  const store = ui.game.shop;
+  const on = store.current();
+  const tabs = h('div', 'tabs shop-tabs');
+  store.shown().forEach((s) => {
+    const t = h('div', `tab${s.tab === on ? ' on' : ''}`, s.label);
+    t.onclick = () => {
+      store.selected = s.tab;
+      ui.sfx.play('ui.click');
       ui.dirty = true;
     };
-    L.appendChild(btn);
-  }
+    tabs.appendChild(t);
+  });
+  L.appendChild(tabs);
+  L.appendChild(renderGrid(ui, 'shop', store.grid));
+  const p = ui.game.player;
+  L.appendChild(h('div', 'goldline', `<span>你的金币：${p.gold}${p.stashGold ? `（储物箱 ${p.stashGold}）` : ''}</span><span style="color:#8a8278;font-size:12px">点击购买 · 把物品放进来出售</span>`));
+  // repairs, D2's (Charsi's in Act 1): the repair cursor for one item, or everything worn; the stash's gold pays too
+  const ctx = p.tradeCtx();
+  const all = repairAllList(p.equipment, ctx);
+  const total = all.reduce((n, r) => n + r.cost, 0);
+  const row = h('div', 'shop-actions');
+  const one = h('button', `btn${isRepairing() ? ' on' : ''}`, '修理');
+  one.onclick = () => toggleRepair(ui);
+  const every = h('button', 'btn', all.length ? `全部修理（${total} 金币）` : '全部修理');
+  every.disabled = !all.length;
+  every.onclick = () => {
+    if (!pay(p, total)) {
+      ui.message('金币不足', '#ff4040', 1);
+      ui.sfx.play('ui.no_gold');
+      return;
+    }
+    for (const r of all) repairItem(r.item);
+    p.markDirty();
+    ui.sfx.play('ui.coins');
+    ui.message(`全部修好了：−${total} 金币`, '#c8a86a', 1.5);
+    ui.dirty = true;
+  };
+  row.append(one, every);
+  L.appendChild(row);
 }
 
 export function renderWaypoints(ui: UIContext, L: HTMLElement) {

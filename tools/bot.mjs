@@ -50,7 +50,10 @@ export default async function (page, shot, log) {
     builds: BUILDS,
   };
   const setup = await page.evaluate(async (o) => {
-    const { baseOf, displayName, sellPrice } = await import('/src/items/item.ts');
+    const { baseOf, displayName } = await import('/src/items/item.ts');
+    // what the camp's stall pays for an item, at D2's prices
+    const V = await import('/src/items/vendor.ts');
+    const sellPrice = (it) => V.sellPrice(V.CAMP_VENDORS, it);
     const { slotsFor } = await import('/src/data/items.ts');
     const { SKILL_BY_ID, SKILLS } = await import('/src/data/skills.ts');
     const { CLASS_IDS } = await import('/src/data/classes.ts');

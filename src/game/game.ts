@@ -4,8 +4,8 @@ import type { Sfx } from '../audio/sfx';
 import { CLASSES, type PlayerClass } from '../data/classes';
 import { SKILL_BY_ID } from '../data/skills';
 import { D2_TO_GAME } from '../data/d2/skillmap';
-import { Grid } from '../items/grid';
-import { createItem, isGold, makeGold, newGameDrops, potionsFor, rollEquipment, rollMonsterDrops, type Drop } from '../items/gen';
+import { createItem, isGold, makeGold, newGameDrops, rollMonsterDrops, type Drop } from '../items/gen';
+import { CAMP_VENDORS, fillStore, Store } from '../items/vendor';
 import { baseOf, displayName, isUnknown, type Item } from '../items/item';
 import { charStats, potionHeal } from './d2/stats';
 import { emptyPacket } from './actor';
@@ -120,7 +120,8 @@ export class Game {
   touchTarget: Monster | null = null;
   /** what the interact button would use: the nearest item, chest, door or person in reach */
   touchNear: TouchNear | null = null;
-  shop = new Grid(10, 10);
+  /** the camp merchant's shelves (src/items/vendor.ts), stocked anew on each way into the camp */
+  shop = new Store(CAMP_VENDORS);
   /** the time of day under the sky, 0 → 1 from midnight (src/render/sky.ts); it starts in the morning */
   clock = 0.3;
   /** how fast the day goes by (0 holds it, for screenshots: ?tod=) */
@@ -384,18 +385,8 @@ export class Game {
   }
 
   refreshShop() {
-    this.shop = new Grid(10, 10);
-    const lvl = Math.max(1, this.player.level);
-    const potions = [...potionsFor(lvl + 4, 'hp'), ...potionsFor(lvl + 4, 'mp')];
-    // identify scrolls and the tome (D2: Akara and Cain's trade; here the one merchant's for now)
-    for (const id of [...potions, 'isc', 'ibk']) this.shop.add(createItem(id));
-    const count = randInt(9, 14);
-    for (let i = 0; i < count; i++) {
-      // D2's vendors sell their stock identified
-      const it = rollEquipment(Math.min(40, lvl + randInt(0, 3)), { mf: 0, identified: true });
-      if (it.rarity === 'unique' || it.rarity === 'set') continue;
-      this.shop.add(it);
-    }
+    // Diablo II's camp shelves for the one merchant: Charsi's weapons and armour, Akara's staves, potions, scrolls and tomes
+    this.shop = fillStore(CAMP_VENDORS, Math.max(1, this.player.level), this.player.difficulty);
   }
 
   respawn() {
@@ -437,6 +428,8 @@ export class Game {
       this.hooks.message('神殿的祝福消失了', '#9a9080', 2);
     }
     updatePlayer(this, p, dt);
+    // self-repairing items mend a point now and then
+    p.mendItems(dt);
     for (const m of L.monsters) {
       if (dist(m.pos, p.pos) > ACTIVE_RADIUS && !m.dead) continue;
       m.hitFlash = Math.max(0, m.hitFlash - dt * 6);

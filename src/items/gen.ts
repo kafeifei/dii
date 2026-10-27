@@ -114,17 +114,21 @@ function goodTc(mlvl: number) {
   return tc;
 }
 
-/** gem types within a grade: six gems at 3, skulls at 2 (Chipped Gem … Perfect Gem classes) */
-export function rollGem(grade: number): Item {
+/**
+ * gem types within a grade: six gems at 3, skulls at 2 (Chipped Gem … Perfect Gem classes); a drop
+ * has its monster's level as its item level (D2Game Items.cpp:1622-1647), which a rune hands on to
+ * the runeword it completes (make.ts insertFiller)
+ */
+export function rollGem(grade: number, ilvl = 1): Item {
   const g = weightedPick(GEMS.filter((x) => x.grade === grade), (x) => (x.gem === 'skull' ? 2 : 3))!;
-  return createItem(g.id);
+  return createItem(g.id, 'normal', ilvl);
 }
 
 export function rollRune(mlvl: number): Item {
   const tc = goodTc(mlvl);
   const e = tc.entries.find((x) => x.kind === 'rune') ?? D2_GOOD_TCS.find((t) => t.entries.some((x) => x.kind === 'rune'))!.entries.find((x) => x.kind === 'rune')!;
   const [id] = weightedPick(e.runes!, (r) => r[1])!;
-  return createItem(id);
+  return createItem(id, 'normal', mlvl);
 }
 
 /** Jewelry A: rings, amulets, jewels and charms by their weights (TreasureClassEx.txt) */
@@ -133,8 +137,8 @@ const JEWELRY = D2X_TREASURE_CLASSES['Jewelry A'].items.filter((e) => e.item && 
 /** one pick from the Good class: jewelry (a ring, an amulet, a jewel or a charm), a gem or a rune */
 export function rollGood(mlvl: number, mf: number, rank = 0, difficulty: 0 | 1 | 2 = 0): Item {
   const e = weightedPick(goodTc(mlvl).entries, (x) => x.w)!;
-  if (e.kind === 'gem') return rollGem(e.grade!);
-  if (e.kind === 'rune') return createItem(weightedPick(e.runes!, (r) => r[1])![0]);
+  if (e.kind === 'gem') return rollGem(e.grade!, mlvl);
+  if (e.kind === 'rune') return createItem(weightedPick(e.runes!, (r) => r[1])![0], 'normal', mlvl);
   const j = weightedPick(JEWELRY, (x) => x.prob)!;
   return makeItem({ code: j.item!, ilvl: Math.max(1, mlvl), mf, tc: tcQuality(rank), difficulty, dropped: DROPPED });
 }
@@ -185,9 +189,9 @@ export function rollMonsterDrops(mlvl: number, quality: number, mf: number, gf: 
 
 // ───────────────────────── runewords ─────────────────────────
 
-/** the item a full set of runes makes a runeword of, made so (d2/legendary.ts); false when they make none */
-export function applyRuneword(item: Item): boolean {
-  return applyRunewordTo(item);
+/** the item a full set of runes makes a runeword of, made so (d2/legendary.ts) at the last rune's item level; false when they make none */
+export function applyRuneword(item: Item, runeIlvl = item.ilvl): boolean {
+  return applyRunewordTo(item, runeIlvl);
 }
 
 /** the starting kit's weapon and shield, and potions */

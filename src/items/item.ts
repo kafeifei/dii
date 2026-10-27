@@ -12,6 +12,7 @@ import { addStat, describeStats, INERT_STATS, PARAM_STATS, type StatBag, type St
 import { affixRow, requiredLevel } from './d2/affixes';
 import { classOnly, describeProps, fmt, type DescLine } from './d2/describe';
 import { SET_BY_ID, SET_ITEM_BY_ID, UNIQUE_BY_ID as D2_UNIQUES, setBonuses, slotsOn } from './d2/legendary';
+import { socketBlock } from './d2/sockets';
 import type { D2Quality } from './d2/types';
 import { ITEM_STATE_CODES, modProps, propMods, rollMax } from './props';
 
@@ -863,21 +864,13 @@ export function tooltip(item: Item, ctx?: ReqContext, priceLine?: string): Toolt
   return price();
 }
 
-/** what a vendor pays: the game's own economy until the shops follow D2's (A6) */
-export function sellPrice(item: Item): number {
-  const b = baseOf(item);
-  if (b.noSell) return 0;
-  const mult: Record<Rarity, number> = { low: 0.6, normal: 1, superior: 1.3, magic: 2, rare: 3.5, unique: 5, set: 5, crafted: 4, runeword: 6 };
-  const n = item.mods.length + (item.props?.length ?? 0);
-  return Math.max(1, Math.floor((b.price * (mult[item.rarity] ?? 1) * (1 + n * 0.15)) / 4));
-}
-
-export function buyPrice(item: Item): number {
-  return baseOf(item).price;
-}
-
-export function canSocket(item: Item): boolean {
-  return item.sockets > item.socketed.length && item.rarity !== 'runeword';
+/**
+ * Whether the item has a free socket a filler may go into (d2/sockets.ts socketBlock): with a
+ * filler, whether that one may. Prices are D2's now: src/items/vendor.ts
+ */
+export function canSocket(item: Item, filler?: Item): boolean {
+  if (filler) return socketBlock(item, filler) === null;
+  return isIdentified(item) && item.sockets > item.socketed.length;
 }
 
 export function isRuneword(item: Item): boolean {

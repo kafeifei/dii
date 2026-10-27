@@ -40,6 +40,7 @@ const R27 = Object.fromEntries(
     [
       'weapons', 'armor', 'misc', 'uniqueitems', 'setitems', 'sets', 'runes', 'magicprefix', 'magicsuffix', 'automagic', 'gems', 'charstats', 'playerclass',
       'difficultylevels', 'itemratio', 'npc', 'gamble', 'hireling', 'levels', 'monstats', 'monlvl', 'monprop', 'superuniques', 'skills', 'tcprecalc',
+      'books', 'itemstatcost',
     ].map(async (n) => [n, await load(REF27, n)]),
   ),
 );
@@ -220,6 +221,7 @@ function shop27(r) {
 }
 {
   const bad = [];
+  const chargeCost = new Map(rows(R27.books).filter((b) => b.BookSpellCode).map((b) => [b.BookSpellCode, b.CostPerCharge]));
   for (const [kind, list] of [['weapons', W], ['armor', A], ['misc', M]]) {
     const old = by(R27[kind], 'code');
     for (const b of list) {
@@ -239,6 +241,9 @@ function shop27(r) {
       f('dur', opt(r.durability));
       f('sockets', opt(r.gemsockets));
       f('shop', shop27(r));
+      f('perm', r.PermStoreItem ? true : undefined);
+      f('shopMagic', r.bitfield1 & 1 ? true : undefined);
+      f('chargeCost', chargeCost.get(b.code));
       if (kind === 'weapons') {
         f('dmg1', r.maxdam ? [r.mindam ?? 0, r.maxdam] : undefined);
         f('dmg2', r['2handed'] ? [r['2handmindam'] ?? 0, r['2handmaxdam'] ?? 0] : undefined);
@@ -252,7 +257,7 @@ function shop27(r) {
       }
     }
   }
-  check('bases: type, size, requirements, damage, defense, sockets, durability, rarity, cost, shops', bad);
+  check('bases: type, size, requirements, damage, defense, sockets, durability, rarity, cost, shops, tomes\' cost per scroll', bad);
 }
 {
   const bad = [];
@@ -589,6 +594,16 @@ section('Properties');
   }
   check(`every property code (${used.size}) is read by src/items/props.ts or in KNOWN_UNMAPPED, lower case, its skill in the data`, bad);
   check('KNOWN_UNMAPPED lists no code props.ts reads', Object.keys(KNOWN_UNMAPPED).filter((c) => mapped.has(c)));
+  // what a stat adds to an item's price (D2Common Items.cpp:1841-1957): ItemStatCost Multiply / Add / Encode
+  const isc = by(R27.itemstatcost, 'Stat');
+  const priced = [];
+  for (const [stat, d] of Object.entries(X.D2X_STAT_DESC)) {
+    const r = isc.get(stat);
+    if (!r) continue;
+    mismatch(priced, stat, 'cost', r.Multiply || r.Add ? [r.Multiply ?? 0, r.Add ?? 0] : undefined, d.cost);
+    mismatch(priced, stat, 'enc', opt(r.Encode), d.enc);
+  }
+  check('stat prices: ItemStatCost Multiply, Add and Encode as 2.7 has them', priced);
 }
 
 // ───────────────────────── skills ─────────────────────────

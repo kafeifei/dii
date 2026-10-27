@@ -103,6 +103,12 @@ interface D2xBase {
   strBonus?: number;
   dexBonus?: number;
   shop?: Partial<Record<D2xNpc, D2xShop>>;
+  /** a vendor never sells out of it: buying takes a copy (Items.txt PermStoreItem) */
+  perm?: true;
+  /** vendors stock magic ones of it too (Items.txt bitfield1, its first bit) */
+  shopMagic?: true;
+  /** tomes: what each scroll in it adds to its price (Books.txt CostPerCharge) */
+  chargeCost?: number;
 }
 
 export interface D2xWeapon extends D2xBase {
@@ -1195,4 +1201,8 @@ export interface D2xStatDesc {
   op?: number;
   opParam?: number;
   opBase?: string;
+  /** what each point adds to an item's price, × its cost / 1024, and once per stat (Multiply, Add) */
+  cost?: [number, number];
+  /** how the value is packed: 1 a skill's level, 2 and 3 a skill and level in the layer (procs, charges), 4 by time */
+  enc?: number;
 }

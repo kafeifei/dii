@@ -1,25 +1,24 @@
 import { ITEM_BASES, slotsFor, type EquipSlot } from '../data/items';
 import { GEMS, RUNE_BY_ID } from '../data/legendary';
-import { createItem, applyRuneword } from '../items/gen';
+import { isBroken } from '../items/d2/durability';
+import { isSocketFiller, socketBlock, type SocketBlock } from '../items/d2/sockets';
 import type { Grid } from '../items/grid';
-import { baseOf, buyPrice, canSocket, displayName, isIdentified, sellPrice, socketId, type Item } from '../items/item';
+import { baseOf, displayName, isIdentified, isUnknown, socketId, type Item } from '../items/item';
+import { insertFiller } from '../items/make';
+import { buyPrice, repairCost, repairOne, sellPrice, shelveSold, takeFromStore } from '../items/vendor';
 import { h, type UIContext } from './common';
 import { CELL, itemIcon } from './icons';
 
 // The bag panel (the paper doll over the bag) and the item grids every panel shares (the bag, the
-// stash, the cube, the shop's stock): taking, dropping, socketing, equipping, buying and selling.
+// stash, the cube, the shop's stock): taking, dropping, socketing, equipping, buying, selling and
+// repairing.
 
 type GridKind = 'inv' | 'stash' | 'shop' | 'cube';
 
-/** runes, gems and (identified) jewels go into sockets */
-const socketable = (it: Item) => {
-  const t = baseOf(it).type;
-  return t === 'rune' || t === 'gem' || (t === 'jewel' && isIdentified(it));
-};
-/** what the shop has as many of as you like: potions, scrolls and tomes (a copy is bought) */
-const restocks = (it: Item) => {
-  const t = baseOf(it).type;
-  return t === 'potion' || t === 'scroll' || t === 'tome';
+/** what a socket filler that can't go in says (d2/sockets.ts); a full or socketless item just swaps places */
+const SOCKET_BLOCKED: Partial<Record<SocketBlock, string>> = {
+  unidentified: '未鉴定的物品不能镶嵌',
+  fillerUnidentified: '先鉴定这颗珠宝',
 };
 /** identify scrolls and the tome of identify (Misc.txt spell 1) */
 const identifies = (it: Item) => it.baseId === 'isc' || it.baseId === 'ibk';
@@ -40,15 +39,61 @@ const DOLL: Record<EquipSlot, [number, number, number, number, string]> = {
 };
 
 // ─────────────────────────── item ops ───────────────────────────
-function socketInto(ui: UIContext, target: Item, filler: Item): boolean {
-  if (!canSocket(target) || !socketable(filler)) return false;
-  // a rune or gem goes in by its code, a jewel whole, with what it rolled
-  target.socketed = [...target.socketed, baseOf(filler).type === 'jewel' ? filler : filler.baseId];
-  if (target.socketed.length === target.sockets && applyRuneword(target)) {
+/**
+ * A gem, rune or jewel on the cursor dropped on an item with sockets (D2's rules: d2/sockets.ts):
+ * in it goes, for good, and the last rune of a runeword makes it. 'swap' when the item has no
+ * socket free (it is just swapped with), 'no' when it can't go in
+ */
+function socketInto(ui: UIContext, target: Item, filler: Item): 'in' | 'swap' | 'no' {
+  const why = socketBlock(target, filler);
+  if (why === 'full' || why === 'noSockets' || why === 'notFiller') return 'swap';
+  if (why) {
+    ui.message(SOCKET_BLOCKED[why] ?? '不能镶嵌', '#ff6060', 1.5);
+    ui.sfx.play('ui.cant_use');
+    return 'no';
+  }
+  if (insertFiller(target, filler)) {
     ui.message(`符文之语：${displayName(target)}！`, '#c8a86a', 4);
     ui.sfx.play('item.runeword');
   } else ui.sfx.play('item.socket');
   ui.game.player.markDirty();
+  return 'in';
+}
+
+/** the merchant's repair cursor: the next item clicked in the bag or on the hero is repaired */
+let repairing = false;
+
+/** whether the repair cursor is up (the tooltip shows repair costs then) */
+export function isRepairing(): boolean {
+  return repairing;
+}
+
+export function toggleRepair(ui: UIContext) {
+  repairing = !repairing;
+  if (repairing) ui.message('点一件背包里或身上的物品修理它', '#c8a86a', 2);
+  ui.sfx.play('ui.click');
+  ui.dirty = true;
+}
+
+/** repair `it` at the merchant (vendor.ts repairOne): in full, or as far as the gold carried goes */
+function repairWith(ui: UIContext, it: Item): boolean {
+  repairing = false;
+  ui.dirty = true;
+  const p = ui.game.player;
+  if (ui.left !== 'shop') return false;
+  if (!repairCost(it, p.tradeCtx())) {
+    ui.message(it.eth ? '无形物品无法修理' : '这件物品不用修理', '#aaa', 1.2);
+    return true;
+  }
+  const done = repairOne(it, p, p.tradeCtx());
+  if (!done) {
+    ui.message('金币不足', '#ff6060');
+    ui.sfx.play('ui.no_gold');
+    return true;
+  }
+  p.markDirty();
+  ui.message(done.full ? `修好了${displayName(it)}：−${done.spent} 金币` : `金币只够修一部分：−${done.spent} 金币`, '#e8d890', 1.5);
+  ui.sfx.play('ui.coins');
   return true;
 }
 
@@ -88,7 +133,7 @@ function identifyWith(ui: UIContext, target: Item): boolean {
 
 function gridOf(ui: UIContext, kind: GridKind): Grid {
   const p = ui.game.player;
-  return kind === 'inv' ? p.inventory : kind === 'stash' ? p.stash : kind === 'cube' ? p.cube : ui.game.shop;
+  return kind === 'inv' ? p.inventory : kind === 'stash' ? p.stash : kind === 'cube' ? p.cube : ui.game.shop.grid;
 }
 
 function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: PointerEvent) {
@@ -131,6 +176,11 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
     if (under && kind !== 'shop' && identifyWith(ui, under.item)) return;
     identifier = null;
   }
+  if (repairing && !ui.cursorItem) {
+    if (under && kind === 'inv' && repairWith(ui, under.item)) return;
+    repairing = false;
+    ui.dirty = true;
+  }
 
   if (ui.cursorItem) {
     const c = ui.cursorItem;
@@ -143,8 +193,8 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
       return;
     }
     if (kind === 'shop') {
-      sell(ui, c);
-      ui.cursorItem = null;
+      // what the merchant won't take stays on the cursor
+      if (sell(ui, c)) ui.cursorItem = null;
       ui.dirty = true;
       return;
     }
@@ -159,12 +209,11 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
       ui.dirty = true;
       return;
     }
-    if (under && socketable(c) && canSocket(under.item)) {
-      if (socketInto(ui, under.item, c)) {
-        ui.cursorItem = null;
-        ui.dirty = true;
-      }
-      return;
+    if (under && isSocketFiller(c) && under.item.sockets > 0) {
+      const r = socketInto(ui, under.item, c);
+      if (r === 'in') ui.cursorItem = null;
+      ui.dirty = true;
+      if (r !== 'swap') return;
     }
     const b = baseOf(c);
     let tx = Math.round(px / CELL - b.w / 2);
@@ -219,38 +268,42 @@ function openCube(ui: UIContext) {
   ui.sfx.play('ui.click');
 }
 
+/** buy from the shelf at its NPC's price (vendor.ts): a permanent item's copy, anything else itself */
 function buy(ui: UIContext, it: Item) {
   const p = ui.game.player;
-  const price = buyPrice(it);
+  const store = ui.game.shop;
+  const price = buyPrice(store, it, p.tradeCtx());
   if (p.gold < price) {
     ui.message('金币不足', '#ff6060');
     ui.sfx.play('ui.no_gold');
     return;
   }
-  const b = baseOf(it);
-  const copy = restocks(it) ? createItem(b.id) : it;
-  if (!(b.type === 'potion' && ui.game.beltInsert(copy)) && !p.inventory.add(copy)) {
+  const perm = store.perm.has(it);
+  const got = perm ? takeFromStore(store, it) : it;
+  if (!(baseOf(got).type === 'potion' && ui.game.beltInsert(got)) && !p.inventory.add(got)) {
     ui.message('背包已满', '#ff6060');
     return;
   }
   p.gold -= price;
-  if (!restocks(it)) ui.game.shop.remove(it);
+  if (!perm) takeFromStore(store, it);
   ui.sfx.play('ui.coins');
   ui.dirty = true;
 }
 
-function sell(ui: UIContext, it: Item) {
+/** sell to the stall at D2's price; what it can sell again goes on its shelf (vendor.ts shelveSold). False: not taken, it goes back on the cursor */
+function sell(ui: UIContext, it: Item): boolean {
   const p = ui.game.player;
-  if (baseOf(it).noSell) {
+  if (baseOf(it).noSell || isUnknown(it)) {
     ui.message('商人不收这个', '#ff6060');
     ui.cursorItem = it;
-    return;
+    return false;
   }
-  const v = sellPrice(it);
+  const v = sellPrice(ui.game.shop, it, p.tradeCtx());
   p.gold += v;
-  if (!restocks(it)) ui.game.shop.add(it);
+  shelveSold(ui.game.shop, it);
   ui.message(`出售 ${displayName(it)}：+${v} 金币`, '#e8d890', 1.5);
   ui.sfx.play('ui.coins');
+  return true;
 }
 
 /** returns error text or null */
@@ -330,12 +383,18 @@ function onEquipDown(ui: UIContext, slot: EquipSlot, e: PointerEvent) {
     if (cur && identifyWith(ui, cur)) return;
     identifier = null;
   }
+  if (repairing && !ui.cursorItem) {
+    if (cur && repairWith(ui, cur)) return;
+    repairing = false;
+    ui.dirty = true;
+  }
   if (ui.cursorItem) {
     const c = ui.cursorItem;
-    if (cur && socketable(c) && canSocket(cur)) {
-      if (socketInto(ui, cur, c)) ui.cursorItem = null;
+    if (cur && isSocketFiller(c) && cur.sockets > 0) {
+      const r = socketInto(ui, cur, c);
+      if (r === 'in') ui.cursorItem = null;
       ui.dirty = true;
-      return;
+      if (r !== 'swap') return;
     }
     const old = equipTo(ui, c, slot);
     if (old === false) return;
@@ -362,7 +421,8 @@ export function renderGrid(ui: UIContext, kind: GridKind, grid: Grid): HTMLEleme
     const it = pl.item;
     const b = baseOf(it);
     const wearable = slotsFor(b.type).length > 0 || b.type === 'charm';
-    const d = h('div', `gitem ${it.rarity}${wearable && kind !== 'shop' && !p.meetsReq(it) ? ' unusable' : ''}`);
+    // red: what the hero can't use, and what is broken (it gives nothing until repaired)
+    const d = h('div', `gitem ${it.rarity}${(wearable && kind !== 'shop' && !p.meetsReq(it)) || isBroken(it) ? ' unusable' : ''}`);
     d.style.left = `${pl.x * CELL + 1}px`;
     d.style.top = `${pl.y * CELL + 1}px`;
     d.style.width = `${b.w * CELL}px`;

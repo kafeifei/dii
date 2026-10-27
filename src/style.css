@@ -1212,6 +1212,23 @@ body {
   min-width: 140px;
   letter-spacing: 0.3em;
 }
+/* the merchant: its shelves' pages, and the repair buttons (the cursor's lit while it repairs) */
+.shop-tabs {
+  margin-bottom: 6px;
+}
+.shop-tabs .tab {
+  padding: 4px 0;
+}
+.shop-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.btn.on {
+  background: linear-gradient(180deg, #6a5030, #2a2016);
+  border-color: #c8a86a;
+  color: #ffe0a0;
+}
 
 /* ───────── touch screens (TouchControls adds body.touch) ───────── */
 :root {

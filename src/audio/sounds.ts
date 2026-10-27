@@ -123,6 +123,8 @@ const GROUPS = {
     socket: { synth: 'socket', max: 1, prio: 'high' },
     /** a socketed item became a runeword */
     runeword: { synth: 'dropunique', max: 1, prio: 'critical' },
+    /** a worn item's durability ran out */
+    broken: { synth: 'nomana', max: 1, prio: 'high' },
     /** the cube made something */
     transmute: { synth: 'socket', max: 1, prio: 'high' },
     drink: { synth: 'potion', max: 2, prio: 'high' },

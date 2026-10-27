@@ -370,9 +370,11 @@ export default async (load) => {
   ok(G.applyRuneword(malice) && malice.rarity === 'runeword', 'Malice');
   const lightLine = describe([{ c: 'light', min: 1, max: 1 }])[0].replace(/[+-]?\d+/, '');
   ok(!texts(I.propLines(malice, 10)).some((t) => t.includes(lightLine)), `Malice shows no light radius: ${texts(I.propLines(malice, 10)).join(' / ')}`);
-  // vendor prices are the game's own: "cheaper" does nothing here
+  // vendor prices are D2's (src/items/vendor.ts): "reduces all vendor prices" and self-repair work
   const cheap = I.propLines({ ...G.createItem('rin'), props: [{ c: 'cheap', min: 10, max: 10 }] }, 1)[0];
-  ok(cheap.text.endsWith(`（${I.NOT_IN_GAME}）`) && cheap.color !== I.MOD_COLOR, `cheaper prices greyed: ${cheap.text}`);
+  ok(!cheap.text.includes(I.NOT_IN_GAME) && cheap.color === I.MOD_COLOR, `cheaper prices live: ${cheap.text}`);
+  const mend = I.propLines({ ...G.createItem('lsd'), props: [{ c: 'rep-dur', p: 5, min: 5, max: 5 }] }, 1)[0];
+  ok(!mend.text.includes(I.NOT_IN_GAME) && mend.color === I.MOD_COLOR, `self-repair live: ${mend.text}`);
   // "(仅限…)" as D2R writes it, old items' lines too
   const zeal = I.describeParamMod({ stat: 'skill', value: 1, param: 'Zeal' }, null).text;
   ok(zeal.includes('(仅限') && !zeal.includes('（'), `class only, half-width brackets: ${zeal}`);

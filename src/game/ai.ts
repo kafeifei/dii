@@ -275,7 +275,7 @@ function fireAction(g: Game, m: Monster) {
   const reach = m.def.range + p.radius + 0.7;
   if (dist(m.pos, p.pos) <= reach) {
     const pk = monsterPacket(m, m.rank === 'boss' && m.chargeTime > -1 ? 1.3 : 1);
-    monsterStrike(g, m, p, pk);
+    monsterStrike(g, m, p, pk, true);
     if (m.rank === 'boss') g.fx.shake(0.15);
   }
   g.sfx.play('monster.swing', { pos: m.pos });

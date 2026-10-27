@@ -1,6 +1,7 @@
 // What an item tooltip needs from D2's tables: the stats each property code sets (Properties.txt
 // func1–7, stat1–7, val1–7), each stat's description (ItemStatCost.txt descpriority, descfunc,
-// descval, descstrpos / descstrneg / descstr2 and its group dgrp*), and the client's own strings
+// descval, descstrpos / descstrneg / descstr2 and its group dgrp*, and Multiply / Add / Encode for
+// the price it adds to an item), and the client's own strings
 // (durability, requirements, sockets, the name formats), all with the official Simplified Chinese
 // of D2CE's string tables (item-modifiers, ui, and item-nameaffixes for Superior and Gemmed). These are generic words; a string with a proper noun the glossary
 // replaces fails the import, as names do.
@@ -79,6 +80,9 @@ export async function buildStatDesc() {
       const gp = text(r.dgrpstrpos, r.Stat);
       if (gp !== undefined) s.grpPos = gp;
     }
+    // what a point of it adds to an item's price, and how its value is encoded (a skill, by time: D2Common Items.cpp:1841-1957)
+    if (r.Multiply || r.Add) s.cost = [r.Multiply ?? 0, r.Add ?? 0];
+    if (r.Encode) s.enc = r.Encode;
     if (r.op) {
       s.op = r.op;
       if (r['op param']) s.opParam = r['op param'];
@@ -100,7 +104,7 @@ export async function buildStatDesc() {
     `import type { D2xPropStat, D2xStatDesc } from './types';\n\n` +
       `/** the stats each property code sets, in order (Properties.txt funcN / statN / valN), by lower-case code */\n` +
       `export const D2X_PROPERTIES: Record<string, D2xPropStat[]> = ${record(properties)};\n\n` +
-      `/** each stat's tooltip description (ItemStatCost.txt), strings in the official Simplified Chinese */\n` +
+      `/** each stat's tooltip description and price (ItemStatCost.txt), strings in the official Simplified Chinese */\n` +
       `export const D2X_STAT_DESC: Record<string, D2xStatDesc> = ${record(stats)};\n\n` +
       `/** the client's own tooltip and item-name strings, by string key */\n` +
       `export const D2X_TOOLTIP_STRINGS: Record<string, string> = ${record(tooltip)};\n`,

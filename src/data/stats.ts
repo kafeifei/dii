@@ -144,10 +144,10 @@ export const PARAM_STATS = new Set<StatKey>(['skill', 'oskill', 'skillTab', 'cls
 
 /** stats this game records but that do nothing here, shown greyed in tooltips */
 export const INERT_STATS = new Set<StatKey>([
-  'defMissile', 'repDur', 'ethereal', 'stamina', 'staminaDrain', 'staminaRegen', 'pierceArrow', 'explosiveArrow', 'chargeNoConsume', 'rip',
+  'defMissile', 'ethereal', 'stamina', 'staminaDrain', 'staminaRegen', 'pierceArrow', 'explosiveArrow', 'chargeNoConsume', 'rip',
   'defMelee', 'resMagic', 'reanimate', 'repQuant', 'extraStack', 'magicArrow', 'sunder',
-  // vendor prices are the game's own until the shops take D2's (item.ts sellPrice, buyPrice); no poison skills here
-  'cheap', 'extraPoison',
+  // no poison skills here
+  'extraPoison',
 ]);
 
 export function addStat(bag: StatBag, key: StatKey, v: number) {

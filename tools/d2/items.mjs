@@ -16,8 +16,8 @@ const QUALITY_ON = ['armor', 'weapon', 'shield', 'scepter', 'wand', 'staff', 'bo
 const WARLOCK_ROW = '术士资料片新增（D2CE 无字串）';
 
 export async function buildItems() {
-  const [weaponsJ, armorJ, miscJ, itypesJ, prefixJ, suffixJ, autoJ, rarePreJ, rareSufJ, qualityJ, lowJ, uniqueJ, setItemsJ, setsJ, runesJ, gemsJ, beltsJ] =
-    await tables('weapons', 'armor', 'misc', 'itemtypes', 'magicprefix', 'magicsuffix', 'automagic', 'rareprefix', 'raresuffix', 'qualityitems', 'lowqualityitems', 'uniqueitems', 'setitems', 'sets', 'runes', 'gems', 'belts');
+  const [weaponsJ, armorJ, miscJ, itypesJ, prefixJ, suffixJ, autoJ, rarePreJ, rareSufJ, qualityJ, lowJ, uniqueJ, setItemsJ, setsJ, runesJ, gemsJ, beltsJ, booksJ] =
+    await tables('weapons', 'armor', 'misc', 'itemtypes', 'magicprefix', 'magicsuffix', 'automagic', 'rareprefix', 'raresuffix', 'qualityitems', 'lowqualityitems', 'uniqueitems', 'setitems', 'sets', 'runes', 'gems', 'belts', 'books');
   // the bases and uniques the expansion changed are read as 2.7 has them (see rows27)
   const [W27, A27, M27, U27] = await Promise.all([rows27('weapons', 'code'), rows27('armor', 'code'), rows27('misc', 'code'), rows27('uniqueitems', '*ID')]);
   const S = await strings('item-names', 'item-runes', 'item-nameaffixes');
@@ -79,6 +79,8 @@ export async function buildItems() {
   // ───────────────────────── base items ─────────────────────────
   const baseNames = names('bases');
   const BELT_SLOTS = Object.fromEntries(Object.entries(beltsJ).map(([i, b]) => [i, b.numboxes]));
+  /** Books.txt CostPerCharge by the tome's code: a tome's price is its cost and this for each scroll in it */
+  const CHARGE_COST = Object.fromEntries(rows(booksJ).filter((b) => b.BookSpellCode).map((b) => [b.BookSpellCode, b.CostPerCharge ?? 0]));
   const runeNum = (code) => +code.slice(1);
   const renamed = new Set();
   /** who stocks the item: an NPC with no counts does not, whatever its MagicLvl (255 = the default) */
@@ -186,6 +188,11 @@ export async function buildItems() {
     }
     const s = shop(r);
     if (s) o.shop = s;
+    // a vendor's that never sells out: buying takes a copy (Items.txt PermStoreItem, D2Game SUnitProxy.cpp:906-952)
+    if (r.PermStoreItem) o.perm = true;
+    // bitfield1's first bit: vendors stock magic ones too (ITEMS_CheckBitField1Flag1, D2Game SUnitNpc.cpp:448)
+    if (r.bitfield1 & 1) o.shopMagic = true;
+    if (CHARGE_COST[r.code] !== undefined) o.chargeCost = CHARGE_COST[r.code];
     BASE[r.code] = o;
     return o;
   }

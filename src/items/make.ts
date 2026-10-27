@@ -7,7 +7,7 @@ import { uid } from '../core/math';
 import { D2X_QUALITY } from '../data/d2x/quality';
 import type { D2Prop } from '../data/d2x/types';
 import { affixPool, affixRow, pickAffix, requiredLevel, rollAffixes, type AffixDrop, type AffixSpec } from './d2/affixes';
-import { d2Base, hasDurability, isArmor, isWeapon, ownType } from './d2/bases';
+import { d2Base, hasDurability, isArmor, isType, isWeapon, ownType } from './d2/bases';
 import { makeRuneword, rollLegendary, SET_ITEM_BY_ID, UNIQUE_BY_ID } from './d2/legendary';
 import { rollProps, type RolledProps } from './d2/props';
 import { dropQuality, newDurability, type DropSpec } from './d2/quality';
@@ -67,18 +67,22 @@ function applyDurPct(item: Item) {
 }
 
 /**
- * A stack's size as made (D2Game Items.cpp:668-683): throwing weapons roll min … max, and magic or
- * better ones are 1 (ITEMS_IsMagSetRarUniCrfOrTmp); misc stacks (tomes, keys, arrows) come with
- * Misc.txt's spawnstack
+ * A stack's size as made (D2Game Items.cpp:616-735 D2GAME_InitItemStats): throwing weapons and
+ * arrows roll min … most, magic or better throwing ones 1 (ITEMS_IsMagSetRarUniCrfOrTmp); other
+ * stacks (tomes, keys) min … Misc.txt spawnstack − 1, or up to the most without one
  */
 function rollQuantity(item: Item, rng: Rand) {
   const b = d2Base(item.baseId);
   if (!b.stack) return;
   const [min, max, spawn] = b.stack;
-  if (isWeapon(b)) {
+  if (isWeapon(b) || ownType(b).quiver) {
     const q = item.quality ?? 'normal';
-    item.qty = q === 'low' || q === 'normal' || q === 'superior' ? Math.max(roll(rng, max - min) + min, 1) : 1;
-  } else item.qty = Math.max(1, spawn || min);
+    const n = Math.max(roll(rng, max - min) + min, 1);
+    item.qty = isWeapon(b) && q !== 'low' && q !== 'normal' && q !== 'superior' ? 1 : n;
+  } else {
+    const top = spawn < min || !spawn ? Math.max(min, max) : spawn;
+    item.qty = Math.max(roll(rng, top - min) + min, 1);
+  }
 }
 
 /** the Item an AffixDrop (and its legendary part) becomes: every value rolled, nothing derived yet */
@@ -192,14 +196,15 @@ export function makeMagicWith(spec: MakeSpec, kind: 'prefix' | 'suffix', row: nu
 }
 
 /**
- * The runeword an item makes now that its last rune is in (legendary.ts makeRuneword, its rune's
- * item level the base's here: the game's runes don't keep their own), or false when it makes none
+ * The runeword an item makes now that its last rune is in (legendary.ts makeRuneword), its
+ * properties rolled at that rune's item level (ITEMMODS_UpdateRuneword is handed the rune: D2Game
+ * ItemMode.cpp:4693), or false when it makes none
  */
-export function applyRunewordTo(item: Item, rng: Rand = MATH_RAND): boolean {
+export function applyRunewordTo(item: Item, runeIlvl = item.ilvl, rng: Rand = MATH_RAND): boolean {
   const q = (item.quality ?? (item.rarity === 'runeword' ? 'normal' : item.rarity)) as D2Quality;
   // a jewel matches no rune: its base code stands in for it
   const socketed = item.socketed.map((f) => (typeof f === 'string' ? f : f.baseId));
-  const made = makeRuneword({ baseId: item.baseId, quality: q, sockets: item.sockets, socketed }, item.ilvl, rng);
+  const made = makeRuneword({ baseId: item.baseId, quality: q, sockets: item.sockets, socketed }, Math.max(1, runeIlvl), rng);
   if (!made) return false;
   item.quality = q;
   item.rarity = 'runeword';
@@ -210,6 +215,23 @@ export function applyRunewordTo(item: Item, rng: Rand = MATH_RAND): boolean {
   if (made.charges) item.charges = { ...item.charges, ...made.charges };
   item.name = displayName(item);
   return true;
+}
+
+/**
+ * Puts a gem, rune or jewel into the item's next socket (D2GAME_ITEMSOCKET_PlaceItem, ItemMode.cpp:
+ * 4587-4708; d2/sockets.ts says when it may): a gem or rune goes in by its code, a jewel whole with
+ * what it rolled. The last rune of a runeword makes it (applyRunewordTo, at that rune's item level).
+ * Returns whether a runeword was made
+ */
+export function insertFiller(item: Item, filler: Item, rng: Rand = MATH_RAND): boolean {
+  item.socketed = [...item.socketed, isType(d2Base(filler.baseId), 'jewl') ? filler : filler.baseId];
+  if (item.socketed.length < item.sockets) {
+    item.name = displayName(item);
+    return false;
+  }
+  if (applyRunewordTo(item, filler.ilvl, rng)) return true;
+  item.name = displayName(item);
+  return false;
 }
 
 /**

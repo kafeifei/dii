@@ -1,7 +1,9 @@
 import { chance, clamp, randInt, type P2 } from '../core/math';
 import { isBlunt } from '../data/items';
 import type { Elem } from '../data/monsters';
-import { baseOf } from '../items/item';
+import { struckArmor, wearDown } from '../items/d2/durability';
+import { baseOf, displayName, type Item } from '../items/item';
+import { MATH_RAND } from '../items/make';
 import { emptyPacket, type Actor, type DamagePacket } from './actor';
 import type { Game } from './game';
 import { Monster } from './monster';
@@ -39,7 +41,7 @@ export function playerWeaponPacket(p: Player, edBonus: number): DamagePacket {
   pk.cb = b.cb;
   pk.ow = b.ow;
   // blunt weapons do half again to the undead
-  pk.vsUndead = (b.dmgUndead ?? 0) + (w && isBlunt(baseOf(w)) ? 50 : 0);
+  pk.vsUndead = (b.dmgUndead ?? 0) + (w && !p.unusable(w) && isBlunt(baseOf(w)) ? 50 : 0);
   pk.vsDemon = b.dmgDemon;
   pk.freeze = b.freeze;
   pk.slow = b.slowTarget;
@@ -257,11 +259,22 @@ export function playerStrike(g: Game, p: Player, m: Monster, pk: DamagePacket, a
   }
   applyDamage(g, m, pk, p.pos);
   g.onProc('procHit', m);
+  // a landed melee hit wears the weapon (SUnitDmg.cpp:2331-2338)
+  const w = p.equipment.weapon;
+  if (w && wearDown(w, MATH_RAND) === 'broke') itemBroke(g, p, w);
   return true;
 }
 
-/** Monster melee/ranged attack on the player, with hit roll and block */
-export function monsterStrike(g: Game, m: Monster, p: Player, pk: DamagePacket): void {
+/** a worn item's last durability went: it gives nothing until repaired (ItemMode.cpp:5714-5733) */
+function itemBroke(g: Game, p: Player, it: Item) {
+  p.markDirty();
+  g.hooks.message(`${displayName(it)}损坏了`, '#ff4040', 3);
+  g.sfx.play('item.broken', { pos: p.pos });
+  g.hooks.inventoryChanged();
+}
+
+/** Monster melee/ranged attack on the player, with hit roll and block; a landed melee blow wears the hero's armor */
+export function monsterStrike(g: Game, m: Monster, p: Player, pk: DamagePacket, melee = false): void {
   if (p.dead) return;
   if (!pk.spell) {
     if (!chance(hitChance(m.ar, p.stats.def, m.level, p.level))) return;
@@ -274,4 +287,9 @@ export function monsterStrike(g: Game, m: Monster, p: Player, pk: DamagePacket):
     }
   }
   applyDamage(g, p, pk, m.pos);
+  // the defender's half of SUNITDMG_DrainItemDurability (SUnitDmg.cpp:2341-2372)
+  if (melee && !p.dead) {
+    const hit = struckArmor(p.equipment, MATH_RAND);
+    if (hit?.wear === 'broke') itemBroke(g, p, hit.item);
+  }
 }

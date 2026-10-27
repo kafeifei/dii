@@ -10,7 +10,9 @@ import { SKILL_BY_ID, SKILLS, type SkillDef } from '../data/skills';
 import { addStat, PARAM_STATS, poisonSeconds, type StatBag, type StatKey } from '../data/stats';
 import { Grid } from '../items/grid';
 import type { D2Prop } from '../data/d2x/types';
+import { isBroken, replenish, replenishFrames } from '../items/d2/durability';
 import { setBonuses } from '../items/d2/legendary';
+import type { TradeCtx } from '../items/vendor';
 import { propMods, rollMax } from '../items/props';
 import { baseOf, classCode, globalItemStats, isIdentified, itemCategory, itemDefense, itemReqLvl, meetsReqs, paramMods, weaponDamage, type Item, type ItemMod } from '../items/item';
 import { Actor, type Resists } from './actor';
@@ -250,18 +252,30 @@ export class Player extends Actor {
     return true;
   }
 
-  /** items carried or worn whose charges are not full, with how many each is missing */
-  spentCharges(): { item: Item; param: string; missing: number; lvl: number }[] {
-    const items = [...Object.values(this.equipment), ...this.inventory.items.map((x) => x.item)].filter((x): x is Item => !!x);
-    const out: { item: Item; param: string; missing: number; lvl: number }[] = [];
-    for (const item of items) {
-      for (const m of paramMods(item)) {
-        if (m.stat !== 'charged' || !m.param) continue;
-        const missing = m.value - (item.charges?.[m.param] ?? m.value);
-        if (missing > 0) out.push({ item, param: m.param, missing, lvl: m.lvl ?? 1 });
-      }
+  /**
+   * Self-repairing items mend (d2/durability.ts replenish), wherever the hero keeps them: D2 runs
+   * an item's own event wherever it is (ItemMode.cpp:4975-5030). Frames carried over are kept per item
+   */
+  mendItems(dt: number) {
+    this.mendClock += dt;
+    if (this.mendClock < 0.5) return;
+    const frames = this.mendClock * 25;
+    this.mendClock = 0;
+    const all = [...Object.values(this.equipment), ...[this.inventory, this.stash, this.cube].flatMap((g) => g.items.map((x) => x.item))];
+    for (const it of all) {
+      if (!it || !replenishFrames(it)) continue;
+      const before = it.dur;
+      this.mending.set(it, replenish(it, frames, this.mending.get(it) ?? 0));
+      if (before !== undefined && before !== it.dur) this.markDirty();
     }
-    return out;
+  }
+
+  private mendClock = 0;
+  private mending = new WeakMap<Item, number>();
+
+  /** what the hero's prices go by: the difficulty and "reduces all vendor prices" (D2's item_reducedprices) */
+  tradeCtx(): TradeCtx {
+    return { difficulty: this.difficulty, reduced: this.stats.bag.cheap ?? 0 };
   }
 
   canLearn(def: SkillDef): boolean {
@@ -285,10 +299,10 @@ export class Player extends Actor {
       .filter((it) => ITEM_BASES[it.baseId]?.type === 'charm' && isIdentified(it) && this.level >= itemReqLvl(it, classCode(this.cls)));
   }
 
-  /** whether a worn item gives nothing because the hero no longer meets its requirements (recalc) */
+  /** whether a worn item gives nothing: broken, or the hero no longer meets its requirements (recalc) */
   unusable(item: Item): boolean {
     if (this.dirty) this.recalc();
-    return this.noEquip.has(item);
+    return this.noEquip.has(item) || isBroken(item);
   }
 
   /**
@@ -298,11 +312,12 @@ export class Player extends Actor {
    * until none does. A worn item's own strength and dexterity count toward its own requirements
    * (ITEMS_CheckStatRequirement outside equipping, Items.cpp:1019-1040), the sets' bonuses don't
    * (they follow from what works). An item taken off loses its flag (D2 clears it as an item goes
-   * on, ItemMode.cpp:1617-1619).
+   * on, ItemMode.cpp:1617-1619). A broken item gives nothing at all, its set's count included
+   * (ItemMode.cpp:2000-2098 skip IFLAG_BROKEN, Items.cpp:4459).
    */
   private usableWorn(charms: Item[]): Item[] {
     const L = this.level;
-    const worn = EQUIP_SLOTS.map((s) => this.equipment[s]).filter((it): it is Item => !!it);
+    const worn = EQUIP_SLOTS.map((s) => this.equipment[s]).filter((it): it is Item => !!it && !isBroken(it));
     for (const it of this.noEquip) if (!worn.includes(it)) this.noEquip.delete(it);
     const strDex = (it: Item) => {
       const g = globalItemStats(it, L);
