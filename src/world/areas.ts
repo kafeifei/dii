@@ -53,6 +53,11 @@ export function dungeonArea(floor: number): number {
   return DUNGEON_AREAS + floor;
 }
 
+/** an area's level, its monsters' and its loot's: normal's, until there are difficulties */
+export function areaLevel(a: AreaDef): number {
+  return a.alvl[0];
+}
+
 /** an area by id; the dungeon's floors are made as they are first asked for, since it has no bottom */
 export function areaDef(id: number): AreaDef | undefined {
   const a = AREAS.get(id);

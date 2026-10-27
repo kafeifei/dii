@@ -1,12 +1,13 @@
 import { RNG, type P2 } from '../core/math';
-import { ALL_MODS, MONSTERS, UNIQUE_FIRST, UNIQUE_SECOND, bossForDepth, type MonsterDef, type MonsterMod } from '../data/monsters';
-import { areaDef, areaForDepth, type AreaDef } from '../world/areas';
-import { bfsDistances, dungeonFloor, generateDungeon, generateGallery, generateTown, isWild, themeForFloor, type Layout, type Room } from '../world/levelgen';
+import { MONSTERS } from '../data/monsters';
+import { areaDef, areaForDepth, areaLevel, type AreaDef } from '../world/areas';
+import { bfsDistances, dungeonFloor, generateDungeon, generateGallery, generateTown, isWild, themeForFloor, type Layout } from '../world/levelgen';
 import { generateWild } from '../world/wild';
 
 /** dev showroom instead of the camp (see generateGallery) */
 const GALLERY = typeof location !== 'undefined' && location.search.includes('gallery');
-import { Monster, type MonsterRank } from './monster';
+import { Monster } from './monster';
+import { areaBoxes, spawnArea } from './spawn';
 import { ITEM_BASES } from '../data/items';
 import { createItem } from '../items/gen';
 import { DelayedBlast, GroundItem, Hammer, Projectile, WorldObject } from './objects';
@@ -67,8 +68,8 @@ export class Level {
     }
     for (const c of L.chests) this.objects.push(new WorldObject('chest', c, '宝箱', 0.45));
     for (const b of L.barrels) this.objects.push(new WorldObject('barrel', b, '木桶', 0.35));
-    if (!this.inTown(L.start)) this.populate(seed);
-    else if (GALLERY) {
+    this.populate(seed);
+    if (GALLERY && this.inTown(L.start)) {
       // every monster in a row, held still (the stun never wears off)
       Object.values(MONSTERS).forEach((def, i) => {
         const m = new Monster(def, 1, 'normal', { x: 6 + (i % 9) * 5, z: 51 + Math.floor(i / 9) * 3.4 });
@@ -94,9 +95,9 @@ export class Level {
     return areaDef(this.areas[tz * m.w + tx])!;
   }
 
-  /** the area level at a point: its monsters' and its loot's (normal, until there are difficulties) */
+  /** the area level at a point: its monsters' and its loot's (areaLevel) */
   alvlAt(p: P2): number {
-    return this.areaAt(p.x, p.z).alvl[0];
+    return areaLevel(this.areaAt(p.x, p.z));
   }
 
   /** whether a point is in a town: no monsters there, the merchant restocks on the way in, no town portal out */
@@ -104,89 +105,20 @@ export class Level {
     return this.areaAt(p.x, p.z).kind === 'town';
   }
 
+  /** every area of the map gets its monsters once, as the map is made (src/game/spawn.ts says which); towns get none */
   private populate(seed: number) {
-    const rng = new RNG(seed ^ 0x9e3779b9);
     const L = this.layout;
-    const reach = bfsDistances(L.map, L.start);
-    const reachable = (p: P2) => {
-      const i = Math.floor(p.z) * L.map.w + Math.floor(p.x);
-      return L.map.walkableAt(p.x, p.z) && reach[i] >= 0;
-    };
-    const f = this.floor;
-    const mlvl = this.alvlAt(L.start);
-    const pool = Object.values(MONSTERS).filter((m) => m.weight > 0 && f >= m.minDepth && f <= m.maxDepth);
-    const pickDef = (): MonsterDef => {
-      let total = 0;
-      for (const m of pool) total += m.weight;
-      let r = rng.next() * total;
-      for (const m of pool) {
-        r -= m.weight;
-        if (r <= 0) return m;
-      }
-      return pool[0];
-    };
-    const randomIn = (room: Room): P2 | null => {
-      for (let k = 0; k < 20; k++) {
-        const p = { x: rng.range(room.x + 0.6, room.x + room.w - 0.6), z: rng.range(room.y + 0.6, room.y + room.h - 0.6) };
-        if (reachable(p)) return p;
-      }
-      return null;
-    };
-    const near = (c: P2, r: number): P2 => {
-      for (let k = 0; k < 12; k++) {
-        const p = { x: c.x + rng.range(-r, r), z: c.z + rng.range(-r, r) };
-        if (reachable(p) && L.map.circleClear(p.x, p.z, 0.3)) return p;
-      }
-      return { ...c };
-    };
-
-    const rooms = L.spawnRooms.filter((r) => r !== L.bossRoom);
-    // early floors are gentler: one unique pack and no champions on floor 1
-    const uniqueCount = f <= 1 ? 1 : 1 + (rng.chance(0.5) ? 1 : 0);
-    const championCount = f <= 1 ? 0 : f <= 3 ? rng.int(1, 2) : rng.int(1, 3);
-    const order = rooms.map((_, i) => i);
-    // shuffle deterministic
-    for (let i = order.length - 1; i > 0; i--) {
-      const j = Math.floor(rng.next() * (i + 1));
-      [order[i], order[j]] = [order[j], order[i]];
-    }
-    order.forEach((ri, idx) => {
-      const room = rooms[ri];
-      const packs = room.w * room.h > 90 ? 2 : 1;
-      for (let p = 0; p < packs; p++) {
-        const c = randomIn(room);
-        if (!c) continue;
-        const def = pickDef();
-        const kind: MonsterRank = idx < uniqueCount && p === 0 ? 'unique' : idx < uniqueCount + championCount && p === 0 ? 'champion' : 'normal';
-        this.spawnPack(def, kind, c, mlvl, rng, near);
-      }
-    });
-    // extra wanderers in corridors
-    const extra = 4 + f;
-    for (let k = 0; k < extra; k++) {
-      const x = rng.int(1, L.map.w - 2) + 0.5;
-      const z = rng.int(1, L.map.h - 2) + 0.5;
-      const p = { x, z };
-      if (!reachable(p) || Math.hypot(x - L.start.x, z - L.start.z) < 12) continue;
-      const def = pickDef();
-      this.spawnPack(def, 'normal', p, mlvl, rng, near, 2);
-    }
-    // the wilderness's monster camps: an elite pack by each fire
-    for (const c of L.elites ?? []) {
-      const melee = pool.filter((d) => d.ai === 'melee');
-      this.spawnPack(rng.pick(melee.length ? melee : pool), 'champion', near(c, 1), mlvl, rng, near);
-    }
-    // boss
-    if (L.bossRoom) {
-      const def = bossForDepth(f);
-      const c = { x: L.bossRoom.x + L.bossRoom.w / 2, z: L.bossRoom.y + L.bossRoom.h / 2 + 1.5 };
-      const boss = new Monster(def, mlvl + 3, 'boss', near(c, 0.5));
-      this.boss = boss;
-      this.monsters.push(boss);
-      // retinue: melee bodyguards (a ranged escort stacked on a caster boss is a wall of missiles)
-      const guards = pool.filter((d) => d.ai === 'melee');
-      const ret = guards.length ? rng.pick(guards) : MONSTERS.skeleton;
-      for (let i = 0; i < 3; i++) this.monsters.push(new Monster(ret, mlvl, 'normal', near(c, 3)));
+    const own = areaForDepth(this.depth).id;
+    // where the hero can walk: one walk from the start across every area, made only if one gets monsters
+    let reach: Int32Array | undefined;
+    for (const [id, box] of areaBoxes(this)) {
+      const area = areaDef(id)!;
+      if (area.kind === 'town') continue;
+      reach ??= bfsDistances(L.map, L.start);
+      // an rng of its own, so what one area spawns never shifts another's; the map's own area keeps
+      // the level's, as when every map was one area
+      const rng = new RNG(seed ^ 0x9e3779b9 ^ (id === own ? 0 : Math.imul(id, 0x85ebca6b)));
+      spawnArea(this, area, rng, { floor: this.floor, box, reach, from: L.start });
     }
   }
 
@@ -205,46 +137,6 @@ export class Level {
       m.awake = false;
       m.path = null;
       m.setState('idle');
-    }
-  }
-
-  spawnPack(def: MonsterDef, rank: MonsterRank, c: P2, mlvl: number, rng: RNG, near: (c: P2, r: number) => P2, maxCount?: number) {
-    let count = rng.int(def.pack[0], def.pack[1]);
-    if (maxCount) count = Math.min(count, maxCount);
-    if (rank === 'champion') {
-      const mods: MonsterMod[] = rng.chance(0.5) ? [rng.pick(ALL_MODS)] : [];
-      const n = rng.int(2, 4);
-      for (let i = 0; i < n; i++) {
-        const m = new Monster(def, mlvl + 2, 'champion', near(c, 1.8), mods);
-        m.displayName = `${def.name}（精英）`;
-        this.monsters.push(m);
-      }
-      return;
-    }
-    if (rank === 'unique') {
-      const mods: MonsterMod[] = [];
-      const nm = rng.int(1, Math.min(3, 1 + Math.floor(this.floor / 4)));
-      while (mods.length < nm) {
-        const m = rng.pick(ALL_MODS);
-        if (!mods.includes(m)) mods.push(m);
-      }
-      const boss = new Monster(def, mlvl + 2, 'unique', c, mods);
-      boss.displayName = rng.pick(UNIQUE_FIRST) + rng.pick(UNIQUE_SECOND);
-      this.monsters.push(boss);
-      const minions = rng.int(3, 5);
-      const minionMods = mods.filter((m) => m === 'fireench' || m === 'coldench' || m === 'lightench');
-      for (let i = 0; i < minions; i++) {
-        const mm = new Monster(def, mlvl + 1, 'minion', near(c, 2), minionMods);
-        mm.leader = boss;
-        this.monsters.push(mm);
-      }
-      return;
-    }
-    for (let i = 0; i < count; i++) this.monsters.push(new Monster(def, mlvl, 'normal', near(c, 1.6)));
-    if (def.escort) {
-      const n = rng.int(def.escort.count[0], def.escort.count[1]);
-      const ed = MONSTERS[def.escort.id];
-      if (ed && this.floor >= ed.minDepth) for (let i = 0; i < n; i++) this.monsters.push(new Monster(ed, mlvl, 'normal', near(c, 2.2)));
     }
   }
 }
