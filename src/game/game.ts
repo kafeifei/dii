@@ -21,8 +21,9 @@ import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
 import { loadSave, markInGame, setSlot, writeSave } from './save';
 import { debugOpts } from './debug';
-import { isWild, levelLabel } from '../world/levelgen';
-import type { AreaDef } from '../world/areas';
+import { WILD_MAPS, isWild, levelLabel } from '../world/levelgen';
+import { CAMP_AREA, type AreaDef } from '../world/areas';
+import { generateOverworld, type Overworld } from '../world/overworld';
 import { SHRINE_BY_ID } from '../data/shrines';
 
 export interface GameHooks {
@@ -48,6 +49,16 @@ export interface Picker {
 }
 
 const ACTIVE_RADIUS = 30;
+
+/**
+ * ?dev&overworld: the camp and the wilderness are one map to walk across (Game.enterWest); without
+ * it they are two, as ever. Read as each level is entered, so a test can turn it on.
+ */
+function overworld(): boolean {
+  if (typeof location === 'undefined') return false;
+  const q = new URLSearchParams(location.search);
+  return q.has('dev') && q.has('overworld');
+}
 
 /** seconds from one midnight to the next under the sky */
 const DAY_LENGTH = 16 * 60;
@@ -81,6 +92,8 @@ export class Game {
   lastDungeon: Level | null = null;
   /** the wilderness maps as they were left: like an area of a Diablo II game, each stays for the session */
   private wilds = new Map<number, Level>();
+  /** ?dev&overworld: the camp and the wilderness on one map, made once a game (enterWest) */
+  private west: Level | null = null;
   /** the area the hero is in (Level.areaAt), announced through hooks.areaChanged when it changes */
   area: AreaDef | null = null;
   fx: Fx = nullFx;
@@ -151,6 +164,7 @@ export class Game {
     this.lastDungeon = null;
     this.portalLevel = null;
     this.wilds.clear();
+    this.west = null;
     this.area = null;
     markInGame(true);
     this.enterLevel(0, 'start');
@@ -166,6 +180,7 @@ export class Game {
     this.lastDungeon = null;
     this.portalLevel = null;
     this.wilds.clear();
+    this.west = null;
     this.area = null;
     markInGame(true);
     // floors are regenerated; you arrive at the entrance of the floor you were on
@@ -179,6 +194,7 @@ export class Game {
 
   /** `exit`: walked off the last level through an exit; you arrive by the one leading back */
   enterLevel(depth: number, how: 'start' | 'stairs' | 'waypoint' | 'portal' | 'respawn' | 'exit') {
+    if (depth <= WILD_MAPS && overworld()) return this.enterWest(depth, how);
     const p = this.player;
     const from = this.level?.depth ?? 0;
     let level: Level;
@@ -241,6 +257,60 @@ export class Game {
     this.hooks.levelChanged(level);
     // a new level is always announced, even in the same area as the last
     this.updateArea(true);
+    this.save();
+  }
+
+  /**
+   * ?dev&overworld: the camp and the wilderness (depths 0 and 1) are one map, the West overworld
+   * (src/world/overworld.ts), made once a game. Coming onto it from another level enters it; going
+   * about on it (a town portal either way, the waypoint to the camp, dying) moves the hero across it
+   * and rebuilds nothing. Its own waypoints aren't kept yet: waypoints are depths until the save
+   * keeps areas (plan M0 1).
+   */
+  private enterWest(depth: number, how: Parameters<Game['enterLevel']>[1]) {
+    const p = this.player;
+    if (!this.west) {
+      const ow = generateOverworld((Math.random() * 2 ** 31) | 0);
+      // the Den of Evil's mouth leads down to the crypt, as the wilderness's stairs do, until there is a den
+      const cave = ow.entrances.find((e) => e.kind === 'cave');
+      if (cave) ow.stairs = { x: cave.x, z: cave.z };
+      // the wilderness's depth: its stairs lead to the crypt's first floor, and the camp is a waypoint away
+      this.west = new Level(WILD_MAPS, ow.seed, ow);
+    } else if (this.level !== this.west) this.west.reenter();
+    const level = this.west;
+    const ow = level.layout as Overworld;
+    const here = this.level === level;
+    // the camp's start; the wilderness (the debug panel's next map) is just past the camp's gate
+    const gate = ow.seams.find((s) => s.a === CAMP_AREA);
+    let spawn: P2 = depth === 0 || how === 'start' || how === 'respawn' || !gate ? ow.start : { x: 3 * gate.tb.x - 2 * gate.ta.x, z: 3 * gate.tb.z - 2 * gate.ta.z };
+    if (how === 'portal') {
+      const far = level.objects.find((o) => o.kind === 'portal' && !level.inTown(o.pos));
+      if (here && far && level.inTown(p.pos)) {
+        // through the camp's end, back to where it was opened on this map: both ends close
+        spawn = { x: far.pos.x + 1, z: far.pos.z + 0.8 };
+        level.objects = level.objects.filter((o) => o.kind !== 'portal');
+        this.portalLevel = null;
+      } else {
+        // into the camp: its end by the start, back to where it was opened, out on this map or below
+        if (here) this.portalLevel = level;
+        const back = this.portalLevel ?? level;
+        level.objects = level.objects.filter((o) => !(o.kind === 'portal' && level.inTown(o.pos)));
+        const pt = { x: ow.start.x - 2.5, z: ow.start.z + 0.5 };
+        const portal = new WorldObject('portal', pt, `传送门 · ${back === level && far ? level.areaAt(far.pos.x, far.pos.z).name : levelLabel(back.depth)}`, 0.6);
+        portal.dest = back.depth;
+        level.objects.push(portal);
+        spawn = { x: pt.x + 1.2, z: pt.z + 0.6 };
+      }
+    }
+    if (here) this.teleportWithin(spawn);
+    else {
+      this.level = level;
+      this.placePlayer(spawn);
+      this.hooks.levelChanged(level);
+      this.updateArea(true);
+      if (level.inTown(p.pos)) this.layOutUnplaced(level);
+    }
+    if (level.inTown(p.pos)) this.refreshShop();
     this.save();
   }
 
@@ -775,9 +845,9 @@ export class Game {
         b.pos.z += nz * push * 2 * wb;
       }
     }
-    const map = this.level.map;
-    if (!p.dead) p.pos = map.resolveCircle(p.pos, p.radius);
-    for (const m of list) m.pos = map.resolveCircle(m.pos, m.radius);
+    if (!p.dead) p.pos = this.level.map.resolveCircle(p.pos, p.radius);
+    // pushed about, monsters still keep out of a town (Level.monsterMap)
+    for (const m of list) m.pos = this.level.monsterMap.resolveCircle(m.pos, m.radius);
   }
 
   private updateProjectiles(dt: number) {

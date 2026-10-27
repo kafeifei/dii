@@ -38,6 +38,18 @@ export class TileMap {
     return this.walkable(Math.floor(wx), Math.floor(wz));
   }
 
+  /**
+   * This map with the `blocked` tiles (1 per tile, row by row) shut as well: walking, sight lines
+   * and paths on it (resolveCircle, los, findPath) go round them. The tiles are this map's own, not
+   * a copy, so the view never goes stale.
+   */
+  without(blocked: Uint8Array): TileMap {
+    const view = Object.create(this) as TileMap;
+    // get() is T_VOID off the map, so blocked[] is only read in bounds
+    view.walkable = (x, y) => this.get(x, y) === T_FLOOR && !blocked[y * this.w + x];
+    return view;
+  }
+
   /** a circle of radius r centred at (wx,wz) is fully on walkable tiles */
   circleClear(wx: number, wz: number, r: number): boolean {
     return (

@@ -18,11 +18,12 @@ import { CELL, OUT_SCALE, cellsOf, flood, generateZone, type Entrance, type Side
  * again with its seed + 1 if not. Stony Field and the Burial Grounds are laid out already (so the
  * ports to them are where they'll be) and slot in by joining BUILT and DRESS.
  *
- * Not in the game yet: Level and the renderer still take one area per map. When it goes in:
+ * In the game only behind ?dev&overworld (Game.enterWest): Level takes it as it is, area by area,
+ * but the renderer still dresses the map as one area. Before it goes in for good:
  * - spawnRooms is a room a cell, as D2's (about 80 in Blood Moor, 110 in Cold Plains). Level.populate's
- *   pack a room is four or five times today's wilderness then, so levels.json MonDen and NumMon want
+ *   pack a room is four or five times today's wilderness then (about 380 monsters in Blood Moor and
+ *   520 in Cold Plains, where the wilderness has 85), so levels.json MonDen and NumMon want
  *   converting first (plan A4).
- * - Level's roamers land anywhere on the map; they must keep out of inTown tiles.
  * - about 7.8k props, where the wilderness and the camp have 1.9k and 1.1k today.
  * - the camp's area is D2's 56 tiles wide at OUT_SCALE (72 at 1.25) round a 46-tile camp: 26 tiles
  *   of camp ground past the gate before Blood Moor's name and monsters. And west of the palisade
@@ -141,7 +142,7 @@ export interface Overworld extends Layout {
   seed: number;
   /** what the hero can't reach from the camp: empty, unless every world tried had something */
   unreached: { area: number; what: string }[];
-  /** the area of every tile, row by row (what Level.areas holds, once Level takes it) */
+  /** the area of every tile, row by row (Level.areas) */
   areaOf: Uint16Array;
   /** cave mouths, and the roads on to areas not built yet, by the area they lead to */
   entrances: Entrance[];

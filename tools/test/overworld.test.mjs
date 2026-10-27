@@ -93,13 +93,13 @@ export default async (load) => {
     check(!ow.exits.length, `${what}: ${ow.exits.length} walk-through exits on a seamless map`);
 
     // ── Level's view of it: the start in the camp, the areas' levels ──
-    // a Level over this layout, without building one (Level makes its own map today)
-    const fake = Object.assign(Object.create(Level.prototype), { layout: ow, areas: areaOf });
-    check(map.walkableAt(start.x, start.z) && fake.inTown(start), `${what}: the start isn't on the camp's ground`);
+    // the Level the game makes over it (?dev&overworld: Game.enterWest); the rest is in seamless.test.mjs
+    const level = new Level(1, seed, ow);
+    check(map.walkableAt(start.x, start.z) && level.inTown(start), `${what}: the start isn't on the camp's ground`);
     for (const area of BUILT) {
       const b = box(area);
-      const def = fake.areaAt(b.x + b.w / 2, b.z + b.h / 2);
-      check(def === areaDef(area) && fake.alvlAt({ x: b.x + 1, z: b.z + 1 }) === areaDef(area).alvl[0], `${what}: Level sees area ${area}'s middle as ${def?.key}`);
+      const def = level.areaAt(b.x + b.w / 2, b.z + b.h / 2);
+      check(def === areaDef(area) && level.alvlAt({ x: b.x + 1, z: b.z + 1 }) === areaDef(area).alvl[0], `${what}: Level sees area ${area}'s middle as ${def?.key}`);
     }
 
     // ── the seams: open through the port, shut everywhere else ──

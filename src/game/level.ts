@@ -2,6 +2,7 @@ import { RNG, type P2 } from '../core/math';
 import { ALL_MODS, MONSTERS, UNIQUE_FIRST, UNIQUE_SECOND, bossForDepth, type MonsterDef, type MonsterMod } from '../data/monsters';
 import { areaDef, areaForDepth, type AreaDef } from '../world/areas';
 import { bfsDistances, dungeonFloor, generateDungeon, generateGallery, generateTown, isWild, themeForFloor, type Layout, type Room } from '../world/levelgen';
+import type { TileMap } from '../world/tilemap';
 import { generateWild } from '../world/wild';
 
 /** dev showroom instead of the camp (see generateGallery) */
@@ -11,6 +12,14 @@ import { ITEM_BASES } from '../data/items';
 import { createItem } from '../items/gen';
 import { DelayedBlast, GroundItem, Hammer, Projectile, WorldObject } from './objects';
 import { SHRINES } from '../data/shrines';
+
+/** the box an area's tiles fill on a level's map: first and last column (x) and row (z), inclusive */
+export interface AreaBox {
+  x0: number;
+  z0: number;
+  x1: number;
+  z1: number;
+}
 
 export class Level {
   layout: Layout;
@@ -29,17 +38,28 @@ export class Level {
    * dungeon, the first floor's in the wilderness, 0 in the camp
    */
   floor: number;
-  /** the area each tile is in (AreaDef ids, row by row); today a map is one area, all of it */
+  /** the area each tile is in (AreaDef ids, row by row): the layout's areaOf, or the depth's one area all over */
   readonly areas: Uint16Array;
+  /**
+   * the map as monsters walk it: on a map with a town and more, the town's tiles are shut to them
+   * (D2Common Path.cpp PATH_IsTargetDestinationAllowed: a monster that may not be in town gets no
+   * path into a DUNGEON_IsRoomInTown room); otherwise the map itself
+   */
+  readonly monsterMap: TileMap;
 
-  constructor(depth: number, seed: number) {
+  /**
+   * `layout`: a map made already to host instead of the depth's own, of several areas (the West
+   * overworld, src/world/overworld.ts); its wilderness is as hard as the first floor, as wild.ts's is
+   */
+  constructor(depth: number, seed: number, layout?: Layout) {
     this.depth = depth;
     const wild = isWild(depth);
     const area = areaForDepth(depth).id;
-    this.floor = depth === 0 ? 0 : wild ? 1 : dungeonFloor(depth);
-    this.layout = depth === 0 ? (GALLERY ? generateGallery(area) : generateTown(area)) : wild ? generateWild(seed) : generateDungeon(this.floor, seed, area);
+    this.floor = layout ? 1 : depth === 0 ? 0 : wild ? 1 : dungeonFloor(depth);
+    this.layout = layout ?? (depth === 0 ? (GALLERY ? generateGallery(area) : generateTown(area)) : wild ? generateWild(seed) : generateDungeon(this.floor, seed, area));
     const L = this.layout;
-    this.areas = new Uint16Array(L.map.w * L.map.h).fill(area);
+    this.areas = L.areaOf ?? new Uint16Array(L.map.w * L.map.h).fill(area);
+    this.monsterMap = this.shutTowns();
     if (L.stairs) this.objects.push(new WorldObject('stairs', L.stairs, wild ? `通往${themeForFloor(1).name}` : `下行至第 ${this.floor + 1} 层`, 0.9));
     const shrineRng = new RNG(seed ^ 0x51ed);
     for (const s of L.shrines ?? []) {
@@ -67,8 +87,8 @@ export class Level {
     }
     for (const c of L.chests) this.objects.push(new WorldObject('chest', c, '宝箱', 0.45));
     for (const b of L.barrels) this.objects.push(new WorldObject('barrel', b, '木桶', 0.35));
-    if (!this.inTown(L.start)) this.populate(seed);
-    else if (GALLERY) {
+    this.populate(seed);
+    if (GALLERY && this.inTown(L.start)) {
       // every monster in a row, held still (the stun never wears off)
       Object.values(MONSTERS).forEach((def, i) => {
         const m = new Monster(def, 1, 'normal', { x: 6 + (i % 9) * 5, z: 51 + Math.floor(i / 9) * 3.4 });
@@ -104,16 +124,62 @@ export class Level {
     return this.areaAt(p.x, p.z).kind === 'town';
   }
 
+  /** monsters keep out of a town that shares its map (monsterMap): its tiles, if the map has others */
+  private shutTowns(): TileMap {
+    const town = new Uint8Array(this.areas.length);
+    let towns = 0;
+    for (let i = 0; i < town.length; i++) if (areaDef(this.areas[i])!.kind === 'town') (town[i] = 1), towns++;
+    return towns > 0 && towns < town.length ? this.map.without(town) : this.map;
+  }
+
+  /** the box each area's tiles fill, by area id in the order the rows come to them: first and last column (x) and row (z) */
+  areaBoxes(): Map<number, AreaBox> {
+    const { w, h } = this.map;
+    const boxes = new Map<number, AreaBox>();
+    for (let z = 0; z < h; z++) {
+      for (let x = 0; x < w; x++) {
+        const id = this.areas[z * w + x];
+        const b = boxes.get(id);
+        if (!b) boxes.set(id, { x0: x, z0: z, x1: x, z1: z });
+        else {
+          b.x0 = Math.min(b.x0, x);
+          b.x1 = Math.max(b.x1, x);
+          b.z1 = z;
+        }
+      }
+    }
+    return boxes;
+  }
+
+  /**
+   * Every area of the map gets its monsters, once, as the map is made; towns get none (D2Game
+   * MonsterSpawn.cpp spawns nothing into a DUNGEON_IsRoomInTown room). Where the hero can walk is one
+   * walk from the start across every area, made only if one gets monsters.
+   */
   private populate(seed: number) {
-    const rng = new RNG(seed ^ 0x9e3779b9);
+    const own = areaForDepth(this.depth).id;
+    let reach: Int32Array | undefined;
+    for (const [id, box] of this.areaBoxes()) {
+      const area = areaDef(id)!;
+      if (area.kind === 'town') continue;
+      reach ??= bfsDistances(this.map, this.layout.start);
+      // an rng of its own, so what one area spawns never shifts another's; the map's own area keeps
+      // the level's, as when every map was one area
+      this.populateArea(area, new RNG(seed ^ 0x9e3779b9 ^ (id === own ? 0 : Math.imul(id, 0x85ebca6b))), box, reach);
+    }
+  }
+
+  /** one area's monsters, on its own tiles where the hero can walk to (populate); `box` is where its tiles are (areaBoxes) */
+  private populateArea(area: AreaDef, rng: RNG, box: AreaBox, reach: Int32Array) {
     const L = this.layout;
-    const reach = bfsDistances(L.map, L.start);
+    const inArea = (p: P2) => this.areaAt(p.x, p.z) === area;
     const reachable = (p: P2) => {
       const i = Math.floor(p.z) * L.map.w + Math.floor(p.x);
-      return L.map.walkableAt(p.x, p.z) && reach[i] >= 0;
+      return L.map.walkableAt(p.x, p.z) && reach[i] >= 0 && inArea(p);
     };
+    const middle = (r: Room): P2 => ({ x: r.x + r.w / 2, z: r.y + r.h / 2 });
     const f = this.floor;
-    const mlvl = this.alvlAt(L.start);
+    const mlvl = area.alvl[0];
     const pool = Object.values(MONSTERS).filter((m) => m.weight > 0 && f >= m.minDepth && f <= m.maxDepth);
     const pickDef = (): MonsterDef => {
       let total = 0;
@@ -135,12 +201,12 @@ export class Level {
     const near = (c: P2, r: number): P2 => {
       for (let k = 0; k < 12; k++) {
         const p = { x: c.x + rng.range(-r, r), z: c.z + rng.range(-r, r) };
-        if (reachable(p) && L.map.circleClear(p.x, p.z, 0.3)) return p;
+        if (reachable(p) && this.monsterMap.circleClear(p.x, p.z, 0.3)) return p;
       }
       return { ...c };
     };
 
-    const rooms = L.spawnRooms.filter((r) => r !== L.bossRoom);
+    const rooms = L.spawnRooms.filter((r) => r !== L.bossRoom && inArea(middle(r)));
     // early floors are gentler: one unique pack and no champions on floor 1
     const uniqueCount = f <= 1 ? 1 : 1 + (rng.chance(0.5) ? 1 : 0);
     const championCount = f <= 1 ? 0 : f <= 3 ? rng.int(1, 2) : rng.int(1, 3);
@@ -164,20 +230,20 @@ export class Level {
     // extra wanderers in corridors
     const extra = 4 + f;
     for (let k = 0; k < extra; k++) {
-      const x = rng.int(1, L.map.w - 2) + 0.5;
-      const z = rng.int(1, L.map.h - 2) + 0.5;
+      const x = rng.int(box.x0 + 1, box.x1 - 1) + 0.5;
+      const z = rng.int(box.z0 + 1, box.z1 - 1) + 0.5;
       const p = { x, z };
       if (!reachable(p) || Math.hypot(x - L.start.x, z - L.start.z) < 12) continue;
       const def = pickDef();
       this.spawnPack(def, 'normal', p, mlvl, rng, near, 2);
     }
     // the wilderness's monster camps: an elite pack by each fire
-    for (const c of L.elites ?? []) {
+    for (const c of (L.elites ?? []).filter(inArea)) {
       const melee = pool.filter((d) => d.ai === 'melee');
       this.spawnPack(rng.pick(melee.length ? melee : pool), 'champion', near(c, 1), mlvl, rng, near);
     }
     // boss
-    if (L.bossRoom) {
+    if (L.bossRoom && inArea(middle(L.bossRoom))) {
       const def = bossForDepth(f);
       const c = { x: L.bossRoom.x + L.bossRoom.w / 2, z: L.bossRoom.y + L.bossRoom.h / 2 + 1.5 };
       const boss = new Monster(def, mlvl + 3, 'boss', near(c, 0.5));
