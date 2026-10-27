@@ -1,6 +1,6 @@
 // The sim's loops over monsters look only near the hero (src/game/monstergrid.ts). The grid finds
 // what a loop over every monster would, by centre (near) and by body (touching), through moves,
-// a new list and a forced resync. On the West overworld, a new game's thousand monsters: while the
+// a new list and a forced resync. On the West overworld, a new game's hundreds of monsters: while the
 // hero fights in Blood Moor only those near are stepped, the far ones never change, the grid still
 // agrees with a loop over all of them after every step, and a corpse far off ages by the time gone
 // once the dead are next cleared, the time spent on its map only: while the hero is on another,
@@ -116,8 +116,9 @@ export default async (load) => {
   for (let i = 0; i < 3000 && victim.deathTime === 0; i++) game.update(DT);
   check(victim.deathTime > 0 && Math.abs(victim.deathTime - (game.time - t0)) < 1e-6, `a corpse far off aged ${victim.deathTime.toFixed(3)} s in ${(game.time - t0).toFixed(3)} s`);
 
-  // ── 400 awake round the hero: what a step costs then ──
-  const crowd = L.monsters.filter((m) => !m.dead).slice(0, 400);
+  // ── 400 awake round the hero: what a step costs then (two far off kept out of it, for below) ──
+  const keepFar = L.monsters.filter((m) => !m.dead && dist(m.pos, p.pos) > 60).slice(0, 2);
+  const crowd = L.monsters.filter((m) => !m.dead && !keepFar.includes(m)).slice(0, 400);
   crowd.forEach((m, i) => {
     const a = (i / crowd.length) * Math.PI * 2;
     const spot = L.map.nearestWalkable(p.pos.x + Math.sin(a) * (4 + (i % 20)), p.pos.z + Math.cos(a) * (4 + (i % 20)), 10) ?? p.pos;
@@ -136,10 +137,10 @@ export default async (load) => {
 
   // ── away on another map, the corpses here keep (they age by the time spent on this map); back,
   // the survivors are home and drawn there, not sliding in from where they were ──
-  const left = L.monsters.find((m) => !m.dead && dist(m.pos, p.pos) > 60);
+  const left = keepFar[0];
   game.killMonster(left, 'phys');
   const onWest = L.time;
-  const stray = L.monsters.find((m) => !m.dead && m !== left && dist(m.pos, p.pos) > 60);
+  const stray = keepFar[1];
   stray.pos = { x: stray.homePos.x + 3, z: stray.homePos.z };
   stray.prevPos = { ...stray.pos };
 

@@ -28,6 +28,6 @@ export function generateDen(seed: number): Layout {
     // facing the start, so someone coming down stands between the two
     entrances: [{ x: up.x, z: up.z, dest: WILD_AREA, name: areaDef(WILD_AREA)!.name, kind: 'up', nx: dx / len, nz: dz / len }],
     // Corpsefire by its row, which has the rename table's name (tools/d2-names/monsters.json)
-    superUniques: [{ pos: far, monster: 'zombie', key: CORPSEFIRE.key, name: CORPSEFIRE.name }],
+    superUniques: [{ pos: far, monster: CORPSEFIRE.mon, key: CORPSEFIRE.key, name: CORPSEFIRE.name }],
   };
 }

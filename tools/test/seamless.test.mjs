@@ -1,6 +1,6 @@
 // A Level over the West overworld (src/world/overworld.ts), as the game plays it. For a few world
 // seeds: the areas are the overworld's tile by tile, with their levels, and town only on the camp's
-// tiles; each area gets its own monsters, at its level, on its own tiles, none in the camp;
+// tiles; each area gets its own monsters (its levels.txt kinds, in normal each at its row's level), on its own tiles, none in the camp;
 // monsters can't walk, slide or path into the camp, and leave a hero who stands in it alone. Maps
 // of one area shut nothing to monsters. The game on it, from a new game on, is tools/test/west.test.mjs.
 const SEEDS = [1, 7, 42, 20261026];
@@ -13,6 +13,7 @@ export default async (load) => {
   const { WILD_MAPS, bfsDistances } = await load('/src/world/levelgen.ts');
   const { findPath } = await load('/src/world/pathfinding.ts');
   const { Level } = await load('/src/game/level.ts');
+  const { D2X_AREAS } = await load('/src/data/d2x/areas.ts');
   const { moveBy, stepToward } = await load('/src/game/movement.ts');
   const { updateMonster } = await load('/src/game/ai.ts');
   const problems = [];
@@ -59,9 +60,13 @@ export default async (load) => {
       by.set(a.id, (by.get(a.id) ?? 0) + 1);
       const i = Math.floor(m.pos.z) * w + Math.floor(m.pos.x);
       if (!mm.walkableAt(m.pos.x, m.pos.z) || reach[i] < 0) problems.push(`${what}: a ${m.def.id} at ${m.pos.x.toFixed(1)},${m.pos.z.toFixed(1)} stands where monsters can't, or the hero can't get to`);
-      // normal ones at the area's level; the elite ranks a little over it
-      if (m.rank === 'normal' && m.level !== a.alvl[0]) problems.push(`${what}: a ${m.def.id} in ${a.key} is level ${m.level}, the area's is ${a.alvl[0]}`);
-      if (m.level < a.alvl[0]) problems.push(`${what}: a ${m.rank} ${m.def.id} in ${a.key} is level ${m.level}, under the area's ${a.alvl[0]}`);
+      // in normal a plain one at its own row's level (D2: Monster.cpp:196-201), the elite ranks over it
+      const own = m.def.row.diff[0].level;
+      if (m.rank === 'normal' && m.level !== own) problems.push(`${what}: a ${m.def.id} in ${a.key} is level ${m.level}, its row's is ${own}`);
+      if (m.level < own) problems.push(`${what}: a ${m.rank} ${m.def.id} in ${a.key} is level ${m.level}, under its row's ${own}`);
+      // of the area's kinds, its champions' and uniques', or what they bring (the shamans' and Bishibosh's fallen)
+      const d2 = D2X_AREAS.find((x) => x.id === a.id);
+      if (d2 && ![...d2.mon, ...d2.umon, 'fallen1'].includes(m.def.id)) problems.push(`${what}: a ${m.def.id} in ${a.key}, not one of its kinds`);
     }
     check(!by.has(CAMP_AREA), `${what}: ${by.get(CAMP_AREA)} monster(s) in the camp`);
     check(by.get(WILD_AREA) > 50 && by.get(COLD_PLAINS) > 50, `${what}: ${by.get(WILD_AREA) ?? 0} monsters in Blood Moor, ${by.get(COLD_PLAINS) ?? 0} in Cold Plains`);
@@ -117,7 +122,8 @@ export default async (load) => {
     m.setState('idle');
     trail.length = 0;
     let swung = false;
-    for (let k = 0; k < 8 / DT && !swung; k++) {
+    // D2's walk home is slow (75 % of Velocity: a zombie's is 0.38 m/s), so give it the time
+    for (let k = 0; k < 25 / DT && !swung; k++) {
       updateMonster(game, m, DT);
       // this hero is too thin to be struck: the swing itself is the failure
       swung = m.state === 'attack' || m.state === 'charge';

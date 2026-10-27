@@ -1,5 +1,4 @@
 import { D2X_AREAS } from '../data/d2x/areas';
-import { monsterLevel } from '../data/monsters';
 import type { Difficulty } from '../items/d2/types';
 import { THEMES, WILD_MAPS, dungeonFloor, isWild, themeForFloor } from './levelgen';
 
@@ -41,9 +40,14 @@ export const BURIAL_GROUNDS = 17;
 /** dungeon floor f is area DUNGEON_AREAS + f */
 const DUNGEON_AREAS = 1000;
 
+/** a trial floor's level: floors 1-2 ease in, then two levels a floor (the old dungeon's monster level) */
+export function trialLevel(floor: number): number {
+  return floor <= 2 ? Math.max(1, floor) : floor * 2 - 2;
+}
+
 /** a trial floor's level, the same in every difficulty: it has no levels.json row, and the debug panel picks the floor and the difficulty apart */
 function alvl(floor: number): [number, number, number] {
-  const m = monsterLevel(floor);
+  const m = trialLevel(floor);
   return [m, m, m];
 }
 
@@ -90,8 +94,8 @@ export function trialFloor(id: number): number | undefined {
 
 /**
  * An area's level in a difficulty (DATATBLS_GetMonsterLevelInArea): what its chests and barrels drop
- * at (Items.cpp:1636-1646, ObjMode.cpp:3929). Its monsters spawn at normal's in every difficulty
- * for now (src/game/spawn.ts), as the game's monsters play no harder yet.
+ * at (Items.cpp:1636-1646, ObjMode.cpp:3929), and in nightmare and hell its monsters' (src/game/d2/
+ * monstats.ts spawnLevel); a trial floor's monsters are at it in every difficulty.
  */
 export function areaLevel(a: AreaDef, difficulty: Difficulty = 0): number {
   return a.alvl[difficulty];

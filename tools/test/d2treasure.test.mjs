@@ -148,7 +148,7 @@ export default async (load) => {
   const { D2X_MONSTERS } = await load('/src/data/d2x/monsters.ts');
   const { D2X_SUPERUNIQUES } = await load('/src/data/d2x/superuniques.ts');
   const { D2X_AREAS } = await load('/src/data/d2x/areas.ts');
-  const { MONSTERS } = await load('/src/data/monsters.ts');
+  const { lookedMonsters, monsterDef } = await load('/src/data/monsters.ts');
   const { areaDef, CAMP_AREA, WILD_AREA, COLD_PLAINS, dungeonArea } = await load('/src/world/areas.ts');
   const rng = new RNG(20261027);
   const codes = (picks) => picks.map((p) => p.code).join(',');
@@ -426,19 +426,17 @@ export default async (load) => {
   // gold piles of Citem A: mul 1280, five times 1–6 at item level 1
   for (let i = 0; i < 1500; i++) for (const it of G.dropTc('Act 1 Citem A', 1)) if (G.isGold(it)) ok(it.qty % 5 === 0 && it.qty >= 5 && it.qty <= 25, `Citem A gold ${it.qty}`);
 
-  // ── the game's monsters, chests and barrels ──
-  for (const id of Object.keys(MONSTERS)) {
-    const row = L.d2MonsterOf(id);
-    ok(row, `${id} stands for an Act 1 monster`);
+  // ── the game's monsters (every D2 one with a look drops by its own row), chests and barrels ──
+  for (const def of lookedMonsters()) {
     for (const d of [0, 1, 2]) {
       for (const rank of ['normal', 'champion', 'unique', 'minion', 'boss']) {
-        const tc = L.monsterLootTc({ def: MONSTERS[id], rank, level: 5 }, d);
-        ok(tc && TCS[tc], `${id} as ${rank} in difficulty ${d} drops from ${tc}`);
+        const tc = L.monsterLootTc({ def, rank, level: 5 }, d);
+        ok(tc && TCS[tc], `${def.id} as ${rank} in difficulty ${d} drops from ${tc}`);
       }
     }
   }
   const hero = { mf: 0, gf: 0, difficulty: 0 };
-  const zombie = (rank, level = 2) => ({ def: MONSTERS.zombie, rank, level });
+  const zombie = (rank, level = 2) => ({ def: monsterDef('zombie1'), rank, level });
   for (let i = 0; i < 300; i++) {
     // Champ A: its item class (one pick, no NoDrop) and Cpot A's two potions; Unique A: one item, four potions
     eq(L.monsterLoot(zombie('champion', 4), hero).length, 3, 'a champion zombie always drops 3');
@@ -451,7 +449,10 @@ export default async (load) => {
   eq(L.monsterLootTc({ ...zombie('unique', 3), superUnique: 'Corpsefire' }, 0), 'Act 1 Super A', "Corpsefire drops its superunique class");
   eq(L.monsterLootTc({ ...zombie('unique', 3), superUnique: 'Corpsefire' }, 1), T.monsterTc(D2X_MONSTERS.zombie1, { difficulty: 1, rank: 'unique', mlvl: 3, su: D2X_SUPERUNIQUES.find((s) => s.key === 'Corpsefire') }), "Corpsefire's class in nightmare");
   ok(L.monsterLootTc({ ...zombie('unique', 3), superUnique: 'Corpsefire' }, 1).startsWith('Act 1 (N) Super'), "Corpsefire's nightmare class is a Super one");
-  eq(L.monsterLootTc({ def: MONSTERS.overlord, rank: 'boss', level: 30 }, 0), 'Andarielq', 'the deepest floor boss drops as Andariel');
+  eq(L.monsterLootTc({ def: monsterDef('andariel'), rank: 'boss', level: 30 }, 0), 'Andarielq', 'Andariel drops her quest class');
+  eq(L.monsterLootTc({ def: monsterDef('quillrat1'), rank: 'normal', level: 1 }, 0), 'Quill 1', 'a quill rat drops its own class');
+  eq(L.monsterLootTc({ def: monsterDef('fallenshaman1'), rank: 'normal', level: 2 }, 0), 'Act 1 Cast A', "a shaman drops a caster's");
+  eq(L.monsterLootTc({ def: monsterDef('fallenshaman1'), rank: 'unique', level: 5, superUnique: 'Bishibosh' }, 0), 'Act 1 Super A', 'Bishibosh drops his superunique class');
   let normal = 0;
   for (let i = 0; i < N; i++) normal += L.monsterLoot(zombie('normal'), hero, rng).length;
   near(normal / N, 0.375, 0.012, 'a zombie drops 3 times in 8');

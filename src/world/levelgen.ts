@@ -152,7 +152,7 @@ export interface SuperUnique {
   pos: P2;
   /** its SuperUniques.txt row (D2X_SUPERUNIQUES key): its name and its drop */
   key: string;
-  /** the monster it is one of (src/data/monsters.ts) */
+  /** the monster it is one of (D2X_MONSTERS id); its row's mon decides */
   monster: string;
   name: string;
 }

@@ -2,9 +2,10 @@
 // the camp on the overworld, a world of its own; out into Blood Moor, a town portal there and
 // back, dying and the waypoints move the hero across the one map without rebuilding it, and coming
 // into the camp restocks the merchant. The Den of Evil's mouth leads down to a map of its own, a
-// cave with Corpsefire's stand-in in its far room; its way up comes out at the mouth, the overworld
-// as it was left, and the Den is kept as it was too. Cold Plains' waypoint is activated by using
-// it, in the difficulty played, and listed; its roads on to Stony Field and the Burial Grounds are
+// cave with Corpsefire (D2's zombie1 superunique) in its far room; its way up comes out at the mouth,
+// the overworld as it was left, and the Den is kept as it was too. Cold Plains' waypoint is activated
+// by using it, in the difficulty played, and listed; another difficulty is another game, the
+// overworld made anew in the same world, its monsters of that difficulty; its roads on to Stony Field and the Burial Grounds are
 // closed and the map is shut past them. Chests and barrels roll at their area's level. The trial
 // ground's floors are the debug panel's alone. A new game, or one continued, makes a new world; a
 // reload plays on in the saved one, in the area it was saved in.
@@ -45,7 +46,7 @@ export default async (load) => {
 
   // ── a new game: in the camp, on the overworld ──
   game.newGame('西块测试', 'paladin');
-  const west = game.level;
+  let west = game.level;
   const ow = west.layout;
   const p = game.player;
   check(Array.isArray(ow.seams) && ow.areaOf, 'a new game is not on the overworld');
@@ -110,16 +111,18 @@ export default async (load) => {
   check(den.areas.every((a) => a === DEN_OF_EVIL), 'the den is not all the Den of Evil');
   const up = den.objects.find((o) => o.kind === 'stairs' && o.dest === WILD_AREA);
   check(up && dist(p.pos, up.pos) < 3.5, `the hero arrived ${up ? dist(p.pos, up.pos).toFixed(1) : '-'} from the den's way up`);
+  // in normal each at its own row's level (zombie1 and fallen1 1, brute1 and fallenshaman1 2), of the den's kinds
   const normal = den.monsters.filter((m) => m.rank === 'normal');
-  check(normal.length > 10 && normal.every((m) => m.level === areaDef(DEN_OF_EVIL).alvl[0]), `the den has ${normal.length} normal monsters at levels ${[...new Set(normal.map((m) => m.level))].join()}`);
+  const denKinds = ['zombie1', 'brute1', 'fallenshaman1', 'fallen1'];
+  check(normal.length > 5 && normal.every((m) => denKinds.includes(m.def.id) && m.level === m.def.row.diff[0].level), `the den has ${normal.length} normal monsters: ${[...new Set(normal.map((m) => `${m.def.id}@${m.level}`))].join()}`);
   const corpsefire = den.monsters.find((m) => m.rank === 'unique' && m.displayName === '尸焰');
   const su = den.layout.superUniques?.[0];
-  check(corpsefire?.def.id === 'zombie' && su && dist(corpsefire.pos, su.pos) < 1.5, `Corpsefire's stand-in is ${corpsefire?.def.id} at ${corpsefire ? dist(corpsefire.pos, su?.pos ?? corpsefire.pos).toFixed(1) : '-'} from the far room's spot`);
+  check(corpsefire?.def.id === 'zombie1' && corpsefire.level === 4 && su && dist(corpsefire.pos, su.pos) < 1.5, `Corpsefire is ${corpsefire?.def.id} level ${corpsefire?.level} at ${corpsefire ? dist(corpsefire.pos, su?.pos ?? corpsefire.pos).toFixed(1) : '-'} from the far room's spot`);
   // it drops its superunique class (superuniques.json Corpsefire), its minions a plain zombie's
   check(su?.key === 'Corpsefire' && corpsefire?.superUnique === 'Corpsefire' && monsterLootTc(corpsefire, 0) === 'Act 1 Super A', `Corpsefire is ${corpsefire?.superUnique} and drops from ${corpsefire && monsterLootTc(corpsefire, 0)}`);
   const minion = den.monsters.find((m) => m.leader === corpsefire);
   check(minion && !minion.superUnique && monsterLootTc(minion, 0) === 'Act 1 H2H A', `Corpsefire's minion drops from ${minion && monsterLootTc(minion, 0)}`);
-  check(den.monsters.filter((m) => m.leader === corpsefire).length >= 3, 'Corpsefire came without minions');
+  check(den.monsters.filter((m) => m.leader === corpsefire).length === 5, `Corpsefire came with ${den.monsters.filter((m) => m.leader === corpsefire).length} minions, superuniques.json has 5`);
   check(su && dist(su.pos, den.layout.start) > 15, `Corpsefire waits ${su ? dist(su.pos, den.layout.start).toFixed(1) : '-'} from the den's start`);
   // a chest in the den rolls at the den's level: what its roll (src/game/loot.ts containerLoot)
   // drops is at it, tried until it drops something (a chest drops in 3 of 4, a barrel in 21 of 100)
@@ -167,11 +170,19 @@ export default async (load) => {
   check(game.level === west && west.inTown(p.pos) && dist(p.pos, campWp.pos) < 2.5, `by waypoint to the camp: in town ${west.inTown(p.pos)}, ${dist(p.pos, campWp.pos).toFixed(1)} from its waypoint`);
   game.travel(COLD_PLAINS);
   check(game.area.id === COLD_PLAINS && notes.levels === built, `by waypoint to Cold Plains: ${game.area.key}, ${notes.levels - built} level(s) built`);
-  // in nightmare only the camp's; back in normal, Cold Plains' again
+  // in nightmare only the camp's; back in normal, Cold Plains' again. Each is another game: the
+  // overworld made anew in the same world, the hero at the camp's waypoint, its monsters of the difficulty
   game.setDifficulty(1);
   check(p.waypoints.join() === String(CAMP_AREA) && saved().progress[1].waypoints.join() === String(CAMP_AREA), `nightmare's waypoints ${p.waypoints.join()}`);
+  const nm = game.level;
+  const nmWp = nm.objects.find((o) => o.kind === 'waypoint' && nm.inTown(o.pos));
+  check(nm !== west && nm.difficulty === 1 && nm.layout.seed === ow.seed && game.area.id === CAMP_AREA && dist(p.pos, nmWp.pos) < 2.5, `nightmare: a new overworld ${nm !== west}, its difficulty ${nm.difficulty}, the hero in ${game.area.key}, ${dist(p.pos, nmWp.pos).toFixed(1)} from the camp's waypoint`);
+  const nmBlood = nm.monsters.filter((m) => m.rank === 'normal' && nm.areaAt(m.pos.x, m.pos.z).id === WILD_AREA);
+  check(nmBlood.length && nmBlood.every((m) => m.level === areaDef(WILD_AREA).alvl[1]), `nightmare's Blood Moor monsters at levels ${[...new Set(nmBlood.map((m) => m.level))].join()}`);
   game.setDifficulty(0);
   check(p.waypoints.join() === `${CAMP_AREA},${COLD_PLAINS}`, `back in normal the waypoints are ${p.waypoints.join()}`);
+  west = game.level;
+  check(west.difficulty === 0 && west !== nm, 'back in normal on the nightmare overworld');
 
   // ── the roads on out of Cold Plains: closed, the map shut past them ──
   const roads = west.objects.filter((o) => o.kind === 'exit');
@@ -219,6 +230,14 @@ export default async (load) => {
   check(stairs?.dest === dungeonArea(4), `the trial floor's stairs lead to area ${stairs?.dest}`);
   game.travel(CAMP_AREA);
   check(game.level === west && west.inTown(p.pos), 'by waypoint from the trial ground the hero is not in the camp');
+  // in another difficulty from the camp: that game's floor, made once; changed on a floor, a new floor there
+  const builtNow = notes.levels;
+  game.enterTrial(3, 1);
+  check(notes.levels === builtNow + 1 && game.level.difficulty === 1 && p.difficulty === 1 && game.area.key === 'floor3', `the trial ground in nightmare: ${notes.levels - builtNow} level(s) built, difficulty ${game.level.difficulty}`);
+  game.setDifficulty(0);
+  check(notes.levels === builtNow + 2 && game.level.difficulty === 0 && game.area.key === 'floor3', `back in normal on the trial floor: ${notes.levels - builtNow} level(s) built, in ${game.area.key}`);
+  game.travel(CAMP_AREA);
+  west = game.level;
 
   // ── a world a game: a new one each game and each continue, the saved one on a reload ──
   const seed = game.worldSeed;

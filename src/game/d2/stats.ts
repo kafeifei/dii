@@ -131,6 +131,18 @@ export function velocityPercent(cs: D2xClass, o: MoveOpts = {}): number {
   return Math.max(25, 100 + run + effFrw - (o.armorSpeed ?? 0) + (o.velocityPct ?? 0));
 }
 
+/**
+ * metres a second for one point of D2's velocity, the hero's and the monsters' alike: the game's run,
+ * 4.6 m/s from before D2's movement, is CharStats RunVelocity 9 (walk 6 is then 3.07 m/s)
+ */
+export const MPS_PER_VELOCITY = 4.6 / 9;
+
+/**
+ * metres for one of D2's subtiles on the same scale: a velocity point moves a sixteenth of a subtile a
+ * frame (Missiles.cpp:289-292, PathMisc.cpp:1159-1161 at its base 1024), 25/16 subtiles a second
+ */
+export const M_PER_SUBTILE = (MPS_PER_VELOCITY * 16) / 25;
+
 /** walk or run speed on the scale of CharStats WalkVelocity and monstats Velocity (Units.cpp:1293, 1702) */
 export function moveVelocity(cs: D2xClass, o: MoveOpts = {}): number {
   return (cs.walk * velocityPercent(cs, o)) / 100;

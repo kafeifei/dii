@@ -9,10 +9,9 @@ const SEED = 7;
 const FLOORS = 13;
 
 export default async (load) => {
-  const { CAMP_AREA, WILD_AREA, COLD_PLAINS, DEN_OF_EVIL, STONY_FIELD, BURIAL_GROUNDS, areaByKey, areaDef, areaForDepth, areaLevel, areaList, dungeonArea, isBuilt, nextArea } = await load('/src/world/areas.ts');
+  const { CAMP_AREA, WILD_AREA, COLD_PLAINS, DEN_OF_EVIL, STONY_FIELD, BURIAL_GROUNDS, areaByKey, areaDef, areaForDepth, areaLevel, areaList, dungeonArea, isBuilt, nextArea, trialLevel: monsterLevel } = await load('/src/world/areas.ts');
   const { D2X_AREAS } = await load('/src/data/d2x/areas.ts');
   const { THEMES, WILD_MAPS, isWild, dungeonFloor, levelLabel, themeForFloor } = await load('/src/world/levelgen.ts');
-  const { monsterLevel } = await load('/src/data/monsters.ts');
   const { Level } = await load('/src/game/level.ts');
   const problems = [];
   const check = (ok, what) => ok || problems.push(what);
@@ -170,9 +169,12 @@ export default async (load) => {
   check(!game.travelToArea(999) && !game.travelToArea(STONY_FIELD) && game.area.key === 'floor3', 'a jump to an area with no map went somewhere');
   check(p.waypoints.join() === String(CAMP_AREA), `the trial ground touched a waypoint: ${p.waypoints.join()}`);
   check(game.travelToArea(COLD_PLAINS) && game.area.id === COLD_PLAINS && game.level === west, `travelToArea(Cold Plains) went to ${game.area.key}`);
-  const coldWp = west.objects.find((o) => o.kind === 'waypoint' && west.areaAt(o.pos.x, o.pos.z).id === COLD_PLAINS);
-  // touched in nightmare, not in normal
+  // touched in nightmare, not in normal; nightmare is another game begun in the camp, its overworld made anew
   game.setDifficulty(1);
+  const nm = game.level;
+  check(nm !== west && nm.difficulty === 1 && game.area.id === CAMP_AREA, `nightmare on ${nm === west ? 'the normal overworld' : 'a new one'} (difficulty ${nm.difficulty}), in ${game.area.key}`);
+  check(game.travelToArea(COLD_PLAINS) && game.area.id === COLD_PLAINS && game.level === nm, `nightmare: travelToArea(Cold Plains) went to ${game.area.key}`);
+  const coldWp = nm.objects.find((o) => o.kind === 'waypoint' && nm.areaAt(o.pos.x, o.pos.z).id === COLD_PLAINS);
   game.interact(coldWp);
   let d = saved();
   check(p.difficulty === 1 && p.waypoints.join() === `${CAMP_AREA},${COLD_PLAINS}`, `nightmare: difficulty ${p.difficulty}, waypoints ${p.waypoints.join()}`);
