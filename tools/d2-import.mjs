@@ -2,6 +2,8 @@
 //
 //   node tools/d2-import.mjs
 //
+// then `node tools/d2-validate.mjs` checks the generated src/data/d2x against D2's semantics.
+//
 // Sources, pinned (downloaded once into tools/.d2cache):
 // - the game's .txt tables as JSON, patch 3.3 — github.com/blizzhackers/d2data
 // - the game's string tables with the official Simplified Chinese — github.com/WalterCouto/D2CE

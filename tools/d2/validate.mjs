@@ -45,7 +45,7 @@ function direct(tc) {
   return { out, total };
 }
 /** expected count of each item per run of a class, expanded through its sub-classes */
-function leaves(name, get, memo = new Map()) {
+export function leaves(name, get, memo = new Map()) {
   if (memo.has(name)) return memo.get(name);
   const tc = get(name);
   if (!tc) throw new Error(`no treasure class ${name}`);
@@ -58,7 +58,7 @@ function leaves(name, get, memo = new Map()) {
   return acc;
 }
 /** the same from tcprecalc: counts × droprate for one player */
-function leavesPre(name, P, memo = new Map()) {
+export function leavesPre(name, P, memo = new Map()) {
   if (memo.has(name)) return memo.get(name);
   const p = P[name];
   const acc = new Map();
@@ -71,14 +71,14 @@ function leavesPre(name, P, memo = new Map()) {
   memo.set(name, acc);
   return acc;
 }
-const maxDiff = (a, b) => {
+export const maxDiff = (a, b) => {
   let d = 0;
   for (const k of new Set([...a.keys(), ...b.keys()])) d = Math.max(d, Math.abs((a.get(k) ?? 0) - (b.get(k) ?? 0)));
   return d;
 };
 
 /** the drop rules on the generated data, one kill: picks, nodrop, negative picks, sub-classes (D2GAME_DropTC_6FC51360, Items.cpp:2062-2232) */
-function simulate(name, tcs, rnd, drops) {
+export function simulate(name, tcs, rnd, drops) {
   const tc = tcs[name];
   const total = tc.items.reduce((s, e) => s + e.prob, 0);
   const pick = (r) => {
@@ -103,7 +103,7 @@ function simulate(name, tcs, rnd, drops) {
   }
 }
 /** mulberry32: a small seeded generator, so the report does not change between runs */
-function seeded(seed) {
+export function seeded(seed) {
   return () => {
     seed = (seed + 0x6d2b79f5) | 0;
     let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
