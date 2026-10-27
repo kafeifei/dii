@@ -174,6 +174,16 @@ async function merge(name) {
     }
     const count = Math.max(2, Math.round((t1 - t0) * FPS) + 1);
     const times = Float32Array.from({ length: count }, (_, i) => (i * (t1 - t0)) / (count - 1));
+    let turn = 0;
+    if (clip.aim) {
+      // the drawn bow (right hand to left) at the loose, half-way, turned to point ahead (+Z)
+      const { chainTo, worldAt } = poser(anim, src.getRoot());
+      const t = (t0 + t1) / 2;
+      const r = worldAt(chainTo('RightHand'), t);
+      const l = worldAt(chainTo('LeftHand'), t);
+      turn = -Math.atan2(l[12] - r[12], l[14] - r[14]);
+      note += ` aim turned ${((turn * 180) / Math.PI).toFixed(0)}°`;
+    }
     const input = doc.createAccessor().setType('SCALAR').setArray(times).setBuffer(buffer);
     const out = doc.createAnimation(clip.name);
     for (const ch of channels) {
@@ -188,6 +198,25 @@ async function merge(name) {
       const tmp = new Float32Array(size);
       const at = (i) => t0 + (clip.reverse ? t1 - t0 - times[i] : times[i]);
       for (let i = 0; i < count; i++) values.set(sample(srcTimes, srcValues, size, smp.getInterpolation(), at(i), tmp), i * size);
+      if (turn && target === hips) {
+        // about the vertical through the hips (their parent, the armature, isn't rotated), turning
+        // in over the first third so the clip leaves the idle stance facing ahead
+        for (let i = 0; i < count; i++) {
+          const k = Math.min(1, i / ((count - 1) * 0.35));
+          const a = turn * k * k * (3 - 2 * k);
+          const c = Math.cos(a / 2);
+          const sn = Math.sin(a / 2);
+          if (pathName === 'rotation') {
+            const [x, y, z, w] = values.subarray(i * 4, i * 4 + 4);
+            values.set([c * x + sn * z, c * y + sn * w, c * z - sn * x, c * w - sn * y], i * 4);
+          } else {
+            const dx = values[i * 3] - bindHips[0];
+            const dz = values[i * 3 + 2] - bindHips[2];
+            values[i * 3] = bindHips[0] + dx * Math.cos(a) + dz * Math.sin(a);
+            values[i * 3 + 2] = bindHips[2] - dx * Math.sin(a) + dz * Math.cos(a);
+          }
+        }
+      }
       if (clip.inPlace && target === hips && pathName === 'translation') {
         // start over the bind spot and end where it started: the sim moves the body, the clip must not
         const dx0 = values[0] - bindHips[0];

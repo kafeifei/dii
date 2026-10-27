@@ -9,6 +9,8 @@
 //   range         [from, to] seconds to search for that frame (combos: pick one blow)
 //   window        explicit [start, end] seconds instead of `quick`
 //   reverse       play it backwards (a death run backwards is the skeletons' revive)
+//   aim           turn the body so the drawn bow (right hand to left) points ahead at the clip's
+//                 half-way point, where the sim looses the arrow: Meshy's archer shoots to her left
 
 const AVATAR = '../avatar/viewer/public/models';
 
@@ -159,6 +161,19 @@ export const CHARS = {
     { name: 'Idle', clip: 'Combat_Stance' },
     { name: 'Attack', clip: 'Right_Hand_Sword_Slash', quick: 'attack' },
     { name: 'Attack2', clip: 'Left_Slash', quick: 'attack' },
+    HIT, DEATH,
+  ]),
+  // the corrupted rogues (D2 corruptrogue* / cr_lancer* / cr_archer*: one body, three weapons);
+  // which clip each plays is the spec's choice (src/render/specs.ts)
+  mon_rogue_fallen: mon('rogue_fallen', [
+    { name: 'Idle', clip: 'Combat_Stance' },
+    { name: 'Attack', clip: 'Right_Hand_Sword_Slash', quick: 'attack' },
+    // a lunge: in place it rocks forward and back
+    { name: 'Thrust', clip: 'Thrust_Slash', quick: 'attack', range: [0.5, 1.2] },
+    // raise, draw and loose at full draw (2.7 s), put half-way as quick: 'attack' would; quick
+    // can't find the loose itself: the furthest-reaching hand is the bow arm, held out through the
+    // whole aim, and it picks the bow being lowered
+    { name: 'Shoot', clip: 'Archery_Shot', window: [1.9, 3.5], aim: true },
     HIT, DEATH,
   ]),
   // camp folk only stand around (and walk when the camp gets busier); prefixed so they don't

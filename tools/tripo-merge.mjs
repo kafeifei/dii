@@ -6,17 +6,26 @@
 import path from 'node:path';
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
-import { dedup, prune, textureCompress } from '@gltf-transform/functions';
-import { MeshoptDecoder } from 'meshoptimizer';
+import { dedup, prune, simplify, textureCompress, weld } from '@gltf-transform/functions';
+import { MeshoptDecoder, MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
+import * as THREE from 'three';
 
 /**
  *   file     the export in models-src/tripo/
  *   project  the Tripo Studio project it came from
  *   clips    Tripo clip name → the name the game plays it under
+ *   steps    the preset plays the same step this many times over: keep the first, as a loop
  *   pace     speed-up for the clips: Tripo's presets amble
- *   idle     hold this clip's first frame as a still 'Idle' (code adds the twitches)
- *   rename   bones Tripo leaves as bone_N, named for the code that poses them (src/render/legs.ts)
+ *   stride   scale the swing of each leg's upper two joints about their mean over the step, by
+ *            leg pair (the presets take short steps, the front paws shorter than the hind ones)
+ *   idle     hold this clip's first frame as a still 'Idle' (code adds the twitches); 'rest' holds
+ *            the bind pose instead
+ *   rename   bones Tripo leaves as bone_N (or misnames), named for the code that poses them
+ *            (src/render/legs.ts); keys are the names in the export
+ *   mirror   legs whose retargeted track is wrong, rebuilt from the opposite leg: mirrored across
+ *            the body and half a step later (`from` / `to` joint chains hip first, below `parent`)
+ *   tris     simplify to about this many triangles (Tripo's raw meshes run to a million and more)
  */
 const CREATURES = {
   mon_spider: {
@@ -42,9 +51,164 @@ const CREATURES = {
       bone_59: 'Fang_Left_2',
     },
   },
+  // D2's quill rat; only the quadruped walk comes rigged, the rest is posed in code (src/render/legs.ts)
+  // (--rig-type quadruped --animations preset:quadruped:walk; the full 1.4M-triangle mesh)
+  mon_quillrat: {
+    file: 'quillrat/quillrat.glb',
+    project: 'c6d02a67-f436-494d-b1fa-5b8fdb020481',
+    clips: { 'preset:quadruped:walk': 'Walk' },
+    steps: 3,
+    // about a body length a second at 1× (specs.ts QUILLRAT_STRIDE): D2's walk (velocity 3, some
+    // 1.5 m/s for a rat 1.1 m long) then plays it at about 1.4×
+    pace: 1.5,
+    stride: [2, 1.5],
+    idle: 'rest',
+    tris: 7000,
+    rename: {
+      // the hind right leg is named one bone down from its left twin: its thigh is bone_36 and
+      // shin..foot carry the names thigh..shin (the left leg's toe has no twin)
+      bone_36: '1_Right_Limb_0',
+      'tripo::1_Right_Limb_0': '1_Right_Limb_1',
+      'tripo::1_Right_Limb_1': '1_Right_Limb_2',
+      'tripo::1_Right_Limb_2': '1_Right_Limb_3',
+      // the shoulder blades; the right one is misnamed as a fifth spine bone
+      bone_15: 'Scapula_Left',
+      'tripo::Spine_4': 'Scapula_Right',
+      // the tail, root to tip
+      bone_40: 'Tail_0',
+      bone_41: 'Tail_1',
+      'tripo::Tail_0': 'Tail_2',
+    },
+    // the walk was retargeted by the old names, so that leg kicks about out of step
+    mirror: {
+      parent: 'Spine_0',
+      from: ['1_Left_Limb_0', '1_Left_Limb_1', '1_Left_Limb_2', '1_Left_Limb_3'],
+      to: ['1_Right_Limb_0', '1_Right_Limb_1', '1_Right_Limb_2', '1_Right_Limb_3'],
+    },
+  },
 };
 
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder });
+const FPS = 30;
+
+/** value of a LINEAR / STEP sampler at time t, rotations nlerped (as tools/meshy-merge.mjs) */
+function sample(times, values, size, interp, t, out) {
+  const n = times.length;
+  let k = 0;
+  while (k < n - 1 && times[k + 1] <= t) k++;
+  const k1 = Math.min(n - 1, k + 1);
+  const span = times[k1] - times[k];
+  const a = interp === 'STEP' || span <= 0 ? 0 : Math.min(1, Math.max(0, (t - times[k]) / span));
+  const sign = size === 4 && values[k * 4] * values[k1 * 4] + values[k * 4 + 1] * values[k1 * 4 + 1] + values[k * 4 + 2] * values[k1 * 4 + 2] + values[k * 4 + 3] * values[k1 * 4 + 3] < 0 ? -1 : 1;
+  for (let i = 0; i < size; i++) out[i] = values[k * size + i] * (1 - a) + sign * values[k1 * size + i] * a;
+  if (size === 4) {
+    const len = Math.hypot(out[0], out[1], out[2], out[3]) || 1;
+    for (let i = 0; i < 4; i++) out[i] /= len;
+  }
+  return out;
+}
+
+/**
+ * Rebuilds a clip as one loop of `steps`, sampled evenly (an even number of frames, so half a
+ * step is a whole number of them), with `stride` and `mirror` applied. Scale tracks are dropped.
+ */
+function loopStep(doc, anim, spec, nodes) {
+  const buffer = doc.getRoot().listBuffers()[0];
+  const chans = anim.listChannels();
+  const end = Math.max(...chans.map((c) => c.getSampler().getInput().getMax([])[0]));
+  const T = end / (spec.steps ?? 1);
+  const frames = 2 * Math.max(1, Math.round((T * FPS) / 2));
+  // track arrays by node and path, `frames + 1` samples with the last the first again
+  const tracks = new Map();
+  const key = (node, p) => `${node.getName()}|${p}`;
+  for (const ch of chans) {
+    const p = ch.getTargetPath();
+    if (p === 'scale') continue;
+    const smp = ch.getSampler();
+    const size = smp.getOutput().getElementSize();
+    const src = smp.getOutput().getArray();
+    const times = smp.getInput().getArray();
+    const values = new Float32Array((frames + 1) * size);
+    const tmp = new Array(size);
+    for (let i = 0; i < frames; i++) values.set(sample(times, src, size, smp.getInterpolation(), (i * T) / frames, tmp), i * size);
+    values.copyWithin(frames * size, 0, size);
+    tracks.set(key(ch.getTargetNode(), p), { node: ch.getTargetNode(), path: p, size, values });
+  }
+  const quat = (tr, i) => new THREE.Quaternion().fromArray(tr.values, i * 4);
+
+  // longer strides: the upper two joints of each leg swing further about their mean pose over the
+  // step (the paws' own flick is left as it is)
+  if (spec.stride) {
+    for (const tr of tracks.values()) {
+      const leg = /^(\d)_(Left|Right)_Limb_[01]$/.exec(tr.node.getName());
+      const k = leg && spec.stride[+leg[1]];
+      if (tr.path !== 'rotation' || !k || k === 1) continue;
+      const mean = new THREE.Quaternion(0, 0, 0, 0);
+      const first = quat(tr, 0);
+      for (let i = 0; i < frames; i++) {
+        const q = quat(tr, i);
+        const s = q.dot(first) < 0 ? -1 : 1;
+        mean.set(mean.x + s * q.x, mean.y + s * q.y, mean.z + s * q.z, mean.w + s * q.w);
+      }
+      mean.normalize();
+      const inv = mean.clone().invert();
+      const axis = new THREE.Vector3();
+      for (let i = 0; i <= frames; i++) {
+        const d = inv.clone().multiply(quat(tr, i));
+        if (d.w < 0) d.set(-d.x, -d.y, -d.z, -d.w);
+        const angle = 2 * Math.acos(Math.min(1, d.w));
+        if (angle < 1e-6) continue;
+        axis.set(d.x, d.y, d.z).normalize();
+        mean.clone().multiply(d.setFromAxisAngle(axis, angle * k)).toArray(tr.values, i * 4);
+      }
+    }
+  }
+
+  // a leg rebuilt from its twin: its joints turn as the twin's did half a step before, measured
+  // from the rest pose in the shared parent's frame and mirrored across the body
+  const m = spec.mirror;
+  if (m) {
+    const parentQ = new THREE.Quaternion();
+    new THREE.Matrix4().fromArray(nodes.get(m.parent).getWorldMatrix()).decompose(new THREE.Vector3(), parentQ, new THREE.Vector3());
+    // Tripo's +Z is the creature's right: the body's mid-plane normal, in the parent's frame
+    const nrm = new THREE.Vector3(0, 0, 1).applyQuaternion(parentQ.invert());
+    const reflect = (q) => {
+      const d = 2 * (q.x * nrm.x + q.y * nrm.y + q.z * nrm.z);
+      return q.set(d * nrm.x - q.x, d * nrm.y - q.y, d * nrm.z - q.z, q.w);
+    };
+    const restOf = (names) => {
+      const acc = new THREE.Quaternion();
+      return names.map((n) => acc.multiply(new THREE.Quaternion().fromArray(nodes.get(n).getRotation())).clone());
+    };
+    const restL = restOf(m.from);
+    const restR = restOf(m.to);
+    const out = m.to.map(() => new Float32Array((frames + 1) * 4));
+    for (let i = 0; i <= frames; i++) {
+      const j = (i + frames / 2) % frames;
+      const acc = new THREE.Quaternion();
+      let prev = new THREE.Quaternion();
+      m.from.forEach((name, b) => {
+        const tr = tracks.get(`${name}|rotation`);
+        acc.multiply(tr ? quat(tr, j) : new THREE.Quaternion().fromArray(nodes.get(name).getRotation()));
+        const delta = reflect(acc.clone().multiply(restL[b].clone().invert()));
+        const world = delta.multiply(restR[b]);
+        prev.clone().invert().multiply(world).toArray(out[b], i * 4);
+        prev = world;
+      });
+    }
+    for (const [k, tr] of tracks) if (m.to.includes(tr.node.getName())) tracks.delete(k);
+    m.to.forEach((name, b) => tracks.set(`${name}|rotation`, { node: nodes.get(name), path: 'rotation', size: 4, values: out[b] }));
+  }
+
+  for (const c of chans) c.dispose();
+  for (const smp of anim.listSamplers()) smp.dispose();
+  const input = doc.createAccessor().setType('SCALAR').setBuffer(buffer).setArray(Float32Array.from({ length: frames + 1 }, (_, i) => (i * T) / frames));
+  for (const tr of tracks.values()) {
+    const output = doc.createAccessor().setType(tr.size === 4 ? 'VEC4' : 'VEC3').setArray(tr.values).setBuffer(buffer);
+    const smp = doc.createAnimationSampler().setInput(input).setOutput(output).setInterpolation('LINEAR');
+    anim.addSampler(smp).addChannel(doc.createAnimationChannel().setTargetNode(tr.node).setTargetPath(tr.path).setSampler(smp));
+  }
+}
 
 async function merge(key) {
   const spec = CREATURES[key];
@@ -52,20 +216,12 @@ async function merge(key) {
   const root = doc.getRoot();
   const buffer = root.listBuffers()[0];
 
-  // Tripo faces +X; the game's models face +Z
-  const scene = root.listScenes()[0];
-  const facing = doc.createNode('Facing').setRotation([0, -Math.SQRT1_2, 0, Math.SQRT1_2]);
-  for (const n of scene.listChildren()) {
-    scene.removeChild(n);
-    facing.addChild(n);
-  }
-  scene.addChild(facing);
-
   // three.js drops the ':' from node names anyway
   for (const n of root.listNodes()) {
     const name = n.getName();
     n.setName(spec.rename?.[name] ?? name.replace(/^tripo::/, ''));
   }
+  const nodes = new Map(root.listNodes().map((n) => [n.getName(), n]));
 
   const times = new Set();
   for (const anim of root.listAnimations()) {
@@ -77,21 +233,33 @@ async function merge(key) {
       continue;
     }
     anim.setName(name);
+    if (spec.steps || spec.stride || spec.mirror) loopStep(doc, anim, spec, nodes);
     for (const s of anim.listSamplers()) times.add(s.getInput());
   }
   // samplers share their time accessors: scale each once
   for (const t of times) t.setArray(t.getArray().map((v) => v / spec.pace));
 
+  // Tripo faces +X; the game's models face +Z (after the clips, which are worked on in Tripo's frame)
+  const scene = root.listScenes()[0];
+  const facing = doc.createNode('Facing').setRotation([0, -Math.SQRT1_2, 0, Math.SQRT1_2]);
+  for (const n of scene.listChildren()) {
+    scene.removeChild(n);
+    facing.addChild(n);
+  }
+  scene.addChild(facing);
+
   if (spec.idle) {
-    const src = root.listAnimations().find((a) => a.getName() === spec.idle);
+    // a still: the first frame of a clip, or the bind pose
+    const src = root.listAnimations().find((a) => a.getName() === (spec.idle === 'rest' ? 'Walk' : spec.idle));
     const idle = doc.createAnimation('Idle');
     const span = doc.createAccessor().setType('SCALAR').setArray(new Float32Array([0, 1])).setBuffer(buffer);
     for (const ch of src.listChannels()) {
       const out = ch.getSampler().getOutput();
-      const v = out.getElement(0, []);
+      const node = ch.getTargetNode();
+      const v = spec.idle !== 'rest' ? out.getElement(0, []) : ch.getTargetPath() === 'rotation' ? node.getRotation() : ch.getTargetPath() === 'translation' ? node.getTranslation() : node.getScale();
       const hold = doc.createAccessor().setType(out.getType()).setArray(new Float32Array([...v, ...v])).setBuffer(buffer);
       const smp = doc.createAnimationSampler().setInput(span).setOutput(hold).setInterpolation('STEP');
-      idle.addSampler(smp).addChannel(doc.createAnimationChannel().setTargetNode(ch.getTargetNode()).setTargetPath(ch.getTargetPath()).setSampler(smp));
+      idle.addSampler(smp).addChannel(doc.createAnimationChannel().setTargetNode(node).setTargetPath(ch.getTargetPath()).setSampler(smp));
     }
   }
 
@@ -102,6 +270,14 @@ async function merge(key) {
     m.setMetallicFactor(0);
   }
   await doc.transform(dedup(), prune(), textureCompress({ encoder: sharp, targetFormat: 'webp', quality: 88, resize: [512, 512] }));
+  if (spec.tris) {
+    // at a few dozen pixels tall a million triangles is waste, and the source must stay small
+    await MeshoptSimplifier.ready;
+    const count = () => root.listMeshes().reduce((n, m) => n + m.listPrimitives().reduce((k, p) => k + p.getIndices().getCount() / 3, 0), 0);
+    const before = count();
+    if (before > spec.tris) await doc.transform(weld(), simplify({ simplifier: MeshoptSimplifier, ratio: spec.tris / before, error: 0.02 }), prune());
+    console.log(`  ${before} → ${count()} triangles`);
+  }
   // the runtime shares textures by name + size: give each creature its own
   root.listTextures().forEach((t, i) => t.setName(`${key}_${i}`).setURI(''));
   // build-models.mjs reads these without a meshopt decoder
