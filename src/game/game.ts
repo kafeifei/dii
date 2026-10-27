@@ -4,12 +4,13 @@ import type { Sfx } from '../audio/sfx';
 import { CLASSES, type PlayerClass } from '../data/classes';
 import { SKILL_BY_ID } from '../data/skills';
 import { D2_TO_GAME } from '../data/d2/skillmap';
-import { createItem, isGold, makeGold, newGameDrops, rollMonsterDrops, type Drop } from '../items/gen';
+import { createItem, isGold, newGameDrops, type Drop } from '../items/gen';
 import { CAMP_VENDORS, fillStore, Store } from '../items/vendor';
 import { baseOf, displayName, isUnknown, type Item } from '../items/item';
 import { charStats, potionHeal } from './d2/stats';
 import { deathPenalty, type DeathPenalty } from './d2/death';
 import { killXp } from './d2/xp';
+import { containerLoot, monsterLoot, type Finder } from './loot';
 import { bodyItems, leaveBody, takeBody } from './corpse';
 import { emptyPacket } from './actor';
 import { blastDamage, updateMonster } from './ai';
@@ -985,7 +986,7 @@ export class Game {
     if (d.lifePerKill) p.life = Math.min(d.maxLife, p.life + d.lifePerKill);
     if (d.manaPerKill) p.mana = Math.min(d.maxMana, p.mana + d.manaPerKill);
     // loot
-    this.spawnDrops(m.pos, this.rollLoot(m.level, m.lootQuality()));
+    this.spawnDrops(m.pos, this.rollLoot((hero) => monsterLoot(m, hero)));
     // fx
     this.fx.death(m, m.def.blood, elem);
     const snd = m.def.blood === 'bone' ? 'monster.die_bone' : m.def.model === 'imp' || m.def.model === 'shaman' ? 'monster.die_imp' : 'monster.die';
@@ -1032,11 +1033,12 @@ export class Game {
     this.hooks.levelUp();
   }
 
-  /** loot from a monster or a container, rolled once more for each extra pass the debug panel asks for */
-  private rollLoot(mlvl: number, quality: number): Drop[] {
+  /** loot from a monster or a container (src/game/loot.ts) for the hero, rolled once more for each extra pass the debug panel asks for */
+  private rollLoot(roll: (hero: Finder) => Item[]): Drop[] {
     const s = this.player.stats;
+    const hero: Finder = { mf: s.mf, gf: s.gf, difficulty: this.player.difficulty };
     const drops: Drop[] = [];
-    for (let i = 0; i < debugOpts.loot; i++) drops.push(...rollMonsterDrops(mlvl, quality, s.mf, s.gf, this.player.difficulty));
+    for (let i = 0; i < debugOpts.loot; i++) for (const item of roll(hero)) drops.push({ kind: 'item', item });
     return drops;
   }
 
@@ -1288,9 +1290,9 @@ export class Game {
         obj.used = true;
         this.sfx.play('env.chest', { pos: obj.pos });
         this.fx.burst('chest', obj.pos);
-        const lvl = Math.max(1, this.level.floor * 2);
-        const drops = this.rollLoot(lvl, 1);
-        drops.push({ kind: 'item', item: makeGold(randInt(lvl * 5, lvl * 15)) });
+        // its area's Chest A, B or C (src/game/loot.ts)
+        const area = this.level.areaAt(obj.pos.x, obj.pos.z);
+        const drops = this.rollLoot((hero) => containerLoot('chest', area, hero));
         // the Horadric Cube waits in the first chest opened from floor 4 down (D2: the Halls of the Dead)
         if (this.level.floor >= 4 && !p.cubeFound) {
           p.cubeFound = true;
@@ -1306,7 +1308,8 @@ export class Game {
         obj.used = true;
         this.sfx.play('env.barrel', { pos: obj.pos });
         this.fx.burst('barrel', obj.pos);
-        if (chance(0.35)) this.spawnDrops(obj.pos, this.rollLoot(Math.max(1, this.level.floor * 2 - 1), 0));
+        const area = this.level.areaAt(obj.pos.x, obj.pos.z);
+        this.spawnDrops(obj.pos, this.rollLoot((hero) => containerLoot('barrel', area, hero)));
         break;
       }
       case 'stairs':

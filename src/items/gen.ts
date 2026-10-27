@@ -1,15 +1,19 @@
-// What the game drops and hands out, and how many: the game's own decisions for now (treasure
-// classes come later). Every item is made Diablo II's way (src/items/make.ts): its quality by
-// ItemRatio.txt with the hero's magic find and the treasure class's quality ratios, then affixes,
-// uniques, set items and their properties.
-import { chance, pick, randInt, weightedPick } from '../core/math';
+// What the game drops and hands out: Diablo II's treasure classes (src/items/d2/treasure.ts) made
+// into items for monsters, chests and barrels (dropTc; src/game/loot.ts says which class), and the
+// game's own picks where D2 has no class to go by (the debug panel's gear, runes and gems). Every
+// item is made Diablo II's way (src/items/make.ts): its quality by ItemRatio.txt with the hero's
+// magic find and the treasure class's quality ratios, then affixes, uniques, set items and their
+// properties.
+import { pick, weightedPick } from '../core/math';
 import { D2_GOOD_TCS } from '../data/d2/progression';
 import { D2X_TREASURE_CLASSES } from '../data/d2x/treasure';
 import { EQUIPPABLE_BASES, ITEM_BASES, categoryOf, itypeMatches, type ItemBase } from '../data/items';
 import { GEMS } from '../data/legendary';
 import type { TcQuality } from './d2/quality';
+import { evalTc, goldAmount, TC_MAX_ITEMS, type TcOpts } from './d2/treasure';
+import type { D2Quality, Difficulty, Rand } from './d2/types';
 import { type Item } from './item';
-import { applyRunewordTo, makeItem, type MakeSpec } from './make';
+import { applyRunewordTo, makeItem, MATH_RAND, type MakeSpec } from './make';
 
 /**
  * A new item of a base. The default (`normal`, identified) is a plain one: a starting weapon, a
@@ -74,7 +78,7 @@ export function pickBaseOfType(itype: string, ilvl: number): ItemBase | null {
   return pick(fit.length ? fit : c);
 }
 
-/** an equipment drop at an item level: the base the game picks, made with the hero's magic find */
+/** a piece of gear at an item level for the debug panel and the bot: the base the game picks (no class to go by), made with the hero's magic find */
 export function rollEquipment(ilvl: number, opts: RollOpts = {}): Item {
   const base = opts.base ?? pickBase(ilvl);
   // sold or handed out: as a vendor's stock, never ethereal and repaired (SUnitNpc.cpp:206, 258)
@@ -91,21 +95,7 @@ export function rollEquipment(ilvl: number, opts: RollOpts = {}): Item {
   });
 }
 
-/** the potion tiers by the level they start dropping at (the game's own steps) */
-const POTION_LVL: Record<string, number> = { hp1: 1, hp2: 8, hp3: 16, hp4: 26, mp1: 1, mp2: 8, mp3: 16, mp4: 26 };
-export const POTIONS = Object.keys(POTION_LVL);
-
-/** the potions of a kind dropping at an item level, the shop's too */
-export function potionsFor(ilvl: number, kind: 'hp' | 'mp'): string[] {
-  return POTIONS.filter((id) => id.startsWith(kind) && POTION_LVL[id] <= ilvl);
-}
-
-export function potionForLevel(ilvl: number, kind: 'hp' | 'mp' | 'rejuv'): Item {
-  if (kind === 'rejuv') return createItem(ilvl >= 28 && chance(0.25) ? 'rvl' : 'rvs');
-  return createItem(pick(potionsFor(ilvl, kind).slice(-2)));
-}
-
-// ───────────────────────── runes, gems, jewelry: D2's "Good" treasure classes ─────────────────────────
+// ───────────────────────── runes and gems for the debug panel: D2's "Good" treasure classes ─────────────────────────
 
 /** the Good class of the highest act and difficulty whose level the monster reaches */
 function goodTc(mlvl: number) {
@@ -131,27 +121,15 @@ export function rollRune(mlvl: number): Item {
   return createItem(id, 'normal', mlvl);
 }
 
-/** Jewelry A: rings, amulets, jewels and charms by their weights (TreasureClassEx.txt) */
-const JEWELRY = D2X_TREASURE_CLASSES['Jewelry A'].items.filter((e) => e.item && ITEM_BASES[e.item]);
-
-/** one pick from the Good class: jewelry (a ring, an amulet, a jewel or a charm), a gem or a rune */
-export function rollGood(mlvl: number, mf: number, rank = 0, difficulty: 0 | 1 | 2 = 0): Item {
-  const e = weightedPick(goodTc(mlvl).entries, (x) => x.w)!;
-  if (e.kind === 'gem') return rollGem(e.grade!, mlvl);
-  if (e.kind === 'rune') return createItem(weightedPick(e.runes!, (r) => r[1])![0], 'normal', mlvl);
-  const j = weightedPick(JEWELRY, (x) => x.prob)!;
-  return makeItem({ code: j.item!, ilvl: Math.max(1, mlvl), mf, tc: tcQuality(rank), difficulty, dropped: DROPPED });
-}
-
 /**
  * Gold is D2's gld misc item (Misc.txt), made with its amount as its gold stat (D2Game
- * Items.cpp:616-628), kept here as its stack (qty); on the ground it lies as a pile (game.ts
- * spawnDrops). The amount is the game's own until the drops follow D2's treasure classes.
+ * Items.cpp:616-628; d2/treasure.ts goldAmount), kept here as its stack (qty); on the ground it lies
+ * as a pile (game.ts spawnDrops)
  */
 export const GOLD = 'gld';
 
-export function makeGold(amount: number): Item {
-  const it = createItem(GOLD);
+export function makeGold(amount: number, ilvl = 1): Item {
+  const it = createItem(GOLD, 'normal', ilvl);
   it.qty = Math.max(1, Math.floor(amount));
   return it;
 }
@@ -162,29 +140,51 @@ export function isGold(item: Item): boolean {
 
 export type Drop = { kind: 'item'; item: Item };
 
-export function rollMonsterDrops(mlvl: number, quality: number, mf: number, gf: number, difficulty: 0 | 1 | 2 = 0): Drop[] {
-  const picks = [1, 2, 4, 7][quality] ?? 1;
-  const noDrop = [0.58, 0.25, 0.05, 0][quality] ?? 0.5;
-  const drops: Drop[] = [];
-  for (let i = 0; i < picks; i++) {
-    if (chance(noDrop)) continue;
-    const r = Math.random();
-    if (r < 0.32) {
-      // gold: D2's gld base, its amount the game's own
-      const amount = Math.max(1, Math.floor(randInt(mlvl * 2, mlvl * 6 + 8) * (1 + gf / 100)));
-      drops.push({ kind: 'item', item: makeGold(amount) });
-    } else if (r < 0.58) {
-      const rr = Math.random();
-      drops.push({ kind: 'item', item: potionForLevel(mlvl, rr < 0.55 ? 'hp' : rr < 0.93 ? 'mp' : 'rejuv') });
-    } else if (r < 0.64 + mlvl * 0.0015) {
-      drops.push({ kind: 'item', item: rollGood(mlvl, mf, quality, difficulty) });
-    } else {
-      drops.push({ kind: 'item', item: rollEquipment(mlvl, { mf, quality, difficulty }) });
-    }
-  }
-  // bosses always drop one more item
-  if (quality >= 3) drops.push({ kind: 'item', item: rollEquipment(mlvl + 2, { mf, quality: 3, difficulty }) });
-  return drops;
+export interface TcDropOpts extends TcOpts {
+  /** the killer's magic find and gold find % */
+  mf?: number;
+  gf?: number;
+  /** the difficulty dropped in: its socket cap and DropConditionCalc (d2/quality.ts) */
+  difficulty?: Difficulty;
+  /** the level the items' quality is rolled at, when not their item level: a chest's (d2/quality.ts QualityRoll.rollLvl) */
+  rollLvl?: number;
+  /** D2GAME_DropTC's nQuality: every item made in this quality (a sparkling chest's magic), not rolled */
+  quality?: D2Quality;
+  /** dropped by a hell bovine (Cow King's Leathers) */
+  hellBovine?: boolean;
+  rng?: Rand;
+}
+
+/**
+ * What one drop of a treasure class comes to at an item level (D2GAME_DropTC_6FC51360, Items.cpp:
+ * 2062-2560): its picks (d2/treasure.ts evalTc, at most 6 items), each made at the item level with
+ * the quality ratios its class chain passed it and the killer's magic find (Items.cpp:2316-2451,
+ * 2505-2520), gold as a pile of goldAmount (× its mul, + gold find), and uniques once a game. D2
+ * makes each item as its pick comes up; here the picks all come first, which drops the same.
+ */
+export function dropTc(name: string, ilvl: number, opts: TcDropOpts = {}): Item[] {
+  const rng = opts.rng ?? MATH_RAND;
+  const lvl = Math.max(1, ilvl);
+  const max = opts.max ?? TC_MAX_ITEMS;
+  return evalTc(name, rng, opts).map((p, i) =>
+    p.code === GOLD
+      ? // the item that reaches the cap ends the drop before gold find goes on (Items.cpp:2543-2559)
+        makeGold(goldAmount(lvl, rng, p.goldMul, i + 1 >= max ? 0 : opts.gf), lvl)
+      : makeItem(
+          {
+            code: p.code,
+            ilvl: lvl,
+            rollLvl: opts.rollLvl,
+            mf: opts.mf ?? 0,
+            tc: p.tc,
+            quality: opts.quality,
+            difficulty: opts.difficulty,
+            hellBovine: opts.hellBovine,
+            dropped: DROPPED,
+          },
+          rng,
+        ),
+  );
 }
 
 // ───────────────────────── runewords ─────────────────────────

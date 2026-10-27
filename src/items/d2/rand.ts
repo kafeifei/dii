@@ -1,5 +1,7 @@
-// The random rolls the D2 item modules share. D2 draws them from the item's own seed; here they
-// come from whatever Rand the caller passes, in the same order D2 makes them.
+// The random rolls the D2 item modules share. D2 draws them from the item's own seed (a drop's
+// picks from its monster's); here they come from whatever Rand the caller passes, in D2's order
+// within an item. A drop's picks all come before its items are made (gen.ts dropTc), where D2 takes
+// turns: the same odds, another order.
 import type { Rand } from './types';
 
 /** D2's ITEMS_RollLimitedRandomNumber: 0 … n − 1, and 0 when n ≤ 0 */

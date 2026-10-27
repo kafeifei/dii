@@ -32,6 +32,12 @@ export interface QualityRoll {
   code: string;
   /** the dropping monster's level (Items.cpp:1624-1645) */
   ilvl: number;
+  /**
+   * The level the roll measures the base's qlvl against when it is not the item level: D2's nLvl
+   * to D2GAME_DropTC, which a chest passes as the index of its Chest A/B/C class, 0–2
+   * (ObjMode.cpp:3958), while its items have the area's level
+   */
+  rollLvl?: number;
   /** the killer's magic find %, a minion's plus its owner's (Items.cpp:2334-2342) */
   mf?: number;
   tc?: TcQuality;
@@ -97,7 +103,7 @@ export function qualityChances(q: QualityRoll): QualityChances {
   const b = d2Base(q.code);
   const t = ownType(b);
   const row = itemRatio(b);
-  const diff = q.ilvl - b.qlvl;
+  const diff = (q.rollLvl ?? q.ilvl) - b.qlvl;
   const mf = q.mf ?? 0;
   const tc = q.tc ?? {};
   // superior and normal take neither magic find nor the TC (Items.cpp:2435, 2442)

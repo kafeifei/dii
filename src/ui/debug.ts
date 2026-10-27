@@ -154,7 +154,7 @@ export class DebugPanel {
 
   private difficulty(d: Difficulty) {
     this.game.setDifficulty(d);
-    this.done(`难度：${DIFFICULTY_NAME[d]}（换成这个难度的传送点，怪物和掉落不变）`);
+    this.done(`难度：${DIFFICULTY_NAME[d]}（换成这个难度的传送点和掉落表，怪物不变）`);
   }
 
   private done(text: string) {

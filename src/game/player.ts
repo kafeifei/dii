@@ -186,7 +186,7 @@ export class Player extends Actor {
   depthReached = 0;
   /** the depths whose waypoints have been touched, in the difficulty being played */
   waypoints: number[] = [0];
-  /** the difficulty being played (Game.setDifficulty): nothing plays harder yet, it is saved and shown and keeps its own waypoints */
+  /** the difficulty being played (Game.setDifficulty): monsters play no harder yet; it is saved and shown, keeps its own waypoints and drops from its own treasure classes */
   difficulty: Difficulty = 0;
   /** a shrine's blessing (one at a time) and its seconds left */
   shrine: { id: string; left: number } | null = null;

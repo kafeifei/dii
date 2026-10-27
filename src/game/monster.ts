@@ -154,18 +154,4 @@ export class Monster extends Actor {
   modText(): string {
     return this.mods.map((m) => MOD_NAMES[m]).join('，');
   }
-
-  /** quality tier used by loot tables */
-  lootQuality(): number {
-    switch (this.rank) {
-      case 'champion':
-        return 1;
-      case 'unique':
-        return 2;
-      case 'boss':
-        return 3;
-      default:
-        return 0;
-    }
-  }
 }

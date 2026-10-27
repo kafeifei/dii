@@ -411,14 +411,13 @@ export default async (load) => {
   const gold = G.makeGold(37);
   ok(gold.baseId === 'gld' && gold.qty === 37 && G.isGold(gold) && I.displayName(gold) === ITEM_BASES.gld.name, 'gold');
   let golds = 0;
-  for (let i = 0; i < 200; i++) for (const d of G.rollMonsterDrops(12, 1, 0, 0)) if (G.isGold(d.item)) golds += d.item.qty > 0 ? 1 : 0;
+  for (let i = 0; i < 200; i++) for (const it of G.dropTc('Act 1 Champ A', 12)) if (G.isGold(it)) golds += it.qty > 0 ? 1 : 0;
   ok(golds > 0, 'monsters drop gold items');
 
   // ── what drops: through the D2 item maker, on D2 bases ──
+  const classes = ['Act 1 H2H A', 'Act 1 Champ A', 'Act 1 Unique A', 'Act 1 Super A'];
   for (let i = 0; i < 300; i++) {
-    for (const d of G.rollMonsterDrops(12, i % 4, 100, 0)) {
-      if (d.kind === 'item') ok(ITEM_BASES[d.item.baseId] && d.item.quality && EQUIPPABLE_BASES.length, `dropped ${d.item.baseId}`);
-    }
+    for (const it of G.dropTc(classes[i % 4], 12, { mf: 100 })) ok(ITEM_BASES[it.baseId] && it.quality && EQUIPPABLE_BASES.length, `dropped ${it.baseId}`);
   }
   console.log(`  bases from d2x; magic, rare, superior, low and socketed names composed (%2%0%1, %0%1…); magic or better ${(b0 * 100).toFixed(1)}% → ${(b500 * 100).toFixed(1)}% at 500% MF; defense, requirements, D2 tooltip lines; charms, sets, runewords, jewels, the cube`);
 };
