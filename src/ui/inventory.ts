@@ -2,7 +2,7 @@ import { ITEM_BASES, slotsFor, type EquipSlot } from '../data/items';
 import { GEMS, RUNE_BY_ID } from '../data/legendary';
 import { createItem, findRuneword, applyRuneword } from '../items/gen';
 import type { Grid } from '../items/grid';
-import { baseOf, buyPrice, canSocket, sellPrice, type Item } from '../items/item';
+import { baseOf, buyPrice, canSocket, displayName, sellPrice, type Item } from '../items/item';
 import { h, type UIContext } from './common';
 import { CELL, itemIcon } from './icons';
 
@@ -39,7 +39,7 @@ function socketInto(ui: UIContext, target: Item, rune: Item): boolean {
   const rw = findRuneword(target);
   if (rw) {
     applyRuneword(target, rw);
-    ui.message(`符文之语：${rw.name}！`, '#c8a86a', 4);
+    ui.message(`符文之语：${displayName(target)}！`, '#c8a86a', 4);
     ui.sfx.play('item.runeword');
   } else ui.sfx.play('item.socket');
   ui.game.player.markDirty();
@@ -97,7 +97,7 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
     if (under && baseOf(under.item).type === 'cube') {
       if (p.cube.add(c)) {
         ui.cursorItem = null;
-        ui.message(`${c.name} 放进了魔盒`, '#c8a86a', 1.2);
+        ui.message(`${displayName(c)} 放进了魔盒`, '#c8a86a', 1.2);
         ui.sfx.play('item.move');
       } else ui.message('魔盒里放不下了', '#ff6060');
       ui.dirty = true;
@@ -193,7 +193,7 @@ function sell(ui: UIContext, it: Item) {
   const v = sellPrice(it);
   p.gold += v;
   if (baseOf(it).type !== 'potion') ui.game.shop.add(it);
-  ui.message(`出售 ${it.name}：+${v} 金币`, '#e8d890', 1.5);
+  ui.message(`出售 ${displayName(it)}：+${v} 金币`, '#e8d890', 1.5);
   ui.sfx.play('ui.coins');
 }
 

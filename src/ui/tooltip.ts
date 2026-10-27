@@ -1,6 +1,6 @@
 import { SKILL_BY_ID } from '../data/skills';
 import { CHARGE_PREFIX } from '../game/player';
-import { baseOf, buyPrice, canSocket, sellPrice, tooltip, type TooltipLine } from '../items/item';
+import { baseOf, buyPrice, canSocket, displayName, sellPrice, tooltip, type TooltipLine } from '../items/item';
 import { escapeHtml, h, type UIContext } from './common';
 
 /** the tooltip by the pointer: items, skills, and anything with a data-tip */
@@ -87,7 +87,7 @@ export class Tooltip {
       const def = SKILL_BY_ID[sid];
       const lines: TooltipLine[] = [{ text: `${def.name}（充能）`, color: '#c8a86a' }, { text: def.desc, small: true }];
       if (c) {
-        lines.push({ text: `技能等级：${c.lvl}（来自${c.item.name}）`, color: '#e8e0d0' });
+        lines.push({ text: `技能等级：${c.lvl}（来自${displayName(c.item)}）`, color: '#e8e0d0' });
         for (const l of def.describe(p.skillParams(sid, c.lvl))) lines.push({ text: l, color: '#7a7aff' });
         lines.push({ text: `剩余充能：${c.left}/${c.max}`, color: c.left > 0 ? '#6a8aff' : '#ff4040' });
       } else lines.push({ text: '没有装备带这项充能的物品', color: '#ff4040' });

@@ -6,7 +6,7 @@ import { ITEM_BASES, categoryOf, itypeOf, itypeSet, maxSocketsAt } from '../data
 import { GEMS } from '../data/legendary';
 import type { Grid } from './grid';
 import { createItem, magicWithAffix, pickBaseOfType } from './gen';
-import { baseOf, type Item } from './item';
+import { baseOf, displayName, type Item } from './item';
 
 /** the cube's 3×4 space */
 export const CUBE_W = 3;
@@ -85,7 +85,7 @@ export function transmute(cube: Grid, clvl: number): TransmuteResult {
     if (!results) continue;
     for (const it of items) cube.remove(it);
     for (const r of results) cube.add(r);
-    return { ok: true, message: `转化成功：${results.map((r) => r.name).join('、')}` };
+    return { ok: true, message: `转化成功：${results.map((r) => displayName(r)).join('、')}` };
   }
   return { ok: false, message: '无法转化：魔盒里的东西对不上任何配方' };
 }

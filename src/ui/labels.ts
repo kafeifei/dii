@@ -1,4 +1,4 @@
-import { itemColor, tooltip } from '../items/item';
+import { displayName, itemColor, tooltip } from '../items/item';
 import type { Renderer } from '../render/renderer';
 import { h, type UIContext } from './common';
 
@@ -38,7 +38,7 @@ export class GroundLabels {
       if (!rec) {
         const el = h('div', 'glabel');
         if (gi.item) {
-          el.textContent = gi.item.name;
+          el.textContent = displayName(gi.item);
           el.style.color = itemColor(gi.item);
         } else {
           el.textContent = `${gi.gold} 金币`;

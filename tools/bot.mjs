@@ -4,7 +4,7 @@ export default async function (page, shot, log) {
   const maxDepth = +(process.env.DEPTH || 8);
   const maxMinutes = +(process.env.MINUTES || 40);
   await page.evaluate(async ({ maxDepth, maxMinutes }) => {
-    const { baseOf, weaponDamage, sellPrice } = await import('/src/items/item.ts');
+    const { baseOf, displayName, weaponDamage, sellPrice } = await import('/src/items/item.ts');
     const { slotsFor } = await import('/src/data/items.ts');
     const { SKILL_BY_ID } = await import('/src/data/skills.ts');
     const { createItem } = await import('/src/items/gen.ts');
@@ -156,7 +156,7 @@ export default async function (page, shot, log) {
               if (it.rarity === 'rare') stats.rares++;
               if (baseOf(it).type === 'rune') stats.runes++;
               pl.intent = { kind: 'pickup', ground: loot };
-              lastPick = `pickup ${it.name} @${loot.pos.x.toFixed(1)},${loot.pos.z.toFixed(1)} tile=${g.level.map.get(Math.floor(loot.pos.x), Math.floor(loot.pos.z))} inv=${pl.inventory.items.length}`;
+              lastPick = `pickup ${displayName(it)} @${loot.pos.x.toFixed(1)},${loot.pos.z.toFixed(1)} tile=${g.level.map.get(Math.floor(loot.pos.x), Math.floor(loot.pos.z))} inv=${pl.inventory.items.length}`;
             } else if (!pl.intent) {
               if (near.length && near[0].d < 40) {
                 pl.intent = { kind: 'attack', target: near[0].m, skill: attackSkill(), hold: true };
@@ -219,9 +219,10 @@ export default async function (page, shot, log) {
     if (s.simTime % 120 < 20) log('…', JSON.stringify(s), `${Math.round((Date.now() - t0) / 1000)}s real`);
     if (Date.now() - t0 > 30 * 60 * 1000) break;
   }
-  const result = await page.evaluate(() => {
+  const result = await page.evaluate(async () => {
+    const { displayName } = await import('/src/items/item.ts');
     const pl = game.player;
-    const eq = Object.fromEntries(Object.entries(pl.equipment).map(([k, v]) => [k, `${v.name} [${v.rarity}]`]));
+    const eq = Object.fromEntries(Object.entries(pl.equipment).map(([k, v]) => [k, `${displayName(v)} [${v.rarity}]`]));
     const d = pl.stats;
     return { ...window.__bot, final: { lvl: pl.level, life: d.maxLife, def: d.def, dmg: [d.wMin, d.wMax, d.dmgPct], ar: d.ar, res: d.res, eq, base: pl.base, skills: pl.skills } };
   });

@@ -23,6 +23,7 @@ export interface Item {
   baseId: string;
   rarity: Rarity;
   ilvl: number;
+  /** the name it was made with, kept in the save; what it shows is displayName(item) */
   name: string;
   mods: ItemMod[];
   defense?: number;
@@ -31,6 +32,14 @@ export interface Item {
   uniqueId?: string;
   setItemId?: string;
   runewordId?: string;
+  /**
+   * Rows of the magic prefix and suffix tables the item rolled, and a rare item's two name words
+   * (rows of the rare prefix and suffix word tables): what displayName will build the name from
+   * once the renamed tables fill them in. Unset on every item made so far
+   */
+  prefixes?: number[];
+  suffixes?: number[];
+  rareName?: [number, number];
   reqLvl: number;
   /** charges left, by skill, for "level N skill (X/Y charges)" */
   charges?: Record<string, number>;
@@ -163,6 +172,15 @@ export function itemTypeName(item: Item): string {
   return baseOf(item).name;
 }
 
+/**
+ * The name an item shows, wherever one is shown. With the renamed tables it will be built from
+ * the item's rows (prefixes, suffixes, rareName), so a renamed affix renames the items already
+ * made; an item without them, like every one made so far, shows the name it was saved with
+ */
+export function displayName(item: Item): string {
+  return item.name;
+}
+
 export interface TooltipLine {
   text: string;
   color?: string;
@@ -256,16 +274,17 @@ export function tooltip(item: Item, ctx?: ReqContext, priceLine?: string): Toolt
   const lines: TooltipLine[] = [];
   const color = itemColor(item);
   const clvl = ctx?.level ?? 1;
+  const name = displayName(item);
   if (item.rarity === 'runeword') {
-    lines.push({ text: item.name, color });
+    lines.push({ text: name, color });
     lines.push({ text: `'${item.socketed.map((r) => RUNE_BY_ID[r]?.letter ?? '?').join('')}'`, color: RARITY_COLOR.unique });
     lines.push({ text: b.name, color: SOCKETED_COLOR });
     if (!RUNEWORD_BY_ID[item.runewordId ?? '']) lines.push({ text: '旧版符文之语（已不能再制作）', small: true, color: '#8a8278' });
   } else if (item.rarity === 'unique' || item.rarity === 'set' || item.rarity === 'rare') {
-    lines.push({ text: item.name, color });
+    lines.push({ text: name, color });
     lines.push({ text: b.name, color });
   } else {
-    lines.push({ text: item.name, color });
+    lines.push({ text: name, color });
   }
 
   if (b.type === 'potion') {

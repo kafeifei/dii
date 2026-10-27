@@ -3,7 +3,7 @@ import { debugOpts, saveDebugOpts } from '../game/debug';
 import type { Game } from '../game/game';
 import { MAX_LEVEL, xpForLevel } from '../game/player';
 import { rollEquipment, rollGem, rollRune, type Drop } from '../items/gen';
-import type { Item, Rarity } from '../items/item';
+import { displayName, type Item, type Rarity } from '../items/item';
 import { levelLabel } from '../world/levelgen';
 
 type Choice<T> = [T, string];
@@ -110,7 +110,7 @@ export class DebugPanel {
     // reroll with plenty of magic find until the quality comes up (some bases have no set or unique)
     let item = rollEquipment(this.ilvl, { mf: 1000, quality: 3 });
     for (let i = 0; i < 400 && item.rarity !== r; i++) item = rollEquipment(this.ilvl, { mf: 1000, quality: 3 });
-    this.drop([item], `一件${RARITY_NAME[item.rarity] ?? ''}「${item.name}」`);
+    this.drop([item], `一件${RARITY_NAME[item.rarity] ?? ''}「${displayName(item)}」`);
   }
 
   private dropRunes() {

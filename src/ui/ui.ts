@@ -3,7 +3,7 @@ import { debugEnabled } from '../game/debug';
 import type { Game, GameHooks } from '../game/game';
 import type { Level } from '../game/level';
 import type { ObjKind } from '../game/objects';
-import { baseOf, itemColor, type Item } from '../items/item';
+import { baseOf, displayName, itemColor, type Item } from '../items/item';
 import type { Renderer } from '../render/renderer';
 import { Automap } from './automap';
 import { renderChar } from './character';
@@ -244,7 +244,7 @@ export class UI implements GameHooks, UIContext {
     const n = this.game.touchNear;
     const t = this.touch!;
     if (!n || this.game.player.dead || this.left || this.right) t.setInteract(null);
-    else if (n.ground) t.setInteract('拾取', n.ground.item!.name, itemColor(n.ground.item!));
+    else if (n.ground) t.setInteract('拾取', displayName(n.ground.item!), itemColor(n.ground.item!));
     else t.setInteract(USE_VERB[n.obj.kind], n.obj.name);
   }
 
