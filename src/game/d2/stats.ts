@@ -1,13 +1,12 @@
 // Diablo II's character formulas: attributes, life/mana/stamina, potions, movement, attack rating,
-// defense, chance to hit and block, resistances and experience, from CharStats.txt
-// (src/data/d2x/classes.ts), DifficultyLevels.txt and experience.txt. Pure functions, nothing wired.
+// defense, chance to hit and block and resistances, from CharStats.txt (src/data/d2x/classes.ts) and
+// DifficultyLevels.txt; experience is in xp.ts. Pure functions, nothing wired.
 // D2MOO references are to github.com/ThePhrozenKeep/D2MOO at commit d9d394f. D2 keeps life, mana
 // and stamina in 256ths of a point and everything else here in integers; the integer steps are kept
 // where they change a result (C division truncates toward zero, hence Math.trunc).
 import type { PlayerClass } from '../../data/classes';
 import { D2X_CLASSES } from '../../data/d2x/classes';
 import { D2X_DIFFICULTIES } from '../../data/d2x/difficulty';
-import { D2X_MAX_LEVEL, D2X_XP, D2X_XP_RATIO } from '../../data/d2x/experience';
 import type { D2xClass, D2xDifficulty } from '../../data/d2x/types';
 
 export type ClassCode = 'ama' | 'sor' | 'nec' | 'pal' | 'bar' | 'dru' | 'ass';
@@ -302,32 +301,4 @@ export function absorb(dmg: number, pct = 0, flat = 0): { dmg: number; life: num
     life += f;
   }
   return { dmg: left, life };
-}
-
-// ───────────────────────── experience ─────────────────────────
-
-export const MAX_LEVEL = D2X_MAX_LEVEL;
-
-/** total experience a hero of level L has at least (D2X_XP[L − 1]) */
-export function xpForLevel(level: number): number {
-  if (level <= 1) return 0;
-  return D2X_XP[Math.min(level, MAX_LEVEL) - 1];
-}
-
-/** the level that much experience makes (PlayerStats.cpp:85, DATATBLS_GetCurrentLevelFromExp) */
-export function levelForXp(xp: number): number {
-  let L = 1;
-  while (L < MAX_LEVEL && xp >= D2X_XP[L]) L++;
-  return L;
-}
-
-/**
- * The experience a hero of `level` keeps from a kill's share (D2MOO SUnitDmg.cpp:3039-3099): none at
- * the top level, × ExpRatio from level 70 on (1024ths, floored), then "+X% experience gained". The
- * level-difference scaling (D2X_XP_LEVEL_DIFF) comes before this.
- */
-export function xpKept(amount: number, level: number, addXpPct = 0): number {
-  if (level >= MAX_LEVEL) return 0;
-  const kept = Math.floor(amount * (D2X_XP_RATIO[level] ?? 1));
-  return kept + Math.trunc((kept * addXpPct) / 100);
 }

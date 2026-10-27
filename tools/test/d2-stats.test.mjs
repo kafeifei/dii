@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 
 export default async (load) => {
   const s = await load('/src/game/d2/stats.ts');
-  const { D2_XP, D2_XP_RATIO } = await load('/src/data/d2/progression.ts');
   const pal = s.charStats('paladin');
   const sor = s.charStats('sorceress');
   assert.equal(s.charStats('pal'), pal);
@@ -135,21 +134,4 @@ export default async (load) => {
   assert.deepEqual(s.absorb(100, 50), { dmg: 60, life: 40 });
   assert.deepEqual(s.absorb(100, 50, 10), { dmg: 50, life: 50 });
   assert.deepEqual(s.absorb(10, 0, 30), { dmg: 0, life: 10 });
-
-  // experience: the same tables the game uses now
-  for (let L = 0; L <= s.MAX_LEVEL; L++) {
-    assert.equal(s.xpKept(1024, L), L >= s.MAX_LEVEL ? 0 : D2_XP_RATIO[L], `ratio at level ${L}`);
-  }
-  assert.equal(s.xpKept(1000, 1), 1000);
-  assert.equal(s.xpKept(1000, 70), 953);
-  assert.equal(s.xpKept(1000, 98), 5); // 6 / 1024
-  assert.equal(s.xpKept(1000, 99), 0);
-  assert.equal(s.xpKept(1000, 10, 10), 1100);
-  for (let L = 2; L <= s.MAX_LEVEL; L++) {
-    assert.equal(s.xpForLevel(L), D2_XP[L - 1]);
-    assert.equal(s.levelForXp(s.xpForLevel(L)), L);
-    assert.equal(s.levelForXp(s.xpForLevel(L) - 1), L - 1);
-  }
-  assert.equal(s.levelForXp(0), 1);
-  assert.equal(s.levelForXp(Number.MAX_SAFE_INTEGER), 99);
 };
