@@ -101,6 +101,8 @@ export const MODEL_FILES = [
   'mon_lich',
   'mon_mushroom',
   'mon_overlord',
+  'mon_quillrat',
+  'mon_rogue_fallen',
   'mon_shaman',
   'mon_skelarcher',
   'mon_skeleton',

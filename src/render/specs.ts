@@ -3,7 +3,7 @@ import { ITEM_BASES, lookOf, staffGem } from '../data/items';
 import type { Monster } from '../game/monster';
 import type { Player } from '../game/player';
 import type { Item } from '../items/item';
-import { assets } from './assets';
+import { assets, type ModelKey } from './assets';
 import type { Attachment, ModelSpec, MoveClip } from './models';
 import { glowSprite, heldModel, topCentroid } from './props';
 
@@ -37,6 +37,12 @@ function meshyClips(h: number, walk: number, run: number, attack: string[], extr
   };
 }
 
+/**
+ * body lengths a second the quill rat's planted paws sweep back in its walk at 1× (tools/tripo-merge.mjs
+ * mon_quillrat, measured on the merged clip: 0.79-1.04, the four paws' mean)
+ */
+const QUILLRAT_STRIDE = 0.94;
+
 /** one-piece AI creatures (ModelSpec.motion) have no clips at all */
 const NO_CLIPS: ModelSpec['clips'] = { idle: [], move: [], attack: [], death: [] };
 
@@ -44,6 +50,77 @@ const RANK_TINT = {
   champion: { tint: '#5a7aff', emissive: '#14206a' },
   unique: { tint: '#e0a840', emissive: '#4a2e06' },
 } as const;
+
+/**
+ * What D2's corrupted rogues carry (MonStats2 RHv / SHv / LHv; D2Game Monster.cpp:486-511
+ * MONSTER_SetComponents rolls each piece evenly per monster): ours by the piece's look, a flail
+ * as a mace, the curved and straight swords all as the one blade
+ */
+const ROGUE_RH: [ModelKey, number][] = [
+  ['axe_1handed', 0.7], // axe
+  ['w_club', 0.6], // clb
+  ['w_mace', 0.6], // fla
+  ['skeleton_blade', 0.62], // flc
+  ['axe_1handed', 0.62], // hax
+  ['skeleton_blade', 0.66], // lsd
+  ['w_mace', 0.62], // mac
+  ['skeleton_blade', 0.62], // scm
+  ['skeleton_blade', 0.58], // ssd
+  ['w_hammer', 0.6], // whm
+  ['skeleton_blade', 0.62], // sbr
+];
+/** nil, buc, lrg, kit */
+const ROGUE_SH: (ModelKey | null)[] = [null, 'skeleton_shield_small_a', 'skeleton_shield_large_a', 'skeleton_shield_large_a'];
+
+/** an even pick that stays the same for a monster, a separate roll for each `salt` */
+function roll<T>(m: Monster, list: readonly T[], salt: number): T {
+  return list[(Math.imul(m.id + salt * 977, 2654435761) >>> 0) % list.length];
+}
+
+/**
+ * Meshy's corrupted rogue (tools/meshy-chars.mjs mon_rogue_fallen) for all three: the hunter (D2
+ * corruptrogue, BaseW 1hs) with a one-handed weapon and maybe a shield, the spearwoman (cr_lancer,
+ * 2ht: pike, spear, trident) thrusting a spear, the ranger (cr_archer, a bow in the left hand)
+ * shooting. Human-sized, a little over the hunched zombie as D2 draws them (MonStats2 pixHeight
+ * 80-96 to its 72).
+ */
+function rogueSpec(m: Monster, sc: number): ModelSpec {
+  const h = 1.75 * sc;
+  const base = { model: 'mon_rogue_fallen' as const, rig: 'quat' as const, height: h };
+  switch (m.def.model) {
+    case 'cr_lancer':
+      return { ...base, attach: [{ model: 'w_spear', hand: 'r', scale: 0.8, hold: 'level', aim: true }], clips: meshyClips(h, 1.42, 4.25, ['Thrust']) };
+    case 'cr_archer':
+      return { ...base, attach: [{ model: makeBow, hand: 'l', hold: 'pistol', aim: true }], clips: meshyClips(h, 1.42, 4.25, ['Shoot']) };
+  }
+  const [rh, scale] = roll(m, ROGUE_RH, 1);
+  const sh = roll(m, ROGUE_SH, 2);
+  const attach: Attachment[] = [{ model: rh, hand: 'r', scale, hold: 'grip' }];
+  if (sh) attach.push({ model: sh, hand: 'l', scale: 0.65, hold: 'shield' });
+  return { ...base, attach, clips: meshyClips(h, 1.42, 4.25, ['Attack']) };
+}
+
+/** a short bow in world units: limbs along ±Y bowed toward +Z (the target), the grip at the origin */
+function makeBow(): THREE.Object3D {
+  const g = new THREE.Group();
+  const wood = new THREE.MeshStandardMaterial({ color: '#5a3a1e', roughness: 0.8 });
+  const tip = 0.55;
+  const back = -0.16;
+  const curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, -tip, back),
+    new THREE.Vector3(0, -tip * 0.55, -0.035),
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(0, tip * 0.55, -0.035),
+    new THREE.Vector3(0, tip, back),
+  ]);
+  g.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 24, 0.018, 5, false), wood));
+  const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.12, 6), new THREE.MeshStandardMaterial({ color: '#2a1a10', roughness: 0.9 }));
+  g.add(grip);
+  const string = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, tip * 2, 3), new THREE.MeshStandardMaterial({ color: '#d8d0b8', roughness: 0.6 }));
+  string.position.z = back;
+  g.add(string);
+  return g;
+}
 
 export function monsterSpec(m: Monster): ModelSpec {
   const d = m.def;
@@ -114,10 +191,29 @@ export function monsterSpec(m: Monster): ModelSpec {
         rig: 'quat',
         height: w,
         fitWidth: true,
-        legs: true,
+        legs: 'octopod',
         clips: { idle: still, move: [{ clip: 'Walk', ref: (0.44 * w * 0.9) / 0.42 }], attack: still, hit: [], death: still },
       });
     }
+    case 'quillrat': {
+      // Tripo rig (tools/tripo-merge.mjs): its walk, the rest posed in code (src/render/legs.ts
+      // QuadRig) over the bind pose; the bite on 'attack', the quills on 'cast'. About half a
+      // zombie's height, as D2 draws them (MonStats2 pixHeight, where the life bar sits: 48 to the
+      // zombie's 72); its quills stand 0.69 of its length.
+      const h = 0.85 * sc;
+      const still = ['Idle'];
+      return ranked({
+        model: 'mon_quillrat',
+        rig: 'quat',
+        height: h,
+        legs: 'quadruped',
+        clips: { idle: still, move: [{ clip: 'Walk', ref: QUILLRAT_STRIDE * (h / 0.69) * 0.9 }], attack: still, cast: still, hit: [], death: still },
+      });
+    }
+    case 'corruptrogue':
+    case 'cr_lancer':
+    case 'cr_archer':
+      return ranked(rogueSpec(m, sc));
     case 'wraith': {
       const h = 1.55 * sc;
       return ranked({

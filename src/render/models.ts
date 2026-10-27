@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { ActorState } from '../game/actor';
 import { assets, type ModelKey } from './assets';
-import { LegRig } from './legs';
+import { LegRig, QuadRig, type PosedRig } from './legs';
 import type { AnimInput } from './rig';
 
 /** something carried in a hand slot: another model file, or a procedural mesh built in body units */
@@ -22,8 +22,14 @@ export interface Attachment {
    * - 'shield': the fist behind its middle, the face turned forward and out
    * - 'upright': a staff kept upright, tilting with the wrist only while attacking — welded to a
    *   rolling wrist, a staff taller than its bearer swings wildly
+   * - 'level': a shaft (+Y) held level and pointing ahead (a spear at the ready)
    */
-  hold?: 'grip' | 'pistol' | 'shield' | 'upright';
+  hold?: 'grip' | 'pistol' | 'shield' | 'upright' | 'level';
+  /**
+   * take the pose at the attack's landing frame (half-way through the first attack clip) rather
+   * than in the idle stance: a drawn bow upright, a spear's point on the target when it thrusts
+   */
+  aim?: boolean;
 }
 
 /** an object held in the actor's frame and placed from the hand and forearm bones every frame */
@@ -43,6 +49,8 @@ interface Held {
   loose: boolean;
   /** 0 = rest pose, 1 = follows the bone */
   follow: number;
+  /** posed at the attack's landing frame (Attachment.aim) */
+  aim: boolean;
 }
 
 /** idle poses in the actor frame (+Z ahead, +X to the left), for the right hand */
@@ -60,6 +68,7 @@ const REST: Record<NonNullable<Attachment['hold']>, THREE.Quaternion> = (() => {
     // carried on the left arm: face (+Z) forward and out to the left
     shield: pose(new THREE.Vector3(0.9, 0, -0.45), new THREE.Vector3(0, 1, 0)),
     upright: new THREE.Quaternion(),
+    level: pose(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0.1, 1)),
   };
 })();
 
@@ -192,8 +201,11 @@ export interface ModelSpec {
    * along x, 'hover' only bobs and sways
    */
   motion?: 'flap' | 'hover';
-  /** a many-legged Tripo rig: its legs are bent in code on top of the clips (src/render/legs.ts) */
-  legs?: boolean;
+  /**
+   * a Tripo rig with only a walk (tools/tripo-merge.mjs): everything else is posed in code on top
+   * of the clips (src/render/legs.ts), by its rig type
+   */
+  legs?: 'octopod' | 'quadruped';
   clips: {
     idle: string[];
     move: MoveClip[];
@@ -271,7 +283,7 @@ export class ModelRig {
   /** where the body sits in the root as made, for reset */
   private readonly basePos = new THREE.Vector3();
   private time = Math.random() * 10;
-  private legs: LegRig | null = null;
+  private legs: PosedRig | null = null;
   private flash = new THREE.Color();
   /** shared by every material of a `motion` creature */
   private moveU = { uMoveT: { value: Math.random() * 10 }, uMoveK: { value: 1 }, uBoxMin: { value: new THREE.Vector3() }, uBoxMax: { value: new THREE.Vector3() } };
@@ -289,7 +301,8 @@ export class ModelRig {
     this.inner.add(this.body);
     this.root.add(this.inner);
     // hinge axes come from the rest pose, before any clip has moved a bone
-    if (spec.legs) this.legs = LegRig.find(this.body);
+    if (spec.legs === 'octopod') this.legs = LegRig.find(this.body);
+    else if (spec.legs === 'quadruped') this.legs = QuadRig.find(this.body, tpl.size.clone().multiplyScalar(s));
 
     // accessories
     if (spec.show) {
@@ -329,7 +342,7 @@ export class ModelRig {
         // the left hand mirrors the right-hand poses across the body
         const rest = REST[a.hold].clone();
         if (a.hand === 'l' && a.hold !== 'shield') rest.set(rest.x, -rest.y, -rest.z, rest.w);
-        this.held.push({ obj, hand: bone, pos: grip, turn: loose ? bone : bone.parent!, rest, rot: new THREE.Quaternion(), push: a.hold === 'shield' ? 0.05 : 0, loose, follow: loose ? 0.2 : 1 });
+        this.held.push({ obj, hand: bone, pos: grip, turn: loose ? bone : bone.parent!, rest, rot: new THREE.Quaternion(), push: a.hold === 'shield' ? 0.05 : 0, loose, follow: loose ? 0.2 : 1, aim: !!a.aim });
         if (a.glow) obj.traverse((o) => glowSet.add(o));
         continue;
       } else if (typeof a.model === 'function') {
@@ -401,11 +414,22 @@ export class ModelRig {
     for (const c of lib) this.clips.set(c.name, c);
     this.play(this.pick(spec.clips.idle), true, 1, 0);
     if (this.held.length) {
-      // the forearm (or wrist) rotation that gives each piece its rest pose in the idle stance
+      // the forearm (or wrist) rotation that gives each piece its rest pose in the idle stance, or
+      // half-way through the attack for an aimed one
+      const fit = (aim: boolean) => {
+        this.root.updateMatrixWorld(true);
+        const rootQ = this.root.getWorldQuaternion(_q1);
+        for (const h of this.held) if (h.aim === aim) h.rot.copy(h.turn.getWorldQuaternion(_q2).invert().multiply(rootQ).multiply(h.rest));
+      };
       this.mixer.setTime(0);
-      this.root.updateMatrixWorld(true);
-      const rootQ = this.root.getWorldQuaternion(_q1);
-      for (const h of this.held) h.rot.copy(h.turn.getWorldQuaternion(_q2).invert().multiply(rootQ).multiply(h.rest));
+      fit(false);
+      const attack = this.held.some((h) => h.aim) ? this.pick(spec.clips.attack) : null;
+      if (attack) {
+        this.play(attack, false, 1, 0);
+        this.mixer.setTime(attack.duration * 0.5);
+        fit(true);
+        this.play(this.pick(spec.clips.idle), true, 1, 0);
+      }
     }
     this.mixer.setTime(Math.random() * 2);
     this.updateHeld(1, false);
@@ -583,6 +607,7 @@ export class ModelRig {
     const walking = !a.dead && (a.state === 'move' || a.state === 'charge') && this.cur && clip && this.spec.clips.move.some((m) => m.clip === clip.name);
     this.legs.pose(dt, a, walking ? (this.cur!.time % clip!.duration) / clip!.duration : null);
     const b = this.legs.body;
+    this.inner.position.x = this.basePos.x + b.side;
     this.inner.position.z = -this.baseCenterZ + b.lunge;
     this.inner.position.y = this.baseY + b.rise;
     this.inner.rotation.x = b.pitch;

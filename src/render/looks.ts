@@ -36,6 +36,14 @@ export function monsterLook(m: Monster): RigLook {
       return { ...base, head: 'ghoul', hunch: 0.45, weapon: 'claws', limb: 0.9, bulk: 0.95, eyes: '#c0ff40', pants: '#2a2a20' };
     case 'spider':
       return { ...base, type: 'spider', eyes: '#ff2020' };
+    case 'corruptrogue':
+      return { ...base, cloth: '#4a2a3a', pants: '#2a1a20', skin: '#a08a8a', weapon: 'sword', weaponColor: '#8a8a90', eyes: '#ff3030' };
+    case 'cr_lancer':
+      return { ...base, cloth: '#4a2a3a', pants: '#2a1a20', skin: '#a08a8a', weapon: 'spear', weaponColor: '#8a7a6a', eyes: '#ff3030' };
+    case 'cr_archer':
+      return { ...base, cloth: '#4a2a3a', pants: '#2a1a20', skin: '#a08a8a', weapon: 'bow', eyes: '#ff3030' };
+    case 'quillrat':
+      return { ...base, type: 'spider', skin: '#5a4a3a', cloth: '#2a2018', eyes: '#ff8020' };
     case 'wraith':
       return { ...base, head: 'hood', robe: '#4a7aa8', cloth: '#5a8ab8', skin: '#a8d8ff', weapon: 'claws', floating: true, ghost: true, eyes: '#c0f0ff', limb: 0.6 };
     case 'demon':

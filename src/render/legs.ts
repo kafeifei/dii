@@ -34,8 +34,19 @@ interface Chain {
 export interface BodyOffset {
   lunge: number;
   rise: number;
+  /** sideways, to the actor's left */
+  side: number;
   pitch: number;
   roll: number;
+}
+
+/** a rig posed in code after the mixer has run (models.ts ModelRig.advance) */
+export interface PosedRig {
+  readonly body: BodyOffset;
+  /** before the mixer runs */
+  reset(): void;
+  /** after the mixer; `phase` is how far through its walk cycle the clip is (null when it isn't walking) */
+  pose(dt: number, a: AnimInput, phase: number | null): void;
 }
 
 /** in a step, which half of the cycle each front leg lifts in: diagonals alternate */
@@ -56,11 +67,11 @@ const _qs = new THREE.Quaternion();
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
 
-export class LegRig {
+export class LegRig implements PosedRig {
   private chains: Chain[] = [];
   private stepK = 0;
   private time = Math.random() * 10;
-  readonly body: BodyOffset = { lunge: 0, rise: 0, pitch: 0, roll: 0 };
+  readonly body: BodyOffset = { lunge: 0, rise: 0, side: 0, pitch: 0, roll: 0 };
 
   /** null when the model has no such bones */
   static find(body: THREE.Object3D): LegRig | null {
@@ -183,5 +194,181 @@ export class LegRig {
     _q.setFromAxisAngle(_v.copy(j.lift), lift);
     _qs.setFromAxisAngle(_w.copy(j.swing), swing);
     j.bone.quaternion.premultiply(_q).premultiply(_qs);
+  }
+}
+
+/** a joint QuadRig turns: its rest rotation and the body's axes in its parent's frame */
+interface QJoint {
+  bone: THREE.Bone;
+  rest: THREE.Quaternion;
+  /** about the body's right-to-left axis, positive lifts the nose (a limb: swings the foot forward) */
+  up: THREE.Vector3;
+  /** about the vertical, positive turns to the body's left */
+  left: THREE.Vector3;
+  /** about the forward axis */
+  roll: THREE.Vector3;
+}
+
+interface QLeg {
+  front: boolean;
+  left: boolean;
+  joints: QJoint[];
+}
+
+/**
+ * Code-driven poses for Tripo's quadruped rig (the quill rat), over its walk and a still bind pose.
+ * Bones: `Spine_<n>` hips to chest, `Head_<n>`, `Tail_<n>`, legs `<pair>_<Left|Right>_Limb_<n>` with
+ * pair 0 in front (tools/tripo-merge.mjs names the ones Tripo got wrong). D2's quill rat bites with
+ * its first attack and shoots quills with its second (D2MOO AiThink.cpp:1050-1115 AITHINK_Fn014_QuillRat:
+ * MONMODE_ATTACK1 in melee, MONMODE_ATTACK2 for the quills), so:
+ * - attack: rear back, then lunge in with the head down at the half-way point, where the bite lands
+ * - cast: hunch the back up with the head tucked in, then shake the quills loose at half-way
+ * - hit: a flinch; death: it rolls over onto its side, legs kicking, then curled and still
+ * - idle: sniffing and looking about, tail swaying; the walk is the clip's
+ */
+export class QuadRig implements PosedRig {
+  private spine: QJoint[] = [];
+  private head: QJoint[] = [];
+  private tail: QJoint[] = [];
+  private legs: QLeg[] = [];
+  private time = Math.random() * 10;
+  /** which way it rolls over when it dies */
+  private rollTo = Math.random() < 0.5 ? 1 : -1;
+  readonly body: BodyOffset = { lunge: 0, rise: 0, side: 0, pitch: 0, roll: 0 };
+
+  /** `size` is the body's bind-pose bounds in world units; null when the model has no such bones */
+  static find(body: THREE.Object3D, size: THREE.Vector3): QuadRig | null {
+    const rig = new QuadRig(body, size);
+    return rig.legs.length === 4 && rig.spine.length ? rig : null;
+  }
+
+  private constructor(body: THREE.Object3D, private size: THREE.Vector3) {
+    // body space: +Z forward, +Y up, +X to the left, in the rest pose as loaded
+    body.updateMatrixWorld(true);
+    const bodyInv = body.getWorldQuaternion(new THREE.Quaternion()).invert();
+    const joint = (bone: THREE.Bone): QJoint => {
+      const parentInBody = bodyInv.clone().multiply(bone.parent!.getWorldQuaternion(new THREE.Quaternion())).invert();
+      return {
+        bone,
+        rest: bone.quaternion.clone(),
+        up: new THREE.Vector3(-1, 0, 0).applyQuaternion(parentInBody),
+        left: new THREE.Vector3(0, 1, 0).applyQuaternion(parentInBody),
+        roll: new THREE.Vector3(0, 0, 1).applyQuaternion(parentInBody),
+      };
+    };
+    const legs = new Map<string, { front: boolean; left: boolean; seg: Map<number, THREE.Bone> }>();
+    const named = { Spine: new Map<number, THREE.Bone>(), Head: new Map<number, THREE.Bone>(), Tail: new Map<number, THREE.Bone>() };
+    body.traverse((o) => {
+      if (!(o as THREE.Bone).isBone) return;
+      const leg = /^(\d)_(Left|Right)_Limb_(\d)$/.exec(o.name);
+      if (leg) {
+        const key = leg[1] + leg[2];
+        if (!legs.has(key)) legs.set(key, { front: leg[1] === '0', left: leg[2] === 'Left', seg: new Map() });
+        legs.get(key)!.seg.set(+leg[3], o as THREE.Bone);
+        return;
+      }
+      const m = /^(Spine|Head|Tail)_(\d)$/.exec(o.name);
+      if (m) named[m[1] as keyof typeof named].set(+m[2], o as THREE.Bone);
+    });
+    const chain = (seg: Map<number, THREE.Bone>) => [...seg.entries()].sort((a, b) => a[0] - b[0]).map((e) => joint(e[1]));
+    for (const l of legs.values()) this.legs.push({ front: l.front, left: l.left, joints: chain(l.seg) });
+    // Spine_0 is the hips the hind legs hang from: bending starts above it
+    this.spine = chain(named.Spine).slice(1);
+    this.head = chain(named.Head);
+    this.tail = chain(named.Tail);
+  }
+
+  reset() {
+    for (const j of this.all()) j.bone.quaternion.copy(j.rest);
+  }
+
+  private *all(): Generator<QJoint> {
+    yield* this.spine;
+    yield* this.head;
+    yield* this.tail;
+    for (const l of this.legs) yield* l.joints;
+  }
+
+  pose(dt: number, a: AnimInput, phase: number | null) {
+    this.time += dt;
+    const t = this.time;
+    const b = this.body;
+    b.lunge = b.rise = b.side = b.pitch = b.roll = 0;
+    if (a.dead) {
+      this.die(a.deathTime);
+      return;
+    }
+    const p = Math.min(1, a.stateTime / Math.max(0.1, a.stateDur));
+    const bite = a.state === 'attack' ? p : -1;
+    const quills = a.state === 'cast' ? p : -1;
+    const flinch = a.state === 'hit' || a.state === 'block' ? Math.sin(Math.PI * Math.min(1, a.stateTime / Math.max(0.15, a.stateDur))) : 0;
+    const idle = phase === null && bite < 0 && quills < 0 && !flinch ? 1 : 0;
+
+    // the bite: rear back until just before half-way, then lunge in head down and recover
+    const wind = bite < 0 ? 0 : smooth(0, 0.4, bite) * (1 - smooth(0.4, 0.5, bite));
+    const strike = bite < 0 ? 0 : smooth(0.4, 0.5, bite) * (1 - smooth(0.62, 0.95, bite));
+    // the quills: hunch over, shake them loose around half-way, settle
+    const hunch = quills < 0 ? 0 : smooth(0, 0.38, quills) * (1 - smooth(0.72, 1, quills));
+    const shake = quills < 0 ? 0 : smooth(0.4, 0.47, quills) * (1 - smooth(0.6, 0.8, quills)) * Math.sin(a.stateTime * 60);
+
+    const look = idle * 0.3 * Math.sin(t * 0.45 + this.rollTo);
+    const sniff = idle * 0.06 * Math.sin(t * 15) * Math.max(0, Math.sin(t * 0.9)) ** 4;
+    const bob = phase === null ? 0 : 0.05 * Math.sin(phase * Math.PI * 4);
+    this.head.forEach((j, i) => {
+      const up = i === 0 ? 0.35 * wind - 0.5 * strike - 0.45 * hunch + 0.3 * flinch + bob : 0.2 * wind - 0.3 * strike - 0.2 * hunch + sniff;
+      this.bend(j, up, i === 0 ? look : 0, 0);
+    });
+    const breath = idle * 0.025 * Math.sin(t * 2.2);
+    this.spine.forEach((j, i) => {
+      // arched: the back rises from the hips and the chest bows back down to the shoulders
+      const arch = i === 0 ? 0.5 : i === this.spine.length - 1 ? -0.4 : 0.05;
+      this.bend(j, arch * hunch + 0.08 * wind - 0.1 * strike + 0.1 * flinch + breath, 0, (i % 2 ? -0.16 : 0.16) * shake);
+    });
+    const sway = phase === null ? 0.12 * Math.sin(t * 1.1) * idle : 0.2 * Math.sin(phase * Math.PI * 2);
+    this.tail.forEach((j) => this.bend(j, 0.15 * hunch - 0.1 * flinch, sway + 0.3 * shake, 0));
+    for (const l of this.legs) {
+      // front paws reach in with the bite while the hind legs push off; braced through the shake
+      const reach = l.front ? 0.3 * strike - 0.1 * wind : -0.3 * strike;
+      l.joints.forEach((j, i) => {
+        if (i === 0) this.bend(j, reach + (l.front ? -0.12 : 0.1) * hunch, 0, 0);
+        else if (i === 1) this.bend(j, (l.front ? -0.3 : 0.2) * strike, 0, 0);
+      });
+    }
+    b.lunge = -0.06 * wind + 0.24 * strike - 0.1 * flinch;
+    // positive pitch dips the nose
+    b.pitch = -0.1 * wind + 0.16 * strike + 0.12 * hunch - 0.1 * flinch;
+    b.rise = 0.02 * wind + 0.02 * hunch;
+    b.roll = 0.1 * shake + 0.08 * flinch * this.rollTo + idle * 0.015 * Math.sin(t * 40) * Math.max(0, Math.sin(t * 0.37)) ** 12;
+  }
+
+  /** over onto its side, the legs kicking a little, then curled up and still */
+  private die(d: number) {
+    const b = this.body;
+    const r = smooth(0.05, 0.6, d);
+    // a little bounce as it lands
+    const settle = d > 0.6 ? 0.12 * Math.sin(Math.min(1, (d - 0.6) / 0.35) * Math.PI) : 0;
+    const roll = this.rollTo * (1.65 * r - settle);
+    const kick = Math.sin(d * 28) * 0.35 * smooth(0.3, 0.5, d) * (1 - smooth(0.6, 1.5, d));
+    for (const l of this.legs) {
+      const k = l.front ? kick : -kick;
+      l.joints.forEach((j, i) => this.bend(j, (i === 0 ? 0.45 : i === 1 ? -0.7 : -0.4) * r + (i === 0 ? k : 0), 0, 0));
+    }
+    this.head.forEach((j, i) => this.bend(j, i === 0 ? -0.35 * r : -0.2 * r, 0.2 * r * this.rollTo, 0));
+    this.tail.forEach((j) => this.bend(j, -0.2 * r, 0.25 * r, 0));
+    // rolled about the ground line under its middle: lifted so the lowest corner of its bounds
+    // (rounded off a little) stays on the ground, and shifted to keep its middle where it was
+    const w = this.size.x * 0.4;
+    const h = this.size.y;
+    const s = Math.sin(roll);
+    const c = Math.cos(roll);
+    b.roll = roll;
+    b.rise = -Math.min(-w * s, w * s, -w * s + h * c, w * s + h * c) - 0.04 * r;
+    b.side = (h / 2) * s;
+  }
+
+  private bend(j: QJoint, up: number, left: number, roll: number) {
+    if (Math.abs(up) > 1e-4) j.bone.quaternion.premultiply(_q.setFromAxisAngle(_v.copy(j.up), up));
+    if (Math.abs(left) > 1e-4) j.bone.quaternion.premultiply(_q.setFromAxisAngle(_v.copy(j.left), left));
+    if (Math.abs(roll) > 1e-4) j.bone.quaternion.premultiply(_q.setFromAxisAngle(_v.copy(j.roll), roll));
   }
 }
