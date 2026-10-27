@@ -42,7 +42,7 @@ export function skillCost(p: Player, skill: string): number {
 function payMana(g: Game, p: Player, skill: string): boolean {
   const cost = skillCost(p, skill);
   if (p.mana < cost) {
-    g.sfx.play('nomana');
+    g.sfx.play('ui.no_mana');
     g.hooks.message('法力不足', '#7a7aff', 0.8);
     return false;
   }
@@ -108,7 +108,7 @@ export function startCharge(g: Game, p: Player, target: Monster): boolean {
   p.setState('charge', 1.6);
   p.chargeTarget = target;
   g.playerAction = { skill: 'charge', target, point: { ...target.pos } };
-  g.sfx.play('charge');
+  g.sfx.play('skill.charge', { pos: p.pos });
   return true;
 }
 
@@ -119,7 +119,7 @@ export function toggleAura(g: Game, p: Player, skill: string) {
   } else {
     p.activeAura = skill;
     g.fx.burst('aura_switch', p.pos, { color: SKILL_BY_ID[skill].color });
-    g.sfx.play('aura');
+    g.sfx.play('skill.aura', { pos: p.pos });
   }
   p.markDirty();
 }
@@ -130,7 +130,7 @@ function fireAttack(g: Game, p: Player) {
   const reachExtra = 0.55;
   let target = act.target && !act.target.dead && dist(act.target.pos, p.pos) <= reachTo(p, act.target) + reachExtra ? act.target : null;
   if (!target) target = nearestInFront(g, p, weaponReach(p) + p.radius + 0.3);
-  g.sfx.play('swing', 0.7);
+  g.sfx.play('combat.swing', { pos: p.pos });
   g.fx.burst('swing', p.pos, { dir: { x: Math.sin(p.facing), z: Math.cos(p.facing) } });
   if (!target) return;
   let ed = 0;
@@ -236,14 +236,14 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
     case 'fire_bolt': {
       const sp = sp_(p, 'fire_bolt');
       shootSpell(g, p, 'firebolt', 15, 13, spellPacket(p, 'fire', sp.min, sp.max));
-      g.sfx.play('fire', 0.5);
+      g.sfx.play('skill.fire_cast', { pos: p.pos, vol: 0.5 });
       return true;
     }
     case 'fire_ball': {
       const sp = sp_(p, 'fire_ball');
       const pr = shootSpell(g, p, 'fireball', 12, 13, spellPacket(p, 'fire', sp.min, sp.max), p.facing, 0.35);
       pr.splash = sp.radius;
-      g.sfx.play('fire', 0.6);
+      g.sfx.play('skill.fire_cast', { pos: p.pos, vol: 0.6 });
       return true;
     }
     case 'fire_wall': {
@@ -270,7 +270,7 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
           L.blasts.push(b);
         }
       }
-      g.sfx.play('fire', 0.8);
+      g.sfx.play('skill.fire_cast', { pos: p.pos, vol: 0.8 });
       return true;
     }
     case 'meteor': {
@@ -281,7 +281,7 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
       b.fx = 'meteor';
       L.blasts.push(b);
       g.fx.burst('meteor_mark', c, { radius: sp.radius });
-      g.sfx.play('fire', 0.4);
+      g.sfx.play('skill.fire_cast', { pos: p.pos, vol: 0.4 });
       return true;
     }
     case 'charged_bolt': {
@@ -290,7 +290,7 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
         const a = p.facing + (sp.bolts > 1 ? (i / (sp.bolts - 1) - 0.5) * 1.1 : 0) + rand(-0.08, 0.08);
         shootSpell(g, p, 'chargedbolt', rand(6.5, 8.5), 9, spellPacket(p, 'light', sp.min, sp.max), a, 0.28);
       }
-      g.sfx.play('lightning', 0.4);
+      g.sfx.play('skill.lightning_cast', { pos: p.pos, vol: 0.4 });
       return true;
     }
     case 'static_field': {
@@ -305,14 +305,14 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
         applyDamage(g, m, pk, p.pos);
       }
       g.fx.burst('static', p.pos, { radius: sp.radius });
-      g.sfx.play('lightning', 0.6);
+      g.sfx.play('skill.lightning_cast', { pos: p.pos, vol: 0.6 });
       return true;
     }
     case 'nova': {
       const sp = sp_(p, 'nova');
       L.blasts.push(new DelayedBlast(p.pos, sp.radius, 0.08, spellPacket(p, 'light', sp.min, sp.max), 'player', 'lightning', p));
       g.fx.burst('nova', p.pos, { radius: sp.radius });
-      g.sfx.play('lightning', 0.8);
+      g.sfx.play('skill.lightning_cast', { pos: p.pos, vol: 0.8 });
       return true;
     }
     case 'teleport': {
@@ -327,11 +327,12 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
       }
       if (!dest) return true;
       g.fx.burst('teleport', p.pos);
+      // heard where the hero leaves from: the listener is still there
+      g.sfx.play('skill.teleport', { pos: p.pos });
       p.pos = { ...dest };
       p.prevPos = { ...dest };
       p.intent = null;
       g.fx.burst('teleport', dest);
-      g.sfx.play('portal', 0.6);
       return true;
     }
     case 'chain_lightning': {
@@ -353,7 +354,7 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
         from = { ...cur.pos };
         cur = nearestMonster(g, from, sp.range, hit);
       }
-      g.sfx.play('lightning', 0.8);
+      g.sfx.play('skill.lightning_cast', { pos: p.pos, vol: 0.8 });
       return true;
     }
     case 'ice_bolt': {
@@ -361,14 +362,14 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
       const pk = spellPacket(p, 'cold', sp.min, sp.max);
       pk.chill = sp.chill;
       shootSpell(g, p, 'iceshard', 14, 13, pk);
-      g.sfx.play('cold', 0.5);
+      g.sfx.play('skill.cold_cast', { pos: p.pos, vol: 0.5 });
       return true;
     }
     case 'frozen_armor': {
       p.frozenArmor = sp_(p, 'frozen_armor').dur;
       p.markDirty();
       g.fx.burst('freeze', p.pos, { radius: 1.6 });
-      g.sfx.play('cold', 0.7);
+      g.sfx.play('skill.cold_cast', { pos: p.pos, vol: 0.7 });
       return true;
     }
     case 'frost_nova': {
@@ -377,7 +378,7 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
       pk.chill = sp.chill;
       L.blasts.push(new DelayedBlast(p.pos, sp.radius, 0.08, pk, 'player', 'frost', p));
       g.fx.burst('frostnova', p.pos, { radius: sp.radius });
-      g.sfx.play('cold', 0.8);
+      g.sfx.play('skill.cold_cast', { pos: p.pos, vol: 0.8 });
       return true;
     }
     case 'glacial_spike': {
@@ -387,7 +388,7 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
       const pr = shootSpell(g, p, 'iceshard', 12, 13, pk, p.facing, 0.35);
       pr.splash = sp.radius;
       pr.splashKind = 'cold';
-      g.sfx.play('cold', 0.6);
+      g.sfx.play('skill.cold_cast', { pos: p.pos, vol: 0.6 });
       return true;
     }
     case 'blizzard': {
@@ -403,7 +404,7 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
         b.fx = 'hail';
         L.blasts.push(b);
       }
-      g.sfx.play('cold', 0.8);
+      g.sfx.play('skill.cold_cast', { pos: p.pos, vol: 0.8 });
       return true;
     }
   }
@@ -427,7 +428,7 @@ function fireSpellNow(g: Game, p: Player, act: PlayerAction) {
   switch (act.skill) {
     case 'blessed_hammer': {
       g.level.hammers.push(new Hammer(p.pos, p.facing, hammerPacket(p)));
-      g.sfx.play('hammer');
+      g.sfx.play('skill.magic_cast', { pos: p.pos });
       break;
     }
     case 'heavens_wrath': {
@@ -442,7 +443,7 @@ function fireSpellNow(g: Game, p: Player, act: PlayerAction) {
       pk.pierceRes = p.stats.pierceRes;
       g.level.blasts.push(new DelayedBlast(target, 2.6, 0.18, pk, 'player', 'lightning', p));
       g.fx.burst('lightning', target, { radius: 2.6 });
-      g.sfx.play('lightning');
+      g.sfx.play('skill.lightning_impact', { pos: target });
       g.fx.shake(0.35);
       const n = hp.bolts;
       for (let i = 0; i < n; i++) {
@@ -461,7 +462,7 @@ function fireSpellNow(g: Game, p: Player, act: PlayerAction) {
       p.holyShield = hp.dur;
       p.markDirty();
       g.fx.burst('shield_buff', p.pos);
-      g.sfx.play('holy');
+      g.sfx.play('skill.holy_cast', { pos: p.pos });
       break;
     }
     case 'townportal': {

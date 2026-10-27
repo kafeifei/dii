@@ -93,7 +93,7 @@ export class SkillTree {
     const other = p.binds.indexOf(skill);
     if (other >= 0 && other !== slot) p.binds[other] = p.binds[slot] ?? (other === 0 ? 'attack' : null);
     p.binds[slot] = skill;
-    ui.sfx.play('click');
+    ui.sfx.play('ui.click');
     ui.message(`${def.name} 已装上`, '#c8a86a', 1.4);
     ui.dirty = true;
   }
@@ -111,7 +111,7 @@ export class SkillTree {
     p.skills[s.id] = p.skillBase(s.id) + 1;
     p.skillPoints--;
     p.markDirty();
-    ui.sfx.play('levelup', 0.4);
+    ui.sfx.play('ui.skill_learn');
     if (first && s.kind !== 'passive') {
       const idx = p.binds.findIndex((b, i) => i >= 1 && !b);
       if (idx >= 0) {

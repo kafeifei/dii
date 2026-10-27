@@ -15,7 +15,7 @@ export function renderCube(ui: UIContext, L: HTMLElement) {
     if (ui.cursorItem) return;
     const r = transmute(p.cube, p.level);
     ui.message(r.message, r.ok ? '#c8a86a' : '#ff6060', 2.5);
-    ui.sfx.play(r.ok ? 'socket' : 'nomana');
+    ui.sfx.play(r.ok ? 'item.transmute' : 'ui.denied');
     ui.dirty = true;
   };
   wrap.appendChild(go);

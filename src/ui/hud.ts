@@ -102,10 +102,10 @@ export class Hud {
       if (stack.length && stack[0].baseId !== c.baseId) return;
       stack.push(c);
       ui.cursorItem = null;
-      ui.sfx.play('pickup');
+      ui.sfx.play('item.move');
     } else if (stack.length) {
       ui.cursorItem = stack.pop()!;
-      ui.sfx.play('pickup');
+      ui.sfx.play('item.move');
     }
     ui.dirty = true;
   }
@@ -260,7 +260,7 @@ export class SkillPicker {
         p.binds[slot] = id;
         this.close();
         ui.dirty = true;
-        ui.sfx.play('click');
+        ui.sfx.play('ui.click');
       };
       el.appendChild(s);
     }

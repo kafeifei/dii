@@ -27,6 +27,8 @@ import { aimLineTexture, glowTexture, ringTexture, runeCircleTexture, shadowText
 const CAM_YAW = Math.PI / 4;
 const CAM_PITCH = 0.68; // ~39°
 const CAM_DIST = 40;
+/** the screen's right as a direction on the ground: the camera never turns, so it never changes (sounds pan by it) */
+const SCREEN_RIGHT: P2 = { x: Math.cos(CAM_YAW), z: -Math.sin(CAM_YAW) };
 const WALL_H = 1.9;
 /**
  * Point lights for the nearest torches and for effects, per lighting setting: every point light
@@ -385,6 +387,8 @@ export class Renderer implements Picker {
     this.camera.top = hh;
     this.camera.bottom = -hh;
     this.camera.updateProjectionMatrix();
+    // sounds pan all the way at the screen's edge, wherever the zoom puts it
+    this.game.sfx.setView(SCREEN_RIGHT, this.camera.right);
     this.pxPerUnit = this.height / (2 * hh);
     const pr = this.webgl.getPixelRatio();
     this.fx.add.setScale(this.pxPerUnit * pr);

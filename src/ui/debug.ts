@@ -171,7 +171,7 @@ export class DebugPanel {
       const b = document.createElement('button');
       b.textContent = text;
       b.onclick = () => {
-        this.game.sfx.play('click');
+        this.game.sfx.play('ui.click');
         fn();
       };
       seg.appendChild(b);
@@ -187,7 +187,7 @@ export class DebugPanel {
       const b = document.createElement('button');
       b.textContent = text;
       b.onclick = () => {
-        this.game.sfx.play('click');
+        this.game.sfx.play('ui.click');
         set(v);
         saveDebugOpts();
         this.refresh();

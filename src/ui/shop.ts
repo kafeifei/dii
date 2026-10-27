@@ -21,14 +21,14 @@ export function renderStash(ui: UIContext, L: HTMLElement) {
   dep.onclick = () => {
     p.stashGold += p.gold;
     p.gold = 0;
-    ui.sfx.play('gold');
+    ui.sfx.play('ui.coins');
     ui.dirty = true;
   };
   const wd = h('button', 'btn', '取出全部');
   wd.onclick = () => {
     p.gold += p.stashGold;
     p.stashGold = 0;
-    ui.sfx.play('gold');
+    ui.sfx.play('ui.coins');
     ui.dirty = true;
   };
   const box = h('div');
@@ -55,7 +55,7 @@ export function renderShop(ui: UIContext, L: HTMLElement) {
       if (p.gold < cost) return ui.message('金币不够', '#ff4040', 1);
       p.gold -= cost;
       for (const c of spent) (c.item.charges ??= {})[c.param] = (c.item.charges[c.param] ?? 0) + c.missing;
-      ui.sfx.play('gold');
+      ui.sfx.play('ui.coins');
       ui.message('充能已补满', '#c8a86a', 1);
       ui.dirty = true;
     };

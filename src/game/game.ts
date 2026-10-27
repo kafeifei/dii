@@ -238,7 +238,9 @@ export class Game {
       this.refreshShop();
       this.layOutUnplaced(level);
     }
-    this.sfx.ambience(depth === 0 || isWild(depth) ? 'town' : 'dungeon');
+    this.sfx.setListener(p.pos);
+    // until levels have areas of their own (Level.areaAt), the theme stands for one
+    this.sfx.enterArea(level.layout.theme.key);
     this.hooks.levelChanged(level);
     this.hooks.message(level.name, '#d8c8a0', 3);
     this.save();
@@ -296,6 +298,8 @@ export class Game {
       a.prevPos.x = a.pos.x;
       a.prevPos.z = a.pos.z;
     }
+    // sounds are heard from where the hero stands
+    this.sfx.setListener(this.player.pos);
     this.updateHover();
     this.handleInput();
     if (this.hitstop > 0) {
@@ -786,7 +790,7 @@ export class Game {
     if (pr.splash > 0) {
       const cold = pr.splashKind === 'cold';
       this.fx.burst(cold ? 'ice_shatter' : 'fireblast', pr.pos, { radius: pr.splash });
-      this.sfx.play(cold ? 'cold' : 'fire', 0.6);
+      this.sfx.play(cold ? 'skill.cold_impact' : 'skill.fire_impact', { pos: pr.pos, vol: 0.6 });
       const p = this.player;
       if (pr.faction === 'monster' && !p.dead && dist(pr.pos, p.pos) < pr.splash + p.radius && !pr.hit.has(p.id)) {
         applyDamage(this, p, { ...pr.dmg, spell: true }, pr.pos);
@@ -825,7 +829,7 @@ export class Game {
       const pr = new Projectile('chargedbolt', m.pos, { x: Math.sin(a) * 5, z: Math.cos(a) * 5 }, null, 'monster', pk, 1.6, 0.2);
       this.level.projectiles.push(pr);
     }
-    this.sfx.play('lightning', 0.25);
+    this.sfx.play('skill.lightning_cast', { pos: m.pos, vol: 0.25 });
   }
 
   killMonster(m: Monster, elem: Elem) {
@@ -858,8 +862,8 @@ export class Game {
     this.spawnDrops(m.pos, this.rollLoot(m.level, m.lootQuality()));
     // fx
     this.fx.death(m, m.def.blood, elem);
-    const snd = m.def.blood === 'bone' ? 'diebone' : m.def.model === 'imp' || m.def.model === 'shaman' ? 'impdie' : 'die';
-    this.sfx.play(snd, 0.8);
+    const snd = m.def.blood === 'bone' ? 'monster.die_bone' : m.def.model === 'imp' || m.def.model === 'shaman' ? 'monster.die_imp' : 'monster.die';
+    this.sfx.play(snd, { pos: m.pos });
     if (m.mods.includes('fireench')) {
       const pk = emptyPacket();
       pk.fire = randInt(m.dmg[0], m.dmg[1]) * 1.5;
@@ -868,7 +872,7 @@ export class Game {
       this.level.blasts.push(new DelayedBlast(m.pos, 2.4, 0.45, pk, 'monster', 'fire', m));
       setTimeout(() => {
         this.fx.burst('fireblast', m.pos, { radius: 2.4 });
-        this.sfx.play('fire', 0.7);
+        this.sfx.play('skill.fire_impact', { pos: m.pos, vol: 0.7 });
       }, 400);
     }
     if (m.mods.includes('coldench')) {
@@ -879,7 +883,7 @@ export class Game {
       pk.source = m;
       this.level.blasts.push(new DelayedBlast(m.pos, 3.2, 0.1, pk, 'monster', 'frost', m));
       this.fx.burst('frostnova', m.pos, { radius: 3.2 });
-      this.sfx.play('cold', 0.7);
+      this.sfx.play('skill.cold_impact', { pos: m.pos, vol: 0.7 });
     }
     // imps nearby panic
     for (const o of this.level.monsters) {
@@ -897,7 +901,7 @@ export class Game {
   celebrateLevelUp() {
     const p = this.player;
     this.fx.burst('levelup', p.pos);
-    this.sfx.play('levelup');
+    this.sfx.play('player.level_up', { pos: p.pos });
     this.hooks.message(`等级提升！你现在是 ${p.level} 级`, '#ffd24a', 3);
     this.hooks.levelUp();
   }
@@ -932,7 +936,7 @@ export class Game {
     p.intent = null;
     const lost = Math.floor(p.gold * 0.1);
     p.gold -= lost;
-    this.sfx.play('death');
+    this.sfx.play('player.death', { pos: p.pos });
     this.fx.death(p, 'red', 'phys');
     this.hooks.playerDied();
   }
@@ -957,12 +961,12 @@ export class Game {
         const it = d.item;
         const b = baseOf(it);
         if (it.rarity === 'unique' || it.rarity === 'set') {
-          this.sfx.play('dropunique');
+          this.sfx.play('item.drop_unique', { pos: spot });
           this.fx.burst('unique_drop', spot, { color: it.rarity === 'set' ? '#22d422' : '#c8a86a' });
         } else if (b.type === 'rune') {
-          this.sfx.play('droprune');
+          this.sfx.play('item.drop_rune', { pos: spot });
           this.fx.burst('unique_drop', spot, { color: '#ffa31a' });
-        } else this.sfx.play('drop', 0.5);
+        } else this.sfx.play('item.drop', { pos: spot });
       }
     }
   }
@@ -973,7 +977,7 @@ export class Game {
     const spot = { x: p.pos.x + Math.sin(a) * 0.8, z: p.pos.z + Math.cos(a) * 0.8 };
     const ok = this.level.map.walkableAt(spot.x, spot.z) ? spot : { ...p.pos };
     this.level.ground.push(new GroundItem(ok, item, 0, p.pos));
-    this.sfx.play('drop', 0.5);
+    this.sfx.play('item.drop', { pos: ok });
   }
 
   // ───────────────────────── items & interaction ─────────────────────────
@@ -1002,7 +1006,7 @@ export class Game {
     if (gi.gold > 0) {
       p.gold += gi.gold;
       L.ground.splice(idx, 1);
-      this.sfx.play('gold');
+      this.sfx.play('item.gold', { pos: gi.pos });
       this.fx.text(gi.pos, `${gi.gold} 金币`, '#e8d890');
       this.hooks.inventoryChanged();
       return;
@@ -1012,11 +1016,11 @@ export class Game {
       L.ground.splice(idx, 1);
       const k = p.unplaced.indexOf(item);
       if (k >= 0) p.unplaced.splice(k, 1);
-      this.sfx.play('pickup');
+      this.sfx.play('item.pickup', { pos: gi.pos });
       this.hooks.inventoryChanged();
     } else {
       this.hooks.message('背包已满', '#ff6060', 1.5);
-      this.sfx.play('nomana');
+      this.sfx.play('ui.no_room');
     }
   }
 
@@ -1037,7 +1041,7 @@ export class Game {
       this.fx.burst('potion_hp', p.pos);
       this.fx.burst('potion_mp', p.pos);
     }
-    this.sfx.play('potion');
+    this.sfx.play('item.drink', { pos: p.pos });
   }
 
   useBelt(col: number) {
@@ -1056,7 +1060,7 @@ export class Game {
       case 'chest': {
         if (obj.used) return;
         obj.used = true;
-        this.sfx.play('chest');
+        this.sfx.play('env.chest', { pos: obj.pos });
         this.fx.burst('chest', obj.pos);
         const lvl = Math.max(1, this.level.floor * 2);
         const drops = this.rollLoot(lvl, 1);
@@ -1073,7 +1077,7 @@ export class Game {
       case 'barrel': {
         if (obj.used) return;
         obj.used = true;
-        this.sfx.play('barrel');
+        this.sfx.play('env.barrel', { pos: obj.pos });
         this.fx.burst('barrel', obj.pos);
         if (chance(0.35)) this.spawnDrops(obj.pos, this.rollLoot(Math.max(1, this.level.floor * 2 - 1), 0));
         break;
@@ -1107,12 +1111,12 @@ export class Game {
           p.markDirty();
         }
         this.fx.burst('aura_switch', p.pos, { color: def.color });
-        this.sfx.play('holy');
+        this.sfx.play('env.shrine', { pos: obj.pos });
         this.hooks.message(`${def.name}：${def.desc}`, def.color, 3);
         break;
       }
       case 'portal':
-        this.sfx.play('portal');
+        this.sfx.play('env.portal_enter', { pos: obj.pos });
         if (this.level.depth === 0) this.enterLevel(obj.dest, 'portal');
         else this.enterLevel(0, 'portal');
         break;
@@ -1129,7 +1133,7 @@ export class Game {
     p.poisonTime = p.chillTime = p.bleedTime = p.slowTime = p.stunTime = 0;
     this.fx.burst('potion_hp', p.pos);
     this.fx.burst('potion_mp', p.pos);
-    this.sfx.play('holy');
+    this.sfx.play('env.vendor_heal', { pos: p.pos });
     this.hooks.message('艾莉娜为你恢复了生命与法力', '#c8a86a', 2);
   }
 
@@ -1149,7 +1153,7 @@ export class Game {
     L.objects.push(portal);
     this.portalLevel = L;
     this.fx.burst('portal', pt);
-    this.sfx.play('portal');
+    this.sfx.play('env.portal_open', { pos: pt });
   }
 
   castTownPortal() {
@@ -1165,7 +1169,7 @@ export class Game {
   }
 
   travel(depth: number) {
-    this.sfx.play('portal');
+    this.sfx.play('env.waypoint', { pos: this.player.pos });
     this.enterLevel(depth, 'waypoint');
   }
 }

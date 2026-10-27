@@ -103,7 +103,7 @@ export class UI implements GameHooks, UIContext {
     this.left = kind;
     if (kind !== 'waypoint') this.right = 'inv';
     this.dirty = true;
-    this.sfx.play('click');
+    this.sfx.play('ui.click');
   }
 
   levelChanged(level: Level) {
@@ -197,14 +197,14 @@ export class UI implements GameHooks, UIContext {
   }
 
   private openSettings() {
-    this.sfx.play('click');
+    this.sfx.play('ui.click');
     this.settingsPanel.open();
   }
 
   /** over the pause menu, so closing it leaves the game paused there */
   openDebug() {
     if (!this.debugPanel) return;
-    this.sfx.play('click');
+    this.sfx.play('ui.click');
     this.menu.toggle(true);
     this.debugPanel.open();
   }

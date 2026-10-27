@@ -170,7 +170,7 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
     }
     g.fx.hit(m, m.def.blood, dir, !!heavy, mainElem(pk));
     if (pk.crit) g.fx.text(m.pos, '致命一击', '#ffdd55');
-    g.sfx.play(m.def.blood === 'bone' ? 'hitbone' : heavy ? 'hitheavy' : 'hit', 0.8);
+    g.sfx.play(m.def.blood === 'bone' ? 'combat.hit_bone' : heavy ? 'combat.hit_heavy' : 'combat.hit', { pos: m.pos });
     if (heavy) {
       g.hitstop = Math.max(g.hitstop, pk.crit ? 0.07 : 0.045);
       g.fx.shake(pk.crit ? 0.25 : 0.12);
@@ -185,7 +185,7 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
     const p = target as Player;
     p.lastDamageTime = g.time;
     g.fx.hit(p, 'red', dir, total > p.stats.maxLife * 0.1, mainElem(pk));
-    if (total > 0) g.sfx.play('hurt', 0.7);
+    if (total > 0) g.sfx.play('player.hurt', { pos: p.pos });
     // hit recovery, with a short poise window afterwards so packs can't stun-lock
     if (total > p.stats.maxLife / 12 && p.state !== 'charge' && p.state !== 'hit' && p.life > 0 && g.time > p.poiseUntil) {
       p.setState('hit', p.stats.hitRecovery);
@@ -262,7 +262,7 @@ export function monsterStrike(g: Game, m: Monster, p: Player, pk: DamagePacket):
     if (blk > 0 && p.state !== 'attack' && p.state !== 'cast' && chance(blk / 100)) {
       p.setState('block', 0.18 / (1 + (p.stats.bag.fbr ?? 0) / 100));
       g.fx.burst('block', p.pos, { dir: { x: m.pos.x - p.pos.x, z: m.pos.z - p.pos.z } });
-      g.sfx.play('block');
+      g.sfx.play('combat.block', { pos: p.pos });
       return;
     }
   }

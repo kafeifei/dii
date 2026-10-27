@@ -65,7 +65,7 @@ export function shoot(g: Game, m: Monster, kind: ProjectileKind, at: P2, spread 
   const p = new Projectile(kind, start, { x: dx * speed, z: dz * speed }, m, 'monster', out, 1.6, kind === 'fireball' ? 0.35 : 0.22);
   if (kind === 'fireball') p.splash = 1.6;
   g.level.projectiles.push(p);
-  g.sfx.play(kind === 'arrow' ? 'arrow' : kind === 'iceshard' ? 'cold' : 'fire', 0.5);
+  g.sfx.play(kind === 'arrow' ? 'combat.arrow' : kind === 'iceshard' ? 'skill.cold_cast' : 'skill.fire_cast', { pos: m.pos, vol: 0.5 });
 }
 
 function wakePack(g: Game, m: Monster) {
@@ -160,7 +160,7 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
       m.awake = true;
       wakePack(g, m);
       if (m.rank === 'boss') {
-        g.sfx.play('boss');
+        g.sfx.play('monster.boss_wake', { pos: m.pos });
         g.hooks.message(`${m.displayName} 被惊醒了！`, '#c8a86a');
       }
     } else {
@@ -249,7 +249,7 @@ function fireAction(g: Game, m: Monster) {
       corpse.awake = true;
       corpse.corpseRaisable = true;
       g.fx.burst('resurrect', corpse.pos);
-      g.sfx.play('holy', 0.5);
+      g.sfx.play('monster.resurrect', { pos: corpse.pos });
     }
     m.target = null;
     return;
@@ -275,7 +275,7 @@ function fireAction(g: Game, m: Monster) {
     monsterStrike(g, m, p, pk);
     if (m.rank === 'boss') g.fx.shake(0.15);
   }
-  g.sfx.play('swing', 0.5);
+  g.sfx.play('monster.swing', { pos: m.pos });
 }
 
 function shamanResurrect(g: Game, m: Monster): boolean {
@@ -304,7 +304,7 @@ function bossSpecial(g: Game, m: Monster, dP: number): boolean {
         m.setState('charge');
         m.chargeTime = 1.4;
         m.specialCd = rand(5, 7);
-        g.sfx.play('charge');
+        g.sfx.play('monster.charge', { pos: m.pos });
         return true;
       }
       break;
@@ -341,7 +341,7 @@ function bossSpecial(g: Game, m: Monster, dP: number): boolean {
         pk.spell = true;
         g.level.blasts.push(new DelayedBlast({ ...m.pos }, 4, 0.5, pk, 'monster', 'fire', m));
         g.fx.burst('fireblast', m.pos, { radius: 4 });
-        g.sfx.play('fire');
+        g.sfx.play('skill.fire_impact', { pos: m.pos });
         m.setState('attack', 0.8);
         m.actionFired = true;
         m.specialCd = rand(5, 7);

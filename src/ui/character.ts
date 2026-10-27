@@ -34,7 +34,7 @@ export function renderChar(ui: UIContext, L: HTMLElement) {
     p.statPoints--;
     p.markDirty();
     ui.dirty = true;
-    ui.sfx.play('click');
+    ui.sfx.play('ui.click');
   };
   const can = p.statPoints > 0;
   row('力量', d.str, d.str !== p.base.str ? 'boost' : '', can ? add('str') : undefined);

@@ -40,8 +40,8 @@ function socketInto(ui: UIContext, target: Item, rune: Item): boolean {
   if (rw) {
     applyRuneword(target, rw);
     ui.message(`符文之语：${rw.name}！`, '#c8a86a', 4);
-    ui.sfx.play('dropunique');
-  } else ui.sfx.play('socket');
+    ui.sfx.play('item.runeword');
+  } else ui.sfx.play('item.socket');
   ui.game.player.markDirty();
   return true;
 }
@@ -98,7 +98,7 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
       if (p.cube.add(c)) {
         ui.cursorItem = null;
         ui.message(`${c.name} 放进了魔盒`, '#c8a86a', 1.2);
-        ui.sfx.play('pickup');
+        ui.sfx.play('item.move');
       } else ui.message('魔盒里放不下了', '#ff6060');
       ui.dirty = true;
       return;
@@ -119,12 +119,12 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
     if (over.length === 0) {
       grid.place(c, tx, ty);
       ui.cursorItem = null;
-      ui.sfx.play('pickup');
+      ui.sfx.play('item.move');
     } else if (over.length === 1) {
       grid.remove(over[0].item);
       grid.place(c, tx, ty);
       ui.cursorItem = over[0].item;
-      ui.sfx.play('pickup');
+      ui.sfx.play('item.move');
     }
     ui.dirty = true;
     return;
@@ -145,13 +145,13 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
     } else if (baseOf(it).type === 'potion' && kind === 'inv') {
       if (ui.game.beltInsert(it)) grid.remove(it);
     }
-    ui.sfx.play('pickup');
+    ui.sfx.play('item.move');
     ui.dirty = true;
     return;
   }
   grid.remove(it);
   ui.cursorItem = it;
-  ui.sfx.play('pickup');
+  ui.sfx.play('item.move');
   ui.dirty = true;
 }
 
@@ -160,7 +160,7 @@ function openCube(ui: UIContext) {
   ui.left = 'cube';
   ui.right = 'inv';
   ui.dirty = true;
-  ui.sfx.play('click');
+  ui.sfx.play('ui.click');
 }
 
 function buy(ui: UIContext, it: Item) {
@@ -168,7 +168,7 @@ function buy(ui: UIContext, it: Item) {
   const price = buyPrice(it);
   if (p.gold < price) {
     ui.message('金币不足', '#ff6060');
-    ui.sfx.play('nomana');
+    ui.sfx.play('ui.no_gold');
     return;
   }
   const b = baseOf(it);
@@ -179,7 +179,7 @@ function buy(ui: UIContext, it: Item) {
   }
   p.gold -= price;
   if (b.type !== 'potion') ui.game.shop.remove(it);
-  ui.sfx.play('gold');
+  ui.sfx.play('ui.coins');
   ui.dirty = true;
 }
 
@@ -194,7 +194,7 @@ function sell(ui: UIContext, it: Item) {
   p.gold += v;
   if (baseOf(it).type !== 'potion') ui.game.shop.add(it);
   ui.message(`出售 ${it.name}：+${v} 金币`, '#e8d890', 1.5);
-  ui.sfx.play('gold');
+  ui.sfx.play('ui.coins');
 }
 
 /** returns error text or null */
@@ -215,7 +215,7 @@ function equipTo(ui: UIContext, it: Item, slot: EquipSlot): Item | null | false 
   const err = equipError(ui, it, slot);
   if (err) {
     ui.message(err, '#ff6060', 1.5);
-    ui.sfx.play('nomana');
+    ui.sfx.play('ui.cant_use');
     return false;
   }
   const b = baseOf(it);
@@ -230,7 +230,7 @@ function equipTo(ui: UIContext, it: Item, slot: EquipSlot): Item | null | false 
   const old = p.equipment[slot] ?? null;
   p.equipment[slot] = it;
   p.markDirty();
-  ui.sfx.play('equip');
+  ui.sfx.play('item.equip');
   return old;
 }
 
@@ -263,7 +263,7 @@ function onEquipDown(ui: UIContext, slot: EquipSlot, e: PointerEvent) {
     if (cur && !ui.cursorItem && p.inventory.add(cur)) {
       delete p.equipment[slot];
       p.markDirty();
-      ui.sfx.play('equip');
+      ui.sfx.play('item.equip');
       ui.dirty = true;
     }
     return;
@@ -285,7 +285,7 @@ function onEquipDown(ui: UIContext, slot: EquipSlot, e: PointerEvent) {
     delete p.equipment[slot];
     p.markDirty();
     ui.cursorItem = cur;
-    ui.sfx.play('equip');
+    ui.sfx.play('item.equip');
     ui.dirty = true;
   }
 }

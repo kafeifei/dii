@@ -6,7 +6,7 @@ import type { UI } from './ui';
 
 /** a HUD button clicked, or its key pressed */
 export function pressButton(ui: UI, k: string) {
-  ui.sfx.play('click');
+  ui.sfx.play('ui.click');
   switch (k) {
     case 'char':
       ui.left = ui.left === 'char' ? null : 'char';

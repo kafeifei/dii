@@ -173,7 +173,7 @@ export class PauseMenu {
       markInGame(false);
       game.started = false;
       game.paused = false;
-      this.ui.sfx.ambience('none');
+      this.ui.sfx.enterArea('title');
       m.classList.remove('open');
       title.refresh();
       title.el.classList.add('open');
