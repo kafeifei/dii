@@ -1,8 +1,9 @@
 /**
  * Every sound the game plays, under a stable id: `category.name`. Game code names the event
  * (sfx.play('combat.hit', { pos })), never how it sounds, so recorded files can take over one id
- * at a time. Until then each id names the WebAudio recipe in Sfx that renders it. Spell sounds are
- * shared by element (cast and impact), whoever casts them, not one set per skill.
+ * at a time (src/audio/files.ts). Until then, and whenever its files fail to load, each id names the
+ * WebAudio recipe in Sfx that renders it. Spell sounds are shared by element (cast and impact),
+ * whoever casts them, not one set per skill.
  */
 
 /** the recipes Sfx synthesizes */
@@ -53,7 +54,12 @@ export interface SoundDef {
   max?: number;
   /** default 'normal' */
   prio?: Priority;
+  /** how far a recorded file's pitch strays each time it plays, as a fraction (default VARY, none for ui.*) */
+  vary?: number;
 }
+
+/** a recorded file plays up to 4% (about ±0.7 semitone) off its pitch: variety from one take */
+export const VARY = 0.04;
 
 export type SoundCategory = 'combat' | 'player' | 'item' | 'ui' | 'skill' | 'monster' | 'env';
 
@@ -163,8 +169,8 @@ export const SOUNDS = Object.fromEntries(
 ) as Record<SoundId, SoundDef>;
 
 /**
- * Where the hero is, for its ambience and (later) its music. The game names the area; until levels
- * have areas of their own, a level's theme key stands in for it ('town' the camp, 'wild', 'crypt'…).
+ * Where the hero is, for its ambience and its music. The game names the area; until levels have
+ * areas of their own, a level's theme key stands in for it ('town' the camp, 'wild', 'crypt'…).
  * Off the map, a named screen such as 'title'.
  */
 export type AreaId = string | number;
@@ -172,24 +178,72 @@ export type AreaId = string | number;
 /** the looping beds Sfx synthesizes */
 export type Bed = 'town' | 'dungeon' | 'none';
 
-/** what an area sounds like: today only its bed; recorded loops and music join it later */
+/** a recorded ambience loop */
+export type AmbId = `amb.${string}`;
+/** a recorded music track, streamed */
+export type MusicId = `music.${string}`;
+/** what can have recorded files: an effect, an ambience loop, a music track */
+export type FileId = SoundId | AmbId | MusicId;
+
+/** the music Sfx composes where an area has no recorded track (src/audio/score.ts) */
+export type ScoreKind = 'town' | 'outdoor' | 'dungeon';
+
+/** what an area sounds like */
 export interface AreaSound {
+  /** the synthesized ambience, while it has no recorded loops (or they failed to load) */
   bed: Bed;
+  /** its recorded ambience: loops layered together */
+  amb?: AmbId[];
+  /** its recorded music */
+  music?: MusicId;
+  /** the music composed in its place while there's no recording of it */
+  score?: ScoreKind;
 }
 
-const AREAS: Record<string, AreaSound> = {
-  title: { bed: 'none' },
-  // the camp and the wilderness: wind and a campfire
-  town: { bed: 'town' },
-  wild: { bed: 'town' },
-  // the dungeon floors: a low drone
-  crypt: { bed: 'dungeon' },
-  cave: { bed: 'dungeon' },
-  ice: { bed: 'dungeon' },
-  hell: { bed: 'dungeon' },
+/** by the kind of area: what each sounds like, and the names its recordings will go by */
+const KINDS: Record<ScoreKind, AreaSound> = {
+  // under the sky, the bed is wind and a campfire
+  town: { bed: 'town', amb: ['amb.town'], music: 'music.town', score: 'town' },
+  outdoor: { bed: 'town', amb: ['amb.wild'], music: 'music.wild', score: 'outdoor' },
+  // underground, a low drone
+  dungeon: { bed: 'dungeon', amb: ['amb.dungeon'], music: 'music.dungeon', score: 'dungeon' },
 };
+
+/** the level themes standing in for areas, by kind */
+const THEME_KIND: Record<string, ScoreKind> = {
+  town: 'town',
+  wild: 'outdoor',
+  crypt: 'dungeon',
+  cave: 'dungeon',
+  ice: 'dungeon',
+  hell: 'dungeon',
+};
+
+/** the screens off the map */
+const SCREENS: Record<string, AreaSound> = {
+  title: { bed: 'none' },
+};
+
+/**
+ * A stable name for the area, which its composed music is seeded by. An area defined in the world
+ * (src/world/areas.ts) would give its key, not itself: String() of an object is the same for all.
+ */
+export function areaKey(area: AreaId): string {
+  return String(area);
+}
 
 /** an area nobody has given a sound is quiet */
 export function areaSound(area: AreaId): AreaSound {
-  return AREAS[String(area)] ?? { bed: 'none' };
+  const kind = THEME_KIND[String(area)];
+  return kind ? KINDS[kind] : (SCREENS[String(area)] ?? { bed: 'none' });
 }
+
+const recordings = (s: AreaSound): FileId[] => [...(s.amb ?? []), ...(s.music ? [s.music] : [])];
+
+/** the recordings an area plays, to warm with Sfx.preload before the hero gets there */
+export function areaFiles(area: AreaId): FileId[] {
+  return recordings(areaSound(area));
+}
+
+/** every recording an area can ask for */
+export const AREA_FILES: readonly FileId[] = [...new Set(Object.values(KINDS).flatMap(recordings))];

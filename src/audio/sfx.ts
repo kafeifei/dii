@@ -1,9 +1,17 @@
 import type { P2 } from '../core/math';
-import { areaSound, PRIORITY, SOUNDS, type AreaId, type Bed, type SoundDef, type SoundId, type Synth } from './sounds';
+import { Buffers, pickVariant, toMono } from './buffers';
+import { FILES, type SoundFiles } from './files';
+import { Players, Stream, type Track } from './music';
+import { Score, seedOf } from './score';
+import { areaKey, areaSound, PRIORITY, SOUNDS, VARY, type AmbId, type AreaId, type AreaSound, type Bed, type FileId, type SoundDef, type SoundId, type Synth } from './sounds';
 
 /**
- * All sounds are synthesized at runtime with WebAudio — no audio assets. Game code plays them by
- * id (src/audio/sounds.ts); one with a place in the world is heard from the listener, the hero.
+ * Game code plays sounds by id (src/audio/sounds.ts); one with a place in the world is heard from
+ * the listener, the hero. An id with recorded files (src/audio/files.ts) plays one of them, decoded
+ * on first use; any other, or one whose files won't load, is synthesized at runtime with WebAudio.
+ * Each area has its ambience (recorded loops, or a synthesized bed) and its music (a recorded track
+ * streamed, or music composed on the spot), both crossfaded as the hero moves between areas, or
+ * playing on where the next area's is the same.
  */
 
 export interface PlayOpts {
@@ -25,8 +33,49 @@ const CRITICAL_FLOOR = 0.35;
 export const PAN_MAX = 0.7;
 /** voices at once over every id: past this, the lowest priority gives way */
 const MAX_VOICES = 24;
-/** the same recipe again this soon is the same event, already sounding */
+/** the same sound again this soon (one recording, or one recipe) is the same event, already sounding */
 const REPEAT_GAP = 0.035;
+/** the music's level in the mix: under the ambience, never over the fighting */
+const MUSIC_LEVEL = 0.5;
+/** seconds an area's music takes to come in, and the last one's to go */
+const MUSIC_IN = 5;
+const MUSIC_OUT = 3;
+/**
+ * A bed's level under the area's music. The dungeon's drone is some 16 dB louder than the camp's
+ * wind and sits on the music's own E: at full level it buries everything but the odd pluck.
+ */
+const BED_UNDER_MUSIC: Record<Bed, number> = { town: 1, dungeon: 0.35, none: 1 };
+/**
+ * The AudioContext's rate at most. Everything WebAudio renders costs in proportion to it, and every
+ * decoded recording takes memory in proportion (decodeAudioData resamples to it): at a DAC's 384 kHz
+ * the composed music took eight times the CPU, and one 15 s loop more than the whole budget.
+ */
+export const MAX_RATE = 48000;
+
+/** where the recordings are served from */
+const fileUrl = (file: string) => `${import.meta.env.BASE_URL}audio/${file}`;
+
+const isAmb = (id: FileId): id is AmbId => id.startsWith('amb.');
+const isMusic = (id: FileId) => id.startsWith('music.');
+
+/** what plays when a recording won't */
+const insteadOf = (id: FileId) => (isAmb(id) ? 'the synthesized bed' : isMusic(id) ? 'the composed music' : 'synthesized');
+
+/**
+ * An AudioContext at the output's own rate, or at MAX_RATE if that's lower. Most devices run at 44.1
+ * or 48 kHz and are left alone; above that the browser resamples once, at the output.
+ */
+function openContext(): AudioContext {
+  const ctx = new AudioContext();
+  if (ctx.sampleRate <= MAX_RATE) return ctx;
+  void ctx.close();
+  try {
+    return new AudioContext({ sampleRate: MAX_RATE });
+  } catch {
+    // one that refuses to run at any rate but its output's
+    return new AudioContext();
+  }
+}
 
 /** what the camera shows, for panning: the renderer keeps it up to date */
 export interface View {
@@ -107,12 +156,34 @@ export class Sfx {
   private master!: GainNode;
   private sfxBus!: GainNode;
   private ambBus!: GainNode;
+  private musicBus!: GainNode;
   private noiseBuf!: AudioBuffer;
+  /** the area's ambience playing: its recorded loops, or its bed */
   private amb: { stop: () => void } | null = null;
+  /** the area's music playing */
+  private music: Track | null = null;
+  /** what the ambience and the music playing are (soundOf): the next area's play on where they're the same */
+  private now = { amb: '', music: '' };
+  /** the <audio> elements recorded music streams through, made on the first click */
+  private players: Players | null = null;
+  /** a click has let the AudioContext run: the media elements were unlocked by then too */
+  private unlocked = false;
+  /** the recordings it plays: the generated manifest, or a test's own */
+  files: Partial<Record<FileId, SoundFiles>> = FILES;
+  /** the recordings decoded so far */
+  private buffers!: Buffers;
+  /** ids whose files wouldn't load: synthesized (or the bed, or the score) for the rest of the session */
+  private failed = new Set<FileId>();
+  /** each id's last variant, not to be played twice running */
+  private lastVariant = new Map<FileId, number>();
+  /** asked to preload before there was an AudioContext to decode with: done when they are, after the first click */
+  private early: { ids: Set<FileId>; done: Promise<void>; resolve: () => void } | null = null;
+  /** each ambience layer's take for its next play: chosen when it's preloaded, so that's the one decoded */
+  private takes = new Map<AmbId, string>();
   /** the hero's area: its bed plays, or starts with the AudioContext on the first click */
   private area: AreaId | null = null;
-  /** each recipe's last start, and how loud it was */
-  private lastPlay: Partial<Record<Synth, { t: number; level: number }>> = {};
+  /** each sound's last start, and how loud it was: by id when it's recorded, by recipe when it's synthesized */
+  private lastPlay = new Map<string, { t: number; level: number }>();
   private voices: Voice[] = [];
   /** where sounds are heard from: the hero, kept up to date by the game */
   private listener: P2 = { x: 0, z: 0 };
@@ -125,12 +196,23 @@ export class Sfx {
   volume = 0.7;
   muted = false;
 
+  /** on every click and key (and touch's end, which is when iOS counts it): start or wake the sound */
   ensure() {
     if (this.ctx) {
-      if (this.ctx.state === 'suspended') void this.ctx.resume();
+      // 'suspended' before the first click; WebKit's 'interrupted' after a call or a trip to the home screen
+      const running = this.ctx.state === 'running';
+      if (!running && this.ctx.state !== 'closed') void this.ctx.resume();
+      // until a click has been let through, each one unlocks the media elements too: not every kind
+      // of event counts on iOS (a touch's start doesn't)
+      if (!this.unlocked) this.players?.unlock();
+      if (running) this.unlocked = true;
+      this.music?.resume?.();
       return;
     }
-    const ctx = new AudioContext();
+    // the iPhone's mute switch silences the music and the effects alike (Safari 17)
+    const session = (navigator as { audioSession?: { type: string } }).audioSession;
+    if (session) session.type = 'ambient';
+    const ctx = openContext();
     this.ctx = ctx;
     this.master = ctx.createGain();
     this.master.gain.value = this.muted ? 0 : this.volume;
@@ -143,12 +225,23 @@ export class Sfx {
     this.ambBus = ctx.createGain();
     this.ambBus.gain.value = 0.35;
     this.ambBus.connect(this.master);
+    this.musicBus = ctx.createGain();
+    this.musicBus.gain.value = MUSIC_LEVEL;
+    this.musicBus.connect(this.master);
+    this.buffers = new Buffers((url, mono) => this.decode(url, mono));
+    // an OfflineAudioContext (tools/scenarios/sfx.mjs) can't stream
+    if ('createMediaElementSource' in ctx) this.players = new Players(ctx, this.musicBus);
     const len = ctx.sampleRate * 2;
     this.noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
     const d = this.noiseBuf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     // the game may have entered an area before there was any sound (?dev, a reload into the game)
-    if (this.area !== null) this.startBed(areaSound(this.area).bed);
+    if (this.area !== null) this.startArea(this.area);
+    if (this.early) {
+      const { ids, resolve } = this.early;
+      this.early = null;
+      void this.preload([...ids]).then(resolve);
+    }
   }
 
   setVolume(v: number) {
@@ -219,8 +312,10 @@ export class Sfx {
     const level = (def.vol ?? 1) * (opts.vol ?? 1) * (where?.gain ?? 1);
     const now = ctx.currentTime;
     // rate-limit identical sounds, unless the new one is louder: a far monster's death mustn't
-    // swallow a near one's in the same frame
-    const last = this.lastPlay[def.synth];
+    // swallow a near one's in the same frame. Ids that share a recipe are the same sound until they
+    // have recordings of their own (a fire's cast and its impact)
+    const key = this.recorded(id) ? id : def.synth;
+    const last = this.lastPlay.get(key);
     if (last && now - last.t < REPEAT_GAP && level <= last.level) return;
     this.voices = this.voices.filter((v) => {
       if (v.end > now) return true;
@@ -235,9 +330,10 @@ export class Sfx {
       v.gain.gain.setTargetAtTime(0, now, 0.01);
       setTimeout(() => v.tail.disconnect(), 100);
     }
-    this.lastPlay[def.synth] = { t: now, level };
+    this.lastPlay.set(key, { t: now, level });
+    const rec = this.variant(id);
     const gain = ctx.createGain();
-    gain.gain.value = level;
+    gain.gain.value = level * (rec?.gain ?? 1);
     let tail: AudioNode = gain;
     if (where) {
       // a balance (earGains), not a StereoPannerNode: that one is 3 dB down in the middle
@@ -251,11 +347,124 @@ export class Sfx {
       tail = merge;
     }
     tail.connect(this.sfxBus);
-    this.out = gain;
-    this.pitch = opts.pitch ?? 1;
     this.end = now;
-    this.synth(def.synth, now + 0.005);
+    if (rec) {
+      const src = ctx.createBufferSource();
+      src.buffer = rec.buf;
+      // variety from one take: a little off its pitch each time
+      const vary = def.vary ?? (id.startsWith('ui.') ? 0 : VARY);
+      src.playbackRate.value = (opts.pitch ?? 1) * (1 + (Math.random() * 2 - 1) * vary);
+      src.connect(gain);
+      src.start(now + 0.005);
+      this.end = now + 0.005 + rec.buf.duration / src.playbackRate.value;
+    } else {
+      this.out = gain;
+      this.pitch = opts.pitch ?? 1;
+      this.synth(def.synth, now + 0.005);
+    }
     this.voices.push({ id, prio, start: now, end: this.end, gain, tail });
+  }
+
+  /**
+   * One of the id's recorded variants to play now, and its level; null to synthesize it: it has no
+   * files, they failed, or none is decoded yet (the first play starts decoding them all).
+   */
+  private variant(id: SoundId): { buf: AudioBuffer; gain: number } | null {
+    const f = this.files[id];
+    if (!f || !this.recorded(id)) return null;
+    // an id's variants go together: playing one keeps them all from being evicted
+    const ready: number[] = [];
+    f.files.forEach((file, i) => {
+      if (this.buffers.get(fileUrl(file))) ready.push(i);
+    });
+    if (ready.length < f.files.length) void this.load(id);
+    if (!ready.length) return null;
+    const i = pickVariant(ready, this.lastVariant.get(id), Math.random);
+    this.lastVariant.set(id, i);
+    return { buf: this.buffers.get(fileUrl(f.files[i]))!, gain: f.gain ?? 1 };
+  }
+
+  /** it has recordings, and they haven't failed */
+  private recorded(id: FileId) {
+    return !!this.files[id] && !this.failed.has(id);
+  }
+
+  /**
+   * Fetch and decode: an effect folded to mono, as Sfx places it; a loop kept as recorded. Every
+   * error names the file.
+   */
+  private async decode(url: string, mono: boolean): Promise<AudioBuffer> {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
+    // a dev server, or a host that falls back to its index page, answers a missing file with HTML
+    const type = res.headers.get('content-type') ?? '';
+    if (type.startsWith('text/')) throw new Error(`${url}: not found (served as ${type})`);
+    let buf: AudioBuffer;
+    try {
+      buf = await this.ctx!.decodeAudioData(await res.arrayBuffer());
+    } catch (e) {
+      throw new Error(`${url}: ${(e as Error).message}`);
+    }
+    return mono ? toMono(this.ctx!, buf) : buf;
+  }
+
+  /** decode all of an effect's takes: false (and the id given up on for the session) if one won't load */
+  private load(id: SoundId): Promise<boolean> {
+    const f = this.files[id];
+    if (!f || !this.recorded(id)) return Promise.resolve(false);
+    return Promise.all(f.files.map((file) => this.buffers.load(fileUrl(file), true))).then(
+      () => true,
+      (e: Error) => {
+        this.fail(id, e);
+        return false;
+      },
+    );
+  }
+
+  /** the take an ambience layer plays next time: one at random, kept until it's played */
+  private takeOf(id: AmbId): string {
+    let url = this.takes.get(id);
+    if (!url) {
+      const files = this.files[id]!.files;
+      url = fileUrl(files[Math.floor(Math.random() * files.length)]);
+      this.takes.set(id, url);
+    }
+    return url;
+  }
+
+  /** decode the take of an ambience layer that plays next: its others would only take memory */
+  private loadAmb(id: AmbId): Promise<AudioBuffer | null> {
+    if (!this.recorded(id)) return Promise.resolve(null);
+    return this.buffers.load(this.takeOf(id), false).catch((e: Error) => {
+      this.fail(id, e);
+      return null;
+    });
+  }
+
+  private fail(id: FileId, e: Error) {
+    if (this.failed.has(id)) return;
+    this.failed.add(id);
+    console.warn(`sound ${id}: ${e.message}; ${insteadOf(id)} instead`);
+  }
+
+  /**
+   * Decode these now (the sounds of the areas next to the hero's), so their first play is the
+   * recording and not the synthesized stand-in. Music streams, so there's nothing to warm for it.
+   * Resolves when they're in, or have failed; asked before the first click, only once that click
+   * has made an AudioContext to decode them with.
+   */
+  preload(ids: readonly FileId[]): Promise<void> {
+    if (!this.ctx) {
+      if (!this.early) {
+        let resolve!: () => void;
+        const done = new Promise<void>((r) => (resolve = r));
+        this.early = { ids: new Set(), done, resolve };
+      }
+      for (const id of ids) this.early.ids.add(id);
+      return this.early.done;
+    }
+    const loads = ids.map((id) => (isMusic(id) ? null : isAmb(id) ? this.loadAmb(id) : this.load(id as SoundId)));
+    return Promise.all(loads).then(() => {});
   }
 
   private synth(name: Synth, t: number) {
@@ -397,24 +606,149 @@ export class Sfx {
     }
   }
 
-  /** the hero is in another area: its bed fades in over the last one's (and later its music) */
+  /**
+   * The hero is in another area: its ambience and its music fade in over the last one's, except
+   * that what's the same plays on (soundOf).
+   */
   enterArea(area: AreaId) {
     if (area === this.area) return;
     this.area = area;
-    // no AudioContext before the first click: ensure() starts the bed then
-    if (this.ctx) this.startBed(areaSound(area).bed);
+    // no AudioContext before the first click: ensure() starts them then
+    if (this.ctx) this.startArea(area);
   }
 
-  /** the looping bed: 'dungeon' drone or 'town' wind+fire, fading in over the last one */
-  private startBed(kind: Bed) {
-    if (!this.ctx) return;
-    this.amb?.stop();
-    this.amb = null;
-    if (kind === 'none') return;
-    const ctx = this.ctx;
+  /**
+   * What an area's ambience and music are, as far as playing on into it goes: the same loops (or,
+   * with none that will play, the same bed) and the same track (or the same kind of composed music).
+   * So floor to floor of a dungeon nothing starts again, and while there are no recordings, the
+   * camp's wind blows on into the wilderness.
+   */
+  private soundOf(s: AreaSound): { amb: string; music: string } {
+    const layers = (s.amb ?? []).filter((id) => this.recorded(id));
+    const music = s.music && this.recorded(s.music) && this.players ? s.music : `score:${s.score ?? 'none'}`;
+    return { amb: layers.length ? layers.join('+') : `bed:${s.bed}`, music };
+  }
+
+  private startArea(area: AreaId) {
+    const s = areaSound(area);
+    const now = this.soundOf(s);
+    // the music first: the bed's level depends on whether there is any
+    if (now.music !== this.now.music) {
+      this.music?.stop(MUSIC_OUT);
+      this.music = this.track(area);
+    }
+    if (now.amb !== this.now.amb) {
+      this.amb?.stop();
+      this.amb = this.ambience(s);
+    }
+    this.now = now;
+  }
+
+  /**
+   * The area's ambience: its recorded loops, fading in once they're decoded (at once, if they were
+   * preloaded); its synthesized bed if it has none, or they won't load.
+   */
+  private ambience(s: AreaSound): { stop: () => void } | null {
+    const ctx = this.ctx!;
+    const layers = (s.amb ?? []).filter((id) => this.recorded(id));
+    if (!layers.length) return this.bed(s.bed);
     const out = ctx.createGain();
     out.gain.value = 0;
-    out.gain.linearRampToValueAtTime(1, ctx.currentTime + 2);
+    out.connect(this.ambBus);
+    // each layer's take (the one preloaded, if it was), pinned while it plays: evicting it would only
+    // mean decoding it again
+    const takes = layers.map((id) => {
+      const url = this.takeOf(id);
+      this.takes.delete(id);
+      return { id, f: this.files[id]!, url };
+    });
+    for (const t of takes) this.buffers.pin(t.url);
+    const loops: AudioBufferSourceNode[] = [];
+    let bed: { stop: () => void } | null = null;
+    let stopped = false;
+    void Promise.all(
+      takes.map((t) =>
+        this.buffers.load(t.url, false).catch((e: Error) => {
+          this.fail(t.id, e);
+          return null;
+        }),
+      ),
+    ).then((bufs) => {
+      if (stopped) return;
+      // what plays on into the next area is what played here: without the layers that failed
+      if (this.amb === handle) this.now.amb = this.soundOf(s).amb;
+      if (!bufs.some((b) => b)) {
+        bed = this.bed(s.bed);
+        return;
+      }
+      const now = ctx.currentTime;
+      takes.forEach(({ f }, i) => {
+        const buf = bufs[i];
+        if (!buf) return;
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.loop = true;
+        // round the loop points, skipping the encoder's silence at the start
+        const start = f.loop?.start ?? 0;
+        if (f.loop) {
+          src.loopStart = start;
+          src.loopEnd = f.loop.end;
+        }
+        const g = ctx.createGain();
+        g.gain.value = f.gain ?? 1;
+        src.connect(g).connect(out);
+        src.start(now, start);
+        loops.push(src);
+      });
+      out.gain.setValueAtTime(0, now);
+      out.gain.linearRampToValueAtTime(1, now + 2);
+    });
+    const handle = {
+      stop: () => {
+        stopped = true;
+        bed?.stop();
+        const t = ctx.currentTime;
+        out.gain.cancelScheduledValues(t);
+        out.gain.setValueAtTime(out.gain.value, t);
+        out.gain.linearRampToValueAtTime(0, t + 1);
+        setTimeout(() => {
+          for (const l of loops) l.stop();
+          out.disconnect();
+          for (const take of takes) this.buffers.unpin(take.url);
+        }, 1200);
+      },
+    };
+    return handle;
+  }
+
+  /**
+   * The area's music: its recording streamed, or until there is one (or if it won't play), its score,
+   * composed from the area's name: the same piece every time it's entered.
+   */
+  private track(area: AreaId): Track | null {
+    const ctx = this.ctx!;
+    const s = areaSound(area);
+    const compose = () => (s.score ? new Score(ctx, this.musicBus, s.score, seedOf(areaKey(area)), MUSIC_IN) : null);
+    const id = s.music;
+    const f = id && this.files[id];
+    if (!id || !f || !this.recorded(id) || !this.players) return compose();
+    const stream: Stream = new Stream(ctx, this.players, f.files.map(fileUrl), MUSIC_IN, (e) => {
+      this.fail(id, e);
+      if (this.music !== stream) return;
+      stream.stop(1);
+      this.music = compose();
+      this.now.music = this.soundOf(s).music;
+    });
+    return stream;
+  }
+
+  /** the looping bed: 'dungeon' drone or 'town' wind+fire, fading in; lower under the area's music */
+  private bed(kind: Bed): { stop: () => void } | null {
+    if (kind === 'none') return null;
+    const ctx = this.ctx!;
+    const out = ctx.createGain();
+    out.gain.setValueAtTime(0, ctx.currentTime);
+    out.gain.linearRampToValueAtTime(this.music ? BED_UNDER_MUSIC[kind] : 1, ctx.currentTime + 2);
     out.connect(this.ambBus);
     const nodes: AudioScheduledSourceNode[] = [];
     if (kind === 'dungeon') {
@@ -487,7 +821,7 @@ export class Sfx {
       crackle.start();
       nodes.push(crackle);
     }
-    this.amb = {
+    return {
       stop: () => {
         const t = ctx.currentTime;
         out.gain.cancelScheduledValues(t);

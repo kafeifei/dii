@@ -60,6 +60,10 @@ export class Input {
       }
     });
     window.addEventListener('pointerdown', gesture, { capture: true });
+    // a touch lets sound start only as it ends (iOS, and the HTML spec): pointerup, or touchend
+    // where there are no pointer events
+    window.addEventListener('pointerup', gesture, { capture: true });
+    window.addEventListener('touchend', gesture, { capture: true, passive: true });
     window.addEventListener('pointerup', (e) => {
       if (e.button === 0) {
         this.lmb = false;
