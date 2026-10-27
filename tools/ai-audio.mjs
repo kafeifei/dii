@@ -27,7 +27,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { RATE, dcBlock, deinterleave, fade, interleave, loopBody, normalize, normalizeLoop, onset, padLoop, toMono, trimSilence } from './audio/dsp.mjs';
+import { RATE, dcBlock, deinterleave, fade, interleave, loopBody, normalize, normalizeLoop, onset, padLoop, peak, toMono, trimSilence } from './audio/dsp.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LIST = path.join(ROOT, 'tools/audio/list.mjs');
@@ -106,6 +106,11 @@ const sounds = await import(pathToFileURL(path.join(ROOT, 'src/audio/sounds.ts')
   console.warn(`(the list's ids go unchecked: ${e.message})`);
   return null;
 });
+/** the heroes, whose lines are the moments in HERO_LINES (sounds.ts); any other speaker's are their own */
+const heroes = await import(pathToFileURL(path.join(ROOT, 'src/data/classes.ts')).href).then(
+  (m) => Object.keys(m.CLASSES),
+  () => [],
+);
 
 function validate(list) {
   const problems = [];
@@ -124,6 +129,8 @@ function validate(list) {
       if (!e.text) problems.push(`${where}: a voice line needs its text`);
       if (!e.id.startsWith('voice.') || e.id.split('.').length !== 3) problems.push(`${where}: a voice line is voice.<speaker>.<line>`);
       if (!SPEAKERS[speakerOf(e)]) problems.push(`${where}: no speaker ${speakerOf(e)} in SPEAKERS`);
+      const [, who, line] = e.id.split('.');
+      if (sounds?.HERO_LINES && heroes.includes(who) && !sounds.HERO_LINES.includes(line)) problems.push(`${where}: ${line} is not a moment in HERO_LINES (src/audio/sounds.ts)`);
       continue;
     }
     if (!e.prompt) problems.push(`${where}: needs a prompt`);
@@ -134,6 +141,11 @@ function validate(list) {
     if (sounds && e.kind === 'loop' && !sounds.AREA_FILES.includes(e.id)) console.warn(`${where}: no area plays it yet (src/audio/sounds.ts)`);
   }
   if (problems.length) fail(problems.join('\n'));
+  // a hero who speaks says something at every moment the game has a line for
+  for (const who of heroes.filter((h) => list.some((e) => e.id.startsWith(`voice.${h}.`)))) {
+    const missing = (sounds?.HERO_LINES ?? []).filter((line) => !seen.has(`voice.${who}.${line}`));
+    if (missing.length) console.warn(`list: ${who} has no line for ${missing.join(', ')}`);
+  }
   return list;
 }
 
@@ -331,8 +343,14 @@ function processTake(t, raw) {
   const back = decode(tmp, chs.length);
   const extra = back[0].length - chs[0].length;
   if (extra < 0 || extra > 4096) throw new Error(`${t.name}: encoded to ${back[0].length} frames from ${chs[0].length}`);
-  // (a few ms of slack for the codec's smearing: the priming left in would be 44 ms)
-  if (!loop && Math.abs(onset(back) - onset(chs)) > RATE / 200) throw new Error(`${t.name}: the encoded file starts ${onset(back) - onset(chs)} frames off`);
+  // (a few ms of slack for the codec's smearing: the priming left in would be 44 ms). Where it starts
+  // at five levels, the median: a priming left in moves every one alike, while the codec nudging a
+  // syllable or a click across one level moves only that one (by a tenth of the peak alone, takes
+  // that lined up sample for sample failed by 700 to 1200 frames)
+  const pk = peak(chs);
+  const offs = [0.05, 0.1, 0.2, 0.3, 0.5].map((k) => onset(back, pk * k) - onset(chs, pk * k)).sort((a, b) => a - b);
+  const off = offs[2];
+  if (!loop && Math.abs(off) > RATE / 200) throw new Error(`${t.name}: the encoded file starts ${off} frames off`);
   fs.mkdirSync(OUT, { recursive: true });
   fs.renameSync(tmp, path.join(OUT, t.file));
   fs.rmSync(pcm);

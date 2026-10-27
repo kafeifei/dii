@@ -4,7 +4,8 @@
 // may; silence is trimmed off both ends; a loop's end runs into its start without a jump, its padding
 // repeating the body sample for sample; the manifest's loop points are those made.json recorded; and
 // every recording in public/audio/ has a record in made.json and a credit in CREDITS.md naming what
-// it was made from.
+// it was made from; the heroes' script (tools/audio/voice-lines.md) has the moments HERO_LINES names,
+// and the list asks for its words.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -131,6 +132,22 @@ export default async (load) => {
     check(!!row, `public/audio/${f} isn't credited in public/audio/CREDITS.md`);
     const asked = m && (m.prompt ?? m.text);
     if (row && m) check(!!asked && row.includes(asked.replace(/\|/g, '\\|')), `public/audio/${f}: CREDITS.md doesn't give what it was made from (${asked ?? 'not recorded in made.json'})`);
+  }
+
+  // the heroes' script names the moments the game has lines for, and the list asks for each hero's
+  // words there as they're written
+  const { HERO_LINES } = await load('/src/audio/sounds.ts');
+  const script = fs.readFileSync(path.join(root, 'tools/audio/voice-lines.md'), 'utf8');
+  const keys = [...script.matchAll(/^\| `([a-z0-9_]+)` \|/gm)].map((m) => m[1]);
+  check(keys.join() === HERO_LINES.join(), `tools/audio/voice-lines.md has ${keys.join(' ')}, src/audio/sounds.ts HERO_LINES ${HERO_LINES.join(' ')}`);
+  const { default: list, SPEAKERS } = await import(`${path.join(root, 'tools/audio/list.mjs')}?t=${Date.now()}`);
+  for (const row of script.split('\n').filter((l) => l.startsWith('| `'))) {
+    const key = row.match(/`([a-z0-9_]+)`/)[1];
+    const words = [...row.matchAll(/「([^」]+)」/g)].map((m) => m[1]);
+    Object.keys(SPEAKERS).forEach((who, i) => {
+      const e = list.find((e) => e.id === `voice.${who}.${key}`);
+      check(e?.text === words[i], `tools/audio/list.mjs: voice.${who}.${key} says ${e?.text}, the script ${words[i]}`);
+    });
   }
 
   if (problems.length) throw new Error(problems.join('\n'));

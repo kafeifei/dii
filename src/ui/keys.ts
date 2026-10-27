@@ -4,26 +4,31 @@ import type { UI } from './ui';
 
 // The HUD's panel buttons and the keyboard.
 
-/** a HUD button clicked, or its key pressed */
+/** a HUD button clicked, or its key pressed: a panel opens or closes with its own sound, the rest click */
 export function pressButton(ui: UI, k: string) {
-  ui.sfx.play('ui.click');
   switch (k) {
     case 'char':
       ui.left = ui.left === 'char' ? null : 'char';
+      ui.sfx.play(ui.left ? 'ui.open' : 'ui.close');
       break;
     case 'inv':
       ui.right = ui.right === 'inv' ? null : 'inv';
+      ui.sfx.play(ui.right ? 'ui.open' : 'ui.close');
       break;
     case 'skills':
       ui.right = ui.right === 'skills' ? null : 'skills';
+      ui.sfx.play(ui.right ? 'ui.open' : 'ui.close');
       break;
     case 'portal':
+      ui.sfx.play('ui.click');
       ui.game.castTownPortal();
       break;
     case 'map':
+      ui.sfx.play('ui.click');
       ui.automap.isOpen = !ui.automap.isOpen;
       break;
     case 'menu':
+      ui.sfx.play('ui.click');
       ui.menu.toggle();
       break;
   }
@@ -53,6 +58,7 @@ export function onKey(ui: UI, e: KeyboardEvent) {
     if (ui.picker.isOpen) {
       ui.picker.close();
     } else if (ui.left || ui.right || ui.automap.isOpen) {
+      if (ui.left || ui.right) ui.sfx.play('ui.close');
       ui.left = null;
       ui.right = null;
       ui.automap.isOpen = false;

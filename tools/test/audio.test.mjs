@@ -3,10 +3,11 @@
 // budget, oldest first, sparing what's pinned, and decodes each file once; variants don't repeat;
 // an effect's leading silence (an AAC priming left in) is skipped;
 // every area kind has its music; walking from area to area, an ambience or a music starts only
-// where it changes; a Karplus–Strong string is in tune, decays and is the same for the same seed;
-// the composer writes the same piece for the same area, in its mode, sparse but never silent for
-// long; and the reverbs are short. tools/scenarios/sfx.mjs and audio.mjs play the same through
-// WebAudio in a page.
+// where it changes; under the sky, the night has its own loops from dusk to dawn, the day's
+// standing in for those not recorded; a Karplus–Strong string is in tune, decays and is the same
+// for the same seed; the composer writes the same piece for the same area, in its mode, sparse but
+// never silent for long; and the reverbs are short. tools/scenarios/sfx.mjs and audio.mjs play the
+// same through WebAudio in a page.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,7 +18,8 @@ const AUDIO_EXT = /\.(m4a|mp3|ogg|opus|webm|wav)$/;
 const MINUTES = 10;
 
 export default async (load) => {
-  const { SOUNDS, AREA_FILES, areaSound, areaFiles } = await load('/src/audio/sounds.ts');
+  const { SOUNDS, AREA_FILES, HERO_LINES, DUSK, DAWN, areaSound, areaFiles, isNight } = await load('/src/audio/sounds.ts');
+  const { CLASSES } = await load('/src/data/classes.ts');
   const { FILES } = await load('/src/audio/files.ts');
   const { Buffers, BUDGET, bytesOf, pickVariant, leadIn, LEAD } = await load('/src/audio/buffers.ts');
   const { SCORES, Composer, pluck, mulberry, seedOf, midiHz, STRING_RATE, ROOM_MAX } = await load('/src/audio/score.ts');
@@ -30,6 +32,9 @@ export default async (load) => {
   // the manifest: ids the game knows, files that are there, sane loop points
   for (const [id, f] of Object.entries(FILES)) {
     check(id in SOUNDS || AREA_FILES.includes(id) || /^voice\.[a-z0-9_]+\.[a-z0-9_]+$/.test(id), `files.ts: ${id} is neither a sound id, an area's recording nor a voice line`);
+    // a hero's line is for a moment the game names (HERO_LINES)
+    const [v, who, line] = id.split('.');
+    if (v === 'voice' && who in CLASSES) check(HERO_LINES.includes(line), `files.ts: ${id}: ${line} is not in HERO_LINES`);
     check(Array.isArray(f.files) && f.files.length > 0, `files.ts: ${id} has no files`);
     for (const file of f.files ?? []) {
       check(AUDIO_EXT.test(file) && !file.startsWith('/') && !file.split('/').includes('..'), `files.ts: ${id}: ${file} is not an audio file under public/audio/`);
@@ -139,6 +144,36 @@ export default async (load) => {
   const looped = { 'amb.town': { files: ['town.m4a'] }, 'amb.wild': { files: ['wild.m4a'] } };
   const want = 'music town, amb amb.town, music wild, amb amb.wild, music crypt, amb dungeon, music town, amb amb.town, music title, amb none';
   check(walk(looped) === want, `with the camp's and the wilderness's loops, walking the areas started: ${walk(looped)}; want ${want}`);
+
+  // the night: the sky's dusk and dawn half over; past dusk the camp and the wilderness play their
+  // night's loops, slowly crossfaded where the hero is; with no night recorded the day's play on;
+  // underground nothing changes
+  check(DUSK > 0.75 && DUSK < 0.8 && DAWN > 0.2 && DAWN < 0.25, `dusk at ${DUSK}, dawn at ${DAWN}: not where the sky's are (src/render/sky.ts)`);
+  check(isNight(0) && isNight(0.1) && isNight(0.9) && !isNight(0.3) && !isNight(0.5) && !isNight(0.7), 'isNight is not night from dusk to dawn');
+  for (const [key, t] of Object.entries(THEMES)) {
+    const s = areaSound(key);
+    const ambAt = (night) => areaFiles(key, night).filter((id) => id.startsWith('amb.')).join();
+    if (t.outdoor) check(s.night?.length && ambAt(true) === s.night.join() && ambAt(false) === s.amb.join(), `${key}: no night of its own, or areaFiles doesn't give it (${JSON.stringify(s)})`);
+    else check(!s.night && areaFiles(key, true).join() === areaFiles(key).join(), `${key}, underground, has a night: ${JSON.stringify(s)}`);
+    for (const id of [...(s.amb ?? []), ...(s.night ?? [])]) check(AREA_FILES.includes(id), `${key}: ${id} is not in AREA_FILES`);
+  }
+  const nightWalk = (files) => {
+    const sfx = new Sfx();
+    const started = [];
+    sfx.files = files;
+    sfx.ctx = {};
+    sfx.track = () => ({ stop() {} });
+    sfx.ambience = (s, rise) => (started.push(`${sfx.layers(s).join('+') || s.bed}${rise > 2 ? ' slowly' : ''}`), { stop() {} });
+    sfx.enterArea('town');
+    // noon, then dusk in the camp, the wilderness by night, a dungeon, dawn there, and back out
+    for (const step of [0.5, 0.8, 'wild', 'crypt', 0.3, 'wild']) typeof step === 'number' ? sfx.setTime(step) : sfx.enterArea(step);
+    return started.join(', ');
+  };
+  const nights = { ...looped, 'amb.town_night': { files: ['tn.m4a'] }, 'amb.wild_night': { files: ['wn.m4a'] } };
+  const wantNight = 'amb.town, amb.town_night slowly, amb.wild_night, dungeon, amb.wild';
+  check(nightWalk(nights) === wantNight, `with night loops, from noon to dusk and dawn the ambience went: ${nightWalk(nights)}; want ${wantNight}`);
+  const wantDay = 'amb.town, amb.wild, dungeon, amb.wild';
+  check(nightWalk(looped) === wantDay, `with no night loops, from noon to dusk and dawn the ambience went: ${nightWalk(looped)}; want ${wantDay}`);
 
   // a plucked string: in tune once played at its rate, ringing down, the same for the same seed
   for (const m of [40, 47, 52, 59, 64, 76, 82]) {

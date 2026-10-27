@@ -160,7 +160,7 @@ function openCube(ui: UIContext) {
   ui.left = 'cube';
   ui.right = 'inv';
   ui.dirty = true;
-  ui.sfx.play('ui.click');
+  ui.sfx.play('ui.open');
 }
 
 function buy(ui: UIContext, it: Item) {
@@ -334,6 +334,7 @@ export function renderInventory(ui: UIContext, R: HTMLElement): void {
   const close = h('button', 'close', '✕');
   close.onclick = () => {
     ui.right = null;
+    ui.sfx.play('ui.close');
     ui.dirty = true;
   };
   R.appendChild(close);

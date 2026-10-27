@@ -1,3 +1,4 @@
+import { SWING_SOUND } from '../audio/sounds';
 import { angleTo, dist, rand, randInt, type P2 } from '../core/math';
 import { ITEM_BASES } from '../data/items';
 import { SKILL_BY_ID } from '../data/skills';
@@ -130,7 +131,10 @@ function fireAttack(g: Game, p: Player) {
   const reachExtra = 0.55;
   let target = act.target && !act.target.dead && dist(act.target.pos, p.pos) <= reachTo(p, act.target) + reachExtra ? act.target : null;
   if (!target) target = nearestInFront(g, p, weaponReach(p) + p.radius + 0.3);
-  g.sfx.play('combat.swing', { pos: p.pos });
+  // by the weapon: a blade's thin whoosh (a two-handed one's long), a mace's or a staff's thick one; bare fists are blunt
+  const w = p.equipment.weapon ? ITEM_BASES[p.equipment.weapon.baseId] : null;
+  const swing = !w ? 'combat.swing_blunt' : (SWING_SOUND[w.type] ?? (w.twoHanded ? 'combat.swing_heavy' : 'combat.swing'));
+  g.sfx.play(swing, { pos: p.pos });
   g.fx.burst('swing', p.pos, { dir: { x: Math.sin(p.facing), z: Math.cos(p.facing) } });
   if (!target) return;
   let ed = 0;

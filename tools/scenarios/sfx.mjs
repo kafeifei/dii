@@ -401,30 +401,45 @@ const AREAS = ['town', 'wild', 'crypt', 'cave', 'ice', 'hell'];
  * The game's own recordings (src/audio/files.ts) against what they replace, rendered offline through
  * the whole chain the game plays them by (their level and gain, the master, its compressor): an
  * effect against its synthesized recipe, as UI, by its momentary loudness (BS.1770's 400 ms, so a
- * short sound counts as heard); an area's ambience loops against its synthesized bed, integrated
- * once both have faded in, the music muted. The loudness is measured here in Node with the meter the
- * pipeline normalizes by (tools/audio/dsp.mjs). Each must be within MATCH_DB: the synthesized mix is
- * the one balanced by ear, and a recording normalized to -16 LUFS once played 23 dB over its recipe.
- * A shipped id the game can't play this way (a voice line, for now) fails: nothing vouches for it.
+ * short sound counts as heard); an area's ambience loops, by day and by night, against its
+ * synthesized bed, integrated once both have faded in, the music muted. The loudness is measured here
+ * in Node with the meter the pipeline normalizes by (tools/audio/dsp.mjs). Each must be within
+ * MATCH_DB: the synthesized mix is the one balanced by ear, and a recording normalized to -16 LUFS
+ * once played 23 dB over its recipe. The heroes' lines (HERO_LINES) have nothing synthesized to match
+ * and nothing plays them yet: they're named, not compared. Any other shipped id the game can't play
+ * this way fails: nothing vouches for it.
  */
 async function shippedLevels(ev) {
   const { RATE, loudness } = await import('../audio/dsp.mjs');
-  const { SOUNDS, areaSound } = await import('../../src/audio/sounds.ts');
+  const { SOUNDS, HERO_LINES, areaSound } = await import('../../src/audio/sounds.ts');
+  const { CLASSES } = await import('../../src/data/classes.ts');
   const files = await ev(() => window.game.sfx.files);
   const fails = [];
   const facts = {};
   const jobs = [];
   const loops = new Map();
+  const heroLines = [];
+  /** voice.<class>.<line>, a moment the game has a line for */
+  const heroLine = (id) => {
+    const [v, who, line, more] = id.split('.');
+    return v === 'voice' && who in CLASSES && HERO_LINES.includes(line) && more === undefined;
+  };
   for (const id of Object.keys(files)) {
     if (id in SOUNDS) jobs.push({ kind: 'sfx', id, ids: [id] });
     else if (id.startsWith('amb.')) {
-      const area = AREAS.find((a) => areaSound(a).amb?.includes(id));
-      if (!area) fails.push(`shipped ${id}: no area plays it`);
-      else loops.set(area, [...(loops.get(area) ?? []), id]);
+      const day = AREAS.find((a) => areaSound(a).amb?.includes(id));
+      const night = AREAS.find((a) => areaSound(a).night?.includes(id));
+      if (!day && !night) fails.push(`shipped ${id}: no area plays it`);
+      else {
+        const at = day ? `${day} by day` : `${night} by night`;
+        loops.set(at, [...(loops.get(at) ?? []), id]);
+      }
     } else if (id.startsWith('music.')) facts[id] = 'streamed music: not compared';
+    else if (heroLine(id)) heroLines.push(id);
     else fails.push(`shipped ${id}: nothing in the game plays it`);
   }
-  for (const [area, ids] of loops) jobs.push({ kind: 'amb', id: ids.join('+'), area, ids });
+  if (heroLines.length) facts['voice.*'] = `${heroLines.length} hero lines: not compared`;
+  for (const [at, ids] of loops) jobs.push({ kind: 'amb', id: ids.join('+'), area: at.split(' ')[0], night: at.endsWith('night'), ids });
   const out = await ev(
     async ({ jobs, RATE }) => {
       const Sfx = window.game.sfx.constructor;
@@ -467,6 +482,8 @@ async function shippedLevels(ev) {
         s.musicBus.gain.value = 0;
         if (recorded) await s.preload(job.ids);
         const failed = job.ids.filter((id) => s.failed.has(id));
+        // midnight, for the night's loops
+        if (job.night) s.setTime(0);
         seeded(() => (job.kind === 'sfx' ? s.play(job.id) : s.enterArea(job.area)));
         // the loops start once their (preloaded) takes resolve
         if (job.kind === 'amb') await wait(50);
@@ -495,7 +512,7 @@ async function shippedLevels(ev) {
     const rec = level(r.rec.chs);
     const synth = level(r.synth.chs);
     const d = rec - synth;
-    const against = r.kind === 'sfx' ? 'its synthesized sound' : `the ${r.area} bed`;
+    const against = r.kind === 'sfx' ? 'its synthesized sound' : `the ${r.area} bed${r.night ? ' by night' : ''}`;
     facts[r.id] = `${rec.toFixed(1)} vs ${synth.toFixed(1)} LUFS ${r.kind === 'sfx' ? 'momentary' : 'integrated'} (${d >= 0 ? '+' : ''}${d.toFixed(1)} dB, gain ${r.gain.join('/')})`;
     if (!(Math.abs(d) <= MATCH_DB)) {
       // the gain that would match, the compressor aside

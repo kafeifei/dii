@@ -298,9 +298,12 @@ export function interleave(chs) {
   return Buffer.from(f.buffer);
 }
 
-/** where the sound starts: the first sample over a tenth of the peak (to check a file's alignment) */
-export function onset(chs) {
-  const thr = peak(chs) / 10;
+/**
+ * Where the sound starts: the first sample over `thr`, by default a tenth of the peak (to check a
+ * file's alignment). Comparing two versions of a sound, give both the same threshold: an encoder
+ * can raise the peak a dB, and a tenth of it then lands on a later click of the same sound.
+ */
+export function onset(chs, thr = peak(chs) / 10) {
   const c = chs[0];
   for (let i = 0; i < c.length; i++) if (Math.abs(c[i]) >= thr) return i;
   return -1;

@@ -1,6 +1,7 @@
 import type { Input } from '../core/input';
 import { chance, dist, rand, randInt, type P2 } from '../core/math';
 import type { Sfx } from '../audio/sfx';
+import { DROP_SOUND, LARGE_MONSTER } from '../audio/sounds';
 import { CLASSES, type PlayerClass } from '../data/classes';
 import { ITEM_BASES } from '../data/items';
 import { SKILL_BY_ID } from '../data/skills';
@@ -240,6 +241,7 @@ export class Game {
     }
     this.sfx.setListener(p.pos);
     // until levels have areas of their own (Level.areaAt), the theme stands for one
+    this.sfx.setTime(this.clock);
     this.sfx.enterArea(level.layout.theme.key);
     this.hooks.levelChanged(level);
     this.hooks.message(level.name, '#d8c8a0', 3);
@@ -293,6 +295,7 @@ export class Game {
     if (!this.started || this.paused) return;
     this.time += dt;
     this.clock = (this.clock + (dt * this.clockRate) / DAY_LENGTH) % 1;
+    this.sfx.setTime(this.clock);
     const L = this.level;
     for (const a of [this.player, ...L.monsters, ...L.projectiles]) {
       a.prevPos.x = a.pos.x;
@@ -862,7 +865,8 @@ export class Game {
     this.spawnDrops(m.pos, this.rollLoot(m.level, m.lootQuality()));
     // fx
     this.fx.death(m, m.def.blood, elem);
-    const snd = m.def.blood === 'bone' ? 'monster.die_bone' : m.def.model === 'imp' || m.def.model === 'shaman' ? 'monster.die_imp' : 'monster.die';
+    const big = m.rank === 'boss' || m.def.scale >= LARGE_MONSTER;
+    const snd = m.def.blood === 'bone' ? 'monster.die_bone' : big ? 'monster.die_large' : m.def.model === 'imp' || m.def.model === 'shaman' ? 'monster.die_imp' : 'monster.die';
     this.sfx.play(snd, { pos: m.pos });
     if (m.mods.includes('fireench')) {
       const pk = emptyPacket();
@@ -956,17 +960,18 @@ export class Game {
       }
       if (d.kind === 'gold') {
         this.level.ground.push(new GroundItem(spot, null, d.amount, pos));
+        this.sfx.play('item.gold', { pos: spot });
       } else {
         this.level.ground.push(new GroundItem(spot, d.item, 0, pos));
         const it = d.item;
         const b = baseOf(it);
+        // each kind of item lands with its own sound (a rune's is its stinger); a unique's stinger goes over it
+        const drop = DROP_SOUND[b.type] ?? 'item.drop';
+        this.sfx.play(drop, { pos: spot });
         if (it.rarity === 'unique' || it.rarity === 'set') {
           this.sfx.play('item.drop_unique', { pos: spot });
           this.fx.burst('unique_drop', spot, { color: it.rarity === 'set' ? '#22d422' : '#c8a86a' });
-        } else if (b.type === 'rune') {
-          this.sfx.play('item.drop_rune', { pos: spot });
-          this.fx.burst('unique_drop', spot, { color: '#ffa31a' });
-        } else this.sfx.play('item.drop', { pos: spot });
+        } else if (b.type === 'rune') this.fx.burst('unique_drop', spot, { color: '#ffa31a' });
       }
     }
   }
@@ -977,7 +982,8 @@ export class Game {
     const spot = { x: p.pos.x + Math.sin(a) * 0.8, z: p.pos.z + Math.cos(a) * 0.8 };
     const ok = this.level.map.walkableAt(spot.x, spot.z) ? spot : { ...p.pos };
     this.level.ground.push(new GroundItem(ok, item, 0, p.pos));
-    this.sfx.play('item.drop', { pos: ok });
+    const dropped = DROP_SOUND[baseOf(item).type] ?? 'item.drop';
+    this.sfx.play(dropped, { pos: ok });
   }
 
   // ───────────────────────── items & interaction ─────────────────────────

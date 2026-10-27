@@ -103,7 +103,7 @@ export class UI implements GameHooks, UIContext {
     this.left = kind;
     if (kind !== 'waypoint') this.right = 'inv';
     this.dirty = true;
-    this.sfx.play('ui.click');
+    this.sfx.play('ui.open');
   }
 
   levelChanged(level: Level) {
@@ -313,6 +313,7 @@ export class UI implements GameHooks, UIContext {
       const o = g.level.objects.find((x) => x.kind === kind);
       if (!o || Math.hypot(o.pos.x - p.pos.x, o.pos.z - p.pos.z) > 4) {
         this.left = null;
+        this.sfx.play('ui.close');
         this.dirty = true;
       }
     }

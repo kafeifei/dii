@@ -67,6 +67,7 @@ export function addClose(ui: UIContext, el: HTMLElement, side: 'left' | 'right')
   close.onclick = () => {
     if (side === 'left') ui.left = null;
     else ui.right = null;
+    ui.sfx.play('ui.close');
     ui.dirty = true;
   };
   el.appendChild(close);

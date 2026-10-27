@@ -3,7 +3,7 @@ import { Buffers, leadIn, pickVariant, toMono } from './buffers';
 import { FILES, type SoundFiles } from './files';
 import { Players, Stream, type Track } from './music';
 import { Score, seedOf } from './score';
-import { areaKey, areaSound, PRIORITY, SOUNDS, VARY, type AmbId, type AreaId, type AreaSound, type Bed, type FileId, type SoundDef, type SoundId, type Synth } from './sounds';
+import { areaKey, areaSound, isNight, PRIORITY, SOUNDS, VARY, type AmbId, type AreaId, type AreaSound, type Bed, type FileId, type SoundDef, type SoundId, type Synth } from './sounds';
 
 /**
  * Game code plays sounds by id (src/audio/sounds.ts); one with a place in the world is heard from
@@ -40,6 +40,11 @@ const MUSIC_LEVEL = 0.5;
 /** seconds an area's music takes to come in, and the last one's to go */
 const MUSIC_IN = 5;
 const MUSIC_OUT = 3;
+/** seconds an area's ambience takes to come in, and the last one's to go, walking from one to the next */
+const AMB_IN = 2;
+const AMB_OUT = 1;
+/** and as the night falls or the day breaks: slowly, as the light goes */
+const NIGHTFALL = 6;
 /**
  * A bed's level under the area's music. The dungeon's drone is some 16 dB louder than the camp's
  * wind and sits on the music's own E: at full level it buries everything but the odd pluck.
@@ -159,7 +164,9 @@ export class Sfx {
   private musicBus!: GainNode;
   private noiseBuf!: AudioBuffer;
   /** the area's ambience playing: its recorded loops, or its bed */
-  private amb: { stop: () => void } | null = null;
+  private amb: { stop: (secs?: number) => void } | null = null;
+  /** past dusk (isNight): an area under the sky plays its night's ambience */
+  private night = false;
   /** the area's music playing */
   private music: Track | null = null;
   /** what the ambience and the music playing are (soundOf): the next area's play on where they're the same */
@@ -626,18 +633,39 @@ export class Sfx {
   }
 
   /**
+   * The time of day under the sky (Game.clock, 0 → 1 from midnight): past dusk an area under it
+   * plays its night's ambience, crossfaded from the day's as the light goes, and the day's again
+   * after dawn. Underground, or with no night of its own recorded, nothing changes.
+   */
+  setTime(clock: number) {
+    const night = isNight(clock);
+    if (night === this.night) return;
+    this.night = night;
+    if (this.ctx && this.area !== null) this.startArea(this.area, NIGHTFALL);
+  }
+
+  /** the area's ambience layers that will play now: the night's by night, the day's while the night has none that will */
+  private layers(s: AreaSound): AmbId[] {
+    const day = (s.amb ?? []).filter((id) => this.recorded(id));
+    if (!this.night) return day;
+    const night = (s.night ?? []).filter((id) => this.recorded(id));
+    return night.length ? night : day;
+  }
+
+  /**
    * What an area's ambience and music are, as far as playing on into it goes: the same loops (or,
    * with none that will play, the same bed) and the same track (or the same kind of composed music).
    * So floor to floor of a dungeon nothing starts again, and while there are no recordings, the
    * camp's wind blows on into the wilderness.
    */
   private soundOf(s: AreaSound): { amb: string; music: string } {
-    const layers = (s.amb ?? []).filter((id) => this.recorded(id));
+    const layers = this.layers(s);
     const music = s.music && this.recorded(s.music) && this.players ? s.music : `score:${s.score ?? 'none'}`;
     return { amb: layers.length ? layers.join('+') : `bed:${s.bed}`, music };
   }
 
-  private startArea(area: AreaId) {
+  /** `fade`: the seconds the last ambience takes to go and this one to come in, if it changes */
+  private startArea(area: AreaId, fade?: number) {
     const s = areaSound(area);
     const now = this.soundOf(s);
     // the music first: the bed's level depends on whether there is any
@@ -646,19 +674,20 @@ export class Sfx {
       this.music = this.track(area);
     }
     if (now.amb !== this.now.amb) {
-      this.amb?.stop();
-      this.amb = this.ambience(s);
+      this.amb?.stop(fade ?? AMB_OUT);
+      this.amb = this.ambience(s, fade ?? AMB_IN);
     }
     this.now = now;
   }
 
   /**
-   * The area's ambience: its recorded loops, fading in once they're decoded (at once, if they were
-   * preloaded); its synthesized bed if it has none, or they won't load.
+   * The area's ambience: its recorded loops (those of the time of day), fading in over `rise`
+   * seconds once they're decoded (at once, if they were preloaded); its synthesized bed if it has
+   * none, or they won't load.
    */
-  private ambience(s: AreaSound): { stop: () => void } | null {
+  private ambience(s: AreaSound, rise = AMB_IN): { stop: (secs?: number) => void } | null {
     const ctx = this.ctx!;
-    const layers = (s.amb ?? []).filter((id) => this.recorded(id));
+    const layers = this.layers(s);
     if (!layers.length) return this.bed(s.bed);
     const out = ctx.createGain();
     out.gain.value = 0;
@@ -672,7 +701,7 @@ export class Sfx {
     });
     for (const t of takes) this.buffers.pin(t.url);
     const loops: AudioBufferSourceNode[] = [];
-    let bed: { stop: () => void } | null = null;
+    let bed: { stop: (secs?: number) => void } | null = null;
     let stopped = false;
     void Promise.all(
       takes.map((t) =>
@@ -709,21 +738,21 @@ export class Sfx {
         loops.push(src);
       });
       out.gain.setValueAtTime(0, now);
-      out.gain.linearRampToValueAtTime(1, now + 2);
+      out.gain.linearRampToValueAtTime(1, now + rise);
     });
     const handle = {
-      stop: () => {
+      stop: (secs = AMB_OUT) => {
         stopped = true;
-        bed?.stop();
+        bed?.stop(secs);
         const t = ctx.currentTime;
         out.gain.cancelScheduledValues(t);
         out.gain.setValueAtTime(out.gain.value, t);
-        out.gain.linearRampToValueAtTime(0, t + 1);
+        out.gain.linearRampToValueAtTime(0, t + secs);
         setTimeout(() => {
           for (const l of loops) l.stop();
           out.disconnect();
           for (const take of takes) this.buffers.unpin(take.url);
-        }, 1200);
+        }, secs * 1000 + 200);
       },
     };
     return handle;
@@ -751,12 +780,12 @@ export class Sfx {
   }
 
   /** the looping bed: 'dungeon' drone or 'town' wind+fire, fading in; lower under the area's music */
-  private bed(kind: Bed): { stop: () => void } | null {
+  private bed(kind: Bed): { stop: (secs?: number) => void } | null {
     if (kind === 'none') return null;
     const ctx = this.ctx!;
     const out = ctx.createGain();
     out.gain.setValueAtTime(0, ctx.currentTime);
-    out.gain.linearRampToValueAtTime(this.music ? BED_UNDER_MUSIC[kind] : 1, ctx.currentTime + 2);
+    out.gain.linearRampToValueAtTime(this.music ? BED_UNDER_MUSIC[kind] : 1, ctx.currentTime + AMB_IN);
     out.connect(this.ambBus);
     const nodes: AudioScheduledSourceNode[] = [];
     if (kind === 'dungeon') {
@@ -830,11 +859,11 @@ export class Sfx {
       nodes.push(crackle);
     }
     return {
-      stop: () => {
+      stop: (secs = AMB_OUT) => {
         const t = ctx.currentTime;
         out.gain.cancelScheduledValues(t);
         out.gain.setValueAtTime(out.gain.value, t);
-        out.gain.linearRampToValueAtTime(0, t + 1);
+        out.gain.linearRampToValueAtTime(0, t + secs);
         setTimeout(() => {
           for (const nd of nodes) {
             try {
@@ -844,7 +873,7 @@ export class Sfx {
             }
           }
           out.disconnect();
-        }, 1200);
+        }, secs * 1000 + 200);
       },
     };
   }
