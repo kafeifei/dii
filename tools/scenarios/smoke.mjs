@@ -4,7 +4,8 @@
 // Reloads the page with empty storage, then plays a short run through the real UI and the game's
 // own API: the HUD and every panel, the debug panel's cheats, loot, the camp's services, the
 // wilderness and the first dungeon floor (every skill cast, kills and their drops), a town portal
-// there and back, a jump within the camp (Game.teleportWithin), and the save. Page errors and
+// there and back, the debug panel's area jumps and difficulty, a jump within the camp
+// (Game.teleportWithin), and the save. Page errors and
 // console errors count from the reload on, and fail the run. The last line is "SMOKE OK <summary>"
 // or "SMOKE FAIL <reasons>".
 
@@ -156,9 +157,19 @@ export default async function (page, shot, log) {
       expect(s1.statPoints === s0.statPoints + 50 && s1.skillPoints === s0.skillPoints + 10, `+10 levels gave ${s1.statPoints - s0.statPoints} stat and ${s1.skillPoints - s0.skillPoints} skill points`);
       // god mode, so the fights below can't end the run
       await debugButton('无敌', '开').click();
+      // the item level: set for the loot buttons, then by the hero again (the camp's area level is 0)
+      const ilvls = () => ev((n) => game.level.ground.slice(-n).map((g) => g.item?.ilvl), 1);
+      await debugButton('物品等级', '99').click();
+      await debugButton('随机装备', '1 件').click();
+      const set = await ilvls();
+      await debugButton('物品等级', '自动').click();
+      const s1b = await state();
       await debugButton('随机装备', '5 件').click();
       const s2 = await state();
-      expect(s2.ground === s1.ground + 5, `5 random gear dropped ${s2.ground - s1.ground}`);
+      expect(set[0] === 99, `with the item level at 99 the gear dropped at ${set[0]}`);
+      expect(s2.ground === s1b.ground + 5, `5 random gear dropped ${s2.ground - s1b.ground}`);
+      const auto = await ev(() => game.level.ground.slice(-5).map((g) => g.item?.ilvl));
+      expect(auto.every((l) => l === s2.level), `back on auto, gear dropped at item levels ${auto.join(', ')}, the hero is level ${s2.level}`);
       await debugButton('指定品质', '暗金').click();
       const s3 = await state();
       expect(s3.ground === s2.ground + 1 && s3.uniques === s2.uniques + 1, `the unique button dropped ${s3.ground - s2.ground} item(s), ${s3.uniques - s2.uniques} unique`);
@@ -170,7 +181,7 @@ export default async function (page, shot, log) {
         return { stored: JSON.parse(localStorage.getItem('dii-debug') ?? '{}'), xp: on('经验') };
       });
       expect(opts.stored.xp === 10 && opts.xp === '×10', `xp ×10 shows ${opts.xp}, stored ${opts.stored.xp}`);
-      expect(opts.stored.loot === 5 && opts.stored.god === true, `stored debug settings ${JSON.stringify(opts.stored)}`);
+      expect(opts.stored.loot === 5 && opts.stored.god === true && opts.stored.ilvl === 0, `stored debug settings ${JSON.stringify(opts.stored)}`);
       await key('Backquote', () => !document.querySelector('.overlay.settings.open'), 'the debug panel to close');
       await key('Escape', () => !game.paused && !document.querySelector('.overlay.open'), 'the pause menu to close');
       await frames();
@@ -415,6 +426,73 @@ export default async function (page, shot, log) {
         return game.level.depth;
       });
       expect(depth === 0, `travel(0) went to depth ${depth}`);
+    },
+
+    async jump() {
+      // the debug panel's area list: the camp, the wilderness, the dungeon's floors; the hero's area picked
+      const open = () => key('Backquote', () => !!document.querySelector('.overlay.settings.open .debug-note'), 'the debug panel to open');
+      const left = (what) => until(() => !game.paused && !document.querySelector('.overlay.open'), null, `the panel to shut after ${what}`);
+      const sel = page.locator('.overlay.settings.open .setting select');
+      await open();
+      const list = await ev(() => {
+        const s = document.querySelector('.overlay.settings.open .setting select');
+        const opts = [...(s?.options ?? [])];
+        return { n: opts.length, value: s?.value, here: String(game.area.id), first: opts[0]?.value, second: opts[1]?.value, floor3: opts.find((o) => o.textContent.includes('第 3 层'))?.value };
+      });
+      expect(list.n >= 32 && list.value === list.here && list.first === list.here, `the area list has ${list.n} areas, ${list.value} picked, starting at ${list.first} (the camp is ${list.here})`);
+      expect(list.second === String(await ev(() => window.__smoke.wildArea)), `the area after the camp is ${list.second}, not the wilderness`);
+      if (!list.floor3) throw new Error('no third floor in the area list');
+      await sel.selectOption(list.floor3);
+      await debugButton('前往', '去').click();
+      await left('going to floor 3');
+      const a = await ev(() => ({ id: String(game.area.id), key: game.area.key, depth: game.level.depth }));
+      expect(a.id === list.floor3 && a.key === 'floor3', `went to area ${a.key} (#${a.id}), not floor 3 (#${list.floor3})`);
+      // the next one down
+      await open();
+      expect((await ev(() => document.querySelector('.overlay.settings.open .setting select')?.value)) === a.id, 'the list does not pick the floor the hero is on');
+      await debugButton('前往', '下一个').click();
+      await left('going on');
+      const b = await ev(() => ({ key: game.area.key, depth: game.level.depth }));
+      expect(b.key === 'floor4' && b.depth === a.depth + 1, `next from floor 3 went to ${b.key} at depth ${b.depth}`);
+      // and home
+      await open();
+      await sel.selectOption(list.first);
+      await debugButton('前往', '去').click();
+      await left('going home');
+      expect((await ev(() => String(game.area.id))) === list.here, 'the camp in the list did not lead to the camp');
+      facts.push('area jumps');
+    },
+
+    async difficulty() {
+      await key('Backquote', () => !!document.querySelector('.overlay.settings.open .debug-note'), 'the debug panel to open');
+      const read = () =>
+        ev((slot) => {
+          const d = JSON.parse(localStorage.getItem(slot) ?? 'null');
+          const row = [...document.querySelectorAll('.overlay.settings.open .setting')].find((r) => r.querySelector('.label > span')?.textContent === '难度');
+          return {
+            diff: game.player.difficulty,
+            wps: [...game.player.waypoints],
+            camp: game.area.id,
+            saved: d && { difficulty: d.difficulty, unlocked: d.unlocked, normal: d.progress?.[0]?.waypoints, nightmare: d.progress?.[1]?.waypoints },
+            shown: row?.querySelector('button.on')?.textContent,
+            note: document.querySelector('.overlay.settings.open .debug-note')?.textContent ?? '',
+          };
+        }, DEV_SLOT);
+      const s0 = await read();
+      expect(s0.diff === 0 && s0.shown === '普通' && s0.wps.length > 1, `starting out: difficulty ${s0.diff} (${s0.shown}), waypoints ${s0.wps.join(' ')}`);
+      await debugButton('难度', '噩梦').click();
+      const s1 = await read();
+      expect(s1.diff === 1 && s1.shown === '噩梦' && s1.note.includes('噩梦'), `nightmare picked: difficulty ${s1.diff}, ${s1.shown} shown, the note says ${s1.note}`);
+      expect(s1.saved?.difficulty === 1 && s1.saved.unlocked >= 1, `nightmare picked, saved ${JSON.stringify(s1.saved)}`);
+      // waypoints go by difficulty: nightmare's are only the camp's, normal's are kept
+      expect(JSON.stringify(s1.wps) === '[0]' && JSON.stringify(s1.saved?.nightmare) === JSON.stringify([s1.camp]), `nightmare's waypoints ${s1.wps.join(' ')}, saved ${JSON.stringify(s1.saved?.nightmare)}`);
+      expect(s1.saved?.normal?.length === s0.wps.length, `normal's saved waypoints ${JSON.stringify(s1.saved?.normal)}, it had depths ${s0.wps.join(' ')}`);
+      await debugButton('难度', '普通').click();
+      const s2 = await read();
+      expect(s2.diff === 0 && s2.saved?.difficulty === 0 && JSON.stringify(s2.wps) === JSON.stringify(s0.wps), `back to normal: difficulty ${s2.diff}, saved ${s2.saved?.difficulty}, waypoints ${s2.wps.join(' ')}`);
+      await key('Backquote', () => !document.querySelector('.overlay.settings.open'), 'the debug panel to close');
+      await key('Escape', () => !game.paused && !document.querySelector('.overlay.open'), 'the pause menu to close');
+      facts.push('difficulty saved');
     },
 
     async teleport() {

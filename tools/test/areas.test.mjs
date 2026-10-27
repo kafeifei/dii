@@ -2,11 +2,14 @@
 // level, the kind and the names the maps had before there were areas; the layouts' waypoints and
 // services become the objects they did. Then Game.teleportWithin on the camp, its east part made
 // wilderness: the hero moves, the view is told to jump, a new area is announced, nothing is rebuilt.
+// Then what the tools go by: areas by key and in order, the way from a map into an area
+// (Level.wayTo), a jump by area (Game.travelToArea) and the difficulty (Game.setDifficulty), whose
+// waypoints are kept apart in the save.
 const SEED = 7;
 const FLOORS = 13;
 
 export default async (load) => {
-  const { CAMP_AREA, WILD_AREA, areaDef, areaForDepth, dungeonArea } = await load('/src/world/areas.ts');
+  const { CAMP_AREA, WILD_AREA, areaByKey, areaDef, areaForDepth, areaList, dungeonArea, nextArea } = await load('/src/world/areas.ts');
   const { THEMES, WILD_MAPS, isWild, dungeonFloor, levelLabel, themeForFloor } = await load('/src/world/levelgen.ts');
   const { monsterLevel } = await load('/src/data/monsters.ts');
   const { Level } = await load('/src/game/level.ts');
@@ -114,6 +117,47 @@ export default async (load) => {
   check(game.level === camp && notes.levels === 1, `the jumps rebuilt the level (${notes.levels} levelChanged)`);
   check(p.state === 'idle' && !p.intent && !p.path, `after a jump the hero is ${p.state}, intent ${p.intent?.kind}`);
 
+  // ── the way into an area: a tile of it on this map, else the exit or stairs there ──
+  const wayEast = camp.wayTo(WILD_AREA, home);
+  check(wayEast && !wayEast.obj && wayEast.pos.x >= east && camp.map.walkableAt(wayEast.pos.x, wayEast.pos.z) && camp.areaAt(wayEast.pos.x, wayEast.pos.z).id === WILD_AREA, `with the camp's east half wild, the way there is ${JSON.stringify(wayEast)}`);
+  check(camp.wayTo(CAMP_AREA, home)?.pos && near(camp.wayTo(CAMP_AREA, home).pos, home), 'the way into the area the hero is in is not where they stand');
+  camp.areas.fill(CAMP_AREA);
+  const gate = camp.wayTo(WILD_AREA, home);
+  check(gate?.obj?.kind === 'exit' && gate.obj.dest === 1, `the camp's way into the wilderness is ${gate?.obj?.kind} to ${gate?.obj?.dest}`);
+  const wild = new Level(1, SEED);
+  const ws = wild.layout.start;
+  check(wild.wayTo(dungeonArea(1), ws)?.obj?.kind === 'stairs', `the wilderness's way into floor 1 is ${wild.wayTo(dungeonArea(1), ws)?.obj?.kind}`);
+  check(wild.wayTo(CAMP_AREA, ws)?.obj?.kind === 'exit', `the wilderness's way back to the camp is ${wild.wayTo(CAMP_AREA, ws)?.obj?.kind}`);
+  check(wild.wayTo(dungeonArea(2), ws) === null, 'the wilderness leads to floor 2');
+  const f2 = new Level(WILD_MAPS + 2, SEED);
+  check(f2.wayTo(dungeonArea(3), f2.layout.start)?.obj?.kind === 'stairs' && f2.wayTo(dungeonArea(1), f2.layout.start) === null, 'floor 2 does not lead to floor 3 by its stairs alone');
+
+  // ── areas by key and in order ──
+  const list = areaList(5);
+  check(list.map((a) => a.key).join() === 'camp,wild,floor1,floor2,floor3,floor4,floor5', `areaList(5): ${list.map((a) => a.key).join()}`);
+  check(list.every((a, i) => i === 0 || nextArea(list[i - 1]) === a), 'nextArea does not follow the list');
+  check(list.every((a) => areaByKey(a.key) === a) && areaByKey('floor40') === areaDef(dungeonArea(40)), 'an area is not found by its key');
+  check(areaByKey('floor0') === undefined && areaByKey('nowhere') === undefined && nextArea({ id: 999 }) === undefined, 'a key or an area that is not there is found');
+
+  // ── a jump by area, and the difficulty ──
+  const saved = () => JSON.parse(localStorage.getItem('dii-save-v1'));
+  check(game.travelToArea(dungeonArea(3)) && game.area.key === 'floor3' && game.level.depth === WILD_MAPS + 3, `travelToArea(floor 3) went to ${game.area.key}`);
+  check(!game.travelToArea(999) && game.area.key === 'floor3', 'a jump to an area with no map went somewhere');
+  const normal = [...p.waypoints];
+  check(normal.includes(WILD_MAPS + 3), `floor 3's waypoint not touched: ${normal.join()}`);
+  game.setDifficulty(1);
+  let d = saved();
+  check(p.difficulty === 1 && p.waypoints.join() === '0', `nightmare: difficulty ${p.difficulty}, waypoints ${p.waypoints.join()}`);
+  check(d.difficulty === 1 && d.unlocked === 1 && d.progress[1].waypoints.join() === String(CAMP_AREA) && d.progress[0].waypoints.includes(dungeonArea(3)), `nightmare saved ${JSON.stringify({ difficulty: d.difficulty, unlocked: d.unlocked, progress: d.progress })}`);
+  game.travelToArea(dungeonArea(4));
+  game.setDifficulty(0);
+  d = saved();
+  check(p.difficulty === 0 && p.waypoints.join() === normal.join(), `back in normal the waypoints are ${p.waypoints.join()}, were ${normal.join()}`);
+  check(d.difficulty === 0 && d.unlocked === 1 && d.progress[1].waypoints.includes(dungeonArea(4)) && !d.progress[0].waypoints.includes(dungeonArea(4)), `floor 4's nightmare waypoint saved as ${JSON.stringify(d.progress)}`);
+  game.setDifficulty(2);
+  const again = (await load('/src/game/save.ts')).loadSave();
+  check(again?.player.difficulty === 2 && again.player.waypoints.join() === '0', `hell reloads as difficulty ${again?.player.difficulty} with waypoints ${again?.player.waypoints.join()}`);
+
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
-  console.log(`  ${depths.length} depths, ${new Set(depths.map((d) => areaForDepth(d).kind)).size} kinds of area; three jumps in the camp announced ${announced}`);
+  console.log(`  ${depths.length} depths, ${new Set(depths.map((d) => areaForDepth(d).kind)).size} kinds of area; three jumps in the camp announced ${announced}; ways, keys, jumps and difficulties as the tools use them`);
 };

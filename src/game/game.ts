@@ -19,10 +19,10 @@ import { CHARGE_PREFIX, Player } from './player';
 import { castItemSkill, startCast, toggleAura, updatePlayer, type PlayerAction } from './playerctl';
 import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
-import { loadSave, markInGame, setSlot, writeSave } from './save';
+import { loadSave, markInGame, savedWaypoints, setSlot, writeSave, type Difficulty } from './save';
 import { debugOpts } from './debug';
 import { isWild, levelLabel } from '../world/levelgen';
-import type { AreaDef } from '../world/areas';
+import { depthForArea, type AreaDef } from '../world/areas';
 import { SHRINE_BY_ID } from '../data/shrines';
 
 export interface GameHooks {
@@ -1222,5 +1222,30 @@ export class Game {
   travel(depth: number) {
     this.sfx.play('env.waypoint', { pos: this.player.pos });
     this.enterLevel(depth, 'waypoint');
+  }
+
+  /**
+   * Go to an area as a waypoint does, touched or not, for the tools (the debug panel, the bench, the
+   * bot): today to the start of its map. False when this build has no map of it
+   */
+  travelToArea(id: number): boolean {
+    const depth = depthForArea(id);
+    if (depth === undefined) return false;
+    this.travel(depth);
+    return true;
+  }
+
+  /**
+   * Play on in another difficulty (the debug panel). Nothing goes by it yet but the save and the
+   * waypoints, which Diablo II keeps apart for each difficulty
+   */
+  setDifficulty(d: Difficulty) {
+    const p = this.player;
+    if (d === p.difficulty) return;
+    // the waypoints so far stay with the difficulty they were touched in
+    this.save();
+    p.difficulty = d;
+    p.waypoints = savedWaypoints(p, d);
+    this.save();
   }
 }

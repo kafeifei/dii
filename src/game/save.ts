@@ -95,6 +95,7 @@ const SAVE_V = 4;
 
 /** 0 normal, 1 nightmare, 2 hell */
 export type Difficulty = 0 | 1 | 2;
+export const DIFFICULTIES: readonly Difficulty[] = [0, 1, 2];
 
 /** what Diablo II keeps apart for each difficulty */
 export interface DifficultySave {
@@ -294,6 +295,17 @@ function backUp(raw: string, d: { name?: string; cls?: string }, tag: string): b
   }
 }
 
+/** the depths of a difficulty's touched waypoints, the camp's at least */
+function waypointDepths(s: DifficultySave | undefined): number[] {
+  const touched = (s?.waypoints ?? []).map(depthForArea).filter((n): n is number => n !== undefined);
+  return touched.length ? [...new Set(touched)].sort((a, b) => a - b) : [0];
+}
+
+/** the depths whose waypoints `p` has touched in difficulty `d`, as last saved or loaded (the camp's at least) */
+export function savedWaypoints(p: Player, d: Difficulty): number[] {
+  return waypointDepths(loaded.get(p)?.progress?.[d]);
+}
+
 /** an empty difficulty: no waypoint but the camp's, no quests */
 function newProgress(): DifficultySave {
   return { waypoints: [CAMP_AREA], quests: {} };
@@ -403,7 +415,10 @@ function restored(raw: NonNullable<Item['raw']>, d: SaveV4): Item | null {
   return out;
 }
 
-/** the save each loaded character came from: what this build doesn't play yet is written back from it */
+/**
+ * the save each character was loaded from, or last written as: what this build doesn't play yet is
+ * written back from it, and so are the difficulties not being played
+ */
 const loaded = new WeakMap<Player, SaveV4>();
 /** characters from a save this build must not write: a newer build's, or one it couldn't back up */
 const readOnly = new WeakSet<Player>();
@@ -412,10 +427,10 @@ const readOnly = new WeakSet<Player>();
 export function writeSave(p: Player, area: number) {
   if (readOnly.has(p)) return;
   const KEY = keyFor(slot);
-  // what this build doesn't play yet (difficulty, progress, the mercenary, the corpse) is written from
-  // the save loaded: a line that moves one onto Player or Game must write it from there instead
+  // what this build doesn't play yet (progress, the mercenary, the corpse) is written from the save
+  // loaded or last written: a line that moves one onto Player or Game must write it from there instead
   const prev = loaded.get(p);
-  const difficulty = prev?.difficulty ?? 0;
+  const difficulty = p.difficulty;
   const progress: SaveV4['progress'] = prev?.progress ?? [newProgress(), newProgress(), newProgress()];
   // waypoints in areas this build doesn't have stay touched
   const others = (progress[difficulty]?.waypoints ?? []).filter((a) => depthForArea(a) === undefined);
@@ -446,7 +461,8 @@ export function writeSave(p: Player, area: number) {
     area: p.dead ? CAMP_AREA : area,
     depthReached: p.depthReached,
     difficulty,
-    unlocked: prev?.unlocked ?? 0,
+    // the one played is open, if only through the debug panel
+    unlocked: Math.max(prev?.unlocked ?? 0, difficulty) as Difficulty,
     progress,
     merc: prev?.merc ?? null,
     corpse: prev?.corpse ?? null,
@@ -454,6 +470,8 @@ export function writeSave(p: Player, area: number) {
     mana: p.dead ? undefined : p.mana,
     time: Date.now(),
   };
+  // a character never loaded keeps its other difficulties' progress from one write to the next
+  loaded.set(p, data);
   try {
     localStorage.setItem(KEY, JSON.stringify(data));
   } catch {
@@ -699,8 +717,8 @@ export function loadSave(): { player: Player; depth: number; readOnly: string | 
   p.binds = d.binds ?? ['attack', null, null, null, null, null];
   p.activeAura = d.activeAura ?? null;
   p.depthReached = d.depthReached ?? 0;
-  const touched = (d.progress?.[d.difficulty ?? 0]?.waypoints ?? []).map(depthForArea).filter((n): n is number => n !== undefined);
-  p.waypoints = touched.length ? [...new Set(touched)].sort((a, b) => a - b) : [0];
+  p.difficulty = DIFFICULTIES.includes(d.difficulty) ? d.difficulty : 0;
+  p.waypoints = waypointDepths(d.progress?.[p.difficulty]);
   p.markDirty();
   p.recalc();
   p.life = Math.min(p.d.maxLife, Math.max(1, d.life ?? p.d.maxLife));

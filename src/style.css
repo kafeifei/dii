@@ -1147,6 +1147,18 @@ body {
   font-size: 12px;
   color: var(--muted);
 }
+/* debug panel: the area to go to */
+.seg select {
+  max-width: min(200px, 30vw);
+  margin-left: -1px;
+  padding: 5px 6px;
+  background: var(--panel2);
+  border: 1px solid var(--edge);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
 .setting input[type='range'] {
   width: 220px;
   accent-color: var(--gold);

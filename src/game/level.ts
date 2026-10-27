@@ -105,6 +105,32 @@ export class Level {
     return this.areaAt(p.x, p.z).kind === 'town';
   }
 
+  /**
+   * Where to go from `from` to get into area `id`, for the tools that travel by area (the bot, the
+   * bench's walk): the nearest walkable tile of it on this map, or else the exit or the stairs that
+   * lead there (`obj`, walked through or used). Null when nothing here leads there.
+   */
+  wayTo(id: number, from: P2): { pos: P2; obj?: WorldObject } | null {
+    if (this.areaAt(from.x, from.z).id === id) return { pos: { ...from } };
+    const m = this.layout.map;
+    let best: P2 | null = null;
+    let bestD = Infinity;
+    for (let z = 0; z < m.h; z++) {
+      for (let x = 0; x < m.w; x++) {
+        if (this.areas[z * m.w + x] !== id || !m.walkable(x, z)) continue;
+        const d = (x + 0.5 - from.x) ** 2 + (z + 0.5 - from.z) ** 2;
+        if (d < bestD) {
+          bestD = d;
+          best = { x: x + 0.5, z: z + 0.5 };
+        }
+      }
+    }
+    if (best) return { pos: best };
+    // stairs lead one depth down (Game.interact)
+    const obj = this.objects.find((o) => (o.kind === 'exit' && areaForDepth(o.dest).id === id) || (o.kind === 'stairs' && areaForDepth(this.depth + 1).id === id));
+    return obj ? { pos: { ...obj.pos }, obj } : null;
+  }
+
   /** every area of the map gets its monsters once, as the map is made (src/game/spawn.ts says which); towns get none */
   private populate(seed: number) {
     const L = this.layout;

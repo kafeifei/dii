@@ -16,9 +16,11 @@ export interface DebugOpts {
   loot: number;
   /** the player can't die */
   god: boolean;
+  /** the item level the panel's loot buttons roll at; 0 goes by the hero and the area */
+  ilvl: number;
 }
 
-export const debugOpts: DebugOpts = { xp: 1, loot: 1, god: false };
+export const debugOpts: DebugOpts = { xp: 1, loot: 1, god: false, ilvl: 0 };
 try {
   Object.assign(debugOpts, JSON.parse(localStorage.getItem(KEY) ?? '{}'));
 } catch {

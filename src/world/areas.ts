@@ -66,6 +66,29 @@ export function areaDef(id: number): AreaDef | undefined {
   return define({ id, key: `floor${f}`, name: `${themeForFloor(f).name} · 第 ${f} 层`, label: `第 ${f} 层`, alvl: alvl(f), kind: 'dungeon', waypoint: true });
 }
 
+/** an area by its key (AreaDef.key), as the tools name them: 'camp', 'wild', 'floor3' */
+export function areaByKey(key: string): AreaDef | undefined {
+  for (const a of AREAS.values()) if (a.key === key) return a;
+  const f = /^floor([1-9]\d*)$/.exec(key);
+  return f ? areaDef(dungeonArea(+f[1])) : undefined;
+}
+
+/** the areas from the camp down, in the order a hero comes to them: the camp, the wilderness, the dungeon's first `floors` floors */
+export function areaList(floors: number): AreaDef[] {
+  const out: AreaDef[] = [];
+  for (let a: AreaDef | undefined = areaDef(CAMP_AREA); a && (a.kind !== 'dungeon' || a.id - DUNGEON_AREAS <= floors); a = nextArea(a)) out.push(a);
+  return out;
+}
+
+/** the area after `a` on the way from the camp down (the dungeon has no last one); undefined for an area this build lacks */
+export function nextArea(a: AreaDef): AreaDef | undefined {
+  let depth = depthForArea(a.id);
+  if (depth === undefined) return undefined;
+  // past every map of it (the wilderness may be several)
+  while (areaForDepth(depth).id === a.id) depth++;
+  return areaForDepth(depth);
+}
+
 /** the area one of today's maps is, by its depth: the camp, the wilderness or a dungeon floor */
 export function areaForDepth(depth: number): AreaDef {
   return areaDef(depth <= 0 ? CAMP_AREA : isWild(depth) ? WILD_AREA : dungeonArea(dungeonFloor(depth)))!;

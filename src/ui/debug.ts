@@ -1,15 +1,18 @@
-import { monsterLevel } from '../data/monsters';
 import { debugOpts, saveDebugOpts } from '../game/debug';
 import type { Game } from '../game/game';
 import { MAX_LEVEL, xpForLevel } from '../game/player';
+import { DIFFICULTIES, type Difficulty } from '../game/save';
 import { rollEquipment, rollGem, rollRune, type Drop } from '../items/gen';
 import { displayName, type Item, type Rarity } from '../items/item';
-import { levelLabel } from '../world/levelgen';
+import { CAMP_AREA, areaDef, areaLevel, areaList, nextArea, type AreaDef } from '../world/areas';
 
 type Choice<T> = [T, string];
 type Action = [string, () => void];
 
 const RARITY_NAME: Partial<Record<Rarity, string>> = { magic: '魔法', rare: '稀有', set: '套装', unique: '暗金' };
+const DIFFICULTY_NAME: Record<Difficulty, string> = { 0: '普通', 1: '噩梦', 2: '地狱' };
+/** how many of the dungeon's floors the area list offers at least (it has no bottom) */
+const FLOORS = 30;
 
 /**
  * The debug overlay (pause menu → 调试, or the ` key): levels, gold and loot for the real
@@ -41,7 +44,8 @@ export class DebugPanel {
     this.choice(me, '无敌', [[true, '开'], [false, '关']] as Choice<boolean>[], () => debugOpts.god, (v) => (debugOpts.god = v), '生命掉到 0 时直接回满');
 
     const loot = this.group(panel, '掉落');
-    this.actions(loot, '随机装备', [['1 件', () => this.dropGear(1)], ['5 件', () => this.dropGear(5)], ['20 件', () => this.dropGear(20)]], '掉在脚下；物品等级取角色等级和这层怪物等级里高的');
+    this.choice(loot, '物品等级', [[0, '自动'], [10, '10'], [30, '30'], [60, '60'], [99, '99']] as Choice<number>[], () => debugOpts.ilvl, (v) => (debugOpts.ilvl = v), '自动取角色等级和区域等级里高的');
+    this.actions(loot, '随机装备', [['1 件', () => this.dropGear(1)], ['5 件', () => this.dropGear(5)], ['20 件', () => this.dropGear(20)]], '掉在脚下');
     this.actions(loot, '指定品质', (['magic', 'rare', 'set', 'unique'] as Rarity[]).map((r): Action => [RARITY_NAME[r]!, () => this.dropRarity(r)]));
     this.actions(loot, '符文和宝石', [['符文 ×3', () => this.dropRunes()], ['宝石 ×3', () => this.dropGems()]]);
 
@@ -50,7 +54,8 @@ export class DebugPanel {
     this.choice(rate, '掉落', [[1, '×1'], [2, '×2'], [5, '×5'], [10, '×10']] as Choice<number>[], () => debugOpts.loot, (v) => (debugOpts.loot = v), '怪物和箱子的掉落重复掷几次');
 
     const map = this.group(panel, '地图');
-    this.actions(map, '前往', [['下一张图', () => this.go(this.depth + 1)], ['往下 5 张', () => this.go(this.depth + 5)], ['回营地', () => this.go(0)]], '沿途的传送点不会激活，只激活到达的那张图');
+    this.areaRow(map, '前往', '只激活到达区域的传送点');
+    this.choice(map, '难度', DIFFICULTIES.map((d): Choice<Difficulty> => [d, DIFFICULTY_NAME[d]]), () => this.game.player.difficulty, (d) => this.difficulty(d), '传送点按难度分开，怪物和掉落还照普通');
 
     this.el = el;
   }
@@ -69,13 +74,11 @@ export class DebugPanel {
     this.el.classList.remove('open');
   }
 
-  private get depth() {
-    return this.game.level?.depth ?? 0;
-  }
-
-  /** the level loot is rolled at */
+  /** the level loot is rolled at: the panel's override, or the higher of the hero's and the area's */
   private get ilvl() {
-    return Math.max(this.game.player.level, monsterLevel(Math.max(1, this.game.level?.floor ?? 1)));
+    if (debugOpts.ilvl > 0) return Math.min(99, Math.round(debugOpts.ilvl));
+    const p = this.game.player;
+    return Math.max(p.level, this.game.level?.alvlAt(p.pos) ?? 1);
   }
 
   private levels(n: number) {
@@ -122,10 +125,17 @@ export class DebugPanel {
     this.drop(Array.from({ length: 3 }, () => rollGem(Math.random() < 0.6 ? 3 : 4)), '3 颗宝石');
   }
 
-  private go(depth: number) {
+  private go(area: AreaDef | undefined) {
+    if (!area) return this.note('没有这块区域');
+    // a list from an older build, or an area this one has no map of yet
+    if (!this.game.travelToArea(area.id)) return this.note(`这个版本还没有「${area.name}」的地图`);
     this.close();
     this.resume();
-    this.game.travel(depth);
+  }
+
+  private difficulty(d: Difficulty) {
+    this.game.setDifficulty(d);
+    this.done(`难度：${DIFFICULTY_NAME[d]}（换成这个难度的传送点，怪物和掉落不变）`);
   }
 
   private done(text: string) {
@@ -137,7 +147,8 @@ export class DebugPanel {
 
   private note(text: string) {
     const p = this.game.player;
-    const status = `${p.name} · ${p.level} 级 · ${levelLabel(this.depth)} · 金币 ${p.gold}`;
+    const a = this.game.area;
+    const status = `${p.name} · ${p.level} 级 · ${a ? (a.label ?? a.name) : '-'} · ${DIFFICULTY_NAME[p.difficulty]} · 金币 ${p.gold}`;
     this.noteEl.textContent = text ? `${text}\n${status}` : status;
   }
 
@@ -163,20 +174,42 @@ export class DebugPanel {
     return r;
   }
 
+  private button(text: string, fn: () => void): HTMLButtonElement {
+    const b = document.createElement('button');
+    b.textContent = text;
+    b.onclick = () => {
+      this.game.sfx.play('ui.click');
+      fn();
+    };
+    return b;
+  }
+
   private actions(group: HTMLElement, label: string, acts: Action[], note?: string) {
     const r = this.row(group, label, note);
     const seg = document.createElement('div');
     seg.className = 'seg';
-    for (const [text, fn] of acts) {
-      const b = document.createElement('button');
-      b.textContent = text;
-      b.onclick = () => {
-        this.game.sfx.play('ui.click');
-        fn();
-      };
-      seg.appendChild(b);
-    }
+    for (const [text, fn] of acts) seg.appendChild(this.button(text, fn));
     r.appendChild(seg);
+  }
+
+  /** the areas from the camp down to pick from (the one the hero is in picked), a button to go, one for the next */
+  private areaRow(group: HTMLElement, label: string, note: string) {
+    const r = this.row(group, label, note);
+    const seg = document.createElement('div');
+    seg.className = 'seg';
+    const sel = document.createElement('select');
+    seg.append(
+      sel,
+      this.button('去', () => this.go(areaDef(Number(sel.value)))),
+      this.button('下一个', () => this.go(this.game.area ? nextArea(this.game.area) : undefined)),
+    );
+    r.appendChild(seg);
+    this.rows.push(() => {
+      // a few floors past the one the hero is on, however deep that is
+      const floors = Math.max(FLOORS, (this.game.level?.floor ?? 0) + 5);
+      sel.replaceChildren(...areaList(floors).map((a) => new Option(a.kind === 'town' ? a.name : `${a.name} · ${areaLevel(a)} 级`, String(a.id))));
+      sel.value = String(this.game.area?.id ?? CAMP_AREA);
+    });
   }
 
   private choice<T>(group: HTMLElement, label: string, opts: Choice<T>[], get: () => T, set: (v: T) => void, note?: string) {

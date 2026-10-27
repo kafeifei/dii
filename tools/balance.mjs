@@ -1,6 +1,8 @@
-// Runs several balance bots in parallel and aggregates per-floor results.
-// node tools/balance.mjs --runs 6 --depth 16 --minutes 120 --url "http://localhost:PORT/?dev"
-// Starts its own vite dev server when nothing answers at a localhost --url.
+// Runs several balance bots (tools/bot.mjs) in parallel and aggregates their results area by area.
+// node tools/balance.mjs --runs 6 --to floor15 --minutes 120 --url "http://localhost:PORT/?dev"
+//   [--class sorceress] [--start-area wild] [--level 1] [--dump floor10,floor11]
+// The bots go from --start-area until past --to (area keys, src/world/areas.ts). Starts its own vite
+// dev server when nothing answers at a localhost --url.
 import { spawn } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
@@ -11,10 +13,15 @@ const opt = (k, d) => {
   return i >= 0 ? args[i + 1] : d;
 };
 const runs = +opt('runs', 6);
-const depth = +opt('depth', 16);
 const minutes = +opt('minutes', 120);
 const url = opt('url', 'http://localhost:5174/?dev');
-const from = +opt('from', 1);
+if (opt('depth') || opt('from')) {
+  console.error('--depth and --from went with the depths: give the areas, --to floor15 (and --start-area)');
+  process.exit(1);
+}
+/** what each bot is told: the class, the start, the last area, the level */
+const botArgs = ['--to', opt('to', 'floor15'), '--start-area', opt('start-area', 'wild'), '--level', opt('level', '1'), '--minutes', String(minutes)];
+if (opt('class')) botArgs.push('--class', opt('class'));
 
 async function reachable(u) {
   try {
@@ -45,9 +52,7 @@ if (!(await reachable(url))) {
 function runOne(i) {
   return new Promise((resolve) => {
     const out = path.join(os.tmpdir(), `dii-balance-${process.pid}-${i}`);
-    const child = spawn('node', ['tools/play.mjs', 'tools/bot.mjs', '--url', url, '--out', out], {
-      env: { ...process.env, DEPTH: String(depth), MINUTES: String(minutes) },
-    });
+    const child = spawn('node', ['tools/play.mjs', 'tools/bot.mjs', '--url', url, '--out', out, ...botArgs]);
     let buf = '';
     child.stdout.on('data', (d) => (buf += d));
     child.stderr.on('data', (d) => (buf += d));
@@ -55,6 +60,11 @@ function runOne(i) {
     child.on('close', () => {
       clearTimeout(kill);
       const line = buf.split('\n').find((l) => l.startsWith('BOT_RESULT '));
+      const error = buf.split('\n').find((l) => l.startsWith('BOT_ERROR '));
+      if (error) {
+        console.error(error.slice('BOT_ERROR '.length));
+        process.exit(1);
+      }
       if (line) resolve(JSON.parse(line.slice('BOT_RESULT '.length)));
       else {
         failures.push(buf.trim().split('\n').slice(-15).join('\n'));
@@ -70,10 +80,11 @@ const results = (await Promise.all(Array.from({ length: runs }, (_, i) => runOne
 console.log(`${results.length}/${runs} runs finished in ${Math.round((Date.now() - t0) / 1000)}s\n`);
 if (failures.length) console.log(`a failed run's last output:\n${failures[0]}\n`);
 if (!results.length) process.exit(1);
+// every bot walks the same route
+const route = results[0].route;
 // runs that stopped short: why
 for (const r of results) {
-  const top = Math.max(0, ...r.levels.map((l) => l.depth));
-  if (top < depth) console.log(`run stopped at floor ${top + 1}: ${JSON.stringify(r.status)}\n  ${(r.stalls ?? []).join('\n  ')}`);
+  if (r.levels.length < route.length) console.log(`run stopped in ${route[r.levels.length]}: ${JSON.stringify(r.status)}\n  ${(r.stalls ?? []).join('\n  ')}`);
 }
 
 const med = (a) => {
@@ -82,15 +93,16 @@ const med = (a) => {
   return s[Math.floor(s.length / 2)];
 };
 const rows = [];
-for (let d = from; d <= depth; d++) {
-  const lv = results.map((r) => r.levels.find((l) => l.depth === d)).filter(Boolean);
-  const reached = results.filter((r) => r.levels.some((l) => l.depth >= d) || r.deathList.some((x) => x.depth >= d)).length;
-  const deaths = results.map((r) => r.deathList.filter((x) => x.depth === d).length);
+for (const [i, area] of route.entries()) {
+  const lv = results.map((r) => r.levels.find((l) => l.area === area)).filter(Boolean);
+  // it got there: it cleared every area before it
+  const reached = results.filter((r) => r.levels.length >= i).length;
+  const deaths = results.map((r) => r.deathList.filter((x) => x.area === area).length);
   const causes = {};
-  for (const r of results) for (const x of r.deathList.filter((y) => y.depth === d)) for (const [k, n] of Object.entries(x.causes)) causes[k.split('(')[0]] = (causes[k.split('(')[0]] ?? 0) + n;
+  for (const r of results) for (const x of r.deathList.filter((y) => y.area === area)) for (const [k, n] of Object.entries(x.causes)) causes[k.split('(')[0]] = (causes[k.split('(')[0]] ?? 0) + n;
   const top = Object.entries(causes).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, n]) => `${k}:${n}`).join(' ');
   rows.push({
-    depth: d,
+    area,
     reached: `${reached}/${results.length}`,
     cleared: lv.length,
     'deaths(med/avg)': `${med(deaths)}/${(deaths.reduce((a, b) => a + b, 0) / Math.max(1, deaths.length)).toFixed(1)}`,
@@ -105,16 +117,16 @@ for (let d = from; d <= depth; d++) {
 }
 console.table(rows);
 
-// --dump 11,12: list the death situations on those floors
-for (const d of (opt('dump', '') || '').split(',').filter(Boolean).map(Number)) {
+// --dump floor10,floor11: list the death situations in those areas
+for (const d of (opt('dump', '') || '').split(',').filter(Boolean)) {
   const combos = {};
   for (const r of results) {
-    for (const x of r.deathList.filter((y) => y.depth === d)) {
+    for (const x of r.deathList.filter((y) => y.area === d)) {
       const k = Object.entries(x.causes).map(([m, n]) => `${n}×${m}`).sort().join(' + ') + (x.proj ? ` (proj ${x.proj})` : '');
       combos[k] = (combos[k] ?? 0) + 1;
     }
   }
-  console.log(`\nfloor ${d} deaths:`);
+  console.log(`\n${d} deaths:`);
   for (const [k, n] of Object.entries(combos).sort((a, b) => b[1] - a[1]).slice(0, 14)) console.log(`  ${n}x  ${k}`);
 }
 

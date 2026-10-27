@@ -1,22 +1,108 @@
 // Balance bot scenario for tools/play.mjs: fast-forwards the sim with an automated player.
-// node tools/play.mjs tools/bot.mjs --url http://localhost:PORT/?dev
+// node tools/play.mjs tools/bot.mjs --url "http://localhost:PORT/?dev" [--class sorceress] [--start-area wild] [--to floor7] [--level 1] [--minutes 40]
+// The hero goes area by area (src/world/areas.ts, from the camp down) from --start-area until past
+// --to: fighting what is near, then on into the next area, across the map when it is on it, or else by
+// the exit or the stairs that lead there (a dungeon's floors are linked by stairs). --level starts the
+// hero at that level, its points spent and wearing gear rolled at it. Each class spends its points and
+// fights as BUILDS says, with the skills it has learned. Options may come from the environment too
+// (CLASS, START_AREA, TO, LEVEL, MINUTES), the way tools/balance.mjs passes them.
+const args = process.argv.slice(2);
+const opt = (k, d) => {
+  const i = args.indexOf(`--${k}`);
+  return i >= 0 ? args[i + 1] : (process.env[k.toUpperCase().replace(/-/g, '_')] ?? d);
+};
+
+/**
+ * What each class does, by skill id. `points`: where its points go, in order, each [skill, the level to
+ * take it to]; a skill a point can't go into yet is passed over until it can, a missing prerequisite is
+ * learned first, a skill this build doesn't have is left out. `attacks`: what it fights with, the first
+ * learned one there is mana for (the weapon when none). `auras`: the one to keep on, the first learned.
+ * `buffs`: [skill, the Player field that is its time left] to cast again as it wears off. `manaShare`:
+ * how many of the potions bought are mana. A class with no build, or none of whose skills are left,
+ * spends on and fights with its own latest skills.
+ */
+const BUILDS = {
+  // zeal under concentration
+  paladin: {
+    points: [['zeal', 20], ['might', 1], ['prayer', 1], ['holy_fire', 1], ['holy_freeze', 1], ['charge', 1], ['concentration', 20], ['vigor', 1], ['might', 20]],
+    attacks: ['zeal'],
+    auras: ['concentration', 'might'],
+    buffs: [],
+    manaShare: 1 / 3,
+  },
+  // fire bolt, then fire ball, with warmth for the mana and frozen armor for the hits
+  sorceress: {
+    points: [['frozen_armor', 1], ['warmth', 1], ['fire_bolt', 8], ['fire_ball', 20], ['fire_wall', 1], ['meteor', 20], ['fire_bolt', 20], ['warmth', 20]],
+    attacks: ['fire_ball', 'fire_bolt'],
+    auras: [],
+    buffs: [['frozen_armor', 'frozenArmor']],
+    manaShare: 1 / 2,
+  },
+};
+
 export default async function (page, shot, log) {
-  const maxDepth = +(process.env.DEPTH || 8);
-  const maxMinutes = +(process.env.MINUTES || 40);
-  await page.evaluate(async ({ maxDepth, maxMinutes }) => {
-    const { baseOf, displayName, weaponDamage, sellPrice } = await import('/src/items/item.ts');
+  const o = {
+    cls: opt('class', ''),
+    startArea: opt('start-area', 'wild'),
+    to: opt('to', 'floor7'),
+    level: +opt('level', 1),
+    maxMinutes: +opt('minutes', 40),
+    builds: BUILDS,
+  };
+  const setup = await page.evaluate(async (o) => {
+    const { baseOf, displayName, sellPrice } = await import('/src/items/item.ts');
     const { slotsFor } = await import('/src/data/items.ts');
-    const { SKILL_BY_ID } = await import('/src/data/skills.ts');
-    const { createItem } = await import('/src/items/gen.ts');
+    const { SKILL_BY_ID, SKILLS } = await import('/src/data/skills.ts');
+    const { CLASS_IDS } = await import('/src/data/classes.ts');
+    const { createItem, rollEquipment } = await import('/src/items/gen.ts');
+    const { xpForLevel } = await import('/src/game/player.ts');
+    const { areaByKey, nextArea } = await import('/src/world/areas.ts');
     const g = game;
-    // the bot steps the sim itself; skip the page's own update/render loop (much faster headless)
+    const cls = o.cls || g.player.cls;
+    /** how far off a spell is cast from */
+    const SPELL_RANGE = 9;
+    if (!CLASS_IDS.includes(cls)) return { error: `no class ${cls} (${CLASS_IDS.join(', ')})` };
+    // the route, compared by id: the page's copies of the modules may not be the game's
+    const start = areaByKey(o.startArea);
+    const end = areaByKey(o.to);
+    if (!start || !end) return { error: `no area ${start ? o.to : o.startArea}` };
+    const route = [start];
+    while (route.length < 500 && route[route.length - 1].id !== end.id) {
+      const n = nextArea(route[route.length - 1]);
+      if (!n) break;
+      route.push(n);
+    }
+    if (route[route.length - 1].id !== end.id) return { error: `${o.to} doesn't come after ${o.startArea}` };
+    const endIdx = route.length - 1;
+    // getting into the area after the last one ends the run
+    const finish = nextArea(end);
+    if (finish) route.push(finish);
+    // the skills the build names that this build of the game has, for the hero's class
+    const own = (id) => SKILL_BY_ID[id]?.cls === cls;
+    const b = o.builds[cls] ?? { points: [], attacks: [], auras: [], buffs: [], manaShare: 1 / 3 };
+    const build = {
+      points: b.points.filter(([id]) => own(id)),
+      attacks: b.attacks.filter(own),
+      auras: b.auras.filter(own),
+      buffs: b.buffs.filter(([id]) => own(id)),
+      manaShare: b.manaShare,
+    };
+    /** a skill that hurts what it is aimed at (a fallback's attack: not a teleport or a passive) */
+    const hurts = (s) => s.kind === 'attack' || (s.kind === 'spell' && Object.keys(s.params(1, 0)).some((k) => /min|max|dps|dmg/i.test(k)));
+    /** the class's own skills, latest first: what a class without a build goes by */
+    const latest = SKILLS.filter((s) => s.cls === cls).sort((x, y) => y.reqLevel - x.reqLevel);
+
+    // the sim is stepped here; the page's own update/render loop is skipped (much faster headless)
     g.headless = true;
+    g.newGame('', cls);
     const STEP = 1 / 60;
-    const stats = { deaths: 0, levels: [], kills: 0, uniques: 0, sets: 0, rares: 0, runes: 0, potionsUsed: 0, timeline: [], deathList: [] };
+    const stats = { route: route.slice(0, endIdx + 1).map((a) => a.key), deaths: 0, levels: [], kills: 0, uniques: 0, sets: 0, rares: 0, runes: 0, potionsUsed: 0, timeline: [], deathList: [] };
     window.__bot = stats;
-    let depth = 1;
-    let levelStart = 0;
-    g.enterLevel(1, 'stairs');
+    const kill = g.killMonster.bind(g);
+    g.killMonster = (m, ...a) => {
+      if (!m.dead) stats.kills++;
+      return kill(m, ...a);
+    };
     const p = () => g.player;
     const score = () => {
       const d = p().stats;
@@ -55,8 +141,26 @@ export default async function (page, shot, log) {
       pl.markDirty(); pl.recalc();
       return true;
     };
-    // per-point priority with caps (a simple zeal/concentration melee build)
-    const skillCaps = [['sacred_strike', 1], ['zeal', 20], ['might', 1], ['prayer', 1], ['holy_fire', 1], ['resist_all', 1], ['holy_freeze', 1], ['charge', 1], ['concentration', 20], ['vigor', 1], ['might', 20]];
+    const mana = (id) => SKILL_BY_ID[id]?.mana(p().skillLevel(id)) ?? 0;
+    /** `id` itself if a point can go into it now, or else a prerequisite of it that can take one */
+    const pointFor = (id, seen = new Set()) => {
+      const pl = p();
+      const def = SKILL_BY_ID[id];
+      if (!def || seen.has(id)) return null;
+      seen.add(id);
+      if (pl.canLearn(def)) return id;
+      if (pl.level < def.reqLevel) return null;
+      for (const pre of def.prereqs) if (!pl.skillBase(pre)) { const s = pointFor(pre, seen); if (s) return s; }
+      return null;
+    };
+    const nextPoint = () => {
+      const pl = p();
+      for (const [id, cap] of build.points) if (pl.skillBase(id) < cap) { const s = pointFor(id); if (s) return s; }
+      if (build.points.length) return null;
+      // no build: the latest skill that hurts, else the latest of any
+      const open = latest.filter((s) => pl.canLearn(s));
+      return (open.find(hurts) ?? open[0])?.id ?? null;
+    };
     const spend = () => {
       const pl = p();
       while (pl.statPoints > 0) {
@@ -67,26 +171,41 @@ export default async function (page, shot, log) {
       }
       let guard = 0;
       while (pl.skillPoints > 0 && guard++ < 50) {
-        const pick = skillCaps.find(([s, cap]) => (pl.skills[s] ?? 0) < cap && pl.canLearn(SKILL_BY_ID[s]));
-        if (!pick) break;
-        pl.skills[pick[0]] = (pl.skills[pick[0]] ?? 0) + 1;
+        const id = nextPoint();
+        if (!id) break;
+        pl.skills[id] = (pl.skills[id] ?? 0) + 1;
         pl.skillPoints--;
       }
       pl.markDirty(); pl.recalc();
-      const aura = pl.skillBase('concentration') ? 'concentration' : pl.skillBase('might') ? 'might' : null;
+      const aura = build.auras.find((a) => pl.skillBase(a)) ?? (build.points.length ? null : latest.find((s) => s.kind === 'aura' && pl.skillBase(s.id))?.id);
       if (aura && pl.activeAura !== aura) { pl.activeAura = aura; pl.markDirty(); }
       // simulated town trip: keep the belt stocked with potions while gold allows
       const potionCount = pl.belt.reduce((a, c) => a + c.length, 0);
       if (potionCount < 4 && pl.gold > 200) {
         for (let k = 0; k < 6 && pl.gold > 100; k++) {
           const tier = pl.level >= 26 ? 'hp4' : pl.level >= 16 ? 'hp3' : pl.level >= 8 ? 'hp2' : 'hp1';
-          const it = createItem(k % 3 === 2 ? tier.replace('hp', 'mp') : tier);
+          const it = createItem((k + 1) % Math.round(1 / build.manaShare) === 0 ? tier.replace('hp', 'mp') : tier);
           if (g.beltInsert(it)) { pl.gold -= baseOf(it).price; stats.bought = (stats.bought ?? 0) + 1; }
         }
       }
     };
-    // out of mana: plain swings, like a player would
-    const attackSkill = () => (p().mana < 8 ? 'attack' : p().skillBase('zeal') ? 'zeal' : p().skillBase('sacred_strike') ? 'sacred_strike' : 'attack');
+    /** what to hit with: the build's first attack learned and paid for, else the latest learned one that hurts, else the weapon */
+    const attackSkill = () => {
+      const pl = p();
+      const ready = (id) => pl.skillLevel(id) > 0 && pl.mana >= mana(id) && !((pl.cooldowns[id] ?? 0) > 0);
+      return build.attacks.find(ready) ?? latest.find((s) => hurts(s) && ready(s.id))?.id ?? 'attack';
+    };
+    /** how a monster is gone for: a spell from where it is in sight and near enough (the game casts at any range), the rest as the game does it */
+    const engage = (m, d) => {
+      const skill = attackSkill();
+      if (SKILL_BY_ID[skill]?.kind === 'spell' && (d > SPELL_RANGE || !g.level.map.los(p().pos, m.pos))) return { kind: 'move', point: { ...m.pos } };
+      return { kind: 'attack', target: m, skill, hold: true };
+    };
+    /** mana to drink at: enough for the build's first attack learned */
+    const thirsty = () => {
+      const main = build.attacks.find((id) => p().skillLevel(id) > 0);
+      return p().mana < Math.max(8, main ? mana(main) : 0);
+    };
     const drink = (kind) => {
       const pl = p();
       for (let i = 0; i < 4; i++) if (pl.belt[i].length && (kind === 'hp' ? (pl.belt[i][0].baseId.startsWith('hp') || pl.belt[i][0].baseId.startsWith('rejuv')) : pl.belt[i][0].baseId.startsWith('mp'))) { g.useBelt(i); stats.potionsUsed++; return true; }
@@ -94,6 +213,27 @@ export default async function (page, shot, log) {
       if (inv) { pl.inventory.remove(inv.item); g.drink(inv.item); stats.potionsUsed++; return true; }
       return false;
     };
+
+    // --level: as if played there, its points spent and wearing the best of a pile of gear rolled at it
+    if (o.level > 1) {
+      const pl = p();
+      pl.xp = xpForLevel(Math.min(99, o.level));
+      pl.gainXp(0);
+      pl.gold += pl.level * 100;
+      spend();
+      for (let i = 0; i < 60; i++) {
+        const it = rollEquipment(pl.level, { quality: 2 });
+        if (pl.inventory.add(it) && !tryEquip(it)) pl.inventory.remove(it);
+      }
+      pl.life = pl.stats.maxLife;
+      pl.mana = pl.stats.maxMana;
+    }
+    g.travelToArea(start.id);
+
+    let idx = 0;
+    let lastArea = -1;
+    let areaStart = 0;
+    let areaDeaths = 0;
     let potionCd = 0;
     let think = 0;
     let stuck = 0;
@@ -104,30 +244,30 @@ export default async function (page, shot, log) {
     let stallSince = 0;
     let stallsLogged = 0;
     let lastPick = '';
-    let floorDeaths = 0;
     const runChunk = (seconds) => {
       const steps = Math.floor(seconds / STEP);
-      for (let i = 0; i < steps; i++) {
+      for (let i = 0; i < steps && idx <= endIdx; i++) {
         simTime += STEP;
         const pl = p();
+        const cur = route[idx];
         if (pl.dead) {
           stats.deaths++;
           const around = g.level.monsters.filter((m) => !m.dead && Math.hypot(m.pos.x - pl.pos.x, m.pos.z - pl.pos.z) < 7);
           const desc = {};
           for (const m of around) { const k = `${m.def.id}/${m.rank}${m.mods.length ? '(' + m.mods.join('+') + ')' : ''}`; desc[k] = (desc[k] ?? 0) + 1; }
-          stats.timeline.push(`death at depth ${depth} lvl ${pl.level} t=${Math.round(simTime)} by ${JSON.stringify(desc)} proj=${g.level.projectiles.length}`);
-          stats.deathList.push({ depth, lvl: pl.level, causes: desc, proj: g.level.projectiles.length });
+          stats.timeline.push(`death in ${cur.key} lvl ${pl.level} t=${Math.round(simTime)} by ${JSON.stringify(desc)} proj=${g.level.projectiles.length}`);
+          stats.deathList.push({ area: cur.key, lvl: pl.level, causes: desc, proj: g.level.projectiles.length });
           g.respawn();
-          floorDeaths++;
+          areaDeaths++;
           // stuck on a floor: do what a player does and start a fresh game of it (a new layout)
-          if (floorDeaths % 4 === 0) g.lastDungeon = null;
-          g.travel(depth);
+          if (areaDeaths % 4 === 0) g.lastDungeon = null;
+          g.travelToArea(cur.id);
           continue;
         }
         potionCd -= STEP;
         think -= STEP;
         if (potionCd <= 0 && pl.life < pl.stats.maxLife * 0.45) { if (drink('hp')) potionCd = 1.2; }
-        if (potionCd <= 0 && pl.mana < 8) { if (drink('mp')) potionCd = 1.5; }
+        if (potionCd <= 0 && thirsty()) { if (drink('mp')) potionCd = 1.5; }
         if (think <= 0) {
           think = 0.1;
           spend();
@@ -144,11 +284,15 @@ export default async function (page, shot, log) {
             if (!tryEquip(it) && pl.inventory.items.length > 8) { pl.inventory.remove(it); pl.gold += sellPrice(it); }
           }
           if (pl.state === 'idle' || pl.state === 'move') {
+            // buffs as they wear off
+            for (const [id, left] of build.buffs) if (pl.skillLevel(id) > 0 && !(pl[left] > 0) && pl.mana >= mana(id)) { g.useSkillAt(id, null, { ...pl.pos }, true); lastPick = `buff:${id}`; break; }
+          }
+          if (pl.state === 'idle' || pl.state === 'move') {
             const near = g.level.monsters.filter((m) => !m.dead).map((m) => ({ m, d: Math.hypot(m.pos.x - pl.pos.x, m.pos.z - pl.pos.z) })).sort((a, b) => a.d - b.d);
             const loot = g.level.ground.filter((gi) => !gi.gold && gi.item && pl.inventory.findSpace(gi.item) && Math.hypot(gi.pos.x - pl.pos.x, gi.pos.z - pl.pos.z) < 8).sort((a, b) => Math.hypot(a.pos.x - pl.pos.x, a.pos.z - pl.pos.z) - Math.hypot(b.pos.x - pl.pos.x, b.pos.z - pl.pos.z))[0];
             if (near.length && near[0].d < 7 && !(pl.intent && pl.intent.kind === 'attack' && !pl.intent.target.dead)) {
-              pl.intent = { kind: 'attack', target: near[0].m, skill: attackSkill(), hold: true };
-              lastPick = 'near-attack:' + pl.intent.skill;
+              pl.intent = engage(near[0].m, near[0].d);
+              lastPick = 'near-attack:' + (pl.intent.skill ?? 'closing in');
             } else if (!pl.intent && loot && pl.inventory.items.length < 24 && (!near.length || near[0].d > 6)) {
               const it = loot.item;
               if (it.rarity === 'unique') stats.uniques++;
@@ -159,18 +303,23 @@ export default async function (page, shot, log) {
               lastPick = `pickup ${displayName(it)} @${loot.pos.x.toFixed(1)},${loot.pos.z.toFixed(1)} tile=${g.level.map.get(Math.floor(loot.pos.x), Math.floor(loot.pos.z))} inv=${pl.inventory.items.length}`;
             } else if (!pl.intent) {
               if (near.length && near[0].d < 40) {
-                pl.intent = { kind: 'attack', target: near[0].m, skill: attackSkill(), hold: true };
-                lastPick = 'far-attack:' + pl.intent.skill;
+                pl.intent = engage(near[0].m, near[0].d);
+                lastPick = 'far-attack:' + (pl.intent.skill ?? 'closing in');
               } else {
-                lastPick = 'stairs';
-                const st = g.level.objects.find((o) => o.kind === 'stairs');
-                pl.intent = { kind: 'interact', obj: st };
+                // on into the next area, or back into this one (walked out of it, say)
+                const to = g.area.id === cur.id ? route[idx + 1] : cur;
+                const way = to && g.level.wayTo(to.id, pl.pos);
+                if (way?.obj) pl.intent = { kind: 'interact', obj: way.obj };
+                else if (way) pl.intent = { kind: 'move', point: way.pos };
+                // nothing here leads there: as by waypoint
+                else if (to) g.travelToArea(to.id);
+                lastPick = `way:${to?.key}${way?.obj ? ' by ' + way.obj.kind : way ? '' : ' (jumped)'}`;
               }
             }
             // stuck detection
-            if (Math.hypot(pl.pos.x - lastPos.x, pl.pos.z - lastPos.z) < 0.05 && pl.state !== 'attack') stuck += 0.1; else stuck = 0;
+            if (Math.hypot(pl.pos.x - lastPos.x, pl.pos.z - lastPos.z) < 0.05 && pl.state !== 'attack' && pl.state !== 'cast') stuck += 0.1; else stuck = 0;
             lastPos = { ...pl.pos };
-            if (stuck > 6) { pl.intent = null; stuck = 0; const t = near[Math.floor(Math.random() * Math.min(5, near.length))]; if (t) pl.intent = { kind: 'attack', target: t.m, skill: attackSkill(), hold: true }; }
+            if (stuck > 6) { pl.intent = null; stuck = 0; const t = near[Math.floor(Math.random() * Math.min(5, near.length))]; if (t) pl.intent = engage(t.m, t.d); }
           }
         }
         g.update(STEP);
@@ -182,7 +331,7 @@ export default async function (page, shot, log) {
           stallSince = simTime;
           const map = g.level.map;
           const it = pl.intent;
-          const tgt = it?.target?.pos ?? it?.ground?.pos ?? it?.obj?.pos ?? null;
+          const tgt = it?.target?.pos ?? it?.ground?.pos ?? it?.obj?.pos ?? it?.point ?? null;
           const grid = [];
           for (let y = Math.floor(pl.pos.z) - 3; y <= Math.floor(pl.pos.z) + 3; y++) {
             let row = '';
@@ -193,25 +342,34 @@ export default async function (page, shot, log) {
             }
             grid.push(row);
           }
-          stats.timeline.push(`STALL depth ${depth} t=${Math.round(simTime)} pos=${pl.pos.x.toFixed(1)},${pl.pos.z.toFixed(1)} state=${pl.state} intent=${it?.kind}${it?.target ? '(' + it.target.def.id + (it.target.dead ? ',dead' : '') + ')' : ''} tgt=${tgt ? tgt.x.toFixed(1) + ',' + tgt.z.toFixed(1) : '-'} path=${pl.path?.length ?? 0} mana=${Math.round(pl.mana)} lastPick=${lastPick}\n      near: ${g.level.monsters.filter((m) => !m.dead).map((m) => ({ m, d: Math.hypot(m.pos.x - pl.pos.x, m.pos.z - pl.pos.z) })).sort((a, b) => a.d - b.d).slice(0, 3).map(({ m, d }) => `${m.def.id}@${d.toFixed(1)} los=${map.los(pl.pos, m.pos)} st=${m.state} tile=${map.get(Math.floor(m.pos.x), Math.floor(m.pos.z))}`).join(' | ')}\n      ${grid.join('\n      ')}`);
+          stats.timeline.push(`STALL in ${g.area.key} t=${Math.round(simTime)} pos=${pl.pos.x.toFixed(1)},${pl.pos.z.toFixed(1)} state=${pl.state} intent=${it?.kind}${it?.target ? '(' + it.target.def.id + (it.target.dead ? ',dead' : '') + ')' : ''} tgt=${tgt ? tgt.x.toFixed(1) + ',' + tgt.z.toFixed(1) : '-'} path=${pl.path?.length ?? 0} mana=${Math.round(pl.mana)} lastPick=${lastPick}\n      near: ${g.level.monsters.filter((m) => !m.dead).map((m) => ({ m, d: Math.hypot(m.pos.x - pl.pos.x, m.pos.z - pl.pos.z) })).sort((a, b) => a.d - b.d).slice(0, 3).map(({ m, d }) => `${m.def.id}@${d.toFixed(1)} los=${map.los(pl.pos, m.pos)} st=${m.state} tile=${map.get(Math.floor(m.pos.x), Math.floor(m.pos.z))}`).join(' | ')}\n      ${grid.join('\n      ')}`);
         }
-        if (g.level.depth !== depth && g.level.depth > 0) {
+        // into an area further along the route: the one before it is cleared
+        const at = g.area.id === lastArea ? -1 : route.findIndex((a, k) => k > idx && a.id === g.area.id);
+        lastArea = g.area.id;
+        if (at > idx) {
           const d = pl.stats;
           stats.levels.push({
-            depth, lvl: pl.level, secs: Math.round(simTime - levelStart), deaths: stats.deaths, gold: pl.gold, kills: stats.kills,
+            area: cur.key, lvl: pl.level, secs: Math.round(simTime - areaStart), deaths: stats.deaths, gold: pl.gold, kills: stats.kills,
             life: Math.round(d.maxLife), def: Math.round(d.def), res: Math.round((d.res.fire + d.res.cold + d.res.light + d.res.poison) / 4),
             dmg: Math.round(((d.wMin + d.wMax) / 2) * (1 + d.dmgPct / 100)), ar: Math.round(d.ar),
           });
-          depth = g.level.depth;
-          levelStart = simTime;
-          floorDeaths = 0;
+          idx = at;
+          areaStart = simTime;
+          areaDeaths = 0;
         }
       }
     };
     window.__runChunk = runChunk;
-    window.__botDone = () => depth > maxDepth || simTime > maxMinutes * 60;
-    window.__botStatus = () => ({ depth, simTime: Math.round(simTime), lvl: p().level, life: Math.round(p().life), max: p().stats.maxLife, deaths: stats.deaths });
-  }, { maxDepth, maxMinutes });
+    window.__botDone = () => idx > endIdx || simTime > o.maxMinutes * 60;
+    window.__botStatus = () => ({ area: route[Math.min(idx, route.length - 1)].key, simTime: Math.round(simTime), lvl: p().level, life: Math.round(p().life), max: p().stats.maxLife, deaths: stats.deaths });
+    return { cls, route: stats.route, level: p().level };
+  }, o);
+  if (setup.error) {
+    log(`BOT_ERROR ${setup.error}`);
+    return;
+  }
+  log(`bot: ${setup.cls} at level ${setup.level}, ${setup.route.join(' → ')}`);
   const t0 = Date.now();
   while (!(await page.evaluate(() => window.__botDone()))) {
     await page.evaluate(() => window.__runChunk(20));
@@ -224,13 +382,13 @@ export default async function (page, shot, log) {
     const pl = game.player;
     const eq = Object.fromEntries(Object.entries(pl.equipment).map(([k, v]) => [k, `${displayName(v)} [${v.rarity}]`]));
     const d = pl.stats;
-    return { ...window.__bot, final: { lvl: pl.level, life: d.maxLife, def: d.def, dmg: [d.wMin, d.wMax, d.dmgPct], ar: d.ar, res: d.res, eq, base: pl.base, skills: pl.skills } };
+    return { ...window.__bot, final: { cls: pl.cls, lvl: pl.level, life: d.maxLife, def: d.def, dmg: [d.wMin, d.wMax, d.dmgPct], ar: d.ar, res: d.res, eq, base: pl.base, skills: pl.skills } };
   });
   const { timeline, deathList, ...rest } = result;
   log(JSON.stringify(rest));
-  log('BOT_RESULT ' + JSON.stringify({ levels: result.levels, deathList, final: result.final, stalls: timeline.filter((t) => t.startsWith('STALL')).slice(0, 2), status: await page.evaluate(() => window.__botStatus()) }));
-  const byDepth = {};
-  for (const t of deathList) byDepth[t.depth] = (byDepth[t.depth] ?? 0) + 1;
-  log('deaths by depth', JSON.stringify(byDepth));
+  log('BOT_RESULT ' + JSON.stringify({ route: result.route, levels: result.levels, deathList, final: result.final, stalls: timeline.filter((t) => t.startsWith('STALL')).slice(0, 2), status: await page.evaluate(() => window.__botStatus()) }));
+  const byArea = {};
+  for (const t of deathList) byArea[t.area] = (byArea[t.area] ?? 0) + 1;
+  log('deaths by area', JSON.stringify(byArea));
   log(timeline.join('\n'));
 }

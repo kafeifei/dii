@@ -11,6 +11,7 @@ import { Grid } from '../items/grid';
 import { baseOf, globalItemStats, itemDefense, itemReqLvl, itemReqStats, paramMods, weaponDamage, type Item, type ItemMod } from '../items/item';
 import { Actor, type Resists } from './actor';
 import type { Monster } from './monster';
+import type { Difficulty } from './save';
 
 export const MAX_LEVEL = 99;
 
@@ -141,7 +142,10 @@ export class Player extends Actor {
   healQueue: { perSec: number; left: number }[] = [];
   manaQueue: { perSec: number; left: number }[] = [];
   depthReached = 0;
+  /** the depths whose waypoints have been touched, in the difficulty being played */
   waypoints: number[] = [0];
+  /** the difficulty being played (Game.setDifficulty): nothing plays harder yet, it is saved and shown and keeps its own waypoints */
+  difficulty: Difficulty = 0;
   /** a shrine's blessing (one at a time) and its seconds left */
   shrine: { id: string; left: number } | null = null;
   // movement / action target
