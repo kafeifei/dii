@@ -4,16 +4,13 @@
 // D2MOO references are to github.com/ThePhrozenKeep/D2MOO at commit d9d394f.
 import { D2X_ITEM_RATIO } from '../../data/d2x/itemratio';
 import { D2X_LOW_QUALITY, D2X_QUALITY } from '../../data/d2x/quality';
-import { D2X_SET_ITEMS } from '../../data/d2x/sets';
-import type { D2xItemRatio, D2xQualityMod, D2xSetItem, D2xUnique } from '../../data/d2x/types';
-import { D2X_UNIQUES } from '../../data/d2x/uniques';
-import { d2Base, hasDurability, isArmor, isWeapon, ownType } from './bases';
+import type { D2xItemRatio, D2xQualityMod } from '../../data/d2x/types';
+import { d2Base, hasDurability, isArmor, isWeapon, itemMaxSockets, ownType } from './bases';
+import { pickSetItem, pickUnique } from './legendary';
+import { roll } from './rand';
 import type { D2Base, D2Quality, Difficulty, Rand } from './types';
 
-/** D2's ITEMS_RollLimitedRandomNumber: 0 … n − 1, and 0 when n ≤ 0 */
-export function roll(rng: Rand, n: number): number {
-  return n > 0 ? Math.floor(rng.next() * n) : 0;
-}
+export { roll };
 
 /** C integer division: D2's level differences can be negative, and it truncates toward zero */
 const idiv = (a: number, b: number) => Math.trunc(a / b);
@@ -216,39 +213,6 @@ function settle(q: D2Quality, b: D2Base): D2Quality {
   return q;
 }
 
-function weighted<T extends { rarity: number }>(rows: T[], rng: Rand): T | undefined {
-  // a rarity of 0 counts as 1 (ItemMode.cpp:6620, ItemsMagic.cpp:849-852)
-  const w = (r: T) => Math.max(r.rarity, 1);
-  let n = roll(rng, rows.reduce((s, r) => s + w(r), 0));
-  for (const r of rows) {
-    if (n < w(r)) return r;
-    n -= w(r);
-  }
-  return undefined;
-}
-
-/**
- * The unique to make (ItemMode.cpp:6597-6670, the expansion branch): a spawnable row on this base
- * with lvl ≤ ilvl, picked by rarity; none, or one already dropped this game, and it isn't unique.
- */
-export function pickUnique(b: D2Base, ilvl: number, rng: Rand, row?: number, dropped?: Set<number>): D2xUnique | undefined {
-  const fits = D2X_UNIQUES.filter((u) => u.spawnable && u.code === b.code && u.lvl <= ilvl);
-  if (!fits.length) return undefined;
-  const u = fits.find((f) => f.id === row) ?? weighted(fits, rng);
-  if (!u || (!b.quest && dropped?.has(u.id))) return undefined;
-  dropped?.add(u.id);
-  return u;
-}
-
-/** the set item to make (ItemsMagic.cpp:817-893): a row on this base with lvl ≤ ilvl, picked by rarity */
-export function pickSetItem(b: D2Base, ilvl: number, rng: Rand, row?: number, hellBovine = false): D2xSetItem | undefined {
-  const fits = D2X_SET_ITEMS.filter(
-    (s) => s.spawnable && s.code === b.code && s.lvl <= ilvl && (s.set !== "Cow King's Leathers" || hellBovine),
-  );
-  if (!fits.length) return undefined;
-  return fits.find((f) => f.id === row) ?? weighted(fits, rng);
-}
-
 // D2's exact own-type checks next to the weapon and armor flags (D2Common ItemMods.cpp:2735-2766)
 const NOT_PLAIN_WEAPON = new Set(['staf', 'bow', 'xbow', 'scep', 'wand']);
 const NOT_PLAIN_ARMOR = new Set(['shie', 'boot', 'glov', 'belt']);
@@ -292,12 +256,9 @@ function newDurability(b: D2Base, rng: Rand): { dur: number; maxDur: number } {
 
 const SOCKET_CAP: Record<Difficulty, number> = { 0: 3, 1: 4, 2: 6 };
 
-/** the most sockets a base can roll at an item level (D2Common Items.cpp:2916-2950) and difficulty (D2Game Items.cpp:174-186) */
+/** the most sockets a base can roll at an item level (D2Common Items.cpp:2915-2970) and difficulty (D2Game Items.cpp:174-186) */
 export function maxSockets(b: D2Base, ilvl: number, difficulty: Difficulty = 0): number {
-  const t = ownType(b);
-  const lv = Math.max(ilvl, 1);
-  const byLvl = t.sockets[lv > t.socketLvls[1] ? 2 : lv > t.socketLvls[0] ? 1 : 0];
-  return Math.min(b.sockets ?? 0, byLvl, SOCKET_CAP[difficulty]);
+  return Math.min(itemMaxSockets(b, ilvl), SOCKET_CAP[difficulty]);
 }
 
 /**
@@ -336,7 +297,7 @@ export function dropQuality(spec: DropSpec, rng: Rand): QualityDrop {
       break;
     }
     case 'unique': {
-      const u = pickUnique(b, spec.ilvl, rng, spec.row, spec.dropped);
+      const u = pickUnique(b, spec.ilvl, rng, spec);
       if (u) out.uniqueRow = u.id;
       else {
         scaleDur(3);
@@ -345,7 +306,7 @@ export function dropQuality(spec: DropSpec, rng: Rand): QualityDrop {
       break;
     }
     case 'set': {
-      const s = pickSetItem(b, spec.ilvl, rng, spec.row, spec.hellBovine);
+      const s = pickSetItem(b, spec.ilvl, rng, spec);
       if (s) out.setRow = s.id;
       else {
         scaleDur(2);

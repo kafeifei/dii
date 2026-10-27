@@ -6,11 +6,10 @@
 // ItemsMagic.cpp and ItemMode.cpp are D2Game's, ItemMods.cpp D2Common's.
 import { D2X_AUTOMAGIC, D2X_PREFIXES, D2X_SUFFIXES } from '../../data/d2x/affixes';
 import { D2X_RARE_PREFIXES, D2X_RARE_SUFFIXES } from '../../data/d2x/rare';
-import { D2X_SET_ITEMS } from '../../data/d2x/sets';
 import type { D2Prop, D2xAffix, D2xRareWord } from '../../data/d2x/types';
-import { D2X_UNIQUES } from '../../data/d2x/uniques';
 import { CLASS_SKILL_BY_NAME, CLASS_SKILLS } from './classskills';
 import { d2Base, isType, ownType } from './bases';
+import { SET_ITEM_BY_ID, UNIQUE_BY_ID } from './legendary';
 import { maxSockets, pickSuperior, roll, rollSockets, type DropSpec, type QualityDrop } from './quality';
 import type { D2Base, D2Item, D2Quality, Rand } from './types';
 
@@ -338,9 +337,6 @@ export function rollAffixes(drop: QualityDrop, spec: AffixSpec, rng: Rand): Affi
 // ───────────────────────── level requirement ─────────────────────────
 
 export type ReqItem = Pick<D2Item, 'baseId' | 'quality' | 'prefixes' | 'suffixes' | 'autoAffix' | 'staffMods' | 'uniqueRow' | 'setRow' | 'socketed'>;
-
-const UNIQUE_BY_ID = new Map(D2X_UNIQUES.map((u) => [u.id, u]));
-const SET_ITEM_BY_ID = new Map(D2X_SET_ITEMS.map((s) => [s.id, s]));
 
 /**
  * The level to use an item (D2Common Items.cpp:1214-1441 ITEMS_GetRequiredLevel): the highest of

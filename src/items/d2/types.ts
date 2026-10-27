@@ -39,7 +39,24 @@ export interface D2Item extends Omit<Item, 'socketed'> {
   /** UniqueItems / SetItems row (D2xUnique.id, D2xSetItem.id) */
   uniqueRow?: number;
   setRow?: number;
-  /** current and most durability; unset on bases without durability */
+  /**
+   * a unique's, set item's or runeword's rolled properties (props.ts: min = max where D2 rolled a
+   * value; per-level ones keep their amount per level)
+   */
+  props?: D2Prop[];
+  /**
+   * a set item's green bonus slots 1..5 as rolled ([] for an empty slot), on by what else of its
+   * set is worn; a slot's dur property is this item's most durability while the slot is on
+   */
+  setBonus?: D2Prop[][];
+  /** charges left of each bonus slot's charged skills ({} for a slot without), used while the slot is on */
+  setCharges?: Record<string, number>[];
+  /** a runeword's Runes.txt row (D2xRuneword.id) */
+  runewordRow?: string;
+  /**
+   * current and most durability, the item's own dur properties' points included (not a set bonus
+   * slot's); unset on bases without durability
+   */
   dur?: number;
   maxDur?: number;
   eth?: true;

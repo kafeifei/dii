@@ -40,6 +40,16 @@ export function isType(b: D2Base, t: string): boolean {
 export const isWeapon = (b: D2Base) => isType(b, 'weap');
 export const isArmor = (b: D2Base) => isType(b, 'armo');
 
+/**
+ * D2Common Items.cpp:2915-2970 ITEMS_GetMaxSockets: the item type's MaxSock1 / 25 / 40 by item
+ * level, and never more than the base's own GemSockets (Items.txt gemsockets)
+ */
+export function itemMaxSockets(b: D2Base, ilvl: number): number {
+  const t = ownType(b);
+  const lv = Math.max(ilvl, 1);
+  return Math.min(t.sockets[lv > t.socketLvls[1] ? 2 : lv > t.socketLvls[0] ? 1 : 0], b.sockets ?? 0);
+}
+
 /** D2Common Items.cpp:2862-2876 ITEMS_HasDurability: a durability value and no nodurability flag */
 export function hasDurability(b: D2Base): boolean {
   return !b.noDur && (b.dur ?? 0) > 0;

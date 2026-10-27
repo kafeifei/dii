@@ -1,12 +1,21 @@
 // Each class's 30 skills in skills.txt row order, as staff mods pick them: [D2 skill name,
 // reqlevel, itypea1]. From d2data skills.json (skill, charclass, reqlevel, itypea1) at the pinned
 // commit fc46999; the integration branch swaps this for the skill table once tools/d2 imports it.
-// Only the classes an item type's StaffMods names (no Amazon type has any).
+// Staff mods only read the classes an item type's StaffMods names (no Amazon type has any); proc
+// and charged skill levels (props.ts) and skill-rand ids read every class.
 
 /** [D2 name, level to learn it, the item type it needs (itypea1)] */
 export type ClassSkill = [name: string, reqLvl: number, itype?: string];
 
 export const CLASS_SKILLS: Record<string, ClassSkill[]> = {
+  ama: [
+    ["Magic Arrow", 1, "miss"], ["Fire Arrow", 1, "miss"], ["Inner Sight", 1], ["Critical Strike", 1, "spea"], ["Jab", 1, "spea"],
+    ["Cold Arrow", 6, "miss"], ["Multiple Shot", 6, "miss"], ["Dodge", 6], ["Power Strike", 6, "spea"], ["Poison Javelin", 6, "jave"],
+    ["Exploding Arrow", 12, "miss"], ["Slow Missiles", 12], ["Avoid", 12], ["Impale", 12, "spea"], ["Lightning Bolt", 12, "jave"],
+    ["Ice Arrow", 18, "miss"], ["Guided Arrow", 18, "miss"], ["Penetrate", 18, "spea"], ["Charged Strike", 18, "spea"], ["Plague Javelin", 18, "jave"],
+    ["Strafe", 24, "miss"], ["Immolation Arrow", 24, "miss"], ["Dopplezon", 24], ["Evade", 24], ["Fend", 24, "spea"],
+    ["Freezing Arrow", 30, "miss"], ["Valkyrie", 30], ["Pierce", 30, "miss"], ["Lightning Strike", 30, "spea"], ["Lightning Fury", 30, "jave"],
+  ],
   sor: [
     ["Fire Bolt", 1], ["Warmth", 1], ["Charged Bolt", 1], ["Ice Bolt", 1], ["Frozen Armor", 1],
     ["Inferno", 6], ["Static Field", 6], ["Telekinesis", 6], ["Frost Nova", 6], ["Ice Blast", 6],
