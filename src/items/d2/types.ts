@@ -1,6 +1,6 @@
 // The item the Diablo II item system (A2) builds: Item plus the save-v4 fields. Nothing outside
 // src/items/d2 uses it yet; the integration branch moves Item itself onto these fields.
-import type { D2xArmor, D2xMisc, D2xWeapon } from '../../data/d2x/types';
+import type { D2Prop, D2xArmor, D2xMisc, D2xWeapon } from '../../data/d2x/types';
 import type { Item } from '../item';
 
 /**
@@ -29,6 +29,11 @@ export interface D2Item extends Omit<Item, 'socketed'> {
   autoAffix?: number;
   /** a rare or crafted item's name words: rows of the rare prefix and suffix tables */
   rareName?: [number, number];
+  /**
+   * staff mods: +N to class skills rolled onto wands, staves, orbs, scepters and class helms, as
+   * D2's item_singleskill stats ("skill" properties with min = max = N)
+   */
+  staffMods?: D2Prop[];
   /** superior: its QualityItems row (D2X_QUALITY id); low quality: its LowQualityItems row */
   qualityRow?: number;
   /** UniqueItems / SetItems row (D2xUnique.id, D2xSetItem.id) */

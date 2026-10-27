@@ -374,13 +374,18 @@ export function dropQuality(spec: DropSpec, rng: Rand): QualityDrop {
     out.dur = out.maxDur;
   }
 
-  // sockets: normal and superior items with sockets, not stacks (Items.cpp:166-224; called for
-  // qualities up to superior, ItemMode.cpp:6287-6290); a third of them, 1 to the most. D2 takes the
-  // count from the item's start seed, a fresh roll here. In the pinned d2data a base takes sockets
-  // (HasInv) exactly when it has GemSockets.
-  if ((out.quality === 'normal' || out.quality === 'superior') && !b.stack) {
-    const max = maxSockets(b, spec.ilvl, spec.difficulty);
-    if (max > 0 && roll(rng, 100) < 33) out.sockets = roll(rng, max) + 1;
-  }
+  if (out.quality === 'normal' || out.quality === 'superior') out.sockets = rollSockets(b, spec.ilvl, spec.difficulty, rng);
   return out;
+}
+
+/**
+ * A normal or superior item's sockets, not on stacks (Items.cpp:166-224; called for qualities up
+ * to superior, ItemMode.cpp:6287-6290): a third of them get 1 to the most. D2 takes the count from
+ * the item's start seed, a fresh roll here. In the pinned d2data a base takes sockets (HasInv)
+ * exactly when it has GemSockets.
+ */
+export function rollSockets(b: D2Base, ilvl: number, difficulty: Difficulty | undefined, rng: Rand): number {
+  if (b.stack) return 0;
+  const max = maxSockets(b, ilvl, difficulty);
+  return max > 0 && roll(rng, 100) < 33 ? roll(rng, max) + 1 : 0;
 }
