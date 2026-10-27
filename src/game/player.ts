@@ -260,11 +260,17 @@ export class Player extends Actor {
   }
 
   meetsReq(item: Item): boolean {
+    return this.unmetReq(item) === null;
+  }
+
+  /** what keeps the hero from using it: it's another class's, the hero's level, its strength or dexterity; null if nothing */
+  unmetReq(item: Item): 'class' | 'level' | 'stats' | null {
     const b = baseOf(item);
     const d = this.stats;
     const req = itemReqStats(item);
-    if (b.cls && b.cls !== this.cls) return false;
-    return this.level >= itemReqLvl(item) && d.str >= req.str && d.dex >= req.dex;
+    if (b.cls && b.cls !== this.cls) return 'class';
+    if (this.level < itemReqLvl(item)) return 'level';
+    return d.str >= req.str && d.dex >= req.dex ? null : 'stats';
   }
 
   recalc() {

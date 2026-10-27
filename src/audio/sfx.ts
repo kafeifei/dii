@@ -3,12 +3,13 @@ import { Buffers, leadIn, pickVariant, toMono } from './buffers';
 import { FILES, type SoundFiles } from './files';
 import { Players, Stream, type Track } from './music';
 import { Score, seedOf } from './score';
-import { areaKey, areaSound, isNight, PRIORITY, SOUNDS, VARY, type AmbId, type AreaId, type AreaSound, type Bed, type FileId, type SoundDef, type SoundId, type Synth } from './sounds';
+import { areaKey, areaSound, isNight, LINE, PRIORITY, SOUNDS, VARY, type AmbId, type AreaId, type AreaSound, type Bed, type FileId, type Playing, type SoundId, type Synth, type VoiceId } from './sounds';
 
 /**
  * Game code plays sounds by id (src/audio/sounds.ts); one with a place in the world is heard from
  * the listener, the hero. An id with recorded files (src/audio/files.ts) plays one of them, decoded
  * on first use; any other, or one whose files won't load, is synthesized at runtime with WebAudio.
+ * A line spoken (voice.<speaker>.<line>) plays its recording or nothing, one line at a time (Lines).
  * Each area has its ambience (recorded loops, or a synthesized bed) and its music (a recorded track
  * streamed, or music composed on the spot), both crossfaded as the hero moves between areas, or
  * playing on where the next area's is the same.
@@ -62,9 +63,13 @@ const fileUrl = (file: string) => `${import.meta.env.BASE_URL}audio/${file}`;
 
 const isAmb = (id: FileId): id is AmbId => id.startsWith('amb.');
 const isMusic = (id: FileId) => id.startsWith('music.');
+const isLine = (id: FileId): id is VoiceId => id.startsWith('voice.');
+
+/** what plays once: an effect, or a line spoken */
+type OneShot = SoundId | VoiceId;
 
 /** what plays when a recording won't */
-const insteadOf = (id: FileId) => (isAmb(id) ? 'the synthesized bed' : isMusic(id) ? 'the composed music' : 'synthesized');
+const insteadOf = (id: FileId) => (isAmb(id) ? 'the synthesized bed' : isMusic(id) ? 'the composed music' : isLine(id) ? 'not said' : 'synthesized');
 
 /**
  * An AudioContext at the output's own rate, or at MAX_RATE if that's lower. Most devices run at 44.1
@@ -118,9 +123,69 @@ export function earGains(pan: number): { l: number; r: number } {
   return { l: Math.min(1, 1 - pan), r: Math.min(1, 1 + pan) };
 }
 
+/** after a line ends, this long before another starts: the hero never talks over itself */
+export const LINE_GAP = 1.2;
+/** the same line again this soon isn't said: a cast held with no mana says so once, not on every try */
+export const LINE_AGAIN = 8;
+/** a line still decoding when its moment comes is said once it's in, if that's within this; later it would go with nothing */
+export const LINE_LATE = 0.8;
+
+/** a line asked for, and given the floor (Lines.book) */
+export interface Booking {
+  id: string;
+  at: number;
+}
+
+/**
+ * Who speaks when: one line at a time, a pause after each, and the same line not again for a while,
+ * however often its moment comes. A line is booked as soon as it's asked for, so nothing else starts
+ * while it decodes; then it starts, holding the floor until it's done, or gives the floor up. Kept
+ * apart from WebAudio so it runs under Node too; times are the AudioContext's, in seconds.
+ */
+export class Lines {
+  /** till when nothing else is said */
+  private quiet = -Infinity;
+  /** each line's last booking */
+  private said = new Map<string, number>();
+  /** the booking holding the floor */
+  private held: Booking | null = null;
+
+  /** may `id` be said at `now`? Its booking if so, null if it isn't to be said */
+  book(id: string, now: number): Booking | null {
+    if (now < this.quiet) return null;
+    const last = this.said.get(id);
+    if (last !== undefined && now - last < LINE_AGAIN) return null;
+    this.said.set(id, now);
+    this.quiet = now + LINE_LATE;
+    return (this.held = { id, at: now });
+  }
+
+  /**
+   * The booked line is to start at `now` and run `secs`: true if it may, and nothing else is said
+   * until it's over and LINE_GAP after. False if it's come too late to go with its moment.
+   */
+  start(b: Booking, now: number, secs: number): boolean {
+    if (b !== this.held) return false;
+    if (now - b.at > LINE_LATE) {
+      this.drop(b, now);
+      return false;
+    }
+    this.quiet = now + secs + LINE_GAP;
+    this.held = null;
+    return true;
+  }
+
+  /** the booked line won't be said (it wouldn't load): the floor is free again */
+  drop(b: Booking, now: number) {
+    if (b !== this.held) return;
+    this.held = null;
+    this.quiet = now;
+  }
+}
+
 /** a sound playing, as the voice limits see it */
 export interface VoiceInfo {
-  id: SoundId;
+  id: OneShot;
   prio: number;
   start: number;
 }
@@ -130,7 +195,7 @@ export interface VoiceInfo {
  * played. Past its own limit it takes over its own oldest voice; past the overall limit, the oldest
  * of the lowest priority, unless that one ranks above it. So a critical sound always plays.
  */
-export function voiceToSteal(playing: readonly VoiceInfo[], id: SoundId, def: SoundDef): number | null {
+export function voiceToSteal(playing: readonly VoiceInfo[], id: OneShot, def: Playing): number | null {
   let own = -1;
   let count = 0;
   for (let i = 0; i < playing.length; i++) {
@@ -147,6 +212,13 @@ export function voiceToSteal(playing: readonly VoiceInfo[], id: SoundId, def: So
     if (v.prio < w.prio || (v.prio === w.prio && v.start < w.start)) low = i;
   }
   return playing[low].prio <= PRIORITY[def.prio ?? 'normal'] ? low : null;
+}
+
+/** a recording picked to play: its buffer, its level, and the silence to skip at its start */
+interface Take {
+  buf: AudioBuffer;
+  gain: number;
+  lead: number;
 }
 
 interface Voice extends VoiceInfo {
@@ -194,6 +266,8 @@ export class Sfx {
   /** each sound's last start, and how loud it was: by id when it's recorded, by recipe when it's synthesized */
   private lastPlay = new Map<string, { t: number; level: number }>();
   private voices: Voice[] = [];
+  /** who may speak when */
+  private lines = new Lines();
   /** where sounds are heard from: the hero, kept up to date by the game */
   private listener: P2 = { x: 0, z: 0 };
   /** what the camera shows; until the renderer says, nothing is panned */
@@ -311,10 +385,43 @@ export class Sfx {
     this.view = { right: { x: right.x, z: right.z }, halfWidth };
   }
 
-  play(id: SoundId, opts: PlayOpts = {}) {
+  /** an effect (SOUNDS), or a line spoken (voice.<speaker>.<line>: say) */
+  play(id: OneShot, opts: PlayOpts = {}) {
     if (!this.ctx || this.muted) return;
-    const ctx = this.ctx;
-    const def = SOUNDS[id];
+    if (isLine(id)) this.say(id, opts);
+    else this.sound(id, SOUNDS[id], opts);
+  }
+
+  /**
+   * A line: one at a time and not too often (Lines), whatever asks for it. Nothing is synthesized in
+   * its place, so with no recording it isn't said; one still to be decoded is said once it is, if
+   * that's soon enough.
+   */
+  private say(id: VoiceId, opts: PlayOpts) {
+    if (!this.recorded(id)) return;
+    const booked = this.lines.book(id, this.ctx!.currentTime);
+    if (!booked) return;
+    const go = () => {
+      const take = this.variant(id);
+      const now = this.ctx!.currentTime;
+      // it wouldn't load, or the sound was turned off while it did
+      if (!take || this.muted) return this.lines.drop(booked, now);
+      if (this.lines.start(booked, now, (take.buf.duration - take.lead) / (opts.pitch ?? 1))) this.sound(id, LINE, opts, take);
+    };
+    if (this.ready(id)) go();
+    else void this.load(id).then(go);
+  }
+
+  /** every take of it is decoded */
+  private ready(id: OneShot) {
+    return !!this.files[id]?.files.every((file) => this.buffers.has(fileUrl(file)));
+  }
+
+  /** `take`: the recording to play, already chosen (a line's); otherwise one is picked, or its recipe rendered */
+  private sound(id: OneShot, def: Playing, opts: PlayOpts, take?: Take) {
+    // a line is only ever played with its take
+    if (!take && !def.synth) return;
+    const ctx = this.ctx!;
     const prio = PRIORITY[def.prio ?? 'normal'];
     const where = opts.pos ? spatial(this.listener, this.view, opts.pos, prio >= PRIORITY.critical) : null;
     if (opts.pos && !where) return;
@@ -323,7 +430,7 @@ export class Sfx {
     // rate-limit identical sounds, unless the new one is louder: a far monster's death mustn't
     // swallow a near one's in the same frame. Ids that share a recipe are the same sound until they
     // have recordings of their own (a fire's cast and its impact)
-    const key = this.recorded(id) ? id : def.synth;
+    const key = this.recorded(id) || !def.synth ? id : def.synth;
     const last = this.lastPlay.get(key);
     if (last && now - last.t < REPEAT_GAP && level <= last.level) return;
     this.voices = this.voices.filter((v) => {
@@ -340,7 +447,7 @@ export class Sfx {
       setTimeout(() => v.tail.disconnect(), 100);
     }
     this.lastPlay.set(key, { t: now, level });
-    const rec = this.variant(id);
+    const rec = take ?? this.variant(id);
     const gain = ctx.createGain();
     gain.gain.value = level * (rec?.gain ?? 1);
     let tail: AudioNode = gain;
@@ -366,7 +473,7 @@ export class Sfx {
       src.connect(gain);
       src.start(now + 0.005, rec.lead);
       this.end = now + 0.005 + (rec.buf.duration - rec.lead) / src.playbackRate.value;
-    } else {
+    } else if (def.synth) {
       this.out = gain;
       this.pitch = opts.pitch ?? 1;
       this.synth(def.synth, now + 0.005);
@@ -379,7 +486,7 @@ export class Sfx {
    * synthesize it: it has no files, they failed, or none is decoded yet (the first play starts
    * decoding them all).
    */
-  private variant(id: SoundId): { buf: AudioBuffer; gain: number; lead: number } | null {
+  private variant(id: OneShot): Take | null {
     const f = this.files[id];
     if (!f || !this.recorded(id)) return null;
     // an id's variants go together: playing one keeps them all from being evicted
@@ -423,8 +530,8 @@ export class Sfx {
     return m;
   }
 
-  /** decode all of an effect's takes: false (and the id given up on for the session) if one won't load */
-  private load(id: SoundId): Promise<boolean> {
+  /** decode all of an effect's (or a line's) takes: false (and the id given up on for the session) if one won't load */
+  private load(id: OneShot): Promise<boolean> {
     const f = this.files[id];
     if (!f || !this.recorded(id)) return Promise.resolve(false);
     return Promise.all(f.files.map((file) => this.buffers.load(fileUrl(file), true))).then(
@@ -478,7 +585,7 @@ export class Sfx {
       for (const id of ids) this.early.ids.add(id);
       return this.early.done;
     }
-    const loads = ids.map((id) => (isMusic(id) ? null : isAmb(id) ? this.loadAmb(id) : this.load(id as SoundId)));
+    const loads = ids.map((id) => (isMusic(id) ? null : isAmb(id) ? this.loadAmb(id) : this.load(id as OneShot)));
     return Promise.all(loads).then(() => {});
   }
 

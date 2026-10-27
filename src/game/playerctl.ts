@@ -45,6 +45,7 @@ function payMana(g: Game, p: Player, skill: string): boolean {
   if (p.mana < cost) {
     g.sfx.play('ui.no_mana');
     g.hooks.message('法力不足', '#7a7aff', 0.8);
+    g.say('no_mana');
     return false;
   }
   p.mana -= cost;

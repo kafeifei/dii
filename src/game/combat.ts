@@ -133,6 +133,8 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
     const len = base * (pl ? Math.max(0.25, 1 - (pl.stats.bag.poisonLenRes ?? 0) / 100) : 1);
     const dps = poison / base;
     if (dps >= target.poisonDps || target.poisonTime <= 0) {
+      // the hero says so as the poison takes hold, not as more of it lands
+      if (pl && target.poisonTime <= 0) g.say('poisoned');
       target.poisonDps = dps;
       target.poisonTime = len;
     }

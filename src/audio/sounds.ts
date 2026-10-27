@@ -48,8 +48,10 @@ export type Synth =
 export type Priority = 'low' | 'normal' | 'high' | 'critical';
 export const PRIORITY: Record<Priority, number> = { low: 0, normal: 1, high: 2, critical: 3 };
 
-export interface SoundDef {
-  synth: Synth;
+/** how a recording is played: an effect's, or a line's (LINE), which has no recipe to stand in for it */
+export interface Playing {
+  /** what plays while it has no recording, or it fails to load: without one, nothing does */
+  synth?: Synth;
   /** its level in the mix, times the caller's vol (default 1) */
   vol?: number;
   /** how many may sound at once (default 3): one more takes over the oldest */
@@ -58,6 +60,10 @@ export interface SoundDef {
   prio?: Priority;
   /** how far a recorded file's pitch strays each time it plays, as a fraction (default VARY, none for ui.*) */
   vary?: number;
+}
+
+export interface SoundDef extends Playing {
+  synth: Synth;
 }
 
 /** a recorded file plays up to 4% (about ±0.7 semitone) off its pitch: variety from one take */
@@ -238,7 +244,8 @@ export const LARGE_MONSTER = 1.3;
 
 /**
  * What the hero says, by the moment, as Diablo II's heroes do: each class has its own words for
- * every one (tools/audio/voice-lines.md), recorded as voice.<class>.<line> (heroLine).
+ * every one (tools/audio/voice-lines.md), recorded as voice.<class>.<line> (heroLine) and said by
+ * Game.say. Those whose moment the game doesn't have yet (a quest, an area cleared) wait for it.
  */
 export const HERO_LINES = [
   // what the hero can't do
@@ -277,9 +284,20 @@ export const HERO_LINES = [
   'back_in_town',
 ] as const;
 export type HeroLine = (typeof HERO_LINES)[number];
+export type HeroVoiceId = `voice.${PlayerClass}.${HeroLine}`;
 
 /** the hero's recording of a line: voice.paladin.no_mana */
-export const heroLine = (cls: PlayerClass, line: HeroLine): VoiceId => `voice.${cls}.${line}`;
+export const heroLine = (cls: PlayerClass, line: HeroLine): HeroVoiceId => `voice.${cls}.${line}`;
+
+/**
+ * How a line is played (Sfx.play of a voice.* id), whoever speaks it: critical, so a busy fight
+ * never drops it, and never off its pitch, which would change the voice. Its level puts the lines
+ * (all made at -18 LUFS) about as loud as the hero's loudest cues (tools/scenarios/sfx.mjs).
+ */
+export const LINE: Playing = { vol: 0.45, max: 1, prio: 'critical', vary: 0 };
+
+/** what the hero says walking into an area of another kind: out of the camp, underground, back */
+export const ENTER_LINE: Record<ScoreKind, HeroLine> = { town: 'back_in_town', outdoor: 'enter_wild', dungeon: 'enter_dungeon' };
 
 /**
  * Where the hero is, for its ambience and its music. The game names the area; until levels have
@@ -349,9 +367,14 @@ export function areaKey(area: AreaId): string {
   return String(area);
 }
 
+/** what kind of area it is: the camp, under the sky, underground; null off the map (or unknown) */
+export function areaKind(area: AreaId): ScoreKind | null {
+  return THEME_KIND[String(area)] ?? null;
+}
+
 /** an area nobody has given a sound is quiet */
 export function areaSound(area: AreaId): AreaSound {
-  const kind = THEME_KIND[String(area)];
+  const kind = areaKind(area);
   return kind ? KINDS[kind] : (SCREENS[String(area)] ?? { bed: 'none' });
 }
 
@@ -379,3 +402,28 @@ export function areaFiles(area: AreaId, night = false): FileId[] {
 
 /** every recording an area can ask for, by day or by night */
 export const AREA_FILES: readonly FileId[] = [...new Set(Object.values(KINDS).flatMap((s) => [...(s.amb ?? []), ...(s.night ?? []), ...musicOf(s)]))];
+
+/** the effects heard in each kind of area, by category: nobody fights in the camp */
+const HEARD: Record<ScoreKind, readonly SoundCategory[]> = {
+  town: ['ui', 'item', 'env', 'player'],
+  outdoor: Object.keys(GROUPS) as SoundCategory[],
+  dungeon: Object.keys(GROUPS) as SoundCategory[],
+};
+
+/**
+ * What to decode as the hero walks into an area (Sfx.preload), so what's heard there plays recorded
+ * from the first time rather than as its synthesized stand-in: the effects of that kind of area, and
+ * for each area its ways out lead to (`next`), its recordings at this time of day and the hero's line
+ * for walking into it. The area's own ambience isn't here: walking in has started it already.
+ */
+export function soundsNear(area: AreaId, next: readonly AreaId[], night: boolean, cls: PlayerClass): FileId[] {
+  const kind = areaKind(area);
+  const heard = kind ? HEARD[kind] : [];
+  const out = new Set<FileId>((Object.keys(SOUNDS) as SoundId[]).filter((id) => heard.includes(id.split('.')[0] as SoundCategory)));
+  for (const a of next) {
+    for (const id of areaFiles(a, night)) out.add(id);
+    const k = areaKind(a);
+    if (k && k !== kind) out.add(heroLine(cls, ENTER_LINE[k]));
+  }
+  return [...out];
+}

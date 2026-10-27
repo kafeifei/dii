@@ -108,6 +108,11 @@ export function levelLabel(depth: number, camp = '营地'): string {
   return `第 ${dungeonFloor(depth)} 层`;
 }
 
+/** the theme of the level at a depth: the camp's, the wilderness's or its dungeon floor's */
+export function themeAt(depth: number): Theme {
+  return depth <= 0 ? THEMES.town : isWild(depth) ? THEMES.wild : themeForFloor(dungeonFloor(depth));
+}
+
 /** a dungeon floor's theme, by its floor number */
 export function themeForFloor(floor: number): Theme {
   if (floor <= 0) return THEMES.town;

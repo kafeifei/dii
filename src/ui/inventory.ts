@@ -3,6 +3,7 @@ import { GEMS, RUNE_BY_ID } from '../data/legendary';
 import { createItem, findRuneword, applyRuneword } from '../items/gen';
 import type { Grid } from '../items/grid';
 import { baseOf, buyPrice, canSocket, displayName, sellPrice, type Item } from '../items/item';
+import type { HeroLine } from '../audio/sounds';
 import { h, type UIContext } from './common';
 import { CELL, itemIcon } from './icons';
 
@@ -141,7 +142,10 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
       if (kind === 'inv' && baseOf(it).type === 'cube') return;
       const dest = kind === 'inv' ? other : p.inventory;
       if (dest.add(it)) grid.remove(it);
-      else ui.message(kind === 'inv' ? (ui.left === 'stash' ? '储物箱已满' : '魔盒已满') : '背包已满', '#ff6060');
+      else {
+        ui.message(kind === 'inv' ? (ui.left === 'stash' ? '储物箱已满' : '魔盒已满') : '背包已满', '#ff6060');
+        if (kind !== 'inv') ui.game.say('bag_full');
+      }
     } else if (baseOf(it).type === 'potion' && kind === 'inv') {
       if (ui.game.beltInsert(it)) grid.remove(it);
     }
@@ -169,12 +173,14 @@ function buy(ui: UIContext, it: Item) {
   if (p.gold < price) {
     ui.message('金币不足', '#ff6060');
     ui.sfx.play('ui.no_gold');
+    ui.game.say('no_gold');
     return;
   }
   const b = baseOf(it);
   const copy = b.type === 'potion' ? createItem(b.id) : it;
   if (!(b.type === 'potion' && ui.game.beltInsert(copy)) && !p.inventory.add(copy)) {
     ui.message('背包已满', '#ff6060');
+    ui.game.say('bag_full');
     return;
   }
   p.gold -= price;
@@ -197,15 +203,19 @@ function sell(ui: UIContext, it: Item) {
   ui.sfx.play('ui.coins');
 }
 
-/** returns error text or null */
-function equipError(ui: UIContext, it: Item, slot: EquipSlot): string | null {
+/** what the hero says to an item it can't use: another class's, too high a level for it, too strong for it */
+const UNMET_LINE: Record<'class' | 'level' | 'stats', HeroLine> = { class: 'cant_use', level: 'low_level', stats: 'too_weak' };
+
+/** why it can't go there, and what the hero says to that; or null */
+function equipError(ui: UIContext, it: Item, slot: EquipSlot): { text: string; line: HeroLine } | null {
   const p = ui.game.player;
   const b = baseOf(it);
-  if (!slotsFor(b.type).includes(slot)) return '无法装备在这里';
-  if (!p.meetsReq(it)) return '不满足装备需求';
+  if (!slotsFor(b.type).includes(slot)) return { text: '无法装备在这里', line: 'cant_use' };
+  const unmet = p.unmetReq(it);
+  if (unmet) return { text: '不满足装备需求', line: UNMET_LINE[unmet] };
   if (slot === 'offhand') {
     const w = p.equipment.weapon;
-    if (w && baseOf(w).twoHanded) return '双手武器无法搭配盾牌';
+    if (w && baseOf(w).twoHanded) return { text: '双手武器无法搭配盾牌', line: 'cant_use' };
   }
   return null;
 }
@@ -214,8 +224,9 @@ function equipTo(ui: UIContext, it: Item, slot: EquipSlot): Item | null | false 
   const p = ui.game.player;
   const err = equipError(ui, it, slot);
   if (err) {
-    ui.message(err, '#ff6060', 1.5);
+    ui.message(err.text, '#ff6060', 1.5);
     ui.sfx.play('ui.cant_use');
+    ui.game.say(err.line);
     return false;
   }
   const b = baseOf(it);
@@ -223,6 +234,7 @@ function equipTo(ui: UIContext, it: Item, slot: EquipSlot): Item | null | false 
     const sh = p.equipment.offhand;
     if (!p.inventory.add(sh)) {
       ui.message('背包没有空间放下盾牌', '#ff6060');
+      ui.game.say('bag_full');
       return false;
     }
     delete p.equipment.offhand;

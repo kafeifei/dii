@@ -1,7 +1,7 @@
 import type { Input } from '../core/input';
 import { chance, dist, rand, randInt, type P2 } from '../core/math';
 import type { Sfx } from '../audio/sfx';
-import { DROP_SOUND, LARGE_MONSTER } from '../audio/sounds';
+import { DROP_SOUND, ENTER_LINE, LARGE_MONSTER, areaKind, heroLine, isNight, soundsNear, type HeroLine } from '../audio/sounds';
 import { CLASSES, type PlayerClass } from '../data/classes';
 import { ITEM_BASES } from '../data/items';
 import { SKILL_BY_ID } from '../data/skills';
@@ -22,7 +22,7 @@ import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
 import { loadSave, markInGame, setSlot, writeSave } from './save';
 import { debugOpts } from './debug';
-import { isWild, levelLabel } from '../world/levelgen';
+import { isWild, levelLabel, themeAt, WILD_MAPS } from '../world/levelgen';
 import { SHRINE_BY_ID } from '../data/shrines';
 
 export interface GameHooks {
@@ -47,6 +47,13 @@ const ACTIVE_RADIUS = 30;
 
 /** seconds from one midnight to the next under the sky */
 const DAY_LENGTH = 16 * 60;
+
+/** the hero's life, as a share of its most, under which it says it's badly hurt: once, as it falls past */
+const LOW_LIFE = 0.3;
+/** it says so again only after its life has been back over this share, */
+const LOW_LIFE_REARM = 0.5;
+/** and this many seconds have gone by */
+const LOW_LIFE_AGAIN = 30;
 
 /** spells a dragged touch button lays on a spot of ground */
 const AIM_SPOT = new Set(['meteor', 'blizzard', 'fire_wall', 'heavens_wrath', 'teleport']);
@@ -108,6 +115,12 @@ export class Game {
   /** driven externally (balance bot): the page loop neither steps nor renders */
   headless = false;
   started = false;
+  /** low_health: under LOW_LIFE last frame; back over LOW_LIFE_REARM since it was last said; the time it may be said again */
+  private lowLife = { was: false, armed: true, quiet: 0 };
+  /** it was night under the sky last frame (isNight) */
+  private night = false;
+  /** the finds the hero has remarked on: picked up again, an item isn't new */
+  private remarked = new WeakSet<Item>();
 
   constructor(
     public input: Input,
@@ -173,6 +186,10 @@ export class Game {
   enterLevel(depth: number, how: 'start' | 'stairs' | 'waypoint' | 'portal' | 'respawn' | 'exit') {
     const p = this.player;
     const from = this.level?.depth ?? 0;
+    const left = this.level ? areaKind(this.level.layout.theme.key) : null;
+    const wasUnderground = p.depthReached > WILD_MAPS;
+    /** what the hero says arriving */
+    let line: HeroLine | null = null;
     let level: Level;
     const wild = this.wilds.get(depth);
     if (how === 'portal' && depth > 0 && this.portalLevel && this.portalLevel.depth === depth) {
@@ -233,7 +250,10 @@ export class Game {
       if (!isWild(depth) && !p.waypoints.includes(depth)) {
         p.waypoints.push(depth);
         p.waypoints.sort((a, b) => a - b);
-        if (how !== 'start') this.hooks.message('传送点已激活', '#c8a86a', 2);
+        if (how !== 'start') {
+          this.hooks.message('传送点已激活', '#c8a86a', 2);
+          line = 'waypoint';
+        }
       }
     } else {
       this.refreshShop();
@@ -242,10 +262,48 @@ export class Game {
     this.sfx.setListener(p.pos);
     // until levels have areas of their own (Level.areaAt), the theme stands for one
     this.sfx.setTime(this.clock);
-    this.sfx.enterArea(level.layout.theme.key);
+    const area = level.layout.theme.key;
+    this.sfx.enterArea(area);
+    // decode what's heard here and where its ways out lead, so it plays recorded from the first time
+    void this.sfx.preload(soundsNear(area, this.waysOut(level), isNight(this.clock), p.cls));
+    // into an area of another kind: out of the camp, back to it, underground the first time; it
+    // says that rather than a waypoint found on the way
+    const kind = areaKind(area);
+    if (kind && left && kind !== left && how !== 'start' && how !== 'respawn' && (kind !== 'dungeon' || !wasUnderground)) line = ENTER_LINE[kind];
+    if (line) this.say(line);
     this.hooks.levelChanged(level);
     this.hooks.message(level.name, '#d8c8a0', 3);
     this.save();
+  }
+
+  /** the areas a level's ways out lead to: its exits, its stairs down and a portal's other end */
+  private waysOut(level: Level): string[] {
+    const out = new Set<string>();
+    for (const o of level.objects) {
+      const dest = o.kind === 'stairs' ? level.depth + 1 : o.kind === 'exit' || o.kind === 'portal' ? o.dest : null;
+      if (dest !== null) out.add(themeAt(dest).key);
+    }
+    return [...out];
+  }
+
+  /** the hero says its line for the moment: Sfx has it say one at a time, and the same one not too often */
+  say(line: HeroLine) {
+    this.sfx.play(heroLine(this.player.cls, line));
+  }
+
+  /** life falling under LOW_LIFE: once as it falls past, then not again until it's been back up */
+  private watchLife() {
+    const p = this.player;
+    const s = this.lowLife;
+    const share = p.dead ? 1 : p.life / p.stats.maxLife;
+    const low = share < LOW_LIFE;
+    if (share >= LOW_LIFE_REARM) s.armed = true;
+    if (low && !s.was && s.armed && this.time >= s.quiet) {
+      this.say('low_health');
+      s.armed = false;
+      s.quiet = this.time + LOW_LIFE_AGAIN;
+    }
+    s.was = low;
   }
 
   /** put the items that fit nowhere (old saves, bigger D2 items) on the ground around the stash */
@@ -297,6 +355,9 @@ export class Game {
     this.clock = (this.clock + (dt * this.clockRate) / DAY_LENGTH) % 1;
     this.sfx.setTime(this.clock);
     const L = this.level;
+    const night = isNight(this.clock);
+    if (night && !this.night && isWild(L.depth)) this.say('night_falls');
+    this.night = night;
     for (const a of [this.player, ...L.monsters, ...L.projectiles]) {
       a.prevPos.x = a.pos.x;
       a.prevPos.z = a.pos.z;
@@ -324,6 +385,7 @@ export class Game {
       updateMonster(this, m, dt);
     }
     p.hitFlash = Math.max(0, p.hitFlash - dt * 6);
+    this.watchLife();
     this.updateAuras(dt);
     this.separate();
     this.updateProjectiles(dt);
@@ -896,6 +958,7 @@ export class Game {
     if (m.rank === 'boss') {
       this.fx.shake(0.8);
       this.hooks.message(`${m.displayName} 被击败了！`, '#c8a86a', 4);
+      this.say('boss_dead');
       this.save();
     }
   }
@@ -907,6 +970,7 @@ export class Game {
     this.fx.burst('levelup', p.pos);
     this.sfx.play('player.level_up', { pos: p.pos });
     this.hooks.message(`等级提升！你现在是 ${p.level} 级`, '#ffd24a', 3);
+    this.say('level_up');
     this.hooks.levelUp();
   }
 
@@ -1023,10 +1087,17 @@ export class Game {
       const k = p.unplaced.indexOf(item);
       if (k >= 0) p.unplaced.splice(k, 1);
       this.sfx.play('item.pickup', { pos: gi.pos });
+      // a find worth a word, the first time it's picked up
+      const find: HeroLine | null = item.rarity === 'unique' ? 'unique' : item.rarity === 'set' ? 'set_item' : baseOf(item).type === 'rune' ? 'rune' : null;
+      if (find && !this.remarked.has(item)) {
+        this.remarked.add(item);
+        this.say(find);
+      }
       this.hooks.inventoryChanged();
     } else {
       this.hooks.message('背包已满', '#ff6060', 1.5);
       this.sfx.play('ui.no_room');
+      this.say('bag_full');
     }
   }
 
@@ -1054,7 +1125,8 @@ export class Game {
     const p = this.player;
     if (p.dead) return;
     const stack = p.belt[col];
-    if (!stack || !stack.length) return;
+    if (!stack) return;
+    if (!stack.length) return this.say('no_potion');
     const item = stack.shift()!;
     this.drink(item);
     this.hooks.inventoryChanged();
@@ -1119,6 +1191,7 @@ export class Game {
         this.fx.burst('aura_switch', p.pos, { color: def.color });
         this.sfx.play('env.shrine', { pos: obj.pos });
         this.hooks.message(`${def.name}：${def.desc}`, def.color, 3);
+        this.say('shrine');
         break;
       }
       case 'portal':
@@ -1147,6 +1220,7 @@ export class Game {
     const L = this.level;
     if (L.depth === 0) {
       this.hooks.message('你已经在营地里了', '#aaa', 1.5);
+      this.say('cant_here');
       return;
     }
     L.objects = L.objects.filter((o) => o.kind !== 'portal');
@@ -1167,6 +1241,7 @@ export class Game {
     if (p.dead || !(p.state === 'idle' || p.state === 'move')) return;
     if (this.level.depth === 0) {
       this.hooks.message('你已经在营地里了', '#aaa', 1.5);
+      this.say('cant_here');
       return;
     }
     p.setState('cast', 0.7);
