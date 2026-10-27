@@ -81,27 +81,24 @@ export function growWoods(
   const w = box.x1 - box.x0;
   const h = box.z1 - box.z0;
   const dist = new Int16Array(w * h).fill(-1);
-  const q: number[] = [];
+  const q = new Int32Array(w * h);
+  let tail = 0;
   for (let z = 0; z < h; z++) {
     for (let x = 0; x < w; x++) {
       if (!land(x + box.x0, z + box.z0)) continue;
       dist[z * w + x] = 0;
-      q.push(z * w + x);
+      q[tail++] = z * w + x;
     }
   }
-  for (let head = 0; head < q.length; head++) {
+  for (let head = 0; head < tail; head++) {
     const i = q[head];
     const x = i % w;
     const z = (i / w) | 0;
-    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const nx = x + dx;
-      const nz = z + dz;
-      if (nx < 0 || nz < 0 || nx >= w || nz >= h) continue;
-      const j = nz * w + nx;
-      if (dist[j] >= 0) continue;
-      dist[j] = dist[i] + 1;
-      q.push(j);
-    }
+    const d = dist[i] + 1;
+    if (x + 1 < w && dist[i + 1] < 0) (dist[i + 1] = d), (q[tail++] = i + 1);
+    if (x > 0 && dist[i - 1] < 0) (dist[i - 1] = d), (q[tail++] = i - 1);
+    if (z + 1 < h && dist[i + w] < 0) (dist[i + w] = d), (q[tail++] = i + w);
+    if (z > 0 && dist[i - w] < 0) (dist[i - w] = d), (q[tail++] = i - w);
   }
   const props: Prop[] = [];
   for (let z = 0; z < h; z++) {

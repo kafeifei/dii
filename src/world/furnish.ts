@@ -148,6 +148,9 @@ const DIRS: [number, number][] = [
   [0, -1],
 ];
 
+/** how far round a solid piece `cuts` looks for its neighbours to join up, before it walks the whole map */
+const NEAR_REACH = 6;
+
 /**
  * Places furniture on a dungeon map. Solid pieces become T_PROP tiles; every solid placement is
  * checked so the whole level stays reachable from the start.
@@ -159,6 +162,13 @@ export class Furnisher {
   decor: Decor[] = [];
   private used = new Set<number>();
   private reachable: number;
+  /** the tiles the last walk from the start reached: tile i if reach[i] === reachMark */
+  private reach: Uint32Array;
+  private reachMark = 0;
+  /** marks for the next walk; each walk takes a new number, so neither array is ever cleared */
+  private marks: Uint32Array;
+  private mark = 0;
+  private queue: Int32Array;
 
   constructor(
     private map: TileMap,
@@ -167,7 +177,11 @@ export class Furnisher {
     keepClear: P2[],
   ) {
     for (const p of keepClear) this.reserveAround(p, 2);
+    this.reach = new Uint32Array(map.w * map.h);
+    this.marks = new Uint32Array(map.w * map.h);
+    this.queue = new Int32Array(map.w * map.h);
     this.reachable = this.countReachable();
+    this.keepWalk();
   }
 
   reserveAround(p: P2, r: number) {
@@ -176,30 +190,104 @@ export class Furnisher {
     for (let y = cy - r; y <= cy + r; y++) for (let x = cx - r; x <= cx + r; x++) this.used.add(y * this.map.w + x);
   }
 
+  /** the tiles reachable from the start (which counts whatever it stands on), marked in `marks` */
   private countReachable(): number {
-    const { map } = this;
+    const { marks, queue } = this;
+    const { w, h, tiles } = this.map;
+    const m = ++this.mark;
+    let tail = 0;
+    queue[tail++] = Math.floor(this.start.z) * w + Math.floor(this.start.x);
+    marks[queue[0]] = m;
+    for (let head = 0; head < tail; head++) {
+      const i = queue[head];
+      const x = i % w;
+      const y = (i / w) | 0;
+      if (x + 1 < w && marks[i + 1] !== m && tiles[i + 1] === T_FLOOR) (marks[i + 1] = m), (queue[tail++] = i + 1);
+      if (x > 0 && marks[i - 1] !== m && tiles[i - 1] === T_FLOOR) (marks[i - 1] = m), (queue[tail++] = i - 1);
+      if (y + 1 < h && marks[i + w] !== m && tiles[i + w] === T_FLOOR) (marks[i + w] = m), (queue[tail++] = i + w);
+      if (y > 0 && marks[i - w] !== m && tiles[i - w] === T_FLOOR) (marks[i - w] = m), (queue[tail++] = i - w);
+    }
+    return tail;
+  }
+
+  /** the walk countReachable just made is the map's now: keep its marks, and the old ones for scratch */
+  private keepWalk() {
+    [this.reach, this.marks] = [this.marks, this.reach];
+    this.reachMark = this.mark;
+  }
+
+  /**
+   * Whether the solid footprint (x0, y0, w×h), already set down, may have cut a walkable tile off
+   * from the start. Not if the walkable tiles round it still join up within NEAR_REACH of it: a way
+   * through it can go round it then. Only when they don't (a piece between two others, in a gap)
+   * does the caller walk the whole map; walking it for every piece was most of an outdoor area's
+   * making.
+   */
+  private cuts(x0: number, y0: number, w: number, h: number): boolean {
+    const { map, marks, queue } = this;
+    const W = map.w;
+    const { tiles } = map;
     const sx = Math.floor(this.start.x);
     const sy = Math.floor(this.start.z);
-    const seen = new Uint8Array(map.w * map.h);
-    const q = [sy * map.w + sx];
-    seen[q[0]] = 1;
-    let n = 0;
-    while (q.length) {
-      const i = q.pop()!;
-      n++;
-      const x = i % map.w;
-      const y = (i / map.w) | 0;
-      for (const [dx, dy] of DIRS) {
-        const nx = x + dx;
-        const ny = y + dy;
-        const j = ny * map.w + nx;
-        if (!seen[j] && map.walkable(nx, ny)) {
-          seen[j] = 1;
-          q.push(j);
-        }
-      }
+    if (sx >= x0 && sx < x0 + w && sy >= y0 && sy < y0 + h) return true;
+    // the ring of tiles round it, in order (-1 where it can't be walked), and the runs of walkable ones in it
+    const ring: number[] = [];
+    for (let x = x0 - 1; x <= x0 + w; x++) ring.push(map.walkable(x, y0 - 1) ? (y0 - 1) * W + x : -1);
+    for (let y = y0; y < y0 + h; y++) ring.push(map.walkable(x0 + w, y) ? y * W + x0 + w : -1);
+    for (let x = x0 + w; x >= x0 - 1; x--) ring.push(map.walkable(x, y0 + h) ? (y0 + h) * W + x : -1);
+    for (let y = y0 + h - 1; y >= y0; y--) ring.push(map.walkable(x0 - 1, y) ? y * W + x0 - 1 : -1);
+    let runs = 0;
+    let from = -1;
+    for (let k = 0; k < ring.length; k++) {
+      if (ring[k] < 0) continue;
+      from = ring[k];
+      if (ring[(k + ring.length - 1) % ring.length] < 0) runs++;
     }
-    return n;
+    // one run of them (or the whole ring) goes round by itself
+    if (runs <= 1) return false;
+    // else walk a little way out from one and see whether that meets the rest
+    const bx0 = Math.max(0, x0 - NEAR_REACH);
+    const by0 = Math.max(0, y0 - NEAR_REACH);
+    const bx1 = Math.min(W - 1, x0 + w - 1 + NEAR_REACH);
+    const by1 = Math.min(map.h - 1, y0 + h - 1 + NEAR_REACH);
+    const m = ++this.mark;
+    let tail = 0;
+    queue[tail++] = from;
+    marks[from] = m;
+    for (let head = 0; head < tail; head++) {
+      const i = queue[head];
+      const x = i % W;
+      const y = (i / W) | 0;
+      if (x < bx1 && marks[i + 1] !== m && tiles[i + 1] === T_FLOOR) (marks[i + 1] = m), (queue[tail++] = i + 1);
+      if (x > bx0 && marks[i - 1] !== m && tiles[i - 1] === T_FLOOR) (marks[i - 1] = m), (queue[tail++] = i - 1);
+      if (y < by1 && marks[i + W] !== m && tiles[i + W] === T_FLOOR) (marks[i + W] = m), (queue[tail++] = i + W);
+      if (y > by0 && marks[i - W] !== m && tiles[i - W] === T_FLOOR) (marks[i - W] = m), (queue[tail++] = i - W);
+    }
+    return ring.some((i) => i >= 0 && marks[i] !== m);
+  }
+
+  /**
+   * Make the footprint (x0, y0, w×h; `tiles`, all floor) solid if the start still reaches every
+   * tile it did but those, else leave it floor: what walking the whole map after every piece
+   * decided, but most pieces only look round themselves.
+   */
+  private setSolid(tiles: number[], x0: number, y0: number, w: number, h: number): boolean {
+    const { map } = this;
+    for (const i of tiles) map.tiles[i] = T_PROP;
+    if (!this.cuts(x0, y0, w, h)) {
+      // the footprint is one patch of floor, so the start reached all of it or none
+      if (this.reach[tiles[0]] === this.reachMark) this.reachable -= tiles.length;
+      for (const i of tiles) this.reach[i] = 0;
+      return true;
+    }
+    const n = this.countReachable();
+    if (n < this.reachable - tiles.length) {
+      for (const i of tiles) map.tiles[i] = T_FLOOR;
+      return false;
+    }
+    this.reachable = n;
+    this.keepWalk();
+    return true;
   }
 
   free(x: number, y: number): boolean {
@@ -219,15 +307,7 @@ export class Furnisher {
         tiles.push(y * this.map.w + x);
       }
     }
-    if (def.solid) {
-      for (const i of tiles) this.map.tiles[i] = T_PROP;
-      const n = this.countReachable();
-      if (n < this.reachable - tiles.length) {
-        for (const i of tiles) this.map.tiles[i] = T_FLOOR;
-        return false;
-      }
-      this.reachable = n;
-    }
+    if (def.solid && !this.setSolid(tiles, tx, ty, fw, fd)) return false;
     for (const i of tiles) this.used.add(i);
     const j = jitter ? (this.rng.next() - 0.5) * jitter : 0;
     this.props.push({ model, x: tx + fw / 2, z: ty + fd / 2, rot: (k * Math.PI) / 2 + j, scale: def.s, light: def.light });
@@ -248,15 +328,7 @@ export class Furnisher {
   placeDecor(kind: DecorKind, tx: number, ty: number, solid: boolean, scale = 1): boolean {
     if (!this.free(tx, ty)) return false;
     const i = ty * this.map.w + tx;
-    if (solid) {
-      this.map.tiles[i] = T_PROP;
-      const n = this.countReachable();
-      if (n < this.reachable - 1) {
-        this.map.tiles[i] = T_FLOOR;
-        return false;
-      }
-      this.reachable = n;
-    }
+    if (solid && !this.setSolid([i], tx, ty, 1, 1)) return false;
     this.used.add(i);
     this.decor.push({ kind, x: tx + 0.5 + (this.rng.next() - 0.5) * 0.3, z: ty + 0.5 + (this.rng.next() - 0.5) * 0.3, rot: this.rng.range(0, Math.PI * 2), scale });
     return true;
