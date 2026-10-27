@@ -1,5 +1,6 @@
 // The content scope: D2R before the Warlock expansion. The pinned tables already have the Warlock
-// class and the content added with it, so it is taken out here; so is what is still ladder-only.
+// class and the content added with it, so it is taken out here; so is what is still ladder-only
+// both there and in 2.7 (stillLadderOnly).
 // Rows the expansion added carry no string in the D2CE string tables (pinned before it), which is
 // how its uniques, sets, runewords and affixes are told apart.
 // What it changed in rows that were there before it is read from D2R 2.7 (rows27 in load.mjs).
@@ -21,6 +22,13 @@ export function latestSeason(...tables) {
 }
 /** ladder-only until a season that has not ended yet (or with no end at all) */
 export const ladderOnly = (r, season) => !!r.firstLadderSeason && !(r.lastLadderSeason < season);
+/**
+ * Left out as ladder-only: ladder-only in the pinned tables and, for a row 2.7 has, in 2.7 too, each
+ * against its own tables' latest season (firstLadderSeason/lastLadderSeason). Season 15 made nine old
+ * uniques and Angelic Raiment ladder-only, which 2.7 has as ordinary items: they are in, as 2.7 has
+ * them. The 2.6 runewords went the other way, ladder-only in 2.7 and ordinary now: in too.
+ */
+export const stillLadderOnly = (pinned, season, old, season27) => ladderOnly(pinned, season) && (!old || ladderOnly(old, season27));
 
 /**
  * Treasure classes out of scope: the Warlock expansion's (its Worldstone shards, Terrorize

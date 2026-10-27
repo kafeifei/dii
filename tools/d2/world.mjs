@@ -208,10 +208,10 @@ export async function buildWorld({ bases }) {
     o.nameKey = r.NameStr;
     if (pets.has(id)) o.petOf = pets.get(id);
     else if (!NO_NAME.has(r.NameStr)) {
-      const nm = (r.npc ? npcNames : monNames).get(r.NameStr, S.en[r.NameStr], official(r.NameStr));
+      const nm = (r.npc ? npcNames : monNames).named(r.NameStr, S.en[r.NameStr], official(r.NameStr));
       // a monster with no name of ours is left out, like an unnamed item (the report lists it)
       if (!nm) continue;
-      o.name = nm;
+      Object.assign(o, nm);
       o.en = S.en[r.NameStr];
     }
     if (r.MonType) o.type = r.MonType;
@@ -379,9 +379,9 @@ export async function buildWorld({ bases }) {
   const superuniques = [];
   for (const s of SU) {
     const where = `superunique ${s.Superunique}`;
-    const name = monNames.get(s.Name, S.en[s.Name], official(s.Name));
-    if (!name || !monsters[s.Class]) continue;
-    const o = { key: s.Superunique, name, en: S.en[s.Name], hcIdx: s.hcIdx, mon: s.Class };
+    const nm = monNames.named(s.Name, S.en[s.Name], official(s.Name));
+    if (!nm || !monsters[s.Class]) continue;
+    const o = { key: s.Superunique, ...nm, en: S.en[s.Name], hcIdx: s.hcIdx, mon: s.Class };
     o.mods = [s.Mod1, s.Mod2, s.Mod3].filter(Boolean);
     for (const u of o.mods) if (!umods.some((x) => x.id === u)) throw new Error(`${where}: no monumod ${u}`);
     o.group = [s.MinGrp ?? 0, s.MaxGrp ?? 0];
@@ -399,12 +399,14 @@ export async function buildWorld({ bases }) {
   const words = (t, file) => {
     const nm = names(file);
     return Object.values(t).flatMap((key) => {
-      const n = nm.get(key, S.en[key], official(key));
-      return n ? [{ key, name: n, en: S.en[key] }] : [];
+      const n = nm.named(key, S.en[key], official(key));
+      return n ? [{ key, ...n, en: S.en[key] }] : [];
     });
   };
   const uniqueNames = { prefix: words(uPreJ, 'monster-prefixes'), suffix: words(uSufJ, 'monster-suffixes'), title: words(uAppJ, 'monster-titles') };
   for (const t of uniqueNames.title) if (!t.name.endsWith('·')) throw new Error(`monster-titles.json ${t.key}: ${t.name} must end in ·, it goes before the name`);
+  // in English the title goes last, "the …", as D2's own (UniqueAppellation.txt: "the Hammer")
+  for (const t of uniqueNames.title) if (!t.nameEn.startsWith('the ')) throw new Error(`monster-titles.json ${t.key}: ${t.nameEn} must start with "the ", it goes after the name`);
 
   // ───────────────────────── areas ─────────────────────────
   const areaNames = names('areas');
@@ -437,9 +439,9 @@ export async function buildWorld({ bases }) {
   const areas = [];
   for (const r of LEVELS) {
     const where = `levels ${r.Id}`;
-    const name = areaNames.get(String(r.Id), S.en[r.LevelName], official(r.LevelName));
-    if (!name) continue;
-    const o = { id: r.Id, key: r.Name, name, en: S.en[r.LevelName] };
+    const nm = areaNames.named(String(r.Id), S.en[r.LevelName], official(r.LevelName));
+    if (!nm) continue;
+    const o = { id: r.Id, key: r.Name, ...nm, en: S.en[r.LevelName] };
     // the expansion's area levels (MonsterRegion.cpp:934-942); MonLvl is the classic game's, for reference
     o.lvl = [0, 1, 2].map((d) => lvlOf(r, d));
     o.lvlClassic = [0, 1, 2].map((d) => r[`MonLvl${DIFF[d]}`] ?? 0);

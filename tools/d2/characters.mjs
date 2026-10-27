@@ -277,10 +277,10 @@ export async function buildCharacters({ bases }) {
     if (S.en[typeKey] !== r.Hireling) throw new Error(`${where}: no string ${typeKey} for "${r.Hireling}"`);
     const nameKeys = nameRange(n('NameFirst'), n('NameLast'));
     for (const key of nameKeys) {
-      const nm = mercNames.get(key, S.en[key], S.zh[key]);
+      const nm = mercNames.named(key, S.en[key], S.zh[key]);
       if (nm) mercNameOf[key] = nm;
     }
-    const type = mercNames.get(typeKey, S.en[typeKey], S.zh[typeKey]);
+    const type = mercNames.named(typeKey, S.en[typeKey], S.zh[typeKey]);
     const head = {
       id: n('Id'),
       difficulty: n('Difficulty') - 1,
@@ -288,7 +288,7 @@ export async function buildCharacters({ bases }) {
       monster: mon.Id,
       seller: seller.Id,
       cls: n('equivalentcharclass'),
-      ...(type ? { type } : {}),
+      ...(type ? { type: type.name, typeEn: type.nameEn } : {}),
       names: nameKeys.filter((k) => mercNameOf[k]),
       defaultChance: n('DefaultChance'),
       maxLvlAbove: n('HiringMaxLevelDifference'),
@@ -309,12 +309,12 @@ export async function buildCharacters({ bases }) {
 
   // no official proper noun, and no official transliteration the glossary replaces, may reach the data
   const terms = glossaryOfficial();
-  const ours = [...Object.values(mercNameOf), ...[...hirelings.values()].map((h) => h.type).filter(Boolean)];
+  const ours = [...Object.values(mercNameOf).map((n) => n.name), ...[...hirelings.values()].map((h) => h.type).filter(Boolean)];
   for (const nm of ours) {
     const t = terms.find((o) => nm.includes(o));
     if (t) throw new Error(`hireling name ${nm} holds the official ${t}`);
   }
-  if (new Set(Object.values(mercNameOf)).size !== Object.keys(mercNameOf).length) throw new Error('mercenaries.json: two hirelings share a name');
+  for (const k of ['name', 'nameEn']) if (new Set(Object.values(mercNameOf).map((n) => n[k])).size !== Object.keys(mercNameOf).length) throw new Error(`mercenaries.json: two hirelings share a ${k}`);
 
   // ───────────────────────── write ─────────────────────────
   const T = (names) => `import type { ${names} } from './types';\n\n`;
@@ -333,7 +333,7 @@ export async function buildCharacters({ bases }) {
   writeD2x(
     'hirelings.ts',
     `${T('D2xHireling, D2xHirelingXp')}/** Act 1's hirelings by Id: fire and cold for each difficulty (Hireling.txt, expansion rows) */\nexport const D2X_HIRELINGS: D2xHireling[] = ${list([...hirelings.values()])};\n\n` +
-      `/** our names for the hirelings, by D2 string key (a hireling's names are keys into this) */\nexport const D2X_HIRELING_NAMES: Record<string, string> = ${record(mercNameOf)};\n\n` +
+      `/** our names for the hirelings, Chinese and English, by D2 string key (a hireling's names are keys into this) */\nexport const D2X_HIRELING_NAMES: Record<string, { name: string; nameEn: string }> = ${record(mercNameOf)};\n\n` +
       `export const D2X_HIRELING_XP: D2xHirelingXp = ${JSON.stringify(hirelingXp)};\n`,
   );
   console.log(

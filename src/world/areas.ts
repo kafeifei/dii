@@ -63,15 +63,14 @@ function define(a: AreaDef): AreaDef {
 
 // Area levels are levels.json MonLvlEx, MonLvlEx(N) and MonLvlEx(H), the expansion's (MonsterRegion.cpp
 // 936-942 reads wMonLvlEx; normal: the camp 0, Blood Moor and the den 1, Cold Plains 2); a Waypoint
-// other than 255 there is `waypoint`. The names are line A's rename table (tools/d2-names/areas.json)
-// with the English the user approved; Stony Field's and the Burial Grounds' English are ours until
-// the table has theirs.
+// other than 255 there is `waypoint`. The names are line A's rename table (tools/d2-names/areas.json
+// name and nameEn, D2X_AREAS), the camp's and Blood Moor's through their themes.
 define({ id: CAMP_AREA, key: 'camp', name: THEMES.town.name, en: THEMES.town.en, label: '营地', alvl: d2Alvl(CAMP_AREA), kind: 'town', waypoint: true });
 define({ id: WILD_AREA, key: 'wild', name: THEMES.wild.name, en: THEMES.wild.en, alvl: d2Alvl(WILD_AREA), kind: 'outdoor', waypoint: false });
 define({ id: COLD_PLAINS, key: 'coldplains', name: '凛寒原野', en: 'Bitterfrost Wilds', alvl: d2Alvl(COLD_PLAINS), kind: 'outdoor', waypoint: true });
-define({ id: STONY_FIELD, key: 'stonyfield', name: '列石荒野', en: 'Cairnstone Waste', alvl: d2Alvl(STONY_FIELD), kind: 'outdoor', waypoint: true });
+define({ id: STONY_FIELD, key: 'stonyfield', name: '列石荒野', en: 'Menhir Wastes', alvl: d2Alvl(STONY_FIELD), kind: 'outdoor', waypoint: true });
 define({ id: DEN_OF_EVIL, key: 'denofevil', name: '邪秽巢穴', en: 'Festering Lair', alvl: d2Alvl(DEN_OF_EVIL), kind: 'dungeon', waypoint: false });
-define({ id: BURIAL_GROUNDS, key: 'burialgrounds', name: '葬骨荒冢', en: 'Bonewake Barrows', alvl: d2Alvl(BURIAL_GROUNDS), kind: 'outdoor', waypoint: false });
+define({ id: BURIAL_GROUNDS, key: 'burialgrounds', name: '葬骨荒冢', en: 'Bone-Strewn Barrows', alvl: d2Alvl(BURIAL_GROUNDS), kind: 'outdoor', waypoint: false });
 
 /**
  * The areas of normal play this build has a map of, in the order a hero comes to them: the camp,

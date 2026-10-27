@@ -1,6 +1,10 @@
 // Types for the tables tools/d2-import.mjs generates in this folder: Diablo II's item data in the
 // content scope (D2R before the Warlock expansion), with our names. Codes are D2's own: item codes
 // (weapons/armor/misc), item type codes (ItemTypes.txt), property codes (Properties.txt, lower case).
+// Names: `name` is what the game shows in Chinese and `nameEn` in English, ours wherever D2's is a
+// proper noun (tools/d2-names); `en` is D2's official English, for reference only, never shown for a
+// row that has a nameEn. Generic words (base items, gems, most skills) keep the official strings
+// and have no nameEn: their English is `en`.
 import type { D2Prop, GemKind } from '../d2/types';
 
 export type { D2Prop, GemKind };
@@ -59,6 +63,8 @@ interface D2xBase {
   code: string;
   /** our name: the official one for generic words, renamed where it holds a proper noun */
   name: string;
+  /** our English name, for the renamed ones (tools/d2-names/bases.json) and runes ("Rune N") */
+  nameEn?: string;
   en: string;
   type: string;
   /** gems: their grade type (gem0 chipped … gem4 perfect) */
@@ -162,6 +168,8 @@ export interface D2xMisc extends D2xBase {
 export interface D2xAffix {
   id: number;
   name: string;
+  /** a prefix is a word or two before the base ("Serrated"), a suffix starts with "of" */
+  nameEn: string;
   en: string;
   /** lowest item level it rolls on, and highest when set */
   level: number;
@@ -193,6 +201,8 @@ export interface D2xAffix {
 export interface D2xRareWord {
   id: number;
   name: string;
+  /** one word: a rare item is "<prefix word> <suffix word>" in English */
+  nameEn: string;
   en: string;
   itypes: string[];
   etypes?: string[];
@@ -217,6 +227,7 @@ export interface D2xUnique {
   id: number;
   key: string;
   name: string;
+  nameEn: string;
   en: string;
   /** base item code */
   code: string;
@@ -240,6 +251,7 @@ export interface D2xSetItem {
   /** the set's id */
   set: string;
   name: string;
+  nameEn: string;
   en: string;
   code: string;
   lvl: number;
@@ -262,6 +274,7 @@ export interface D2xSetItem {
 export interface D2xSet {
   id: string;
   name: string;
+  nameEn: string;
   en: string;
   /** set item keys, in set order */
   pieces: string[];
@@ -274,6 +287,7 @@ export interface D2xSet {
 export interface D2xRuneword {
   id: string;
   name: string;
+  nameEn: string;
   en: string;
   /** rune numbers in order (1 = r01) */
   runes: number[];
@@ -298,6 +312,8 @@ interface D2xSocketable {
 }
 
 export interface D2xRune extends D2xSocketable {
+  /** "Rune N" */
+  nameEn: string;
   num: number;
   /** what a socket and the icon show: the number */
   glyph: string;
@@ -514,8 +530,9 @@ export interface D2xHireling {
   seller: string;
   /** the class it counts as (D2R column): its skills are this class's */
   cls: string;
-  /** our name for the kind of hireling */
+  /** our name for the kind of hireling, and in English */
   type?: string;
+  typeEn?: string;
   /** keys into D2X_HIRELING_NAMES, one picked per hireling on offer */
   names: string[];
   defaultChance: number;
@@ -557,6 +574,7 @@ export interface D2xArea {
   /** Levels.txt Name, e.g. "Act 1 - Wilderness 1" */
   key: string;
   name: string;
+  nameEn: string;
   en: string;
   /** area level by difficulty: the expansion's MonLvlEx columns */
   lvl: D2xTri;
@@ -660,6 +678,8 @@ export interface D2xMonster {
    */
   nameKey: string;
   name?: string;
+  /** with name: our English name */
+  nameEn?: string;
   en?: string;
   petOf?: string;
   /** MonType.txt type (undead, demon, fallen, …): what modifiers and skills check */
@@ -806,6 +826,7 @@ export interface D2xMonUMod {
 export interface D2xSuperUnique {
   key: string;
   name: string;
+  nameEn: string;
   en: string;
   hcIdx: number;
   /** its monster (D2X_MONSTERS) */
@@ -828,10 +849,14 @@ export interface D2xSuperUnique {
   sound?: string;
 }
 
-/** a word random unique monsters are named from */
+/**
+ * A word random unique monsters are named from. In English the title ("the …") goes last, after the
+ * prefix and the suffix, one word each: "Murk Canker the Sledge".
+ */
 export interface D2xUniqueNameWord {
   key: string;
   name: string;
+  nameEn: string;
   en: string;
 }
 
@@ -995,6 +1020,8 @@ export interface D2xSkill {
   id: number;
   /** what the game shows (our name, or the official generic one); monster skills have none */
   name?: string;
+  /** our English name where name is ours (tools/d2-names/skills.json, or a runeword's); generic ones go by en */
+  nameEn?: string;
   en?: string;
   /** class code (pal, sor, ama…); monster and item skills have none */
   cls?: string;
@@ -1072,6 +1099,8 @@ export interface D2xSkill {
 export interface D2xSkillRef {
   id: number;
   name?: string;
+  /** as D2xSkill's */
+  nameEn?: string;
   en?: string;
   cls?: string;
   reqLvl: number;

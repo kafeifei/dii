@@ -350,9 +350,10 @@ export async function buildSkills({ itemSkills, staffMods, hirelingSkills, monst
   const descCol = (r, cands) => note(cands.map((c) => r[c]).find((v) => v !== undefined && v !== ''));
 
   // ───────────────────────── skill names ─────────────────────────
-  // Generic names keep the official Chinese (火球术, 冰封球); proper-noun-ish ones take ours from
-  // tools/d2-names/skills.json; a skill whose name is a runeword's (Delirium's change) takes our
-  // runeword name. Monster skills have no description row, and no name: the game shows none.
+  // Generic names keep the official Chinese (火球术, 冰封球) and English; proper-noun-ish ones take
+  // ours, both, from tools/d2-names/skills.json; a skill whose name is a runeword's (Delirium's
+  // change) takes our runeword names. Monster skills have no description row, and no name: the game
+  // shows none.
   const skillNames = names('skills');
   const runewordNames = names('runewords');
   const renamedOfficial = new Set();
@@ -367,9 +368,9 @@ export async function buildSkills({ itemSkills, staffMods, hirelingSkills, monst
     const official = k ? S.zh[k] : undefined;
     if (skillNames.has(s.skill) || (!official && !/^Runeword\d+$/.test(k ?? ''))) {
       if (official) renamedOfficial.add(official.trim());
-      return { name: skillNames.get(s.skill, en, official), en };
+      return { ...skillNames.named(s.skill, en, official), en };
     }
-    if (/^Runeword\d+$/.test(k)) return { name: runewordNames.get(k, en, official), en };
+    if (/^Runeword\d+$/.test(k)) return { ...runewordNames.named(k, en, official), en };
     return { name: official.trim(), en };
   }
 
@@ -447,6 +448,7 @@ export async function buildSkills({ itemSkills, staffMods, hirelingSkills, monst
       const nm = nameOf(raw);
       if (!nm.name) continue;
       o.name = nm.name;
+      if (nm.nameEn) o.nameEn = nm.nameEn;
       if (nm.en) o.en = nm.en;
       const changedDesc = diff27(d0, D27.get(r.skilldesc), DESC_IGNORED);
       if (changedDesc.length) throw new Error(`skilldesc ${r.skilldesc}: differs from 2.7 in ${changedDesc.join(', ')}`);
@@ -784,6 +786,7 @@ export async function buildSkills({ itemSkills, staffMods, hirelingSkills, monst
     const nm = s.skilldesc ? nameOf(s) : {};
     if (!s.skilldesc && onItems.has(name)) throw new Error(`${where}: ${name} has no description row to name it by`);
     if (nm.name) o.name = nm.name;
+    if (nm.nameEn) o.nameEn = nm.nameEn;
     if (nm.en) o.en = nm.en;
     if (s.charclass) o.cls = s.charclass;
     o.reqLvl = s.reqlevel ?? 0;

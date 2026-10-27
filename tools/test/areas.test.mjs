@@ -159,6 +159,8 @@ export default async (load) => {
   for (const a of [...list, areaDef(STONY_FIELD), areaDef(BURIAL_GROUNDS)]) {
     const row = D2X_AREAS.find((r) => r.id === a.id);
     check(row && [0, 1, 2].every((d) => areaLevel(a, d) === row.lvl[d]), `${a.key}: area levels ${a.alvl.join('/')}, levels.json's ${row?.lvl.join('/')}`);
+    // and their names are the rename table's (tools/d2-names/areas.json name and nameEn)
+    check(row && a.name === row.name && a.en === row.nameEn, `${a.key}: named ${a.name} / ${a.en}, the rename table ${row?.name} / ${row?.nameEn}`);
   }
   check(areaDef(DEN_OF_EVIL).alvl.join() === '1,36,79' && areaLevel(areaDef(WILD_AREA)) === 1, `the den's levels ${areaDef(DEN_OF_EVIL).alvl.join('/')}, Blood Moor's normal ${areaLevel(areaDef(WILD_AREA))}`);
 
