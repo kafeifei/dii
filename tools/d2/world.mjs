@@ -5,7 +5,7 @@
 // the monster's level, which the game applies at spawn (see D2xMonsterDiff).
 //
 // D2MOO references are to github.com/ThePhrozenKeep/D2MOO at commit d9d394f, by file and line.
-import { list, record, rows, strings, tables, writeD2x } from './load.mjs';
+import { list, record, rows, rows27, strings, tables, writeD2x } from './load.mjs';
 import { glossaryOfficial, names } from './names.mjs';
 import { propReader } from './props.mjs';
 import { GAME_CLASSES } from './scope.mjs';
@@ -29,6 +29,18 @@ const PORTAL_ONLY = new Set([38, 39]);
  * modifier's proc chances, the heralds' spawner missile); 2.7 has none past 33.
  */
 const UMOD_CONSTANTS = 34;
+
+/**
+ * MonPreset's placeholders in Act 1 that stand for given monsters, which D2 spawns in their place
+ * (D2MOO MonsterRegion.cpp:141-540): Blood Raven's (288-294), and the fallen and fallen shamans,
+ * the first of their class but in Black Marsh, Tamoe Highland and the Pit (375-381, 421-451). The
+ * others pick from the area's own monsters or place nothing.
+ */
+const PLACED = {
+  place_bloodraven: ['bloodraven'],
+  place_fallen: ['fallen1', 'fallen2', 'fallen3'],
+  place_fallenshaman: ['fallenshaman1', 'fallenshaman2', 'fallenshaman3'],
+};
 
 /** NameStr keys the game shows no name for: critters, camp dummies, arrow traps */
 const NO_NAME = new Set(['dummy', 'Dummy', 'a trap']);
@@ -112,7 +124,9 @@ export async function buildWorld({ bases }) {
   );
   const S = await strings('levels', 'monsters', 'npcs', 'item-nameaffixes');
   const { prop } = await propReader();
-  const MON = new Map(rows(monJ).map((m) => [m.Id, m]));
+  // the monsters the expansion changed are read as 2.7 has them (see rows27); it added columns, checked below on the pinned rows
+  const M27 = await rows27('monstats', 'Id');
+  const MON = new Map(rows(monJ).map((m) => [m.Id, M27.get(m.Id) ?? m]));
   const MON2 = new Map(rows(mon2J).map((m) => [m.Id, m]));
   const SKILL = new Set(rows(skillsJ).filter((s) => s.skill).map((s) => s.skill));
   const MISSILE = new Set(rows(missJ).map((m) => m.Missile));
@@ -127,10 +141,11 @@ export async function buildWorld({ bases }) {
   // ───────────────────────── which monsters ─────────────────────────
   // What Act 1 spawns: the areas' mon (normal), nmon (nightmare and hell, MonsterRegion.cpp:944-962),
   // umon (normal champions and uniques, MonsterChoose.cpp:156-167) and cmon (critters) lists; the
-  // superuniques and other units Act 1's map presets place (MonPreset.txt, act 1); its bosses
-  // (areaId); the Act 1 hireling; Cain, a camp NPC once rescued (cain5, Quests.cpp:150-158). Then
-  // what those bring: minion1/2 (pack members, and the dead minions a fallen shaman raises,
-  // AiUtil.cpp:489-500) and spawn (what a nest or Blood Raven summons).
+  // superuniques and other units Act 1's map presets place (MonPreset.txt, act 1, with the monsters
+  // its placeholders stand for); its bosses (areaId); the Act 1 hireling; Cain, a camp NPC once
+  // rescued (cain5, Quests.cpp:150-158). Then what those bring: minion1/2 (pack members, and the
+  // dead minions a fallen shaman raises, AiUtil.cpp:489-500) and spawn (what a nest or Blood Raven
+  // summons).
   const LEVELS = rows(levelsJ).filter((r) => r.Id >= ACT1.first && r.Id <= ACT1.last).sort((a, b) => a.Id - b.Id);
   const presets = rows(presetJ).filter((r) => r.Act === 1).map((r) => r.Place);
   const SU = rows(suJ).filter((s) => presets.includes(s.Superunique)).sort((a, b) => a.hcIdx - b.hcIdx);
@@ -147,16 +162,17 @@ export async function buildWorld({ bases }) {
   };
   for (const r of LEVELS) for (const p of ['mon', 'nmon', 'umon', 'cmon']) for (const id of listOf(r, p)) want(id, `levels ${r.Id} ${p}`);
   for (const s of SU) want(s.Class, `superunique ${s.Superunique}`);
-  for (const m of rows(monJ)) if (m.areaId >= ACT1.first && m.areaId <= ACT1.last) want(m.Id, `boss of area ${m.areaId}`);
+  for (const m of MON.values()) if (m.areaId >= ACT1.first && m.areaId <= ACT1.last) want(m.Id, `boss of area ${m.areaId}`);
   // MonPreset also names placeholders the map generator fills in (place_fallen, …) and the superuniques
   for (const p of presets) if (MON.has(p)) want(p, 'monpreset act 1');
+  for (const p of presets) for (const id of PLACED[p] ?? []) want(id, `monpreset act 1 ${p}`);
   want('roguehire', 'the Act 1 hireling');
   want('cain5', 'Cain in the camp after his rescue');
   // the pets of the game's classes, which show the skill's name (the Hydra's NameStr is a skill string)
   const pets = new Map();
   for (const s of rows(skillsJ)) {
     if (!GAME_CLASSES.has(s.charclass)) continue;
-    for (const id of petsOf(s, rows(monJ))) {
+    for (const id of petsOf(s, [...MON.values()])) {
       want(id, `summon of ${s.skill}`);
       pets.set(id, s.skill);
     }

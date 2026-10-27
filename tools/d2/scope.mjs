@@ -2,6 +2,7 @@
 // class and the content added with it, so it is taken out here; so is what is still ladder-only.
 // Rows the expansion added carry no string in the D2CE string tables (pinned before it), which is
 // how its uniques, sets, runewords and affixes are told apart.
+// What it changed in rows that were there before it is read from D2R 2.7 (rows27 in load.mjs).
 
 export const WARLOCK = 'war';
 /** the classes the game has: their whole skill trees, and what those summon, are taken */

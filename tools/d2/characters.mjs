@@ -7,7 +7,7 @@
 //
 // The rules the numbers plug into are cited from D2MOO (github.com/ThePhrozenKeep/D2MOO, the
 // reverse-engineered game code) at commit d9d394f, by file and line.
-import { STR, list, load, record, rows, strings, tables, writeD2x } from './load.mjs';
+import { REF27, STR, list, load, record, rows, strings, tables, writeD2x } from './load.mjs';
 import { exclude, glossaryOfficial, names } from './names.mjs';
 import { WARLOCK } from './scope.mjs';
 
@@ -69,8 +69,10 @@ function questOf(flag) {
 const HIRE_ELEMENT = { strhirespecial1: 'fire', strhirespecial2: 'cold' };
 
 export async function buildCharacters({ bases }) {
-  const [charJ, classJ, skillsJ, diffJ, expJ, ratioJ, npcJ, gambleJ, hireJ, monJ] =
-    await tables('charstats', 'playerclass', 'skills', 'difficultylevels', 'experience', 'itemratio', 'npc', 'gamble', 'hireling', 'monstats');
+  const [charJ, classJ, skillsJ, diffJ, expJ, ratioJ, npcJ, hireJ, monJ] =
+    await tables('charstats', 'playerclass', 'skills', 'difficultylevels', 'experience', 'itemratio', 'npc', 'hireling', 'monstats');
+  // Gamble.txt as 2.7 has it: the 3.x table took the four daggers out (see rows27)
+  const gambleJ = await load(REF27, 'gamble');
   const S = await strings('item-modifiers', 'mercenaries', 'monsters');
   const need = (r, col, where) => {
     if (r[col] === undefined) throw new Error(`${where}: no ${col}`);

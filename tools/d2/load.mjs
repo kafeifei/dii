@@ -46,6 +46,18 @@ export async function importTs(rel) {
 /** several d2data tables at once, by name */
 export const tables = (...names) => Promise.all(names.map((n) => load(DATA, n)));
 
+/**
+ * D2R 2.7's rows of a table, by `key`. The pinned 3.x tables carry what the Warlock expansion changed
+ * in rows that were there before it: daggers got a third socket, moved shops and left gambling,
+ * Gheed's Fortune's rarity went from 1 to 15 (the pre-crafted sunder charms joined it on the grand
+ * charm), Blood Raven got an area. A stage reads such a row as 2.7 has it; the pinned row still
+ * decides the scope (what the expansion added, what is still ladder-only). tools/d2-validate.mjs
+ * checks the values the game reads against 2.7.
+ */
+export async function rows27(name, key) {
+  return new Map(rows(await load(REF27, name)).map((r) => [r[key], r]));
+}
+
 /** the official strings of some D2CE string files, by key (the item files share no keys) */
 export async function strings(...files) {
   const zh = {};

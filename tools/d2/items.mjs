@@ -2,7 +2,7 @@
 // too: they drop, sell and take sockets even where the hero cannot use them), the item types, magic
 // and rare affixes for all item types, the quality tables, uniques, sets, runewords, runes and gems.
 // The game does not read these files yet; the item system (A2) moves onto them.
-import { list, numbered, record, rows, strings, tables, writeD2x } from './load.mjs';
+import { list, numbered, record, rows, rows27, strings, tables, writeD2x } from './load.mjs';
 import { exclude, glossaryOfficial, names } from './names.mjs';
 import { SKILL_PROPS, coverage, propReader } from './props.mjs';
 import { WARLOCK, WARLOCK_SETS, WARLOCK_TYPES, ladderOnly, latestSeason } from './scope.mjs';
@@ -18,6 +18,8 @@ const WARLOCK_ROW = '术士资料片新增（D2CE 无字串）';
 export async function buildItems() {
   const [weaponsJ, armorJ, miscJ, itypesJ, prefixJ, suffixJ, autoJ, rarePreJ, rareSufJ, qualityJ, lowJ, uniqueJ, setItemsJ, setsJ, runesJ, gemsJ, beltsJ] =
     await tables('weapons', 'armor', 'misc', 'itemtypes', 'magicprefix', 'magicsuffix', 'automagic', 'rareprefix', 'raresuffix', 'qualityitems', 'lowqualityitems', 'uniqueitems', 'setitems', 'sets', 'runes', 'gems', 'belts');
+  // the bases and uniques the expansion changed are read as 2.7 has them (see rows27)
+  const [W27, A27, M27, U27] = await Promise.all([rows27('weapons', 'code'), rows27('armor', 'code'), rows27('misc', 'code'), rows27('uniqueitems', '*ID')]);
   const S = await strings('item-names', 'item-runes', 'item-nameaffixes');
   const { prop, isWarlock, unknownSkills, skillOf } = await propReader();
   const cover = coverage();
@@ -187,9 +189,9 @@ export async function buildItems() {
     BASE[r.code] = o;
     return o;
   }
-  const weapons = rows(weaponsJ).map((r) => base('weapons', r)).filter(Boolean);
-  const armor = rows(armorJ).map((r) => base('armor', r)).filter(Boolean);
-  const misc = rows(miscJ).map((r) => base('misc', r)).filter(Boolean);
+  const weapons = rows(weaponsJ).map((r) => base('weapons', W27.get(r.code) ?? r)).filter(Boolean);
+  const armor = rows(armorJ).map((r) => base('armor', A27.get(r.code) ?? r)).filter(Boolean);
+  const misc = rows(miscJ).map((r) => base('misc', M27.get(r.code) ?? r)).filter(Boolean);
 
   // ───────────────────────── magic affixes and automagic ─────────────────────────
   const prefixNames = names('prefixes');
@@ -270,8 +272,12 @@ export async function buildItems() {
   // ───────────────────────── uniques ─────────────────────────
   const uniqueNames = names('uniques');
   const uniques = [];
-  for (const r of rows(uniqueJ)) {
-    if (!r.code) continue; // the table's section-divider rows
+  for (const pinned of rows(uniqueJ)) {
+    if (!pinned.code) continue; // the table's section-divider rows
+    // by *ID: index repeats (Azurewrath's unused first row, the eight Rainbow Facets). 2.7 calls the
+    // drop flag "enabled", the 3.x tables "spawnable".
+    const old = U27.get(pinned['*ID']);
+    const r = old ? { ...old, spawnable: old.enabled, firstLadderSeason: pinned.firstLadderSeason, lastLadderSeason: pinned.lastLadderSeason } : pinned;
     if (S.zh[r.index] === undefined) {
       exclude('uniqueitems', WARLOCK_ROW, r.index);
       continue;
