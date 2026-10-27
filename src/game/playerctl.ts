@@ -55,7 +55,7 @@ function nearestInFront(g: Game, p: Player, maxDist: number, preferDir = true): 
   let bestD = Infinity;
   const fx = Math.sin(p.facing);
   const fz = Math.cos(p.facing);
-  for (const m of g.level.monsters) {
+  for (const m of g.level.monstersTouching(p.pos, maxDist)) {
     if (m.dead) continue;
     const d = dist(m.pos, p.pos);
     if (d > maxDist + m.radius) continue;
@@ -211,7 +211,7 @@ function shootSpell(g: Game, p: Player, kind: ProjKind, speed: number, range: nu
 function nearestMonster(g: Game, at: P2, maxDist: number, skip?: Set<number>): Monster | null {
   let best: Monster | null = null;
   let bestD = Infinity;
-  for (const m of g.level.monsters) {
+  for (const m of g.level.monstersTouching(at, maxDist)) {
     if (m.dead || skip?.has(m.id)) continue;
     const d = dist(m.pos, at) - m.radius;
     if (d <= maxDist && d < bestD) {
@@ -295,7 +295,7 @@ function fireSorceressSpell(g: Game, p: Player, act: PlayerAction): boolean {
     }
     case 'static_field': {
       const sp = sp_(p, 'static_field');
-      for (const m of L.monsters) {
+      for (const m of L.monstersTouching(p.pos, sp.radius)) {
         if (m.dead || dist(m.pos, p.pos) > sp.radius + m.radius) continue;
         const pk = emptyPacket();
         // like D2, a share of current life that ignores resistances (halved on bosses)

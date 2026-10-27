@@ -1,15 +1,18 @@
-// Render benchmark on the real GPU: node tools/bench.mjs [--url http://localhost:5174/?dev] [--dpr 2] [--scenes camp,gate,wild,coldplains,denofevil,floor2,floor10,walk:camp,walk:wild] [--frames 900]
+// Render benchmark on the real GPU: node tools/bench.mjs [--url http://localhost:5174/?dev] [--dpr 2] [--scenes camp,gate,wild,coldplains,denofevil,floor2,floor10,walk:camp,walk:wild] [--frames 900] [--tour]
 // Needs the dev server. Scenes go by area, named by their keys (src/world/areas.ts): 'camp', 'wild',
 // 'coldplains', 'denofevil' and the trial ground's 'floor3' go to that area as a waypoint does, 'gate'
 // stands in the camp by its way out. Each is drawn 40 times with a pixel read after every draw, so the
 // time is what the GPU really takes per frame (rAF would hide it behind vsync).
 // 'walk:<area>' (or 'walk', where the last scene left off) plays instead: the hero walks a route, from
 // where they stand into each next area on this map (past a way off it, the Den's mouth, to one
-// further on) and back, one sim step and one draw (with the
+// further on), across the last to a way on not open yet, and back, one sim step and one draw (with the
 // pixel read) a frame, for --frames frames after ten drawn standing still. It gives the median, p95
-// and p99 frame time (the sim's share as a mean: the page's clock ticks in 0.1 ms) and how the JS
+// and p99 frame time (the sim's share as a mean: the page's clock ticks in 0.1 ms), the median and
+// p95 in each area it went through (frames counted where the hero was), and how the JS
 // heap and the renderer's geometries, textures and shader programs changed from the first frame to
-// the last. Monsters are held still throughout, so the route stays the same.
+// the last. Monsters are held still throughout, so the route stays the same. With --tour the walk
+// goes round its route once and stops there (--frames still caps it), so runs compare like for like;
+// it then also says how many views of monsters and items the renderer still keeps (Renderer.counts).
 // Levels are generated afresh each run, so numbers vary a little between runs. Add &tod=0.5 to the url
 // to bench the camp and the wilderness by day (shadows from the sun) rather than by the clock.
 import { chromium } from 'playwright-core';
@@ -27,6 +30,7 @@ const dir = fs.readdirSync(base).filter((d) => /^chromium-\d+$/.test(d)).sort().
 const exe = process.env.CHROME ?? path.join(base, dir, 'chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing');
 const dpr = +opt('dpr', 2);
 const frames = +opt('frames', 900);
+const tour = args.includes('--tour');
 
 // new headless with Metal: the real GPU, not SwiftShader; a heap that reads exactly and can be collected
 const browser = await chromium.launch({
@@ -107,7 +111,9 @@ await page.evaluate(async () => {
   /**
    * The walk's goals: toward the way into each next area while it is on this map (one big map),
    * passing a way off it (the Den's mouth) by for an area further along on it; else up to the last
-   * such way, stopping `short` of it so the level stays; then back to the start
+   * such way, stopping `short` of it so the level stays. The last area on the map is crossed to the
+   * furthest of its ways on that aren't open yet (Cold Plains' roads), stopping short, rather than
+   * left where the walk came into it. Then back to the start
    */
   const goals = () => {
     const L = game.level;
@@ -130,6 +136,12 @@ await page.evaluate(async () => {
       next = nextArea(areaByKey(L.areaAt(from.x, from.z).key))?.id;
     }
     if (off) out.push(off);
+    else if (out.length) {
+      const last = L.areaAt(from.x, from.z).id;
+      const shut = L.objects.filter((o) => (o.kind === 'exit' || o.kind === 'stairs') && o.closed && L.areaAt(o.pos.x, o.pos.z).id === last);
+      const far = shut.sort((a, b) => dist(b.pos, from) - dist(a.pos, from))[0];
+      if (far) out.push({ pos: { ...far.pos }, short: far.radius + 2 });
+    }
     return out.length ? [...out, ...out.slice(0, -1).reverse(), { pos: { ...p.pos }, short: 0 }] : [];
   };
   const pct = (sorted, q) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))];
@@ -139,7 +151,7 @@ await page.evaluate(async () => {
     window.gc?.();
     return performance.memory?.usedJSHeapSize ?? NaN;
   };
-  B.walk = (frames) => {
+  B.walk = (frames, once) => {
     const L = game.level;
     const p = game.player;
     const map = L.map;
@@ -149,6 +161,8 @@ await page.evaluate(async () => {
     const px = new Uint8Array(4);
     const STEP = 1 / 60;
     const total = [];
+    /** the frames by the area the hero was in */
+    const byArea = {};
     let sim = 0;
     const areas = [game.area.key];
     let leg = 0;
@@ -170,17 +184,22 @@ await page.evaluate(async () => {
       gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
     }
     const m0 = mem();
+    let done = 0;
     for (let i = 0; i < frames; i++) {
       if (!p.intent) {
+        // round the route once: the last leg's goal reached
+        if (!path.length && once && leg >= tour.length) break;
         if (!path.length) nextLeg();
         p.intent = { kind: 'move', point: path.shift() };
       }
+      done++;
       const t0 = performance.now();
       game.update(STEP);
       const t1 = performance.now();
       renderer.render(STEP, 1);
       gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
       total.push(performance.now() - t0);
+      (byArea[game.area.key] ??= []).push(total[total.length - 1]);
       sim += t1 - t0;
       // the route stops short of every way off the map
       if (game.level !== L) return { error: `walked off ${areas[0]} into ${game.area.key}` };
@@ -204,6 +223,7 @@ await page.evaluate(async () => {
     const m1 = mem();
     total.sort((a, b) => a - b);
     const r = (v) => +v.toFixed(2);
+    frames = done;
     return {
       frames,
       median: r(pct(total, 0.5)),
@@ -216,10 +236,17 @@ await page.evaluate(async () => {
       legs: leg,
       stuck,
       areas: areas.join('→'),
+      // the plan's targets are by area (camp, wilderness): each one's median and p95
+      byArea: Object.entries(byArea).map(([k, l]) => {
+        l.sort((a, b) => a - b);
+        return `${k} ${r(pct(l, 0.5))}/${r(pct(l, 0.95))} (${l.length})`;
+      }),
       heap: (m1.heap - m0.heap) / 2 ** 20,
       geometries: m1.geometries - m0.geometries,
       textures: m1.textures - m0.textures,
       programs: m1.programs - m0.programs,
+      // what the renderer keeps when the walk is over, where it says (src/render/renderer.ts counts)
+      views: renderer.counts?.() ?? null,
     };
   };
 });
@@ -240,14 +267,16 @@ for (const s of opt('scenes', 'camp,gate,wild,coldplains,denofevil,floor2,floor1
     const r = await page.evaluate(() => __bench.draw());
     console.log(`${s.padEnd(10)} ${String(r.ms).padStart(6)} ms/frame  ${String(r.calls).padStart(4)} draws  ${String(Math.round(r.tris / 1000)).padStart(4)}k tris  ${r.textures} textures  ${r.monsters} monsters`);
   } else {
-    const r = await page.evaluate((n) => __bench.walk(n), frames);
+    const r = await page.evaluate(([n, once]) => __bench.walk(n, once), [frames, tour]);
     if (r.error) {
       console.log(`${s.padEnd(10)} ${r.error}`);
       continue;
     }
     console.log(
       `${s.padEnd(10)} median ${r.median}  p95 ${r.p95}  p99 ${r.p99}  max ${r.max} ms/frame (sim ${r.sim})  ${r.frames} frames, ${r.walked} m in ${r.legs} legs${r.stuck ? `, stuck ${r.stuck}×` : ''}, ${r.areas}` +
-        `  heap ${sign(+r.heap.toFixed(1), ' MB')}  geometries ${sign(r.geometries)}  textures ${sign(r.textures)}  programs ${sign(r.programs)}`,
+        `  median/p95 by area: ${r.byArea.join(', ')}` +
+        `  heap ${sign(+r.heap.toFixed(1), ' MB')}  geometries ${sign(r.geometries)}  textures ${sign(r.textures)}  programs ${sign(r.programs)}` +
+        (r.views ? `  kept: ${Object.entries(r.views).map(([k, v]) => `${v} ${k}`).join(', ')}` : ''),
     );
   }
 }

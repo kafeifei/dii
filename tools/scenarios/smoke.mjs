@@ -515,6 +515,8 @@ export default async function (page, shot, log) {
       const pick = async (name, area) => {
         await page.locator('.panel.left.open .wp', { hasText: name }).click();
         await until((a) => game.area?.id === a, area, `the waypoint to area ${area}`);
+        // the pick shuts the panel on the next frame: wait for it, so one opened next is drawn anew
+        await until(() => !document.querySelector('.panel.left.open'), null, 'the waypoint panel to shut');
       };
       await pick(await ev(() => game.level.areaAt(game.level.layout.start.x, game.level.layout.start.z).name), CAMP);
       // the camp's waypoint lists Cold Plains, the current one marked

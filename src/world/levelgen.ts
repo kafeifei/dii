@@ -268,25 +268,38 @@ function findClearSpot(map: TileMap, c: P2, r: number, offsets: number[][]): P2 
   return null;
 }
 
+/** bfsDistances' queue, kept from walk to walk: it grows to the biggest map and no more */
+let bfsQueue = new Int32Array(0);
+const BFS_DIRS = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+];
+
 export function bfsDistances(map: TileMap, from: P2): Int32Array {
   const d = new Int32Array(map.w * map.h).fill(-1);
   const sx = Math.floor(from.x);
   const sy = Math.floor(from.z);
-  const q: number[] = [sy * map.w + sx];
+  // every tile goes in at most once
+  if (bfsQueue.length < d.length) bfsQueue = new Int32Array(d.length);
+  const q = bfsQueue;
+  q[0] = sy * map.w + sx;
   d[q[0]] = 0;
   let head = 0;
-  while (head < q.length) {
+  let tail = 1;
+  while (head < tail) {
     const c = q[head++];
     const cx = c % map.w;
     const cy = (c / map.w) | 0;
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    for (const [dx, dy] of BFS_DIRS) {
       const nx = cx + dx;
       const ny = cy + dy;
       if (!map.walkable(nx, ny)) continue;
       const ni = ny * map.w + nx;
       if (d[ni] !== -1) continue;
       d[ni] = d[c] + 1;
-      q.push(ni);
+      q[tail++] = ni;
     }
   }
   return d;

@@ -1,48 +1,65 @@
 import type { P2 } from '../core/math';
 import type { TileMap } from './tilemap';
 
+/**
+ * A binary heap of tile indices by priority, kept for every path (findPath empties it first): its
+ * arrays only ever grow, so a path costs no allocation once the first few long ones have run.
+ */
 class MinHeap {
-  private items: number[] = [];
-  private prio: number[] = [];
-  get size() {
-    return this.items.length;
+  private items = new Int32Array(1024);
+  private prio = new Float64Array(1024);
+  size = 0;
+  clear() {
+    this.size = 0;
   }
   push(item: number, p: number) {
-    this.items.push(item);
-    this.prio.push(p);
-    let i = this.items.length - 1;
+    if (this.size === this.items.length) {
+      const items = new Int32Array(this.size * 2);
+      const prio = new Float64Array(this.size * 2);
+      items.set(this.items);
+      prio.set(this.prio);
+      this.items = items;
+      this.prio = prio;
+    }
+    const items = this.items;
+    const prio = this.prio;
+    let i = this.size++;
     while (i > 0) {
       const parent = (i - 1) >> 1;
-      if (this.prio[parent] <= this.prio[i]) break;
-      this.swap(i, parent);
+      if (prio[parent] <= p) break;
+      items[i] = items[parent];
+      prio[i] = prio[parent];
       i = parent;
     }
+    items[i] = item;
+    prio[i] = p;
   }
   pop(): number {
-    const top = this.items[0];
-    const lastI = this.items.pop()!;
-    const lastP = this.prio.pop()!;
-    if (this.items.length > 0) {
-      this.items[0] = lastI;
-      this.prio[0] = lastP;
+    const items = this.items;
+    const prio = this.prio;
+    const top = items[0];
+    const n = --this.size;
+    if (n > 0) {
+      const lastI = items[n];
+      const lastP = prio[n];
       let i = 0;
-      const n = this.items.length;
       for (;;) {
         const l = i * 2 + 1;
+        if (l >= n) break;
         const r = l + 1;
-        let m = i;
-        if (l < n && this.prio[l] < this.prio[m]) m = l;
-        if (r < n && this.prio[r] < this.prio[m]) m = r;
-        if (m === i) break;
-        this.swap(i, m);
+        const m = r < n && prio[r] < prio[l] ? r : l;
+        if (prio[m] >= lastP) break;
+        items[i] = items[m];
+        prio[i] = prio[m];
         i = m;
       }
+      items[i] = lastI;
+      prio[i] = lastP;
     }
     return top;
   }
-  private swap(a: number, b: number) {
-    [this.items[a], this.items[b]] = [this.items[b], this.items[a]];
-    [this.prio[a], this.prio[b]] = [this.prio[b], this.prio[a]];
+  get capacity() {
+    return this.items.length;
   }
 }
 
@@ -57,12 +74,19 @@ const DIRS = [
   [-1, -1, Math.SQRT2],
 ];
 
-// reusable buffers
+// buffers kept from path to path and from map to map: they grow to the biggest map walked and no
+// more, and a tile counts only when stamped with the current path's number, so nothing is cleared
 let gScore = new Float32Array(0);
 let came = new Int32Array(0);
 let stamp = new Uint32Array(0);
 let closedStamp = new Uint32Array(0);
 let curStamp = 1;
+const open = new MinHeap();
+
+/** how big the kept buffers are (tiles, heap entries), for the tests */
+export function pathBuffers(): { tiles: number; heap: number } {
+  return { tiles: gScore.length, heap: open.capacity };
+}
 
 /**
  * A* over the tile grid with 8-dir movement (no corner cutting).
@@ -70,7 +94,7 @@ let curStamp = 1;
  */
 export function findPath(map: TileMap, from: P2, to: P2, maxNodes = 4000, radius = 0.3): P2[] | null {
   const n = map.w * map.h;
-  if (gScore.length !== n) {
+  if (gScore.length < n) {
     gScore = new Float32Array(n);
     came = new Int32Array(n);
     stamp = new Uint32Array(n);
@@ -92,7 +116,7 @@ export function findPath(map: TileMap, from: P2, to: P2, maxNodes = 4000, radius
 
   const start = sy * map.w + sx;
   const target = gy * map.w + gx;
-  const open = new MinHeap();
+  open.clear();
   gScore[start] = 0;
   stamp[start] = curStamp;
   came[start] = -1;

@@ -69,7 +69,7 @@ export function shoot(g: Game, m: Monster, kind: ProjectileKind, at: P2, spread 
 }
 
 function wakePack(g: Game, m: Monster) {
-  for (const o of g.level.monsters) {
+  for (const o of g.level.monstersNear(m.pos, 7)) {
     if (!o.awake && !o.dead && dist(o.pos, m.pos) < 7) o.awake = true;
   }
 }
@@ -283,7 +283,7 @@ function fireAction(g: Game, m: Monster) {
 
 function shamanResurrect(g: Game, m: Monster): boolean {
   if (m.specialCd > 0) return false;
-  for (const o of g.level.monsters) {
+  for (const o of g.level.monstersNear(m.pos, 7)) {
     if (!o.dead || !o.corpseRaisable || o.deathTime < 1.2 || o.def.model !== 'imp') continue;
     if (o.killedBy === 'fire' || o.killedBy === 'cold') continue;
     if (dist(o.pos, m.pos) > 7) continue;
@@ -370,7 +370,7 @@ export function blastDamage(g: Game, b: DelayedBlast) {
     const p = g.player;
     if (!p.dead && dist(p.pos, b.pos) <= b.radius + p.radius) applyDamage(g, p, { ...b.dmg }, b.pos);
   } else {
-    for (const m of g.level.monsters) {
+    for (const m of g.level.monstersTouching(b.pos, b.radius)) {
       if (!m.dead && dist(m.pos, b.pos) <= b.radius + m.radius) applyDamage(g, m, { ...b.dmg }, b.pos);
     }
   }

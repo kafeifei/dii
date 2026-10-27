@@ -8,6 +8,7 @@ import { generateWild } from '../world/wild';
 /** dev showroom instead of the camp (see generateGallery) */
 export const GALLERY = typeof location !== 'undefined' && location.search.includes('gallery');
 import { Monster } from './monster';
+import { MonsterGrid } from './monstergrid';
 import { areaBoxes, spawnArea } from './spawn';
 import { ITEM_BASES } from '../data/items';
 import { createItem } from '../items/gen';
@@ -33,6 +34,8 @@ export class Level {
   objects: WorldObject[] = [];
   /** set when the renderer must rebuild static geometry */
   version = 0;
+  /** the seconds the hero has spent on this map (Game.update): what its far corpses age by, none while the hero is on another */
+  time = 0;
   boss: Monster | null = null;
   /**
    * the dungeon floor this level is as hard as, for its monsters and loot: its own floor in the
@@ -47,6 +50,8 @@ export class Level {
    * path into a DUNGEON_IsRoomInTown room); otherwise the map itself
    */
   readonly monsterMap: TileMap;
+  /** the monsters by where they stand (monstersNear) */
+  private readonly grid: MonsterGrid<Monster>;
 
   /**
    * `depth`: the old map to make (levelgen.ts: the separate camp, the old wilderness, a floor of the
@@ -62,6 +67,7 @@ export class Level {
     const L = this.layout;
     this.areas = L.areaOf ?? new Uint16Array(L.map.w * L.map.h).fill(area);
     this.monsterMap = this.shutTowns();
+    this.grid = new MonsterGrid(L.map.w, L.map.h);
     if (L.stairs) {
       const o = new WorldObject('stairs', L.stairs, wild ? `通往${themeForFloor(1).name}` : `下行至第 ${this.floor + 1} 层`, 0.9);
       o.dest = areaForDepth(depth + 1).id;
@@ -168,6 +174,27 @@ export class Level {
     return obj ? { pos: { ...obj.pos }, obj } : null;
   }
 
+  /**
+   * The monsters within `r` of `p` (the dead too), for the loops that only look near the hero: the
+   * AI, pushing apart, aiming and the views (MonsterGrid). Added to `out` when given
+   */
+  monstersNear(p: P2, r: number, out?: Monster[]): Monster[] {
+    this.grid.sync(this.monsters);
+    return this.grid.near(p, r, out);
+  }
+
+  /** the monsters whose bodies come within `r` of `p` (centres within r + their radius), as monstersNear */
+  monstersTouching(p: P2, r: number, out?: Monster[]): Monster[] {
+    this.grid.sync(this.monsters);
+    return this.grid.touching(p, r, out);
+  }
+
+  /** after a sim step: the monsters it stepped, which may have moved, put where they stand now */
+  monstersMoved(list: readonly Monster[]) {
+    this.grid.sync(this.monsters);
+    for (const m of list) this.grid.moved(m);
+  }
+
   /** every area of the map gets its monsters once, as the map is made (src/game/spawn.ts says which); towns get none */
   private populate(seed: number) {
     const L = this.layout;
@@ -201,13 +228,17 @@ export class Level {
     for (const m of this.monsters) {
       if (m.dead) continue;
       m.life = m.maxLife;
-      // back to where they were spawned, so nothing camps the waypoint
+      // back to where they were spawned, so nothing camps the waypoint; drawn there, not sliding
+      // from where they were (only the monsters a step runs have prevPos kept)
       m.pos = { ...m.homePos };
+      m.prevPos = { ...m.homePos };
       m.chillTime = 0;
       m.poisonTime = 0;
       m.awake = false;
       m.path = null;
       m.setState('idle');
     }
+    // all of them home again: bucketed anew
+    this.grid.sync(this.monsters, true);
   }
 }

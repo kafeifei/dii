@@ -25,6 +25,8 @@ export interface Template {
 
 class AssetLib {
   private templates = new Map<string, Template>();
+  /** the templates' own geometries and materials, which their clones share: never disposed with a view */
+  private shared = new WeakSet<object>();
   /** animation clips shared by every KayKit character (same rig) */
   kaykitClips: THREE.AnimationClip[] = [];
   ready = false;
@@ -41,6 +43,12 @@ class AssetLib {
         try {
           const gltf = await loader.loadAsync(`${import.meta.env.BASE_URL}models/${name}.glb`);
           this.shareTextures(gltf.scene);
+          gltf.scene.traverse((o) => {
+            const m = o as THREE.Mesh;
+            if (!m.isMesh) return;
+            this.shared.add(m.geometry);
+            for (const mat of Array.isArray(m.material) ? m.material : [m.material]) this.shared.add(mat);
+          });
           gltf.scene.updateMatrixWorld(true);
           const box = bodyBounds(gltf.scene);
           this.templates.set(name, { gltf, size: box.getSize(new THREE.Vector3()), min: box.min.clone(), center: box.getCenter(new THREE.Vector3()) });
@@ -83,6 +91,11 @@ class AssetLib {
 
   get(name: string): Template | undefined {
     return this.templates.get(name);
+  }
+
+  /** whether a geometry or a material is a template's, shared by every clone of it */
+  owns(x: object): boolean {
+    return this.shared.has(x);
   }
 }
 

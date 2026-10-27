@@ -160,6 +160,8 @@ const _v2 = new THREE.Vector3();
 const _q1 = new THREE.Quaternion();
 const _q2 = new THREE.Quaternion();
 const _q3 = new THREE.Quaternion();
+const _v3 = new THREE.Vector3();
+const _m1 = new THREE.Matrix4();
 
 export interface MoveClip {
   clip: string;
@@ -216,6 +218,16 @@ interface MatInfo {
   emissive: THREE.Color;
   color: THREE.Color;
   opacity: number;
+  transparent: boolean;
+}
+
+/**
+ * What tells one model rig from another (ModelRig.reset hands a rig on to another actor of the same
+ * key): the whole spec, or null for one carrying something built in code, which can't be compared
+ */
+export function rigKey(spec: ModelSpec): string | null {
+  if (spec.attach?.some((a) => typeof a.model === 'function')) return null;
+  return JSON.stringify(spec);
 }
 
 /**
@@ -256,6 +268,8 @@ export class ModelRig {
   private reviving = 0;
   private baseY = 0;
   private baseCenterZ = 0;
+  /** where the body sits in the root as made, for reset */
+  private readonly basePos = new THREE.Vector3();
   private time = Math.random() * 10;
   private legs: LegRig | null = null;
   private flash = new THREE.Color();
@@ -270,6 +284,7 @@ export class ModelRig {
     this.inner.scale.setScalar(s);
     this.baseY = -tpl.min.y * s + (spec.float ?? 0);
     this.inner.position.set(-tpl.center.x * s, this.baseY, -tpl.center.z * s);
+    this.basePos.copy(this.inner.position);
     this.baseCenterZ = tpl.center.z * s;
     this.inner.add(this.body);
     this.root.add(this.inner);
@@ -374,7 +389,7 @@ export class ModelRig {
           mat.opacity = spec.opacity;
         }
         if (spec.motion && spec.motion !== 'hover') addMotion(mat, spec.motion, this.moveU);
-        this.mats.push({ mat, emissive: mat.emissive.clone(), color: mat.color.clone(), opacity: mat.opacity });
+        this.mats.push({ mat, emissive: mat.emissive.clone(), color: mat.color.clone(), opacity: mat.opacity, transparent: mat.transparent });
         return mat;
       };
       m.material = Array.isArray(m.material) ? m.material.map(conv) : conv(m.material);
@@ -398,15 +413,20 @@ export class ModelRig {
 
   private updateHeld(dt: number, attacking: boolean) {
     if (!this.held.length) return;
-    this.root.updateMatrixWorld(true);
-    const rootInv = this.root.getWorldQuaternion(_q1).invert();
+    // only the bones from the root down to each hand placed as the clips left them (`turn` is the
+    // hand or its parent): the rest of the rig is placed with the scene, after
+    for (const h of this.held) h.hand.updateWorldMatrix(true, false);
+    const toRoot = _m1.copy(this.root.matrixWorld).invert();
+    this.root.matrixWorld.decompose(_v3, _q1, _v2);
+    const rootInv = _q1.invert();
     for (const h of this.held) {
       if (h.loose) h.follow += ((attacking ? 1 : 0.2) - h.follow) * (1 - Math.exp(-10 * dt));
-      const q = _q2.copy(rootInv).multiply(h.turn.getWorldQuaternion(_q3)).multiply(h.rot);
+      h.turn.matrixWorld.decompose(_v3, _q3, _v2);
+      const q = _q2.copy(rootInv).multiply(_q3).multiply(h.rot);
       if (h.loose) h.obj.quaternion.copy(h.rest).slerp(q, h.follow);
       else h.obj.quaternion.copy(q);
       // the piece's origin is where the hand takes it
-      h.obj.position.copy(this.root.worldToLocal(h.hand.localToWorld(_v1.copy(h.pos))));
+      h.obj.position.copy(_v1.copy(h.pos).applyMatrix4(h.hand.matrixWorld).applyMatrix4(toRoot));
       if (h.push) h.obj.position.add(_v2.set(0, 0, h.push).applyQuaternion(h.obj.quaternion));
     }
   }
@@ -618,9 +638,40 @@ export class ModelRig {
     }
   }
 
+  /**
+   * Back as it was made, for another actor with the same spec (the renderer keeps rigs of monsters
+   * gone from view for the next that comes): standing idle, its colours its own, nothing fading
+   */
+  reset() {
+    this.mixer.stopAllAction();
+    this.cur = this.curClip = null;
+    this.lastState = null;
+    this.lastStateTime = 0;
+    this.wasDead = this.faded = false;
+    this.reviving = 0;
+    this.time = Math.random() * 10;
+    this.root.position.set(0, 0, 0);
+    this.root.rotation.set(0, 0, 0);
+    this.root.visible = true;
+    this.inner.position.copy(this.basePos);
+    this.inner.rotation.set(0, 0, 0);
+    this.moveU.uMoveK.value = 1;
+    for (const mi of this.mats) {
+      mi.mat.color.copy(mi.color);
+      mi.mat.emissive.copy(mi.emissive);
+      mi.mat.opacity = mi.opacity;
+      mi.mat.transparent = mi.transparent;
+    }
+    this.play(this.pick(this.spec.clips.idle), true, 1, 0);
+    this.mixer.setTime(Math.random() * 2);
+    this.updateHeld(1, false);
+  }
+
   dispose() {
     this.mixer.stopAllAction();
     for (const mi of this.mats) mi.mat.dispose();
+    // the skeletons are the clone's own, each with a texture of its bones on the GPU
+    this.body.traverse((o) => (o as THREE.SkinnedMesh).skeleton?.dispose());
     this.root.removeFromParent();
   }
 }

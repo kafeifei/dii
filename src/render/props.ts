@@ -6,6 +6,8 @@ import { assets, type ModelKey } from './assets';
 import { glowTexture, runeCircleTexture } from './textures';
 
 const matCache = new Map<string, THREE.Material>();
+/** stdMat's materials, shared by whatever asks for the same one */
+const cached = new WeakSet<THREE.Material>();
 export function stdMat(color: string, rough = 0.85, metal = 0, emissive?: string, ei = 1): THREE.MeshStandardMaterial {
   const k = `${color}|${rough}|${metal}|${emissive ?? ''}|${ei}`;
   let m = matCache.get(k) as THREE.MeshStandardMaterial | undefined;
@@ -16,8 +18,14 @@ export function stdMat(color: string, rough = 0.85, metal = 0, emissive?: string
       m.emissiveIntensity = ei;
     }
     matCache.set(k, m);
+    cached.add(m);
   }
   return m;
+}
+
+/** whether a view's geometry or material is shared, not its own: a model's (assets.owns) or stdMat's */
+export function sharedResource(x: object): boolean {
+  return assets.owns(x) || cached.has(x as THREE.Material);
 }
 
 function add(parent: THREE.Object3D, geo: THREE.BufferGeometry, mat: THREE.Material, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0): THREE.Mesh {

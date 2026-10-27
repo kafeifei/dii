@@ -105,6 +105,13 @@ export class Game {
   worldSeed = 0;
   /** the closed way the hero is at, told once until they step off it */
   private atClosed: WorldObject | null = null;
+  /** the monsters this sim step runs: those near the hero (Level.monstersNear) */
+  private stepped: Monster[] = [];
+  /**
+   * when each corpse last aged (Monster.deathTime), by its map's clock (Level.time): those far off,
+   * not stepped, catch up as the dead are cleared, by the time the hero spent on that map
+   */
+  private aged = new WeakMap<Monster, number>();
   /** the area the hero is in (Level.areaAt), announced through hooks.areaChanged when it changes */
   area: AreaDef | null = null;
   fx: Fx = nullFx;
@@ -469,10 +476,16 @@ export class Game {
     this.time += dt;
     this.clock = (this.clock + (dt * this.clockRate) / DAY_LENGTH) % 1;
     const L = this.level;
-    for (const a of [this.player, ...L.monsters, ...L.projectiles]) {
+    L.time += dt;
+    // where things were before this step, to draw between steps: the hero, the missiles and the
+    // monsters the last step ran, the only ones that move (and those it runs now, below)
+    const keep = (a: { pos: P2; prevPos: P2 }) => {
       a.prevPos.x = a.pos.x;
       a.prevPos.z = a.pos.z;
-    }
+    };
+    keep(this.player);
+    for (const pr of L.projectiles) keep(pr);
+    for (const m of this.stepped) keep(m);
     // sounds are heard from where the hero stands
     this.sfx.setListener(this.player.pos);
     this.updateHover();
@@ -488,16 +501,27 @@ export class Game {
       this.hooks.message('神殿的祝福消失了', '#9a9080', 2);
     }
     updatePlayer(this, p, dt);
-    for (const m of L.monsters) {
-      if (dist(m.pos, p.pos) > ACTIVE_RADIUS && !m.dead) continue;
+    // only the monsters near the hero act; the rest are out of play until the hero comes back
+    // (MonsterGrid), and so cost nothing. They go in the grid's order, cell by cell, not the list's:
+    // one added to the level during a step would wait for the next (none is: spawn.ts fills a map
+    // as it is made, and a raised corpse is one of those already)
+    const stepped = this.stepped;
+    stepped.length = 0;
+    L.monstersNear(p.pos, ACTIVE_RADIUS, stepped);
+    for (const m of stepped) {
+      m.prevPos.x = m.pos.x;
+      m.prevPos.z = m.pos.z;
       m.hitFlash = Math.max(0, m.hitFlash - dt * 6);
       m.convictRes = 0;
       m.convictDef = 0;
       updateMonster(this, m, dt);
+      if (m.dead) this.aged.set(m, L.time);
     }
     p.hitFlash = Math.max(0, p.hitFlash - dt * 6);
     this.updateAuras(dt);
     this.separate();
+    // the ones that walked, were knocked back or pushed apart: into the cells they're in now
+    L.monstersMoved(stepped);
     this.updateProjectiles(dt);
     this.updateHammers(dt);
     for (const b of L.blasts) {
@@ -525,9 +549,19 @@ export class Game {
       } else this.atClosed = null;
     }
     this.updateArea();
-    // corpse cleanup
+    // corpse cleanup; the corpses far off, which no step aged, catch up first, on the time spent on
+    // this map: those on a map the hero is away from keep, as when every corpse was stepped (D2
+    // instead keeps 1 in 3 ordinary corpses of a room it untiles, none of uniques or minions: D2Game
+    // UNIT/SUnitInactive.cpp SUNITINACTIVE_CompressUnitIfNeeded)
     if (L.monsters.length > 0 && Math.random() < 0.02) {
-      L.monsters = L.monsters.filter((m) => !m.dead || m.deathTime < 40);
+      for (const m of L.monsters) {
+        if (!m.dead) continue;
+        m.deathTime += L.time - (this.aged.get(m) ?? L.time);
+        this.aged.set(m, L.time);
+      }
+      const kept = L.monsters.filter((m) => !m.dead || m.deathTime < 40);
+      // a new list is bucketed anew (Level.monstersNear): only when one went
+      if (kept.length < L.monsters.length) L.monsters = kept;
     }
     this.saveTimer += dt;
     if (this.saveTimer > 8) {
@@ -543,7 +577,7 @@ export class Game {
     let monster: Monster | null = null;
     let object: WorldObject | null = null;
     if (!ground && !inp.overUI) {
-      const near = this.level.monsters.filter((m) => !m.dead && dist(m.pos, this.player.pos) < 22);
+      const near = this.level.monstersNear(this.player.pos, 22).filter((m) => !m.dead && dist(m.pos, this.player.pos) < 22);
       monster = this.picker.pickMonster(inp.mx, inp.my, near);
       if (!monster) object = this.picker.pickObject(inp.mx, inp.my, this.level.objects.filter((o) => !(o.used && (o.kind === 'chest' || o.kind === 'barrel' || o.kind === 'shrine'))));
     }
@@ -670,7 +704,7 @@ export class Game {
     const fz = Math.cos(p.facing);
     let foe: Monster | null = null;
     let best = Infinity;
-    for (const m of this.level.monsters) {
+    for (const m of this.level.monstersNear(p.pos, 10)) {
       const d = dist(m.pos, p.pos);
       if (m.dead || d >= 10) continue;
       const ahead = d > 0.01 ? ((m.pos.x - p.pos.x) * fx + (m.pos.z - p.pos.z) * fz) / d : 1;
@@ -743,7 +777,7 @@ export class Game {
     }
     let target: Monster | null = null;
     let best = Infinity;
-    for (const m of this.level.monsters) {
+    for (const m of this.level.monstersNear(p.pos, AIM_LINE + 2)) {
       const dx = m.pos.x - p.pos.x;
       const dz = m.pos.z - p.pos.z;
       const d = Math.hypot(dx, dz);
@@ -854,7 +888,7 @@ export class Game {
     const p = this.player;
     const sp = p.skillParams(aura, lvl);
     const radius = sp.radius ?? 5;
-    const inRange = this.level.monsters.filter((m) => !m.dead && dist(m.pos, p.pos) <= radius + m.radius);
+    const inRange = this.level.monstersTouching(p.pos, radius).filter((m) => !m.dead && dist(m.pos, p.pos) <= radius + m.radius);
     if (aura === 'holy_freeze') {
       for (const m of inRange) {
         m.chillTime = Math.max(m.chillTime, 0.3);
@@ -889,7 +923,7 @@ export class Game {
 
   private separate() {
     const p = this.player;
-    const list = this.level.monsters.filter((m) => !m.dead && dist(m.pos, p.pos) < ACTIVE_RADIUS);
+    const list = this.level.monstersNear(p.pos, ACTIVE_RADIUS).filter((m) => !m.dead && dist(m.pos, p.pos) < ACTIVE_RADIUS);
     const actors: { pos: P2; radius: number; w: number }[] = [];
     if (!p.dead) actors.push({ pos: p.pos, radius: p.radius, w: p.state === 'charge' ? 0.05 : 0.2 });
     for (const m of list) actors.push({ pos: m.pos, radius: m.radius, w: m.rank === 'boss' ? 0.25 : 1 });
@@ -945,7 +979,7 @@ export class Game {
           this.projectileImpact(pr);
         }
       } else {
-        for (const m of L.monsters) {
+        for (const m of L.monstersTouching(pr.pos, pr.radius)) {
           if (m.dead || pr.hit.has(m.id)) continue;
           if (dist(pr.pos, m.pos) < pr.radius + m.radius) {
             pr.hit.add(m.id);
@@ -973,7 +1007,7 @@ export class Game {
         applyDamage(this, p, { ...pr.dmg, spell: true }, pr.pos);
       } else if (pr.faction === 'player') {
         // the monster hit head-on already took the full packet
-        for (const m of this.level.monsters) {
+        for (const m of this.level.monstersTouching(pr.pos, pr.splash)) {
           if (!m.dead && !pr.hit.has(m.id) && dist(pr.pos, m.pos) < pr.splash + m.radius) applyDamage(this, m, { ...pr.dmg, spell: true }, pr.pos);
         }
       }
@@ -984,7 +1018,7 @@ export class Game {
     const L = this.level;
     for (const h of L.hammers) {
       h.update(dt);
-      for (const m of L.monsters) {
+      for (const m of L.monstersTouching(h.pos, 0.55)) {
         if (m.dead) continue;
         if (dist(h.pos, m.pos) > 0.55 + m.radius) continue;
         const last = h.lastHit.get(m.id);
@@ -1018,6 +1052,7 @@ export class Game {
     m.killedBy = elem;
     m.setState('dead');
     m.path = null;
+    this.aged.set(m, this.level.time);
     // xp, as Diablo II scales it by the level gap: monsters more than 5 levels below give
     // 81/62/43/24/5%, more than 5 above give character level / monster level
     let xp = m.xp;
@@ -1063,7 +1098,7 @@ export class Game {
       this.sfx.play('skill.cold_impact', { pos: m.pos, vol: 0.7 });
     }
     // imps nearby panic
-    for (const o of this.level.monsters) {
+    for (const o of this.level.monstersNear(m.pos, 6)) {
       if (!o.dead && o.def.flee && o !== m && dist(o.pos, m.pos) < 6 && chance(0.6)) o.fleeTime = rand(1, 2);
     }
     if (m.rank === 'boss') {

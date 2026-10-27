@@ -12,14 +12,16 @@ import { T_FLOOR, T_PROP, T_WALL } from '../world/tilemap';
 import { Effects } from './effects';
 import { assets } from './assets';
 import { monsterLook, playerLook, playerLookKey, vendorLook } from './looks';
-import { ModelRig, type ModelSpec } from './models';
+import { ModelRig, rigKey, type ModelSpec } from './models';
+import { ownDepth, PropBatches, Scenery, sphereInFrustum, sphereInShadows, type Chunk, type PropPart, type StaticLight, type Viewers } from './chunks';
+import { disposeView, NearViews, Pool, tintOwn, VIEW_FAR, VIEW_NEAR } from './views';
 import { GRADES, Post } from './post';
 import { ambientMotes, applyLavaGlow, Mist } from './atmosphere';
 import { makeGround } from './ground';
 import { skyAt, type SkyLook } from './sky';
 import { SHRINE_BY_ID } from '../data/shrines';
 import {
-  assetProp, glowSprite, makeBarrel, makeBrazier, makeHouse, makeChest, makeDecor, makeGroundItem, makeHammer, makePortal, makeProjectile, makeStairs, makeTorch, makeTree, makeWaypoint, topCentroid,
+  assetProp, glowSprite, makeBarrel, makeBrazier, makeHouse, makeChest, makeDecor, makeGroundItem, makeHammer, makePortal, makeProjectile, makeStairs, makeTorch, makeTree, makeWaypoint, sharedResource, topCentroid,
 } from './props';
 import { Rig, type AnimInput, type RigLook } from './rig';
 import { monsterSpec, npcSpec, playerSpec, vendorSpec } from './specs';
@@ -37,8 +39,35 @@ const WALL_H = 1.9;
  */
 export const LIGHT_POOLS = { low: [2, 1], mid: [4, 3], high: [6, 5] } as const;
 export type LightLevel = keyof typeof LIGHT_POOLS;
-/** static props are batched per model per block this many tiles square, so blocks off screen are culled */
-const PROP_BLOCK = 16;
+/** a monster is drawn only this near the hero, or as far as the view reaches (its view is kept from views.ts VIEW_NEAR to VIEW_FAR) */
+const MONSTER_SEEN = 28;
+/**
+ * A monster's bounds for culling, for one of scale 1 (its rig's own don't follow its clips): standing,
+ * a sphere this wide round the middle of its body (the tallest are 1.7 m, the bats 2.3 m across),
+ * reaching out to a swung weapon; for its shadow, one round the body alone (the weapon's is a thin
+ * line, and the shadow test adds the soft edge); fallen, one this wide round a point this high, for
+ * a body lying full length
+ */
+const MONSTER_BODY = 1.4;
+const MONSTER_SHADE = 1;
+const MONSTER_FALLEN: [radius: number, y: number] = [2, 0.4];
+/** a champion's or a unique's body is drawn about this much bigger (specs.ts monsterSpec) */
+const RANKED_SIZE = 1.2;
+/** how much further than the view reaches on the ground a view is made: a tall thing below its edge shows */
+const VIEW_MARGIN = 4;
+/** the corners of the view, in clip space, for its reach on the ground */
+const VIEW_CORNERS = [
+  [-1, -1],
+  [1, -1],
+  [1, 1],
+  [-1, 1],
+] as const;
+/** the most time a rig out of view catches up on at once: every clip has played out by then */
+const MAX_LAG = 5;
+/** the torch lights and the lanterns' within this of the hero are the ones the light pools pick from */
+const LIGHT_REACH = 22;
+/** a campfire throws sparks while this near the middle of the view */
+const CAMPFIRE_SEEN = 30;
 
 interface OccUniforms {
   uPlayer: { value: THREE.Vector3 };
@@ -151,6 +180,7 @@ function castShadows(root: THREE.Object3D, cast = true) {
     const lit = mats.every((x) => !(x as THREE.MeshBasicMaterial).isMeshBasicMaterial && !x.transparent);
     m.castShadow = cast && lit;
     m.receiveShadow = lit;
+    if (m.castShadow) ownDepth(m);
   });
 }
 
@@ -169,11 +199,104 @@ interface ActorView {
   key?: string;
 }
 
+/** a monster's body: its rig, and what it is culled by (its round shadow is one of Blobs') */
+interface MonsterBody {
+  rig: CharRig;
+  /** the pool the rig goes back to when the view is let go (rigKey); none to dispose it */
+  pool: string | null;
+  /** whether the camera sees it and whether its shadow can fall in view, this frame */
+  cull: { main: boolean; shadow: boolean };
+}
+
+/** a monster near the hero: its body made, or taken from the pool, once first drawn */
+interface MonsterView {
+  body: MonsterBody | null;
+  /** the time it went unanimated, out of the view, to catch up on */
+  lag: number;
+}
+
 interface ObjView {
   group: THREE.Group;
   update?: (dt: number, o: WorldObject) => void;
   lightColor?: string;
   lightIntensity?: number;
+  /** what else to let go with it (the merchant's rig) */
+  free?: () => void;
+}
+
+/**
+ * The round shadows under the monsters seen, in one draw: an instance each, set where they stand
+ * every frame (a mesh each was a draw each, some 60 at a time in Blood Moor)
+ */
+class Blobs {
+  mesh: THREE.InstancedMesh;
+  private n = 0;
+  private priming = false;
+  private readonly m = new THREE.Matrix4();
+  private readonly flat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+  private readonly pos = new THREE.Vector3();
+  private readonly size = new THREE.Vector3();
+
+  constructor(
+    private geo: THREE.BufferGeometry,
+    private mat: THREE.Material,
+    private room = 128,
+  ) {
+    this.mesh = this.make();
+  }
+
+  /** the frame's shadows start over */
+  begin() {
+    this.n = 0;
+  }
+
+  /** one under a body of radius r at (x, z), as Renderer.makeShadow's */
+  add(x: number, z: number, r: number) {
+    if (this.n >= this.room) this.grow();
+    this.m.compose(this.pos.set(x, 0.02, z), this.flat, this.size.setScalar(r * 2.8));
+    this.mesh.setMatrixAt(this.n++, this.m);
+  }
+
+  /**
+   * The next frame draws one of no size if it has none: the draw's shader is built then, with the
+   * level, not mid-walk as the first monster comes into view (a long frame)
+   */
+  prime() {
+    this.priming = true;
+  }
+
+  /** the frame's shadows uploaded, only as many as there are */
+  end() {
+    if (this.priming && !this.n) this.mesh.setMatrixAt(this.n++, this.m.makeScale(0, 0, 0));
+    this.priming = false;
+    const im = this.mesh;
+    im.count = this.n;
+    im.visible = this.n > 0;
+    if (!this.n) return;
+    im.instanceMatrix.clearUpdateRanges();
+    im.instanceMatrix.addUpdateRange(0, this.n * 16);
+    im.instanceMatrix.needsUpdate = true;
+  }
+
+  private make() {
+    const im = new THREE.InstancedMesh(this.geo, this.mat, this.room);
+    im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    im.count = 0;
+    // placed anew round the view every frame: bounds worked out once would be stale
+    im.frustumCulled = false;
+    im.renderOrder = 3;
+    return im;
+  }
+
+  private grow() {
+    const old = this.mesh;
+    this.room *= 2;
+    this.mesh = this.make();
+    this.mesh.instanceMatrix.array.set(old.instanceMatrix.array);
+    old.parent?.add(this.mesh);
+    old.removeFromParent();
+    old.dispose();
+  }
 }
 
 export class Renderer implements Picker {
@@ -206,19 +329,55 @@ export class Renderer implements Picker {
   private lavaTime = { value: 0 };
   private torchLights: THREE.PointLight[] = [];
   private fxLights: THREE.PointLight[] = [];
-  private staticLights: { pos: THREE.Vector3; color: THREE.Color; intensity: number; flicker: number; distance: number }[] = [];
-  private flames: THREE.Sprite[] = [];
-  private flameSpots: THREE.Vector3[] = [];
-  private monsterViews = new Map<Monster, ActorView>();
+  /** the level's walls, torches, decor and their lights by 16-tile chunk, in the scene where a view reaches */
+  private scenery: Scenery | null = null;
+  /** the level's props, culled instance by instance into the view and the shadow maps */
+  private props: PropBatches | null = null;
+  /** what sees the scene this frame: the camera, the sun's shadow camera, the hero's shadow-casting light */
+  private viewers: Viewers = { main: new THREE.Frustum(), sun: null, sunDir: new THREE.Vector3(0, -1, 0), lamp: null };
+  private lampSphere = new THREE.Sphere();
+  private viewProj = new THREE.Matrix4();
+  /** the rigs of monsters gone from view, for the next that look the same (rigKey) */
+  private rigPool = new Pool<MonsterBody>((v) => v.rig.dispose());
+  /** the round shadows under the monsters seen */
+  private blobs: Blobs;
+  /** how far from the hero the view reaches on the ground, at its furthest corner (updateViewers) */
+  private viewReach = 0;
+  private reachDir = new THREE.Vector3();
+  private monsterViews = new NearViews<Monster, MonsterView>(
+    () => ({ body: null, lag: 0 }),
+    (_m, v) => this.freeMonsterView(v),
+  );
+  /** the level's monster list as last seen, and who is in it, to let go the views of those cleared away */
+  private monsterList: Monster[] | null = null;
+  private monsterCount = 0;
+  private monsterSet = new Set<Monster>();
   private playerView: ActorView | null = null;
-  private vendorView: ActorView | null = null;
   private npcViews: ActorView[] = [];
   private propMats = new Map<string, THREE.Material>();
   private flameSpots2 = new Map<string, THREE.Vector3>();
-  private groundViews = new Map<GroundItem, THREE.Group>();
+  private groundViews = new NearViews<GroundItem, THREE.Group>(
+    (gi) => this.makeGroundView(gi),
+    (_gi, v) => {
+      v.removeFromParent();
+      disposeView(v, sharedResource);
+    },
+  );
   private projViews = new Map<Projectile, { group: THREE.Group; light: string | null }>();
   private hammerViews = new Map<Hammer, THREE.Group>();
-  private objViews = new Map<WorldObject, ObjView>();
+  private objViews = new NearViews<WorldObject, ObjView>(
+    (o) => this.makeObjView(o),
+    (_o, v) => {
+      v.group.removeFromParent();
+      v.free?.();
+      disposeView(v.group, sharedResource);
+    },
+  );
+  /** the objects that had a view before: one made again shows them as they were left (views.ts) */
+  private viewed = new WeakSet<WorldObject>();
+  /** what is on the level this frame, and what of it is near: scratch for the views' sync */
+  private seen = new Set<GroundItem | WorldObject>();
+  private nearby: (GroundItem | WorldObject)[] = [];
   private auraDecal: THREE.Mesh;
   private shieldGlow: THREE.Sprite;
   /** phones: the ring under the enemy the skill buttons go for, and a dragged button's aim */
@@ -275,6 +434,9 @@ export class Renderer implements Picker {
     ds.normalBias = 0.03;
     ds.radius = 2;
     this.scene.add(this.levelGroup, this.dynGroup, this.hemi, this.dir, this.dir.target, this.playerLight, this.heroLight);
+    // a material of their own: the instanced draw is another shader than the single shadows'
+    this.blobs = new Blobs(this.shadowGeo, this.shadowMat.clone());
+    this.scene.add(this.blobs.mesh);
     this.setLights('mid');
     this.fx = new Effects(this.scene, textLayer, (v) => this.project(v));
     this.auraDecal = new THREE.Mesh(
@@ -401,21 +563,24 @@ export class Renderer implements Picker {
   buildLevel(level: Level) {
     this.level = level;
     // clear
-    for (const v of this.monsterViews.values()) v.rig.dispose();
     this.monsterViews.clear();
-    for (const g of this.groundViews.values()) g.removeFromParent();
+    this.monsterList = null;
+    this.blobs.begin();
+    this.blobs.end();
+    this.blobs.prime();
+    // the rigs put by of monsters the new level hasn't go: they would only keep room and memory
+    if (assets.ready && !assets.failed) {
+      const looks = new Set(level.monsters.map((m) => rigKey(monsterSpec(m))));
+      this.rigPool.retain((k) => looks.has(k));
+    }
     this.groundViews.clear();
     for (const p of this.projViews.values()) p.group.removeFromParent();
     this.projViews.clear();
     for (const h of this.hammerViews.values()) h.removeFromParent();
     this.hammerViews.clear();
-    for (const o of this.objViews.values()) o.group.removeFromParent();
     this.objViews.clear();
-    if (this.vendorView) {
-      this.vendorView.rig.dispose();
-      this.vendorView.shadow.removeFromParent();
-      this.vendorView = null;
-    }
+    this.scenery?.dispose();
+    this.props?.dispose();
     this.levelGroup.traverse((o) => {
       const m = o as THREE.Mesh;
       // prop instances borrow the model templates' geometry: keep it
@@ -429,9 +594,6 @@ export class Renderer implements Picker {
     this.levelGroup.clear();
     this.dynGroup.clear();
     this.fx.clearLevel();
-    this.flames = [];
-    this.flameSpots = [];
-    this.staticLights = [];
 
     const L = level.layout;
     const theme = L.theme;
@@ -451,6 +613,21 @@ export class Renderer implements Picker {
     // the hero's light, split between the shadow-casting light overhead and the camera-side fill
     this.heroLight.intensity = outdoor ? 11 : 25;
     this.playerLight.intensity = outdoor ? 7 : 15;
+
+    // the static scenery, by 16-tile chunk: only the chunks a view reaches are in the scene
+    const scenery = (this.scenery = new Scenery(map.w, map.h));
+    this.levelGroup.add(scenery.group);
+    /** tiles by the chunk they're in */
+    const byChunk = (tiles: [number, number][]) => {
+      const out = new Map<Chunk, [number, number][]>();
+      for (const t of tiles) {
+        const c = scenery.at(t[0] + 0.5, t[1] + 0.5);
+        const l = out.get(c);
+        if (l) l.push(t);
+        else out.set(c, [t]);
+      }
+      return out;
+    };
 
     // floor
     const floorTiles: [number, number][] = [];
@@ -478,29 +655,30 @@ export class Renderer implements Picker {
     const m4 = new THREE.Matrix4();
     const one = new THREE.Vector3(1, 1, 1);
     const col = new THREE.Color();
-    let i = 0;
-    let floor: THREE.InstancedMesh | null = null;
+    const floors: THREE.InstancedMesh[] = [];
     if (!this.ground) {
       const floorMat = new THREE.MeshStandardMaterial({ map: tileTexture(`${theme.key}_floor`), roughness: 0.95, metalness: 0 });
       applyWorldUv(floorMat, 'floor', 4);
       if (theme.key === 'hell') applyLavaGlow(floorMat, this.lavaTime);
       const floorGeo = new THREE.PlaneGeometry(1, 1);
       floorGeo.rotateX(-Math.PI / 2);
-      floor = new THREE.InstancedMesh(floorGeo, floorMat, floorTiles.length + pillarTiles.length);
       const q = new THREE.Quaternion();
-      for (const [x, y] of [...floorTiles, ...pillarTiles]) {
-        m4.compose(new THREE.Vector3(x + 0.5, 0, y + 0.5), q, one);
-        floor.setMatrixAt(i, m4);
-        // ambient occlusion near walls, and a faint per-tile variation
-        let walls = 0;
-        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (map.get(x + dx, y + dy) === T_WALL) walls++;
-        const v = (0.95 + Math.random() * 0.1) * (1 - walls * 0.12);
-        floor.setColorAt(i, col.setRGB(v, v, v));
-        i++;
+      for (const [c, tiles] of byChunk([...floorTiles, ...pillarTiles])) {
+        const floor = new THREE.InstancedMesh(floorGeo, floorMat, tiles.length);
+        tiles.forEach(([x, y], i) => {
+          m4.compose(new THREE.Vector3(x + 0.5, 0, y + 0.5), q, one);
+          floor.setMatrixAt(i, m4);
+          // ambient occlusion near walls, and a faint per-tile variation
+          let walls = 0;
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (map.get(x + dx, y + dy) === T_WALL) walls++;
+          const v = (0.95 + Math.random() * 0.1) * (1 - walls * 0.12);
+          floor.setColorAt(i, col.setRGB(v, v, v));
+        });
+        floor.instanceMatrix.needsUpdate = true;
+        if (floor.instanceColor) floor.instanceColor.needsUpdate = true;
+        c.group.add(floor);
+        floors.push(floor);
       }
-      floor.instanceMatrix.needsUpdate = true;
-      if (floor.instanceColor) floor.instanceColor.needsUpdate = true;
-      this.levelGroup.add(floor);
     }
 
     // walls
@@ -516,20 +694,20 @@ export class Renderer implements Picker {
     applyOcclusionFade(topMat, this.occ);
     const wallGeo = new THREE.BoxGeometry(1, WALL_H, 1);
     wallGeo.translate(0, WALL_H / 2, 0);
-    const walls = new THREE.InstancedMesh(wallGeo, [sideMat, sideMat, topMat, topMat, sideMat, sideMat], wallTiles.length);
-    i = 0;
-    for (const [x, y] of wallTiles) {
-      // the town's palisade is uneven; the wilderness's walls are ruins, broken down low
-      const hJ = level.areaAt(x + 0.5, y + 0.5).kind === 'town' ? 0.85 + Math.random() * 0.25 : theme.key === 'wild' ? 0.2 + Math.random() * 0.4 : 0.96 + Math.random() * 0.08;
-      m4.compose(new THREE.Vector3(x + 0.5, 0, y + 0.5), new THREE.Quaternion(), new THREE.Vector3(1, hJ, 1));
-      walls.setMatrixAt(i, m4);
-      const v = 0.8 + Math.random() * 0.25;
-      walls.setColorAt(i, col.setRGB(v, v, v));
-      i++;
+    for (const [c, tiles] of byChunk(wallTiles)) {
+      const walls = new THREE.InstancedMesh(wallGeo, [sideMat, sideMat, topMat, topMat, sideMat, sideMat], tiles.length);
+      tiles.forEach(([x, y], i) => {
+        // the town's palisade is uneven; the wilderness's walls are ruins, broken down low
+        const hJ = level.areaAt(x + 0.5, y + 0.5).kind === 'town' ? 0.85 + Math.random() * 0.25 : theme.key === 'wild' ? 0.2 + Math.random() * 0.4 : 0.96 + Math.random() * 0.08;
+        m4.compose(new THREE.Vector3(x + 0.5, 0, y + 0.5), new THREE.Quaternion(), new THREE.Vector3(1, hJ, 1));
+        walls.setMatrixAt(i, m4);
+        const v = 0.8 + Math.random() * 0.25;
+        walls.setColorAt(i, col.setRGB(v, v, v));
+      });
+      walls.instanceMatrix.needsUpdate = true;
+      if (walls.instanceColor) walls.instanceColor.needsUpdate = true;
+      c.group.add(walls);
     }
-    walls.instanceMatrix.needsUpdate = true;
-    if (walls.instanceColor) walls.instanceColor.needsUpdate = true;
-    this.levelGroup.add(walls);
 
     if (pillarTiles.length) {
       let pGeo: THREE.BufferGeometry;
@@ -548,17 +726,18 @@ export class Renderer implements Picker {
         pGeo = new THREE.CylinderGeometry(0.36, 0.42, WALL_H + 0.3, 8);
         pGeo.translate(0, (WALL_H + 0.3) / 2, 0);
       }
-      const pillars = new THREE.InstancedMesh(pGeo, pMat, pillarTiles.length);
-      i = 0;
-      for (const [x, y] of pillarTiles) {
-        m4.compose(new THREE.Vector3(x + 0.5, 0, y + 0.5), new THREE.Quaternion(), one);
-        pillars.setMatrixAt(i++, m4);
+      for (const [c, tiles] of byChunk(pillarTiles)) {
+        const pillars = new THREE.InstancedMesh(pGeo, pMat, tiles.length);
+        tiles.forEach(([x, y], i) => {
+          m4.compose(new THREE.Vector3(x + 0.5, 0, y + 0.5), new THREE.Quaternion(), one);
+          pillars.setMatrixAt(i, m4);
+        });
+        c.group.add(pillars);
       }
-      this.levelGroup.add(pillars);
     }
 
     // furniture, wall hangings and town buildings (instanced CC0 models)
-    this.buildProps(L);
+    this.buildProps(L, scenery);
     // townsfolk
     for (const n of L.npcs ?? []) {
       const rig = makeCharRig(() => npcSpec(n.model), vendorLook);
@@ -577,11 +756,11 @@ export class Renderer implements Picker {
       const { group, flame } = makeTorch(theme.torch);
       group.position.set(t.x, 0, t.z);
       group.rotation.y = Math.atan2(t.nx, t.nz);
-      this.levelGroup.add(group);
-      this.flames.push(flame);
+      const c = scenery.add(group, t.x, t.z);
+      c.flames.push(flame);
       group.updateMatrixWorld(true);
-      this.flameSpots.push(flame.getWorldPosition(new THREE.Vector3()));
-      this.staticLights.push({ pos: new THREE.Vector3(t.x + t.nx * 0.5, 1.9, t.z + t.nz * 0.5), color: new THREE.Color(theme.torch), intensity: 16, flicker: 1, distance: 8 });
+      c.spots.push(flame.getWorldPosition(new THREE.Vector3()));
+      c.lights.push({ pos: new THREE.Vector3(t.x + t.nx * 0.5, 1.9, t.z + t.nz * 0.5), color: new THREE.Color(theme.torch), intensity: 16, flicker: 1, distance: 8 });
     }
     // decor
     const treeMats: THREE.Material[] = [];
@@ -596,20 +775,24 @@ export class Renderer implements Picker {
           if (mm && !treeMats.includes(mm)) treeMats.push(mm);
         });
       }
-      this.levelGroup.add(g);
+      const c = scenery.add(g, d.x, d.z);
       if (d.kind === 'campfire') {
-        this.staticLights.push({ pos: new THREE.Vector3(d.x, 0.8, d.z), color: new THREE.Color('#ff8030'), intensity: 45, flicker: 1.5, distance: 14 });
+        c.lights.push({ pos: new THREE.Vector3(d.x, 0.8, d.z), color: new THREE.Color('#ff8030'), intensity: 45, flicker: 1.5, distance: 14 });
       }
-      if (d.kind === 'crystal') this.staticLights.push({ pos: new THREE.Vector3(d.x, 0.6, d.z), color: new THREE.Color('#4a90d0'), intensity: 6, flicker: 0, distance: 5 });
+      if (d.kind === 'crystal') c.lights.push({ pos: new THREE.Vector3(d.x, 0.6, d.z), color: new THREE.Color('#4a90d0'), intensity: 6, flicker: 0, distance: 5 });
     }
     for (const mm of treeMats) {
       const cloned = mm;
       applyOcclusionFade(cloned, this.occ);
       cloned.needsUpdate = true;
     }
-    castShadows(this.levelGroup);
-    if (floor) floor.castShadow = false;
-    if (this.ground) this.ground.mesh.castShadow = false;
+    for (const c of scenery.all) castShadows(c.group);
+    for (const f of floors) f.castShadow = false;
+    scenery.finish();
+    if (this.ground) {
+      castShadows(this.ground.mesh);
+      this.ground.mesh.castShadow = false;
+    }
     // ground mist, part of the post effects
     this.mist?.dispose();
     this.mist = new Mist(map.w, map.h, theme.key, (x, y) => map.get(x, y) === T_FLOOR || map.get(x, y) === T_PROP);
@@ -634,18 +817,22 @@ export class Renderer implements Picker {
         const { group, lid } = makeChest(false);
         group.rotation.y = Math.PI / 4 + Math.PI;
         g.add(group);
+        const looted = () => {
+          if (group.userData.looted !== false) return;
+          group.userData.looted = true;
+          tintOwn(group, sharedResource, (m) => m.color.multiplyScalar(0.7));
+        };
+        // one looted before this view was made (the hero gone and back) is open already, not opening again
+        if (o.used) {
+          lid.rotation.x = -1.9;
+          looted();
+        }
         return {
           group: g,
           update: (dt, ob) => {
             if (!ob.used) return;
             lid.rotation.x = Math.max(-1.9, lid.rotation.x - dt * 6);
-            if (group.userData.looted === false) {
-              group.userData.looted = true;
-              group.traverse((c) => {
-                const m = (c as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
-                if (m?.color) m.color.multiplyScalar(0.7);
-              });
-            }
+            looted();
           },
         };
       }
@@ -656,9 +843,7 @@ export class Renderer implements Picker {
         group.rotation.y = Math.PI / 4 + Math.PI;
         group.scale.multiplyScalar(1.8);
         // lit from within, not by the camp's pooled lights, which go to whatever is nearest
-        group.traverse((c) => {
-          const m = (c as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
-          if (!m?.color) return;
+        tintOwn(group, sharedResource, (m) => {
           m.color.multiplyScalar(1.5);
           m.emissive = new THREE.Color('#6a4210');
           m.emissiveIntensity = 0.55;
@@ -681,6 +866,8 @@ export class Renderer implements Picker {
       case 'barrel': {
         const b = makeBarrel();
         g.add(b);
+        // one broken before this view was made lies broken, not breaking again
+        if (o.used) b.scale.set(1.4, 0.15, 1.4);
         return {
           group: g,
           update: (dt, ob) => {
@@ -752,7 +939,8 @@ export class Renderer implements Picker {
         const color = o.dest === CAMP_AREA ? '#4a8aff' : '#ff4a4a';
         const { group, disc, ring } = makePortal(color);
         g.add(group);
-        group.scale.setScalar(0.01);
+        // it opens as it first shows; a view made again (the hero back through it) finds it open
+        group.scale.setScalar(this.viewed.has(o) ? 1 : 0.01);
         return {
           group: g,
           update: (dt) => {
@@ -803,9 +991,12 @@ export class Renderer implements Picker {
         const shadow = this.makeShadow(0.5);
         this.dynGroup.add(shadow);
         shadow.position.set(o.pos.x, 0.02, o.pos.z);
-        this.vendorView = { rig, shadow };
         return {
           group: g,
+          free: () => {
+            rig.dispose();
+            shadow.removeFromParent();
+          },
           update: (dt) => {
             const p = this.game.player;
             const ang = Math.atan2(p.pos.x - o.pos.x, p.pos.z - o.pos.z);
@@ -857,32 +1048,27 @@ export class Renderer implements Picker {
     return spot;
   }
 
-  private buildProps(L: Layout) {
+  private buildProps(L: Layout, scenery: Scenery) {
     const theme = L.theme.key;
-    const insts = new Map<string, THREE.Matrix4[]>();
-    const add = (key: string, m: THREE.Matrix4) => {
-      let l = insts.get(key);
-      if (!l) insts.set(key, (l = []));
-      l.push(m);
-    };
+    const props = (this.props = new PropBatches([this.dir.shadow.getFrustum(), this.heroLight.shadow.getFrustum()]));
     const yAxis = new THREE.Vector3(0, 1, 0);
     const light = (key: string, m: THREE.Matrix4, color: string, s: number) => {
       const spot = this.flameSpot(key);
       if (!spot) return;
       const pos = spot.clone().applyMatrix4(m);
-      this.staticLights.push({ pos: pos.clone().setY(pos.y + 0.1), color: new THREE.Color(color), intensity: 7, flicker: 0.6, distance: 4.5 });
       const glow = glowSprite(color, 0.5 * Math.min(1.4, s / 0.5), 0.85);
       glow.position.copy(pos);
       glow.userData.base = glow.scale.x;
-      this.levelGroup.add(glow);
-      this.flames.push(glow);
+      const c = scenery.add(glow, pos.x, pos.z);
+      c.lights.push({ pos: pos.clone().setY(pos.y + 0.1), color: new THREE.Color(color), intensity: 7, flicker: 0.6, distance: 4.5 });
+      c.flames.push(glow);
     };
     for (const p of L.props) {
       const t = assets.get(p.model);
       if (!t) continue;
       const m = new THREE.Matrix4().compose(new THREE.Vector3(p.x, 0, p.z), new THREE.Quaternion().setFromAxisAngle(yAxis, p.rot), new THREE.Vector3(p.scale, p.scale, p.scale));
       m.multiply(new THREE.Matrix4().makeTranslation(-t.center.x, -t.min.y, -t.center.z));
-      add(p.model, m);
+      props.add(p.model, m);
       if (p.light) light(p.model, m, p.light, p.scale);
     }
     for (const w of L.wallDecor) {
@@ -896,13 +1082,13 @@ export class Renderer implements Picker {
         new THREE.Vector3(w.scale, w.scale, w.scale),
       );
       m.multiply(new THREE.Matrix4().makeTranslation(-t.center.x, 0, 0));
-      add(w.model, m);
+      props.add(w.model, m);
       if (w.light) light(w.model, m, w.light, w.scale);
     }
     for (const hs of L.houses ?? []) {
       const t = hs.model ? assets.get(hs.model) : undefined;
       if (!t || !hs.model) {
-        this.levelGroup.add(makeHouse(hs.w, hs.h, hs.x, hs.y));
+        scenery.add(makeHouse(hs.w, hs.h, hs.x, hs.y), hs.x + hs.w / 2, hs.y + hs.h / 2);
         continue;
       }
       const rot = hs.rot ?? 0;
@@ -910,32 +1096,25 @@ export class Renderer implements Picker {
       const s = Math.min(hs.w / (turned ? t.size.z : t.size.x), hs.h / (turned ? t.size.x : t.size.z)) * 1.08;
       const m = new THREE.Matrix4().compose(new THREE.Vector3(hs.x + hs.w / 2, 0, hs.y + hs.h / 2), new THREE.Quaternion().setFromAxisAngle(yAxis, rot), new THREE.Vector3(s, s, s));
       m.multiply(new THREE.Matrix4().makeTranslation(-t.center.x, -t.min.y, -t.center.z));
-      add(hs.model, m);
+      props.add(hs.model, m);
     }
-    const tmp = new THREE.Matrix4();
-    for (const [key, all] of insts) {
-      const t = assets.get(key)!;
-      const blocks = new Map<string, THREE.Matrix4[]>();
-      for (const pm of all) {
-        const b = `${Math.floor(pm.elements[12] / PROP_BLOCK)},${Math.floor(pm.elements[14] / PROP_BLOCK)}`;
-        const list = blocks.get(b);
-        if (list) list.push(pm);
-        else blocks.set(b, [pm]);
-      }
-      for (const list of blocks.values()) {
-        t.gltf.scene.traverse((o) => {
-          const mesh = o as THREE.Mesh;
-          if (!mesh.isMesh) return;
-          const mat = Array.isArray(mesh.material) ? mesh.material.map((x) => this.propMat(x, theme)) : this.propMat(mesh.material, theme);
-          const im = new THREE.InstancedMesh(mesh.geometry, mat, list.length);
-          list.forEach((pm, i) => im.setMatrixAt(i, tmp.multiplyMatrices(pm, mesh.matrixWorld)));
-          im.instanceMatrix.needsUpdate = true;
-          im.userData.sharedGeometry = true;
-          im.computeBoundingSphere();
-          this.levelGroup.add(im);
-        });
-      }
-    }
+    // each model's meshes in the theme's tint; opaque lit ones cast and take shadows (castShadows)
+    props.build((key) => {
+      const t = assets.get(key as Parameters<typeof assets.get>[0]);
+      if (!t) return null;
+      const parts: PropPart[] = [];
+      t.gltf.scene.updateMatrixWorld(true);
+      t.gltf.scene.traverse((o) => {
+        const mesh = o as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        const material = Array.isArray(mesh.material) ? mesh.material.map((x) => this.propMat(x, theme)) : this.propMat(mesh.material, theme);
+        const mats = Array.isArray(material) ? material : [material];
+        const lit = mats.every((x) => !(x as THREE.MeshBasicMaterial).isMeshBasicMaterial && !x.transparent);
+        parts.push({ geometry: mesh.geometry, material, matrix: mesh.matrixWorld.clone(), lit });
+      });
+      return parts;
+    });
+    this.levelGroup.add(props.group);
   }
 
   private makeShadow(r: number): THREE.Mesh {
@@ -946,30 +1125,109 @@ export class Renderer implements Picker {
     return s;
   }
 
+  /** an object's view, in the scene */
+  private makeObjView(o: WorldObject): ObjView {
+    const v = this.makeObjectView(o);
+    this.viewed.add(o);
+    castShadows(v.group);
+    this.dynGroup.add(v.group);
+    return v;
+  }
+
+  /** the views of the objects near the hero (views.ts), animated */
   private syncObjects(level: Level, dt: number) {
-    const seen = new Set<WorldObject>();
+    const p = this.game.player.pos;
+    const seen = this.seen;
+    const near = this.nearby;
+    const [nearR, farR] = this.viewRadii();
+    seen.clear();
+    near.length = 0;
     for (const o of level.objects) {
       seen.add(o);
-      let v = this.objViews.get(o);
-      if (!v) {
-        v = this.makeObjectView(o);
-        castShadows(v.group);
-        this.objViews.set(o, v);
-        this.dynGroup.add(v.group);
-      }
-      v.update?.(dt, o);
+      if ((o.pos.x - p.x) ** 2 + (o.pos.z - p.z) ** 2 <= nearR * nearR) near.push(o);
     }
-    for (const [o, v] of this.objViews) {
-      if (!seen.has(o)) {
-        v.group.removeFromParent();
-        this.objViews.delete(o);
-      }
+    this.objViews.sync(p, near as WorldObject[], (o) => !seen.has(o), farR);
+    for (const [o, v] of this.objViews.views) v.update?.(dt, o);
+  }
+
+  /**
+   * How near the hero a view is made and how far it is kept (views.ts): VIEW_NEAR and VIEW_FAR, or
+   * as much further as the view reaches past them, zoomed out on a wide screen
+   */
+  private viewRadii(): [near: number, far: number] {
+    const near = Math.max(VIEW_NEAR, this.viewReach + VIEW_MARGIN);
+    return [near, near + VIEW_FAR - VIEW_NEAR];
+  }
+
+  /** a monster's body, its rig one put by for a monster that looked the same when there is one */
+  private makeMonsterBody(m: Monster): MonsterBody {
+    const made = assets.ready && !assets.failed ? monsterSpec(m) : null;
+    const spec = made && assets.get(made.model) ? made : null;
+    const pool = spec ? rigKey(spec) : null;
+    let v = pool ? this.rigPool.take(pool) : undefined;
+    if (v) (v.rig as ModelRig).reset();
+    else {
+      const rig = makeCharRig(() => spec ?? monsterSpec(m), () => monsterLook(m));
+      castShadows(rig.root);
+      // drawn where the camera sees it and into the shadow maps only where its shadow can fall in
+      // view (the frame's `cull`): a skinned body's own bounds don't follow its clips
+      const cull = { main: true, shadow: true };
+      const shadows = [this.dir.shadow.getFrustum(), this.heroLight.shadow.getFrustum()];
+      rig.root.traverse((o) => {
+        const mesh = o as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        mesh.frustumCulled = true;
+        mesh.intersectsFrustum = (f: THREE.Frustum) => (shadows.includes(f) ? cull.shadow : cull.main);
+      });
+      v = { rig, pool, cull };
     }
+    this.dynGroup.add(v.rig.root);
+    v.rig.root.rotation.y = m.facing;
+    return v;
+  }
+
+  /** a monster's view let go: its rig put by for the next that looks the same, or disposed */
+  private freeMonsterView(v: MonsterView) {
+    const b = v.body;
+    if (!b) return;
+    b.rig.root.removeFromParent();
+    if (b.pool) this.rigPool.give(b.pool, b);
+    else b.rig.dispose();
+  }
+
+  /** an item on the ground's view, a beam over the best */
+  private makeGroundView(gi: GroundItem): THREE.Group {
+    const v = makeGroundItem(gi.item, gi.item ? itemColor(gi.item) : '#e8c040');
+    // turned by its id, not at random: the same way each time its view is made again
+    v.rotation.y = ((gi.id * 0.618034) % 1) * Math.PI * 2;
+    this.dynGroup.add(v);
+    if (gi.item && (gi.item.rarity === 'unique' || gi.item.rarity === 'set' || gi.item.rarity === 'runeword')) {
+      const beam = glowSprite(itemColor(gi.item), 0.9, 0.6);
+      beam.position.y = 0.3;
+      v.add(beam);
+    }
+    return v;
+  }
+
+  /** what the renderer keeps now, for the tools (tools/bench.mjs) */
+  counts(): Record<string, number> {
+    const shown = this.scenery?.visible.length ?? 0;
+    return {
+      'monster views': this.monsterViews.views.size,
+      'monster rigs': [...this.monsterViews.views.values()].filter((v) => v.body).length,
+      'rigs put by': this.rigPool.size,
+      'item views': this.groundViews.views.size,
+      'object views': this.objViews.views.size,
+      'chunks shown': shown,
+      'chunks in all': this.scenery?.all.length ?? 0,
+      'props in view': this.props?.drawn.view ?? 0,
+      'props in shadow': this.props?.drawn.shadow ?? 0,
+    };
   }
 
   // ─────────────────────────── per-frame ───────────────────────────
 
-  private anim(a: { state: AnimInput['state']; stateTime: number; stateDur: number; dead: boolean; deathTime: number; hitFlash: number; chillTime: number; poisonTime: number; killedBy: AnimInput['killedBy'] }, speed: number, blood: AnimInput['blood']): AnimInput {
+  private anim(a: { state: AnimInput['state']; stateTime: number; stateDur: number; dead: boolean; deathTime: number; hitFlash: number; chillTime: number; poisonTime: number; killedBy: AnimInput['killedBy'] }, speed: number, blood: AnimInput['blood'], hitFlash = a.hitFlash): AnimInput {
     return {
       state: a.state,
       stateTime: a.stateTime,
@@ -977,7 +1235,7 @@ export class Renderer implements Picker {
       speed,
       dead: a.dead,
       deathTime: a.deathTime,
-      hitFlash: a.hitFlash,
+      hitFlash,
       chilled: a.chillTime > 0,
       poisoned: a.poisonTime > 0,
       blood,
@@ -1087,6 +1345,9 @@ export class Renderer implements Picker {
     this.heroLight.position.set(pp.x, 3.4, pp.z);
     this.heroLight.distance = this.playerLight.distance;
 
+    // the scenery and props the views reach, for this frame's camera and lights
+    this.updateViewers();
+
     // player rig
     const key = playerLookKey(p);
     if (!this.playerView || this.playerView.key !== key) {
@@ -1110,7 +1371,13 @@ export class Renderer implements Picker {
     pv.rig.update(dt, this.anim(p, p.stats.moveSpeed * p.slowFactor() * (p.state === 'charge' ? 2.5 : 1), 'red'));
     pv.shadow.position.set(pp.x, 0.02, pp.z);
 
-    for (const n of this.npcViews) n.rig.update(dt, IDLE_ANIM);
+    // the camp's people stand still: animated, and drawn, only while the hero is about
+    for (const n of this.npcViews) {
+      const r = n.rig.root.position;
+      const near = (r.x - p.pos.x) ** 2 + (r.z - p.pos.z) ** 2 <= VIEW_FAR * VIEW_FAR;
+      n.rig.root.visible = n.shadow.visible = near;
+      if (near) n.rig.update(dt, IDLE_ANIM);
+    }
 
     // aura decal
     if (p.activeAura && !p.dead && p.skillLevel(p.activeAura) > 0) {
@@ -1136,64 +1403,77 @@ export class Renderer implements Picker {
 
     this.updateTouchMarks(pp);
 
-    // monsters
-    const seen = new Set<Monster>();
-    for (const m of level.monsters) {
+    // monsters: views of those near (views.ts), let go past VIEW_FAR or once cleared away; further
+    // where the view reaches further
+    if (level.monsters !== this.monsterList || level.monsters.length !== this.monsterCount) {
+      this.monsterList = level.monsters;
+      this.monsterCount = level.monsters.length;
+      this.monsterSet = new Set(level.monsters);
+    }
+    const alive = this.monsterSet;
+    const [nearR, farR] = this.viewRadii();
+    const seen = Math.max(MONSTER_SEEN, this.viewReach + VIEW_MARGIN);
+    this.monsterViews.sync(p.pos, level.monstersNear(p.pos, nearR), (m) => !alive.has(m), farR);
+    const vw = this.viewers;
+    this.blobs.begin();
+    for (const [m, v] of this.monsterViews.views) {
       const d2 = (m.pos.x - p.pos.x) ** 2 + (m.pos.z - p.pos.z) ** 2;
-      let v = this.monsterViews.get(m);
-      if (!v) {
-        if (d2 > 30 * 30) continue;
-        const rig = makeCharRig(() => monsterSpec(m), () => monsterLook(m));
-        castShadows(rig.root);
-        this.dynGroup.add(rig.root);
-        const shadow = this.makeShadow(m.radius);
-        this.dynGroup.add(shadow);
-        v = { rig, shadow };
-        rig.root.rotation.y = m.facing;
-        this.monsterViews.set(m, v);
-      }
-      seen.add(m);
-      const visible = d2 < 28 * 28;
-      v.rig.root.visible = visible;
-      v.shadow.visible = visible && !m.dead;
-      if (!visible) continue;
+      const near = d2 < seen * seen;
       const mp = this.at(m);
-      v.rig.root.position.x = mp.x;
-      v.rig.root.position.z = mp.z;
-      if (!m.dead) v.rig.root.rotation.y = smoothAngle(v.rig.root.rotation.y, m.facing, dt * 12);
+      // seen, or casting a shadow that can be: the body standing, or lying once fallen
+      const k = Math.max(1, m.def.scale * (m.rank === 'normal' ? 1 : RANKED_SIZE));
+      const r = (m.dead ? MONSTER_FALLEN[0] : MONSTER_BODY) * k;
+      const y = m.dead ? MONSTER_FALLEN[1] * k : k;
+      const main = near && sphereInFrustum(vw.main, mp.x, y, mp.z, r);
+      const shadow = near && sphereInShadows(vw, mp.x, y, mp.z, m.dead ? r : MONSTER_SHADE * k);
+      const drawn = main || shadow;
+      if (drawn && !v.body) {
+        v.body = this.makeMonsterBody(m);
+        // one first seen dead lies where its death has got to by now
+        v.lag = m.dead ? Math.min(MAX_LAG, m.deathTime) : 0;
+      }
+      const b = v.body;
+      if (!b) continue;
+      b.cull.main = main;
+      b.cull.shadow = shadow;
+      if (main && !m.dead) this.blobs.add(mp.x, mp.z, m.radius);
+      // one neither seen nor shadowing what is is out of the scene and not animated: it catches up
+      // on the time it missed when it next is, so it comes into view where its clips have got to
+      if (drawn !== (b.rig.root.parent !== null)) {
+        if (drawn) this.dynGroup.add(b.rig.root);
+        else b.rig.root.removeFromParent();
+      }
+      if (!drawn) {
+        v.lag = Math.min(MAX_LAG, v.lag + dt);
+        continue;
+      }
+      const step = dt + v.lag;
+      v.lag = 0;
+      b.rig.root.position.x = mp.x;
+      b.rig.root.position.z = mp.z;
+      if (!m.dead) b.rig.root.rotation.y = smoothAngle(b.rig.root.rotation.y, m.facing, step * 12);
       const hover = g.hover.monster === m;
-      v.rig.update(dt, this.anim({ ...m, hitFlash: Math.max(m.hitFlash, hover ? 0.12 : 0) }, m.speed * m.slowFactor(), m.def.blood));
-      v.shadow.position.set(mp.x, 0.02, mp.z);
+      // (a copy of the monster with the hover's flash was a big object a monster a frame)
+      b.rig.update(step, this.anim(m, m.speed * m.slowFactor(), m.def.blood, Math.max(m.hitFlash, hover ? 0.12 : 0)));
       // elemental enchant auras
       if (!m.dead && m.mods.length && Math.random() < dt * 10) {
         const c = m.mods.includes('fireench') ? '#ff6010' : m.mods.includes('coldench') ? '#80c8ff' : m.mods.includes('lightench') ? '#ffff80' : null;
         if (c) this.fx.add.spawn({ x: m.pos.x + (Math.random() - 0.5) * 0.6, y: 0.2 + Math.random() * 1.2, z: m.pos.z + (Math.random() - 0.5) * 0.6, vy: 0.8, color: c, size: 0.18, life: 0.6 });
       }
     }
-    for (const [m, v] of this.monsterViews) {
-      if (!seen.has(m)) {
-        v.rig.dispose();
-        v.shadow.removeFromParent();
-        this.monsterViews.delete(m);
-      }
-    }
+    this.blobs.end();
 
-    // ground items
-    const gseen = new Set<GroundItem>();
+    // ground items: views of those near, as the monsters'
+    const gseen = this.seen;
+    const gnear = this.nearby;
+    gseen.clear();
+    gnear.length = 0;
     for (const gi of level.ground) {
       gseen.add(gi);
-      let v = this.groundViews.get(gi);
-      if (!v) {
-        v = makeGroundItem(gi.item, gi.item ? itemColor(gi.item) : '#e8c040');
-        v.rotation.y = Math.random() * Math.PI * 2;
-        this.dynGroup.add(v);
-        this.groundViews.set(gi, v);
-        if (gi.item && (gi.item.rarity === 'unique' || gi.item.rarity === 'set' || gi.item.rarity === 'runeword')) {
-          const beam = glowSprite(itemColor(gi.item), 0.9, 0.6);
-          beam.position.y = 0.3;
-          v.add(beam);
-        }
-      }
+      if ((gi.pos.x - p.pos.x) ** 2 + (gi.pos.z - p.pos.z) ** 2 <= nearR * nearR) gnear.push(gi);
+    }
+    this.groundViews.sync(p.pos, gnear as GroundItem[], (gi) => !gseen.has(gi), farR);
+    for (const [gi, v] of this.groundViews.views) {
       const t = Math.min(1, gi.age / 0.45);
       const x = gi.from.x + (gi.pos.x - gi.from.x) * t;
       const z = gi.from.z + (gi.pos.z - gi.from.z) * t;
@@ -1202,12 +1482,6 @@ export class Renderer implements Picker {
       if (t < 1) {
         v.rotation.x = t * Math.PI * 4;
       } else v.rotation.x = 0;
-    }
-    for (const [gi, v] of this.groundViews) {
-      if (!gseen.has(gi)) {
-        v.removeFromParent();
-        this.groundViews.delete(gi);
-      }
     }
 
     // projectiles
@@ -1260,14 +1534,19 @@ export class Renderer implements Picker {
     // objects
     this.syncObjects(level, dt);
 
-    // torch flames flicker
-    for (const f of this.flames) f.scale.setScalar((f.userData.base ?? 1) * (0.8 + Math.random() * 0.25));
-    for (const f of this.flameSpots) {
-      if (Math.random() < dt * 6) this.fx.add.spawn({ x: f.x + (Math.random() - 0.5) * 0.08, y: f.y + 0.05, z: f.z + (Math.random() - 0.5) * 0.08, vy: 0.7, color: '#ffa040', size: 0.14, life: 0.5 });
+    // torch flames flicker, in the chunks shown, and throw sparks where the camera sees them
+    for (const c of this.scenery?.visible ?? []) {
+      for (const f of c.flames) f.scale.setScalar((f.userData.base ?? 1) * (0.8 + Math.random() * 0.25));
+      if (!c.inView) continue;
+      for (const f of c.spots) {
+        if (Math.random() < dt * 6) this.fx.add.spawn({ x: f.x + (Math.random() - 0.5) * 0.08, y: f.y + 0.05, z: f.z + (Math.random() - 0.5) * 0.08, vy: 0.7, color: '#ffa040', size: 0.14, life: 0.5 });
+      }
     }
     for (const s of level.layout.services) {
       if (s.kind !== 'campfire') continue;
       const c = s.pos;
+      // only a fire about the view: no sparks for the monster camps across the map
+      if ((c.x - this.camTarget.x) ** 2 + (c.z - this.camTarget.z) ** 2 > CAMPFIRE_SEEN * CAMPFIRE_SEEN) continue;
       for (let k = 0; k < 3; k++) {
         if (Math.random() < dt * 30) this.fx.add.spawn({ x: c.x + (Math.random() - 0.5) * 0.5, y: 0.2, z: c.z + (Math.random() - 0.5) * 0.5, vy: 1.4 + Math.random(), vx: (Math.random() - 0.5) * 0.3, color: Math.random() < 0.5 ? '#ff6010' : '#ffb040', size: 0.4 + Math.random() * 0.3, life: 0.7, gravity: -0.5 });
       }
@@ -1284,20 +1563,57 @@ export class Renderer implements Picker {
     this.playerScreen = ps;
   }
 
+  /**
+   * The camera's view and the shadow cameras this frame, the camera and the lights placed: the
+   * scenery's chunks go in or out of the scene by them, and the props are culled to them
+   */
+  private updateViewers() {
+    const v = this.viewers;
+    this.camera.updateMatrixWorld();
+    this.viewProj.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
+    v.main.setFromProjectionMatrix(this.viewProj);
+    // the view's reach on the ground from the hero: its furthest corner, down the camera's line to y = 0
+    const hero = this.game.player.pos;
+    const ahead = this.camera.getWorldDirection(this.reachDir);
+    let reach = 0;
+    for (const [cx, cy] of VIEW_CORNERS) {
+      const c = this.tmpV.set(cx, cy, -1).unproject(this.camera);
+      const t = ahead.y < -1e-6 ? -c.y / ahead.y : 0;
+      reach = Math.max(reach, Math.hypot(c.x + ahead.x * t - hero.x, c.z + ahead.z * t - hero.z));
+    }
+    this.viewReach = reach;
+    if (this.dir.castShadow) {
+      // as the shadow map will place it (WebGLShadowMap: LightShadow.updateMatrices)
+      this.dir.updateMatrixWorld();
+      this.dir.target.updateMatrixWorld();
+      this.dir.shadow.updateMatrices(this.dir);
+      v.sun = this.dir.shadow.getFrustum();
+      v.sunDir.subVectors(this.dir.target.position, this.dir.position).normalize();
+    } else v.sun = null;
+    if (this.heroLight.castShadow) {
+      // a point light's shadow reaches as far as the light does (its shadow camera's far plane)
+      this.lampSphere.center.copy(this.heroLight.position);
+      this.lampSphere.radius = this.heroLight.distance || this.heroLight.shadow.camera.far;
+      v.lamp = this.lampSphere;
+    } else v.lamp = null;
+    this.scenery?.update(v);
+    this.props?.cull(v);
+  }
+
   private assignLights() {
     const p = this.game.player;
     const level = this.game.level;
-    // static: torches, campfire, waypoint, portals
+    // static: torches, campfire, waypoint, portals; only the scenery's chunks round the hero are asked
     const cands: { pos: THREE.Vector3; color: THREE.Color; intensity: number; distance: number; flicker: number; d: number }[] = [];
-    for (const s of this.staticLights) cands.push({ ...s, d: (s.pos.x - p.pos.x) ** 2 + (s.pos.z - p.pos.z) ** 2 });
-    for (const [o, v] of this.objViews) {
+    this.scenery?.lightsNear(p.pos.x, p.pos.z, LIGHT_REACH, (s: StaticLight) => cands.push({ ...s, d: (s.pos.x - p.pos.x) ** 2 + (s.pos.z - p.pos.z) ** 2 }));
+    for (const [o, v] of this.objViews.views) {
       if (v.lightColor) cands.push({ pos: new THREE.Vector3(o.pos.x, 1.2, o.pos.z), color: new THREE.Color(v.lightColor), intensity: v.lightIntensity ?? 10, distance: 7, flicker: 0.3, d: (o.pos.x - p.pos.x) ** 2 + (o.pos.z - p.pos.z) ** 2 });
     }
     cands.sort((a, b) => a.d - b.d);
     for (let i = 0; i < this.torchLights.length; i++) {
       const l = this.torchLights[i];
       const c = cands[i];
-      if (c && c.d < 22 * 22) {
+      if (c && c.d < LIGHT_REACH * LIGHT_REACH) {
         l.position.copy(c.pos);
         l.color.copy(c.color);
         l.distance = c.distance;
