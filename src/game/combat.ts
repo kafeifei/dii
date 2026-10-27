@@ -1,16 +1,19 @@
-import { chance, clamp, randInt, type P2 } from '../core/math';
+import { chance, randInt, type P2 } from '../core/math';
 import { isBlunt } from '../data/items';
 import type { Elem } from '../data/monsters';
-import { baseOf } from '../items/item';
+import { struckArmor, wearDown } from '../items/d2/durability';
+import { baseOf, displayName, type Item } from '../items/item';
+import { MATH_RAND } from '../items/make';
 import { emptyPacket, type Actor, type DamagePacket } from './actor';
+import { blockAnimGap, hitRecoveryOdds } from './d2/frames';
+import { absorb, attackRating, charStats, hitChance, mitigate, resistance } from './d2/stats';
 import type { Game } from './game';
 import { Monster } from './monster';
 import { Player } from './player';
 
-export function hitChance(ar: number, def: number, alvl: number, dlvl: number): number {
-  // D2's formula, with a softer level term so early level gaps aren't brutal
-  const c = 2 * (ar / Math.max(1, ar + def)) * ((alvl + 5) / (alvl + dlvl + 10));
-  return clamp(c, 0.05, 0.95);
+/** Diablo II's chance to hit as odds (game/d2/stats.ts hitChance: 5–95 %, the levels counting) */
+export function hitOdds(ar: number, def: number, alvl: number, dlvl: number): number {
+  return hitChance(ar, def, alvl, dlvl) / 100;
 }
 
 export function rollRange(r: [number, number]): number {
@@ -39,7 +42,7 @@ export function playerWeaponPacket(p: Player, edBonus: number): DamagePacket {
   pk.cb = b.cb;
   pk.ow = b.ow;
   // blunt weapons do half again to the undead
-  pk.vsUndead = (b.dmgUndead ?? 0) + (w && isBlunt(baseOf(w)) ? 50 : 0);
+  pk.vsUndead = (b.dmgUndead ?? 0) + (w && !p.unusable(w) && isBlunt(baseOf(w)) ? 50 : 0);
   pk.vsDemon = b.dmgDemon;
   pk.freeze = b.freeze;
   pk.slow = b.slowTarget;
@@ -88,39 +91,35 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
   if (target.dead) return 0;
   const res = target.resists();
   const isPlayer = target instanceof Player;
-  const cap = isPlayer ? 75 : 95;
-  const mult = (r: number, e: 'fire' | 'cold' | 'light' | 'poison') => {
-    const pierce = (pk.pierceRes ?? 0) + (pk.pierce?.[e] ?? 0);
-    // resist reduction only half effective on immune monsters (D2-ish)
-    const eff = r >= 100 ? r - pierce / 2 : r - pierce;
-    return 1 - Math.min(cap, eff) / 100;
-  };
+  const pl = isPlayer ? (target as Player) : null;
+  // Diablo II's resistances (game/d2/stats.ts): the hero's already carry the difficulty's penalty
+  // and caps (Player.recalc); a monster's lose the attacker's pierce, unless 100 or more
+  const resOf = (e: 'fire' | 'cold' | 'light' | 'poison') => (pl ? res[e] : resistance(e, res[e], { monster: true, pierce: (pk.pierceRes ?? 0) + (pk.pierce?.[e] ?? 0) }));
   const m0 = target instanceof Monster ? target : null;
   // +X% damage to undead / demons is part of the physical damage bonus
   const vs = m0 ? (m0.def.undead ? (pk.vsUndead ?? 0) : 0) + (m0.def.demon ? (pk.vsDemon ?? 0) : 0) : 0;
-  let phys = pk.phys * (1 + vs / 100) * (1 - res.phys / 100);
-  let fire = pk.fire * mult(res.fire, 'fire');
-  let cold = pk.cold * mult(res.cold, 'cold');
-  let light = pk.light * mult(res.light, 'light');
-  let magic = pk.magic;
-  const poison = pk.poison * mult(res.poison, 'poison');
-  const pl = isPlayer ? (target as Player) : null;
-  if (pl) {
-    // the wearer's defenses: % then flat physical reduction, flat magic reduction, then absorption,
-    // which turns the damage it stops into life
-    const b = pl.stats.bag;
-    phys = Math.max(0, phys * (1 - pl.stats.dr / 100) - (b.drFlat ?? 0));
-    magic = Math.max(0, magic - (b.mdr ?? 0));
+  const b = pl?.stats.bag;
+  // the hero's flat reductions come off first, "damage reduced by X" physical and "magic damage
+  // reduced by X" the elements and magic, then the % (SUnitDmg.cpp:764-772, 1016-1025)
+  const mdr = b?.mdr ?? 0;
+  let phys = mitigate(pk.phys * (1 + vs / 100), pl ? pl.stats.dr : res.phys, b?.drFlat ?? 0);
+  let fire = mitigate(pk.fire, resOf('fire'), mdr);
+  let cold = mitigate(pk.cold, resOf('cold'), mdr);
+  let light = mitigate(pk.light, resOf('light'), mdr);
+  let magic = mitigate(pk.magic, 0, mdr);
+  const poison = mitigate(pk.poison, resOf('poison'));
+  if (pl && b) {
+    // then absorption, the % and then the flat amount, turns what it stops into life (SUnitDmg.cpp:1036-1057)
     let healed = 0;
-    const absorb = (v: number, pct: number, flat: number) => {
-      const a = Math.min(v, (v * Math.min(40, pct)) / 100 + flat);
-      healed += a;
-      return v - a;
+    const take = (v: number, pct: number, flat: number) => {
+      const a = absorb(v, pct, flat);
+      healed += a.life;
+      return a.dmg;
     };
-    fire = absorb(fire, b.absFirePct ?? 0, b.absFire ?? 0);
-    cold = absorb(cold, b.absColdPct ?? 0, b.absCold ?? 0);
-    light = absorb(light, b.absLightPct ?? 0, b.absLight ?? 0);
-    magic = absorb(magic, 0, b.absMagic ?? 0);
+    fire = take(fire, b.absFirePct ?? 0, b.absFire ?? 0);
+    cold = take(cold, b.absColdPct ?? 0, b.absCold ?? 0);
+    light = take(light, b.absLightPct ?? 0, b.absLight ?? 0);
+    magic = take(magic, 0, b.absMagic ?? 0);
     if (healed > 0) pl.life = Math.min(pl.stats.maxLife, pl.life + healed);
   }
   const total = Math.max(0, phys) + Math.max(0, fire) + Math.max(0, cold) + Math.max(0, light) + Math.max(0, magic);
@@ -188,11 +187,12 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
     p.lastDamageTime = g.time;
     g.fx.hit(p, 'red', dir, total > p.stats.maxLife * 0.1, mainElem(pk));
     if (total > 0) g.sfx.play('player.hurt', { pos: p.pos });
-    // hit recovery, with a short poise window afterwards so packs can't stun-lock
-    if (total > p.stats.maxLife / 12 && p.state !== 'charge' && p.state !== 'hit' && p.life > 0 && g.time > p.poiseUntil) {
+    // hit recovery as Diablo II decides it (frames.ts hitRecoveryOdds), for its frames; it cuts
+    // into an attack or a cast, never into another hit or a block (PlrModes.cpp:1586-1605)
+    const busy = p.state === 'charge' || p.state === 'hit' || p.state === 'block';
+    if (!busy && p.life > 0 && chance(hitRecoveryOdds(total, p.stats.maxLife))) {
       p.setState('hit', p.stats.hitRecovery);
       p.zealHitsLeft = 0;
-      p.poiseUntil = g.time + p.stats.hitRecovery + 0.9;
     }
     if (total > p.stats.maxLife * 0.15) g.fx.shake(0.3);
     // thorns
@@ -201,6 +201,13 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
       src.life -= p.stats.thorns;
       src.hitFlash = 0.6;
       if (src.life <= 0) g.killMonster(src, 'phys');
+    }
+    // "attacker takes lightning damage": the same for melee hits, less the attacker's lightning resistance
+    const lt = p.stats.bag.lightThorns ?? 0;
+    if (src instanceof Monster && lt > 0 && !pk.spell && !src.dead) {
+      src.life -= lt * (1 - Math.min(100, src.resists().light) / 100);
+      src.hitFlash = 0.6;
+      if (src.life <= 0) g.killMonster(src, 'light');
     }
     if (src instanceof Monster && src.mods.includes('manaburn')) p.mana = Math.max(0, p.mana - total * 0.6);
     if (src instanceof Monster && src.mods.includes('vampiric') && src.noHealTime <= 0) src.life = Math.min(src.maxLife, src.life + total * 0.25);
@@ -241,32 +248,64 @@ function strikeEffects(m: Monster, pk: DamagePacket, physRes: number) {
 
 /** Player melee strike: hit roll then damage. Returns true if hit. */
 export function playerStrike(g: Game, p: Player, m: Monster, pk: DamagePacket, arBonusPct: number): boolean {
-  const b = p.stats.bag;
+  const d = p.stats;
+  const b = d.bag;
+  // the attack rating against this one: "+X to attack rating against undead / demons" is flat
+  // rating, the skill's % goes with the items' on all of it (SUnitDmg.cpp:2507-2541)
   const arVs = (m.def.undead ? (b.arUndead ?? 0) : 0) + (m.def.demon ? (b.arDemon ?? 0) : 0);
-  const ar = (p.stats.ar + arVs) * (1 + arBonusPct / 100);
+  const ar = attackRating(charStats(p.cls), d.dex, (b.ar ?? 0) + arVs, (b.arPct ?? 0) + arBonusPct);
   // "ignore target's defense" (not on bosses), else "-X% target defense"
   const def = b.ignoreDef && m.rank !== 'boss' ? 0 : m.effectiveDefense() * (1 - Math.min(100, b.targetDef ?? 0) / 100);
-  if (!chance(hitChance(ar, def, p.level, m.level))) {
+  if (!chance(hitOdds(ar, def, p.level, m.level))) {
     g.fx.text(m.pos, '未命中', '#aaaaaa');
     return false;
   }
   applyDamage(g, m, pk, p.pos);
   g.onProc('procHit', m);
+  // a landed melee hit wears the weapon (SUnitDmg.cpp:2331-2338)
+  const w = p.equipment.weapon;
+  if (w && wearDown(w, MATH_RAND) === 'broke') itemBroke(g, p, w);
   return true;
 }
 
-/** Monster melee/ranged attack on the player, with hit roll and block */
-export function monsterStrike(g: Game, m: Monster, p: Player, pk: DamagePacket): void {
+/** a worn item's last durability went: it gives nothing until repaired (ItemMode.cpp:5714-5733) */
+function itemBroke(g: Game, p: Player, it: Item) {
+  p.markDirty();
+  g.hooks.message(`${displayName(it)}损坏了`, '#ff4040', 3);
+  g.sfx.play('item.broken', { pos: p.pos });
+  g.hooks.inventoryChanged();
+}
+
+/**
+ * Monster melee/ranged attack on the player, with Diablo II's hit roll (the monster's own level,
+ * rating and the hero's defense) and block; a landed melee blow wears the hero's armor
+ */
+export function monsterStrike(g: Game, m: Monster, p: Player, pk: DamagePacket, melee = false): void {
   if (p.dead) return;
   if (!pk.spell) {
-    if (!chance(hitChance(m.ar, p.stats.def, m.level, p.level))) return;
-    const blk = p.stats.block;
-    if (blk > 0 && p.state !== 'attack' && p.state !== 'cast' && chance(blk / 100)) {
-      p.setState('block', 0.18 / (1 + (p.stats.bag.fbr ?? 0) / 100));
+    const d = p.stats;
+    // a running hero is hit by every melee blow, and blocks a third as often (SUnitDmg.cpp:2589-2595, 2719-2722)
+    const running = p.runningNow();
+    if (!(melee && running) && !chance(hitOdds(m.ar, d.def, m.level, p.level))) return;
+    const blk = running ? Math.trunc(d.block / 3) : d.block;
+    if (blk > 0 && chance(blk / 100)) {
+      // the blow is stopped; the block plays (cutting into an attack or cast) when the last one is
+      // far enough back and the hero isn't already reeling or blocking (SUnitDmg.cpp:2003-2008)
+      const free = p.state !== 'hit' && p.state !== 'block' && p.state !== 'charge';
+      if (free && g.time - p.lastBlockTime > blockAnimGap(d.bag.fbr ?? 0)) {
+        p.setState('block', d.blockTime);
+        p.zealHitsLeft = 0;
+        p.lastBlockTime = g.time;
+      }
       g.fx.burst('block', p.pos, { dir: { x: m.pos.x - p.pos.x, z: m.pos.z - p.pos.z } });
       g.sfx.play('combat.block', { pos: p.pos });
       return;
     }
   }
   applyDamage(g, p, pk, m.pos);
+  // the defender's half of SUNITDMG_DrainItemDurability (SUnitDmg.cpp:2341-2372)
+  if (melee && !p.dead) {
+    const hit = struckArmor(p.equipment, MATH_RAND);
+    if (hit?.wear === 'broke') itemBroke(g, p, hit.item);
+  }
 }

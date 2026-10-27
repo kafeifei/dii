@@ -17,6 +17,7 @@ export default async (load) => {
   const { Game } = await load('/src/game/game.ts');
   const { Sfx } = await load('/src/audio/sfx.ts');
   const { createItem } = await load('/src/items/gen.ts');
+  const { monsterLootTc } = await load('/src/game/loot.ts');
   const problems = [];
   const check = (ok, what) => ok || problems.push(what);
   const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
@@ -114,16 +115,24 @@ export default async (load) => {
   const corpsefire = den.monsters.find((m) => m.rank === 'unique' && m.displayName === '尸焰');
   const su = den.layout.superUniques?.[0];
   check(corpsefire?.def.id === 'zombie' && su && dist(corpsefire.pos, su.pos) < 1.5, `Corpsefire's stand-in is ${corpsefire?.def.id} at ${corpsefire ? dist(corpsefire.pos, su?.pos ?? corpsefire.pos).toFixed(1) : '-'} from the far room's spot`);
+  // it drops its superunique class (superuniques.json Corpsefire), its minions a plain zombie's
+  check(su?.key === 'Corpsefire' && corpsefire?.superUnique === 'Corpsefire' && monsterLootTc(corpsefire, 0) === 'Act 1 Super A', `Corpsefire is ${corpsefire?.superUnique} and drops from ${corpsefire && monsterLootTc(corpsefire, 0)}`);
+  const minion = den.monsters.find((m) => m.leader === corpsefire);
+  check(minion && !minion.superUnique && monsterLootTc(minion, 0) === 'Act 1 H2H A', `Corpsefire's minion drops from ${minion && monsterLootTc(minion, 0)}`);
   check(den.monsters.filter((m) => m.leader === corpsefire).length >= 3, 'Corpsefire came without minions');
   check(su && dist(su.pos, den.layout.start) > 15, `Corpsefire waits ${su ? dist(su.pos, den.layout.start).toFixed(1) : '-'} from the den's start`);
-  // a chest in the den rolls at the den's level
+  // a chest in the den rolls at the den's level: what its roll (src/game/loot.ts containerLoot)
+  // drops is at it, tried until it drops something (a chest drops in 3 of 4, a barrel in 21 of 100)
   const levels = [];
   const roll = game.rollLoot.bind(game);
-  game.rollLoot = (lvl, q) => (levels.push(lvl), roll(lvl, q));
+  game.rollLoot = (r) => {
+    for (let k = 0; k < 100 && !levels.length; k++) for (const it of r({ mf: 0, gf: 0, difficulty: 0 })) levels.push(it.ilvl);
+    return roll(r);
+  };
   const denChest = den.objects.find((o) => o.kind === 'chest');
   if (denChest) {
     game.interact(denChest);
-    check(levels[0] === areaDef(DEN_OF_EVIL).alvl[0], `a chest in the den rolled at level ${levels[0]}`);
+    check(levels.length && levels.every((l) => l === areaDef(DEN_OF_EVIL).alvl[0]), `a chest in the den rolled at levels ${levels.join()}`);
   }
   // up and out: at the mouth, the overworld as it was
   game.interact(up);
@@ -188,12 +197,11 @@ export default async (load) => {
     if (!o) continue;
     levels.length = 0;
     game.interact(o);
-    if (kind === 'chest') check(levels[0] === areaDef(area).alvl[0], `a ${kind} in ${areaDef(area).key} rolled at level ${levels[0]}`);
-    else check(!levels.length || levels[0] === areaDef(area).alvl[0], `a ${kind} in ${areaDef(area).key} rolled at level ${levels[0]}`);
+    check(levels.length && levels.every((l) => l === areaDef(area).alvl[0]), `a ${kind} in ${areaDef(area).key} rolled at levels ${levels.join()}`);
   }
 
   // ── what fits nowhere is laid by the stash once, however often the hero comes into the camp ──
-  const ring = createItem('ring');
+  const ring = createItem('rin');
   p.unplaced = [ring];
   game.travel(CAMP_AREA);
   game.travel(COLD_PLAINS);

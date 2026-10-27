@@ -1,3 +1,5 @@
+import { ITEM_BASES } from '../data/items';
+import { GOLD } from '../items/gen';
 import { displayName, itemColor, tooltip } from '../items/item';
 import type { Renderer } from '../render/renderer';
 import { h, type UIContext } from './common';
@@ -41,7 +43,7 @@ export class GroundLabels {
           el.textContent = displayName(gi.item);
           el.style.color = itemColor(gi.item);
         } else {
-          el.textContent = `${gi.gold} 金币`;
+          el.textContent = `${gi.gold} ${ITEM_BASES[GOLD].name}`;
           el.style.color = '#e8e0c0';
         }
         el.addEventListener('pointerenter', () => (this.hovered = gi.id));
@@ -57,7 +59,7 @@ export class GroundLabels {
         el.addEventListener('pointermove', (e) => {
           if (gi.item) {
             const pl = g.player;
-            ui.tooltip.show(tooltip(gi.item, { level: pl.level, str: pl.stats.str, dex: pl.stats.dex }), e.clientX, e.clientY);
+            ui.tooltip.show(tooltip(gi.item, { level: pl.level, str: pl.stats.str, dex: pl.stats.dex, cls: pl.cls, worn: Object.values(pl.equipment).filter((x) => !!x) }), e.clientX, e.clientY);
           }
         });
         el.addEventListener('pointerleave', () => ui.tooltip.hide());

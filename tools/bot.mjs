@@ -53,12 +53,16 @@ export default async function (page, shot, log) {
     builds: BUILDS,
   };
   const setup = await page.evaluate(async (o) => {
-    const { baseOf, displayName, sellPrice } = await import('/src/items/item.ts');
+    const { baseOf, displayName } = await import('/src/items/item.ts');
+    // what the camp's stall pays for an item, at D2's prices
+    const V = await import('/src/items/vendor.ts');
+    const sellPrice = (it) => V.sellPrice(V.CAMP_VENDORS, it);
     const { slotsFor } = await import('/src/data/items.ts');
     const { SKILL_BY_ID, SKILLS } = await import('/src/data/skills.ts');
     const { CLASS_IDS } = await import('/src/data/classes.ts');
     const { createItem, rollEquipment } = await import('/src/items/gen.ts');
     const { xpForLevel } = await import('/src/game/player.ts');
+    const { bodyItems, takeBody } = await import('/src/game/corpse.ts');
     const { areaByKey, nextArea } = await import('/src/world/areas.ts');
     const g = game;
     const cls = o.cls || g.player.cls;
@@ -211,8 +215,8 @@ export default async function (page, shot, log) {
     };
     const drink = (kind) => {
       const pl = p();
-      for (let i = 0; i < 4; i++) if (pl.belt[i].length && (kind === 'hp' ? (pl.belt[i][0].baseId.startsWith('hp') || pl.belt[i][0].baseId.startsWith('rejuv')) : pl.belt[i][0].baseId.startsWith('mp'))) { g.useBelt(i); stats.potionsUsed++; return true; }
-      const inv = pl.inventory.items.find((x) => x.item.baseId.startsWith(kind) || (kind === 'hp' && x.item.baseId.startsWith('rejuv')));
+      for (let i = 0; i < 4; i++) if (pl.belt[i].length && (kind === 'hp' ? (pl.belt[i][0].baseId.startsWith('hp') || pl.belt[i][0].baseId.startsWith('rv')) : pl.belt[i][0].baseId.startsWith('mp'))) { g.useBelt(i); stats.potionsUsed++; return true; }
+      const inv = pl.inventory.items.find((x) => x.item.baseId.startsWith(kind) || (kind === 'hp' && x.item.baseId.startsWith('rv')));
       if (inv) { pl.inventory.remove(inv.item); g.drink(inv.item); stats.potionsUsed++; return true; }
       return false;
     };
@@ -225,7 +229,8 @@ export default async function (page, shot, log) {
       pl.gold += pl.level * 100;
       spend();
       for (let i = 0; i < 60; i++) {
-        const it = rollEquipment(pl.level, { quality: 2 });
+        // identified, as gear found and worn on the way would be
+        const it = rollEquipment(pl.level, { quality: 2, identified: true });
         if (pl.inventory.add(it) && !tryEquip(it)) pl.inventory.remove(it);
       }
       pl.life = pl.stats.maxLife;
@@ -271,6 +276,14 @@ export default async function (page, shot, log) {
           stats.timeline.push(`death in ${cur.key} lvl ${pl.level} t=${Math.round(simTime)} by ${JSON.stringify(desc)} proj=${g.level.projectiles.length}`);
           stats.deathList.push({ area: cur.key, lvl: pl.level, causes: desc, proj: g.level.projectiles.length });
           g.respawn();
+          // a player walks back for the body (D2: it keeps the gear and some experience); the bot takes it at once
+          for (const c of pl.corpses) {
+            if (c.xp) pl.gainXp(c.xp);
+            c.xp = 0;
+            takeBody(pl, c, (it) => g.beltInsert(it));
+          }
+          pl.corpses = pl.corpses.filter((c) => bodyItems(c).length);
+          pl.markDirty();
           areaDeaths++;
           // stuck on a floor: do what a player does and start a fresh game of it (a new layout)
           if (areaDeaths % 4 === 0) g.lastDungeon = null;

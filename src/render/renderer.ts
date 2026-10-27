@@ -8,6 +8,7 @@ import { CAMP_AREA, areaDef } from '../world/areas';
 import { areaShares, lookMix, type AreaShare } from '../world/seams';
 import type { Monster } from '../game/monster';
 import type { GroundItem, Hammer, Projectile, WorldObject } from '../game/objects';
+import type { Player } from '../game/player';
 import { itemColor } from '../items/item';
 import { T_FLOOR, T_PROP, T_WALL } from '../world/tilemap';
 import { Effects } from './effects';
@@ -1085,6 +1086,20 @@ export class Renderer implements Picker {
           },
         };
       }
+      case 'corpse': {
+        // the hero's body as it fell, in the gear left on it (game/corpse.ts)
+        const c = o.corpse;
+        if (!c) break;
+        const body = { cls: c.cls, equipment: c.equipment } as Player;
+        const rig = makeCharRig(() => playerSpec(body), () => playerLook(body));
+        rig.root.rotation.y = (o.id * 2.39996) % (Math.PI * 2);
+        g.add(rig.root);
+        const lying: AnimInput = { state: 'dead', stateTime: 0, stateDur: 0, speed: 0, dead: true, deathTime: 2, hitFlash: 0, chilled: false, poisoned: false, blood: 'red', killedBy: 'phys' };
+        // already down when first seen
+        rig.update(5, lying);
+        // a view let go past VIEW_FAR (views.ts) takes its rig with it, as the merchant's
+        return { group: g, free: () => rig.dispose(), update: (dt) => rig.update(dt, lying) };
+      }
     }
     return { group: g };
   }
@@ -1470,7 +1485,8 @@ export class Renderer implements Picker {
     pv.rig.root.position.z = pp.z;
     if (!p.dead) pv.rig.root.position.y = 0;
     pv.rig.root.rotation.y = smoothAngle(pv.rig.root.rotation.y, p.facing, dt * 18);
-    pv.rig.update(dt, this.anim(p, p.stats.moveSpeed * p.slowFactor() * (p.state === 'charge' ? 2.5 : 1), 'red'));
+    // the hero's attacks, casts, hit recoveries and blocks last Diablo II's frames: the clips fit them exactly
+    pv.rig.update(dt, { ...this.anim(p, p.moveSpeed() * p.slowFactor() * (p.state === 'charge' ? 2.5 : 1), 'red'), exact: true });
     pv.shadow.position.set(pp.x, 0.02, pp.z);
 
     // the camp's people stand still: animated, and drawn, only while the hero is about

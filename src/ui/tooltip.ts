@@ -1,7 +1,10 @@
 import { SKILL_BY_ID } from '../data/skills';
 import { CHARGE_PREFIX } from '../game/player';
-import { baseOf, buyPrice, canSocket, displayName, sellPrice, tooltip, type TooltipLine } from '../items/item';
+import { isSocketFiller } from '../items/d2/sockets';
+import { baseOf, canSocket, displayName, tooltip, type TooltipLine } from '../items/item';
+import { buyPrice, repairCost, sellPrice } from '../items/vendor';
 import { escapeHtml, h, type UIContext } from './common';
+import { isRepairing } from './inventory';
 
 /** the tooltip by the pointer: items, skills, and anything with a data-tip */
 export class Tooltip {
@@ -39,13 +42,21 @@ export class Tooltip {
     if (ui.cursorItem && holder.dataset.src !== 'shop') {
       if (baseOf(item).type === 'cube') return this.show([{ text: '放进魔盒', color: '#c8a86a' }], e.clientX, e.clientY);
       // still show the target's tooltip when socketing
-      if (!(baseOf(ui.cursorItem).type === 'rune' && canSocket(item))) return this.hide();
+      if (!(isSocketFiller(ui.cursorItem) && canSocket(item))) return this.hide();
     }
     const p = ui.game.player;
+    const ctx = p.tradeCtx();
+    const src = holder.dataset.src;
     let price: string | undefined;
-    if (holder.dataset.src === 'shop') price = `购买价格：${buyPrice(item)} 金币`;
-    else if (ui.left === 'shop' && (holder.dataset.src === 'inv')) price = `出售价格：${sellPrice(item)} 金币（${ui.touch ? '拿起后放进商店出售' : 'Ctrl+点击出售'}）`;
-    this.show(tooltip(item, { level: p.level, str: p.stats.str, dex: p.stats.dex, cls: p.cls }, price), e.clientX, e.clientY);
+    if (src === 'shop') price = `购买价格：${buyPrice(ui.game.shop, item, ctx)} 金币`;
+    else if (ui.left === 'shop' && isRepairing() && (src === 'inv' || src === 'eq')) {
+      const c = repairCost(item, ctx);
+      price = c ? `修理价格：${c} 金币` : item.eth ? '无形物品无法修理' : '不需要修理';
+    } else if (ui.left === 'shop' && src === 'inv') {
+      price = baseOf(item).noSell ? '商人不收这件物品' : `出售价格：${sellPrice(ui.game.shop, item, ctx)} 金币（${ui.touch ? '拿起后放进商店出售' : 'Ctrl+点击出售'}）`;
+    }
+    const worn = Object.values(p.equipment).filter((x) => !!x);
+    this.show(tooltip(item, { level: p.level, str: p.stats.str, dex: p.stats.dex, cls: p.cls, worn }, price), e.clientX, e.clientY);
   }
 
   show(lines: TooltipLine[], x: number, y: number) {

@@ -25,7 +25,7 @@ import { Tooltip } from './tooltip';
 import { isTouchDevice, TouchControls } from './touch';
 
 /** what the touch interact button says it does to each kind of thing */
-const USE_VERB: Record<ObjKind, string> = { chest: '打开', barrel: '打碎', stairs: '进入', waypoint: '使用', vendor: '交谈', stash: '打开', portal: '进入', exit: '前往', shrine: '触摸' };
+const USE_VERB: Record<ObjKind, string> = { chest: '打开', barrel: '打碎', stairs: '进入', waypoint: '使用', vendor: '交谈', stash: '打开', portal: '进入', exit: '前往', shrine: '触摸', corpse: '拾取' };
 
 /**
  * The HTML interface over the world, and the game's hooks into it. The HUD, the panels and the

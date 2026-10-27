@@ -157,6 +157,8 @@ const GROUPS = {
     socket: { synth: 'socket', max: 1, prio: 'high' },
     /** a socketed item became a runeword */
     runeword: { synth: 'dropunique', max: 1, prio: 'critical' },
+    /** a worn item's durability ran out */
+    broken: { synth: 'nomana', max: 1, prio: 'high' },
     /** the cube made something */
     transmute: { synth: 'socket', max: 1, prio: 'high' },
     drink: { synth: 'potion', max: 2, prio: 'high' },
@@ -233,6 +235,14 @@ export const DROP_SOUND: Partial<Record<ItemType, SoundId>> = {
   dagger: 'item.drop_weapon',
   spear: 'item.drop_weapon',
   polearm: 'item.drop_weapon',
+  // the D2 bases' kinds, by their Weapons.txt / Misc.txt dropsound: throwing knives and axes
+  // (item_smallmetalweapon), claws (item_sword) and javelins (item_javelins) are steel; a jewel
+  // (item_jewel) a cut stone. Bows, crossbows, charms, scrolls, tomes, keys and quivers have sounds
+  // of their own in D2 that aren't recorded yet: item.drop
+  throwing: 'item.drop_weapon',
+  claw: 'item.drop_weapon',
+  javelin: 'item.drop_weapon',
+  jewel: 'item.drop_gem',
   armor: 'item.drop_armor',
   helm: 'item.drop_armor',
   shield: 'item.drop_armor',

@@ -150,6 +150,8 @@ export interface Entrance {
 /** a named unique pack a map sets down where it says (superuniques.json, by its areaId) */
 export interface SuperUnique {
   pos: P2;
+  /** its SuperUniques.txt row (D2X_SUPERUNIQUES key): its name and its drop */
+  key: string;
   /** the monster it is one of (src/data/monsters.ts) */
   monster: string;
   name: string;

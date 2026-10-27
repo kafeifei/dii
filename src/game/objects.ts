@@ -2,6 +2,7 @@ import type { P2 } from '../core/math';
 import type { ProjectileKind } from '../data/monsters';
 import type { Item } from '../items/item';
 import type { Actor, DamagePacket, Faction } from './actor';
+import type { Corpse } from './corpse';
 import type { FxKind } from './fx';
 
 let objIds = 0;
@@ -22,7 +23,7 @@ export class GroundItem {
   }
 }
 
-export type ObjKind = 'chest' | 'barrel' | 'stairs' | 'waypoint' | 'vendor' | 'stash' | 'portal' | 'exit' | 'shrine';
+export type ObjKind = 'chest' | 'barrel' | 'stairs' | 'waypoint' | 'vendor' | 'stash' | 'portal' | 'exit' | 'shrine' | 'corpse';
 
 export class WorldObject {
   readonly id = ++objIds;
@@ -42,6 +43,8 @@ export class WorldObject {
   shrine?: string;
   /** vendors: who keeps the stall (the layout's Service.npc), for what they say and the shop's title */
   npc?: string;
+  /** the hero's body (src/game/corpse.ts), for 'corpse' */
+  corpse?: Corpse;
   constructor(kind: ObjKind, pos: P2, name: string, radius = 0.5) {
     this.kind = kind;
     this.pos = { ...pos };

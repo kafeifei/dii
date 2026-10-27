@@ -1,4 +1,6 @@
+import { D2X_AREAS } from '../data/d2x/areas';
 import { monsterLevel } from '../data/monsters';
+import type { Difficulty } from '../items/d2/types';
 import { THEMES, WILD_MAPS, dungeonFloor, isWild, themeForFloor } from './levelgen';
 
 /**
@@ -39,10 +41,17 @@ export const BURIAL_GROUNDS = 17;
 /** dungeon floor f is area DUNGEON_AREAS + f */
 const DUNGEON_AREAS = 1000;
 
-/** one difficulty for now: nightmare and hell repeat normal until there are difficulties */
+/** a trial floor's level, the same in every difficulty: it has no levels.json row, and the debug panel picks the floor and the difficulty apart */
 function alvl(floor: number): [number, number, number] {
   const m = monsterLevel(floor);
   return [m, m, m];
+}
+
+/** an Act 1 area's level in normal, nightmare and hell: levels.json MonLvlEx, MonLvlEx(N), MonLvlEx(H) (D2xArea.lvl) */
+function d2Alvl(id: number): [number, number, number] {
+  const row = D2X_AREAS.find((a) => a.id === id);
+  if (!row) throw new Error(`no Act 1 area ${id}`);
+  return [...row.lvl];
 }
 
 const AREAS = new Map<number, AreaDef>();
@@ -52,16 +61,17 @@ function define(a: AreaDef): AreaDef {
   return a;
 }
 
-// Area levels are levels.json MonLvlEx (normal), repeated until there are difficulties; a Waypoint
+// Area levels are levels.json MonLvlEx, MonLvlEx(N) and MonLvlEx(H), the expansion's (MonsterRegion.cpp
+// 936-942 reads wMonLvlEx; normal: the camp 0, Blood Moor and the den 1, Cold Plains 2); a Waypoint
 // other than 255 there is `waypoint`. The names are line A's rename table (tools/d2-names/areas.json)
 // with the English the user approved; Stony Field's and the Burial Grounds' English are ours until
-// the table has theirs. The camp and Blood Moor are as hard as the endless dungeon's first floor was.
-define({ id: CAMP_AREA, key: 'camp', name: THEMES.town.name, en: THEMES.town.en, label: '营地', alvl: [0, 0, 0], kind: 'town', waypoint: true });
-define({ id: WILD_AREA, key: 'wild', name: THEMES.wild.name, en: THEMES.wild.en, alvl: alvl(1), kind: 'outdoor', waypoint: false });
-define({ id: COLD_PLAINS, key: 'coldplains', name: '凛寒原野', en: 'Bitterfrost Wilds', alvl: [2, 2, 2], kind: 'outdoor', waypoint: true });
-define({ id: STONY_FIELD, key: 'stonyfield', name: '列石荒野', en: 'Cairnstone Waste', alvl: [4, 4, 4], kind: 'outdoor', waypoint: true });
-define({ id: DEN_OF_EVIL, key: 'denofevil', name: '邪秽巢穴', en: 'Festering Lair', alvl: [1, 1, 1], kind: 'dungeon', waypoint: false });
-define({ id: BURIAL_GROUNDS, key: 'burialgrounds', name: '葬骨荒冢', en: 'Bonewake Barrows', alvl: [3, 3, 3], kind: 'outdoor', waypoint: false });
+// the table has theirs.
+define({ id: CAMP_AREA, key: 'camp', name: THEMES.town.name, en: THEMES.town.en, label: '营地', alvl: d2Alvl(CAMP_AREA), kind: 'town', waypoint: true });
+define({ id: WILD_AREA, key: 'wild', name: THEMES.wild.name, en: THEMES.wild.en, alvl: d2Alvl(WILD_AREA), kind: 'outdoor', waypoint: false });
+define({ id: COLD_PLAINS, key: 'coldplains', name: '凛寒原野', en: 'Bitterfrost Wilds', alvl: d2Alvl(COLD_PLAINS), kind: 'outdoor', waypoint: true });
+define({ id: STONY_FIELD, key: 'stonyfield', name: '列石荒野', en: 'Cairnstone Waste', alvl: d2Alvl(STONY_FIELD), kind: 'outdoor', waypoint: true });
+define({ id: DEN_OF_EVIL, key: 'denofevil', name: '邪秽巢穴', en: 'Festering Lair', alvl: d2Alvl(DEN_OF_EVIL), kind: 'dungeon', waypoint: false });
+define({ id: BURIAL_GROUNDS, key: 'burialgrounds', name: '葬骨荒冢', en: 'Bonewake Barrows', alvl: d2Alvl(BURIAL_GROUNDS), kind: 'outdoor', waypoint: false });
 
 /**
  * The areas of normal play this build has a map of, in the order a hero comes to them: the camp,
@@ -79,9 +89,13 @@ export function trialFloor(id: number): number | undefined {
   return id > DUNGEON_AREAS ? id - DUNGEON_AREAS : undefined;
 }
 
-/** an area's level, its monsters' and its loot's: normal's, until there are difficulties */
-export function areaLevel(a: AreaDef): number {
-  return a.alvl[0];
+/**
+ * An area's level in a difficulty (DATATBLS_GetMonsterLevelInArea): what its chests and barrels drop
+ * at (Items.cpp:1636-1646, ObjMode.cpp:3929). Its monsters spawn at normal's in every difficulty
+ * for now (src/game/spawn.ts), as the game's monsters play no harder yet.
+ */
+export function areaLevel(a: AreaDef, difficulty: Difficulty = 0): number {
+  return a.alvl[difficulty];
 }
 
 /** an area by id; the dungeon's floors are made as they are first asked for, since it has no bottom */

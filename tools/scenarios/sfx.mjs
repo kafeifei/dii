@@ -474,7 +474,9 @@ async function shippedLevels(ev) {
   const { RATE, loudness } = await import('../audio/dsp.mjs');
   const { SOUNDS, HERO_LINES, LINE, areaSound } = await import('../../src/audio/sounds.ts');
   const LINE_VOL = LINE.vol;
-  const { CLASSES } = await import('../../src/data/classes.ts');
+  // the classes through the page: src/data/classes.ts imports the generated tables without an
+  // extension, which only Vite resolves
+  const classes = await ev(async () => Object.keys((await import('/src/data/classes.ts')).CLASSES));
   const files = await ev(() => window.game.sfx.files);
   // the areas of normal play (src/world/areas.ts), to find the one a loop is played in
   const AREAS = await ev(async () => (await import('/src/world/areas.ts')).areaList());
@@ -486,7 +488,7 @@ async function shippedLevels(ev) {
   /** voice.<class>.<line>, a moment the game has a line for */
   const heroLine = (id) => {
     const [v, who, line, more] = id.split('.');
-    return v === 'voice' && who in CLASSES && HERO_LINES.includes(line) && more === undefined;
+    return v === 'voice' && classes.includes(who) && HERO_LINES.includes(line) && more === undefined;
   };
   for (const id of Object.keys(files)) {
     if (id in SOUNDS) jobs.push({ kind: 'sfx', id, ids: [id] });

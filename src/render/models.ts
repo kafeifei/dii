@@ -558,7 +558,7 @@ export class ModelRig {
       case 'block': {
         if (restarted) {
           const clip = this.pick(a.state === 'block' ? (c.block ?? c.hit) : c.hit, true);
-          if (clip) this.play(clip, false, Math.max(1, clip.duration / Math.max(0.25, dur)), 0.05);
+          if (clip) this.play(clip, false, a.exact ? clip.duration / Math.max(0.04, a.stateDur) : Math.max(1, clip.duration / Math.max(0.25, dur)), 0.05);
         }
         break;
       }

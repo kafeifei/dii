@@ -66,7 +66,8 @@ interface Spawn {
 
 /** fills one area of a level with its monsters (Level.monsters, and Level.boss when the boss room is in it) */
 export function spawnArea(level: Level, area: AreaDef, rng: RNG, opts: SpawnOpts) {
-  fill({ level, rng, floor: opts.floor, mlvl: areaLevel(area), at: placement(level, area, rng, opts) });
+  // normal's level in every difficulty: the game's monsters play no harder yet (areaLevel)
+  fill({ level, rng, floor: opts.floor, mlvl: areaLevel(area, 0), at: placement(level, area, rng, opts) });
 }
 
 /** the box each area's tiles fill on a level's map, in one pass over it, by area id (in the order the rows come to them) */
@@ -165,7 +166,7 @@ function fill(s: Spawn) {
   }
   // the named uniques, each a unique pack where the layout says (D2GAME_SpawnSuperUnique_6FC6F690
   // spawns a superunique with its minions); after the rest, so a map without any rolls as before
-  for (const u of at.uniques) spawnPack(s, MONSTERS[u.monster] ?? pickDef(pool, rng), 'unique', at.near(u.pos, 0.5), undefined, u.name);
+  for (const u of at.uniques) spawnPack(s, MONSTERS[u.monster] ?? pickDef(pool, rng), 'unique', at.near(u.pos, 0.5), undefined, u);
   // boss
   if (at.boss) {
     const c = at.boss;
@@ -196,8 +197,8 @@ function pickDef(pool: MonsterDef[], rng: RNG): MonsterDef {
   return pool[0];
 }
 
-/** a pack around c: champions, a unique with its minions (named `name`, or by chance), or a normal pack with its escort */
-function spawnPack(s: Spawn, def: MonsterDef, rank: MonsterRank, c: P2, maxCount?: number, name?: string) {
+/** a pack around c: champions, a unique with its minions (the superunique `su`, or one named by chance), or a normal pack with its escort */
+function spawnPack(s: Spawn, def: MonsterDef, rank: MonsterRank, c: P2, maxCount?: number, su?: SuperUnique) {
   const { rng, mlvl } = s;
   const near = s.at.near;
   const monsters = s.level.monsters;
@@ -221,7 +222,9 @@ function spawnPack(s: Spawn, def: MonsterDef, rank: MonsterRank, c: P2, maxCount
       if (!mods.includes(m)) mods.push(m);
     }
     const boss = new Monster(def, mlvl + 2, 'unique', c, mods);
-    boss.displayName = name ?? rng.pick(UNIQUE_FIRST) + rng.pick(UNIQUE_SECOND);
+    boss.displayName = su?.name ?? rng.pick(UNIQUE_FIRST) + rng.pick(UNIQUE_SECOND);
+    // what it drops by (src/game/loot.ts); its minions are plain monsters there
+    boss.superUnique = su?.key;
     monsters.push(boss);
     const minions = rng.int(3, 5);
     const minionMods = mods.filter((m) => m === 'fireench' || m === 'coldench' || m === 'lightench');

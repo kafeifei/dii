@@ -1,12 +1,15 @@
 import { CLASSES, type PlayerClass } from '../data/classes';
 import { randInt, type P2 } from '../core/math';
 import { categoryOf, ITEM_BASES, UNKNOWN_BASE, type Category } from '../data/items';
-import { RUNEWORD_BY_ID, isOldRuneword, type OldRunewordId } from '../data/legendary';
+import { D2_RUNEWORDS } from '../data/d2/runewords';
+import { isOldRuneword, type OldRunewordId } from '../data/legendary';
 import type { StatKey } from '../data/stats';
-import { createItem } from '../items/gen';
+import { uid } from '../core/math';
 import { isUnknown, type Item } from '../items/item';
+import { OLD_BASES, toD2Item } from '../items/legacy';
 import type { Grid, Placed } from '../items/grid';
 import { Player, xpForLevel } from './player';
+import { bodyItems, type Corpse } from './corpse';
 import { WILD_MAPS } from '../world/levelgen';
 import { CAMP_AREA, areaForDepth, builtWaypoints, isBuilt } from '../world/areas';
 
@@ -121,12 +124,18 @@ export interface MercSave {
   dead: boolean;
 }
 
-/** the body a hero leaves on dying, with all they wore, until they walk back over it */
+/**
+ * the body a hero leaves on dying, with all they wore, until they walk back over it: as Diablo II
+ * saves one (PlrSave2.cpp:404-450), the first that holds items, without the experience on it;
+ * loaded, it waits in the camp (src/game/corpse.ts)
+ */
 export interface CorpseSave {
   area: number;
   pos: P2;
   difficulty: Difficulty;
   equipment: Player['equipment'];
+  /** the item that was on the cursor */
+  items?: Item[];
 }
 
 /** how many of each line's migrations a save has had (MIGRATIONS): each line bumps only its own */
@@ -191,7 +200,33 @@ export interface SaveV4 {
  * save in version 4's form and leaves unknown items alone. Loading doesn't touch version 4 items
  * otherwise: a base table change that saved items must follow (a reqLvl, say) ships as an items step
  */
-export const MIGRATIONS: Record<keyof MigrationCounts, ((d: SaveV4) => void)[]> = { items: [], world: [], skills: [] };
+export const MIGRATIONS: Record<keyof MigrationCounts, ((d: SaveV4) => void)[]> = {
+  items: [
+    // 1: the Diablo II bases. Every item, the mercenary's and the corpse's too, moves from the game's
+    // own base ids onto D2 codes (src/items/legacy.ts), keeping its mods, name, defense and, where
+    // the D2 base asks more, its old requirements
+    (d) => {
+      mapItems(d, toD2Item);
+      for (const eq of [d.merc?.equipment]) {
+        if (!eq || typeof eq !== 'object') continue;
+        for (const k of Object.keys(eq) as (keyof typeof eq)[]) {
+          const it = eq[k];
+          if (it && typeof it === 'object' && !isUnknown(it as Item)) eq[k] = toD2Item(it as Item) as never;
+        }
+      }
+    },
+  ],
+  world: [],
+  skills: [],
+};
+
+/** the items migration that moved items onto D2 codes: saves before it name bases by the game's old ids */
+const D2_BASES_STEP = 1;
+
+/** whether a base id is one this build knows, in a save at items migration count `n` */
+function knownBase(id: string, n: number): boolean {
+  return n < D2_BASES_STEP ? !!OLD_BASES[id] : !!ITEM_BASES[id];
+}
 const LINES = Object.keys(MIGRATIONS) as (keyof MigrationCounts)[];
 
 /** a count for each line */
@@ -355,12 +390,15 @@ function runMigrations(d: SaveV4) {
   }
 }
 
-/** each of the hero's items replaced by what `f` makes of it (not the mercenary's or the corpse's: this build doesn't play them) */
+/** each of the hero's items, the body's too, replaced by what `f` makes of it (not the mercenary's: this build doesn't play it) */
 function mapItems(d: SaveV4, f: (it: Item) => Item) {
   // a save is read as it is: anything may be in a place an item should be
   const m = (it: Item): Item => (it && typeof it === 'object' ? f(it) : it);
-  const eq = d.equipment ?? {};
-  for (const k of Object.keys(eq) as (keyof typeof eq)[]) eq[k] = m(eq[k]!);
+  const body = d.corpse && typeof d.corpse === 'object' ? d.corpse : null;
+  for (const eq of [d.equipment ?? {}, body?.equipment ?? {}]) {
+    if (eq && typeof eq === 'object') for (const k of Object.keys(eq) as (keyof typeof eq)[]) eq[k] = m(eq[k]!);
+  }
+  if (body && Array.isArray(body.items)) body.items = body.items.map(m);
   for (const list of [d.inventory, d.stash, d.cube]) {
     if (Array.isArray(list)) for (const pl of list) if (pl && typeof pl === 'object') pl.item = m(pl.item);
   }
@@ -370,7 +408,7 @@ function mapItems(d: SaveV4, f: (it: Item) => Item) {
 
 /** what stands in for an item whose base this build doesn't know: the item as saved, and where in the save's history */
 function unknownItem(it: Item, v: number, mig: MigrationCounts, damaged = false): Item {
-  const u = createItem(UNKNOWN_BASE);
+  const u: Item = { uid: uid('i'), baseId: UNKNOWN_BASE, rarity: 'normal', ilvl: 1, name: ITEM_BASES[UNKNOWN_BASE].name, mods: [], sockets: 0, socketed: [], reqLvl: 1 };
   u.raw = { v, mig: { ...mig }, item: it };
   if (damaged) u.raw.damaged = true;
   return u;
@@ -384,7 +422,7 @@ function unknownItem(it: Item, v: number, mig: MigrationCounts, damaged = false)
 function knownItem(it: Item, d: SaveV4, restore: boolean, fresh: Set<Item>): Item {
   if (fresh.has(it)) return it;
   if (it.raw) return (restore && restored(it.raw, d)) || it;
-  if (ITEM_BASES[it.baseId]) return it;
+  if (knownBase(it.baseId, d.mig.items)) return it;
   const u = unknownItem(it, d.v, d.mig);
   fresh.add(u);
   return u;
@@ -397,11 +435,11 @@ function restored(raw: NonNullable<Item['raw']>, d: SaveV4): Item | null {
   // worked on as a copy: while it stays unknown, what it holds stays as it was saved
   const copy = structuredClone(held);
   const it = raw.v < 4 ? upgradeItem(copy, { v: raw.v, damaged: !!raw.damaged }) : copy;
-  if (isUnknown(it) || !ITEM_BASES[it.baseId]) return null;
   const from = counts((k) => raw.mig?.[k] ?? 0);
+  if (isUnknown(it) || !knownBase(it.baseId, from.items)) return null;
   if (LINES.every((k) => from[k] >= d.mig[k])) return it;
   // the steps it missed, on a copy of the save holding only it
-  const shell: SaveV4 = { ...structuredClone({ ...d, equipment: {}, inventory: [], stash: [], cube: [], unplaced: [], belt: [] }), unplaced: [it] };
+  const shell: SaveV4 = { ...structuredClone({ ...d, equipment: {}, inventory: [], stash: [], cube: [], unplaced: [], belt: [], corpse: null }), unplaced: [it] };
   for (const k of LINES) for (let i = from[k]; i < Math.min(d.mig[k], MIGRATIONS[k].length); i++) MIGRATIONS[k][i](shell);
   // found again by its uid: a step may add items, or remake this one (not found, it stays unknown)
   let out: Item | null = null;
@@ -427,7 +465,7 @@ const readOnly = new WeakSet<Player>();
 export function writeSave(p: Player, area: number, worldSeed?: number) {
   if (readOnly.has(p)) return;
   const KEY = keyFor(slot);
-  // what this build doesn't play yet (progress, the mercenary, the corpse) is written from the save
+  // what this build doesn't play yet (progress, the mercenary) is written from the save
   // loaded or last written: a line that moves one onto Player or Game must write it from there instead
   const prev = loaded.get(p);
   const difficulty = p.difficulty;
@@ -468,7 +506,7 @@ export function writeSave(p: Player, area: number, worldSeed?: number) {
     unlocked: Math.max(prev?.unlocked ?? 0, difficulty) as Difficulty,
     progress,
     merc: prev?.merc ?? null,
-    corpse: prev?.corpse ?? null,
+    corpse: corpseSave(p),
     life: p.dead ? undefined : p.life,
     mana: p.dead ? undefined : p.mana,
     time: Date.now(),
@@ -482,9 +520,23 @@ export function writeSave(p: Player, area: number, worldSeed?: number) {
   }
 }
 
+/** the body the save keeps: the first that holds items, as Diablo II keeps one (PlrSave2.cpp:404-450) */
+function corpseSave(p: Player): CorpseSave | null {
+  const c = p.corpses.find((x) => bodyItems(x).length);
+  if (!c) return null;
+  const out: CorpseSave = { area: c.area, pos: c.pos ? { ...c.pos } : { x: 0, z: 0 }, difficulty: c.difficulty, equipment: c.equipment };
+  if (c.items.length) out.items = c.items;
+  return out;
+}
+
 // ── saves from before the Diablo II items (2026-10) ──
-/** weapon bases that are gone, to the D2 base nearest them */
-const OLD_BASES: Record<string, string> = { runeblade: 'runesword', cleaver: 'militarypick', sacredmace: 'flangedmace' };
+/**
+ * The D2 runewords there were at items migration 0 (the first D2 import's, src/data/d2), the ones
+ * since left out of the content scope included: an item made from one keeps it
+ */
+const OLD_D2_RUNEWORDS = new Set(D2_RUNEWORDS.map((r) => r.id));
+/** weapon bases that were gone before the D2 bases, to the D2 weapon nearest them (old ids) */
+const OLD_WEAPONS: Record<string, string> = { runeblade: 'runesword', cleaver: 'militarypick', sacredmace: 'flangedmace' };
 /** the twelve invented runes, to D2 runes of the same kind */
 const OLD_RUNES: Record<string, string> = {
   r_dawn: 'r01', r_ember: 'r08', r_frost: 'r10', r_thunder: 'r09', r_venom: 'r07', r_stone: 'r05',
@@ -524,24 +576,24 @@ interface MigrateOpts {
 /** an old runeword the first D2 release took apart: its (now D2) runes, in a base it fits */
 function strippedRuneword(it: Item) {
   if ((it.rarity !== 'normal' && it.rarity !== 'superior') || !it.sockets || it.socketed.length !== it.sockets) return undefined;
-  const cat = categoryOf(ITEM_BASES[it.baseId].type);
+  const cat = categoryOf(OLD_BASES[it.baseId].type);
   return OLD_RUNEWORDS.find((rw) => cat && rw.cats.includes(cat) && rw.runes.length === it.socketed.length && rw.runes.every((r, i) => OLD_RUNES[r] === it.socketed[i]));
 }
 
-/** an item from a save before version 4 as version 4 has it, or unknown when this build lacks its base */
+/**
+ * An item from a save before version 4 as version 4 had it at items migration 0 (the game's own
+ * base ids, src/items/legacy.ts OLD_BASES), or unknown when there was no such base. Its names are
+ * worked out from its base now (displayName), so a white item's isn't changed here
+ */
 function upgradeItem(it: Item, opts: MigrateOpts): Item {
   const was = it.baseId;
-  const id = OLD_BASES[was] ?? OLD_RUNES[was] ?? was;
-  if (!ITEM_BASES[id]) return unknownItem(it, opts.v, counts(() => 0), opts.damaged);
+  const id = OLD_WEAPONS[was] ?? OLD_RUNES[was] ?? was;
+  if (!OLD_BASES[id]) return unknownItem(it, opts.v, counts(() => 0), opts.damaged);
   it.baseId = id;
-  // a white item that changed base takes the new base's name
-  if (was !== it.baseId && (it.rarity === 'normal' || it.rarity === 'superior')) {
-    it.name = `${it.sockets > 0 ? '有孔的' : ''}${it.rarity === 'superior' ? '优质的' : ''}${ITEM_BASES[it.baseId].name}`;
-  }
   // a rune or gem this build doesn't know stays in its socket, doing nothing
   it.socketed = (it.socketed ?? []).map((r) => (typeof r === 'string' ? (OLD_RUNES[r] ?? r) : r));
-  const b = ITEM_BASES[it.baseId];
-  if (b.code && (it.rarity === 'normal' || it.rarity === 'superior')) it.reqLvl = Math.max(b.reqLvl ?? 1, 1);
+  const b = OLD_BASES[it.baseId];
+  if (b.d2 && (it.rarity === 'normal' || it.rarity === 'superior')) it.reqLvl = Math.max(b.reqLvl ?? 1, 1);
   const rw = opts.damaged ? strippedRuneword(it) : undefined;
   if (rw) {
     it.rarity = 'runeword';
@@ -551,11 +603,10 @@ function upgradeItem(it: Item, opts: MigrateOpts): Item {
     it.reqLvl = Math.max(it.reqLvl, rw.reqLvl);
   }
   // a runeword that exists in neither list goes back to the socketed white item it was made on
-  if (it.runewordId && !RUNEWORD_BY_ID[it.runewordId] && !isOldRuneword(it.runewordId)) {
+  if (it.runewordId && !OLD_D2_RUNEWORDS.has(it.runewordId) && !isOldRuneword(it.runewordId)) {
     delete it.runewordId;
     it.rarity = 'normal';
     it.mods = [];
-    it.name = b.name;
   }
   // from a save before the D2 items: keep the requirements it had
   if (opts.v < 2 && !it.legacy && categoryOf(b.type)) {
@@ -735,10 +786,27 @@ export function loadSave(): Loaded | null {
   p.depthReached = d.depthReached ?? 0;
   p.difficulty = DIFFICULTIES.includes(d.difficulty) ? d.difficulty : 0;
   p.waypoints = builtWaypoints(d.progress?.[p.difficulty]?.waypoints ?? []);
+  // the body left on dying waits in the camp, with no experience on it (src/game/corpse.ts)
+  p.corpses = [];
+  const body = d.corpse && typeof d.corpse === 'object' ? d.corpse : null;
+  if (body) {
+    const c: Corpse = { level: null, pos: null, area: body.area ?? CAMP_AREA, difficulty: DIFFICULTIES.includes(body.difficulty) ? body.difficulty : p.difficulty, cls: p.cls, equipment: {}, items: [], xp: 0 };
+    for (const [slot, it] of Object.entries(body.equipment ?? {})) {
+      const m = keep(it);
+      if (m) c.equipment[slot as keyof Player['equipment']] = m;
+    }
+    for (const it of Array.isArray(body.items) ? body.items : []) {
+      const m = keep(it);
+      if (m) c.items.push(m);
+    }
+    if (bodyItems(c).length) p.corpses.push(c);
+  }
+  // what follows from the level and attributes is worked out anew (Diablo II's CharStats: Player.recalc)
   p.markDirty();
   p.recalc();
   p.life = Math.min(p.d.maxLife, Math.max(1, d.life ?? p.d.maxLife));
   p.mana = Math.min(p.d.maxMana, Math.max(0, d.mana ?? p.d.maxMana));
+  p.stamina = p.d.maxStamina;
   loaded.set(p, d);
   if (why) readOnly.add(p);
   return { player: p, area: !old && isBuilt(d.area) ? d.area : CAMP_AREA, worldSeed: typeof d.worldSeed === 'number' ? d.worldSeed : undefined, readOnly: why };

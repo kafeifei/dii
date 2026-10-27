@@ -9,6 +9,8 @@ import type { Monster } from './monster';
 import { DelayedBlast, Hammer, Projectile, type ProjKind } from './objects';
 import { face, faceNow, moveBy, stepToward } from './movement';
 import type { ChargeUse, Player } from './player';
+import { castAnim, toSeconds } from './d2/frames';
+import { charStats, manaRegenPerSec, runDrainPerSec, staminaRegenPerSec, type StaminaMode } from './d2/stats';
 
 /** set while an item casts a skill (chance to cast, charges): the level it casts at */
 let castLvl: number | undefined;
@@ -73,14 +75,26 @@ function nearestInFront(g: Game, p: Player, maxDist: number, preferDir = true): 
   return best;
 }
 
-/** begin a weapon attack (basic / sacred strike / zeal / charge finish) */
+/**
+ * begin a weapon attack (basic / sacred strike / zeal / charge finish): Diablo II's attack frames for
+ * the class, weapon and IAS (Player.recalc), the blow landing on the animation's action frame
+ */
 export function startAttack(g: Game, p: Player, skill: string, target: Monster | null, point: P2, free = false): boolean {
   if (!free && skill !== 'attack' && !payMana(g, p, skill)) return false;
-  const aps = p.stats.attacksPerSec * p.slowFactor();
-  let dur = 1 / aps;
-  if (skill === 'zeal') dur /= 1.7;
-  if (skill === 'charge') dur = 0.32;
+  const slow = p.slowFactor();
+  let dur = p.stats.attackTime / slow;
+  let at = p.stats.attackAction / slow;
+  // the game's own zeal and charge, until the skills follow D2 (plan A5)
+  if (skill === 'zeal') {
+    dur /= 1.7;
+    at /= 1.7;
+  }
+  if (skill === 'charge') {
+    dur = 0.32;
+    at = 0.16;
+  }
   p.setState('attack', dur);
+  p.actionAt = at;
   g.playerAction = { skill, target, point: { ...point } };
   faceNow(p, target ? target.pos : point);
   if (skill === 'zeal' && !free) p.zealHitsLeft = sp_(p, 'zeal').hits - 1;
@@ -99,7 +113,16 @@ export function startCast(g: Game, p: Player, skill: string, point: P2, target: 
     }
   } else if (!payMana(g, p, skill)) return false;
   if (def.cooldown) p.cooldowns[skill] = def.cooldown;
-  p.setState('cast', p.stats.castTime);
+  // D2's cast frames for the class and FCR; the Sorceress's Lightning and Chain Lightning play their
+  // own sequence (game/d2/frames.ts castAnim), which says nothing of when the bolt leaves
+  if (skill === 'chain_lightning' && p.cls === 'sorceress') {
+    const seq = castAnim(p.cls, p.stats.fcr, { lightning: true });
+    p.setState('cast', toSeconds(seq.frames));
+    p.actionAt = toSeconds(seq.frames) * (p.stats.castAction / p.stats.castTime);
+  } else {
+    p.setState('cast', p.stats.castTime);
+    p.actionAt = p.stats.castAction;
+  }
   g.playerAction = { skill, target, point: { ...point }, lvl: charge?.lvl };
   faceNow(p, point);
   return true;
@@ -519,7 +542,24 @@ export function updatePlayer(g: Game, p: Player, dt: number) {
     }
   }
   p.life = Math.min(d.maxLife, p.life + d.lifeRegen * dt);
-  p.mana = Math.min(d.maxMana, p.mana + d.maxMana * 0.014 * (1 + d.manaRegenPct / 100) * dt);
+  // D2's mana regeneration: the pool in CharStats ManaRegen seconds, raised by "regenerate mana %"
+  p.mana = Math.min(d.maxMana, p.mana + manaRegenPerSec(charStats(p.cls), d.maxMana, d.manaRegenPct) * dt);
+  // run or walk: the switch (Ctrl held turns it over); out of town only with stamina left (PlrModes.cpp:190-200)
+  const town = g.level.inTown(p.pos);
+  p.running = p.runMode !== !!g.input?.ctrl && (town || p.stamina > 0);
+  // stamina: running out of town spends it, the body armor's Speed making it faster
+  // (PlrModes.cpp:256-293); out of it the hero walks. Standing and walking bring it back (1139-1186)
+  if (p.runningNow() && !town) {
+    const body = p.equipment.body;
+    p.stamina -= runDrainPerSec(charStats(p.cls), { torsoSpeed: body ? (ITEM_BASES[body.baseId]?.armorSpeed ?? 0) : 0, drainPct: d.bag.staminaDrain ?? 0 }) * dt;
+    if (p.stamina <= 0) {
+      p.stamina = 0;
+      p.running = false;
+    }
+  } else {
+    const mode: StaminaMode = p.state === 'idle' ? 'stand' : p.state === 'move' && !p.running ? (town ? 'townWalk' : 'walk') : 'busy';
+    p.stamina = Math.min(d.maxStamina, p.stamina + staminaRegenPerSec(d.maxStamina, mode, p.stamina, d.bag.staminaRegen ?? 0) * dt);
+  }
   for (const q of p.healQueue) {
     const s = Math.min(q.left, dt);
     p.life = Math.min(d.maxLife, p.life + q.perSec * s);
@@ -557,7 +597,7 @@ export function updatePlayer(g: Game, p: Player, dt: number) {
       return;
     case 'attack': {
       p.stateTime += dt;
-      if (!p.actionFired && p.stateTime >= p.stateDur * 0.5) {
+      if (!p.actionFired && p.stateTime >= (p.actionAt >= 0 ? p.actionAt : p.stateDur * 0.5)) {
         p.actionFired = true;
         fireAttack(g, p);
       }
@@ -581,7 +621,7 @@ export function updatePlayer(g: Game, p: Player, dt: number) {
     }
     case 'cast':
       p.stateTime += dt;
-      if (!p.actionFired && p.stateTime >= p.stateDur * 0.55) {
+      if (!p.actionFired && p.stateTime >= (p.actionAt >= 0 ? p.actionAt : p.stateDur * 0.55)) {
         p.actionFired = true;
         fireSpell(g, p);
       }
@@ -616,7 +656,7 @@ export function updatePlayer(g: Game, p: Player, dt: number) {
     if (p.state === 'move') p.setState('idle');
     return;
   }
-  const speed = d.moveSpeed * p.slowFactor();
+  const speed = p.moveSpeed() * p.slowFactor();
   switch (it.kind) {
     case 'steer': {
       // no path finding: walk where the stick points and slide along walls

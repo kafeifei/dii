@@ -127,10 +127,12 @@ export class DeathScreen {
     this.el = d;
   }
 
-  /** the player died: this comes up a moment later */
+  /** the player died: this comes up a moment later, with what the death cost (Game.lastDeath) */
   open() {
-    const lost = this.game.player.gold;
-    this.el.querySelector('.note')!.textContent = `你的灵魂回到了营地……（携带金币剩余 ${lost}）`;
+    const pen = this.game.lastDeath;
+    const cost = pen ? `失去 ${pen.goldLost} 金币${pen.xpLost ? `、${pen.xpLost} 点经验` : ''}。` : '';
+    const left = pen?.goldDropped ? `身上剩下的 ${pen.goldDropped} 金币` : '';
+    this.el.querySelector('.note')!.textContent = `你的灵魂回到了营地……${cost}装备${left ? `和${left}` : ''}留在了你倒下的地方，回去拾取尸体就能拿回。`;
     setTimeout(() => this.el.classList.add('open'), 1200);
   }
 }

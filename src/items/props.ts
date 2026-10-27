@@ -1,5 +1,6 @@
 import { randInt } from '../core/math';
 import type { D2Prop } from '../data/d2/types';
+import { perLevelShift } from './d2/props';
 import type { StatKey } from '../data/stats';
 import type { ItemMod } from './item';
 
@@ -30,14 +31,26 @@ const SIMPLE: Record<string, StatKey> = {
   ease: 'ease', cheap: 'cheap', 'ac-miss': 'defMissile', 'res-pois-len': 'poisonLenRes',
   indestruct: 'indestructible', ethereal: 'ethereal', stam: 'stamina', stamdrain: 'staminaDrain', 'regen-stam': 'staminaRegen',
   pierce: 'pierceArrow', explosivearrow: 'explosiveArrow', 'charge-noconsume': 'chargeNoConsume',
+  addxp: 'xpPct', 'light-thorns': 'lightThorns', 'res-mag': 'resMagic', 'ac-hth': 'defMelee', reanimate: 'reanimate',
+  'rep-quant': 'repQuant', stack: 'extraStack', magicarrow: 'magicArrow',
+  'pierce-immunity-cold': 'sunder', 'pierce-immunity-fire': 'sunder', 'pierce-immunity-light': 'sunder',
+  'pierce-immunity-poison': 'sunder', 'pierce-immunity-damage': 'sunder', 'pierce-immunity-magic': 'sunder',
 };
 
-/** "+X per character level" properties: the value is in eighths of a point per level */
+/**
+ * "+X per character level" properties: the value is in eighths of a point per level, attack rating
+ * in halves (ItemStatCost op param 3 and 1: d2/props.ts perLevelShift), which propMods turns into eighths
+ */
 const PER_LEVEL: Record<string, StatKey> = {
   'str/lvl': 'str', 'dex/lvl': 'dex', 'vit/lvl': 'vit', 'enr/lvl': 'ene', 'hp/lvl': 'life', 'mana/lvl': 'mana',
   'ac/lvl': 'def', 'att/lvl': 'ar', 'att%/lvl': 'arPct', 'dmg/lvl': 'dmgMax', 'deadly/lvl': 'crit',
   'mag%/lvl': 'mf', 'gold%/lvl': 'gf', 'dmg-dem/lvl': 'dmgDemon', 'dmg-und/lvl': 'dmgUndead', 'thorns/lvl': 'thorns',
+  'abs-cold/lvl': 'absCold', 'abs-fire/lvl': 'absFire', 'ac%/lvl': 'defPct', 'att-dem/lvl': 'arDemon', 'att-und/lvl': 'arUndead',
+  'dmg%/lvl': 'dmgMaxPct', 'dmg-cold/lvl': 'coldMax', 'dmg-fire/lvl': 'fireMax', 'dmg-ltng/lvl': 'lightMax',
+  'res-cold/lvl': 'resCold', 'res-fire/lvl': 'resFire', 'res-ltng/lvl': 'resLight', 'res-pois/lvl': 'resPoison',
+  'regen-stam/lvl': 'staminaRegen', 'stam/lvl': 'stamina', 'crush/lvl': 'cb', 'wounds/lvl': 'ow',
 };
+
 
 const PROC: Record<string, StatKey> = {
   'hit-skill': 'procHit', 'gethit-skill': 'procStruck', 'att-skill': 'procAttack',
@@ -49,6 +62,84 @@ const FLAGS = new Set(['knock', 'ignore-ac', 'nofreeze', 'half-freeze', 'noheal'
 
 const CLASS_CODES = new Set(['ama', 'sor', 'nec', 'pal', 'bar', 'dru', 'ass', 'war']);
 
+/**
+ * What the item itself takes, not the wearer (src/items/make.ts): sockets, most durability and its
+ * %, and the item level requirement a recipe adds. propMods leaves them out
+ */
+export const ITEM_STATE_CODES = new Set(['sock', 'dur', 'dur%', 'levelreq']);
+
+/**
+ * Codes the item rolls into others as it is made (d2/props.ts rollProps): a random class's skills
+ * (randclassskill → its class code) and a random skill (skill-rand → skill)
+ */
+const ROLLED_INTO = ['randclassskill', 'skill-rand'];
+
+/**
+ * Every property code propMods reads, for tools/d2-import.mjs to check its tables against: keep in
+ * step with the switch below. pois-max and pois-len are read together with pois-min.
+ */
+export const PROP_CODES: readonly string[] = [
+  ...Object.keys(SIMPLE), ...Object.keys(PER_LEVEL), ...Object.keys(PROC), ...CLASS_CODES, ...ITEM_STATE_CODES, ...ROLLED_INTO,
+  'ac', 'howl', 'rep-dur', 'dmg', 'dmg-norm', 'dmg-fire', 'dmg-ltng', 'dmg-cold', 'dmg-mag', 'dmg-elem', 'res-all-max',
+  'fire-min', 'fire-max', 'ltng-min', 'ltng-max', 'cold-min', 'cold-max', 'mag-min', 'mag-max',
+  'dmg-pois', 'pois-min', 'pois-max', 'pois-len', 'skill', 'oskill', 'aura', 'charged', 'skilltab',
+];
+
+/** each stat's property code, for saying an old item's mods as D2 says its properties (the first code of a stat) */
+const CODE_OF = new Map<StatKey, string>();
+for (const [code, stat] of Object.entries(SIMPLE)) if (!CODE_OF.has(stat)) CODE_OF.set(stat, code);
+const PER_LEVEL_CODE = new Map<StatKey, string>();
+for (const [code, stat] of Object.entries(PER_LEVEL)) if (!PER_LEVEL_CODE.has(stat)) PER_LEVEL_CODE.set(stat, code);
+const PROC_CODE = new Map(Object.entries(PROC).map(([code, stat]) => [stat, code]));
+const PAIR_CODE: Partial<Record<StatKey, string>> = {
+  def: 'ac', defLocal: 'ac', fireMin: 'fire-min', fireMax: 'fire-max', lightMin: 'ltng-min', lightMax: 'ltng-max',
+  coldMin: 'cold-min', coldMax: 'cold-max', magicMin: 'mag-min', magicMax: 'mag-max',
+};
+
+/** the property code an old item's mod is said with, if one says it one for one */
+function codeOf(m: ItemMod): string | undefined {
+  if (m.perLvl) return PER_LEVEL_CODE.get(m.stat);
+  if (PROC_CODE.has(m.stat)) return PROC_CODE.get(m.stat);
+  switch (m.stat) {
+    case 'skill':
+    case 'oskill':
+    case 'aura':
+    case 'charged':
+      return m.stat;
+    case 'skillTab':
+      return 'skilltab';
+    case 'clsSkills':
+      return m.param;
+    default:
+      return CODE_OF.get(m.stat) ?? PAIR_CODE[m.stat];
+  }
+}
+
+/**
+ * An old item's mods as the D2 properties that give them, so its tooltip lines read as the D2
+ * items' do; what no property says one for one (poison's total, flee, the game's own stats) is
+ * left in rest. The inverse of propMods for what it maps one to one.
+ */
+export function modProps(mods: readonly ItemMod[]): { props: D2Prop[]; rest: ItemMod[] } {
+  const props: D2Prop[] = [];
+  const rest: ItemMod[] = [];
+  for (const m of mods) {
+    const c = codeOf(m);
+    if (!c) rest.push(m);
+    // per level: back from eighths to the property's own steps
+    else if (m.perLvl) {
+      const n = m.value >> (3 - perLevelShift(c));
+      props.push({ c, p: n, min: n, max: n });
+    }
+    // procs and charges: the chance or charges, and the skill level
+    else if (PROC_CODE.has(m.stat) || m.stat === 'charged') props.push({ c, p: m.param, min: m.value, max: m.lvl ?? 1 });
+    else if (m.stat === 'skillTab') props.push({ c, p: Number(m.param), min: m.value, max: m.value });
+    else if (m.stat === 'skill' || m.stat === 'oskill' || m.stat === 'aura') props.push({ c, p: m.param, min: m.value, max: m.value });
+    else props.push({ c, min: m.value, max: m.value });
+  }
+  return { props, rest };
+}
+
 export type Roll = (min: number, max: number) => number;
 export const rollRandom: Roll = (min, max) => randInt(Math.min(min, max), Math.max(min, max));
 /** the top of every range, for describing what a property can be */
@@ -57,7 +148,8 @@ export const rollMax: Roll = (min, max) => Math.max(min, max);
 /**
  * Turns Diablo II properties into item mods. Properties that only work together (poison damage
  * and its length) are read as a set. On a weapon, flat defense counts toward the character's
- * defense; on armor it is the piece's own.
+ * defense; off one it is defLocal, an armor's own, which globalItemStats (src/items/item.ts) gives
+ * the hero from anything without defense of its own (jewelry, charms, a jewel in a weapon).
  */
 export function propMods(props: D2Prop[], onWeapon: boolean, roll: Roll = rollRandom): ItemMod[] {
   const out: ItemMod[] = [];
@@ -73,7 +165,8 @@ export function propMods(props: D2Prop[], onWeapon: boolean, roll: Roll = rollRa
       continue;
     }
     if (PER_LEVEL[p.c]) {
-      add(PER_LEVEL[p.c], Number(p.p ?? p.min), { perLvl: true });
+      // in eighths: attack rating's halves are four eighths each
+      add(PER_LEVEL[p.c], Number(p.p ?? p.min) << (3 - perLevelShift(p.c)), { perLvl: true });
       continue;
     }
     if (PROC[p.c]) {
@@ -95,6 +188,15 @@ export function propMods(props: D2Prop[], onWeapon: boolean, roll: Roll = rollRa
       case 'dmg':
         add('dmgMin', v());
         add('dmgMax', v());
+        break;
+      case 'dmg-norm':
+        // funcs 15 and 16: min is the low damage, max the high one (Properties.txt)
+        add('dmgMin', p.min);
+        add('dmgMax', p.max);
+        break;
+      case 'res-all-max':
+        // all four maximum resistances, one value (func 1 then 3: Properties.txt)
+        for (const k of ['maxResFire', 'maxResCold', 'maxResLight', 'maxResPoison'] as const) add(k, v());
         break;
       case 'dmg-fire':
         add('fireMin', p.min);
@@ -175,7 +277,7 @@ export function propMods(props: D2Prop[], onWeapon: boolean, roll: Roll = rollRa
         break;
       default:
         if (CLASS_CODES.has(p.c)) out.push({ stat: 'clsSkills', value: v(), param: p.c });
-      // pois-max, pois-len, cold-len: read with their partner above; sock, levelreq: by the cube
+      // pois-max, pois-len, cold-len: read with their partner above; ITEM_STATE_CODES: by the item
     }
   }
   return out;

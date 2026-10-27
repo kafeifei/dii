@@ -10,7 +10,7 @@ export const GALLERY = typeof location !== 'undefined' && location.search.includ
 import { Monster } from './monster';
 import { MonsterGrid } from './monstergrid';
 import { areaBoxes, spawnArea } from './spawn';
-import { ITEM_BASES } from '../data/items';
+import { ITEM_BASES, UNKNOWN_BASE } from '../data/items';
 import { createItem } from '../items/gen';
 import { DelayedBlast, GroundItem, Hammer, Projectile, WorldObject } from './objects';
 import { SHRINES } from '../data/shrines';
@@ -121,7 +121,7 @@ export class Level {
         this.monsters.push(m);
       });
       // and one of every item base lying on the floor
-      Object.keys(ITEM_BASES).forEach((id, i) => {
+      Object.keys(ITEM_BASES).filter((id) => id !== UNKNOWN_BASE).forEach((id, i) => {
         this.ground.push(new GroundItem({ x: 5.5 + (i % 40) * 1.3, z: 36 + Math.floor(i / 40) * 1.6 }, createItem(id)));
       });
     }
@@ -139,7 +139,7 @@ export class Level {
     return areaDef(this.areas[tz * m.w + tx])!;
   }
 
-  /** the area level at a point: its monsters' and its loot's (areaLevel) */
+  /** the area level at a point in normal, its monsters' in every difficulty (areaLevel; a chest's goes by the difficulty played) */
   alvlAt(p: P2): number {
     return areaLevel(this.areaAt(p.x, p.z));
   }

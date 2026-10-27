@@ -9,7 +9,8 @@ const SEED = 7;
 const FLOORS = 13;
 
 export default async (load) => {
-  const { CAMP_AREA, WILD_AREA, COLD_PLAINS, DEN_OF_EVIL, STONY_FIELD, areaByKey, areaDef, areaForDepth, areaList, dungeonArea, isBuilt, nextArea } = await load('/src/world/areas.ts');
+  const { CAMP_AREA, WILD_AREA, COLD_PLAINS, DEN_OF_EVIL, STONY_FIELD, BURIAL_GROUNDS, areaByKey, areaDef, areaForDepth, areaLevel, areaList, dungeonArea, isBuilt, nextArea } = await load('/src/world/areas.ts');
+  const { D2X_AREAS } = await load('/src/data/d2x/areas.ts');
   const { THEMES, WILD_MAPS, isWild, dungeonFloor, levelLabel, themeForFloor } = await load('/src/world/levelgen.ts');
   const { monsterLevel } = await load('/src/data/monsters.ts');
   const { Level } = await load('/src/game/level.ts');
@@ -36,7 +37,8 @@ export default async (load) => {
     const [kind, id, lvl, wp] =
       depth === 0 ? ['town', CAMP_AREA, 0, true] : isWild(depth) ? ['outdoor', WILD_AREA, monsterLevel(1), false] : ['dungeon', dungeonArea(f), monsterLevel(f), true];
     check(a.id === id && a.kind === kind && a.waypoint === wp, `${what}: ${a.kind} #${a.id}, waypoint ${a.waypoint}; want ${kind} #${id}, waypoint ${wp}`);
-    check(a.alvl.length === 3 && a.alvl.every((x) => x === lvl), `${what}: area level ${a.alvl.join('/')}, want ${lvl}`);
+    // a trial floor's level is its floor's in every difficulty; the camp's and Blood Moor's are levels.json's (below)
+    check(a.alvl.length === 3 && a.alvl[0] === lvl && (a.kind !== 'dungeon' || a.alvl.every((x) => x === lvl)), `${what}: area level ${a.alvl.join('/')}, want ${lvl}`);
   }
   check(areaDef(999) === undefined, 'an unknown area id has a def');
   check(new Set(depths.map((d) => areaForDepth(d).key)).size === depths.length, 'two areas share a key');
@@ -153,6 +155,12 @@ export default async (load) => {
   check(list.every((a) => areaByKey(a.key) === a) && areaByKey('floor40') === areaDef(dungeonArea(40)), 'an area is not found by its key');
   check(areaByKey('floor0') === undefined && areaByKey('nowhere') === undefined && nextArea({ id: 999 }) === undefined, 'a key or an area that is not there is found');
   check([...list, areaDef(STONY_FIELD), areaDef(dungeonArea(7))].every((a) => /^[A-Z]/.test(a.en ?? '')), 'an area has no English name');
+  // the Act 1 areas' levels in the three difficulties are levels.json MonLvlEx, (N), (H), as areaLevel gives them
+  for (const a of [...list, areaDef(STONY_FIELD), areaDef(BURIAL_GROUNDS)]) {
+    const row = D2X_AREAS.find((r) => r.id === a.id);
+    check(row && [0, 1, 2].every((d) => areaLevel(a, d) === row.lvl[d]), `${a.key}: area levels ${a.alvl.join('/')}, levels.json's ${row?.lvl.join('/')}`);
+  }
+  check(areaDef(DEN_OF_EVIL).alvl.join() === '1,36,79' && areaLevel(areaDef(WILD_AREA)) === 1, `the den's levels ${areaDef(DEN_OF_EVIL).alvl.join('/')}, Blood Moor's normal ${areaLevel(areaDef(WILD_AREA))}`);
 
   // ── a jump by area, and the difficulty ──
   const saved = () => JSON.parse(localStorage.getItem('dii-save-v1'));

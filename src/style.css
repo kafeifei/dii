@@ -147,6 +147,34 @@ body {
   width: 0;
   transition: width 0.3s;
 }
+/* the stamina bar along the top of the panel, its run/walk switch at the left end */
+.stambar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 5px;
+  background: #050403;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.stambar .fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8a5a10, #e8b040);
+  width: 100%;
+}
+.stambar .run {
+  position: absolute;
+  left: 6px;
+  top: -15px;
+  padding: 0 4px;
+  font-size: 10px;
+  line-height: 13px;
+  color: #e8c878;
+  background: #1a140e;
+  border: 1px solid #5a4a34;
+  border-bottom: 0;
+}
 
 .orb {
   position: absolute;
@@ -525,6 +553,9 @@ body {
 .gitem.set {
   background: rgba(30, 130, 30, 0.28);
 }
+.gitem.crafted {
+  background: rgba(160, 90, 10, 0.28);
+}
 .gitem.hl {
   outline: 1px solid #c8a86a;
   box-shadow: 0 0 8px rgba(200, 168, 106, 0.7);
@@ -607,8 +638,15 @@ body {
 .eqslot.set {
   background: rgba(30, 130, 30, 0.25);
 }
+.eqslot.crafted {
+  background: rgba(160, 90, 10, 0.25);
+}
 .eqslot.hl {
   outline: 1px solid #c8a86a;
+}
+/* worn but giving nothing: after the quality colours so it wins */
+.eqslot.unusable {
+  background: rgba(160, 20, 20, 0.35);
 }
 
 .goldline {
@@ -1263,6 +1301,23 @@ body {
   min-width: 140px;
   letter-spacing: 0.3em;
 }
+/* the merchant: its shelves' pages, and the repair buttons (the cursor's lit while it repairs) */
+.shop-tabs {
+  margin-bottom: 6px;
+}
+.shop-tabs .tab {
+  padding: 4px 0;
+}
+.shop-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.btn.on {
+  background: linear-gradient(180deg, #6a5030, #2a2016);
+  border-color: #c8a86a;
+  color: #ffe0a0;
+}
 
 /* ───────── touch screens (TouchControls adds body.touch) ───────── */
 :root {
@@ -1331,6 +1386,16 @@ html {
   bottom: 0;
   height: 3px;
   border: 0;
+}
+.touch .stambar {
+  position: fixed;
+  top: auto;
+  bottom: 3px;
+  height: 2px;
+  pointer-events: none;
+}
+.touch .stambar .run {
+  display: none;
 }
 
 /* the skill bar as round buttons by the right thumb: left-click skill biggest, the rest in an arc */

@@ -3,12 +3,16 @@ import { chance, dist, rand, randInt, type P2 } from '../core/math';
 import type { Sfx } from '../audio/sfx';
 import { DROP_SOUND, ENTER_LINE, LARGE_MONSTER, heroLine, isNight, soundsNear, type HeroLine } from '../audio/sounds';
 import { CLASSES, type PlayerClass } from '../data/classes';
-import { ITEM_BASES } from '../data/items';
 import { SKILL_BY_ID } from '../data/skills';
 import { D2_TO_GAME } from '../data/d2/skillmap';
-import { Grid } from '../items/grid';
-import { createItem, rollEquipment, rollMonsterDrops, type Drop } from '../items/gen';
-import { baseOf, isUnknown, type Item } from '../items/item';
+import { createItem, isGold, newGameDrops, type Drop } from '../items/gen';
+import { CAMP_VENDORS, fillStore, Store } from '../items/vendor';
+import { baseOf, displayName, isUnknown, type Item } from '../items/item';
+import { charStats, potionHeal } from './d2/stats';
+import { deathPenalty, type DeathPenalty } from './d2/death';
+import { killXp } from './d2/xp';
+import { containerLoot, monsterLoot, type Finder } from './loot';
+import { bodyItems, leaveBody, takeBody } from './corpse';
 import { emptyPacket } from './actor';
 import { blastDamage, updateMonster } from './ai';
 import { applyDamage, monsterStrike } from './combat';
@@ -23,7 +27,7 @@ import type { Elem } from '../data/monsters';
 import { loadSave, markInGame, savedWaypoints, setSlot, writeSave, type Difficulty } from './save';
 import { debugOpts } from './debug';
 import { WILD_MAPS } from '../world/levelgen';
-import { CAMP_AREA, DEN_OF_EVIL, areaDef, areaForDepth, builtWaypoints, depthForArea, dungeonArea, isBuilt, trialFloor, type AreaDef, type AreaKind } from '../world/areas';
+import { CAMP_AREA, DEN_OF_EVIL, areaDef, areaForDepth, areaLevel, builtWaypoints, depthForArea, dungeonArea, isBuilt, trialFloor, type AreaDef, type AreaKind } from '../world/areas';
 import { BUILT as WEST_AREAS, generateOverworld, type Overworld } from '../world/overworld';
 import { generateDen } from '../world/den';
 import { SHRINE_BY_ID } from '../data/shrines';
@@ -149,7 +153,10 @@ export class Game {
   touchTarget: Monster | null = null;
   /** what the interact button would use: the nearest item, chest, door or person in reach */
   touchNear: TouchNear | null = null;
-  shop = new Grid(10, 10);
+  /** what the hero's last death cost (Diablo II's death penalty, game/d2/death.ts), for the death screen */
+  lastDeath: DeathPenalty | null = null;
+  /** the camp merchant's shelves (src/items/vendor.ts), stocked anew on each way into the camp */
+  shop = new Store(CAMP_VENDORS);
   /** the time of day under the sky, 0 → 1 from midnight (src/render/sky.ts); it starts in the morning */
   clock = 0.3;
   /** how fast the day goes by (0 holds it, for screenshots: ?tod=) */
@@ -200,6 +207,7 @@ export class Game {
     p.recalc();
     p.life = p.d.maxLife;
     p.mana = p.d.maxMana;
+    p.stamina = p.d.maxStamina;
     this.player = p;
     this.started = true;
     this.newWorld(newSeed());
@@ -227,7 +235,10 @@ export class Game {
     return true;
   }
 
-  /** a game's maps forgotten, the next ones made from `seed` */
+  /**
+   * a game's maps forgotten, the next ones made from `seed`; the uniques dropped and the last death
+   * belong to the game gone (gen.ts newGameDrops)
+   */
   private newWorld(seed: number) {
     this.worldSeed = seed;
     this.west = this.den = this.gallery = this.lastDungeon = this.portalLevel = null;
@@ -235,6 +246,8 @@ export class Game {
     this.atClosed = null;
     this.leftKind.clear();
     this.wentUnder = false;
+    this.lastDeath = null;
+    newGameDrops();
   }
 
   save() {
@@ -530,24 +543,19 @@ export class Game {
   }
 
   refreshShop() {
-    this.shop = new Grid(10, 10);
-    const lvl = Math.max(1, this.player.level);
-    const potions = ['hp1', 'hp2', 'hp3', 'hp4', 'mp1', 'mp2', 'mp3', 'mp4'].filter((id) => ITEM_BASES[id].qlvl <= lvl + 4);
-    for (const id of potions) this.shop.add(createItem(id));
-    const count = randInt(9, 14);
-    for (let i = 0; i < count; i++) {
-      const it = rollEquipment(Math.min(40, lvl + randInt(0, 3)), { mf: 0 });
-      if (it.rarity === 'unique' || it.rarity === 'set') continue;
-      this.shop.add(it);
-    }
+    // Diablo II's camp shelves for the one merchant: Charsi's weapons and armour, Akara's staves, potions, scrolls and tomes
+    this.shop = fillStore(CAMP_VENDORS, Math.max(1, this.player.level), this.player.difficulty);
   }
 
   respawn() {
     const p = this.player;
+    // the body stays where the hero fell, with the gear, as the death plays out (game/corpse.ts)
+    if (p.dead) this.leaveCorpse();
     p.dead = false;
     p.recalc();
     p.life = p.stats.maxLife;
     p.mana = p.stats.maxMana;
+    p.stamina = p.stats.maxStamina;
     p.poisonTime = 0;
     p.chillTime = 0;
     p.healQueue = [];
@@ -593,6 +601,8 @@ export class Game {
       this.hooks.message('神殿的祝福消失了', '#9a9080', 2);
     }
     updatePlayer(this, p, dt);
+    // self-repairing items mend a point now and then
+    p.mendItems(dt);
     // only the monsters near the hero act; the rest are out of play until the hero comes back
     // (MonsterGrid), and so cost nothing. They go in the grid's order, cell by cell, not the list's:
     // one added to the level during a step would wait for the next (none is: spawn.ts fills a map
@@ -642,6 +652,7 @@ export class Game {
       } else this.atClosed = null;
     }
     this.updateArea(false, 'walk');
+    this.layOutCorpses();
     // corpse cleanup; the corpses far off, which no step aged, catch up first, on the time spent on
     // this map: those on a map the hero is away from keep, as when every corpse was stepped (D2
     // instead keeps 1 in 3 ordinary corpses of a room it untiles, none of uniques or minions: D2Game
@@ -1146,14 +1157,10 @@ export class Game {
     m.setState('dead');
     m.path = null;
     this.aged.set(m, this.level.time);
-    // xp, as Diablo II scales it by the level gap: monsters more than 5 levels below give
-    // 81/62/43/24/5%, more than 5 above give character level / monster level
-    let xp = m.xp;
-    const diff = p.level - m.level;
-    if (diff > 5) xp *= [0.81, 0.62, 0.43, 0.24][diff - 6] ?? 0.05;
-    else if (diff < -5) xp *= p.level / m.level;
-    xp *= 1 + (p.shrine ? (SHRINE_BY_ID[p.shrine.id].xpPct ?? 0) : 0) / 100;
-    const gained = p.gainXp(Math.floor(xp * debugOpts.xp));
+    // Diablo II's experience for the kill (SUNITDMG_ComputeExperienceGain: game/d2/xp.ts killXp):
+    // the level gap's two tables, ExpRatio, then "+X% experience gained" and the shrine's on top
+    const addPct = (p.shrine ? (SHRINE_BY_ID[p.shrine.id].xpPct ?? 0) : 0) + (p.stats.bag.xpPct ?? 0);
+    const gained = p.gainXp(Math.floor(killXp(m.xp, p.level, m.level, addPct) * debugOpts.xp));
     if (gained > 0) {
       this.onProc('procLevelUp', null);
       this.celebrateLevelUp();
@@ -1164,7 +1171,7 @@ export class Game {
     if (d.lifePerKill) p.life = Math.min(d.maxLife, p.life + d.lifePerKill);
     if (d.manaPerKill) p.mana = Math.min(d.maxMana, p.mana + d.manaPerKill);
     // loot
-    this.spawnDrops(m.pos, this.rollLoot(m.level, m.lootQuality()));
+    this.spawnDrops(m.pos, this.rollLoot((hero) => monsterLoot(m, hero)));
     // fx
     this.fx.death(m, m.def.blood, elem);
     const big = m.rank === 'boss' || m.def.scale >= LARGE_MONSTER;
@@ -1214,11 +1221,12 @@ export class Game {
     this.hooks.levelUp();
   }
 
-  /** loot from a monster or a container, rolled once more for each extra pass the debug panel asks for */
-  private rollLoot(mlvl: number, quality: number): Drop[] {
+  /** loot from a monster or a container (src/game/loot.ts) for the hero, rolled once more for each extra pass the debug panel asks for */
+  private rollLoot(roll: (hero: Finder) => Item[]): Drop[] {
     const s = this.player.stats;
+    const hero: Finder = { mf: s.mf, gf: s.gf, difficulty: this.player.difficulty };
     const drops: Drop[] = [];
-    for (let i = 0; i < debugOpts.loot; i++) drops.push(...rollMonsterDrops(mlvl, quality, s.mf, s.gf));
+    for (let i = 0; i < debugOpts.loot; i++) for (const item of roll(hero)) drops.push({ kind: 'item', item });
     return drops;
   }
 
@@ -1242,11 +1250,101 @@ export class Game {
     p.life = 0;
     p.setState('dead');
     p.intent = null;
-    const lost = Math.floor(p.gold * 0.1);
-    p.gold -= lost;
+    // Diablo II's death penalty as the death starts (PLAYER_ApplyDeathPenalty: game/d2/death.ts):
+    // min(level, 20) % of all the gold, the inventory's first, and in nightmare and hell some of
+    // the level's experience; the gold left in the inventory drops by the body (leaveCorpse)
+    const pen = deathPenalty({ level: p.level, xp: p.xp, gold: p.gold, stashGold: p.stashGold, diff: p.difficulty });
+    p.gold = pen.goldDropped;
+    p.stashGold = pen.stashGold;
+    p.xp = pen.xp;
+    this.lastDeath = pen;
     this.sfx.play('player.death', { pos: p.pos });
     this.fx.death(p, 'red', 'phys');
     this.hooks.playerDied();
+  }
+
+  /**
+   * The body left where the hero fell once the death has played out (D2GAME_CORPSE_Handler,
+   * PlrModes.cpp:429-650): all that was worn and the cursor's item on it (game/corpse.ts), the belt's
+   * potions past its first row into the inventory or onto the ground, the inventory's gold in a
+   * pile beside it
+   */
+  private leaveCorpse() {
+    const p = this.player;
+    const L = this.level;
+    const cursor = this.hooks.getCursorItem();
+    if (cursor) this.hooks.setCursorItem(null);
+    const r = leaveBody(p, cursor, { level: L, pos: p.pos, area: L.areaAt(p.pos.x, p.pos.z).id }, this.lastDeath?.corpseXp ?? 0);
+    const ground = [...r.dropped, ...r.loose.filter((it) => !p.inventory.add(it))];
+    if (ground.length) this.spawnDrops(p.pos, ground.map((item): Drop => ({ kind: 'item', item })));
+    if (p.gold > 0) {
+      L.ground.push(new GroundItem(p.pos, null, p.gold, p.pos));
+      p.gold = 0;
+    }
+    this.layOutCorpses();
+    this.hooks.inventoryChanged();
+  }
+
+  /**
+   * Each body on the map it lies on. One whose map this game has let go of (a trial floor two
+   * floors back), and one read from a save, waits in the camp by the way in, as D2 sets a saved body
+   * down in town (PLRSAVE2_ReadCorpses, PlrSave2.cpp:1104-1203). Cheap enough to run every frame.
+   */
+  private layOutCorpses() {
+    const p = this.player;
+    if (!p.corpses.length) return;
+    const L = this.level;
+    // the maps this game keeps (levelFor), and the one the hero is on
+    const live = new Set<object>([L]);
+    for (const l of [this.west, this.den, this.gallery, this.lastDungeon, this.portalLevel]) if (l) live.add(l);
+    // the map holding the camp: the overworld, or ?gallery's showroom (its start is the camp's)
+    const camp = L.inTown(L.layout.start);
+    p.corpses.forEach((c, i) => {
+      if (c.level && !live.has(c.level)) {
+        c.level = null;
+        c.pos = null;
+      }
+      if (!(c.level === L || (!c.level && camp)) || L.objects.some((o) => o.corpse === c)) return;
+      let pos = c.level ? c.pos : null;
+      if (!pos) {
+        const a = 2.4 + i * 0.9;
+        pos = L.map.nearestWalkable(L.layout.start.x + Math.sin(a) * 2.2, L.layout.start.z + Math.cos(a) * 2.2) ?? L.layout.start;
+      }
+      const o = new WorldObject('corpse', pos, `${p.name}的尸体`, 0.7);
+      o.corpse = c;
+      L.objects.push(o);
+    });
+  }
+
+  /**
+   * The hero takes a body back: the experience it holds, given back as it is (PlrModes.cpp:713-722),
+   * then its items (game/corpse.ts takeBody). What fits nowhere stays on it.
+   */
+  private takeCorpse(o: WorldObject) {
+    const p = this.player;
+    const c = o.corpse;
+    if (!c) return;
+    if (c.xp > 0) {
+      const gained = p.gainXp(c.xp);
+      c.xp = 0;
+      if (gained) {
+        this.onProc('procLevelUp', null);
+        this.celebrateLevelUp();
+      }
+    }
+    const taken = takeBody(p, c, (it) => this.beltInsert(it));
+    if (bodyItems(c).length) {
+      this.hooks.message('背包放不下尸体上剩下的物品', '#ff6060', 2);
+      this.sfx.play('ui.no_room');
+    } else {
+      this.level.objects = this.level.objects.filter((x) => x !== o);
+      p.corpses = p.corpses.filter((x) => x !== c);
+      this.sfx.play('item.equip', { pos: p.pos });
+    }
+    if (taken) {
+      p.markDirty();
+      this.hooks.inventoryChanged();
+    }
   }
 
   spawnDrops(pos: P2, drops: Drop[]) {
@@ -1262,8 +1360,9 @@ export class Game {
           break;
         }
       }
-      if (d.kind === 'gold') {
-        this.level.ground.push(new GroundItem(spot, null, d.amount, pos));
+      if (isGold(d.item)) {
+        // gold lies as a pile, picked up into the purse
+        this.level.ground.push(new GroundItem(spot, null, d.item.qty ?? 1, pos));
         this.sfx.play('item.gold', { pos: spot });
       } else {
         this.level.ground.push(new GroundItem(spot, d.item, 0, pos));
@@ -1341,15 +1440,26 @@ export class Game {
     }
   }
 
+  /** a potion this game has an effect for: healing, mana, rejuvenation (not stamina, antidote, thawing yet) */
+  drinkable(item: Item): boolean {
+    const b = baseOf(item);
+    return b.type === 'potion' && !!(b.heal || b.manaHeal || b.rejuv);
+  }
+
   drink(item: Item) {
     const p = this.player;
     const b = baseOf(item);
+    // D2's potions: their Misc.txt amount over their length, by the class's share (CharStats
+    // HealthPotionPercent / ManaPotionPercent: game/d2/stats.ts potionHeal)
+    const cs = charStats(p.cls);
     if (b.heal) {
-      p.healQueue.push({ perSec: b.heal / 3, left: 3 });
+      const sec = b.healSec ?? 3;
+      p.healQueue.push({ perSec: potionHeal(cs, 'life', b.heal) / sec, left: sec });
       this.fx.burst('potion_hp', p.pos);
     }
     if (b.manaHeal) {
-      p.manaQueue.push({ perSec: b.manaHeal / 3, left: 3 });
+      const sec = b.manaSec ?? 3;
+      p.manaQueue.push({ perSec: potionHeal(cs, 'mana', b.manaHeal) / sec, left: sec });
       this.fx.burst('potion_mp', p.pos);
     }
     if (b.rejuv) {
@@ -1367,6 +1477,7 @@ export class Game {
     const stack = p.belt[col];
     if (!stack) return;
     if (!stack.length) return this.say('no_potion');
+    if (!this.drinkable(stack[0])) return;
     const item = stack.shift()!;
     this.drink(item);
     this.hooks.inventoryChanged();
@@ -1380,17 +1491,18 @@ export class Game {
         obj.used = true;
         this.sfx.play('env.chest', { pos: obj.pos });
         this.fx.burst('chest', obj.pos);
-        // at the level of the area it stands in, as D2 rolls a chest's treasure class by its level's
-        // (D2Game OBJECTS/ObjMode.cpp OBJMODE_DropFromChestTCWithQuality: DATATBLS_GetMonsterLevelInArea)
-        const lvl = Math.max(1, this.level.alvlAt(obj.pos));
-        const drops = this.rollLoot(lvl, 1);
-        drops.push({ kind: 'gold', amount: randInt(lvl * 5, lvl * 15) });
+        // the area it stands in's Chest A, B or C at the area's level, as D2 rolls a chest's treasure
+        // class by its level's (src/game/loot.ts containerLoot; D2Game OBJECTS/ObjMode.cpp
+        // OBJMODE_DropFromChestTCWithQuality: DATATBLS_GetMonsterLevelInArea)
+        const area = this.level.areaAt(obj.pos.x, obj.pos.z);
+        const drops = this.rollLoot((hero) => containerLoot('chest', area, hero));
         // the Horadric Cube waits in the first chest opened in an area of level 4 or more (plan A2;
         // D2's is in the Halls of the Dead, in Act 2)
-        if (lvl >= 4 && !p.cubeFound) {
+        if (areaLevel(area) >= 4 && !p.cubeFound) {
           p.cubeFound = true;
-          drops.push({ kind: 'item', item: createItem('cube') });
-          this.hooks.message('你找到了赫拉迪姆魔盒！', '#c8a86a', 4);
+          const box = createItem('box');
+          drops.push({ kind: 'item', item: box });
+          this.hooks.message(`你找到了${displayName(box)}！`, '#c8a86a', 4);
         }
         this.spawnDrops(obj.pos, drops);
         break;
@@ -1400,8 +1512,9 @@ export class Game {
         obj.used = true;
         this.sfx.play('env.barrel', { pos: obj.pos });
         this.fx.burst('barrel', obj.pos);
-        // the area's level, as a chest's
-        if (chance(0.35)) this.spawnDrops(obj.pos, this.rollLoot(Math.max(1, this.level.alvlAt(obj.pos)), 0));
+        // the area's classes at its level, as a chest's
+        const area = this.level.areaAt(obj.pos.x, obj.pos.z);
+        this.spawnDrops(obj.pos, this.rollLoot((hero) => containerLoot('barrel', area, hero)));
         break;
       }
       case 'stairs':
@@ -1427,6 +1540,9 @@ export class Game {
         break;
       case 'stash':
         this.hooks.openPanel('stash');
+        break;
+      case 'corpse':
+        this.takeCorpse(obj);
         break;
       case 'exit':
         if (obj.closed) this.tellClosed(obj);
@@ -1528,8 +1644,9 @@ export class Game {
   }
 
   /**
-   * Play on in another difficulty (the debug panel). Nothing goes by it yet but the save and the
-   * waypoints, which Diablo II keeps apart for each difficulty
+   * Play on in another difficulty (the debug panel): its waypoints, which Diablo II keeps apart for
+   * each difficulty, its treasure classes, its area levels for chests and barrels, its resistance
+   * and death penalties. The monsters play no harder yet (src/game/spawn.ts)
    */
   setDifficulty(d: Difficulty) {
     const p = this.player;
@@ -1537,6 +1654,8 @@ export class Game {
     // the waypoints so far stay with the difficulty they were touched in
     this.save();
     p.difficulty = d;
+    // the resistances take the new difficulty's penalty
+    p.markDirty();
     p.waypoints = savedWaypoints(p, d);
     this.save();
   }

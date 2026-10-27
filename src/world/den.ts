@@ -1,5 +1,9 @@
+import { D2X_SUPERUNIQUES } from '../data/d2x/superuniques';
 import { DEN_OF_EVIL, WILD_AREA, areaDef } from './areas';
 import { THEMES, generateDungeon, type Layout } from './levelgen';
+
+/** the den's superunique (superuniques.json areaId 8) */
+const CORPSEFIRE = D2X_SUPERUNIQUES.find((s) => s.key === 'Corpsefire')!;
 
 /**
  * The Den of Evil (levels.json Id 8, "Act 1 - Cave 1"): one cave level under Blood Moor, its mouth
@@ -23,7 +27,7 @@ export function generateDen(seed: number): Layout {
     areaOf: new Uint16Array(L.map.w * L.map.h).fill(DEN_OF_EVIL),
     // facing the start, so someone coming down stands between the two
     entrances: [{ x: up.x, z: up.z, dest: WILD_AREA, name: areaDef(WILD_AREA)!.name, kind: 'up', nx: dx / len, nz: dz / len }],
-    // the rename table's name for Corpsefire (tools/d2-names/monsters.json)
-    superUniques: [{ pos: far, monster: 'zombie', name: '尸焰' }],
+    // Corpsefire by its row, which has the rename table's name (tools/d2-names/monsters.json)
+    superUniques: [{ pos: far, monster: 'zombie', key: CORPSEFIRE.key, name: CORPSEFIRE.name }],
   };
 }

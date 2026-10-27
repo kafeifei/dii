@@ -23,6 +23,8 @@ export class Monster extends Actor {
   rank: MonsterRank;
   mods: MonsterMod[];
   displayName: string;
+  /** the superunique it is (D2X_SUPERUNIQUES key), which drops its own class; minions aren't */
+  superUnique?: string;
   dmg: [number, number];
   defense: number;
   ar: number;
@@ -153,19 +155,5 @@ export class Monster extends Actor {
 
   modText(): string {
     return this.mods.map((m) => MOD_NAMES[m]).join('，');
-  }
-
-  /** quality tier used by loot tables */
-  lootQuality(): number {
-    switch (this.rank) {
-      case 'champion':
-        return 1;
-      case 'unique':
-        return 2;
-      case 'boss':
-        return 3;
-      default:
-        return 0;
-    }
   }
 }

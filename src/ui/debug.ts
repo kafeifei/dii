@@ -2,8 +2,10 @@ import { debugOpts, saveDebugOpts } from '../game/debug';
 import type { Game } from '../game/game';
 import { MAX_LEVEL, xpForLevel } from '../game/player';
 import { DIFFICULTIES, type Difficulty } from '../game/save';
+import { EQUIPPABLE_BASES } from '../data/items';
 import { rollEquipment, rollGem, rollRune, type Drop } from '../items/gen';
-import { displayName, type Item, type Rarity } from '../items/item';
+import { displayName, isIdentified, type Item, type Rarity } from '../items/item';
+import { makeItem } from '../items/make';
 import { CAMP_AREA, areaDef, areaLevel, areaList, dungeonArea, nextArea, trialFloor, type AreaDef } from '../world/areas';
 
 type Choice<T> = [T, string];
@@ -48,6 +50,7 @@ export class DebugPanel {
     this.actions(loot, '随机装备', [['1 件', () => this.dropGear(1)], ['5 件', () => this.dropGear(5)], ['20 件', () => this.dropGear(20)]], '掉在脚下');
     this.actions(loot, '指定品质', (['magic', 'rare', 'set', 'unique'] as Rarity[]).map((r): Action => [RARITY_NAME[r]!, () => this.dropRarity(r)]));
     this.actions(loot, '符文和宝石', [['符文 ×3', () => this.dropRunes()], ['宝石 ×3', () => this.dropGems()]]);
+    this.actions(loot, '鉴定', [['全部鉴定', () => this.identifyAll()]], '背包、储物箱和身上未辨识的物品');
 
     const rate = this.group(panel, '倍率');
     this.choice(rate, '经验', [[1, '×1'], [2, '×2'], [5, '×5'], [10, '×10'], [100, '×100']] as Choice<number>[], () => debugOpts.xp, (v) => (debugOpts.xp = v), '杀怪得到的经验');
@@ -56,7 +59,7 @@ export class DebugPanel {
     const map = this.group(panel, '地图');
     this.areaRow(map, '前往', '直接去，不激活那里的传送点');
     this.trialRow(map, '试炼场', '无尽地下城的一层，每次进都重新生成，用来试高等级的怪物和掉落');
-    this.choice(map, '难度', DIFFICULTIES.map((d): Choice<Difficulty> => [d, DIFFICULTY_NAME[d]]), () => this.game.player.difficulty, (d) => this.difficulty(d), '传送点按难度分开，怪物和掉落还照普通');
+    this.choice(map, '难度', DIFFICULTIES.map((d): Choice<Difficulty> => [d, DIFFICULTY_NAME[d]]), () => this.game.player.difficulty, (d) => this.difficulty(d), '传送点、掉落表和宝箱的物品等级按难度分开，怪物还照普通');
 
     this.el = el;
   }
@@ -104,17 +107,33 @@ export class DebugPanel {
   }
 
   private dropGear(n: number) {
-    const items = Array.from({ length: n }, () => rollEquipment(this.ilvl, { quality: 2 }));
+    // as a unique monster's items drop (their treasure class's quality ratios), with the hero's magic find
+    const mf = this.game.player.stats.mf;
+    const items = Array.from({ length: n }, () => rollEquipment(this.ilvl, { quality: 2, mf }));
     const count = (r: Rarity) => items.filter((it) => it.rarity === r).length;
     const best = (['unique', 'set', 'rare'] as Rarity[]).filter(count).map((r) => `${RARITY_NAME[r]} ${count(r)}`);
     this.drop(items, `${n} 件装备${best.length ? `（${best.join('、')}）` : ''}`);
   }
 
   private dropRarity(r: Rarity) {
-    // reroll with plenty of magic find until the quality comes up (some bases have no set or unique)
-    let item = rollEquipment(this.ilvl, { mf: 1000, quality: 3 });
-    for (let i = 0; i < 400 && item.rarity !== r; i++) item = rollEquipment(this.ilvl, { mf: 1000, quality: 3 });
-    this.drop([item], `一件${RARITY_NAME[item.rarity] ?? ''}「${displayName(item)}」`);
+    // made in that quality (D2's pItemDrop quality), on bases until one has a row for it: a unique
+    // or set item needs one at the item level, else D2 makes it rare or magic
+    const bases = EQUIPPABLE_BASES.filter((b) => b.qlvl <= this.ilvl && !b.noDrop);
+    let item: Item | null = null;
+    for (let i = 0; i < 400 && item?.rarity !== r; i++) {
+      const b = bases[Math.floor(Math.random() * bases.length)];
+      item = makeItem({ code: b.id, ilvl: this.ilvl, quality: r as Item['quality'] });
+    }
+    if (!item) return this.note('这个物品等级没有可以掉落的底材');
+    this.drop([item], `一件${RARITY_NAME[item.rarity] ?? ''}「${displayName({ ...item, identified: true })}」`);
+  }
+
+  private identifyAll() {
+    const p = this.game.player;
+    const all = [...Object.values(p.equipment), ...p.inventory.items.map((x) => x.item), ...p.stash.items.map((x) => x.item)].filter((it): it is Item => !!it && !isIdentified(it));
+    for (const it of all) it.identified = true;
+    p.markDirty();
+    this.done(`鉴定了 ${all.length} 件物品`);
   }
 
   private dropRunes() {
@@ -143,7 +162,7 @@ export class DebugPanel {
 
   private difficulty(d: Difficulty) {
     this.game.setDifficulty(d);
-    this.done(`难度：${DIFFICULTY_NAME[d]}（换成这个难度的传送点，怪物和掉落不变）`);
+    this.done(`难度：${DIFFICULTY_NAME[d]}（换成这个难度的传送点、掉落表和宝箱的物品等级，怪物不变）`);
   }
 
   private done(text: string) {
