@@ -165,30 +165,81 @@ export const SOUNDS = Object.fromEntries(
 ) as Record<SoundId, SoundDef>;
 
 /**
- * Where the hero is, for its ambience and (later) its music: an area (src/world/areas.ts), which
- * sounds like its kind until areas are given sounds of their own (by key); or off the map, a named
- * screen such as 'title'. Only the area's type is needed here, not the maps that make areas.
+ * Where the hero is, for its ambience and its music: an area (src/world/areas.ts), which sounds as
+ * its row of ENVIRONS says (by its key, else by its kind); or off the map, a named screen such as
+ * 'title'. Only the area's type is needed here, not the maps that make areas.
  */
 export type Place = AreaDef | string;
 
-/** the looping beds Sfx synthesizes */
-export type Bed = 'town' | 'dungeon' | 'none';
+/** the looping beds Sfx synthesizes: the camp's wind and campfire, the wilderness's wind alone, a drone underground */
+export type Bed = 'town' | 'wild' | 'dungeon' | 'none';
 
-/** what an area sounds like: today only its bed; recorded loops and music join it later */
+/** a recorded ambience loop, named for the audio engine to come (line C); this build has none */
+export type AmbId = `amb.${string}`;
+/** a recorded music track, likewise */
+export type MusicId = `music.${string}`;
+
+/** what an area sounds like */
 export interface AreaSound {
+  /** the ambience synthesized while there are no recordings: what plays today */
   bed: Bed;
+  /** its ambience by day: loops layered */
+  amb?: AmbId[];
+  /** under the sky, its ambience by night, in place of amb */
+  night?: AmbId[];
+  /** its music. Nothing plays it yet: there are no recordings and nothing composes one in its place */
+  music?: MusicId;
 }
 
-/** the beds by the kind of area: wind and a campfire under the sky, a low drone underground */
-const BEDS: Record<AreaKind, Bed> = { town: 'town', outdoor: 'town', dungeon: 'dungeon' };
+/**
+ * The sound environments, as Diablo II's: levels.json SoundEnv names an area's row of
+ * soundenviron.json (D2Common LevelsTbls.h dwSoundEnv), which plays its Song and its Day and Night
+ * Ambience. ESOUNDENVIRON_TOWN_1 (1) is music_town_1 over the wilderness's ambience and the camp's
+ * own events; ESOUNDENVIRON_WILDERNESS (2) is music_wilderness with scene_wilderness_day and
+ * _night; ESOUNDENVIRON_CAVE (4) is music_caves and scene_cave, day and night. Our ids are D2's,
+ * renamed by what plays them: the camp's ambience is its own, for its fire.
+ */
+const ENVIRONS = {
+  town: { bed: 'town', amb: ['amb.town'], night: ['amb.town_night'], music: 'music.town' },
+  wilderness: { bed: 'wild', amb: ['amb.wild'], night: ['amb.wild_night'], music: 'music.wild' },
+  cave: { bed: 'dungeon', amb: ['amb.dungeon'], music: 'music.dungeon' },
+} satisfies Record<string, AreaSound>;
+
+type Environ = keyof typeof ENVIRONS;
+
+/**
+ * Each area's environment, by its key, as levels.json SoundEnv has it: the camp 1; Blood Moor,
+ * Cold Plains, Stony Field and the Burial Grounds all 2, so the wilderness's music and wind play on
+ * from one into the next; the Den of Evil 4
+ */
+const AREA_ENVIRON: Record<string, Environ> = {
+  camp: 'town',
+  wild: 'wilderness',
+  coldplains: 'wilderness',
+  stonyfield: 'wilderness',
+  burialgrounds: 'wilderness',
+  denofevil: 'cave',
+};
+
+/** an area with no row of its own sounds like its kind: the trial ground's floors are dungeons */
+const KIND_ENVIRON: Record<AreaKind, Environ> = { town: 'town', outdoor: 'wilderness', dungeon: 'cave' };
 
 /** the screens off the map */
 const SCREENS: Record<string, AreaSound> = {
   title: { bed: 'none' },
 };
 
-/** a screen nobody has given a sound is quiet */
+/** what a place sounds like; a screen nobody has given a sound is quiet */
 export function areaSound(place: Place): AreaSound {
   if (typeof place === 'string') return SCREENS[place] ?? { bed: 'none' };
-  return { bed: BEDS[place.kind] };
+  return ENVIRONS[AREA_ENVIRON[place.key] ?? KIND_ENVIRON[place.kind]];
+}
+
+/**
+ * What of a place's sound must change when the hero comes to another: what plays (its bed) and
+ * what will (its ambience and its music). Equal for two areas, the one's sound plays on into the
+ * other's, as D2's does between areas of one SoundEnv.
+ */
+export function soundKey(s: AreaSound): string {
+  return `${s.bed}|${(s.amb ?? []).join('+')}|${(s.night ?? []).join('+')}|${s.music ?? ''}`;
 }

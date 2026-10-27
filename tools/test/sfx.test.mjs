@@ -108,11 +108,11 @@ export default async (load) => {
   check(calls > 50, `only ${calls} sfx.play calls found`);
   for (const id of ids) check(used.has(id), `${id}: nothing plays it`);
 
-  // the beds, by area: the camp's wind and fire under the sky (as each map's theme is outdoor), a
-  // drone underground; the camp, the wilderness and a floor of each dungeon theme
+  // the beds, by area: the camp's wind and fire, the wilderness's wind, a drone underground; the
+  // camp, the wilderness and a floor of each dungeon theme
   for (const depth of [0, ...Array.from({ length: WILD_MAPS }, (_, i) => i + 1), ...[1, 5, 9, 13].map((f) => WILD_MAPS + f)]) {
     const theme = depth === 0 ? THEMES.town : isWild(depth) ? THEMES.wild : themeForFloor(dungeonFloor(depth));
-    const want = theme.outdoor ? 'town' : 'dungeon';
+    const want = depth === 0 ? 'town' : theme.outdoor ? 'wild' : 'dungeon';
     const a = areaForDepth(depth);
     check(areaSound(a).bed === want, `${a.name} (area ${a.id}) plays ${areaSound(a).bed}, not ${want}`);
   }
@@ -120,8 +120,8 @@ export default async (load) => {
   check(areaSound('nowhere').bed === 'none', `an unknown screen plays ${areaSound('nowhere').bed}`);
 
   // from area to area a bed starts only when it changes: the drone plays on from floor to floor
-  // (into the cave too), the wind from the camp out into the wilderness. Node has no AudioContext,
-  // so one is pretended and only the beds enterArea asks for are watched
+  // (into the cave too); the camp's fire fades out into the wilderness's wind. Node has no
+  // AudioContext, so one is pretended and only the beds enterArea asks for are watched
   const sfx = new Sfx();
   const started = [];
   sfx.ctx = {};
@@ -130,7 +130,7 @@ export default async (load) => {
   for (const a of walk) sfx.enterArea(a);
   sfx.enterArea('title');
   const beds = started.join(' ');
-  check(beds === 'town dungeon town none', `${walk.map((a) => a.key).join(' > ')} > title started the beds ${beds}, want town dungeon town none`);
+  check(beds === 'town wild dungeon town none', `${walk.map((a) => a.key).join(' > ')} > title started the beds ${beds}, want town wild dungeon town none`);
 
   // the listener at the origin; the screen's right along +x, 12 m to its edge
   const at = { x: 0, z: 0 };

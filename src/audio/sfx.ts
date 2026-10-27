@@ -1,5 +1,5 @@
 import type { P2 } from '../core/math';
-import { areaSound, PRIORITY, SOUNDS, type Bed, type Place, type SoundDef, type SoundId, type Synth } from './sounds';
+import { areaSound, PRIORITY, soundKey, SOUNDS, type AreaSound, type Bed, type Place, type SoundDef, type SoundId, type Synth } from './sounds';
 
 /**
  * All sounds are synthesized at runtime with WebAudio — no audio assets. Game code plays them by
@@ -110,7 +110,12 @@ export class Sfx {
   private noiseBuf!: AudioBuffer;
   private amb: { stop: () => void } | null = null;
   /** the hero's area: its bed plays, or starts with the AudioContext on the first click */
-  private area: Place | null = null;
+  area: Place | null = null;
+  /**
+   * what the hero's area sounds like (areaSound): its bed playing, and the ambience and music it
+   * names for the recordings to come (the tools read it)
+   */
+  playing: AreaSound = { bed: 'none' };
   /** each recipe's last start, and how loud it was */
   private lastPlay: Partial<Record<Synth, { t: number; level: number }>> = {};
   private voices: Voice[] = [];
@@ -148,7 +153,7 @@ export class Sfx {
     const d = this.noiseBuf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     // the game may have entered an area before there was any sound (?dev, a reload into the game)
-    if (this.area !== null) this.startBed(areaSound(this.area).bed);
+    if (this.area !== null) this.startBed(this.playing.bed);
   }
 
   setVolume(v: number) {
@@ -397,19 +402,25 @@ export class Sfx {
     }
   }
 
-  /** the hero is in another area: its bed fades in over the last one's (and later its music) */
+  /**
+   * The hero is in another area (Game calls it as it announces the area): the area's sound fades in
+   * over the last one's, or the last plays on if the two sound the same (soundKey: floor to floor,
+   * Blood Moor into Cold Plains). This is the hook the audio engine to come (line C) takes over: it
+   * will crossfade the recordings `playing` names, the area's ambience and music, where this
+   * crossfades the synthesized bed.
+   */
   enterArea(area: Place) {
     if (area === this.area) return;
-    const was = this.area === null ? null : areaSound(this.area).bed;
     this.area = area;
-    const bed = areaSound(area).bed;
-    // the same bed plays on into the next area (floor to floor, the camp out into the wilderness)
-    if (bed === was) return;
+    const s = areaSound(area);
+    if (soundKey(s) === soundKey(this.playing)) return;
+    const bed = this.playing.bed;
+    this.playing = s;
     // no AudioContext before the first click: ensure() starts the bed then
-    if (this.ctx) this.startBed(bed);
+    if (this.ctx && s.bed !== bed) this.startBed(s.bed);
   }
 
-  /** the looping bed: 'dungeon' drone or 'town' wind+fire, fading in over the last one */
+  /** the looping bed: 'dungeon' drone, 'wild' wind or 'town' wind and a campfire, crossfaded with the last one */
   private startBed(kind: Bed) {
     if (!this.ctx) return;
     this.amb?.stop();
@@ -469,11 +480,14 @@ export class Sfx {
       lfoG.gain.value = 250;
       lfo.connect(lfoG).connect(bp.frequency);
       const ng = ctx.createGain();
-      ng.gain.value = 0.12;
+      // out in the open the wind blows harder, with no fire to hear over it
+      ng.gain.value = kind === 'wild' ? 0.16 : 0.12;
       n.connect(bp).connect(ng).connect(out);
       n.start();
       lfo.start();
       nodes.push(n, lfo);
+    }
+    if (kind === 'town') {
       // fire crackle
       const crackle = ctx.createBufferSource();
       const len = ctx.sampleRate * 3;
@@ -496,7 +510,7 @@ export class Sfx {
         const t = ctx.currentTime;
         out.gain.cancelScheduledValues(t);
         out.gain.setValueAtTime(out.gain.value, t);
-        out.gain.linearRampToValueAtTime(0, t + 1);
+        out.gain.linearRampToValueAtTime(0, t + 2);
         setTimeout(() => {
           for (const nd of nodes) {
             try {
@@ -506,7 +520,7 @@ export class Sfx {
             }
           }
           out.disconnect();
-        }, 1200);
+        }, 2200);
       },
     };
   }

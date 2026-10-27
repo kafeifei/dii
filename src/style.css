@@ -375,6 +375,67 @@ body {
   transition: opacity 0.4s;
 }
 
+/* ───────── the area's name on the way in (src/ui/banner.ts): below the target bar and the messages ───────── */
+#area-banner {
+  position: absolute;
+  top: max(100px, 15vh);
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+}
+#area-banner.show {
+  animation: area-banner 4.2s ease-out forwards;
+}
+#area-banner .ab-sub {
+  font-size: 12px;
+  line-height: 1.4;
+  letter-spacing: 0.6em;
+  text-indent: 0.6em;
+  color: #a89062;
+  text-shadow: 0 1px 3px #000;
+}
+#area-banner .ab-name {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 30px;
+  line-height: 1.2;
+  letter-spacing: 0.14em;
+  color: #e4d2a2;
+  text-shadow: 0 0 12px #000, 0 2px 4px #000, 0 0 26px rgba(0, 0, 0, 0.9);
+}
+#area-banner .ab-name::before,
+#area-banner .ab-name::after {
+  content: '';
+  width: 64px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim));
+  box-shadow: 0 1px 2px #000;
+}
+#area-banner .ab-name::after {
+  background: linear-gradient(90deg, var(--gold-dim), transparent);
+}
+@keyframes area-banner {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  62% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 0);
+  }
+}
+
 /* ───────── panels ───────── */
 .panel {
   position: absolute;
@@ -1439,6 +1500,17 @@ html {
 }
 .touch #messages {
   top: calc(56px + var(--sat));
+}
+.touch #area-banner {
+  top: calc(var(--sat) + 26vh);
+}
+.touch #area-banner .ab-name {
+  font-size: 22px;
+  gap: 10px;
+}
+.touch #area-banner .ab-name::before,
+.touch #area-banner .ab-name::after {
+  width: 36px;
 }
 
 /* iPhone Safari keeps its bars: say how to get rid of them (TouchControls.iosBanner) */

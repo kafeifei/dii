@@ -7,6 +7,7 @@ import { baseOf, displayName, itemColor, type Item } from '../items/item';
 import type { Renderer } from '../render/renderer';
 import type { AreaDef } from '../world/areas';
 import { Automap } from './automap';
+import { AreaBanner } from './banner';
 import { renderChar } from './character';
 import { h, type LeftPanel, type RightPanel, type UIContext } from './common';
 import { renderCube } from './cube';
@@ -45,6 +46,7 @@ export class UI implements GameHooks, UIContext {
   picker!: SkillPicker;
   tooltip!: Tooltip;
   automap!: Automap;
+  banner!: AreaBanner;
   menu!: PauseMenu;
   settingsPanel!: SettingsPanel;
   debugPanel: DebugPanel | null = null;
@@ -109,18 +111,20 @@ export class UI implements GameHooks, UIContext {
 
   levelChanged(level: Level) {
     this.renderer.buildLevel(level);
+    this.banner.jump();
     this.labels.clear();
     if (this.left === 'shop' || this.left === 'stash' || this.left === 'waypoint') this.left = null;
     this.dirty = true;
   }
 
-  areaChanged(area: AreaDef) {
+  areaChanged(area: AreaDef, prev: AreaDef | null) {
     // the area's name on the way in, as Diablo II shows it
-    this.hud.message(area.name, '#d8c8a0', 3);
+    this.banner.areaChanged(area, prev);
   }
 
   teleported() {
     this.renderer.snapCamera();
+    this.banner.jump();
   }
 
   playerDied() {
@@ -153,6 +157,7 @@ export class UI implements GameHooks, UIContext {
     const r = this.root;
     this.hud = new Hud(this, r, (k) => pressButton(this, k));
     this.automap = new Automap(this.game, r);
+    this.banner = new AreaBanner(r);
 
     this.leftEl = h('div', 'panel left ui-block');
     this.rightEl = h('div', 'panel right ui-block');
@@ -350,6 +355,7 @@ export class UI implements GameHooks, UIContext {
     this.tooltip.dropStale();
     this.labels.update();
     this.automap.update(dt);
+    this.banner.update();
   }
 }
 

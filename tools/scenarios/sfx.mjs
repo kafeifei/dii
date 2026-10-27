@@ -154,8 +154,8 @@ export default async function (page, shot, log) {
       (s) => s.enterArea(floor1),
     );
     if (!early.bed) fails.push(`${floor1.name} entered before ensure(): no bed after it`);
-    // from area to area the same bed plays on (floor to floor, the camp out into the wilderness);
-    // another one takes over
+    // from area to area the same bed plays on (floor to floor); another one takes over (the camp's
+    // fire gives way to the wilderness's wind)
     const kept = [];
     await render((s) => {
       for (const a of [floor1, floor2, camp, wild, floor1]) {
@@ -164,7 +164,7 @@ export default async function (page, shot, log) {
         if (last) kept.push(`${a.key} ${s.amb === last ? 'kept' : 'new'}`);
       }
     });
-    const want = `${floor2.key} kept,${camp.key} new,${wild.key} kept,${floor1.key} new`;
+    const want = `${floor2.key} kept,${camp.key} new,${wild.key} new,${floor1.key} new`;
     if (kept.join() !== want) fails.push(`walking the areas the beds went ${kept.join()}, want ${want}`);
     return { fails, facts };
   });

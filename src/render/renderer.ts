@@ -3,8 +3,9 @@ import type { P2 } from '../core/math';
 import { SKILL_BY_ID } from '../data/skills';
 import type { Game, Picker } from '../game/game';
 import type { Level } from '../game/level';
-import type { Layout } from '../world/levelgen';
-import { CAMP_AREA } from '../world/areas';
+import { THEMES, type Layout } from '../world/levelgen';
+import { CAMP_AREA, areaDef } from '../world/areas';
+import { areaShares, lookMix, type AreaShare } from '../world/seams';
 import type { Monster } from '../game/monster';
 import type { GroundItem, Hammer, Projectile, WorldObject } from '../game/objects';
 import { itemColor } from '../items/item';
@@ -15,8 +16,9 @@ import { monsterLook, playerLook, playerLookKey, vendorLook } from './looks';
 import { ModelRig, rigKey, type ModelSpec } from './models';
 import { ownDepth, PropBatches, Scenery, sphereInFrustum, sphereInShadows, type Chunk, type PropPart, type StaticLight, type Viewers } from './chunks';
 import { disposeView, NearViews, Pool, tintOwn, VIEW_FAR, VIEW_NEAR } from './views';
-import { GRADES, Post } from './post';
+import { GRADES, Post, type Grade } from './post';
 import { ambientMotes, applyLavaGlow, Mist } from './atmosphere';
+import { blendAtmos, GROUND_LOOKS, lookOf, newAtmos, shiftGrade, type AreaLook, type WallKind } from './arealooks';
 import { makeGround } from './ground';
 import { skyAt, type SkyLook } from './sky';
 import { SHRINE_BY_ID } from '../data/shrines';
@@ -53,6 +55,16 @@ const MONSTER_SHADE = 1;
 const MONSTER_FALLEN: [radius: number, y: number] = [2, 0.4];
 /** a champion's or a unique's body is drawn about this much bigger (specs.ts monsterSpec) */
 const RANKED_SIZE = 1.2;
+/**
+ * Where two areas meet: the ground's looks blend over about twice this either side of the seam
+ * (src/world/seams.ts lookMix); the mist, the grade and the specks by the areas' shares of the ground
+ * this far round the hero (areaShares), so they have turned all the way by the time they are this
+ * far into the next area
+ */
+const GROUND_SEAM = 2;
+const AIR_SEAM = 12;
+/** a wall's height as a share of WALL_H, by how it's built: at least the first, up to the first and the second */
+const WALL_HEIGHT: Record<WallKind, [number, number]> = { palisade: [0.85, 0.25], ruins: [0.2, 0.4], wall: [0.96, 0.08] };
 /** how much further than the view reaches on the ground a view is made: a tall thing below its edge shows */
 const VIEW_MARGIN = 4;
 /** the corners of the view, in clip space, for its reach on the ground */
@@ -390,6 +402,23 @@ export class Renderer implements Picker {
   private groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   /** an outdoor map's blended ground */
   private ground: ReturnType<typeof makeGround> | null = null;
+  /** how each area of the level looks (src/render/arealooks.ts), by its id */
+  private looks = new Map<number, AreaLook>();
+  private lookById = (area: number) => this.looks.get(area)!;
+  /** the level wears one look (it has one area): nothing to blend */
+  private oneLook = true;
+  /** the areas round the hero this frame and their shares of the ground (the tools read it) */
+  readonly airShares: AreaShare[] = [];
+  /** the air about the hero this frame: its areas' looks blended (the tools read it) */
+  readonly atmos = newAtmos();
+  /** the sky's grade, shifted by the air's */
+  private grade: Grade = { ...GRADES.town };
+  /**
+   * textures of the level's scenery that may first show far from where the hero comes in (the
+   * wilderness's ruins), put on the GPU as soon as they've loaded rather than on the frame they
+   * first come into view: a hitch out on the moor
+   */
+  private uploads: THREE.Texture[] = [];
   /** where the shadow-casting light stands from the view's centre: the sun or the moon outdoors */
   private sunOffset = new THREE.Vector3(-8, 20, 4);
   /** how much lanterns, fires and the hero's light count: all of it below ground and by night */
@@ -598,6 +627,18 @@ export class Renderer implements Picker {
     const L = level.layout;
     const theme = L.theme;
     const map = L.map;
+    // how each of the level's areas looks (one, but on the overworld), and the ground's looks among them
+    this.looks.clear();
+    let last = -1;
+    for (const a of level.areas) {
+      if (a === last) continue;
+      last = a;
+      if (!this.looks.has(a)) this.looks.set(a, lookOf(areaDef(a)!, theme.key));
+    }
+    this.oneLook = new Set(this.looks.values()).size < 2;
+    const grounds = [...new Set([...this.looks.values()].map((l) => l.ground))];
+    const groundSlot = new Map([...this.looks].map(([a, l]) => [a, grounds.indexOf(l.ground)]));
+    const wallKind = (x: number, y: number) => this.looks.get(level.areas[y * map.w + x])!.walls;
     this.scene.background = new THREE.Color(theme.bg);
     this.sunOffset.set(-8, 20, 4);
     this.lamps = 1;
@@ -645,9 +686,18 @@ export class Renderer implements Picker {
         }
       }
     }
-    // outdoor maps: one blended ground for the whole map; elsewhere a tile for each floor square
+    // outdoor maps: one blended ground for the whole map, each area's look fading into the next's
+    // across their seams; elsewhere a tile for each floor square
     this.ground?.dispose();
-    this.ground = L.ground ? makeGround(map.w, map.h, L.ground, theme.key) : null;
+    this.ground = L.ground
+      ? makeGround(
+          map.w,
+          map.h,
+          L.ground,
+          grounds.map((k) => GROUND_LOOKS[k] ?? GROUND_LOOKS.wild),
+          grounds.length > 1 ? lookMix(level.areas, map.w, map.h, (a) => groundSlot.get(a)!, grounds.length, GROUND_SEAM) : [],
+        )
+      : null;
     if (this.ground) {
       this.ground.edge.set(theme.bg);
       this.levelGroup.add(this.ground.mesh);
@@ -681,37 +731,55 @@ export class Renderer implements Picker {
       }
     }
 
-    // walls
-    const sideMat = new THREE.MeshStandardMaterial({ map: tileTexture(`${theme.key === 'wild' ? 'crypt' : theme.key}_wall`), roughness: 0.92 });
-    // the wilderness's ruins are broken off low, so their tops show stone; other walls are capped in shadow
-    const topMat =
-      theme.key === 'wild'
-        ? new THREE.MeshStandardMaterial({ map: tileTexture('crypt_wall'), roughness: 0.95 })
-        : new THREE.MeshStandardMaterial({ color: new THREE.Color(theme.wall).lerp(new THREE.Color(theme.wallDark), 0.35), roughness: 1 });
-    if (theme.key === 'wild') applyWorldUv(topMat, 'floor', 2);
-    applyOcclusionFade(sideMat, this.occ);
-    applyWorldUv(sideMat, 'wall', 2);
-    applyOcclusionFade(topMat, this.occ);
+    // walls, as the area each stands in builds them: the camp's palisade is uneven, the wilderness's
+    // ruins are broken off low (so their tops show stone), other walls are capped in shadow
+    const wallMats = new Map<WallKind, THREE.Material[]>();
+    const wallMat = (kind: WallKind): THREE.Material[] => {
+      const had = wallMats.get(kind);
+      if (had) return had;
+      const t = kind === 'palisade' ? THEMES.town : theme;
+      const side = new THREE.MeshStandardMaterial({ map: tileTexture(kind === 'ruins' ? 'crypt_wall' : `${t.key}_wall`), roughness: 0.92 });
+      const top =
+        kind === 'ruins'
+          ? new THREE.MeshStandardMaterial({ map: tileTexture('crypt_wall'), roughness: 0.95 })
+          : new THREE.MeshStandardMaterial({ color: new THREE.Color(t.wall).lerp(new THREE.Color(t.wallDark), 0.35), roughness: 1 });
+      if (kind === 'ruins') applyWorldUv(top, 'floor', 2);
+      for (const m of [side.map, top.map]) if (m && !this.uploads.includes(m)) this.uploads.push(m);
+      applyOcclusionFade(side, this.occ);
+      applyWorldUv(side, 'wall', 2);
+      applyOcclusionFade(top, this.occ);
+      const mats = [side, side, top, top, side, side];
+      wallMats.set(kind, mats);
+      return mats;
+    };
     const wallGeo = new THREE.BoxGeometry(1, WALL_H, 1);
     wallGeo.translate(0, WALL_H / 2, 0);
-    for (const [c, tiles] of byChunk(wallTiles)) {
-      const walls = new THREE.InstancedMesh(wallGeo, [sideMat, sideMat, topMat, topMat, sideMat, sideMat], tiles.length);
-      tiles.forEach(([x, y], i) => {
-        // the town's palisade is uneven; the wilderness's walls are ruins, broken down low
-        const hJ = level.areaAt(x + 0.5, y + 0.5).kind === 'town' ? 0.85 + Math.random() * 0.25 : theme.key === 'wild' ? 0.2 + Math.random() * 0.4 : 0.96 + Math.random() * 0.08;
-        m4.compose(new THREE.Vector3(x + 0.5, 0, y + 0.5), new THREE.Quaternion(), new THREE.Vector3(1, hJ, 1));
-        walls.setMatrixAt(i, m4);
-        const v = 0.8 + Math.random() * 0.25;
-        walls.setColorAt(i, col.setRGB(v, v, v));
-      });
-      walls.instanceMatrix.needsUpdate = true;
-      if (walls.instanceColor) walls.instanceColor.needsUpdate = true;
-      c.group.add(walls);
+    const wallsBy = new Map<WallKind, [number, number][]>();
+    for (const t of wallTiles) {
+      const k = wallKind(t[0], t[1]);
+      const l = wallsBy.get(k);
+      if (l) l.push(t);
+      else wallsBy.set(k, [t]);
+    }
+    for (const [kind, kindTiles] of wallsBy) {
+      const [h0, hr] = WALL_HEIGHT[kind];
+      for (const [c, tiles] of byChunk(kindTiles)) {
+        const walls = new THREE.InstancedMesh(wallGeo, wallMat(kind), tiles.length);
+        tiles.forEach(([x, y], i) => {
+          m4.compose(new THREE.Vector3(x + 0.5, 0, y + 0.5), new THREE.Quaternion(), new THREE.Vector3(1, h0 + Math.random() * hr, 1));
+          walls.setMatrixAt(i, m4);
+          const v = 0.8 + Math.random() * 0.25;
+          walls.setColorAt(i, col.setRGB(v, v, v));
+        });
+        walls.instanceMatrix.needsUpdate = true;
+        if (walls.instanceColor) walls.instanceColor.needsUpdate = true;
+        c.group.add(walls);
+      }
     }
 
     if (pillarTiles.length) {
       let pGeo: THREE.BufferGeometry;
-      let pMat: THREE.Material = sideMat;
+      let pMat: THREE.Material = wallMat(wallKind(pillarTiles[0][0], pillarTiles[0][1]))[0];
       const tpl = assets.ready ? assets.get('d_pillar_decorated') : undefined;
       const pMesh = tpl ? (tpl.gltf.scene.getObjectByProperty('isMesh', true) as THREE.Mesh | undefined) : undefined;
       if (tpl && pMesh) {
@@ -789,6 +857,18 @@ export class Renderer implements Picker {
     for (const c of scenery.all) castShadows(c.group);
     for (const f of floors) f.castShadow = false;
     scenery.finish();
+    // each kind of wall's shaders made now, not on the first frame a chunk of them comes into view
+    // (the wilderness's ruins are far from the camp: a hitch out on the moor)
+    const warm = new THREE.Scene();
+    for (const kind of wallsBy.keys()) {
+      const w = new THREE.InstancedMesh(wallGeo, wallMat(kind), 1);
+      w.setMatrixAt(0, m4.identity());
+      w.setColorAt(0, col.setRGB(1, 1, 1));
+      warm.add(w);
+    }
+    castShadows(warm);
+    this.post.compile(warm, this.scene, this.camera);
+    for (const w of warm.children) (w as THREE.InstancedMesh).dispose();
     if (this.ground) {
       castShadows(this.ground.mesh);
       this.ground.mesh.castShadow = false;
@@ -1279,7 +1359,25 @@ export class Renderer implements Picker {
     }
   }
 
-  /** the camp's and the wilderness's light at this time of day */
+  /** the first of `uploads` that has loaded, onto the GPU (one a frame: each is a few ms) */
+  private uploadLoaded() {
+    const i = this.uploads.findIndex((t) => t.version > 0);
+    if (i < 0) return;
+    this.webgl.initTexture(this.uploads[i]);
+    this.uploads.splice(i, 1);
+  }
+
+  /** the level's one look, as a share of the air (airShares) */
+  private onlyShare(level: Level): AreaShare[] {
+    const sh = this.airShares;
+    if (sh.length !== 1) sh.length = 0;
+    if (!sh.length) sh.push({ area: 0, w: 1 });
+    sh[0].area = level.areas[0];
+    sh[0].w = 1;
+    return sh;
+  }
+
+  /** the light under the sky at this time of day, as the areas about the hero grade it (atmos) */
   private applySky(s: SkyLook) {
     this.dir.color.copy(s.sun);
     this.dir.intensity = s.sunIntensity;
@@ -1289,8 +1387,8 @@ export class Renderer implements Picker {
     this.hemi.intensity = s.skyIntensity;
     (this.scene.background as THREE.Color).copy(s.bg);
     this.ground?.edge.copy(s.bg);
-    if (this.post.enabled) this.post.setGrade(s.grade);
-    this.mist?.setSky(s.sky, s.mist);
+    if (this.post.enabled) this.post.setGrade(shiftGrade(s.grade, this.atmos.grade, this.grade));
+    this.mist?.setSky(s.sky, s.mist, this.atmos.mist);
     this.lamps = s.lamps;
     this.night = 1 - s.day;
     // the hero's light is a lantern's: it matters by night, barely by day
@@ -1332,6 +1430,9 @@ export class Renderer implements Picker {
     const off = new THREE.Vector3(Math.sin(CAM_YAW) * Math.cos(CAM_PITCH), Math.sin(CAM_PITCH), Math.cos(CAM_YAW) * Math.cos(CAM_PITCH)).multiplyScalar(CAM_DIST);
     this.camera.position.set(this.camTarget.x + off.x + sx, off.y, this.camTarget.z + off.z + sz);
     this.camera.lookAt(this.camTarget.x + sx, 0, this.camTarget.z + sz);
+    // the air about the hero: their area's, or where areas meet each one's share of it
+    const shares = this.oneLook ? this.onlyShare(level) : areaShares(level.areas, level.map.w, level.map.h, pp.x, pp.z, AIR_SEAM, this.airShares);
+    blendAtmos(shares, this.lookById, this.atmos);
     if (level.layout.theme.outdoor) this.applySky(skyAt(g.clock));
     this.dir.position.set(this.camTarget.x + this.sunOffset.x, this.sunOffset.y, this.camTarget.z + this.sunOffset.z);
     this.dir.target.position.set(this.camTarget.x, 0, this.camTarget.z);
@@ -1347,6 +1448,7 @@ export class Renderer implements Picker {
 
     // the scenery and props the views reach, for this frame's camera and lights
     this.updateViewers();
+    this.uploadLoaded();
 
     // player rig
     const key = playerLookKey(p);
@@ -1554,7 +1656,7 @@ export class Renderer implements Picker {
 
     this.lavaTime.value += dt;
     this.mist?.update(dt);
-    if (this.post.enabled) ambientMotes(this.fx, level.layout.theme.key, dt, pp, this.camTarget, this.night);
+    if (this.post.enabled) for (const [kind, rate] of this.atmos.motes) ambientMotes(this.fx, kind, dt, pp, this.camTarget, this.night, rate);
     this.assignLights();
     this.fx.update(dt);
 

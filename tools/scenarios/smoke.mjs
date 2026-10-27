@@ -293,8 +293,11 @@ export default async function (page, shot, log) {
         if (!spot) return { error: 'no open ground past the camp gate' };
         S.moor = spot;
         const builds = S.builds;
+        // the area's name on the way in (src/ui/banner.ts), counted
+        const banner = document.getElementById('area-banner');
+        const shown = +(banner.dataset.shown ?? 0);
         S.put(spot);
-        const banners = [...document.querySelectorAll('#messages > div')].filter((e) => e.textContent === game.area.name).length;
+        const banners = banner.dataset.area === game.area.key ? +(banner.dataset.shown ?? 0) - shown : 0;
         const mouth = L.objects.find((o) => o.kind === 'stairs' && o.dest === 8);
         S.mouth = mouth;
         return {
@@ -636,7 +639,7 @@ export default async function (page, shot, log) {
           town: L.inTown(p.pos),
           same: game.level === L && renderer.levelGroup.children[0] === view,
           builds: S.builds - builds,
-          banner: [...document.querySelectorAll('#messages > div')].some((e) => e.textContent === game.area.name),
+          banner: (({ dataset, classList }) => dataset.area === game.area.key && classList.contains('show'))(document.getElementById('area-banner')),
         };
       });
       expect(s.moved < 0.01 && s.cam < 0.01, `the jump left the hero ${s.moved.toFixed(2)} m and the camera ${s.cam.toFixed(2)} m off the spot`);

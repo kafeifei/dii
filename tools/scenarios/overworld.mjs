@@ -2,7 +2,11 @@
 //   node tools/play.mjs tools/scenarios/overworld.mjs --url "http://localhost:5179/?dev&tod=0.5"
 // Reloads with empty storage, then walks the hero out of the camp, through Blood Moor and into Cold
 // Plains, hop by hop along found paths (Game.teleportWithin), and checks the areas are announced
-// camp > Blood Moor > Cold Plains with no level rebuilt. Then 30 s of sim by the camp's edge, a pack
+// camp > Blood Moor > Cold Plains with no level rebuilt. Through each seam's opening the air turns
+// from the one area's to the other's (src/render/arealooks.ts: half each at the opening, all one
+// area past AIR_SEAM), the ground wears the three areas' looks, the minimap and the music the hero's
+// area names follow, and stepping to and fro over a seam doesn't say the area's name again
+// (src/ui/banner.ts). Then 30 s of sim by the camp's edge, a pack
 // of Blood Moor's monsters woken just outside it: 10 s with the hero out there, 20 s with them just
 // inside; no monster may ever stand on a camp tile. Page and console errors fail the run. Shots:
 // the camp's palisade gate, the camp's seam, Blood Moor's seam with Cold Plains, Cold Plains'
@@ -17,6 +21,10 @@ const OUTSIDE = 10;
 const INSIDE = 20;
 /** monsters woken by the camp's edge for the sim */
 const PACK = 25;
+/** how far round the hero the air is the areas' (src/render/renderer.ts AIR_SEAM) */
+const AIR_SEAM = 12;
+/** the music each area names (src/audio/sounds.ts, by levels.json SoundEnv) */
+const MUSIC = { 1: 'music.town', 2: 'music.wild', 3: 'music.wild' };
 
 export default async function (page, shot, log) {
   const t0 = Date.now();
@@ -196,6 +204,73 @@ export default async function (page, shot, log) {
       expect(s.trail.join('>') === ROUTE.join('>'), `the walk went through areas ${s.trail.join('>')}`);
       expect(s.levels === 0 && s.west, `${s.levels} levelChanged on the walk, same level ${s.west}`);
       facts.push(`walked ${s.hops} hops, areas ${s.areas.join(' ')}`);
+    },
+
+    async seams() {
+      const air = [];
+      const mist = {};
+      for (const [s, what] of [
+        [await ev(() => window.__ow.gate), 'camp|moor'],
+        [await ev(() => window.__ow.moor), 'moor|plains'],
+      ]) {
+        const dir = { x: Math.sign(Math.round(s.tb.x - s.ta.x)), z: Math.sign(Math.round(s.tb.z - s.ta.z)) };
+        const mid = { x: (s.ta.x + s.tb.x) / 2, z: (s.ta.z + s.tb.z) / 2 };
+        for (const k of [-AIR_SEAM - 2, 0, AIR_SEAM + 2]) {
+          const at = { x: mid.x + dir.x * k, z: mid.z + dir.z * k };
+          await ev((at) => game.teleportWithin(game.level.map.nearestWalkable(at.x, at.z) ?? at), at);
+          // a few frames for the renderer's air, and the minimap's next draw (5 a second)
+          await frames(3);
+          await page.waitForTimeout(260);
+          const r = await ev(() => ({
+            area: game.area.id,
+            label: game.area.label ?? game.area.name,
+            minimap: document.querySelector('#minimap .lvl')?.textContent,
+            shares: renderer.airShares.map((x) => ({ area: x.area, w: x.w })),
+            mist: renderer.atmos.mist.opacity,
+            music: game.sfx.playing.music,
+            sfx: game.sfx.area === game.area,
+          }));
+          const share = (a) => r.shares.find((x) => x.area === a)?.w ?? 0;
+          const want = k < 0 ? s.a : k > 0 ? s.b : null;
+          if (want !== null) {
+            expect(r.area === want && share(want) > 0.98, `${what} ${k} tiles on: area ${r.area}, the air ${JSON.stringify(r.shares)}`);
+            mist[want] = r.mist;
+          } else {
+            expect(share(s.a) >= 0.25 && share(s.b) >= 0.25, `${what} at the opening the air is ${JSON.stringify(r.shares)}`);
+            air.push(`${what} ${share(s.a).toFixed(2)}/${share(s.b).toFixed(2)}`);
+          }
+          expect(r.minimap === r.label, `${what} ${k} tiles on the minimap says ${r.minimap}, not ${r.label}`);
+          expect(r.sfx && r.music === MUSIC[r.area], `${what} ${k} tiles on the sound names ${r.music} for area ${r.area} (Sfx's area is the hero's: ${r.sfx})`);
+        }
+      }
+      expect(mist[1] < mist[2] && mist[2] < mist[3], `the mist camp ${mist[1]}, moor ${mist[2]}, plains ${mist[3]}`);
+      // to and fro over Blood Moor's seam with Cold Plains, walked (no jump): its name isn't said again
+      const d = await ev(() => {
+        const S = window.__ow;
+        const p = game.player;
+        const banner = document.getElementById('area-banner');
+        const shown = () => +(banner.dataset.shown ?? 0);
+        game.teleportWithin(S.moor.ta);
+        const before = shown();
+        const areas = [];
+        for (let k = 0; k < 6; k++) {
+          const at = k % 2 ? S.moor.ta : S.moor.tb;
+          p.pos = { ...at };
+          p.prevPos = { ...at };
+          game.updateArea();
+          areas.push(game.area.id);
+        }
+        const said = shown() - before;
+        // and back into Cold Plains to stay, as the walk left it
+        game.teleportWithin(S.moor.tb);
+        const key = renderer.ground?.mesh.material.customProgramCacheKey() ?? '';
+        return { areas: areas.join(''), said, key, shown: shown() };
+      });
+      expect(d.areas === '323232' && d.said === 0, `to and fro over the seam (areas ${d.areas}) said the name ${d.said} more time(s)`);
+      expect(d.key.startsWith('ground-3-'), `the ground's shader is ${d.key}, not one of three looks`);
+      facts.push(`air at the openings ${air.join(', ')}; mist ${[1, 2, 3].map((a) => mist[a].toFixed(2)).join('/')}; ${d.shown} names said`);
+      await frames();
+      await shot('coldplains-seam');
     },
 
     async sim() {

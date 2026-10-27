@@ -2,14 +2,15 @@ import * as THREE from 'three';
 import type { P2 } from '../core/math';
 import type { Effects } from './effects';
 
-/** per-theme ground mist: colour, how thick, and a glow of its own (lava under the smoke) */
-interface MistLook {
-  color: string;
+/** ground mist: its colour, how thick, and a glow of its own (lava under the smoke) */
+export interface MistLook {
+  color: THREE.ColorRepresentation;
   opacity: number;
   emissive?: string;
 }
 
-const MIST: Record<string, MistLook> = {
+/** each theme's mist; under the sky an area's own (src/render/looks.ts) takes over */
+export const MIST: Record<string, MistLook> = {
   town: { color: '#7a86a0', opacity: 0.2 },
   wild: { color: '#7a86a0', opacity: 0.24 },
   crypt: { color: '#a89a88', opacity: 0.3 },
@@ -92,7 +93,8 @@ export class Mist {
 
   private mask: THREE.DataTexture;
   private look: MistLook;
-  private layers: { mat: THREE.MeshLambertMaterial; opacity: number }[] = [];
+  /** each layer's material and its share of the look's thickness */
+  private layers: { mat: THREE.MeshLambertMaterial; share: number }[] = [];
 
   /** `open(x, y)`: whether mist lies on that tile (the floor, not the rock between rooms) */
   constructor(w: number, h: number, theme: string, open: (x: number, y: number) => boolean) {
@@ -118,7 +120,7 @@ export class Mist {
         opacity: look.opacity * share,
         depthWrite: false,
       });
-      this.layers.push({ mat, opacity: look.opacity * share });
+      this.layers.push({ mat, share });
       const size = { value: new THREE.Vector2(w, h) };
       mat.onBeforeCompile = (shader) => {
         shader.uniforms.uTime = this.time;
@@ -154,11 +156,14 @@ export class Mist {
     this.time.value += dt;
   }
 
-  /** under the sky: tinted toward the sky's light, `thick` times the theme's thickness */
-  setSky(sky: THREE.Color, thick: number) {
+  /**
+   * under the sky: `look` (the theme's, or the areas' about the hero, blended) tinted toward the
+   * sky's light, `thick` times its thickness
+   */
+  setSky(sky: THREE.Color, thick: number, look: MistLook = this.look) {
     for (const l of this.layers) {
-      l.mat.color.set(this.look.color).lerp(sky, 0.3);
-      l.mat.opacity = l.opacity * thick;
+      l.mat.color.set(look.color).lerp(sky, 0.3);
+      l.mat.opacity = look.opacity * l.share * thick;
     }
   }
 
@@ -174,28 +179,37 @@ export class Mist {
 }
 
 /**
- * Specks drifting through the air around the hero: dust in the crypt and the caves, frost falling
- * in the ice cellars, embers rising and ash falling in hell, fireflies over the camp. Dust and frost
- * only show near the hero, where the light would catch them.
+ * Specks drifting through the air: dust in the crypt and the caves, frost falling in the ice
+ * cellars, embers rising and ash falling in hell, fireflies by night under the sky, seeds adrift
+ * in the sun over the moor and frost blowing across Cold Plains. Dust and frost below ground only
+ * show near the hero, where the light would catch them.
  */
-/** `night`: 1 by night (and below ground), 0 by day */
-export function ambientMotes(fx: Effects, theme: string, dt: number, hero: P2, view: P2, night = 1) {
+export type MoteKind = 'dust' | 'cave' | 'ice' | 'hell' | 'fireflies' | 'seeds' | 'frost';
+
+/** each theme's specks; under the sky an area's own (src/render/looks.ts) take over */
+export const THEME_MOTES: Record<string, MoteKind> = { crypt: 'dust', cave: 'cave', ice: 'ice', hell: 'hell', town: 'fireflies', wild: 'fireflies' };
+
+/**
+ * One frame's specks of `kind` round the hero and the view's centre, `rate` times as many (an
+ * area's share of the air where two meet). `night`: 1 by night (and below ground), 0 by day.
+ */
+export function ambientMotes(fx: Effects, kind: MoteKind, dt: number, hero: P2, view: P2, night = 1, rate = 1) {
   const r = Math.random;
   const around = (c: P2, rad: number) => {
     const a = r() * Math.PI * 2;
     const d = Math.sqrt(r()) * rad;
     return { x: c.x + Math.sin(a) * d, z: c.z + Math.cos(a) * d, d };
   };
-  const chance = (perSecond: number) => r() < perSecond * dt;
-  switch (theme) {
-    case 'crypt':
+  const chance = (perSecond: number) => r() < perSecond * rate * dt;
+  switch (kind) {
+    case 'dust':
     case 'cave': {
       if (!chance(22)) return;
       const p = around(hero, 7);
       fx.add.spawn({
         x: p.x, y: 0.3 + r() * 2, z: p.z,
         vx: (r() - 0.5) * 0.2, vy: (r() - 0.5) * 0.08, vz: (r() - 0.5) * 0.2,
-        color: theme === 'cave' ? '#e0a888' : '#e8d4b4', size: 0.05 + r() * 0.05, life: 4 + r() * 4,
+        color: kind === 'cave' ? '#e0a888' : '#e8d4b4', size: 0.05 + r() * 0.05, life: 4 + r() * 4,
         alpha: 0.5 * (1 - p.d / 7.5), endSize: 1, fadeIn: 0.3,
       });
       return;
@@ -229,9 +243,8 @@ export function ambientMotes(fx: Effects, theme: string, dt: number, hero: P2, v
       }
       return;
     }
-    case 'town':
-    case 'wild': {
-      // fireflies, by night
+    case 'fireflies': {
+      // by night
       if (!chance(2.5 * night)) return;
       const p = around(view, 13);
       fx.add.spawn({
@@ -239,7 +252,33 @@ export function ambientMotes(fx: Effects, theme: string, dt: number, hero: P2, v
         vx: (r() - 0.5) * 0.5, vy: (r() - 0.5) * 0.15, vz: (r() - 0.5) * 0.5,
         color: '#d0ff70', size: 0.08, life: 3 + r() * 3, alpha: 0.9, endSize: 0.8, fadeIn: 0.35,
       });
+      return;
     }
+    case 'seeds': {
+      // by day: thistledown on the wind, catching the sun
+      if (!chance(4 * (1 - night))) return;
+      const p = around(view, 13);
+      fx.norm.spawn({
+        x: p.x, y: 0.6 + r() * 1.8, z: p.z,
+        vx: 0.3 + r() * 0.2, vy: (r() - 0.45) * 0.12, vz: 0.1 + (r() - 0.5) * 0.2,
+        color: '#f2ead2', size: 0.08 + r() * 0.04, life: 5 + r() * 4, alpha: 0.6, endSize: 1, fadeIn: 0.25,
+      });
+      return;
+    }
+    case 'frost': {
+      // day and night: fine frost blown slantwise, settling
+      if (!chance(14)) return;
+      const p = around(view, 13);
+      fx.norm.spawn({
+        x: p.x - 1.5, y: 2.8 + r() * 1.4, z: p.z,
+        vx: 0.45 + r() * 0.25, vy: -0.3 - r() * 0.15, vz: (r() - 0.5) * 0.15,
+        color: '#eef6ff', size: 0.08 + r() * 0.06, life: 9, alpha: 0.7, endSize: 1, fadeIn: 0.2, floor: true,
+      });
+      return;
+    }
+    default:
+      // every kind has its specks above
+      kind satisfies never;
   }
 }
 

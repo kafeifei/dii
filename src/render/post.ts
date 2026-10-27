@@ -149,6 +149,18 @@ export class Post {
     this.bloom.strength = g.bloom;
   }
 
+  /**
+   * The shaders of `objects`, lit by `scene`'s lights, made now rather than on the frame they first
+   * show: as that frame draws them, into the composer's target (linear, tone mapped after), or to
+   * the screen with the post effects off
+   */
+  compile(objects: THREE.Object3D, scene: THREE.Scene, camera: THREE.Camera) {
+    const was = this.webgl.getRenderTarget();
+    this.webgl.setRenderTarget(this.enabled ? this.composer.readBuffer : null);
+    this.webgl.compile(objects, camera, scene);
+    this.webgl.setRenderTarget(was);
+  }
+
   setSize(w: number, h: number, pixelRatio: number) {
     this.composer.setPixelRatio(pixelRatio);
     this.composer.setSize(w, h);
