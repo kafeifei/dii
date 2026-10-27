@@ -1,6 +1,7 @@
 import type { Input } from '../core/input';
 import { chance, dist, rand, randInt, type P2 } from '../core/math';
 import type { Sfx } from '../audio/sfx';
+import { DROP_SOUND, ENTER_LINE, LARGE_MONSTER, heroLine, isNight, soundsNear, type HeroLine } from '../audio/sounds';
 import { CLASSES, type PlayerClass } from '../data/classes';
 import { ITEM_BASES } from '../data/items';
 import { SKILL_BY_ID } from '../data/skills';
@@ -22,7 +23,7 @@ import type { Elem } from '../data/monsters';
 import { loadSave, markInGame, savedWaypoints, setSlot, writeSave, type Difficulty } from './save';
 import { debugOpts } from './debug';
 import { WILD_MAPS } from '../world/levelgen';
-import { CAMP_AREA, DEN_OF_EVIL, areaDef, areaForDepth, builtWaypoints, depthForArea, dungeonArea, isBuilt, trialFloor, type AreaDef } from '../world/areas';
+import { CAMP_AREA, DEN_OF_EVIL, areaDef, areaForDepth, builtWaypoints, depthForArea, dungeonArea, isBuilt, trialFloor, type AreaDef, type AreaKind } from '../world/areas';
 import { BUILT as WEST_AREAS, generateOverworld, type Overworld } from '../world/overworld';
 import { generateDen } from '../world/den';
 import { SHRINE_BY_ID } from '../data/shrines';
@@ -59,6 +60,18 @@ const newSeed = () => (Math.random() * 2 ** 31) | 0;
 
 /** seconds from one midnight to the next under the sky */
 const DAY_LENGTH = 16 * 60;
+
+/** the hero's life, as a share of its most, under which it says it's badly hurt: once, as it falls past */
+const LOW_LIFE = 0.3;
+/** it says so again only after its life has been back over this share, */
+const LOW_LIFE_REARM = 0.5;
+/** and this many seconds have gone by */
+const LOW_LIFE_AGAIN = 30;
+/**
+ * seconds since walking out of a kind of area within which walking back into it says nothing: to and
+ * fro over the camp's seam the hero doesn't remark on it at every step (as the area banner, src/ui/banner.ts)
+ */
+const REENTRY = 4;
 
 /** spells a dragged touch button lays on a spot of ground */
 const AIM_SPOT = new Set(['meteor', 'blizzard', 'fire_wall', 'heavens_wrath', 'teleport']);
@@ -145,6 +158,16 @@ export class Game {
   /** driven externally (balance bot): the page loop neither steps nor renders */
   headless = false;
   started = false;
+  /** low_health: under LOW_LIFE last frame; back over LOW_LIFE_REARM since it was last said; the time it may be said again */
+  private lowLife = { was: false, armed: true, quiet: 0 };
+  /** it was night under the sky last frame (isNight) */
+  private night = false;
+  /** the finds the hero has remarked on: picked up again, an item isn't new */
+  private remarked = new WeakSet<Item>();
+  /** when the hero last walked out of each kind of area (Game.time), for REENTRY */
+  private leftKind = new Map<AreaKind, number>();
+  /** the hero has been underground this game: enter_dungeon is said the first time */
+  private wentUnder = false;
 
   constructor(
     public input: Input,
@@ -210,6 +233,8 @@ export class Game {
     this.west = this.den = this.gallery = this.lastDungeon = this.portalLevel = null;
     this.area = null;
     this.atClosed = null;
+    this.leftKind.clear();
+    this.wentUnder = false;
   }
 
   save() {
@@ -260,7 +285,7 @@ export class Game {
     const level = this.levelFor(id, how === 'stairs');
     if (!level) return false;
     const at = this.arrival(level, id, how, this.area?.id);
-    this.arrive(level, at.pos, true, at.facing);
+    this.arrive(level, at.pos, true, how, at.facing);
     return true;
   }
 
@@ -279,19 +304,19 @@ export class Game {
   /**
    * The hero set down at `at` on `level`: a jump on the map they're on, else onto it, its view built
    * anew; a map kept from earlier is found as it was left, its survivors healed and home again
-   * (`reenter`, not through a town portal)
+   * (`reenter`, not through a town portal), coming `how`
    */
-  private arrive(level: Level, at: P2, reenter: boolean, facing?: number) {
+  private arrive(level: Level, at: P2, reenter: boolean, how: Arrival, facing?: number) {
     const p = this.player;
     this.atClosed = null;
-    if (level === this.level) this.teleportWithin(at);
+    if (level === this.level) this.teleportWithin(at, how);
     else {
       if (reenter) level.reenter();
       this.level = level;
       this.placePlayer(at);
       this.hooks.levelChanged(level);
       // a new level is always announced, even in the same area as the last
-      this.updateArea(true);
+      this.updateArea(true, how);
     }
     if (facing !== undefined) p.facing = facing;
     const here = this.area?.id ?? CAMP_AREA;
@@ -358,12 +383,12 @@ export class Game {
       const portal = new WorldObject('portal', pt, `传送门 · ${there?.name ?? '?'}`, 0.6);
       portal.dest = there?.id ?? CAMP_AREA;
       camp.objects.push(portal);
-      this.arrive(camp, { x: pt.x + 1.2, z: pt.z + 0.6 }, false);
+      this.arrive(camp, { x: pt.x + 1.2, z: pt.z + 0.6 }, false, 'portal');
       return true;
     }
     this.closePortals();
     if (!L || !far) return this.enterArea(id, 'waypoint');
-    this.arrive(L, { x: far.pos.x + 1, z: far.pos.z + 0.8 }, false);
+    this.arrive(L, { x: far.pos.x + 1, z: far.pos.z + 0.8 }, false, 'portal');
     return true;
   }
 
@@ -375,12 +400,13 @@ export class Game {
 
   /**
    * Move the hero elsewhere on this map without leaving it (a waypoint, a town portal or respawning
-   * on the overworld): the view jumps there and a new area is announced, nothing is rebuilt.
+   * on the overworld, coming `how`; the tools' jumps, no way in): the view jumps there and a new area
+   * is announced, nothing is rebuilt.
    */
-  teleportWithin(pos: P2) {
+  teleportWithin(pos: P2, how: Arrival | null = null) {
     this.placePlayer(pos);
     this.hooks.teleported();
-    this.updateArea();
+    this.updateArea(false, how);
   }
 
   /** the hero set down on walkable ground near `pos`, standing still, whatever they were doing dropped */
@@ -400,8 +426,12 @@ export class Game {
     this.sfx.setListener(p.pos);
   }
 
-  /** announce the hero's area when it changed (or always, `entered` a level): its banner and its ambience */
-  private updateArea(entered = false) {
+  /**
+   * announce the hero's area when it changed (or always, `entered` a level): its banner, its
+   * ambience and music, and what the hero says coming to it. `how` they came: on foot over a seam
+   * ('walk'), by a way in (Arrival), or null for a jump the tools made
+   */
+  private updateArea(entered = false, how: Arrival | 'walk' | null = null) {
     const p = this.player;
     const area = this.level.areaAt(p.pos.x, p.pos.z);
     if (area === this.area && !entered) return;
@@ -413,8 +443,65 @@ export class Game {
       this.refreshShop();
       this.layOutUnplaced(this.level);
     }
-    this.sfx.enterArea(area);
+    // its ambience at this time of day, and its music, over the last area's; walked over a seam, a
+    // switch back so soon after the last waits a moment (Sfx SWITCH_HOLD)
+    this.sfx.setTime(this.clock);
+    this.sfx.enterArea(area, how === 'walk');
+    // decode what's heard here and in the areas next to it, so it plays recorded from the first time
+    void this.sfx.preload(soundsNear(area, this.areasNext(area), isNight(this.clock), p.cls));
+    const line = this.arrivalLine(area, prev, how);
+    if (prev && prev.kind !== area.kind) this.leftKind.set(prev.kind, this.time);
+    if (area.kind === 'dungeon') this.wentUnder = true;
+    if (line) this.say(line);
     this.hooks.areaChanged(area, prev);
+  }
+
+  /**
+   * What the hero says coming into `area` from `prev`: walking out of the camp, back into it,
+   * underground the first time this game; not as a game starts or a dead hero is brought back, nor
+   * walking back into a kind of area left a moment ago (REENTRY)
+   */
+  private arrivalLine(area: AreaDef, prev: AreaDef | null, how: Arrival | 'walk' | null): HeroLine | null {
+    if (!prev || prev.kind === area.kind || how === 'start' || how === 'respawn') return null;
+    if (area.kind === 'dungeon' && this.wentUnder) return null;
+    if (how === 'walk' && this.time - (this.leftKind.get(area.kind) ?? -Infinity) < REENTRY) return null;
+    return ENTER_LINE[area.kind];
+  }
+
+  /** the areas next to `area` on this map: across its seams, and where its ways on lead (stairs, exits, a portal) */
+  private areasNext(area: AreaDef): AreaDef[] {
+    const L = this.level;
+    const out = new Set<number>();
+    for (const sm of (L.layout as Partial<Overworld>).seams ?? []) {
+      if (sm.a === area.id) out.add(sm.b);
+      else if (sm.b === area.id) out.add(sm.a);
+    }
+    for (const o of L.objects) {
+      const way = o.kind === 'stairs' || o.kind === 'exit' || o.kind === 'portal';
+      if (way && !o.closed && o.dest !== undefined && L.areaAt(o.pos.x, o.pos.z) === area) out.add(o.dest);
+    }
+    out.delete(area.id);
+    return [...out].flatMap((id) => areaDef(id) ?? []);
+  }
+
+  /** the hero says its line for the moment: Sfx has it say one at a time, and the same one not too often */
+  say(line: HeroLine) {
+    this.sfx.play(heroLine(this.player.cls, line));
+  }
+
+  /** life falling under LOW_LIFE: once as it falls past, then not again until it's been back up */
+  private watchLife() {
+    const p = this.player;
+    const s = this.lowLife;
+    const share = p.dead ? 1 : p.life / p.stats.maxLife;
+    const low = share < LOW_LIFE;
+    if (share >= LOW_LIFE_REARM) s.armed = true;
+    if (low && !s.was && s.armed && this.time >= s.quiet) {
+      this.say('low_health');
+      s.armed = false;
+      s.quiet = this.time + LOW_LIFE_AGAIN;
+    }
+    s.was = low;
   }
 
   /**
@@ -475,8 +562,13 @@ export class Game {
     if (!this.started || this.paused) return;
     this.time += dt;
     this.clock = (this.clock + (dt * this.clockRate) / DAY_LENGTH) % 1;
+    this.sfx.setTime(this.clock);
     const L = this.level;
     L.time += dt;
+    // night falls on the hero out in the wilderness
+    const night = isNight(this.clock);
+    if (night && !this.night && this.area?.kind === 'outdoor') this.say('night_falls');
+    this.night = night;
     // where things were before this step, to draw between steps: the hero, the missiles and the
     // monsters the last step ran, the only ones that move (and those it runs now, below)
     const keep = (a: { pos: P2; prevPos: P2 }) => {
@@ -518,6 +610,7 @@ export class Game {
       if (m.dead) this.aged.set(m, L.time);
     }
     p.hitFlash = Math.max(0, p.hitFlash - dt * 6);
+    this.watchLife();
     this.updateAuras(dt);
     this.separate();
     // the ones that walked, were knocked back or pushed apart: into the cells they're in now
@@ -548,7 +641,7 @@ export class Game {
         return;
       } else this.atClosed = null;
     }
-    this.updateArea();
+    this.updateArea(false, 'walk');
     // corpse cleanup; the corpses far off, which no step aged, catch up first, on the time spent on
     // this map: those on a map the hero is away from keep, as when every corpse was stepped (D2
     // instead keeps 1 in 3 ordinary corpses of a room it untiles, none of uniques or minions: D2Game
@@ -1074,7 +1167,8 @@ export class Game {
     this.spawnDrops(m.pos, this.rollLoot(m.level, m.lootQuality()));
     // fx
     this.fx.death(m, m.def.blood, elem);
-    const snd = m.def.blood === 'bone' ? 'monster.die_bone' : m.def.model === 'imp' || m.def.model === 'shaman' ? 'monster.die_imp' : 'monster.die';
+    const big = m.rank === 'boss' || m.def.scale >= LARGE_MONSTER;
+    const snd = m.def.blood === 'bone' ? 'monster.die_bone' : big ? 'monster.die_large' : m.def.model === 'imp' || m.def.model === 'shaman' ? 'monster.die_imp' : 'monster.die';
     this.sfx.play(snd, { pos: m.pos });
     if (m.mods.includes('fireench')) {
       const pk = emptyPacket();
@@ -1104,6 +1198,7 @@ export class Game {
     if (m.rank === 'boss') {
       this.fx.shake(0.8);
       this.hooks.message(`${m.displayName} 被击败了！`, '#c8a86a', 4);
+      this.say('boss_dead');
       this.save();
     }
   }
@@ -1115,6 +1210,7 @@ export class Game {
     this.fx.burst('levelup', p.pos);
     this.sfx.play('player.level_up', { pos: p.pos });
     this.hooks.message(`等级提升！你现在是 ${p.level} 级`, '#ffd24a', 3);
+    this.say('level_up');
     this.hooks.levelUp();
   }
 
@@ -1168,17 +1264,18 @@ export class Game {
       }
       if (d.kind === 'gold') {
         this.level.ground.push(new GroundItem(spot, null, d.amount, pos));
+        this.sfx.play('item.gold', { pos: spot });
       } else {
         this.level.ground.push(new GroundItem(spot, d.item, 0, pos));
         const it = d.item;
         const b = baseOf(it);
+        // each kind of item lands with its own sound (a rune's is its stinger); a unique's stinger goes over it
+        const drop = DROP_SOUND[b.type] ?? 'item.drop';
+        this.sfx.play(drop, { pos: spot });
         if (it.rarity === 'unique' || it.rarity === 'set') {
           this.sfx.play('item.drop_unique', { pos: spot });
           this.fx.burst('unique_drop', spot, { color: it.rarity === 'set' ? '#22d422' : '#c8a86a' });
-        } else if (b.type === 'rune') {
-          this.sfx.play('item.drop_rune', { pos: spot });
-          this.fx.burst('unique_drop', spot, { color: '#ffa31a' });
-        } else this.sfx.play('item.drop', { pos: spot });
+        } else if (b.type === 'rune') this.fx.burst('unique_drop', spot, { color: '#ffa31a' });
       }
     }
   }
@@ -1189,7 +1286,8 @@ export class Game {
     const spot = { x: p.pos.x + Math.sin(a) * 0.8, z: p.pos.z + Math.cos(a) * 0.8 };
     const ok = this.level.map.walkableAt(spot.x, spot.z) ? spot : { ...p.pos };
     this.level.ground.push(new GroundItem(ok, item, 0, p.pos));
-    this.sfx.play('item.drop', { pos: ok });
+    const dropped = DROP_SOUND[baseOf(item).type] ?? 'item.drop';
+    this.sfx.play(dropped, { pos: ok });
   }
 
   // ───────────────────────── items & interaction ─────────────────────────
@@ -1229,10 +1327,17 @@ export class Game {
       const k = p.unplaced.indexOf(item);
       if (k >= 0) p.unplaced.splice(k, 1);
       this.sfx.play('item.pickup', { pos: gi.pos });
+      // a find worth a word, the first time it's picked up
+      const find: HeroLine | null = item.rarity === 'unique' ? 'unique' : item.rarity === 'set' ? 'set_item' : baseOf(item).type === 'rune' ? 'rune' : null;
+      if (find && !this.remarked.has(item)) {
+        this.remarked.add(item);
+        this.say(find);
+      }
       this.hooks.inventoryChanged();
     } else {
       this.hooks.message('背包已满', '#ff6060', 1.5);
       this.sfx.play('ui.no_room');
+      this.say('bag_full');
     }
   }
 
@@ -1260,7 +1365,8 @@ export class Game {
     const p = this.player;
     if (p.dead) return;
     const stack = p.belt[col];
-    if (!stack || !stack.length) return;
+    if (!stack) return;
+    if (!stack.length) return this.say('no_potion');
     const item = stack.shift()!;
     this.drink(item);
     this.hooks.inventoryChanged();
@@ -1309,6 +1415,7 @@ export class Game {
         if (!p.waypoints.includes(a.id) && builtWaypoints([a.id]).includes(a.id)) {
           p.waypoints = builtWaypoints([...p.waypoints, a.id]);
           this.hooks.message('传送点已激活', '#c8a86a', 2);
+          this.say('waypoint');
           this.save();
         }
         this.hooks.openPanel('waypoint');
@@ -1340,6 +1447,7 @@ export class Game {
         this.fx.burst('aura_switch', p.pos, { color: def.color });
         this.sfx.play('env.shrine', { pos: obj.pos });
         this.hooks.message(`${def.name}：${def.desc}`, def.color, 3);
+        this.say('shrine');
         break;
       }
       case 'portal':
@@ -1374,6 +1482,7 @@ export class Game {
     const L = this.level;
     if (L.inTown(this.player.pos)) {
       this.hooks.message('你已经在营地里了', '#aaa', 1.5);
+      this.say('cant_here');
       return;
     }
     // one town portal a hero: a new one closes the last, both its ends
@@ -1395,6 +1504,7 @@ export class Game {
     if (p.dead || !(p.state === 'idle' || p.state === 'move')) return;
     if (this.level.inTown(p.pos)) {
       this.hooks.message('你已经在营地里了', '#aaa', 1.5);
+      this.say('cant_here');
       return;
     }
     p.setState('cast', 0.7);

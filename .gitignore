@@ -5,5 +5,6 @@ public/models/_cand
 models-src/*
 !models-src/ai
 tools/.d2cache
+audio-src
 .vercel
 .env*.local

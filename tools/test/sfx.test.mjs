@@ -1,7 +1,10 @@
 // Sound ids and the rules Sfx plays them by, without an AudioContext: the id table, that every id
-// the code plays is in it (and every one in it is played), the area beds, how loud and where a
-// sound with a place is heard, and which voice a new sound takes over when the limits are reached
-// (a critical sound must always get one). tools/scenarios/sfx.mjs renders the same in a page.
+// the code plays is in it (and every one in it is played), the hero's lines it says are lines it
+// has, the area beds and when they change (walking to and fro over a seam, not at every step), how
+// loud and where a sound with a place is heard, which voice a new sound takes
+// over when the limits are reached (a critical sound must always get one), when a line may be said
+// (one at a time, not the same one too often), and what's decoded walking into an area.
+// tools/scenarios/sfx.mjs renders the same in a page.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -53,10 +56,16 @@ const literals = (s) => [...s.matchAll(/'([^'\n]*)'|"([^"\n]*)"|`([^`]*)`/g)].ma
 const results = (s) => literals(s.replace(/[=!]==?\s*('[^'\n]*'|"[^"\n]*")|('[^'\n]*'|"[^"\n]*")\s*[=!]==?/g, ''));
 
 export default async (load) => {
-  const { SOUNDS, PRIORITY, areaSound } = await load('/src/audio/sounds.ts');
-  const { Sfx, spatial, earGains, voiceToSteal, PAN_MAX } = await load('/src/audio/sfx.ts');
+  const { SOUNDS, PRIORITY, HERO_LINES, LINE, ENTER_LINE, AREA_FILES, areaSound, areaKind, soundsNear, heroLine } = await load('/src/audio/sounds.ts');
+  const { Sfx, spatial, earGains, voiceToSteal, PAN_MAX, Lines, LINE_GAP, LINE_AGAIN, LINE_LATE } = await load('/src/audio/sfx.ts');
+  const { FILES } = await load('/src/audio/files.ts');
   const { THEMES, WILD_MAPS, isWild, dungeonFloor, themeForFloor } = await load('/src/world/levelgen.ts');
-  const { areaForDepth } = await load('/src/world/areas.ts');
+  const { areaDef, areaForDepth, dungeonArea, CAMP_AREA, WILD_AREA, COLD_PLAINS, DEN_OF_EVIL } = await load('/src/world/areas.ts');
+  const camp = areaDef(CAMP_AREA);
+  const moor = areaDef(WILD_AREA);
+  const plains = areaDef(COLD_PLAINS);
+  const den = areaDef(DEN_OF_EVIL);
+  const floor = (f) => areaDef(dungeonArea(f));
   const problems = [];
   const check = (ok, what) => ok || problems.push(what);
 
@@ -83,6 +92,7 @@ export default async (load) => {
   };
   const idShaped = new RegExp(`^(${CATEGORIES.join('|')})\\.[a-z0-9_]+$`);
   let calls = 0;
+  let says = 0;
   for (const file of sources()) {
     const src = fs.readFileSync(file, 'utf8');
     const rel = path.relative(root, file);
@@ -91,6 +101,8 @@ export default async (load) => {
       calls++;
       const open = m.index + m[0].length - 1;
       const arg = firstArg(src, open).trim();
+      // a hero's line (Game.say): tsc holds it to HERO_LINES, and the says below are checked
+      if (arg.startsWith('heroLine(')) continue;
       let named = results(arg);
       if (!named.length && /^[A-Za-z_$][\w$]*$/.test(arg)) {
         // a variable: the ids it is given where it's declared
@@ -100,12 +112,18 @@ export default async (load) => {
       check(named.length > 0, `${line(m.index)}: can't tell which sound sfx.play(${arg}) plays`);
       for (const id of named) use(id, line(m.index));
     }
+    // what the hero is made to say, where it's written out
+    for (const m of src.matchAll(/\.say\(/g)) {
+      says++;
+      for (const said of results(firstArg(src, m.index + m[0].length - 1))) check(HERO_LINES.includes(said), `${line(m.index)}: the hero has no line '${said}'`);
+    }
     for (const m of src.matchAll(/'([^'\n]*)'|"([^"\n]*)"|`([^`$]*)`/g)) {
       const s = m[1] ?? m[2] ?? m[3];
       if (idShaped.test(s)) use(s, line(m.index));
     }
   }
   check(calls > 50, `only ${calls} sfx.play calls found`);
+  check(says > 10, `only ${says} lines said`);
   for (const id of ids) check(used.has(id), `${id}: nothing plays it`);
 
   // the beds, by area: the camp's wind and fire, the wilderness's wind, a drone underground; the
@@ -119,18 +137,60 @@ export default async (load) => {
   check(areaSound('title').bed === 'none', `the title screen plays ${areaSound('title').bed}`);
   check(areaSound('nowhere').bed === 'none', `an unknown screen plays ${areaSound('nowhere').bed}`);
 
-  // from area to area a bed starts only when it changes: the drone plays on from floor to floor
-  // (into the cave too); the camp's fire fades out into the wilderness's wind. Node has no
-  // AudioContext, so one is pretended and only the beds enterArea asks for are watched
-  const sfx = new Sfx();
-  const started = [];
-  sfx.ctx = {};
-  sfx.startBed = (bed) => started.push(bed);
-  const walk = [0, 1, WILD_MAPS + 1, WILD_MAPS + 2, WILD_MAPS + 5, 0].map(areaForDepth);
-  for (const a of walk) sfx.enterArea(a);
-  sfx.enterArea('title');
-  const beds = started.join(' ');
-  check(beds === 'town wild dungeon town none', `${walk.map((a) => a.key).join(' > ')} > title started the beds ${beds}, want town wild dungeon town none`);
+  // from area to area, with no recordings, a bed starts only when it changes: the drone plays on
+  // from floor to floor (into the cave too); the camp's fire fades out into the wilderness's wind.
+  // Node has no AudioContext, so one is pretended and only the ambience Sfx starts is watched
+  const quiet = () => {
+    const sfx = new Sfx();
+    const started = [];
+    sfx.files = {};
+    sfx.ctx = { currentTime: 0 };
+    sfx.track = () => ({ stop() {} });
+    sfx.ambience = (s) => (started.push(s.bed), { stop() {} });
+    return { sfx, started };
+  };
+  {
+    const { sfx, started } = quiet();
+    const walk = [0, 1, WILD_MAPS + 1, WILD_MAPS + 2, WILD_MAPS + 5, 0].map(areaForDepth);
+    for (const a of walk) sfx.enterArea(a);
+    sfx.enterArea('title');
+    const beds = started.join(' ');
+    check(beds === 'town wild dungeon town none', `${walk.map((a) => a.key).join(' > ')} > title started the beds ${beds}, want town wild dungeon town none`);
+  }
+
+  // walking to and fro over the camp's seam (Game passes `walked`): out into Blood Moor the wind
+  // takes over at once; a step back within SWITCH_HOLD waits, and comes to nothing if the hero has
+  // stepped out again by then; still in the camp when the hold is up, its fire comes back. A jump
+  // never waits, and Blood Moor into Cold Plains has nothing to switch
+  {
+    const { sfx, started } = quiet();
+    const at = (t, a, walked = true) => {
+      sfx.ctx.currentTime = t;
+      sfx.enterArea(a, walked);
+    };
+    at(0, camp, false);
+    at(10, moor);
+    at(10.3, camp);
+    at(10.6, moor);
+    at(10.9, camp);
+    const held = sfx.holding !== null && sfx.area === camp && sfx.playing.bed === 'wild';
+    check(held, `stepping back into the camp 0.9 s after leaving it: held ${sfx.holding !== null}, Sfx's area ${sfx.area?.key}, playing ${sfx.playing.bed}`);
+    // the hold's timer, run by hand
+    clearTimeout(sfx.holding);
+    sfx.ctx.currentTime = 12;
+    sfx.settle(false);
+    check(sfx.playing.bed === 'town', `the hold up with the hero in the camp, it plays ${sfx.playing.bed}`);
+    at(12.5, moor);
+    check(sfx.holding !== null && sfx.playing.bed === 'town', 'walking out again at once did not wait');
+    // a waypoint to Cold Plains, then back into Blood Moor on foot and into the camp long after
+    at(12.6, plains, false);
+    check(sfx.holding === null && sfx.playing.bed === 'wild', `a jump during a hold: held ${sfx.holding !== null}, playing ${sfx.playing.bed}`);
+    at(13, moor);
+    check(sfx.holding === null && sfx.area === moor, 'Cold Plains into Blood Moor waited for something');
+    at(20, camp);
+    const beds = started.join(' ');
+    check(beds === 'town wild town wild town', `to and fro over the camp's seam started the beds ${beds}, want town wild town wild town`);
+  }
 
   // the listener at the origin; the screen's right along +x, 12 m to its edge
   const at = { x: 0, z: 0 };
@@ -218,6 +278,56 @@ export default async (load) => {
     check(voiceToSteal(normals, id, SOUNDS[id]) === 0, `${id} found no voice among normal ones`);
   }
 
+  // lines: as critical as they come, never off pitch, one at a time
+  check(LINE.prio === 'critical' && LINE.vary === 0 && LINE.max === 1 && !LINE.synth, `a line plays as ${JSON.stringify(LINE)}`);
+  for (const [kind, said] of Object.entries(ENTER_LINE)) check(HERO_LINES.includes(said), `walking into a ${kind} area the hero says '${said}', not one of its lines`);
+  {
+    const L = new Lines();
+    const a = L.book('voice.paladin.no_mana', 10);
+    check(a && L.start(a, 10, 1.5), 'a line asked for with nothing said was not said');
+    check(L.book('voice.paladin.bag_full', 10.5) === null, 'a line started over another');
+    check(L.book('voice.paladin.bag_full', 10 + 1.5 + LINE_GAP - 0.01) === null, 'a line started right after another, with no pause');
+    const b = L.book('voice.paladin.bag_full', 10 + 1.5 + LINE_GAP);
+    check(b && L.start(b, 10 + 1.5 + LINE_GAP, 1), 'a line after the last and its pause was not said');
+    const free = 10 + 1.5 + LINE_GAP + 1 + LINE_GAP;
+    check(L.book('voice.paladin.no_mana', free) === null && free - 10 < LINE_AGAIN, 'the same line said again too soon');
+    const c = L.book('voice.paladin.no_mana', 10 + LINE_AGAIN);
+    check(c !== null, `the same line not said again ${LINE_AGAIN} s on`);
+    // still decoding: nothing else meanwhile; come too late, it isn't said and the floor is free
+    const t = 10 + LINE_AGAIN;
+    check(L.book('voice.paladin.unique', t + LINE_LATE / 2) === null, 'a line started while another was decoding');
+    check(c && !L.start(c, t + LINE_LATE + 0.1, 1), 'a line decoded too late to go with its moment was said');
+    const d = L.book('voice.paladin.unique', t + LINE_LATE + 0.1);
+    check(d !== null, 'the floor stayed taken after a line came too late');
+    // one that won't load gives the floor up at once
+    L.drop(d, t + LINE_LATE + 0.2);
+    const e = L.book('voice.paladin.rune', t + LINE_LATE + 0.2);
+    check(e !== null && !L.start(d, t + LINE_LATE + 0.3, 1), 'a line given up on was said, or kept the floor');
+    // one never heard from again: once LINE_LATE is past, the next may book, and the old one can't start
+    const f = L.book('voice.paladin.shrine', t + 2 * LINE_LATE + 0.3);
+    check(f !== null && !L.start(e, t + 2 * LINE_LATE + 0.3, 1), 'a line left booked kept the floor, or started after it was taken');
+  }
+
+  // walking in: the camp warms no fighting, the wilderness does; the next areas' ambience (across a
+  // seam, down a cave mouth) and the line for walking into another kind of area, in the hero's own
+  // voice, and nothing that isn't a sound
+  for (const cls of ['paladin', 'sorceress']) {
+    const town = soundsNear(camp, [moor], false, cls);
+    const wild = soundsNear(moor, [camp, den], true, cls);
+    const crypt = soundsNear(floor(1), [floor(2)], false, cls);
+    // the wilderness on into the wilderness: nothing to say there
+    const plainsNext = soundsNear(moor, [plains], false, cls);
+    check(!plainsNext.some((id) => id.startsWith('voice.')), `${cls}: Blood Moor warms a line for Cold Plains: ${plainsNext.filter((id) => id.startsWith('voice.'))}`);
+    check(!town.some((id) => id.startsWith('combat.') || id.startsWith('monster.')) && town.includes('item.pickup'), `the camp warms ${town.filter((id) => id.startsWith('combat.')).join(' ') || 'no pickup'}`);
+    check(wild.includes('combat.hit') && wild.includes('monster.die'), 'the wilderness warms no fighting');
+    check(town.includes('amb.wild') && wild.includes('amb.town_night') && !wild.includes('amb.wild_night'), `ways out's ambience: ${town.filter((id) => id.startsWith('amb.'))} / ${wild.filter((id) => id.startsWith('amb.'))}`);
+    check(town.includes(heroLine(cls, 'enter_wild')) && wild.includes(heroLine(cls, 'back_in_town')) && wild.includes(heroLine(cls, 'enter_dungeon')), `${cls}: no line warmed for walking into the next areas`);
+    check(!crypt.some((id) => id.startsWith('voice.')), `${cls}: floor to floor warms ${crypt.filter((id) => id.startsWith('voice.'))}`);
+    for (const id of [...town, ...wild, ...crypt]) check(id in SOUNDS || AREA_FILES.includes(id) || id in FILES, `warmed: ${id} is no sound, area recording or line on file`);
+    check(soundsNear('title', [], false, cls).length === 0, 'the title screen warms sounds');
+  }
+  check(areaKind(camp) === 'town' && areaKind(moor) === 'outdoor' && areaKind(den) === 'dungeon' && areaKind(floor(13)) === 'dungeon' && areaKind('title') === null, 'area kinds');
+
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
-  console.log(`  ${ids.length} sound ids, ${calls} sfx.play calls, all ids played and in the table`);
+  console.log(`  ${ids.length} sound ids, ${calls} sfx.play calls, all ids played and in the table; ${says} lines said`);
 };

@@ -178,11 +178,13 @@ export default async (load) => {
   check(soundKey(areaSound(moor)) === soundKey(areaSound(plains)), 'Blood Moor and Cold Plains (both SoundEnv 2) sound different');
   check(areaSound(camp).music === 'music.town' && areaSound(moor).music === 'music.wild' && areaSound(areaDef(DEN_OF_EVIL)).music === 'music.dungeon', 'the music by SoundEnv');
   // Sfx.enterArea crossfades when the sound changes and plays on when it doesn't (no AudioContext
-  // in node: one is pretended and the beds asked for are watched)
+  // in node: one is pretended, with no recordings, and the beds it starts are watched)
   const sfx = new Sfx();
   const beds = [];
+  sfx.files = {};
   sfx.ctx = {};
-  sfx.startBed = (bed) => beds.push(bed);
+  sfx.track = () => ({ stop() {} });
+  sfx.ambience = (s) => (beds.push(s.bed), { stop() {} });
   const music = [];
   for (const a of [camp, moor, plains, moor, camp, areaDef(DEN_OF_EVIL)]) {
     sfx.enterArea(a);

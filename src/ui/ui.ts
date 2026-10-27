@@ -106,7 +106,7 @@ export class UI implements GameHooks, UIContext {
     this.left = kind;
     if (kind !== 'waypoint') this.right = 'inv';
     this.dirty = true;
-    this.sfx.play('ui.click');
+    this.sfx.play('ui.open');
   }
 
   levelChanged(level: Level) {
@@ -330,6 +330,7 @@ export class UI implements GameHooks, UIContext {
       const near = Math.min(...g.level.objects.filter((x) => x.kind === kind).map((o) => Math.hypot(o.pos.x - p.pos.x, o.pos.z - p.pos.z)));
       if (!(near <= 4)) {
         this.left = null;
+        this.sfx.play('ui.close');
         this.dirty = true;
       }
     }

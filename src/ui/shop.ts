@@ -54,7 +54,10 @@ export function renderShop(ui: UIContext, L: HTMLElement) {
     const cost = spent.reduce((n, c) => n + rechargeCost(c.missing, c.lvl), 0);
     const btn = h('button', 'cube-go', `补充充能（${cost} 金币）`);
     btn.onclick = () => {
-      if (p.gold < cost) return ui.message('金币不够', '#ff4040', 1);
+      if (p.gold < cost) {
+        ui.game.say('no_gold');
+        return ui.message('金币不够', '#ff4040', 1);
+      }
       p.gold -= cost;
       for (const c of spent) (c.item.charges ??= {})[c.param] = (c.item.charges[c.param] ?? 0) + c.missing;
       ui.sfx.play('ui.coins');

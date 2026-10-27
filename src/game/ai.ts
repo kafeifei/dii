@@ -165,6 +165,7 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
       if (m.rank === 'boss') {
         g.sfx.play('monster.boss_wake', { pos: m.pos });
         g.hooks.message(`${m.displayName} 被惊醒了！`, '#c8a86a');
+        g.say('boss_near');
       }
     } else {
       m.setState('idle');
