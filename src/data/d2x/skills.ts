@@ -193,7 +193,7 @@ export const D2X_SKILL_REFS: Record<string, D2xSkillRef> = {
   "Maul": {"id":233,"name":"猛槌","en":"Maul","cls":"dru","reqLvl":12,"cost":{"mult":512,"add":3000}},
   "Eruption": {"id":234,"name":"熔岩裂地","en":"Fissure","cls":"dru","reqLvl":12,"cost":{"mult":512,"add":8000}},
   "Cyclone Armor": {"id":235,"name":"气旋护甲","en":"Cyclone Armor","cls":"dru","reqLvl":12,"cost":{"mult":512,"add":8000}},
-  "Heart of Wolverine": {"id":236,"name":"貂熊之魄","nameEn":"Soul of the Glutton","en":"Heart of Wolverine","cls":"dru","reqLvl":18,"cost":{"mult":640,"add":8000}},
+  "Heart of Wolverine": {"id":236,"name":"战彘之魂","nameEn":"Soul of the Warboar","en":"Heart of Wolverine","cls":"dru","reqLvl":18,"cost":{"mult":640,"add":8000}},
   "Summon Fenris": {"id":237,"name":"召唤狂狼","en":"Summon Dire Wolf","cls":"dru","reqLvl":18,"cost":{"mult":640,"add":8000}},
   "Rabies": {"id":238,"name":"狂犬","en":"Rabies","cls":"dru","reqLvl":18,"cost":{"mult":640,"add":16000}},
   "Fire Claws": {"id":239,"name":"焰爪","en":"Fire Claws","cls":"dru","reqLvl":18,"cost":{"mult":640,"add":16000}},

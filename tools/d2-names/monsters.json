@@ -1,7 +1,7 @@
 {
   "Zombie": {"name":"朽尸","nameEn":"Rotcorpse","en":"Zombie","official":"僵尸","note":"通用名词，换同义说法以免与官方相同；原「腐尸」是官方另一种怪（Decayed）的名字"},
   "Fallen": {"name":"堕渊魔","nameEn":"Abyssling","en":"Fallen","official":"沉沦魔","note":"沉沦→堕入深渊；本族统一用「堕渊魔」"},
-  "QuillRat": {"name":"针鬃鼠","nameEn":"Needlemane Rat","en":"Quill Rat","official":"刺毛鼠"},
+  "QuillRat": {"name":"箭猪","nameEn":"Arrowhog","en":"Quill Rat","official":"刺毛鼠","note":"原「针鬃鼠」只是「刺毛鼠」换同义字；箭猪是豪猪的俗名，取射刺如箭；Rat 在原名里；英文 Arrowhog 照箭猪拼（如 hedgehog）：Porcupine 只是这种兽的普通英文名，没有自己的意象，古称 Porpentine 又是一位知名独立游戏作者的笔名；箭＝Arrow，与「无虚之」（箭无虚发）一致"},
   "GargantuanBeast": {"name":"巨躯魈","nameEn":"Colossal Ape","en":"Gargantuan Beast","official":"巨身兽","note":"巨兽一族统一用「魈」（山魈）"},
   "DarkHunter": {"name":"晦影女猎","nameEn":"Gloomshade Huntmaiden","en":"Dark Hunter","official":"黑暗猎手","note":"堕落流亡者一族：Dark=晦影，Vile=秽血，Black=墨心；女性单位用「女猎/X女」，弃用二次元味的「姬」"},
   "FallenShaman": {"name":"堕渊魔巫祝","nameEn":"Abyssling Augur","en":"Fallen Shaman","official":"沉沦魔萨满","note":"萨满统一改为「巫祝」"},
@@ -34,7 +34,7 @@
   "Devilkin": {"name":"魔裔","nameEn":"Hellscion","en":"Devilkin","official":"小恶魔","note":"kin→裔"},
   "DarkArcher": {"name":"晦影弓女","nameEn":"Gloomshade Bowmaiden","en":"Dark Archer","official":"黑暗弓手"},
   "Ghost": {"name":"游魂","nameEn":"Driftsoul","en":"Ghost","official":"幽灵"},
-  "BloodClan": {"name":"沥血部族","nameEn":"Bloodletting Tribe","en":"Blood Clan","official":"鲜血氏族"},
+  "BloodClan": {"name":"血角部族","nameEn":"Gorehorn Tribe","en":"Blood Clan","official":"鲜血氏族","note":"原「沥血部族」只是「鲜血氏族」换字（鲜→沥、氏→部），英文 Goredrip Tribe 也只有 drip 是自己的；改为血角部族，羊人染血的角；Blood 在原名里，血用 Gore，与「血潮」Goretide 同；角＝Horn，与「狄雅孛洛的角」同；部族＝Tribe，与望月、长夜、殒命部族一致"},
   "Disfigured": {"name":"裂面魔","nameEn":"Splitface Imp","en":"Disfigured","official":"残身魔","note":"「破相」口语化"},
   "Yeti": {"name":"雪岭魈","nameEn":"Snowcrag Ape","en":"Yeti","official":"雪人怪"},
   "BlackRogue": {"name":"墨心逆女","nameEn":"Sootheart Apostate","en":"Black Rogue","official":"黑化流亡者","note":"逆女＝背弃本门的女子，对应堕落的流亡者"},
@@ -48,9 +48,9 @@
   "BlackArcher": {"name":"墨心弓女","nameEn":"Sootheart Bowmaiden","en":"Black Archer","official":"黑化弓手"},
   "Tainted": {"name":"浊秽魔","nameEn":"Mirefilth Imp","en":"Tainted","official":"污染魔"},
   "DarkShaman": {"name":"冥魔巫祝","nameEn":"Netherfiend Augur","en":"Dark Shaman","official":"黑暗魔萨满"},
-  "RatMan": {"name":"鼠面鬼","nameEn":"Ratface Bogle","en":"Rat Man","official":"鼠人","note":"「侏儒」偏现代且易联想魔兽的侏儒族，也太长"},
+  "RatMan": {"name":"鼠面鬼","nameEn":"Ratface Hob","en":"Rat Man","official":"鼠人","note":"「侏儒」偏现代且易联想魔兽的侏儒族，也太长"},
   "Arach": {"name":"悬丝蛛","nameEn":"Silkhanger Spider","en":"Arach","official":"结网蛛"},
-  "Ghoul": {"name":"噬腐鬼","nameEn":"Carrion Gorger","en":"Ghoul","official":"食尸鬼"},
+  "Ghoul": {"name":"噬腐鬼","nameEn":"Gorging Rotwight","en":"Ghoul","official":"食尸鬼","note":"腐鬼＝Rotwight，与稀有名词「腐鬼」一致"},
   "Afflicted": {"name":"罹厄魔","nameEn":"Ill-Starred Imp","en":"Afflicted","official":"受难魔"},
   "Banished": {"name":"流谪者","nameEn":"Wandering Exile","en":"The Banished","official":"被放逐者"},
   "Hell Bovine": {"name":"冥府牛卒","nameEn":"Nether Oxguard","en":"Hell Bovine","official":"地狱魔牛","note":"「蛮牛」是台湾能量饮料品牌；与牛首王（牛头）呼应"},
@@ -72,5 +72,5 @@
   "BurningDeadMage": {"name":"焚骸咒师","nameEn":"Pyrebone Incanter","en":"Burning Dead Mage","official":"烈焰亡骨法师","note":"骷髅法师一族统一用「咒师」；只作骸烬的本体出现"},
   "Rogue": {"name":"放逐者","nameEn":"Exiled One","en":"Rogue","official":"流亡者","note":"佣兵的单位名，Rogue＝放逐者"},
   "GargoyleTrap": {"name":"石魔机关","nameEn":"Stonefiend Engine","en":"Gargoyle Trap","official":"石像鬼陷阱","note":"墙上会喷射的兽首机关"},
-  "Flamespike the Crawler": {"name":"焰棘匍行者","nameEn":"Emberthorn the Creeper","en":"Flamespike the Crawler","official":"火焰脊刺","note":"锋脊妖一族；原版放在第一幕的预设里但没有区域会刷出它"}
+  "Flamespike the Crawler": {"name":"燧背灰腹","nameEn":"Flintback Ashbelly","en":"Flamespike the Crawler","official":"火焰脊刺","note":"锋脊妖一族；原版放在第一幕的预设里但没有区域会刷出它；原「焰棘匍行者」是 Flamespike the Crawler 逐词换同义字，改为背刺如燧石迸火、肚腹拖在灰烬里爬行；燧＝Flint（「燧薪之」），灰＝Ash（「灾殃灰木」），腹＝Belly（「裂腹之」）"}
 }

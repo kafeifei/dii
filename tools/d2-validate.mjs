@@ -4,14 +4,17 @@
 //
 //   node tools/d2-import.mjs && node tools/d2-validate.mjs
 //
-// Prints the counts left after the scope filters, then one line per check; exits 1 if any fails.
+// Prints the counts left after the scope filters, then one line per check and any warnings; exits 1
+// if a check fails (warnings never fail it).
 // What it holds the data to:
 // - the scope: no Warlock-era row, none ladder-only both now and in D2R 2.7 (the last tables before
 //   the Warlock expansion), and every row as 2.7 has it, for the values the game reads;
 // - the names: every unique, set and runeword in scope is named or listed in tools/d2-names/report.md,
 //   no official proper noun anywhere, runes "N 号符文";
 // - the English names (tools/d2-names/style-en.md): every renamed row has one, never Blizzard's,
-//   plain ASCII in Title Case, the glossary's forms, no two alike;
+//   plain ASCII in Title Case, the glossary's forms, no two alike, hirelings three letters apart and
+//   no three of them with one ending; a warning, not a failure, for one a letter or two from
+//   Blizzard's or holding Blizzard's whole;
 // - the units: charstats quarters, monster stats as monlvl percentages through D2MOO's ApplyRatio,
 //   the expansion columns, HitShift, manashift and frames in skills;
 // - the drops: Andariel's and the Countess' items per kill against d2data's tcprecalc, worked out
@@ -63,6 +66,13 @@ function check(label, bad) {
   const shown = list.slice(0, 12).map((x) => `          ${x}`);
   if (list.length > 12) shown.push(`          … ${list.length - 12} more`);
   console.log(`  FAIL  ${label}: ${list.length}\n${shown.join('\n')}`);
+}
+let warned = 0;
+/** a warning: printed in full for a person to look at, never failing the run; counted by name listed */
+function warn(label, list) {
+  if (!list.length) return;
+  warned += list.length;
+  console.log(`  warn  ${label}: ${list.length}\n${list.map((x) => `          ${x}`).join('\n')}`);
 }
 const section = (s) => console.log(`\n${s}`);
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -527,32 +537,33 @@ section('English names');
   const renamedBases = ours('bases');
   const renamedSkills = ours('skills');
   const merc = await strings('mercenaries');
-  // every row whose name is ours, with D2's English: { where, group, zh, nameEn, en }
-  const of = (where, group, arr, key) => arr.map((x) => ({ where: `${where} ${key(x)}`, group, zh: x.name, nameEn: x.nameEn, en: x.en }));
+  // every row whose name is ours, with D2's English: { where, group, files, zh, nameEn, en }; `files`
+  // are the names files the importer takes the row's names from, in its order
+  const of = (where, group, files, arr, key) => arr.map((x) => ({ where: `${where} ${key(x)}`, group, files, zh: x.name, nameEn: x.nameEn, en: x.en }));
   // a skill named by a runeword's string takes our runeword names (Delirium's change)
   const runewordOf = new Map(X.D2X_RUNEWORDS.map((r) => [r.name, r]));
   const allSkills = Object.entries({ ...X.D2X_SKILLS, ...X.D2X_SKILL_REFS });
   const hire27 = new Map(rows(R27.hireling).filter((h) => h.Version === 100).map((h) => [h.Id, h]));
   const renamed = [
-    ...of('unique', 'items', X.D2X_UNIQUES, (u) => u.key),
-    ...of('set item', 'items', X.D2X_SET_ITEMS, (s) => s.key),
-    ...of('set', 'items', X.D2X_SETS, (s) => s.id),
-    ...of('runeword', 'items', X.D2X_RUNEWORDS, (r) => r.id),
-    ...of('rune', 'runes', X.D2X_RUNES, (r) => r.id),
-    ...of('prefix', 'prefixes', X.D2X_PREFIXES, (a) => a.id),
-    ...of('suffix', 'suffixes', X.D2X_SUFFIXES, (a) => a.id),
-    ...of('automagic', 'automagic', X.D2X_AUTOMAGIC, (a) => a.id),
-    ...of('rare prefix', 'rare prefixes', X.D2X_RARE_PREFIXES, (w) => w.id),
-    ...of('rare suffix', 'rare suffixes', X.D2X_RARE_SUFFIXES, (w) => w.id),
-    ...of('base', 'bases', BASES.filter((b) => renamedBases[b.code] && !renamedBases[b.code].generic), (b) => b.code),
-    ...of('monster', 'monsters', Object.values(X.D2X_MONSTERS).filter((m) => m.name), (m) => m.id),
-    ...of('superunique', 'superuniques', X.D2X_SUPERUNIQUES, (s) => s.key),
-    ...of('area', 'areas', X.D2X_AREAS, (a) => a.id),
-    ...['prefix', 'suffix', 'title'].flatMap((k) => of(`unique monster ${k}`, `unique monster ${k}${k === 'title' ? 's' : 'es'}`, X.D2X_UNIQUE_NAMES[k], (w) => w.key)),
-    ...Object.entries(X.D2X_HIRELING_NAMES).map(([k, v]) => ({ where: `hireling name ${k}`, group: 'hireling names', zh: v.name, nameEn: v.nameEn, en: merc.en[k] })),
-    ...X.D2X_HIRELINGS.filter((h) => h.type).map((h) => ({ where: `hireling ${h.id} type`, group: 'hireling types', zh: h.type, nameEn: h.typeEn, en: hire27.get(h.id)?.Hireling })),
+    ...of('unique', 'items', ['uniques'], X.D2X_UNIQUES, (u) => u.key),
+    ...of('set item', 'items', ['sets'], X.D2X_SET_ITEMS, (s) => s.key),
+    ...of('set', 'items', ['sets'], X.D2X_SETS, (s) => s.id),
+    ...of('runeword', 'items', ['runewords'], X.D2X_RUNEWORDS, (r) => r.id),
+    ...of('rune', 'runes', [], X.D2X_RUNES, (r) => r.id),
+    ...of('prefix', 'prefixes', ['prefixes'], X.D2X_PREFIXES, (a) => a.id),
+    ...of('suffix', 'suffixes', ['suffixes'], X.D2X_SUFFIXES, (a) => a.id),
+    ...of('automagic', 'automagic', ['prefixes', 'suffixes'], X.D2X_AUTOMAGIC, (a) => a.id),
+    ...of('rare prefix', 'rare prefixes', ['rare-prefixes'], X.D2X_RARE_PREFIXES, (w) => w.id),
+    ...of('rare suffix', 'rare suffixes', ['rare-suffixes'], X.D2X_RARE_SUFFIXES, (w) => w.id),
+    ...of('base', 'bases', ['bases'], BASES.filter((b) => renamedBases[b.code] && !renamedBases[b.code].generic), (b) => b.code),
+    ...of('monster', 'monsters', ['monsters', 'npcs'], Object.values(X.D2X_MONSTERS).filter((m) => m.name), (m) => m.id),
+    ...of('superunique', 'superuniques', ['monsters'], X.D2X_SUPERUNIQUES, (s) => s.key),
+    ...of('area', 'areas', ['areas'], X.D2X_AREAS, (a) => a.id),
+    ...['prefix', 'suffix', 'title'].flatMap((k) => of(`unique monster ${k}`, `unique monster ${k}${k === 'title' ? 's' : 'es'}`, [`monster-${k}${k === 'title' ? 's' : 'es'}`], X.D2X_UNIQUE_NAMES[k], (w) => w.key)),
+    ...Object.entries(X.D2X_HIRELING_NAMES).map(([k, v]) => ({ where: `hireling name ${k}`, group: 'hireling names', files: ['mercenaries'], zh: v.name, nameEn: v.nameEn, en: merc.en[k] })),
+    ...X.D2X_HIRELINGS.filter((h) => h.type).map((h) => ({ where: `hireling ${h.id} type`, group: 'hireling types', files: ['mercenaries'], zh: h.type, nameEn: h.typeEn, en: hire27.get(h.id)?.Hireling })),
     // skills.json's, and a skill whose name is a runeword's
-    ...allSkills.filter(([n, s]) => s.name && (renamedSkills[n] || runewordOf.has(s.name))).map(([n, s]) => ({ where: `skill ${n}`, group: 'skills', zh: s.name, nameEn: s.nameEn, en: s.en })),
+    ...allSkills.filter(([n, s]) => s.name && (renamedSkills[n] || runewordOf.has(s.name))).map(([n, s]) => ({ where: `skill ${n}`, group: 'skills', files: ['skills', 'runewords'], zh: s.name, nameEn: s.nameEn, en: s.en })),
   ];
   const named = renamed.filter((r) => r.nameEn);
   check(`every renamed row (${renamed.length}) has an English name of ours, nameEn`, renamed.filter((r) => !r.nameEn).map((r) => `${r.where} ${r.zh}`));
@@ -577,12 +588,24 @@ section('English names');
   const WORDS = new Set(['prefixes', 'suffixes', 'automagic', 'rare prefixes', 'rare suffixes', 'unique monster prefixes', 'unique monster suffixes', 'unique monster titles']);
   check('a whole name is no official English name of a unique, set, runeword, monster, area or NPC', named.filter((r) => !WORDS.has(r.group) && officialEn.has(norm(r.nameEn))).map((r) => `${r.where} ${r.nameEn} = ${officialEn.get(norm(r.nameEn))}`));
   check('nameEn is plain ASCII', named.filter((r) => !/^[\x20-\x7E]+$/.test(r.nameEn)).map((r) => `${r.where} ${r.nameEn}`));
-  // Title Case: every word capitalised but the small ones inside a name ("of", "the", …)
+  // Title Case: every word, and every part of a hyphenated one ("Death's-Head"), capitalised but the
+  // small ones inside a name ("of", "the", "Man-at-Arms"); a name starts lowercase only where its slot
+  // reads on from the base or monster name: a magic suffix with "of" (an automagic row as the
+  // suffix its English is), a monster title with "the"
   const SMALL = new Set(['of', 'the', 'a', 'an', 'and', 'or', 'nor', 'in', 'on', 'at', 'to', 'for', 'from', 'with', 'by']);
-  const titleCase = (s) => s.split(' ').every((w, i) => /^[A-Z0-9]/.test(w) || (SMALL.has(w) && (i > 0 || /^(of|the) /.test(s))));
-  check('nameEn is in Title Case (a suffix starts with "of", a monster title with "the")', named.filter((r) => !titleCase(r.nameEn)).map((r) => `${r.where} ${r.nameEn}`));
-  // the grammar of the slots: magic suffixes "of …", prefixes never (automagic as D2's English of the
-  // row); rare and monster name words one word; monster titles "the" and one word, after the name
+  const leading = (r) => (r.group === 'suffixes' || (r.group === 'automagic' && /^of /.test(r.en)) ? 'of' : r.group === 'unique monster titles' ? 'the' : undefined);
+  const titleCase = (r) =>
+    r.nameEn.split(' ').every((w, i) => w.split('-').every((p, j) => /^[A-Z0-9]/.test(p) || (SMALL.has(p) && (i > 0 || j > 0 || p === leading(r)))));
+  check('nameEn is in Title Case, every hyphenated part too (only a suffix starts with "of", a monster title with "the")', named.filter((r) => !titleCase(r)).map((r) => `${r.where} ${r.nameEn}`));
+  // style-en.md's "about 1–4 words": five at most, where an "of the" takes two ("Mantle of the Stone
+  // Ram"); a sixth makes a sentence of it
+  check('nameEn is five words at most', named.filter((r) => r.nameEn.split(' ').length > 5).map((r) => `${r.where} ${r.nameEn}`));
+  // the grammar of the slots (style-en.md, "Per category"): magic suffixes "of …" (magicsuffix Name,
+  // "of Warding"), prefixes never (magicprefix Name, "Jagged"); automagic.txt's Name has both kinds,
+  // "Fletcher's" before the base and "of the Jackal" after it, so an automagic row takes the slot its
+  // own English has; rare words (rareprefix, raresuffix name) and monster name words (uniqueprefix,
+  // uniquesuffix Name) one word; monster titles (uniqueappellation Name, "the Hammer") "the" and one
+  // word, after the name
   const grammar = [];
   for (const r of named) {
     const g = r.group;
@@ -595,11 +618,12 @@ section('English names');
   }
   check('affix and name-word grammar: suffixes "of …", prefixes not, rare and monster name words one word, titles "the …"', grammar);
   // No two rows share one: across uniques, set items, sets and runewords, and within each other group
-  // (rows of one name string share theirs: affixes and rare words by name, the quest bases their unique's)
+  // (rows of one name string share theirs: affixes and rare words by name, the quest bases their unique's);
+  // "Twinshade", "Twin Shade" and "Twin-Shade" are one name
   const dups = [];
   const byGroup = new Map();
   for (const r of named) {
-    const k = r.nameEn.toLowerCase();
+    const k = r.nameEn.toLowerCase().replace(/[\s-]+/g, '');
     const seen = byGroup.get(r.group) ?? byGroup.set(r.group, new Map()).get(r.group);
     const prev = seen.get(k);
     if (prev && prev.en !== r.en) dups.push(`${r.where} and ${prev.where}: ${r.nameEn}`);
@@ -628,6 +652,122 @@ section('English names');
   check(
     "no English name keeps a name of D2's the glossary replaces",
     named.flatMap((r) => blizzard.filter(({ t }) => new RegExp(`(^|[^A-Za-z])${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z])`).test(r.nameEn)).map(({ t, g }) => `${r.where} ${r.nameEn}: ${t} is ${g.newEn}`)),
+  );
+  // Close to Blizzard's: a name a letter or two away from its row's own English, after the norm above
+  // ("Haenna" for Hannah, "Pock" for Pox), reads as a respelling of it (tools/d2-names/style-en.md,
+  // "Similar but different"). Printed for a look, never failed, since a short word can be that close
+  // and still be another word ("Rime" for Ice). Blizzard's English of a row, `en`, is the enUS of the
+  // string the d2data table names it by (uniqueitems and setitems index, sets index, runes Name,
+  // magicprefix, magicsuffix and automagic Name, rareprefix and raresuffix name, monstats NameStr,
+  // superuniques Name, levels LevelName, uniqueprefix, uniquesuffix and uniqueappellation Name,
+  // hireling NameFirst..NameLast), in D2CE's string tables. The glossary's transliterations are taken
+  // out of both first (ours from ours, D2's from D2's: "Chashi" for Charsi was looked at there), and
+  // what is left is compared, so a name whose person is all that changed is compared too ("Weirte's
+  // Leg" for Wirt's Leg).
+  const editDistance = (a, b) => {
+    let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+    for (let i = 1; i <= a.length; i++) {
+      const cur = [i];
+      for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = cur;
+    }
+    return prev[b.length];
+  };
+  const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // one RegExp per term, longest first ("Daikor Kahin" before "Kahin"), with its "of" or "'s" ("Lance
+  // of Yaggai" and "Yagayi's Lance" are both the person's lance)
+  const terms = (list) =>
+    [...new Set(list)].sort((a, b) => b.length - a.length).map((t) => new RegExp(`(^|[^A-Za-z])(?:of (?:the )?)?${esc(t)}(?:['’]s)?(?![a-z])`, 'g'));
+  const ourTerms = terms(forms.map((g) => g.newEn));
+  const theirTerms = terms(blizzard.map(({ t }) => t));
+  const strip = (s, res) => res.reduce((acc, re) => acc.replace(re, '$1'), s);
+  // rows of one D2 string (an affix on several item types) are one name: listed once, with a count
+  const rest = [];
+  const ofString = new Map();
+  for (const r of named.filter((r) => r.en)) {
+    const k = `${r.group}|${r.nameEn}|${r.en}`;
+    if (ofString.has(k)) ofString.get(k).n++;
+    else rest.push(ofString.set(k, { r, n: 1, ours: norm(strip(r.nameEn, ourTerms)), theirs: norm(strip(r.en, theirTerms)) }).get(k));
+  }
+  const where = ({ r, n }) => (n > 1 ? `${r.where} (and ${n - 1} more of its string)` : r.where);
+  // Where our Chinese too only swapped the transliteration for the glossary's (韦尔特的腿 for 怀特的腿,
+  // quest items and bases named after a person or place), the English follows it on purpose: those
+  // are counted, not listed. The official Chinese is the names files' `official` (D2CE's zhCN of the
+  // same string), looked up by names file and our Chinese name: one Chinese word can stand for rows
+  // of two files whose official Chinese differ (坚盾 for the monster suffix 之盾 and the rare word 盾牌),
+  // and inside one file it has one.
+  const officialZh = new Map();
+  for (const f of fs.readdirSync(path.join(ROOT, 'tools/d2-names')).filter((f) => f.endsWith('.json') && !f.startsWith('glossary'))) {
+    const file = f.replace(/\.json$/, '');
+    for (const v of Object.values(ours(file))) if (v?.name && v.official) officialZh.set(`${file}|${v.name}`, v.official.trim());
+  }
+  const officialOf = (r) => r.files.map((f) => officialZh.get(`${f}|${r.zh}`)).find(Boolean);
+  // (Chinese has no word breaks: each term is cut out wherever it stands, longest first)
+  const zhTerms = (key) => [...new Set(glossary.map((g) => g[key]).filter((t) => t && t.length >= 2))].sort((a, b) => b.length - a.length);
+  const zhStrip = (s, list) => list.reduce((acc, t) => acc.split(t).join(''), s);
+  const [zhOurs, zhTheirs] = [zhTerms('new'), zhTerms('official')];
+  const onlyTransliterated = (r) => !!officialOf(r) && zhStrip(r.zh, zhOurs) === zhStrip(officialOf(r), zhTheirs);
+  const near = rest
+    .filter(({ ours, theirs }) => ours && theirs.length >= 3)
+    .map((x) => ({ ...x, d: editDistance(x.ours, x.theirs) }))
+    // the same after the transliterations: only the person or place changed (the same before is a
+    // failure above)
+    .filter(({ r, d }) => d <= 2 && (d > 0 || norm(r.nameEn) !== norm(r.en)));
+  const byDesign = near.filter(({ r, d }) => d === 0 && onlyTransliterated(r));
+  warn(
+    `nameEn within edit distance 2 of its row's official English (case, "the", apostrophes, spaces and hyphens aside), the glossary's transliterations taken out of both (${byDesign.length} more, only the transliteration changed as in our Chinese, not listed)`,
+    near.filter((x) => !byDesign.includes(x)).map((x) => `${where(x)} ${x.r.nameEn} ~ ${x.r.en} (${x.d})`),
+  );
+  // Blizzard's whole name inside ours, a word added to it ("Bitter Rain" for Rain, "Batwing" for Wing):
+  // style-en.md's "nor Blizzard's whole name with a word added", on the same `en`. The edit distance
+  // above misses these, the added word being longer than two letters. The same norm and a suffix's
+  // "of" aside ("of Sinfire" holds "of Fire"), and the transliterations taken out of both as above,
+  // so a name that swaps the person for the glossary's and adds a word to the rest is listed too
+  // ("Ishenhed's Twin Horns" for Isenhart's Horns); where only the person changed, it is the edit
+  // distance's. An English of two letters or fewer ("Ox") is too short to tell.
+  const core = (s) => norm(s.replace(/^of /, ''));
+  warn(
+    "nameEn holds its row's official English whole, a word added (the same norm, a suffix's \"of\" aside, the glossary's transliterations out of both)",
+    rest
+      .map((x) => ({ ...x, ours: core(strip(x.r.nameEn, ourTerms)), theirs: core(strip(x.r.en, theirTerms)) }))
+      .filter(({ ours, theirs }) => theirs.length >= 3 && ours !== theirs && ours.includes(theirs))
+      .map((x) => `${where(x)} ${x.r.nameEn} ⊃ ${x.r.en}`),
+  );
+  // A name word that is a whole name of Blizzard's carries that name into ours: "the Lacerator" was a
+  // monster title and Lacerator is a unique throwing axe (uniqueitems index Lacerator). The affixes,
+  // rare words and monster name words (magicprefix, magicsuffix, automagic Name; rareprefix,
+  // raresuffix name; uniqueprefix, uniquesuffix, uniqueappellation Name), their slot's "of" or "the"
+  // aside, against the official English of every unique, set item, set, runeword, monster, area and
+  // NPC above. Printed for a look: style-en.md only prefers another word, an ordinary one can be a
+  // name too.
+  warn(
+    'a name word (affix, rare word, monster name word) is the whole official English of a unique, set, runeword, monster, area or NPC',
+    rest
+      .filter(({ r }) => WORDS.has(r.group) && officialEn.has(norm(r.nameEn.replace(/^(of|the) /, ''))))
+      .map((x) => `${where(x)} ${x.r.nameEn} = ${officialEn.get(norm(x.r.nameEn.replace(/^(of|the) /, '')))}`),
+  );
+  // Hirelings: the Rogue Scouts' names are hireling.txt's NameFirst..NameLast, merc01 to merc41 (D2Game
+  // SUnitNpc.cpp:68-76, SUNITNPC_InitializeHirelingRoster, names each slot of the roster
+  // wNameFirst + i up to wNameLast): one pool, a name shown beside the others' when hiring.
+  // style-en.md keeps each at least three letters (edit distance 3) from Blizzard's name for any
+  // hireling and from our other hirelings', after the same norm: a name two letters from another
+  // reads as that one ("Hrimna" and Oriana)
+  const hirelings = named.filter((r) => r.group === 'hireling names');
+  const close = [];
+  for (const [i, r] of hirelings.entries()) {
+    for (const o of hirelings) {
+      if (o.en && editDistance(norm(r.nameEn), norm(o.en)) < 3) close.push(`${r.where} ${r.nameEn} ~ ${o.en} (${o === r ? "its own, D2's" : `D2's ${o.where}`})`);
+    }
+    for (const o of hirelings.slice(i + 1)) if (editDistance(norm(r.nameEn), norm(o.nameEn)) < 3) close.push(`${r.where} ${r.nameEn} ~ ${o.where} ${o.nameEn}`);
+  }
+  check(`hireling names (${hirelings.length}) are three letters or more from every hireling's official name and from each other`, close);
+  // ...and the pool (the same NameFirst..NameLast strings) reads as many names, not one name with its
+  // start changed: no more than two share their last three letters (style-en.md; seven of them once
+  // ended in "-nne")
+  const endings = Map.groupBy(hirelings, (r) => norm(r.nameEn).slice(-3));
+  check(
+    'no more than two hireling names share an ending (their last three letters)',
+    [...endings].filter(([, l]) => l.length > 2).map(([e, l]) => `-${e}: ${l.map((r) => r.nameEn).join(', ')}`),
   );
 }
 
@@ -752,5 +892,5 @@ section('Skills: the two trees, HitShift, manashift, frames');
   check(`Frost Nova level 1 chills for ${nova.elem.len[0]} s (200 frames)`, nova.elem.len[0] === 8 ? [] : 'differs');
 }
 
-console.log(`\n${passed} checks passed, ${failed} failed`);
+console.log(`\n${passed} checks passed, ${failed} failed${warned ? `, ${warned} name${warned > 1 ? 's' : ''} to look at` : ''}`);
 if (failed) process.exitCode = 1;
