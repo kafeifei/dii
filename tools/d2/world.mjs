@@ -1,5 +1,5 @@
 // The world stage → src/data/d2x/: Act 1's areas (Levels.txt ids 1–39), every monster they spawn or
-// bring with them, the monster level table, champion and unique modifiers, Act 1's superuniques and
+// bring with them and the pets of the game's two classes, the monster level table, champion and unique modifiers, Act 1's superuniques and
 // the words random uniques are named from. Always the expansion columns. Monster life, defense,
 // experience, to-hit and damage stay what MonStats.txt keeps: percentages of the D2X_MONLVL row of
 // the monster's level, which the game applies at spawn (see D2xMonsterDiff).
@@ -8,6 +8,7 @@
 import { list, record, rows, strings, tables, writeD2x } from './load.mjs';
 import { glossaryOfficial, names } from './names.mjs';
 import { propReader } from './props.mjs';
+import { GAME_CLASSES } from './scope.mjs';
 
 const ACT1 = { first: 1, last: 39 };
 const DIFF = ['', '(N)', '(H)'];
@@ -88,6 +89,22 @@ const STATS2_FLAGS = {
   objCol: 'objCol', deadCol: 'deadCol', unflatDead: 'unflatDead', noUniqueShift: 'noUniqueShift',
 };
 
+/**
+ * What a skill summons, by MonStats id: its summon column, and for Hydra (server function 144) the
+ * two rows after it too, its three heads (SkillSor.cpp:1091-1160, hcIdx summon + 0…2).
+ */
+export function petsOf(s, monRows) {
+  if (!s.summon) return [];
+  const first = monRows.find((m) => m.Id === s.summon);
+  if (!first) throw new Error(`skill ${s.skill}: summon ${s.summon} is not in monstats`);
+  if (s.srvdofunc !== 144) return [s.summon];
+  return [0, 1, 2].map((i) => {
+    const m = monRows.find((x) => x['*hcIdx'] === first['*hcIdx'] + i);
+    if (!m) throw new Error(`skill ${s.skill}: no monstats row ${first['*hcIdx'] + i}`);
+    return m.Id;
+  });
+}
+
 export async function buildWorld({ bases }) {
   const [levelsJ, monJ, mon2J, lvlJ, umodJ, propJ, equipJ, aiJ, suJ, uPreJ, uSufJ, uAppJ, presetJ, warpJ, skillsJ, missJ] = await tables(
     'levels', 'monstats', 'monstats2', 'monlvl', 'monumod', 'monprop', 'monequip', 'monai', 'superuniques',
@@ -135,6 +152,15 @@ export async function buildWorld({ bases }) {
   for (const p of presets) if (MON.has(p)) want(p, 'monpreset act 1');
   want('roguehire', 'the Act 1 hireling');
   want('cain5', 'Cain in the camp after his rescue');
+  // the pets of the game's classes, which show the skill's name (the Hydra's NameStr is a skill string)
+  const pets = new Map();
+  for (const s of rows(skillsJ)) {
+    if (!GAME_CLASSES.has(s.charclass)) continue;
+    for (const id of petsOf(s, rows(monJ))) {
+      want(id, `summon of ${s.skill}`);
+      pets.set(id, s.skill);
+    }
+  }
   for (let grew = true; grew; ) {
     grew = false;
     for (const id of [...why.keys()]) {
@@ -164,7 +190,8 @@ export async function buildWorld({ bases }) {
     if (r.BaseId && r.BaseId !== id) o.base = r.BaseId;
     if (r.NextInClass) o.next = r.NextInClass;
     o.nameKey = r.NameStr;
-    if (!NO_NAME.has(r.NameStr)) {
+    if (pets.has(id)) o.petOf = pets.get(id);
+    else if (!NO_NAME.has(r.NameStr)) {
       const nm = (r.npc ? npcNames : monNames).get(r.NameStr, S.en[r.NameStr], official(r.NameStr));
       // a monster with no name of ours is left out, like an unnamed item (the report lists it)
       if (!nm) continue;
@@ -173,7 +200,8 @@ export async function buildWorld({ bases }) {
     }
     if (r.MonType) o.type = r.MonType;
     o.ai = r.AI;
-    o.code = r.Code;
+    // (d2data reads a code of digits as a number: hydra2 is 21)
+    o.code = String(r.Code);
     if (!r.enabled) o.disabled = true;
     if (r.areaId) o.area = r.areaId;
     for (const [col, key] of Object.entries(FLAGS)) if (r[col]) o[key] = true;
@@ -476,7 +504,7 @@ export async function buildWorld({ bases }) {
   );
   writeD2x(
     'monsters.ts',
-    `${T('D2xMonster')}/**\n * Every monster Act 1 spawns or brings along, by MonStats id. Life, defense, experience, to-hit and\n * damage are percentages of the D2X_MONLVL row at the monster's level (see D2xMonsterDiff).\n */\nexport const D2X_MONSTERS: Record<string, D2xMonster> = ${record(monsters)};\n\n` +
+    `${T('D2xMonster')}/**\n * Every monster Act 1 spawns or brings along, and the pets the game's classes summon, by MonStats\n * id. Life, defense, experience, to-hit and damage are percentages of the D2X_MONLVL row at the\n * monster's level (see D2xMonsterDiff).\n */\nexport const D2X_MONSTERS: Record<string, D2xMonster> = ${record(monsters)};\n\n` +
       `/** what each AI's parameters (D2xMonsterDiff.ai.params, aip1 first) mean, by AI (MonAI.txt; null: unused) */\nexport const D2X_MONSTER_AI: Record<string, (string | null)[]> = ${record(ai)};\n`,
   );
   writeD2x('monlvl.ts', `${T('D2xMonLvl')}/** monster stats by monster level, the expansion columns (MonLvl.txt L-*); index = level, 0–110 */\nexport const D2X_MONLVL: D2xMonLvl[] = ${list(monlvl)};\n`);
@@ -492,5 +520,5 @@ export async function buildWorld({ bases }) {
     `world: ${areas.length} areas, ${n.length} monsters (${n.filter((m) => m.name).length} named), ${Object.keys(ai).length} AIs, ${monlvl.length} monster levels, ` +
       `${umods.length} monster modifiers, ${superuniques.length} superuniques, ${uniqueNames.prefix.length}+${uniqueNames.suffix.length}+${uniqueNames.title.length} unique name words`,
   );
-  return { monsters, superuniques, areas };
+  return { monsters, superuniques, umods, areas };
 }

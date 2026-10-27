@@ -648,10 +648,14 @@ export interface D2xMonster {
   /** the first monster of its class, and the next one up (NextInClass) */
   base?: string;
   next?: string;
-  /** the NameStr string key; name is ours (absent for critters, camp dummies and traps, which show none) */
+  /**
+   * The NameStr string key; name is ours (absent for critters, camp dummies and traps, which show
+   * none). A pet has none either: it shows the name of the skill that summons it (petOf, D2X_SKILLS).
+   */
   nameKey: string;
   name?: string;
   en?: string;
+  petOf?: string;
   /** MonType.txt type (undead, demon, fallen, …): what modifiers and skills check */
   type?: string;
   /** its AI (the parameters' meaning: D2X_MONSTER_AI) and sprite code */
@@ -870,4 +874,290 @@ export interface D2xTreasureClass {
   next?: string;
   /** built by the importer the way the game builds it at load */
   auto?: true;
+}
+
+// ───────────────────────── skills, missiles, states ─────────────────────────
+// Units, converted by the importer: damage and mana are points (D2's 256ths with HitShift and
+// manashift applied; × 256 gives D2's integers back, but D2 floors a synergy where D2xSkill and
+// D2xMissile say); skill effect lengths, cooldowns and a missile's elemental lengths are seconds
+// (× 25, rounded, gives D2's frames back). A missile's own clock (range, activation, loops, hit
+// delays) stays in D2 frames, D2X_FPS (25) a second. Params and calcs are D2's, in D2's units,
+// named by their *Desc notes: an aura's len calc gives frames; its range calc and the radius params
+// (Fire Ball's par1) give D2's distance unit, the sub-tile, which D2 searches by as it is
+// (MonsterUnique.cpp:998), and a tooltip shows × 2/3 of it as yards (Might's ln12*2/3).
+// The calc codes read D2's own numbers too, not the converted fields: the length codes (edln, m1el,
+// edma…) give frames where elem.len is seconds, the codes D2X_SKILL_CALC marks (256ths) (usmc,
+// edns…) give 256ths, the other damage and mana codes whole points; an evaluator converts back.
+
+/**
+ * A calc expression as D2 writes it, or a constant (D2X_SKILL_CALC / D2X_MISSILE_CALC name its
+ * codes). Fog's rules (D2MOO Calc.cpp): int32 arithmetic, / truncates and gives 0 for / 0, a ^ b is
+ * 1 for b ≤ 0, comparisons give 0 or 1, ?: lowest, then < <= > >= == !=, + -, * /, ^, unary −.
+ * min, max, rand(a, b); skill('Name'.code) a code of another skill (blvl its base level), miss('name'.code),
+ * stat('name'.base|mod|accr), sklvl('Name'.level.code) another skill's code at the level the first
+ * code gives. A code Fog does not know reads 0; the importer fails on one instead, and it adds the
+ * ) a calc leaves open, which Fog closes at the end.
+ *
+ * One rule is a quirk, not precedence: D2MOO's evaluator (Calc.cpp:233-241, the AST_Ternary case
+ * falls through to the default return) ends the whole calc at the first ?: it reaches, so what the
+ * postfix code holds after it is never added. Zeal's calc2, ((lvl < 5) ? 0 : …)+skill('Sacrifice'.blvl)*par8,
+ * so loses its Sacrifice synergy. Whether D2R keeps the quirk is not known: the game decides (A5).
+ */
+export type D2xCalc = string | number;
+
+/** a SkillCalc / MissCalc code: what it reads (desc), or a macro of other codes (expr) */
+export interface D2xCalcCode {
+  desc?: string;
+  expr?: string;
+}
+
+/**
+ * A value by D2's level bands (SKILLS_CalculateDamageBonusByLevel, D2Skills.cpp:2477-2505):
+ * [base, a, b, c, d, e] → base + a·(L−1) for L ≤ 8, then + b per level for 9–16, c for 17–22,
+ * d for 23–28, e from 29 (so L = 9 is base + 7a + b).
+ */
+export type D2xBands = [number, number, number, number, number, number];
+/** a length by D2's bands (D2Skills.cpp:2742-2785): [base, a, b, c] → base + a·(L−1) to L 8, + b per level for 9–16, + c from 17; seconds */
+export type D2xLenBands = [number, number, number, number];
+
+/** a line of a skill's description: D2's line format, its texts (D2X_SKILL_TEXT keys, or a skill by name) and calcs */
+export interface D2xSkillDescLine {
+  line: number;
+  a?: string | { skill: string };
+  b?: string | { skill: string };
+  calcA?: D2xCalc;
+  calcB?: D2xCalc;
+}
+
+/** SkillDesc.txt: the skill's place in its class's trees and how its tooltip is built */
+export interface D2xSkillDesc {
+  /** tree 1–3 of the class (0: none), row 1–6, column 1–3 */
+  page: number;
+  row: number;
+  col: number;
+  listRow?: number;
+  listPool?: number;
+  manaText?: string;
+  /** how the damage line shows (descdam), and the attack rating line (descatt) */
+  dam?: number;
+  att?: number;
+  damCalc?: (D2xCalc | null)[];
+  extraDam?: { elem: string | null; min: D2xCalc; max: D2xCalc }[];
+  /** the missiles its m1…m3 calc codes read */
+  missiles?: string[];
+  /** desc, dsc2 and dsc3 lines; dsc3 is the synergy list */
+  lines?: D2xSkillDescLine[];
+  lines2?: D2xSkillDescLine[];
+  lines3?: D2xSkillDescLine[];
+  procText?: string;
+  procLines?: number;
+}
+
+/** the stat a skill, aura or passive sets (ItemStatCost name, see D2X_SKILL_STATS), and its calc */
+export interface D2xSkillStat {
+  stat: string;
+  calc: D2xCalc;
+}
+
+export type D2xSkillFlag =
+  | 'left' | 'right' | 'interrupt' | 'inTown' | 'passive' | 'aura' | 'periodic' | 'immediate' | 'repeat' | 'warp' | 'finishing'
+  | 'progressive' | 'prgStack' | 'kick' | 'lob' | 'decQuant' | 'noAmmo' | 'durability' | 'useAttackRate' | 'alwaysHit' | 'manaOnDo'
+  | 'attackNoMana' | 'enhanceable' | 'targetableOnly' | 'searchEnemyXY' | 'searchEnemyNear' | 'searchOpenXY' | 'targetCorpse'
+  | 'targetPet' | 'targetAlly' | 'targetItem' | 'tgtPlaceCheck' | 'continueCastUnselected' | 'clearSelectedOnHold'
+  | 'keepCursorOnKill' | 'scroll' | 'periodicClearAura' | 'itemTgtDo' | 'itemCheckStart' | 'requiresWeapon';
+
+/**
+ * A skill (Skills.txt with its SkillDesc.txt row), keyed by D2 name in D2X_SKILLS. At level L:
+ * - mana: max(base + perLvl·(L−1), min) points; none when base and perLvl are both 0 (Skills.cpp:1063-1096).
+ * - phys: D2xBands points, plus src's share of the weapon's damage on its own attack, then
+ *   + floor(× sym / 100) of that sum, before HitShift (D2Skills.cpp:2539-2567, 2607-2635); the
+ *   importer takes a phys synergy only with HitShift 8, where that floor is in whole points.
+ * - elem: D2xBands points, then in 256ths (× 256), as D2 takes it after HitShift: + floor(× sym / 100),
+ *   which min takes only when it is over 256 (a point) or its first band is set, then the caster's
+ *   mastery, + floor(× mastery / 100) of that (D2Skills.cpp:2654-2671, 2717-2734); ÷ 256 for points.
+ *   Fire Ball 1 with a 28% synergy: 1536 + floor(430.08) = 1966, 7.68 points (not 6 + floor(1.68)).
+ *   Burning (Inferno, Blaze, Fire Wall) and poison are per frame over the length. With no type the
+ *   E values are numbers its calcs read (edmn).
+ * - elem.len: D2xLenBands seconds, its synergy floored in frames: n = len × 25, + floor(n × lenSym / 100)
+ *   (D2Skills.cpp:2774-2782).
+ * - toHit: base + perLvl·(L−1) percent, or the calc.
+ * D2 runs most skills through hard-coded server functions (funcs, by number); the game implements
+ * each skill's behaviour itself, reading the numbers here.
+ */
+export interface D2xSkill {
+  /** Skills.txt *Id, the number item properties and saves use */
+  id: number;
+  /** what the game shows (our name, or the official generic one); monster skills have none */
+  name?: string;
+  en?: string;
+  /** class code (pal, sor, ama…); monster and item skills have none */
+  cls?: string;
+  /** why it is in: a class tree, an Act 1 monster, a champion or unique modifier, an Act 1 hireling, a summon's, a missile's damage */
+  from: ('class' | 'monster' | 'umod' | 'hireling' | 'summon' | 'missile')[];
+  reqLvl: number;
+  reqSkills?: string[];
+  maxLvl?: number;
+  desc?: D2xSkillDesc;
+  flags?: D2xSkillFlag[];
+  /** none, h2h (melee), rng (ranged), both, loc (a place) */
+  range?: string;
+  /** the player's animation mode (SC cast, A1 attack…) and the monster's */
+  anim?: string;
+  monAnim?: string;
+  /** attack sequences (Zeal, Smite…): which, and the frame input it waits for */
+  seq?: { num: number; input: number };
+  /** D2's server functions: start, each frame (do), stop, charge-up */
+  funcs?: { start?: number; do?: number; stop?: number; prg?: number[] };
+  mana?: { base: number; perLvl: number; min?: number; start?: number };
+  toHit?: { base: number; perLvl: number } | { calc: D2xCalc };
+  /**
+   * src: the share of weapon damage it adds (SrcDam / 128). Its own attack adds that before HitShift
+   * and so scales it by srcScale (2^HitShift / 256; absent: 1) with the rest, but its missiles add it
+   * unshifted (D2Skills.cpp:2540-2567, Missile.cpp:544-551, 661-662). Cold Arrow (HitShift 7) is the
+   * one taken skill where the two differ: srcScale 0.5.
+   */
+  phys?: { min: D2xBands; max: D2xBands; src?: number; srcScale?: number; sym?: D2xCalc };
+  elem?: { type?: string; min?: D2xBands; max?: D2xBands; sym?: D2xCalc; len?: D2xLenBands; lenSym?: D2xCalc };
+  /** Param1–14 by number, and their notes */
+  params?: Record<number, number>;
+  paramDesc?: Record<number, string>;
+  /** calc1–10 by number (read as clc1…clc0), and their notes */
+  calcs?: Record<number, D2xCalc>;
+  calcDesc?: Record<number, string>;
+  /**
+   * an aura, or a buff or curse that works like one: the filter of whom it hits (bits), its states,
+   * its length (frames) and radius (sub-tiles; a tooltip's yards are × 2/3) calcs, stats and events
+   */
+  aura?: { filter?: number; state?: string; targetState?: string; len?: D2xCalc; range?: D2xCalc; stats?: D2xSkillStat[]; events?: { event: string; func: number }[] };
+  /** frames between an aura's pulses */
+  perDelay?: D2xCalc;
+  passive?: { state?: string; stats?: D2xSkillStat[]; itype?: string; weapons?: number };
+  /** pets: their kind (PetType.txt: pets of one kind share the cap; null: none) and how many (D2 counts at least 1) */
+  pet?: { type: string | null; max: D2xCalc };
+  /** what it summons (a MonStats id), in which mode, with which skills at which level */
+  summon?: { mon: string; mode: string | null; skills?: { skill: string; lvl: D2xCalc }[]; umod?: number; requiresPetType?: number };
+  /** the missiles its functions fire (srv, srvA–C) and draw (clt, cltA–D) */
+  missiles?: Partial<Record<'srv' | 'srvA' | 'srvB' | 'srvC' | 'clt' | 'cltA' | 'cltB' | 'cltC' | 'cltD', string>>;
+  /** item types the main hand (a) and the other hand (b) must be and must not be, and which hand; a staff-mod roll checks a[0] (see D2xSkillRef.staffModType) */
+  weapons?: { a?: string[]; aNot?: string[]; b?: string[]; bNot?: string[]; sel?: number };
+  /** shape-shift restrictions: the mode and the states it allows */
+  restrict?: { mode: number; states: string[] };
+  /** cooldowns, seconds: this skill's and every skill's */
+  delay?: { local: number; global: number };
+  /** charge-up skills: their calcs, damage kind, charges to cast and used */
+  charge?: { calcs: D2xCalc[]; dam: number; toCast: number; consumed: number };
+  /** D2's hit result bits, hit flags and hit class (sound and effect of the hit) */
+  hit?: { result: number; flags: number; class: number };
+  /** cast from an item (charges, oskill, chance to cast): its server function and target kind */
+  item?: { effect: number; target: number; useRestrict?: number };
+  lineOfSight?: number;
+  selectProc?: number;
+  /** how monster AIs rank it */
+  attackRank: number;
+  aiBonus?: number;
+  /** what charges or levels of it add to an item's price, with reqLvl */
+  cost?: { mult: number; add: number };
+}
+
+/**
+ * A skill the data names or an item rolls but the game does not implement: shown greyed, 本游戏未实现.
+ * Every skill of a class whose items roll staff mods is here or in D2X_SKILLS, ids consecutive.
+ */
+export interface D2xSkillRef {
+  id: number;
+  name?: string;
+  en?: string;
+  cls?: string;
+  reqLvl: number;
+  /** what an item's price takes of the charges and skills it carries, with reqLvl (D2Common Items.cpp:1814-1892) */
+  cost?: { mult: number; add: number };
+  /** the item type a staff-mod roll needs the item to be (itypea1): on any other it rolls again (D2Game ITEMS/Items.cpp:2716-2857) */
+  staffModType?: string;
+}
+
+export type D2xMissileFlag =
+  | 'collideKill' | 'lastCollide' | 'collideFriend' | 'collision' | 'canSlow' | 'returnFire' | 'getHit' | 'softHit' | 'pierce'
+  | 'explosion' | 'alwaysExplode' | 'noMultiShot' | 'noUniqueMod' | 'half2HSrc' | 'applyMastery' | 'missileSkill' | 'canDestroy'
+  | 'town' | 'srcTown' | 'subLoop';
+
+/**
+ * A missile (Missiles.txt), keyed by name in D2X_MISSILES. One with `skill`, or the missileSkill
+ * flag (the skill that fired it), deals that skill's damage; otherwise its own phys and elem, by
+ * the missile's level (Missile.cpp:505-560). Its own synergy, unlike a skill's elemental one, is
+ * taken before HitShift: + floor(× sym / 100) in units of elem.symUnit points (Missile.cpp:1160-1174,
+ * 1216-1230). Clock values are frames.
+ */
+export interface D2xMissile {
+  id: number;
+  /** D2's server functions: each frame, on hit, damage */
+  funcs?: { do?: number; hit?: number; dmg?: number };
+  /** speed Vel + floor(L × perLvl) up to max, × 0.75 when it moves (Missiles.cpp:118-145); accel per frame */
+  vel?: { base: number; max: number; perLvl: number; accel: number };
+  /** lifetime: [frames, frames per level] (Missiles.cpp:205-208) */
+  range: [number, number];
+  activate?: number;
+  initSteps?: number;
+  randStart?: number;
+  /** the frames a subLoop missile loops between */
+  loop?: [number, number];
+  flags?: D2xMissileFlag[];
+  size: number;
+  /** 0 none, 1 players, 2 monsters, 3 both, 6 barriers, 7 missiles, 8 players, monsters and walls */
+  collideType: number;
+  collisionOverlap?: number;
+  nextHit?: number;
+  nextDelay?: number;
+  knockBack?: number;
+  toHit?: number;
+  /**
+   * bits of whom its damage hits fully, their positive resists, damage reduction and absorb skipped
+   * (Missile.cpp:564-577, SUnitDmg.cpp:891-916, 1012-1033): 1 undead, 2 demons, 4 beasts (a monster
+   * that is neither, or a target that is no monster). Whom it hits at all is its hit function's (hitParams).
+   */
+  holy?: number;
+  damageRate?: number;
+  radius?: number;
+  skill?: string;
+  /** the weapon damage it adds (SrcDamage / 128); srcNone: not even the skill's */
+  src?: number;
+  srcNone?: true;
+  phys?: { min: D2xBands; max: D2xBands };
+  /** symUnit: the points D2 floors the synergy in, 2^HitShift / 256 (absent: 1) */
+  elem?: { type?: string; min?: D2xBands; max?: D2xBands; sym?: D2xCalc; symUnit?: number; len?: D2xLenBands };
+  params?: Record<number, number>;
+  paramDesc?: Record<number, string>;
+  hitParams?: Record<number, number>;
+  hitParamDesc?: Record<number, string>;
+  dmgParams?: Record<number, number>;
+  dmgParamDesc?: Record<number, string>;
+  calcs?: { srv?: D2xCalc; hit?: D2xCalc; dmg?: D2xCalc };
+  calcDesc?: { srv?: string; hit?: string; dmg?: string };
+  /** missiles it makes: as it flies (srv), on hit (hit), on exploding, and the client's visual ones */
+  sub?: { srv?: string[]; hit?: string[]; explosion?: string; clt?: string[]; cltHit?: string[] };
+  hit?: { result: number; flags: number; class: number };
+  light?: { radius: number; rgb: [number, number, number] };
+}
+
+export type D2xStateFlag =
+  | 'playerStaysOnDeath' | 'monsterStaysOnDeath' | 'bossStaysOnDeath' | 'curable' | 'curse' | 'active' | 'undead' | 'aura' | 'exp'
+  | 'transform' | 'restrict' | 'disguise' | 'meleeOnly' | 'noClear' | 'removedOnHit' | 'hide' | 'notOnDead' | 'bossInvulnerable'
+  | 'shatter' | 'hideDead' | 'life' | 'green' | 'sunderFull' | 'sunderResReduce';
+
+/** a state (States.txt), keyed by name in D2X_STATES */
+export interface D2xState {
+  id: number;
+  /** states of one group replace each other (the sorceress's armors) */
+  group?: number;
+  /** the stat it shows on the character screen */
+  stat?: string;
+  flags?: D2xStateFlag[];
+  /** the character screen numbers it turns blue or red: att, arm, dam, rf/rl/rc/rp (resists), stamina */
+  blue?: string[];
+  red?: string[];
+  /** D2's server functions when set, removed, active */
+  funcs?: { set?: number; rem?: number; active?: number };
+  skill?: string;
+  missile?: string;
+  /** the taken skills whose D2 server code sets or checks it by id, where no table column names it */
+  code?: string[];
 }

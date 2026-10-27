@@ -33,6 +33,7 @@
 - `bases.json`：名字里带专有名词的底材和任务物品（物品代码）。其余底材、宝石沿用官方的通用名；符文不起名，一律叫「N 号符文」。
 - `monsters.json`、`areas.json`、`npcs.json`、`quests.json`：怪物和超级暗金怪、区域、NPC、任务。怪物按 MonStats 的 NameStr 字串键，超级暗金怪按 SuperUniques 的 Name，区域按 Levels 的 Id，NPC 按 NameStr。NameStr 是 `dummy`、`Dummy`、`a trap` 的（鸡、老鼠、营地里的哨兵、箭矢机关这类）游戏里不显示名字，不用起。
 - `monster-prefixes.json`、`monster-suffixes.json`、`monster-titles.json`：随机暗金怪名字的三个词库（UniquePrefix / UniqueSuffix / UniqueAppellation 的字串键）。中文照官方的拼法：称号 + 前缀 + 后缀，称号以「·」结尾放在最前，比如「刽子手·晦冥蚀触」。前缀两个字，后缀是名词或「X者」，称号是「X者·」或两三个字的绰号。
+- `skills.json`：技能（Skills.txt 的 skill 列，如 `Valkyrie`）。火球术、冰封球这类通用叫法沿用官方译名，不用收；只收带专有名词意味的（召唤物、灵体之类的称谓，比如女武神、橡木智灵）。名字取自符文之语字串的技能（迷狂的变身）自动用 `runewords.json` 里的名字。怪物技能游戏里不显示名字，不用起。
 - `mercenaries.json`：佣兵的人名（Hireling 的 NameFirst…NameLast 之间的字串键，如 `merc01`）和佣兵类型名（字串键，如 `RogueScout`）。技能树名（「火系法术」「防御光环」这类）是通用词，沿用官方叫法。
 
 `node tools/d2-import.mjs` 只收录有名字的行，没名字的列在 `report.md` 里；名字和官方译名相同、或者含有术语表替换掉的官方音译时，导入直接报错。

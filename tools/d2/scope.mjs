@@ -4,6 +4,8 @@
 // how its uniques, sets, runewords and affixes are told apart.
 
 export const WARLOCK = 'war';
+/** the classes the game has: their whole skill trees, and what those summon, are taken */
+export const GAME_CLASSES = new Set(['pal', 'sor']);
 /** item types the Warlock expansion added: grimoires, its class items, colossal jewels, crafted sunder charms */
 export const WARLOCK_TYPES = new Set(['grim', 'warl', 'cjwl', 'csch']);
 export const WARLOCK_SETS = new Set(["Bane's Garments", "Horazon's Splendor", "Warlord's Glory"]);

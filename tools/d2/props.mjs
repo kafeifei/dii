@@ -1,10 +1,7 @@
 // D2 properties → D2Prop { c, p?, min, max } (src/data/d2/types.ts), and the coverage check: every
 // code an imported row uses must be one src/items/props.ts reads, or be listed in KNOWN_UNMAPPED with
 // the reason, so a new table never loses properties silently (propMods drops codes it does not know).
-import { registerHooks } from 'node:module';
-import path from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { ROOT, rows, tables } from './load.mjs';
+import { importTs, rows, tables } from './load.mjs';
 import { WARLOCK, isWarlockTab } from './scope.mjs';
 
 /** property codes the game does not read yet, and why: the item system (A2) works these off */
@@ -56,7 +53,7 @@ export const KNOWN_UNMAPPED = {
 };
 
 /** codes whose parameter is a skill (by id or name) */
-const SKILL_PROPS = new Set(['skill', 'oskill', 'aura', 'hit-skill', 'gethit-skill', 'att-skill', 'kill-skill', 'death-skill', 'levelup-skill', 'charged']);
+export const SKILL_PROPS = new Set(['skill', 'oskill', 'aura', 'hit-skill', 'gethit-skill', 'att-skill', 'kill-skill', 'death-skill', 'levelup-skill', 'charged']);
 
 export async function propReader() {
   const [skillsJ, classJ] = await tables('skills', 'playerclass');
@@ -99,7 +96,7 @@ export async function propReader() {
     (o.c === 'skilltab' && isWarlockTab(o.p)) ||
     (SKILL_PROPS.has(o.c) && skillOf(o.p)?.charclass === WARLOCK) ||
     (o.c === 'randclassskill' && o.min >= warlockId);
-  return { prop, isWarlock, skills, unknownSkills };
+  return { prop, isWarlock, skills, unknownSkills, skillOf };
 }
 
 /** records which codes the kept rows use; check() fails on any the game neither reads nor lists */
@@ -114,18 +111,7 @@ export function coverage() {
       }
     },
     async check() {
-      // props.ts is TypeScript with extensionless imports: Node strips the types, and './x' resolves to './x.ts'
-      registerHooks({
-        resolve(spec, ctx, next) {
-          try {
-            return next(spec, ctx);
-          } catch (e) {
-            if (spec.startsWith('.') && !path.extname(spec)) return next(`${spec}.ts`, ctx);
-            throw e;
-          }
-        },
-      });
-      const { PROP_CODES } = await import(pathToFileURL(path.join(ROOT, 'src/items/props.ts')).href);
+      const { PROP_CODES } = await importTs('src/items/props.ts');
       const mapped = new Set(PROP_CODES);
       const where = (c) => [...used.get(c)].map(([w, n]) => `${w} ${n}`).join(', ');
       const missing = [...used.keys()].filter((c) => !mapped.has(c) && !KNOWN_UNMAPPED[c]).sort();

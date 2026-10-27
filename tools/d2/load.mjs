@@ -1,8 +1,9 @@
 // What every importer stage shares: the pinned sources, the download cache, the official strings
 // and the writer for src/data/d2x.
 import fs from 'node:fs';
+import { registerHooks } from 'node:module';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const CACHE = path.join(ROOT, 'tools/.d2cache');
@@ -23,6 +24,25 @@ export async function load(base, name) {
   return JSON.parse(fs.readFileSync(file, 'utf8').replace(/^﻿/, ''));
 }
 export const rows = (x) => (Array.isArray(x) ? x : Object.values(x));
+let hooked = false;
+/** one of the game's TypeScript modules: Node strips the types, and './x' resolves to './x.ts' */
+export async function importTs(rel) {
+  if (!hooked) {
+    registerHooks({
+      resolve(spec, ctx, next) {
+        try {
+          return next(spec, ctx);
+        } catch (e) {
+          if (spec.startsWith('.') && !path.extname(spec)) return next(`${spec}.ts`, ctx);
+          throw e;
+        }
+      },
+    });
+    hooked = true;
+  }
+  return import(pathToFileURL(path.join(ROOT, rel)).href);
+}
+
 /** several d2data tables at once, by name */
 export const tables = (...names) => Promise.all(names.map((n) => load(DATA, n)));
 

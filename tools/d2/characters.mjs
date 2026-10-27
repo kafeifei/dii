@@ -339,4 +339,6 @@ export async function buildCharacters({ bases }) {
       `${Object.keys(prices).length} NPC price rows, ${gamble.length} gamble bases, ${hirelings.size} hirelings with ` +
       `${[...hirelings.values()].reduce((s, h) => s + h.bands.length, 0)} level bands, ${Object.keys(mercNameOf).length} hireling names`,
   );
+  // the skills stage takes in what the hirelings cast
+  return { hirelingSkills: [...new Set([...hirelings.values()].flatMap((h) => h.bands.flatMap((b) => b.skills.map((s) => s.skill))))] };
 }

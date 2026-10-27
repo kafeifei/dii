@@ -4,7 +4,7 @@
 // The game does not read these files yet; the item system (A2) moves onto them.
 import { list, numbered, record, rows, strings, tables, writeD2x } from './load.mjs';
 import { exclude, glossaryOfficial, names } from './names.mjs';
-import { coverage, propReader } from './props.mjs';
+import { SKILL_PROPS, coverage, propReader } from './props.mjs';
 import { WARLOCK, WARLOCK_SETS, WARLOCK_TYPES, ladderOnly, latestSeason } from './scope.mjs';
 
 /** the NPCs that have shop columns in the base tables, by their internal names */
@@ -19,7 +19,7 @@ export async function buildItems() {
   const [weaponsJ, armorJ, miscJ, itypesJ, prefixJ, suffixJ, autoJ, rarePreJ, rareSufJ, qualityJ, lowJ, uniqueJ, setItemsJ, setsJ, runesJ, gemsJ, beltsJ] =
     await tables('weapons', 'armor', 'misc', 'itemtypes', 'magicprefix', 'magicsuffix', 'automagic', 'rareprefix', 'raresuffix', 'qualityitems', 'lowqualityitems', 'uniqueitems', 'setitems', 'sets', 'runes', 'gems', 'belts');
   const S = await strings('item-names', 'item-runes', 'item-nameaffixes');
-  const { prop, isWarlock, skills, unknownSkills } = await propReader();
+  const { prop, isWarlock, unknownSkills, skillOf } = await propReader();
   const cover = coverage();
   const season = latestSeason(uniqueJ, setItemsJ, runesJ);
   /** official names of the proper nouns: none of them may reach the generated data */
@@ -437,6 +437,29 @@ export async function buildItems() {
   if (unknownSkills.size) throw new Error(`skill parameters not in skills.json: ${[...unknownSkills].join(', ')}`);
   await cover.check();
 
+  // the skills the kept rows' properties name (rows left out may name the Warlock's)
+  const skills = new Set();
+  const allProps = [
+    ...[...prefixes, ...suffixes, ...automagic, ...quality, ...uniques, ...runewords].flatMap((x) => x.props),
+    ...setItems.flatMap((x) => [...x.props, ...(x.bonus ?? []).flat()]),
+    ...sets.flatMap((x) => [...x.partial.flatMap((p) => p.props), ...x.full]),
+    ...[...runes, ...gems].flatMap((x) => [...x.weapon, ...x.armor, ...x.shield]),
+  ];
+  for (const p of allProps) {
+    if (SKILL_PROPS.has(p.c)) skills.add(p.p);
+    // skill-rand rolls a skill id from min to max (Ormus' Robes: 36–60, the Sorceress's)
+    if (p.c === 'skill-rand') {
+      for (let id = p.min; id <= p.max; id++) {
+        const s = skillOf(id);
+        if (!s || s.charclass === WARLOCK) throw new Error(`skill-rand ${p.min}–${p.max}: skill ${id} is ${s ? "the Warlock's" : 'not in skills.json'}`);
+        skills.add(s.skill);
+      }
+    }
+  }
+  // the classes whose skills bases roll as staff mods: an item's own type's StaffMods, not an
+  // ancestor's (ITEMS_GetStaffMods, D2Common Items.cpp:2879-2899)
+  const staffMods = [...new Set(bases.map((b) => itemTypes[b.type]?.staffMods).filter(Boolean))].sort();
+
   // ───────────────────────── write ─────────────────────────
   const T = (names) => `import type { ${names} } from './types';\n\n`;
   writeD2x('itemtypes.ts', `${T('D2xItemType')}/** item types by code: what they count as (up), where they are worn, sockets by item level, drop flags */\nexport const D2X_ITEM_TYPES: Record<string, D2xItemType> = ${record(itemTypes)};\n`);
@@ -456,6 +479,6 @@ export async function buildItems() {
       `${quality.length} superior mods, ${uniques.length} uniques, ${sets.length} sets with ${setItems.length} pieces, ${runewords.length} runewords, ` +
       `${runes.length} runes, ${gems.length} gems; item props name ${skills.size} skills`,
   );
-  // the skills stage needs every skill an item refers to; later stages check item codes against the bases
-  return { skills: [...skills.keys()], bases: new Set(Object.keys(BASE)), baseNames: new Map(Object.entries(BASE).map(([c, b]) => [c, b.name])) };
+  // the skills stage needs every skill an item refers to or rolls; later stages check item codes against the bases
+  return { skills: [...skills].sort(), staffMods, bases: new Set(Object.keys(BASE)), baseNames: new Map(Object.entries(BASE).map(([c, b]) => [c, b.name])) };
 }
