@@ -1,34 +1,38 @@
-// Builds src/data/d2/*.ts from Diablo II: Resurrected's own data tables: weapons, magic affixes,
-// runes, gems, runewords, Horadric Cube recipes, experience and the rune/gem treasure classes.
+// Builds the game's data from Diablo II: Resurrected's own data tables.
 //
 //   node tools/d2-import.mjs
+//
+// then `node tools/d2-validate.mjs` checks the generated src/data/d2x against D2's semantics.
 //
 // Sources, pinned (downloaded once into tools/.d2cache):
 // - the game's .txt tables as JSON, patch 3.3 — github.com/blizzhackers/d2data
 // - the game's string tables with the official Simplified Chinese — github.com/WalterCouto/D2CE
-// Only melee and caster weapons are taken (no bows, crossbows, throwing weapons or javelins, and
-// no Amazon or Assassin class weapons): the game has no ranged weapon attack.
+// Our names for the proper nouns are in tools/d2-names (see tools/d2/names.mjs).
+//
+// Two outputs:
+// - src/data/d2/*.ts, what the game reads today: weapons, magic affixes, runes, gems, runewords,
+//   Horadric Cube recipes, experience and the rune/gem treasure classes. Only melee and caster
+//   weapons are taken (no bows, crossbows, throwing weapons or javelins, and no Amazon or Assassin
+//   class weapons): the game has no ranged weapon attack. Kept as it is until the game moves over.
+// - src/data/d2x/*.ts, the full tables in the content scope (tools/d2/scope.mjs), one stage per
+//   module in tools/d2/: items, then characters (classes, difficulties, experience, quality
+//   ratios, NPC prices, gambling, hirelings), then world (Act 1's areas, monsters, the classes'
+//   pets, superuniques) and treasure (every treasure class Act 1 drops from), checked against
+//   d2data's precalculated drop rates in tools/d2/validation.md, then skills (the two classes'
+//   trees, Act 1's monster, modifier and hireling skills, the names of every other skill items
+//   carry or roll, their missiles and states, the calc tables). The game does not read them yet.
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { buildCharacters } from './d2/characters.mjs';
+import { buildItems } from './d2/items.mjs';
+import { DATA, ROOT, STR, load, rows } from './d2/load.mjs';
+import { writeReport } from './d2/names.mjs';
+import { buildSkills } from './d2/skills.mjs';
+import { buildTreasure } from './d2/treasure.mjs';
+import { writeValidation } from './d2/validate.mjs';
+import { buildWorld } from './d2/world.mjs';
 
-const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const CACHE = path.join(ROOT, 'tools/.d2cache');
 const OUT = path.join(ROOT, 'src/data/d2');
-const DATA = 'https://raw.githubusercontent.com/blizzhackers/d2data/fc469993502d0498809b9fc1af140ee2a9eb8902/json/';
-const STR = 'https://raw.githubusercontent.com/WalterCouto/D2CE/c246509f385790462979004aeeaf7a47696ed605/source/res/TXT/local/lng/strings/';
-
-async function load(base, name) {
-  fs.mkdirSync(CACHE, { recursive: true });
-  const file = path.join(CACHE, `${base === DATA ? 'data' : 'str'}-${name}.json`);
-  if (!fs.existsSync(file)) {
-    const r = await fetch(base + name + '.json');
-    if (!r.ok) throw new Error(`${name}: HTTP ${r.status}`);
-    fs.writeFileSync(file, await r.text());
-  }
-  return JSON.parse(fs.readFileSync(file, 'utf8').replace(/^﻿/, ''));
-}
-const rows = (x) => (Array.isArray(x) ? x : Object.values(x));
 
 const [weaponsJ, prefixJ, suffixJ, itypesJ, runesJ, gemsJ, miscJ, cubeJ, expJ, monlvlJ, tcJ, skillsJ] = await Promise.all(
   ['weapons', 'magicprefix', 'magicsuffix', 'itemtypes', 'runes', 'gems', 'misc', 'cubemain', 'experience', 'monlvl', 'treasureclassex', 'skills'].map((n) => load(DATA, n)),
@@ -330,3 +334,12 @@ write(
   `/** total experience to reach level L+1, index L (D2 experience.txt) */\nexport const D2_XP: number[] = ${json(xpTable)};\n\n/** experience kept at character level L, out of 1024 */\nexport const D2_XP_RATIO: number[] = ${json(expRatio)};\n\n/** monster experience by monster level 1-110: [normal, nightmare, hell] (monlvl.txt) */\nexport const D2_MON_XP: [number, number, number][] = ${json(monXp)};\n\n/** the "Act N Good" treasure classes: jewelry, gems by grade and runes, by monster level */\nexport const D2_GOOD_TCS: { name: string; level: number; entries: { kind: 'jewelry' | 'gem' | 'rune'; w: number; grade?: number; runes?: [string, number][] }[] }[] = ${list(goodTcs)};\n`,
 );
 console.log(`${weapons.length} weapons, ${prefixes.length}+${suffixes.length} affixes, ${runes.length} runes, ${gems.length} gems, ${runewords.length} runewords, ${cube.length} cube recipes, ${usedSkills.size} skills`);
+
+// ───────────────────────── the full tables ─────────────────────────
+const { bases, baseNames, skills: itemSkills, staffMods } = await buildItems();
+const { hirelingSkills } = await buildCharacters({ bases });
+const world = await buildWorld({ bases });
+const treasure = await buildTreasure({ bases, ...world });
+await buildSkills({ itemSkills, staffMods, hirelingSkills, ...world, bases });
+await writeValidation({ ...treasure, bases, baseNames });
+writeReport();
