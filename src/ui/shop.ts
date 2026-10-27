@@ -1,4 +1,4 @@
-import { levelLabel } from '../world/levelgen';
+import { areaDef } from '../world/areas';
 import { addClose, h, type UIContext } from './common';
 import { renderGrid } from './inventory';
 
@@ -71,13 +71,16 @@ export function renderWaypoints(ui: UIContext, L: HTMLElement) {
   addClose(ui, L, 'left');
   const list = h('div', 'wplist');
   const p = ui.game.player;
-  for (const d of p.waypoints) {
-    const name = levelLabel(d, '流亡者营地');
-    const w = h('div', `wp${ui.game.level.depth === d ? ' cur' : ''}`, name);
+  // the areas whose waypoint is touched, in the order a hero comes to them (Player.waypoints)
+  for (const id of p.waypoints) {
+    const here = ui.game.area?.id === id;
+    const w = h('div', `wp${here ? ' cur' : ''}`, areaDef(id)?.name ?? '?');
     w.onclick = () => {
-      if (ui.game.level.depth === d) return;
+      if (ui.game.area?.id === id) return;
+      // shut now: a jump on the same map builds nothing that would redraw the panels
       ui.left = null;
-      ui.game.travel(d);
+      ui.dirty = true;
+      ui.game.travel(id);
     };
     list.appendChild(w);
   }

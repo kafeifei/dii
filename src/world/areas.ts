@@ -3,8 +3,9 @@ import { THEMES, WILD_MAPS, dungeonFloor, isWild, themeForFloor } from './levelg
 
 /**
  * Areas: the named places of the world, Diablo II's levels.txt rows. An area has a level (its
- * monsters' and its loot's), a kind and maybe a waypoint. Today each map is one area, every tile of
- * it; the seamless Act 1 map will hold several side by side, tile by tile (Level.areaAt).
+ * monsters' and its loot's), a kind and maybe a waypoint. The West overworld holds several side by
+ * side, tile by tile (Level.areaAt); a dungeon, the Den of Evil or a floor of the trial ground, is a
+ * map of its own.
  */
 
 export type AreaKind = 'town' | 'outdoor' | 'dungeon';
@@ -15,6 +16,8 @@ export interface AreaDef {
   key: string;
   /** what its banner says on the way in */
   name: string;
+  /** its name in English */
+  en: string;
   /** the shorter name the minimap shows, when it has one */
   label?: string;
   /** the area level in normal, nightmare and hell */
@@ -28,7 +31,7 @@ export interface AreaDef {
 export const CAMP_AREA = 1;
 /** the wilderness outside it (Blood Moor) */
 export const WILD_AREA = 2;
-// the rest of the West overworld (src/world/overworld.ts), by their levels.json Id like the two above
+// the rest of the West overworld (src/world/overworld.ts) and the Den of Evil, by their levels.json Id like the two above
 export const COLD_PLAINS = 3;
 export const STONY_FIELD = 4;
 export const DEN_OF_EVIL = 8;
@@ -49,20 +52,31 @@ function define(a: AreaDef): AreaDef {
   return a;
 }
 
-define({ id: CAMP_AREA, key: 'camp', name: THEMES.town.name, label: '营地', alvl: [0, 0, 0], kind: 'town', waypoint: true });
-// as hard as the first floor, and no waypoint: the camp is a walk away
-define({ id: WILD_AREA, key: 'wild', name: THEMES.wild.name, alvl: alvl(1), kind: 'outdoor', waypoint: false });
 // Area levels are levels.json MonLvlEx (normal), repeated until there are difficulties; a Waypoint
 // other than 255 there is `waypoint`. The names are line A's rename table (tools/d2-names/areas.json)
-// as it stands, until its import replaces this list.
-define({ id: COLD_PLAINS, key: 'coldplains', name: '凛寒原野', alvl: [2, 2, 2], kind: 'outdoor', waypoint: true });
-define({ id: STONY_FIELD, key: 'stonyfield', name: '列石荒野', alvl: [4, 4, 4], kind: 'outdoor', waypoint: true });
-define({ id: DEN_OF_EVIL, key: 'denofevil', name: '邪秽巢穴', alvl: [1, 1, 1], kind: 'dungeon', waypoint: false });
-define({ id: BURIAL_GROUNDS, key: 'burialgrounds', name: '葬骨荒冢', alvl: [3, 3, 3], kind: 'outdoor', waypoint: false });
+// with the English the user approved; Stony Field's and the Burial Grounds' English are ours until
+// the table has theirs. The camp and Blood Moor are as hard as the endless dungeon's first floor was.
+define({ id: CAMP_AREA, key: 'camp', name: THEMES.town.name, en: THEMES.town.en, label: '营地', alvl: [0, 0, 0], kind: 'town', waypoint: true });
+define({ id: WILD_AREA, key: 'wild', name: THEMES.wild.name, en: THEMES.wild.en, alvl: alvl(1), kind: 'outdoor', waypoint: false });
+define({ id: COLD_PLAINS, key: 'coldplains', name: '凛寒原野', en: 'Bitterfrost Wilds', alvl: [2, 2, 2], kind: 'outdoor', waypoint: true });
+define({ id: STONY_FIELD, key: 'stonyfield', name: '列石荒野', en: 'Cairnstone Waste', alvl: [4, 4, 4], kind: 'outdoor', waypoint: true });
+define({ id: DEN_OF_EVIL, key: 'denofevil', name: '邪秽巢穴', en: 'Festering Lair', alvl: [1, 1, 1], kind: 'dungeon', waypoint: false });
+define({ id: BURIAL_GROUNDS, key: 'burialgrounds', name: '葬骨荒冢', en: 'Bonewake Barrows', alvl: [3, 3, 3], kind: 'outdoor', waypoint: false });
+
+/**
+ * The areas of normal play this build has a map of, in the order a hero comes to them: the camp,
+ * Blood Moor, its Den of Evil, Cold Plains. Stony Field and the Burial Grounds join as they are built.
+ */
+const BUILT = [CAMP_AREA, WILD_AREA, DEN_OF_EVIL, COLD_PLAINS];
 
 /** the area of dungeon floor `floor` (dungeonFloor) */
 export function dungeonArea(floor: number): number {
   return DUNGEON_AREAS + floor;
+}
+
+/** the floor of the trial ground (the endless dungeon, a debug panel's way in) an area is; undefined for any other */
+export function trialFloor(id: number): number | undefined {
+  return id > DUNGEON_AREAS ? id - DUNGEON_AREAS : undefined;
 }
 
 /** an area's level, its monsters' and its loot's: normal's, until there are difficulties */
@@ -73,9 +87,10 @@ export function areaLevel(a: AreaDef): number {
 /** an area by id; the dungeon's floors are made as they are first asked for, since it has no bottom */
 export function areaDef(id: number): AreaDef | undefined {
   const a = AREAS.get(id);
-  if (a || id <= DUNGEON_AREAS) return a;
-  const f = id - DUNGEON_AREAS;
-  return define({ id, key: `floor${f}`, name: `${themeForFloor(f).name} · 第 ${f} 层`, label: `第 ${f} 层`, alvl: alvl(f), kind: 'dungeon', waypoint: true });
+  const f = trialFloor(id);
+  if (a || f === undefined) return a;
+  const t = themeForFloor(f);
+  return define({ id, key: `floor${f}`, name: `${t.name} · 第 ${f} 层`, en: `${t.en} · Level ${f}`, label: `第 ${f} 层`, alvl: alvl(f), kind: 'dungeon', waypoint: true });
 }
 
 /** an area by its key (AreaDef.key), as the tools name them: 'camp', 'wild', 'floor3' */
@@ -85,35 +100,54 @@ export function areaByKey(key: string): AreaDef | undefined {
   return f ? areaDef(dungeonArea(+f[1])) : undefined;
 }
 
-/** the areas from the camp down, in the order a hero comes to them: the camp, the wilderness, the dungeon's first `floors` floors */
-export function areaList(floors: number): AreaDef[] {
-  const out: AreaDef[] = [];
-  for (let a: AreaDef | undefined = areaDef(CAMP_AREA); a && (a.kind !== 'dungeon' || a.id - DUNGEON_AREAS <= floors); a = nextArea(a)) out.push(a);
-  return out;
+/**
+ * An area of normal play this build has a map of: what a save resumes in and what the waypoint list
+ * may show. Worked out as a save loads (plan B 区域结构), so a save needs no migration as areas come.
+ */
+export function isBuilt(id: number): boolean {
+  return BUILT.includes(id);
 }
 
-/** the area after `a` on the way from the camp down (the dungeon has no last one); undefined for an area this build lacks */
+/** the areas of normal play, in the order a hero comes to them (the trial ground's floors aren't) */
+export function areaList(): AreaDef[] {
+  return BUILT.map((id) => areaDef(id)!);
+}
+
+/**
+ * The waypoints a hero can use of the areas `touched`: the ones this build has (isBuilt), in the
+ * order a hero comes to them, the camp's always. What else was touched stays in the save
+ */
+export function builtWaypoints(touched: readonly number[]): number[] {
+  return BUILT.filter((id) => areaDef(id)!.waypoint && (id === CAMP_AREA || touched.includes(id)));
+}
+
+/**
+ * The area after `a` in the order a hero comes to them, or the trial ground's next floor (it has no
+ * bottom); undefined after the last area there is, or for one this build lacks
+ */
 export function nextArea(a: AreaDef): AreaDef | undefined {
-  let depth = depthForArea(a.id);
-  if (depth === undefined) return undefined;
-  // past every map of it (the wilderness may be several)
-  while (areaForDepth(depth).id === a.id) depth++;
-  return areaForDepth(depth);
+  const i = BUILT.indexOf(a.id);
+  if (i >= 0) return i + 1 < BUILT.length ? areaDef(BUILT[i + 1]) : undefined;
+  const f = trialFloor(a.id);
+  return f === undefined ? undefined : areaDef(dungeonArea(f + 1));
 }
 
-/** the area one of today's maps is, by its depth: the camp, the wilderness or a dungeon floor */
+/**
+ * The area one of the old maps is, by its depth (src/world/levelgen.ts): the separate camp (only
+ * ?gallery's now), the old wilderness, or a floor of the trial ground
+ */
 export function areaForDepth(depth: number): AreaDef {
   return areaDef(depth <= 0 ? CAMP_AREA : isWild(depth) ? WILD_AREA : dungeonArea(dungeonFloor(depth)))!;
 }
 
 /**
- * The depth of today's map an area is, the other way from areaForDepth (a save keeps the area, the
- * game still goes by depth): the wilderness is its first map. Undefined for an area this build lacks
+ * The depth of the old map an area is, the other way from areaForDepth (old saves went by depth):
+ * the wilderness is its first map. Undefined for an area with no old map
  */
 export function depthForArea(id: number): number | undefined {
   if (id === CAMP_AREA) return 0;
   // the first of its maps (isWild), when it has any
   if (id === WILD_AREA) return WILD_MAPS > 0 ? 1 : undefined;
-  if (id > DUNGEON_AREAS) return WILD_MAPS + (id - DUNGEON_AREAS);
-  return undefined;
+  const f = trialFloor(id);
+  return f === undefined ? undefined : WILD_MAPS + f;
 }

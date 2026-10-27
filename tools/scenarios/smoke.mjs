@@ -2,10 +2,12 @@
 //   node tools/play.mjs tools/scenarios/smoke.mjs --url "http://localhost:5174/?dev"        the paladin
 //   node tools/play.mjs tools/scenarios/smoke.mjs --url "http://localhost:5174/?dev&sorc"   the sorceress
 // Reloads the page with empty storage, then plays a short run through the real UI and the game's
-// own API: the HUD and every panel, the debug panel's cheats, loot, the camp's services, the
-// wilderness and the first dungeon floor (every skill cast, kills and their drops), a town portal
-// there and back, the debug panel's area jumps and difficulty, a jump within the camp
-// (Game.teleportWithin), and the save. Page errors and
+// own API, the way a game goes now: the HUD and every panel, the debug panel's cheats, loot, the
+// camp's services, out of the camp into Blood Moor on the one overworld map, down into the Den of
+// Evil (every skill cast, kills and their drops, Corpsefire's stand-in), a town portal there and
+// back, up out of the Den to its mouth, Cold Plains' waypoint used and travelled by through its
+// panel (jumps on the one map, nothing rebuilt), the debug panel's area jumps, its trial ground and
+// the difficulty, a jump out of the camp (Game.teleportWithin), and the save. Page errors and
 // console errors count from the reload on, and fail the run. The last line is "SMOKE OK <summary>"
 // or "SMOKE FAIL <reasons>".
 
@@ -13,8 +15,13 @@
 const SAVE_V = 4;
 /** the save slot ?dev plays in (src/game/save.ts), apart from the real characters */
 const DEV_SLOT = 'dii-save-dev';
-/** how many monsters to kill on the dungeon floor */
+/** how many monsters to kill in the Den of Evil */
 const KILLS = 8;
+/** the areas the run goes through (src/world/areas.ts CAMP_AREA, WILD_AREA, COLD_PLAINS, DEN_OF_EVIL) */
+const CAMP = 1;
+const MOOR = 2;
+const PLAINS = 3;
+const DEN = 8;
 
 export default async function (page, shot, log) {
   const t0 = Date.now();
@@ -68,14 +75,27 @@ export default async function (page, shot, log) {
       await page.reload({ timeout: 60000 });
       await until(() => window.game?.started && window.game.level, null, 'the game to start', 60000);
       const cls = new URL(page.url()).searchParams.has('sorc') ? 'sorceress' : 'paladin';
-      const s = await ev(() => ({ cls: game.player.cls, depth: game.level.depth, level: game.player.level }));
+      const s = await ev(() => ({ cls: game.player.cls, area: game.area?.id, overworld: Array.isArray(game.level.layout.seams), level: game.player.level }));
       expect(s.cls === cls, `started as ${s.cls}, the URL asks for ${cls}`);
-      expect(s.depth === 0, `started at depth ${s.depth}, not in the camp`);
+      expect(s.area === CAMP && s.overworld, `started in area ${s.area}, on the overworld ${s.overworld}`);
       facts.push(s.cls);
       // helpers for the steps below, kept on the page
       await ev(() => {
         const S = (window.__smoke = {});
         S.dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+        S.west = game.level;
+        // the levels built from here on (renderer.buildLevel: a map entered, not a jump on one)
+        S.builds = 0;
+        const build = renderer.buildLevel;
+        renderer.buildLevel = function (...a) {
+          S.builds++;
+          return build.apply(this, a);
+        };
+        /** the hero set down somewhere on this map, as a jump does */
+        S.put = (spot) => {
+          game.teleportWithin(game.level.map.nearestWalkable(spot.x, spot.z) ?? spot);
+          game.player.intent = null;
+        };
         /** the nearest living monster, with the player put 2 m from it, in sight of it */
         S.engage = () => {
           const p = game.player;
@@ -98,7 +118,7 @@ export default async function (page, shot, log) {
         };
         /** the player put beside a camp object (a service panel shuts when you walk off from it) */
         S.goTo = (kind) => {
-          const o = game.level.objects.find((x) => x.kind === kind);
+          const o = game.level.objects.find((x) => x.kind === kind && game.level.inTown(x.pos));
           if (!o) return false;
           const p = game.player;
           const spot = game.level.map.nearestWalkable(o.pos.x + o.radius + 0.8, o.pos.z) ?? o.pos;
@@ -257,30 +277,70 @@ export default async function (page, shot, log) {
       facts.push(`learned ${learned.length}`);
     },
 
-    async wild() {
+    async moor() {
+      // out of the camp past its gate, on the same map: nothing is built
       const s = await ev(() => {
-        game.travel(1);
-        window.__smoke.wildArea = game.area.id;
+        const S = window.__smoke;
+        const L = game.level;
+        const gate = L.layout.seams.find((x) => x.a === 1 && x.b === 2);
+        const dx = gate.tb.x - gate.ta.x;
+        const dz = gate.tb.z - gate.ta.z;
+        let spot = null;
+        for (let k = 6; k < 40 && !spot; k++) {
+          const c = { x: gate.tb.x + dx * k, z: gate.tb.z + dz * k };
+          if (L.map.circleClear(c.x, c.z, 0.6) && L.areaAt(c.x, c.z).id === 2) spot = c;
+        }
+        if (!spot) return { error: 'no open ground past the camp gate' };
+        S.moor = spot;
+        const builds = S.builds;
+        S.put(spot);
         const banners = [...document.querySelectorAll('#messages > div')].filter((e) => e.textContent === game.area.name).length;
-        return { depth: game.level.depth, area: game.area.kind, banners, exit: game.level.objects.some((o) => o.kind === 'exit' && o.dest === 0), stairs: game.level.objects.some((o) => o.kind === 'stairs'), monsters: game.level.monsters.length };
+        const mouth = L.objects.find((o) => o.kind === 'stairs' && o.dest === 8);
+        S.mouth = mouth;
+        return {
+          area: game.area.id,
+          kind: game.area.kind,
+          same: game.level === S.west && S.builds === builds,
+          banners,
+          mouth: !!mouth && L.areaAt(mouth.pos.x, mouth.pos.z).id === 2,
+          open: L.objects.filter((o) => o.kind === 'exit' && !o.closed).length,
+          monsters: L.monsters.filter((m) => !m.dead && L.areaAt(m.pos.x, m.pos.z).id === 2).length,
+        };
       });
-      expect(s.depth === 1 && s.area === 'outdoor', `travel(1) went to depth ${s.depth}, a ${s.area} area`);
-      expect(s.banners === 1, `the wilderness's name shown ${s.banners} times on the way in`);
-      expect(s.exit && s.stairs, `the wilderness has exit ${s.exit}, stairs ${s.stairs}`);
-      expect(s.monsters > 0, 'no monsters in the wilderness');
+      if (s.error) throw new Error(s.error);
+      expect(s.area === MOOR && s.kind === 'outdoor' && s.same, `out past the gate: area ${s.area} (${s.kind}), on the same map without a build ${s.same}`);
+      expect(s.banners === 1, `Blood Moor's name shown ${s.banners} times on the way in`);
+      expect(s.mouth && !s.open, `Blood Moor's way down ${s.mouth}, ${s.open} open exit(s) off the map`);
+      expect(s.monsters > 0, 'no monsters in Blood Moor');
       await frames();
-      await shot('wild');
+      await shot('blood-moor');
     },
 
-    async dungeon() {
-      // down the stairs to the first dungeon floor
+    async den() {
+      // down the Den of Evil's mouth: a map of its own
       const s = await ev(() => {
-        game.enterLevel(2, 'stairs');
-        return { depth: game.level.depth, waypoint: game.player.waypoints.includes(game.level.depth), monsters: game.level.monsters.length };
+        const S = window.__smoke;
+        const m = S.mouth;
+        S.put({ x: m.pos.x + m.inward.x * 2, z: m.pos.z + m.inward.z * 2 });
+        const builds = S.builds;
+        game.interact(m);
+        const L = game.level;
+        S.den = L;
+        const cf = L.monsters.find((x) => x.rank === 'unique' && x.displayName === '尸焰');
+        return {
+          area: game.area.id,
+          built: S.builds - builds,
+          other: L !== S.west,
+          theme: L.layout.theme.key,
+          monsters: L.monsters.length,
+          corpsefire: !!cf,
+          up: L.objects.some((o) => o.kind === 'stairs' && o.dest === 2),
+        };
       });
-      expect(s.depth === 2, `enterLevel(2) went to depth ${s.depth}`);
-      expect(s.waypoint, 'the waypoint on the floor was not activated');
-      expect(s.monsters > 0, 'no monsters on the floor');
+      expect(s.area === DEN && s.other && s.built === 1, `down the mouth: area ${s.area}, its own map ${s.other}, ${s.built} build(s)`);
+      expect(s.theme === 'cave' && s.up && s.monsters > 0 && s.corpsefire, `the den: ${s.theme}, a way up ${s.up}, ${s.monsters} monsters, Corpsefire's stand-in ${s.corpsefire}`);
+      await frames();
+      await shot('den-of-evil');
     },
 
     async cast() {
@@ -328,7 +388,7 @@ export default async function (page, shot, log) {
         cast.push(id);
       }
       await frames();
-      await shot('dungeon-skills');
+      await shot('den-skills');
       facts.push(`${cast.length} skills cast (${cast.join(' ')})`);
     },
 
@@ -387,7 +447,6 @@ export default async function (page, shot, log) {
 
     async portal() {
       await ev(() => {
-        window.__smoke.dungeon = game.level;
         game.player.intent = null;
       });
       // cast once the player is free to (a monster's hit holds the cast up)
@@ -403,64 +462,123 @@ export default async function (page, shot, log) {
         8000,
       );
       const s = await ev(() => {
+        const S = window.__smoke;
         const out = {};
+        const b0 = S.builds;
         game.interact(game.level.objects.find((o) => o.kind === 'portal'));
-        out.town = game.level.depth;
-        const back = game.level.objects.find((o) => o.kind === 'portal');
+        out.town = game.area.id;
+        out.west = game.level === S.west;
+        const back = game.level.objects.find((o) => o.kind === 'portal' && game.level.inTown(o.pos));
         out.backDest = back?.dest;
         if (back) game.interact(back);
-        out.again = game.level.depth;
-        out.same = game.level === window.__smoke.dungeon;
-        out.left = game.level.objects.filter((o) => o.kind === 'portal').length;
+        out.again = game.area.id;
+        out.same = game.level === S.den;
+        out.left = game.level.objects.filter((o) => o.kind === 'portal').length + S.west.objects.filter((o) => o.kind === 'portal').length;
+        out.builds = S.builds - b0;
         return out;
       });
-      expect(s.town === 0, `the portal went to depth ${s.town}`);
-      expect(s.backDest === 2, `the camp's portal leads to ${s.backDest}`);
-      expect(s.again === 2 && s.same, `back through the portal: depth ${s.again}, same floor ${s.same}`);
-      expect(s.left === 0, `${s.left} portal(s) still on the floor after coming back`);
+      expect(s.town === CAMP && s.west, `the portal went to area ${s.town}, on the overworld ${s.west}`);
+      expect(s.backDest === DEN, `the camp's portal leads to ${s.backDest}`);
+      expect(s.again === DEN && s.same && s.builds === 2, `back through the portal: area ${s.again}, the same den ${s.same}, ${s.builds} build(s)`);
+      expect(s.left === 0, `${s.left} portal(s) still open after coming back`);
+    },
+
+    async denExit() {
+      // up out of the den: at its mouth on the overworld as it was left
+      const s = await ev(() => {
+        const S = window.__smoke;
+        const up = game.level.objects.find((o) => o.kind === 'stairs' && o.dest === 2);
+        game.interact(up);
+        return { area: game.area.id, west: game.level === S.west, mouth: S.dist(game.player.pos, S.mouth.pos) };
+      });
+      expect(s.area === MOOR && s.west && s.mouth < 3.5, `up out of the den: area ${s.area}, the same overworld ${s.west}, ${s.mouth.toFixed(1)} from the mouth`);
+    },
+
+    async plains() {
+      // Cold Plains' waypoint: used, it's activated; its panel's camp and then Cold Plains are jumps on this map
+      const s = await ev(() => {
+        const S = window.__smoke;
+        const L = game.level;
+        const wp = L.objects.find((o) => o.kind === 'waypoint' && L.areaAt(o.pos.x, o.pos.z).id === 3);
+        if (!wp) return { error: 'no waypoint in Cold Plains' };
+        S.put({ x: wp.pos.x + 1.2, z: wp.pos.z + 0.6 });
+        const before = [...game.player.waypoints];
+        game.interact(wp);
+        return { area: game.area.id, before, after: [...game.player.waypoints], said: [...document.querySelectorAll('#messages > div')].some((e) => e.textContent === '传送点已激活') };
+      });
+      if (s.error) throw new Error(s.error);
+      expect(s.area === PLAINS && s.before.join() === String(CAMP) && s.after.join() === `${CAMP},${PLAINS}` && s.said, `using Cold Plains' waypoint in area ${s.area}: waypoints ${s.before.join()} → ${s.after.join()}, said so ${s.said}`);
+      await until(() => game.hooks.left === 'waypoint' && document.querySelectorAll('.panel.left.open .wp').length === 2, null, "Cold Plains' waypoint panel with two waypoints");
+      await frames();
+      await shot('waypoint-panel');
+      const b0 = await ev(() => window.__smoke.builds);
+      const pick = async (name, area) => {
+        await page.locator('.panel.left.open .wp', { hasText: name }).click();
+        await until((a) => game.area?.id === a, area, `the waypoint to area ${area}`);
+      };
+      await pick(await ev(() => game.level.areaAt(game.level.layout.start.x, game.level.layout.start.z).name), CAMP);
+      // the camp's waypoint lists Cold Plains, the current one marked
+      expect(await ev(() => window.__smoke.goTo('waypoint')), 'no waypoint in the camp');
+      await ev(() => game.hooks.openPanel('waypoint'));
+      await until(() => game.hooks.left === 'waypoint' && document.querySelectorAll('.panel.left.open .wp').length === 2 && !!document.querySelector('.panel.left.open .wp.cur'), null, "the camp's waypoint panel");
+      await pick(await ev(() => document.querySelector('.panel.left.open .wp:not(.cur)')?.textContent ?? ''), PLAINS);
+      const r = await ev((b0) => ({ builds: window.__smoke.builds - b0, west: game.level === window.__smoke.west }), b0);
+      expect(r.builds === 0 && r.west, `by waypoint to the camp and back: ${r.builds} build(s), on the overworld ${r.west}`);
+      // picking a waypoint shuts the panel
+      await until(() => !game.hooks.left && !document.querySelector('.panel.open'), null, 'the waypoint panel to shut');
+      facts.push('den and Cold Plains');
     },
 
     async home() {
-      const depth = await ev(() => {
-        game.travel(0);
-        return game.level.depth;
+      const area = await ev(() => {
+        game.travel(1);
+        return game.area.id;
       });
-      expect(depth === 0, `travel(0) went to depth ${depth}`);
+      expect(area === CAMP, `travel to the camp went to area ${area}`);
     },
 
     async jump() {
-      // the debug panel's area list: the camp, the wilderness, the dungeon's floors; the hero's area picked
+      // the debug panel's area list: normal play's areas in order, the hero's picked; its trial ground
       const open = () => key('Backquote', () => !!document.querySelector('.overlay.settings.open .debug-note'), 'the debug panel to open');
       const left = (what) => until(() => !game.paused && !document.querySelector('.overlay.open'), null, `the panel to shut after ${what}`);
-      const sel = page.locator('.overlay.settings.open .setting select');
+      const row = (name) => page.locator('.overlay.settings.open .setting').filter({ has: page.locator('.label > span', { hasText: new RegExp(`^${name}$`) }) });
       await open();
       const list = await ev(() => {
-        const s = document.querySelector('.overlay.settings.open .setting select');
+        const r = [...document.querySelectorAll('.overlay.settings.open .setting')].find((x) => x.querySelector('.label > span')?.textContent === '前往');
+        const s = r?.querySelector('select');
         const opts = [...(s?.options ?? [])];
-        return { n: opts.length, value: s?.value, here: String(game.area.id), first: opts[0]?.value, second: opts[1]?.value, floor3: opts.find((o) => o.textContent.includes('第 3 层'))?.value };
+        return { values: opts.map((o) => o.value), value: s?.value, here: String(game.area.id) };
       });
-      expect(list.n >= 32 && list.value === list.here && list.first === list.here, `the area list has ${list.n} areas, ${list.value} picked, starting at ${list.first} (the camp is ${list.here})`);
-      expect(list.second === String(await ev(() => window.__smoke.wildArea)), `the area after the camp is ${list.second}, not the wilderness`);
-      if (!list.floor3) throw new Error('no third floor in the area list');
-      await sel.selectOption(list.floor3);
+      expect(list.values.join() === [CAMP, MOOR, DEN, PLAINS].join() && list.value === list.here, `the area list is ${list.values.join()}, ${list.value} picked (the hero is in ${list.here})`);
+      await row('前往').locator('select').selectOption(String(DEN));
       await debugButton('前往', '去').click();
-      await left('going to floor 3');
-      const a = await ev(() => ({ id: String(game.area.id), key: game.area.key, depth: game.level.depth }));
-      expect(a.id === list.floor3 && a.key === 'floor3', `went to area ${a.key} (#${a.id}), not floor 3 (#${list.floor3})`);
-      // the next one down
+      await left('going to the den');
+      expect((await ev(() => game.area.id)) === DEN, 'the list did not lead to the den');
+      // the next one on
       await open();
-      expect((await ev(() => document.querySelector('.overlay.settings.open .setting select')?.value)) === a.id, 'the list does not pick the floor the hero is on');
       await debugButton('前往', '下一个').click();
       await left('going on');
-      const b = await ev(() => ({ key: game.area.key, depth: game.level.depth }));
-      expect(b.key === 'floor4' && b.depth === a.depth + 1, `next from floor 3 went to ${b.key} at depth ${b.depth}`);
+      const b = await ev(() => ({ id: game.area.id, west: game.level === window.__smoke.west }));
+      expect(b.id === PLAINS && b.west, `next from the den went to area ${b.id}, on the overworld ${b.west}`);
+      // the trial ground: a floor and a difficulty picked, then the next floor down
+      await open();
+      await row('试炼场').locator('select').first().selectOption('3');
+      await debugButton('试炼场', '进入').click();
+      await left('going to the trial ground');
+      const t = await ev(() => ({ key: game.area.key, depth: game.level.depth, wps: [...game.player.waypoints] }));
+      expect(t.key === 'floor3' && t.wps.join() === `${CAMP},${PLAINS}`, `the trial ground's floor 3 is ${t.key}, waypoints ${t.wps.join()}`);
+      await open();
+      await debugButton('前往', '下一个').click();
+      await left('going on down');
+      const t2 = await ev(() => ({ key: game.area.key, depth: game.level.depth }));
+      expect(t2.key === 'floor4' && t2.depth === t.depth + 1, `next from floor 3 went to ${t2.key} at depth ${t2.depth}`);
       // and home
       await open();
-      await sel.selectOption(list.first);
+      await row('前往').locator('select').selectOption(String(CAMP));
       await debugButton('前往', '去').click();
       await left('going home');
-      expect((await ev(() => String(game.area.id))) === list.here, 'the camp in the list did not lead to the camp');
-      facts.push('area jumps');
+      expect((await ev(() => game.area.id)) === CAMP, 'the camp in the list did not lead to the camp');
+      facts.push('area jumps and the trial ground');
     },
 
     async difficulty() {
@@ -485,8 +603,8 @@ export default async function (page, shot, log) {
       expect(s1.diff === 1 && s1.shown === '噩梦' && s1.note.includes('噩梦'), `nightmare picked: difficulty ${s1.diff}, ${s1.shown} shown, the note says ${s1.note}`);
       expect(s1.saved?.difficulty === 1 && s1.saved.unlocked >= 1, `nightmare picked, saved ${JSON.stringify(s1.saved)}`);
       // waypoints go by difficulty: nightmare's are only the camp's, normal's are kept
-      expect(JSON.stringify(s1.wps) === '[0]' && JSON.stringify(s1.saved?.nightmare) === JSON.stringify([s1.camp]), `nightmare's waypoints ${s1.wps.join(' ')}, saved ${JSON.stringify(s1.saved?.nightmare)}`);
-      expect(s1.saved?.normal?.length === s0.wps.length, `normal's saved waypoints ${JSON.stringify(s1.saved?.normal)}, it had depths ${s0.wps.join(' ')}`);
+      expect(JSON.stringify(s1.wps) === JSON.stringify([CAMP]) && JSON.stringify(s1.saved?.nightmare) === JSON.stringify([CAMP]), `nightmare's waypoints ${s1.wps.join(' ')}, saved ${JSON.stringify(s1.saved?.nightmare)}`);
+      expect(JSON.stringify(s1.saved?.normal) === JSON.stringify(s0.wps), `normal's saved waypoints ${JSON.stringify(s1.saved?.normal)}, it had ${s0.wps.join(' ')}`);
       await debugButton('难度', '普通').click();
       const s2 = await read();
       expect(s2.diff === 0 && s2.saved?.difficulty === 0 && JSON.stringify(s2.wps) === JSON.stringify(s0.wps), `back to normal: difficulty ${s2.diff}, saved ${s2.saved?.difficulty}, waypoints ${s2.wps.join(' ')}`);
@@ -496,33 +614,17 @@ export default async function (page, shot, log) {
     },
 
     async teleport() {
-      // the camp's east part made wilderness for the test: a jump into it moves the view with the hero
-      // and announces the area without rebuilding the scene; walking back is noticed by the frame loop
+      // a jump out of the camp into Blood Moor moves the view with the hero and announces the area
+      // without rebuilding the scene; walking back is noticed by the frame loop
       const s = await ev(() => {
         const S = window.__smoke;
         const L = game.level;
-        const map = L.map;
         const p = game.player;
-        S.campArea = game.area.id;
-        S.areasBefore = L.areas.slice();
-        const east = Math.floor(map.w * 0.6);
-        for (let z = 0; z < map.h; z++) for (let x = east; x < map.w; x++) L.areas[z * map.w + x] = S.wildArea;
-        const spotIn = (x0, x1) => {
-          for (let z = 4; z < map.h - 4; z++) for (let x = x0; x < x1; x++) if (map.circleClear(x + 0.5, z + 0.5, 0.45)) return { x: x + 0.5, z: z + 0.5 };
-          return null;
-        };
-        const out = spotIn(east + 2, map.w - 4);
-        S.home = spotIn(4, east - 2);
-        if (!out || !S.home) return { error: 'no walkable spots either side of the camp' };
-        let builds = 0;
-        const build = renderer.buildLevel;
-        renderer.buildLevel = (...a) => {
-          builds++;
-          return build.apply(renderer, a);
-        };
+        S.home = { ...p.pos };
+        const out = L.map.nearestWalkable(S.moor.x, S.moor.z) ?? S.moor;
+        const builds = S.builds;
         const view = renderer.levelGroup.children[0];
         game.teleportWithin(out);
-        renderer.buildLevel = build;
         const cam = renderer.camTarget;
         return {
           moved: S.dist(p.pos, out),
@@ -531,15 +633,14 @@ export default async function (page, shot, log) {
           sfx: game.sfx.area === game.area,
           town: L.inTown(p.pos),
           same: game.level === L && renderer.levelGroup.children[0] === view,
-          builds,
+          builds: S.builds - builds,
           banner: [...document.querySelectorAll('#messages > div')].some((e) => e.textContent === game.area.name),
         };
       });
-      if (s.error) throw new Error(s.error);
       expect(s.moved < 0.01 && s.cam < 0.01, `the jump left the hero ${s.moved.toFixed(2)} m and the camera ${s.cam.toFixed(2)} m off the spot`);
-      expect(s.area === (await ev(() => window.__smoke.wildArea)) && s.sfx && !s.town, `after the jump: area ${s.area}, the sound's the same ${s.sfx}, in town ${s.town}`);
+      expect(s.area === MOOR && s.sfx && !s.town, `after the jump: area ${s.area}, the sound's the same ${s.sfx}, in town ${s.town}`);
       expect(s.same && s.builds === 0, `the jump rebuilt the scene (${s.builds} builds)`);
-      expect(s.banner, "the wilderness's name wasn't shown after the jump");
+      expect(s.banner, "Blood Moor's name wasn't shown after the jump");
       await frames();
       await shot('teleport');
       // walked back in (put there): the next frames see the camp again
@@ -548,8 +649,7 @@ export default async function (page, shot, log) {
         p.pos = { ...window.__smoke.home };
         p.prevPos = { ...p.pos };
       });
-      await until((a) => game.area.id === a, await ev(() => window.__smoke.campArea), 'the camp to be noticed after walking back');
-      await ev(() => game.level.areas.set(window.__smoke.areasBefore));
+      await until((a) => game.area.id === a, CAMP, 'the camp to be noticed after walking back');
     },
 
     async save() {
@@ -559,7 +659,6 @@ export default async function (page, shot, log) {
         const raw = localStorage.getItem(slot);
         const d = raw ? JSON.parse(raw) : null;
         const slots = Object.keys(localStorage).filter((k) => k.startsWith('dii-save'));
-        const floor = game.lastDungeon;
         return {
           d: d && {
             v: d.v,
@@ -575,6 +674,7 @@ export default async function (page, shot, log) {
             corpse: d.corpse,
             inv: d.inventory?.length,
             skills: d.skills,
+            seed: d.worldSeed,
           },
           slots,
           name: p.name,
@@ -582,17 +682,16 @@ export default async function (page, shot, log) {
           level: p.level,
           inv: p.inventory.items.length,
           skills: p.skills,
-          camp: window.__smoke.campArea,
-          floorArea: floor?.areaAt(floor.layout.start.x, floor.layout.start.z).id,
+          seed: game.worldSeed,
         };
       }, DEV_SLOT);
       if (!expect(s.d, `nothing saved in ${DEV_SLOT}`)) return;
       expect(s.d.v === SAVE_V, `saved as version ${s.d.v}, expected ${SAVE_V}`);
       expect(s.d.mig && typeof s.d.mig.items === 'number' && typeof s.d.mig.world === 'number' && typeof s.d.mig.skills === 'number', `saved migration counts ${JSON.stringify(s.d.mig)}`);
       expect(s.d.name === s.name && s.d.cls === s.cls && s.d.level === s.level, `saved ${s.d.name}/${s.d.cls}/${s.d.level}, playing ${s.name}/${s.cls}/${s.level}`);
-      expect(s.d.area === s.camp && s.d.depth === undefined && s.d.inv === s.inv, `saved area ${s.d.area} (the camp is ${s.camp}), depth ${s.d.depth}, with ${s.d.inv} items in the bag (has ${s.inv})`);
-      // the floor's waypoint was touched on the way down, kept by area for this difficulty
-      expect(s.d.diffs === 3 && s.d.waypoints?.includes(s.camp) && s.d.waypoints.includes(s.floorArea), `saved waypoints ${JSON.stringify(s.d.waypoints)} over ${s.d.diffs} difficulties, the floor is area ${s.floorArea}`);
+      expect(s.d.area === CAMP && s.d.depth === undefined && s.d.inv === s.inv && s.d.seed === s.seed, `saved area ${s.d.area}, depth ${s.d.depth}, seed ${s.d.seed} (the game's ${s.seed}), with ${s.d.inv} items in the bag (has ${s.inv})`);
+      // Cold Plains' waypoint was used, kept by area for this difficulty
+      expect(s.d.diffs === 3 && JSON.stringify(s.d.waypoints) === JSON.stringify([CAMP, PLAINS]), `saved waypoints ${JSON.stringify(s.d.waypoints)} over ${s.d.diffs} difficulties`);
       expect(s.d.merc === null && s.d.corpse === null, `saved merc ${JSON.stringify(s.d.merc)}, corpse ${JSON.stringify(s.d.corpse)}`);
       expect(JSON.stringify(s.d.skills) === JSON.stringify(s.skills), 'the saved skills differ');
       expect(s.slots.length === 1, `save keys written: ${s.slots.join(', ')}`);

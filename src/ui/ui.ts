@@ -225,7 +225,8 @@ export class UI implements GameHooks, UIContext {
 
   /** continue the saved run without going through the title screen */
   resume() {
-    if (!this.game.continueGame()) return;
+    // a reload mid-game: on in the same world, where the hero was
+    if (!this.game.continueGame(undefined, true)) return;
     this.touch?.gameStarted();
     this.title.el.classList.remove('open');
     this.dirty = true;
@@ -320,8 +321,9 @@ export class UI implements GameHooks, UIContext {
     // close shop/stash when walking away
     if ((this.left === 'shop' || this.left === 'stash' || this.left === 'waypoint') && g.level) {
       const kind = this.left === 'shop' ? 'vendor' : this.left;
-      const o = g.level.objects.find((x) => x.kind === kind);
-      if (!o || Math.hypot(o.pos.x - p.pos.x, o.pos.z - p.pos.z) > 4) {
+      // the nearest: the overworld has a waypoint in more than one area
+      const near = Math.min(...g.level.objects.filter((x) => x.kind === kind).map((o) => Math.hypot(o.pos.x - p.pos.x, o.pos.z - p.pos.z)));
+      if (!(near <= 4)) {
         this.left = null;
         this.dirty = true;
       }

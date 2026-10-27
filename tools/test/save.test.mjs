@@ -1,13 +1,15 @@
 // Saves (src/game/save.ts). The fixtures are what the game writes: a level 12 paladin, made and
-// played through Game, saved by its own writer (version 4) in the camp, the wilderness and the
-// dungeon, then turned into what versions 1, 2 and 3 wrote at their depths 0, 1 and 5 (before
-// version 3, depth 1 was the dungeon's first floor; since, it is the wilderness). Each loads into
-// version 4 and is written back as it: every item still there (unknown ones by the stash, holding
-// themselves as saved), worn gear still usable, the points adding up, the depth an area and the
-// waypoints areas, the save's text backed up first, once. Then: migration steps and the backups
-// they leave (every one from before version 4 and the hero's first stay), unknown items catching
-// up when they come back, a version 4 round trip, newer and unbacked saves never written, and Game
-// saving the area the hero stands in.
+// played through Game, saved by its own writer (version 4) in the camp, Blood Moor and the trial
+// ground's floors (the endless dungeon's, at its depths), then turned into what versions 1, 2 and 3
+// wrote at their depths 0, 1 and 5 (before version 3, depth 1 was the dungeon's first floor; since,
+// it is the wilderness). Each loads into version 4, in the camp whatever its depth, and is written
+// back as it: every item still there (unknown ones by the stash, holding themselves as saved), worn
+// gear still usable, the points adding up, the waypoints areas (the dungeon's kept in the save, the
+// camp's the only one listed), the save's text backed up first, once. Then: migration steps and the
+// backups they leave (every one from before version 4 and the hero's first stay), unknown items
+// catching up when they come back, a version 4 round trip, where a version 4 save resumes (an area
+// this build has, else the camp), newer and unbacked saves never written, and Game saving the area
+// the hero stands in.
 const KEY = 'dii-save-v1';
 const LEVEL = 12;
 /** a save's migration counts before any step */
@@ -38,7 +40,7 @@ export default async (load) => {
   const { CLASSES } = await load('/src/data/classes.ts');
   const { createItem } = await load('/src/items/gen.ts');
   const { Player, xpForLevel } = await load('/src/game/player.ts');
-  const { CAMP_AREA, WILD_AREA, areaForDepth, dungeonArea, depthForArea } = await load('/src/world/areas.ts');
+  const { CAMP_AREA, WILD_AREA, COLD_PLAINS, DEN_OF_EVIL, areaForDepth } = await load('/src/world/areas.ts');
   const { WILD_MAPS } = await load('/src/world/levelgen.ts');
   const { Game } = await load('/src/game/game.ts');
   const { Sfx } = await load('/src/audio/sfx.ts');
@@ -100,11 +102,16 @@ export default async (load) => {
   hero.gold = 1200;
   hero.stashGold = 3400;
   hero.markDirty();
-  /** what version 4 writes at each of today's depths, played in this order, with the waypoints touched by then */
+  /**
+   * what version 4 writes at each of the old depths, played in this order, with the waypoints an
+   * old version had touched by then (its depths: the camp's, and every dungeon floor's on arriving)
+   */
   const at = new Map();
+  const touched = [0];
   for (const depth of [0, 1, 1 + WILD_MAPS, 4 + WILD_MAPS, 5 + WILD_MAPS]) {
     game.enterLevel(depth, 'waypoint');
-    at.set(depth, { d: JSON.parse(localStorage.getItem(KEY)), waypoints: [...hero.waypoints] });
+    if (depth > WILD_MAPS) touched.push(depth);
+    at.set(depth, { d: JSON.parse(localStorage.getItem(KEY)), waypoints: [...touched] });
   }
   game.enterLevel(0, 'waypoint');
   if (!pointsOk(at.get(0).d)) throw new Error(`the hero's points don't add up: ${pointsOf(at.get(0).d)}`);
@@ -193,12 +200,11 @@ export default async (load) => {
       check(s.readOnly === null, `${what}: read-only (${s.readOnly})`);
       const backup = `${KEY}-backup-0-${n}`;
       check(backups().join() === backup && localStorage.getItem(backup) === raw, `${what}: backups ${backups().join(', ') || 'none'}, want ${backup} holding the save as it was`);
-      // where the hero was: a dungeon floor one deeper before version 3, behind the wilderness
-      const want = n < 3 && depth > 0 ? depth + WILD_MAPS : depth;
-      const area = depth === 0 ? CAMP_AREA : n < 3 ? dungeonArea(depth) : depth <= WILD_MAPS ? WILD_AREA : dungeonArea(depth - WILD_MAPS);
-      check(s.depth === want, `${what}: resumes at depth ${s.depth}, want ${want}`);
+      // whatever the depth, in the camp: the old depths were the endless dungeon's
+      check(s.area === CAMP_AREA, `${what}: resumes in area ${s.area}, not the camp`);
+      // the waypoints touched, a dungeon floor's one deeper before version 3, behind the wilderness; the camp's the one listed
       const wps = old.waypoints.map((w) => (n < 3 && w > 0 ? w + WILD_MAPS : w)).sort((a, b) => a - b);
-      check(p.waypoints.join() === wps.join(), `${what}: waypoints ${p.waypoints}, want ${wps}`);
+      check(p.waypoints.join() === String(CAMP_AREA), `${what}: waypoints ${p.waypoints}, want the camp's`);
       check(pointsOk(p), `${what}: ${pointsOf(p)}`);
       check(p.xp >= xpForLevel(LEVEL) && p.xp < xpForLevel(LEVEL + 1), `${what}: ${p.xp} experience at level ${p.level}`);
       // every item still there, the unknown ones by the stash
@@ -229,10 +235,10 @@ export default async (load) => {
       check(big && (v !== 1 || (big.name === ITEM_BASES.runesword.name && big.legacy?.str === 103 && big.legacy.dex === 72)), `${what}: the stashed rune sword is ${big?.name}, legacy ${JSON.stringify(big?.legacy)}`);
 
       // written back as version 4
-      save.writeSave(p, areaForDepth(s.depth).id);
+      save.writeSave(p, s.area);
       const d = JSON.parse(localStorage.getItem(KEY));
       check(d.v === 4 && JSON.stringify(d.mig) === JSON.stringify(thisBuild()), `${what}: written as v${d.v}, migrations ${JSON.stringify(d.mig)}`);
-      check(d.area === area && !('depth' in d) && !('waypoints' in d), `${what}: written in area ${d.area} (want ${area}), depth ${d.depth}, waypoints ${d.waypoints}`);
+      check(d.area === CAMP_AREA && !('depth' in d) && !('waypoints' in d), `${what}: written in area ${d.area}, depth ${d.depth}, waypoints ${d.waypoints}`);
       check(d.progress?.length === 3 && [...d.progress[0].waypoints].sort().join() === [...new Set(wps.map((w) => areaForDepth(w).id))].sort().join(), `${what}: written waypoints ${JSON.stringify(d.progress)}`);
       check(d.difficulty === 0 && d.unlocked === 0 && d.merc === null && d.corpse === null, `${what}: difficulty ${d.difficulty}/${d.unlocked}, merc ${d.merc}, corpse ${d.corpse}`);
       check(savedItems(d).length === before && pointsOk(d), `${what}: ${savedItems(d).length} items written (${before} were saved), ${pointsOf(d)}`);
@@ -242,7 +248,7 @@ export default async (load) => {
       check(backups().join() === backup && localStorage.getItem(backup) === raw, `${what}: loading the v4 save left backups ${backups().join(', ')}`);
       const items2 = playerItems(again.player);
       check(items2.length === before && items2.filter(isUnknown).length === 3, `${what}: reloaded ${items2.length} items, ${items2.filter(isUnknown).length} unknown`);
-      check(again.depth === want && again.player.waypoints.join() === p.waypoints.join(), `${what}: reloaded at depth ${again.depth}, waypoints ${again.player.waypoints}`);
+      check(again.area === CAMP_AREA && again.player.waypoints.join() === p.waypoints.join(), `${what}: reloaded in area ${again.area}, waypoints ${again.player.waypoints}`);
 
       // the same hero at that version again (an older build wrote it back): the first copy stays
       localStorage.setItem(KEY, JSON.stringify({ ...old, gold: old.gold + 1 }));
@@ -417,7 +423,8 @@ export default async (load) => {
   const s4 = save.loadSave();
   const p4 = s4.player;
   check(s4.readOnly === null && !backups().length, `v4: read-only ${s4.readOnly}, backups ${backups().join()}`);
-  check(s4.depth === 4 + WILD_MAPS && p4.waypoints.join() === at.get(4 + WILD_MAPS).waypoints.join(), `v4: depth ${s4.depth}, waypoints ${p4.waypoints}`);
+  // left on the trial ground: back in the camp; the Burial Grounds' waypoint is kept, not listed
+  check(s4.area === CAMP_AREA && s4.worldSeed === 4242 && p4.waypoints.join() === String(CAMP_AREA), `v4: resumes in area ${s4.area} (seed ${s4.worldSeed}), waypoints ${p4.waypoints}`);
   check(pointsOk(p4) && p4.xp === v4.xp, `v4: ${pointsOf(p4)}, ${p4.xp} experience (saved ${v4.xp})`);
   const kept = p4.inventory.items.find((x) => x.x === 5)?.item;
   check(kept && isUnknown(kept) && kept.raw.item.baseId === 'zz_still_unknown', `v4: the unknown item in the bag became ${kept?.baseId}`);
@@ -438,7 +445,27 @@ export default async (load) => {
   check(w4.area === floorArea && w4.cls === 'paladin' && w4.inventory.length === 5, `v4: written in area ${w4.area} as ${w4.cls} with ${w4.inventory.length} in the bag`);
   const keptRaw = w4.inventory.find((x) => x.x === 5)?.item.raw;
   check(keptRaw?.v === 4 && JSON.stringify(keptRaw.mig) === JSON.stringify(ZERO) && keptRaw.item.baseId === 'zz_still_unknown', `v4: the unknown item was written holding ${JSON.stringify(keptRaw)}`);
-  check(save.listSaves()[0]?.depth === 4 + WILD_MAPS, `v4: the title screen lists depth ${save.listSaves()[0]?.depth}`);
+  check(save.listSaves()[0]?.area === floorArea, `v4: the title screen lists area ${save.listSaves()[0]?.area}`);
+
+  // ── where a version 4 save resumes on a reload: an area this build has, else the camp ──
+  for (const [where, area, want] of [
+    ['Blood Moor', WILD_AREA, WILD_AREA],
+    ['Cold Plains', COLD_PLAINS, COLD_PLAINS],
+    ['the Den of Evil', DEN_OF_EVIL, DEN_OF_EVIL],
+    ['the Burial Grounds (not built)', 17, CAMP_AREA],
+    ['the trial ground', floorArea, CAMP_AREA],
+  ]) {
+    reset();
+    const d = { ...clone(at.get(0).d), area, worldSeed: 99 };
+    d.progress = [{ waypoints: [CAMP_AREA, COLD_PLAINS, 17, floorArea], quests: {} }, { waypoints: [CAMP_AREA], quests: {} }, { waypoints: [CAMP_AREA], quests: {} }];
+    localStorage.setItem(KEY, JSON.stringify(d));
+    const s = save.loadSave();
+    check(s?.area === want && s.worldSeed === 99, `v4 in ${where}: resumes in area ${s?.area} (want ${want}), seed ${s?.worldSeed}`);
+    check(s?.player.waypoints.join() === `${CAMP_AREA},${COLD_PLAINS}`, `v4 in ${where}: waypoints ${s?.player.waypoints}, want the camp's and Cold Plains'`);
+    save.writeSave(s.player, s.area, 123);
+    const w = JSON.parse(localStorage.getItem(KEY));
+    check(w.worldSeed === 123 && [...w.progress[0].waypoints].sort().join() === [CAMP_AREA, COLD_PLAINS, 17, floorArea].sort().join(), `v4 in ${where}: written seed ${w.worldSeed}, waypoints ${JSON.stringify(w.progress[0].waypoints)}`);
+  }
 
   // ── a newer build's save: played, never written ──
   for (const [label, d] of [
@@ -493,22 +520,21 @@ export default async (load) => {
   const told = msgs.filter((t) => t.includes('认不出')).length;
   check(told === 1 && game.player.unplaced.filter(isUnknown).length === 3, `unknown items by the stash: told ${told} times, ${game.player.unplaced.filter(isUnknown).length} there`);
 
-  // ── Game saves the area the hero stands in: the camp's east, made wilderness for the test ──
+  // ── Game saves the area the hero stands in, on the overworld that holds several ──
   reset();
-  const camp = game.level;
-  const { map } = camp.layout;
-  const east = Math.floor(map.w * 0.6);
-  const areasBefore = camp.areas.slice();
-  for (let z = 0; z < map.h; z++) for (let x = east; x < map.w; x++) camp.areas[z * map.w + x] = WILD_AREA;
+  const west = game.level;
+  const gate = west.layout.seams.find((sm) => sm.a === CAMP_AREA && sm.b === WILD_AREA);
   let spot = null;
-  for (let z = 4; z < map.h - 4 && !spot; z++) for (let x = east + 2; x < map.w - 4 && !spot; x++) if (map.circleClear(x + 0.5, z + 0.5, 0.45)) spot = { x: x + 0.5, z: z + 0.5 };
-  if (!spot) throw new Error('no walkable spot in the east of the camp');
+  for (let k = 4; k < 40 && !spot; k++) {
+    const c = { x: gate.tb.x + (gate.tb.x - gate.ta.x) * k, z: gate.tb.z + (gate.tb.z - gate.ta.z) * k };
+    if (west.map.circleClear(c.x, c.z, 0.45)) spot = c;
+  }
+  if (!spot) throw new Error('no walkable spot past the camp gate');
   game.teleportWithin(spot);
   game.save();
-  const inWild = JSON.parse(localStorage.getItem(KEY) ?? '{}').area;
-  check(inWild === WILD_AREA && depthForArea(inWild) === 1, `saved standing in the camp's wild east: area ${inWild}`);
-  camp.areas.set(areasBefore);
+  const inWild = JSON.parse(localStorage.getItem(KEY) ?? '{}');
+  check(inWild.area === WILD_AREA && inWild.worldSeed === game.worldSeed, `saved standing out past the camp gate: area ${inWild.area}, seed ${inWild.worldSeed} (the game's ${game.worldSeed})`);
 
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
-  console.log(`  v1 (both), v2, v3 at depths 0, 1, 5 → v4 with every item kept (3 unknown by the stash), usable gear, points adding up, backed up once; steps see v4 items, keep the first and pre-v4 backups, catch restored items up; v4 round trip; newer and unbacked saves never written`);
+  console.log(`  v1 (both), v2, v3 at depths 0, 1, 5 → v4 in the camp with every item kept (3 unknown by the stash), usable gear, points adding up, backed up once; steps see v4 items, keep the first and pre-v4 backups, catch restored items up; v4 round trip, resuming in a built area or the camp; newer and unbacked saves never written`);
 };

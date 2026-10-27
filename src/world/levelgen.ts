@@ -48,6 +48,8 @@ export interface Torch {
 export interface Theme {
   key: string;
   name: string;
+  /** the name in English */
+  en: string;
   wall: string;
   wallDark: string;
   ambient: string;
@@ -61,27 +63,27 @@ export interface Theme {
 
 export const THEMES: Record<string, Theme> = {
   town: {
-    key: 'town', name: '流亡者营地', wall: '#5a4630', wallDark: '#33281b',
+    key: 'town', name: '放逐者营寨', en: "Exiles' Stockade", wall: '#5a4630', wallDark: '#33281b',
     ambient: '#6f7aa8', ambientIntensity: 0.55, torch: '#ffa040', bg: '#07080c', outdoor: true,
   },
   wild: {
-    key: 'wild', name: '寒鸦荒野', wall: '#4a4436', wallDark: '#2a261e',
+    key: 'wild', name: '血沼荒原', en: 'Bloodmire Heath', wall: '#4a4436', wallDark: '#2a261e',
     ambient: '#6f7aa8', ambientIntensity: 0.55, torch: '#ffa040', bg: '#07080c', outdoor: true,
   },
   crypt: {
-    key: 'crypt', name: '遗忘墓穴', wall: '#5e5850', wallDark: '#2e2a26',
+    key: 'crypt', name: '遗忘墓穴', en: 'Forgotten Crypt', wall: '#5e5850', wallDark: '#2e2a26',
     ambient: '#46506e', ambientIntensity: 0.18, torch: '#ff9a3c', bg: '#030304',
   },
   cave: {
-    key: 'cave', name: '血岩洞窟', wall: '#5c4030', wallDark: '#2c1d15',
+    key: 'cave', name: '血岩洞窟', en: 'Bloodrock Caverns', wall: '#5c4030', wallDark: '#2c1d15',
     ambient: '#5e3a3a', ambientIntensity: 0.16, torch: '#ff7a2c', bg: '#040202',
   },
   ice: {
-    key: 'ice', name: '霜寂地窖', wall: '#6a7888', wallDark: '#2a323c',
+    key: 'ice', name: '霜寂地窖', en: 'Stillfrost Vaults', wall: '#6a7888', wallDark: '#2a323c',
     ambient: '#5070a0', ambientIntensity: 0.2, torch: '#9ad0ff', bg: '#020306',
   },
   hell: {
-    key: 'hell', name: '燃烬深渊', wall: '#4c2620', wallDark: '#200c0a',
+    key: 'hell', name: '燃烬深渊', en: 'Cinder Abyss', wall: '#4c2620', wallDark: '#200c0a',
     ambient: '#8a2a1a', ambientIntensity: 0.22, torch: '#ff5a20', bg: '#060100',
   },
 };
@@ -121,12 +123,36 @@ export function themeForFloor(floor: number): Theme {
 export interface Exit {
   x: number;
   z: number;
-  /** the level it leads to */
+  /** the level it leads to, by its depth (Level makes it the area that is) */
   dest: number;
   name: string;
   /** into the map from the exit: where someone coming the other way appears */
   nx: number;
   nz: number;
+}
+
+/**
+ * A way onto another map: a cave mouth down into a dungeon (used), the way back up out of one (used),
+ * or the road on to an area not built yet (walked into)
+ */
+export interface Entrance {
+  x: number;
+  z: number;
+  /** the area it leads to */
+  dest: number;
+  name: string;
+  kind: 'cave' | 'up' | 'road';
+  /** into this map from it: where someone coming back appears */
+  nx: number;
+  nz: number;
+}
+
+/** a named unique pack a map sets down where it says (superuniques.json, by its areaId) */
+export interface SuperUnique {
+  pos: P2;
+  /** the monster it is one of (src/data/monsters.ts) */
+  monster: string;
+  name: string;
 }
 
 /** a waypoint and the area it serves (one big map will have a waypoint in each of several areas) */
@@ -176,6 +202,10 @@ export interface Layout {
   npcs?: Npc[];
   /** a map of several areas (the overworld): the area of every tile, row by row; without it the map is all one area */
   areaOf?: Uint16Array;
+  /** the ways onto other maps: cave mouths, the way back up, roads on to areas not built yet */
+  entrances?: Entrance[];
+  /** named unique packs, each where it waits */
+  superUniques?: SuperUnique[];
 }
 
 function roomCenter(r: Room): P2 {
@@ -276,10 +306,12 @@ function torchSpots(map: TileMap, room: Room): Torch[] {
   return spots;
 }
 
-/** `floor` is the dungeon's own floor number (dungeonFloor), `area` the area its waypoint is in */
-export function generateDungeon(floor: number, seed: number, area: number): Layout {
+/**
+ * `floor` is the dungeon's own floor number (dungeonFloor), `area` the area its waypoint is in;
+ * `theme` its look, the floor's unless another is asked for (the Den of Evil's cave)
+ */
+export function generateDungeon(floor: number, seed: number, area: number, theme = themeForFloor(floor)): Layout {
   const rng = new RNG(seed);
-  const theme = themeForFloor(floor);
   const size = 60 + Math.min(floor * 2, 30);
   const map = new TileMap(size, size);
   const rooms: Room[] = [];

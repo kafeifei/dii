@@ -1,8 +1,11 @@
 // Balance bot scenario for tools/play.mjs: fast-forwards the sim with an automated player.
-// node tools/play.mjs tools/bot.mjs --url "http://localhost:PORT/?dev" [--class sorceress] [--start-area wild] [--to floor7] [--level 1] [--minutes 40]
-// The hero goes area by area (src/world/areas.ts, from the camp down) from --start-area until past
-// --to: fighting what is near, then on into the next area, across the map when it is on it, or else by
-// the exit or the stairs that lead there (a dungeon's floors are linked by stairs). --level starts the
+// node tools/play.mjs tools/bot.mjs --url "http://localhost:PORT/?dev" [--class sorceress] [--start-area wild] [--to coldplains] [--level 1] [--minutes 40]
+// The hero goes area by area (src/world/areas.ts, in the order a hero comes to them: the camp, Blood
+// Moor, the Den of Evil, Cold Plains) from --start-area until past --to: fighting what is near, then
+// on into the next area, across the map when it is on it, or else by the way that leads there (the
+// Den's mouth), or back out the way it came in (the Den's way up) toward one further on. The last
+// area there is, with none after it, is fought until nothing in it is left alive. The trial ground's
+// floors (--start-area floor3 --to floor7) follow one another by their stairs. --level starts the
 // hero at that level, its points spent and wearing gear rolled at it. Each class spends its points and
 // fights as BUILDS says, with the skills it has learned. Options may come from the environment too
 // (CLASS, START_AREA, TO, LEVEL, MINUTES), the way tools/balance.mjs passes them.
@@ -44,7 +47,7 @@ export default async function (page, shot, log) {
   const o = {
     cls: opt('class', ''),
     startArea: opt('start-area', 'wild'),
-    to: opt('to', 'floor7'),
+    to: opt('to', 'coldplains'),
     level: +opt('level', 1),
     maxMinutes: +opt('minutes', 40),
     builds: BUILDS,
@@ -244,6 +247,16 @@ export default async function (page, shot, log) {
     let stallSince = 0;
     let stallsLogged = 0;
     let lastPick = '';
+    /** an area left behind (or the last one cleared): how long it took and how the hero stands after it */
+    const record = (area) => {
+      const pl = p();
+      const d = pl.stats;
+      stats.levels.push({
+        area: area.key, lvl: pl.level, secs: Math.round(simTime - areaStart), deaths: stats.deaths, gold: pl.gold, kills: stats.kills,
+        life: Math.round(d.maxLife), def: Math.round(d.def), res: Math.round((d.res.fire + d.res.cold + d.res.light + d.res.poison) / 4),
+        dmg: Math.round(((d.wMin + d.wMax) / 2) * (1 + d.dmgPct / 100)), ar: Math.round(d.ar),
+      });
+    };
     const runChunk = (seconds) => {
       const steps = Math.floor(seconds / STEP);
       for (let i = 0; i < steps && idx <= endIdx; i++) {
@@ -305,13 +318,26 @@ export default async function (page, shot, log) {
               if (near.length && near[0].d < 40) {
                 pl.intent = engage(near[0].m, near[0].d);
                 lastPick = 'far-attack:' + (pl.intent.skill ?? 'closing in');
+              } else if (idx === endIdx && !finish) {
+                // the last area there is: on to whatever is left alive in it, however far; done when nothing is
+                const left = near.find(({ m }) => g.level.areaAt(m.pos.x, m.pos.z).id === cur.id);
+                if (left) pl.intent = { kind: 'move', point: { ...left.m.pos } };
+                else {
+                  record(cur);
+                  idx = endIdx + 1;
+                }
+                lastPick = 'hunt';
               } else {
-                // on into the next area, or back into this one (walked out of it, say)
-                const to = g.area.id === cur.id ? route[idx + 1] : cur;
-                const way = to && g.level.wayTo(to.id, pl.pos);
+                // on into the next area; back into this one if walked out of it (say), unless out
+                // to an area before it on the route, the way on from it (up out of the Den)
+                const at = route.findIndex((a) => a.id === g.area.id);
+                const to = g.area.id === cur.id || (at >= 0 && at < idx) ? route[idx + 1] : cur;
+                let way = to && g.level.wayTo(to.id, pl.pos);
+                // nothing here leads there: back out the way the route came in
+                for (let k = idx - 1; !way && to && k >= 0 && g.area.id === cur.id; k--) way = g.level.wayTo(route[k].id, pl.pos);
                 if (way?.obj) pl.intent = { kind: 'interact', obj: way.obj };
                 else if (way) pl.intent = { kind: 'move', point: way.pos };
-                // nothing here leads there: as by waypoint
+                // nothing here leads anywhere on the way: as by waypoint
                 else if (to) g.travelToArea(to.id);
                 lastPick = `way:${to?.key}${way?.obj ? ' by ' + way.obj.kind : way ? '' : ' (jumped)'}`;
               }
@@ -348,12 +374,7 @@ export default async function (page, shot, log) {
         const at = g.area.id === lastArea ? -1 : route.findIndex((a, k) => k > idx && a.id === g.area.id);
         lastArea = g.area.id;
         if (at > idx) {
-          const d = pl.stats;
-          stats.levels.push({
-            area: cur.key, lvl: pl.level, secs: Math.round(simTime - areaStart), deaths: stats.deaths, gold: pl.gold, kills: stats.kills,
-            life: Math.round(d.maxLife), def: Math.round(d.def), res: Math.round((d.res.fire + d.res.cold + d.res.light + d.res.poison) / 4),
-            dmg: Math.round(((d.wMin + d.wMax) / 2) * (1 + d.dmgPct / 100)), ar: Math.round(d.ar),
-          });
+          record(cur);
           idx = at;
           areaStart = simTime;
           areaDeaths = 0;

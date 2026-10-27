@@ -1,8 +1,9 @@
 // Runs several balance bots (tools/bot.mjs) in parallel and aggregates their results area by area.
-// node tools/balance.mjs --runs 6 --to floor15 --minutes 120 --url "http://localhost:PORT/?dev"
-//   [--class sorceress] [--start-area wild] [--level 1] [--dump floor10,floor11]
-// The bots go from --start-area until past --to (area keys, src/world/areas.ts). Starts its own vite
-// dev server when nothing answers at a localhost --url.
+// node tools/balance.mjs --runs 6 --to coldplains --minutes 120 --url "http://localhost:PORT/?dev"
+//   [--class sorceress] [--start-area wild] [--level 1] [--dump wild,denofevil]
+// The bots go from --start-area until past --to (area keys, src/world/areas.ts: camp, wild,
+// denofevil, coldplains; or the trial ground's floor3 to floor15). Starts its own vite dev server
+// when nothing answers at a localhost --url.
 import { spawn } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
@@ -16,11 +17,11 @@ const runs = +opt('runs', 6);
 const minutes = +opt('minutes', 120);
 const url = opt('url', 'http://localhost:5174/?dev');
 if (opt('depth') || opt('from')) {
-  console.error('--depth and --from went with the depths: give the areas, --to floor15 (and --start-area)');
+  console.error('--depth and --from went with the depths: give the areas, --to coldplains (and --start-area)');
   process.exit(1);
 }
 /** what each bot is told: the class, the start, the last area, the level */
-const botArgs = ['--to', opt('to', 'floor15'), '--start-area', opt('start-area', 'wild'), '--level', opt('level', '1'), '--minutes', String(minutes)];
+const botArgs = ['--to', opt('to', 'coldplains'), '--start-area', opt('start-area', 'wild'), '--level', opt('level', '1'), '--minutes', String(minutes)];
 if (opt('class')) botArgs.push('--class', opt('class'));
 
 async function reachable(u) {
@@ -117,7 +118,7 @@ for (const [i, area] of route.entries()) {
 }
 console.table(rows);
 
-// --dump floor10,floor11: list the death situations in those areas
+// --dump wild,denofevil: list the death situations in those areas
 for (const d of (opt('dump', '') || '').split(',').filter(Boolean)) {
   const combos = {};
   for (const r of results) {

@@ -1,5 +1,5 @@
-// The West overworld as ?dev&overworld plays it (tools/play.mjs scenario):
-//   node tools/play.mjs tools/scenarios/overworld.mjs --url "http://localhost:5177/?dev&overworld&tod=0.5"
+// The West overworld, where a game is played (tools/play.mjs scenario):
+//   node tools/play.mjs tools/scenarios/overworld.mjs --url "http://localhost:5179/?dev&tod=0.5"
 // Reloads with empty storage, then walks the hero out of the camp, through Blood Moor and into Cold
 // Plains, hop by hop along found paths (Game.teleportWithin), and checks the areas are announced
 // camp > Blood Moor > Cold Plains with no level rebuilt. Then 30 s of sim by the camp's edge, a pack
@@ -61,7 +61,6 @@ export default async function (page, shot, log) {
       });
       await page.reload({ timeout: 60000 });
       await until(() => window.game?.started && window.game.level, null, 'the game to start', 60000);
-      expect(new URL(page.url()).searchParams.has('overworld'), 'the URL has no &overworld');
       const s = await ev(async () => {
         const L = game.level;
         const ow = L.layout;

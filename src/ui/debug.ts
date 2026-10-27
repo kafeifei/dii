@@ -4,14 +4,14 @@ import { MAX_LEVEL, xpForLevel } from '../game/player';
 import { DIFFICULTIES, type Difficulty } from '../game/save';
 import { rollEquipment, rollGem, rollRune, type Drop } from '../items/gen';
 import { displayName, type Item, type Rarity } from '../items/item';
-import { CAMP_AREA, areaDef, areaLevel, areaList, nextArea, type AreaDef } from '../world/areas';
+import { CAMP_AREA, areaDef, areaLevel, areaList, dungeonArea, nextArea, trialFloor, type AreaDef } from '../world/areas';
 
 type Choice<T> = [T, string];
 type Action = [string, () => void];
 
 const RARITY_NAME: Partial<Record<Rarity, string>> = { magic: '魔法', rare: '稀有', set: '套装', unique: '暗金' };
 const DIFFICULTY_NAME: Record<Difficulty, string> = { 0: '普通', 1: '噩梦', 2: '地狱' };
-/** how many of the dungeon's floors the area list offers at least (it has no bottom) */
+/** how many of the trial ground's floors its list offers at least (it has no bottom) */
 const FLOORS = 30;
 
 /**
@@ -54,7 +54,8 @@ export class DebugPanel {
     this.choice(rate, '掉落', [[1, '×1'], [2, '×2'], [5, '×5'], [10, '×10']] as Choice<number>[], () => debugOpts.loot, (v) => (debugOpts.loot = v), '怪物和箱子的掉落重复掷几次');
 
     const map = this.group(panel, '地图');
-    this.areaRow(map, '前往', '只激活到达区域的传送点');
+    this.areaRow(map, '前往', '直接去，不激活那里的传送点');
+    this.trialRow(map, '试炼场', '无尽地下城的一层，每次进都重新生成，用来试高等级的怪物和掉落');
     this.choice(map, '难度', DIFFICULTIES.map((d): Choice<Difficulty> => [d, DIFFICULTY_NAME[d]]), () => this.game.player.difficulty, (d) => this.difficulty(d), '传送点按难度分开，怪物和掉落还照普通');
 
     this.el = el;
@@ -133,6 +134,13 @@ export class DebugPanel {
     this.resume();
   }
 
+  private trial(floor: number, d: Difficulty) {
+    if (!(floor >= 1)) return this.note('没有这一层');
+    this.game.enterTrial(floor, d);
+    this.close();
+    this.resume();
+  }
+
   private difficulty(d: Difficulty) {
     this.game.setDifficulty(d);
     this.done(`难度：${DIFFICULTY_NAME[d]}（换成这个难度的传送点，怪物和掉落不变）`);
@@ -192,7 +200,10 @@ export class DebugPanel {
     r.appendChild(seg);
   }
 
-  /** the areas from the camp down to pick from (the one the hero is in picked), a button to go, one for the next */
+  /**
+   * The areas of normal play to pick from (the one the hero is in picked), a button to go, one for
+   * the next (on the trial ground, its next floor)
+   */
   private areaRow(group: HTMLElement, label: string, note: string) {
     const r = this.row(group, label, note);
     const seg = document.createElement('div');
@@ -205,10 +216,34 @@ export class DebugPanel {
     );
     r.appendChild(seg);
     this.rows.push(() => {
-      // a few floors past the one the hero is on, however deep that is
-      const floors = Math.max(FLOORS, (this.game.level?.floor ?? 0) + 5);
-      sel.replaceChildren(...areaList(floors).map((a) => new Option(a.kind === 'town' ? a.name : `${a.name} · ${areaLevel(a)} 级`, String(a.id))));
+      sel.replaceChildren(...areaList().map((a) => new Option(a.kind === 'town' ? a.name : `${a.name} · ${areaLevel(a)} 级`, String(a.id))));
       sel.value = String(this.game.area?.id ?? CAMP_AREA);
+    });
+  }
+
+  /**
+   * The trial ground, the endless dungeon kept out of normal play: a floor by its area level and a
+   * difficulty to pick, a button to go (a new floor each time)
+   */
+  private trialRow(group: HTMLElement, label: string, note: string) {
+    const r = this.row(group, label, note);
+    const seg = document.createElement('div');
+    seg.className = 'seg';
+    const floorSel = document.createElement('select');
+    const diffSel = document.createElement('select');
+    diffSel.replaceChildren(...DIFFICULTIES.map((d) => new Option(DIFFICULTY_NAME[d], String(d))));
+    seg.append(floorSel, diffSel, this.button('进入', () => this.trial(Number(floorSel.value), Number(diffSel.value) as Difficulty)));
+    r.appendChild(seg);
+    this.rows.push(() => {
+      // a few floors past the one the hero is on, however deep that is
+      const here = trialFloor(this.game.area?.id ?? 0);
+      const floors = Math.max(FLOORS, (here ?? 0) + 5);
+      const opts: HTMLOptionElement[] = [];
+      for (let f = 1; f <= floors; f++) opts.push(new Option(`第 ${f} 层 · ${areaLevel(areaDef(dungeonArea(f))!)} 级`, String(f)));
+      const keep = floorSel.value;
+      floorSel.replaceChildren(...opts);
+      floorSel.value = here ? String(here) : keep || '1';
+      diffSel.value = String(this.game.player.difficulty);
     });
   }
 

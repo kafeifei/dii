@@ -1,10 +1,11 @@
-// Render benchmark on the real GPU: node tools/bench.mjs [--url http://localhost:5174/?dev] [--dpr 2] [--scenes camp,gate,wild,floor2,floor6,floor10,floor14,walk:camp,walk:wild] [--frames 900]
+// Render benchmark on the real GPU: node tools/bench.mjs [--url http://localhost:5174/?dev] [--dpr 2] [--scenes camp,gate,wild,coldplains,denofevil,floor2,floor10,walk:camp,walk:wild] [--frames 900]
 // Needs the dev server. Scenes go by area, named by their keys (src/world/areas.ts): 'camp', 'wild',
-// 'floor3' go to that area as a waypoint does, 'gate' stands in the camp by its way out. Each is drawn
-// 40 times with a pixel read after every draw, so the time is what the GPU really takes per frame (rAF
-// would hide it behind vsync).
+// 'coldplains', 'denofevil' and the trial ground's 'floor3' go to that area as a waypoint does, 'gate'
+// stands in the camp by its way out. Each is drawn 40 times with a pixel read after every draw, so the
+// time is what the GPU really takes per frame (rAF would hide it behind vsync).
 // 'walk:<area>' (or 'walk', where the last scene left off) plays instead: the hero walks a route, from
-// where they stand toward the way into the next area and back, one sim step and one draw (with the
+// where they stand into each next area on this map (past a way off it, the Den's mouth, to one
+// further on) and back, one sim step and one draw (with the
 // pixel read) a frame, for --frames frames after ten drawn standing still. It gives the median, p95
 // and p99 frame time (the sim's share as a mean: the page's clock ticks in 0.1 ms) and how the JS
 // heap and the renderer's geometries, textures and shader programs changed from the first frame to
@@ -48,7 +49,7 @@ console.log(`${gpu.name}, device pixel ratio ${dpr}, drawn at ${gpu.ratio}`);
 
 // helpers kept on the page
 await page.evaluate(async () => {
-  const { areaByKey, nextArea } = await import('/src/world/areas.ts');
+  const { areaByKey, areaDef, nextArea } = await import('/src/world/areas.ts');
   const { findPath } = await import('/src/world/pathfinding.ts');
   const B = (window.__bench = {});
   const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
@@ -104,9 +105,9 @@ await page.evaluate(async () => {
     return { ms: +ms.toFixed(2), calls, tris: triangles, textures: info.memory.textures, monsters: game.level.monsters.length };
   };
   /**
-   * The walk's goals: toward the way into each next area while it is on this map (one big map), then
-   * up to the exit or stairs leading off it, stopping `short` of it so the level stays; then back to
-   * the start
+   * The walk's goals: toward the way into each next area while it is on this map (one big map),
+   * passing a way off it (the Den's mouth) by for an area further along on it; else up to the last
+   * such way, stopping `short` of it so the level stays; then back to the start
    */
   const goals = () => {
     const L = game.level;
@@ -114,17 +115,21 @@ await page.evaluate(async () => {
     const out = [];
     let from = { ...p.pos };
     let next = nextId();
+    let off = null;
     for (let i = 0; i < 12 && next !== undefined; i++) {
       const way = L.wayTo(next, from);
       if (!way) break;
       if (way.obj) {
-        out.push({ pos: way.pos, short: way.obj.radius + 2 });
-        break;
+        off ??= { pos: way.pos, short: way.obj.radius + 2 };
+        next = nextArea(areaDef(next))?.id;
+        continue;
       }
       out.push({ pos: way.pos, short: 0 });
+      off = null;
       from = way.pos;
       next = nextArea(areaByKey(L.areaAt(from.x, from.z).key))?.id;
     }
+    if (off) out.push(off);
     return out.length ? [...out, ...out.slice(0, -1).reverse(), { pos: { ...p.pos }, short: 0 }] : [];
   };
   const pct = (sorted, q) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))];
@@ -220,7 +225,7 @@ await page.evaluate(async () => {
 });
 
 const sign = (n, unit = '') => `${n >= 0 ? '+' : ''}${n}${unit}`;
-for (const s of opt('scenes', 'camp,gate,wild,floor2,floor6,floor10,floor14,walk:camp,walk:wild').split(',')) {
+for (const s of opt('scenes', 'camp,gate,wild,coldplains,denofevil,floor2,floor10,walk:camp,walk:wild').split(',')) {
   const [kind, key] = s.startsWith('walk') ? ['walk', s.split(':')[1]] : ['draw', s];
   // 'gate' is in the camp; a walk goes afresh, so it starts where the area does
   const ok = await page.evaluate(([kind, key]) => (key === 'gate' ? __bench.goTo('camp') && __bench.gate() : !key || __bench.goTo(key, kind === 'walk')), [kind, key]);

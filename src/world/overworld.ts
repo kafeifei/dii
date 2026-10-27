@@ -18,8 +18,8 @@ import { CELL, OUT_SCALE, cellsOf, flood, generateZone, type Entrance, type Side
  * again with its seed + 1 if not. Stony Field and the Burial Grounds are laid out already (so the
  * ports to them are where they'll be) and slot in by joining BUILT and DRESS.
  *
- * In the game only behind ?dev&overworld (Game.enterWest): Level takes it as it is, area by area,
- * but the renderer still dresses the map as one area. Before it goes in for good:
+ * The game is played on it (Game.enterArea): Level takes it as it is, area by area, but the
+ * renderer still dresses the map as one area. Still to do:
  * - spawnRooms is a room a cell, as D2's (about 80 in Blood Moor, 110 in Cold Plains). Level.populate's
  *   pack a room is four or five times today's wilderness then (about 380 monsters in Blood Moor and
  *   520 in Cold Plains, where the wilderness has 85), so levels.json MonDen and NumMon want

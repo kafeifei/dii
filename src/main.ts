@@ -78,10 +78,10 @@ assets
     ui.loadProgress(1, 1);
     if (DEV) {
       ui.devStart();
-      // ?dev&lvl=3: start in that dungeon level (for testing on devices without a console)
+      // ?dev&lvl=3: start on that floor of the trial ground (for testing on devices without a console)
       const q = new URLSearchParams(location.search);
       const lvl = Number(q.get('lvl'));
-      if (lvl > 0) game.enterLevel(lvl, 'stairs');
+      if (lvl > 0) game.enterTrial(lvl);
       // ?dev&tod=0.5: hold the time of day there (0 midnight, 0.25 dawn, 0.5 noon, 0.75 dusk)
       if (q.has('tod')) {
         game.clock = Number(q.get('tod')) || 0;

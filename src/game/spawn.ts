@@ -1,7 +1,7 @@
 import type { P2, RNG } from '../core/math';
 import { ALL_MODS, MONSTERS, UNIQUE_FIRST, UNIQUE_SECOND, bossForDepth, type MonsterDef, type MonsterMod } from '../data/monsters';
 import { areaLevel, type AreaDef } from '../world/areas';
-import type { Room } from '../world/levelgen';
+import type { Room, SuperUnique } from '../world/levelgen';
 import type { Level } from './level';
 import { Monster, type MonsterRank } from './monster';
 
@@ -44,6 +44,8 @@ interface Placement {
   boss?: P2;
   /** the monster camps in the area */
   camps: P2[];
+  /** the named unique packs the layout sets down in the area */
+  uniques: SuperUnique[];
   /** a spot in the room, in the area and reachable; null if none turns up */
   randomIn(room: Room): P2 | null;
   /** a spot within r of c (either way), in the area and reachable, that a monster fits on; c itself if none turns up */
@@ -102,6 +104,7 @@ function placement(level: Level, area: AreaDef, rng: RNG, opts: SpawnOpts): Plac
     // a step south of the room's middle, about where the stairs down are
     boss: bossRoom && { x: bossRoom.x + bossRoom.w / 2, z: bossRoom.y + bossRoom.h / 2 + 1.5 },
     camps: (L.elites ?? []).filter(inArea),
+    uniques: (L.superUniques ?? []).filter((u) => inArea(u.pos)),
     randomIn(room) {
       for (let k = 0; k < 20; k++) {
         const p = { x: rng.range(room.x + 0.6, room.x + room.w - 0.6), z: rng.range(room.y + 0.6, room.y + room.h - 0.6) };
@@ -160,6 +163,9 @@ function fill(s: Spawn) {
     const melee = pool.filter((d) => d.ai === 'melee');
     spawnPack(s, rng.pick(melee.length ? melee : pool), 'champion', at.near(c, 1));
   }
+  // the named uniques, each a unique pack where the layout says (D2GAME_SpawnSuperUnique_6FC6F690
+  // spawns a superunique with its minions); after the rest, so a map without any rolls as before
+  for (const u of at.uniques) spawnPack(s, MONSTERS[u.monster] ?? pickDef(pool, rng), 'unique', at.near(u.pos, 0.5), undefined, u.name);
   // boss
   if (at.boss) {
     const c = at.boss;
@@ -190,8 +196,8 @@ function pickDef(pool: MonsterDef[], rng: RNG): MonsterDef {
   return pool[0];
 }
 
-/** a pack around c: champions, a unique with its minions, or a normal pack with its escort */
-function spawnPack(s: Spawn, def: MonsterDef, rank: MonsterRank, c: P2, maxCount?: number) {
+/** a pack around c: champions, a unique with its minions (named `name`, or by chance), or a normal pack with its escort */
+function spawnPack(s: Spawn, def: MonsterDef, rank: MonsterRank, c: P2, maxCount?: number, name?: string) {
   const { rng, mlvl } = s;
   const near = s.at.near;
   const monsters = s.level.monsters;
@@ -215,7 +221,7 @@ function spawnPack(s: Spawn, def: MonsterDef, rank: MonsterRank, c: P2, maxCount
       if (!mods.includes(m)) mods.push(m);
     }
     const boss = new Monster(def, mlvl + 2, 'unique', c, mods);
-    boss.displayName = rng.pick(UNIQUE_FIRST) + rng.pick(UNIQUE_SECOND);
+    boss.displayName = name ?? rng.pick(UNIQUE_FIRST) + rng.pick(UNIQUE_SECOND);
     monsters.push(boss);
     const minions = rng.int(3, 5);
     const minionMods = mods.filter((m) => m === 'fireench' || m === 'coldench' || m === 'lightench');

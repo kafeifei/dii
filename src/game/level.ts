@@ -1,12 +1,12 @@
 import { RNG, type P2 } from '../core/math';
 import { MONSTERS } from '../data/monsters';
-import { areaDef, areaForDepth, areaLevel, type AreaDef } from '../world/areas';
+import { areaDef, areaForDepth, areaLevel, isBuilt, type AreaDef } from '../world/areas';
 import { bfsDistances, dungeonFloor, generateDungeon, generateGallery, generateTown, isWild, themeForFloor, type Layout } from '../world/levelgen';
 import type { TileMap } from '../world/tilemap';
 import { generateWild } from '../world/wild';
 
 /** dev showroom instead of the camp (see generateGallery) */
-const GALLERY = typeof location !== 'undefined' && location.search.includes('gallery');
+export const GALLERY = typeof location !== 'undefined' && location.search.includes('gallery');
 import { Monster } from './monster';
 import { areaBoxes, spawnArea } from './spawn';
 import { ITEM_BASES } from '../data/items';
@@ -49,8 +49,9 @@ export class Level {
   readonly monsterMap: TileMap;
 
   /**
-   * `layout`: a map made already to host instead of the depth's own, of several areas (the West
-   * overworld, src/world/overworld.ts); its wilderness is as hard as the first floor, as wild.ts's is
+   * `depth`: the old map to make (levelgen.ts: the separate camp, the old wilderness, a floor of the
+   * trial ground). `layout`: a map made already to host instead, the West overworld
+   * (src/world/overworld.ts) or the Den of Evil (den.ts), as hard as the first floor, as wild.ts's is
    */
   constructor(depth: number, seed: number, layout?: Layout) {
     this.depth = depth;
@@ -61,7 +62,11 @@ export class Level {
     const L = this.layout;
     this.areas = L.areaOf ?? new Uint16Array(L.map.w * L.map.h).fill(area);
     this.monsterMap = this.shutTowns();
-    if (L.stairs) this.objects.push(new WorldObject('stairs', L.stairs, wild ? `通往${themeForFloor(1).name}` : `下行至第 ${this.floor + 1} 层`, 0.9));
+    if (L.stairs) {
+      const o = new WorldObject('stairs', L.stairs, wild ? `通往${themeForFloor(1).name}` : `下行至第 ${this.floor + 1} 层`, 0.9);
+      o.dest = areaForDepth(depth + 1).id;
+      this.objects.push(o);
+    }
     const shrineRng = new RNG(seed ^ 0x51ed);
     for (const s of L.shrines ?? []) {
       const def = shrineRng.pick(SHRINES);
@@ -71,8 +76,21 @@ export class Level {
     }
     for (const e of L.exits ?? []) {
       const o = new WorldObject('exit', { x: e.x, z: e.z }, e.name, 1.3);
+      o.dest = areaForDepth(e.dest).id;
+      o.inward = { x: e.nx, z: e.nz };
+      this.objects.push(o);
+    }
+    // a cave mouth and the way back up are used; a road on is walked into, and closed while there's
+    // no map of where it goes
+    for (const e of L.entrances ?? []) {
+      const road = e.kind === 'road';
+      const closed = !isBuilt(e.dest);
+      // named as the old maps' were: an exit by where it goes (前往…), stairs by the way (进入 通往…)
+      const name = road ? `${e.name}${closed ? '（未开通）' : ''}` : `通往${e.name}`;
+      const o = new WorldObject(road ? 'exit' : 'stairs', { x: e.x, z: e.z }, name, road ? 1.3 : 0.9);
       o.dest = e.dest;
       o.inward = { x: e.nx, z: e.nz };
+      if (closed) o.closed = true;
       this.objects.push(o);
     }
     for (const w of L.waypoints) this.objects.push(new WorldObject('waypoint', w.pos, '传送点', 0.8));
@@ -89,7 +107,7 @@ export class Level {
     for (const c of L.chests) this.objects.push(new WorldObject('chest', c, '宝箱', 0.45));
     for (const b of L.barrels) this.objects.push(new WorldObject('barrel', b, '木桶', 0.35));
     this.populate(seed);
-    if (GALLERY && this.inTown(L.start)) {
+    if (GALLERY && !layout && this.inTown(L.start)) {
       // every monster in a row, held still (the stun never wears off)
       Object.values(MONSTERS).forEach((def, i) => {
         const m = new Monster(def, 1, 'normal', { x: 6 + (i % 9) * 5, z: 51 + Math.floor(i / 9) * 3.4 });
@@ -128,7 +146,7 @@ export class Level {
   /**
    * Where to go from `from` to get into area `id`, for the tools that travel by area (the bot, the
    * bench's walk): the nearest walkable tile of it on this map, or else the exit or the stairs that
-   * lead there (`obj`, walked through or used). Null when nothing here leads there.
+   * lead there (`obj`, walked through or used). Null when nothing open here leads there.
    */
   wayTo(id: number, from: P2): { pos: P2; obj?: WorldObject } | null {
     if (this.areaAt(from.x, from.z).id === id) return { pos: { ...from } };
@@ -146,8 +164,7 @@ export class Level {
       }
     }
     if (best) return { pos: best };
-    // stairs lead one depth down (Game.interact)
-    const obj = this.objects.find((o) => (o.kind === 'exit' && areaForDepth(o.dest).id === id) || (o.kind === 'stairs' && areaForDepth(this.depth + 1).id === id));
+    const obj = this.objects.find((o) => (o.kind === 'exit' || o.kind === 'stairs') && o.dest === id && !o.closed);
     return obj ? { pos: { ...obj.pos }, obj } : null;
   }
 

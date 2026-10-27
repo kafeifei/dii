@@ -1,10 +1,8 @@
-// A Level over the West overworld (src/world/overworld.ts), as ?dev&overworld plays it. For a few
-// world seeds: the areas are the overworld's tile by tile, with their levels, and town only on the
-// camp's tiles; each area gets its own monsters, at its level, on its own tiles, none in the camp;
+// A Level over the West overworld (src/world/overworld.ts), as the game plays it. For a few world
+// seeds: the areas are the overworld's tile by tile, with their levels, and town only on the camp's
+// tiles; each area gets its own monsters, at its level, on its own tiles, none in the camp;
 // monsters can't walk, slide or path into the camp, and leave a hero who stands in it alone. Maps
-// of one area shut nothing to monsters. Then Game.enterWest: a new game starts in the overworld's
-// camp; a town portal out of Blood Moor and back, dying and the waypoint to the camp move the hero
-// across the one map without rebuilding it, and the way down and back up again finds it as it was.
+// of one area shut nothing to monsters. The game on it, from a new game on, is tools/test/west.test.mjs.
 const SEEDS = [1, 7, 42, 20261026];
 /** a sim step, as main.ts runs them */
 const DT = 1 / 60;
@@ -144,82 +142,6 @@ export default async (load) => {
     check(level.monsterMap === level.map, `depth ${depth}: monsters walk a map of their own`);
   }
 
-  // ── Game.enterWest, with ?dev&overworld on and hooks that only take notes ──
-  const { Game } = await load('/src/game/game.ts');
-  const { Sfx } = await load('/src/audio/sfx.ts');
-  const was = location;
-  globalThis.location = new URL('http://localhost/?dev&overworld');
-  const notes = { areas: [], levels: 0, jumps: 0 };
-  const game = new Game({}, new Sfx());
-  game.hooks = {
-    message() {},
-    openPanel() {},
-    levelChanged: () => notes.levels++,
-    areaChanged: (area, prev) => notes.areas.push(`${prev?.key ?? '-'}>${area.key}`),
-    teleported: () => notes.jumps++,
-    playerDied() {},
-    inventoryChanged() {},
-    getCursorItem: () => null,
-    setCursorItem() {},
-    hoveredGroundId: () => null,
-    levelUp() {},
-  };
-  try {
-    game.newGame('测试', 'paladin');
-    const west = game.level;
-    const ow = west.layout;
-    const p = game.player;
-    check(Array.isArray(ow.seams) && west.depth === WILD_MAPS, `a new game didn't start on the overworld (depth ${west.depth})`);
-    check(game.area?.id === CAMP_AREA && west.inTown(p.pos) && notes.levels === 1, `a new game started in ${game.area?.key}, ${notes.levels} level(s) built`);
-    check(!west.monsters.some((m) => west.inTown(m.pos)), 'monsters in the camp on a new game');
-    const cave = ow.entrances.find((e) => e.kind === 'cave');
-    const stairs = west.objects.find((o) => o.kind === 'stairs');
-    check(!cave || (stairs && Math.hypot(stairs.pos.x - cave.x, stairs.pos.z - cave.z) < 1e-6), 'no way down at the Den of Evil');
-
-    // out into Blood Moor, a town portal home, and back through it
-    const spot = (() => {
-      const gate = ow.seams.find((s) => s.a === CAMP_AREA);
-      const dx = gate.tb.x - gate.ta.x;
-      const dz = gate.tb.z - gate.ta.z;
-      for (let k = 6; k < 40; k++) {
-        const c = { x: gate.tb.x + dx * k, z: gate.tb.z + dz * k };
-        if (ow.map.circleClear(c.x, c.z, 0.6) && west.areaAt(c.x, c.z).id === WILD_AREA) return c;
-      }
-      return null;
-    })();
-    if (!spot) throw new Error('no open ground out past the camp gate');
-    notes.areas = [];
-    game.teleportWithin(spot);
-    p.facing = 0;
-    game.openTownPortal();
-    const far = west.objects.find((o) => o.kind === 'portal');
-    check(far && !west.inTown(far.pos) && game.portalLevel === west, 'no town portal opened in Blood Moor');
-    game.interact(far);
-    const home = west.objects.find((o) => o.kind === 'portal' && west.inTown(o.pos));
-    check(game.level === west && west.inTown(p.pos) && home && home.dest === WILD_MAPS, `through the portal the hero is in ${game.area?.key}, the camp's end leads to ${home?.dest}`);
-    game.interact(home);
-    check(game.level === west && Math.hypot(p.pos.x - far.pos.x, p.pos.z - far.pos.z) < 2.5, `back through the camp's end the hero is ${Math.hypot(p.pos.x - far.pos.x, p.pos.z - far.pos.z).toFixed(1)} from where the portal was`);
-    check(!west.objects.some((o) => o.kind === 'portal') && !game.portalLevel, 'the portal is still open after going back through it');
-    // dying, and the waypoint to the camp
-    game.respawn();
-    check(west.inTown(p.pos) && game.level === west, 'respawned outside the camp');
-    game.teleportWithin(spot);
-    game.travel(0);
-    check(west.inTown(p.pos) && game.level === west, 'the waypoint to the camp left the hero outside it');
-    check(notes.levels === 1, `going about the overworld built ${notes.levels - 1} more level(s)`);
-    check(notes.areas.join(' ') === 'camp>wild wild>camp camp>wild wild>camp camp>wild wild>camp', `going about announced ${notes.areas.join(' ')}`);
-
-    // down the Den of Evil and back up by the waypoint: the overworld as it was left
-    if (stairs) {
-      game.interact(stairs);
-      check(game.level !== west && game.level.depth === WILD_MAPS + 1, `the way down led to depth ${game.level.depth}`);
-      game.travel(0);
-      check(game.level === west && west.inTown(p.pos) && notes.levels === 3, `back up, the hero is on ${game.level === west ? 'the overworld' : `depth ${game.level.depth}`}, ${notes.levels} level(s) built`);
-    }
-  } finally {
-    globalThis.location = was;
-  }
-
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.slice(0, 40).join('\n  ')}`);
-  console.log(`  ${SEEDS.length} seeds: Blood Moor + Cold Plains monsters ${counts.join(' / ')}, none in or into the camp; a game about the overworld rebuilt nothing`);
+  console.log(`  ${SEEDS.length} seeds: Blood Moor + Cold Plains monsters ${counts.join(' / ')}, none in or into the camp`);
 };

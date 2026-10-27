@@ -8,7 +8,7 @@ import { isUnknown, type Item } from '../items/item';
 import type { Grid, Placed } from '../items/grid';
 import { Player, xpForLevel } from './player';
 import { WILD_MAPS } from '../world/levelgen';
-import { CAMP_AREA, areaForDepth, depthForArea } from '../world/areas';
+import { CAMP_AREA, areaForDepth, builtWaypoints, isBuilt } from '../world/areas';
 
 const BASE_KEY = 'dii-save-v1';
 export const MAX_SLOTS = 8;
@@ -160,7 +160,10 @@ export interface SaveV4 {
   stashGold: number;
   binds: (string | null)[];
   activeAura: string | null;
-  /** the area the hero stood in (dead heroes resume in the camp) */
+  /**
+   * the area the hero stood in (dead heroes are saved in the camp). A game anew starts in the camp;
+   * a reload mid-game plays on here, if this build has the area (isBuilt)
+   */
   area: number;
   /** the endless dungeon's deepest depth reached, in its depths (it goes when the dungeon does) */
   depthReached: number;
@@ -295,15 +298,9 @@ function backUp(raw: string, d: { name?: string; cls?: string }, tag: string): b
   }
 }
 
-/** the depths of a difficulty's touched waypoints, the camp's at least */
-function waypointDepths(s: DifficultySave | undefined): number[] {
-  const touched = (s?.waypoints ?? []).map(depthForArea).filter((n): n is number => n !== undefined);
-  return touched.length ? [...new Set(touched)].sort((a, b) => a - b) : [0];
-}
-
-/** the depths whose waypoints `p` has touched in difficulty `d`, as last saved or loaded (the camp's at least) */
+/** the waypoints `p` can use in difficulty `d`, as last saved or loaded: the touched ones this build has (builtWaypoints) */
 export function savedWaypoints(p: Player, d: Difficulty): number[] {
-  return waypointDepths(loaded.get(p)?.progress?.[d]);
+  return builtWaypoints(loaded.get(p)?.progress?.[d]?.waypoints ?? []);
 }
 
 /** an empty difficulty: no waypoint but the camp's, no quests */
@@ -311,7 +308,7 @@ function newProgress(): DifficultySave {
   return { waypoints: [CAMP_AREA], quests: {} };
 }
 
-/** waypoints the game keeps by depth, as the areas a save keeps them by */
+/** an old save's waypoints, kept by depth, as the areas version 4 keeps them by */
 function waypointAreas(depths: number[]): number[] {
   return [...new Set(depths.map((d) => areaForDepth(d).id))];
 }
@@ -423,8 +420,11 @@ const loaded = new WeakMap<Player, SaveV4>();
 /** characters from a save this build must not write: a newer build's, or one it couldn't back up */
 const readOnly = new WeakSet<Player>();
 
-/** save the character, standing in the area `area` (one dead is saved in the camp, where it comes back) */
-export function writeSave(p: Player, area: number) {
+/**
+ * Save the character, standing in the area `area` (one dead is saved in the camp, where it comes
+ * back), in the game whose maps come from `worldSeed`
+ */
+export function writeSave(p: Player, area: number, worldSeed?: number) {
   if (readOnly.has(p)) return;
   const KEY = keyFor(slot);
   // what this build doesn't play yet (progress, the mercenary, the corpse) is written from the save
@@ -432,9 +432,11 @@ export function writeSave(p: Player, area: number) {
   const prev = loaded.get(p);
   const difficulty = p.difficulty;
   const progress: SaveV4['progress'] = prev?.progress ?? [newProgress(), newProgress(), newProgress()];
-  // waypoints in areas this build doesn't have stay touched
-  const others = (progress[difficulty]?.waypoints ?? []).filter((a) => depthForArea(a) === undefined);
-  progress[difficulty] = { ...progress[difficulty], quests: progress[difficulty]?.quests ?? {}, waypoints: [...new Set([...others, ...waypointAreas(p.waypoints)])] };
+  // waypoints in areas this build doesn't have (an old dungeon floor's, a later build's) stay touched
+  const touched = progress[difficulty]?.waypoints ?? [];
+  const usable = builtWaypoints(touched);
+  const others = touched.filter((a) => !usable.includes(a));
+  progress[difficulty] = { ...progress[difficulty], quests: progress[difficulty]?.quests ?? {}, waypoints: [...new Set([...others, ...p.waypoints])] };
   const data: SaveV4 = {
     ...prev,
     v: SAVE_V,
@@ -460,6 +462,7 @@ export function writeSave(p: Player, area: number) {
     activeAura: p.activeAura,
     area: p.dead ? CAMP_AREA : area,
     depthReached: p.depthReached,
+    worldSeed: worldSeed ?? prev?.worldSeed,
     difficulty,
     // the one played is open, if only through the debug panel
     unlocked: Math.max(prev?.unlocked ?? 0, difficulty) as Difficulty,
@@ -600,11 +603,11 @@ function migrateDepths(d: OldSave) {
   d.v = 3;
 }
 
-/** the depth a save resumes at, whatever its version */
-function savedDepth(d: SaveV4 | OldSave): number {
-  if ((d.v ?? 1) >= 4) return depthForArea((d as SaveV4).area) ?? 0;
+/** the area a save was made in, whatever its version */
+function savedArea(d: SaveV4 | OldSave): number {
+  if ((d.v ?? 1) >= 4) return (d as SaveV4).area;
   migrateDepths(d as OldSave);
-  return (d as OldSave).depth ?? 0;
+  return areaForDepth((d as OldSave).depth ?? 0).id;
 }
 
 export interface SaveSummary {
@@ -612,7 +615,8 @@ export interface SaveSummary {
   name: string;
   level: number;
   cls: PlayerClass;
-  depth: number;
+  /** where it was saved */
+  area: number;
   time: number;
 }
 
@@ -624,7 +628,7 @@ export function listSaves(): SaveSummary[] {
       const raw = localStorage.getItem(keyFor(n));
       if (!raw) continue;
       const d = JSON.parse(raw) as SaveV4 | OldSave;
-      out.push({ slot: n, name: d.name, level: d.level, cls: d.cls && CLASSES[d.cls] ? d.cls : 'paladin', depth: savedDepth(d), time: d.time ?? 0 });
+      out.push({ slot: n, name: d.name, level: d.level, cls: d.cls && CLASSES[d.cls] ? d.cls : 'paladin', area: savedArea(d), time: d.time ?? 0 });
     } catch {
       /* unreadable slot: treat as empty */
     }
@@ -648,11 +652,22 @@ export function deleteSave(n: number) {
   }
 }
 
-/**
- * The current slot's character, its save brought up to date. `readOnly` says why it is never written
- * back, when it mustn't be (a newer build's save, or one that couldn't be backed up)
- */
-export function loadSave(): { player: Player; depth: number; readOnly: string | null } | null {
+/** a save loaded (loadSave) */
+export interface Loaded {
+  player: Player;
+  /**
+   * the area a reload mid-game plays on in: where it was saved if this build has it (isBuilt), else
+   * the camp, as for every save from before version 4 (their depths were the endless dungeon's)
+   */
+  area: number;
+  /** the seed of the game it was saved in, for a reload to play on in the same world */
+  worldSeed?: number;
+  /** why it is never written back, when it mustn't be (a newer build's save, or one that couldn't be backed up) */
+  readOnly: string | null;
+}
+
+/** The current slot's character, its save brought up to date */
+export function loadSave(): Loaded | null {
   let raw: string | null;
   let o: SaveV4 | OldSave;
   try {
@@ -669,7 +684,8 @@ export function loadSave(): { player: Player; depth: number; readOnly: string | 
   else if (isBehind(o) && !backUp(raw, o, versionTag(o))) why = '旧存档没能备份（存储空间满了？）：可以继续玩，但这次不会保存';
   /** the items found unknown in this load, the ones that go by the stash */
   const fresh = new Set<Item>();
-  const d = (o.v ?? 1) < 4 ? upgrade(o as OldSave, fresh) : (o as SaveV4);
+  const old = (o.v ?? 1) < 4;
+  const d = old ? upgrade(o as OldSave, fresh) : (o as SaveV4);
   d.mig = { ...counts(() => 0), ...d.mig };
   // before the steps, which see only what this build knows
   mapItems(d, (it) => knownItem(it, d, !newer, fresh));
@@ -718,12 +734,12 @@ export function loadSave(): { player: Player; depth: number; readOnly: string | 
   p.activeAura = d.activeAura ?? null;
   p.depthReached = d.depthReached ?? 0;
   p.difficulty = DIFFICULTIES.includes(d.difficulty) ? d.difficulty : 0;
-  p.waypoints = waypointDepths(d.progress?.[p.difficulty]);
+  p.waypoints = builtWaypoints(d.progress?.[p.difficulty]?.waypoints ?? []);
   p.markDirty();
   p.recalc();
   p.life = Math.min(p.d.maxLife, Math.max(1, d.life ?? p.d.maxLife));
   p.mana = Math.min(p.d.maxMana, Math.max(0, d.mana ?? p.d.maxMana));
   loaded.set(p, d);
   if (why) readOnly.add(p);
-  return { player: p, depth: depthForArea(d.area) ?? 0, readOnly: why };
+  return { player: p, area: !old && isBuilt(d.area) ? d.area : CAMP_AREA, worldSeed: typeof d.worldSeed === 'number' ? d.worldSeed : undefined, readOnly: why };
 }

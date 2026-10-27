@@ -12,7 +12,7 @@ import { emptyPacket } from './actor';
 import { blastDamage, updateMonster } from './ai';
 import { applyDamage, monsterStrike } from './combat';
 import { nullFx, type Fx } from './fx';
-import { Level } from './level';
+import { GALLERY, Level } from './level';
 import type { Monster } from './monster';
 import { DelayedBlast, GroundItem, Projectile, WorldObject } from './objects';
 import { CHARGE_PREFIX, Player } from './player';
@@ -21,9 +21,10 @@ import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
 import { loadSave, markInGame, savedWaypoints, setSlot, writeSave, type Difficulty } from './save';
 import { debugOpts } from './debug';
-import { WILD_MAPS, isWild, levelLabel } from '../world/levelgen';
-import { CAMP_AREA, depthForArea, type AreaDef } from '../world/areas';
-import { generateOverworld, type Overworld } from '../world/overworld';
+import { WILD_MAPS } from '../world/levelgen';
+import { CAMP_AREA, DEN_OF_EVIL, areaDef, areaForDepth, builtWaypoints, depthForArea, dungeonArea, isBuilt, trialFloor, type AreaDef } from '../world/areas';
+import { BUILT as WEST_AREAS, generateOverworld, type Overworld } from '../world/overworld';
+import { generateDen } from '../world/den';
 import { SHRINE_BY_ID } from '../data/shrines';
 
 export interface GameHooks {
@@ -50,15 +51,11 @@ export interface Picker {
 
 const ACTIVE_RADIUS = 30;
 
-/**
- * ?dev&overworld: the camp and the wilderness are one map to walk across (Game.enterWest); without
- * it they are two, as ever. Read as each level is entered, so a test can turn it on.
- */
-function overworld(): boolean {
-  if (typeof location === 'undefined') return false;
-  const q = new URLSearchParams(location.search);
-  return q.has('dev') && q.has('overworld');
-}
+/** how the hero comes to where they arrive (Game.enterArea) */
+export type Arrival = 'start' | 'stairs' | 'waypoint' | 'portal' | 'respawn' | 'exit';
+
+/** a seed for a map made anew */
+const newSeed = () => (Math.random() * 2 ** 31) | 0;
 
 /** seconds from one midnight to the next under the sky */
 const DAY_LENGTH = 16 * 60;
@@ -87,15 +84,27 @@ export type TouchNear = { ground: GroundItem; obj?: undefined } | { obj: WorldOb
 export class Game {
   player: Player;
   level!: Level;
+  /** the map the far end of the hero's town portal is on (the camp's end leads back to it) */
   portalLevel: Level | null = null;
-  /** the dungeon floor visited last, kept so waypoint trips and deaths don't reroll it */
+  /** the trial ground's floor visited last, kept so waypoint trips and deaths don't reroll it */
   lastDungeon: Level | null = null;
-  /** the wilderness maps as they were left: like an area of a Diablo II game, each stays for the session */
-  private wilds = new Map<number, Level>();
   /** the unknown items by the stash were pointed out this game: they may wait there for long */
   private toldUnknown = false;
-  /** ?dev&overworld: the camp and the wilderness on one map, made once a game (enterWest) */
+  /**
+   * The maps of this game, each made the first time it's entered and kept while the game lasts, as
+   * Diablo II keeps a game's levels: the West overworld (the camp, Blood Moor and Cold Plains on one
+   * map), the Den of Evil, and ?gallery's showroom standing in for the camp
+   */
   private west: Level | null = null;
+  private den: Level | null = null;
+  private gallery: Level | null = null;
+  /**
+   * the seed this game makes its maps from: a new one each game (D2Game GAME/Game.cpp
+   * GAME_CreateNewEmptyGame seeds dwInitSeed afresh), the saved one carried across a reload
+   */
+  worldSeed = 0;
+  /** the closed way the hero is at, told once until they step off it */
+  private atClosed: WorldObject | null = null;
   /** the area the hero is in (Level.areaAt), announced through hooks.areaChanged when it changes */
   area: AreaDef | null = null;
   fx: Fx = nullFx;
@@ -163,166 +172,203 @@ export class Game {
     p.mana = p.d.maxMana;
     this.player = p;
     this.started = true;
-    this.lastDungeon = null;
-    this.portalLevel = null;
-    this.wilds.clear();
-    this.west = null;
-    this.area = null;
+    this.newWorld(newSeed());
     markInGame(true);
-    this.enterLevel(0, 'start');
+    this.enterArea(CAMP_AREA, 'start');
   }
 
-  /** resume a saved character (the current slot when none is given) */
-  continueGame(slot?: number): boolean {
+  /**
+   * Resume a saved character (the current slot when none is given). Like a game of Diablo II it
+   * starts in the camp, its maps made anew, the waypoints as they were; a `reload` mid-game plays on
+   * in the same world, in the area it was saved in (the camp, if this build has no map of that)
+   */
+  continueGame(slot?: number, reload = false): boolean {
     if (slot !== undefined) setSlot(slot);
     const s = loadSave();
     if (!s) return false;
     this.player = s.player;
     this.started = true;
-    this.lastDungeon = null;
-    this.portalLevel = null;
-    this.wilds.clear();
-    this.west = null;
-    this.area = null;
+    this.newWorld(reload && s.worldSeed !== undefined ? s.worldSeed : newSeed());
     this.toldUnknown = false;
     markInGame(true);
-    // floors are regenerated; you arrive at the entrance of the floor you were on
-    this.enterLevel(s.depth, 'start');
+    this.enterArea(reload ? s.area : CAMP_AREA, 'start');
     // said once: the save won't be written this time
     if (s.readOnly) this.hooks.message(s.readOnly, '#ff8060', 10);
     return true;
   }
 
+  /** a game's maps forgotten, the next ones made from `seed` */
+  private newWorld(seed: number) {
+    this.worldSeed = seed;
+    this.west = this.den = this.gallery = this.lastDungeon = this.portalLevel = null;
+    this.area = null;
+    this.atClosed = null;
+  }
+
   save() {
     // the area the hero stands in, not the map's: one map may hold several
-    if (this.started && this.level) writeSave(this.player, this.level.areaAt(this.player.pos.x, this.player.pos.z).id);
+    if (this.started && this.level) writeSave(this.player, this.level.areaAt(this.player.pos.x, this.player.pos.z).id, this.worldSeed);
   }
 
-  /** `exit`: walked off the last level through an exit; you arrive by the one leading back */
-  enterLevel(depth: number, how: 'start' | 'stairs' | 'waypoint' | 'portal' | 'respawn' | 'exit') {
-    if (depth <= WILD_MAPS && overworld()) return this.enterWest(depth, how);
-    const p = this.player;
-    const from = this.level?.depth ?? 0;
-    let level: Level;
-    const wild = this.wilds.get(depth);
-    if (how === 'portal' && depth > 0 && this.portalLevel && this.portalLevel.depth === depth) {
-      level = this.portalLevel;
-    } else if (wild) {
-      level = wild;
-      level.reenter();
-    } else if (how !== 'stairs' && depth > 0 && this.lastDungeon?.depth === depth) {
-      // like D2: going back to the floor you left (waypoint, after dying) finds it as you left it;
-      // the dead stay dead, survivors have healed
-      level = this.lastDungeon;
-      level.reenter();
-    } else {
-      level = new Level(depth, (Math.random() * 2 ** 31) | 0);
-    }
-    if (isWild(depth)) this.wilds.set(depth, level);
-    else if (depth > 0) this.lastDungeon = level;
-    this.level = level;
-    let spawn: P2 = level.layout.start;
-    let facing = p.facing;
-    const back = how === 'exit' ? level.objects.find((o) => o.kind === 'exit' && o.dest === from) : undefined;
-    if (back?.inward) {
-      const d = back.radius + 1.6;
-      spawn = { x: back.pos.x + back.inward.x * d, z: back.pos.z + back.inward.z * d };
-      facing = Math.atan2(back.inward.x, back.inward.z);
-    }
-    if (how === 'portal') {
-      if (level.inTown(spawn)) {
-        // create the return portal in town
-        const pt = { x: level.layout.start.x - 2.5, z: level.layout.start.z + 0.5 };
-        const portal = new WorldObject('portal', pt, `传送门 · ${levelLabel(this.portalLevel?.depth ?? 1)}`, 0.6);
-        portal.dest = this.portalLevel?.depth ?? 1;
-        level.objects.push(portal);
-        spawn = { x: pt.x + 1.2, z: pt.z + 0.6 };
-      } else {
-        const portal = level.objects.find((o) => o.kind === 'portal');
-        if (portal) {
-          spawn = { x: portal.pos.x + 1, z: portal.pos.z + 0.8 };
-          level.objects.splice(level.objects.indexOf(portal), 1);
-        }
-        this.portalLevel = null;
-      }
-    }
-    this.placePlayer(spawn);
-    p.facing = facing;
-    if (level.inTown(p.pos)) {
-      this.refreshShop();
-      this.layOutUnplaced(level);
-    } else {
-      p.depthReached = Math.max(p.depthReached, depth);
-      // arriving activates the area's waypoint (the wilderness has none: the camp is a walk away)
-      if (level.areaAt(p.pos.x, p.pos.z).waypoint && !p.waypoints.includes(depth)) {
-        p.waypoints.push(depth);
-        p.waypoints.sort((a, b) => a - b);
-        if (how !== 'start') this.hooks.message('传送点已激活', '#c8a86a', 2);
-      }
-    }
-    this.hooks.levelChanged(level);
-    // a new level is always announced, even in the same area as the last
-    this.updateArea(true);
-    this.save();
+  /** whether this build has a map of area `id`: the areas of normal play (isBuilt) and the trial ground's floors */
+  hasMap(id: number): boolean {
+    return isBuilt(id) || trialFloor(id) !== undefined;
   }
 
   /**
-   * ?dev&overworld: the camp and the wilderness (depths 0 and 1) are one map, the West overworld
-   * (src/world/overworld.ts), made once a game. Coming onto it from another level enters it; going
-   * about on it (a town portal either way, the waypoint to the camp, dying) moves the hero across it
-   * and rebuilds nothing. Its own waypoints aren't kept yet: waypoints are depths until the save
-   * keeps areas (plan M0 1).
+   * The map that holds area `id` in this game, made the first time it's asked for: the overworld for
+   * its areas, the Den of Evil's own, a trial floor (a new one when `fresh`, else the one left last).
+   * Null when this build has none
    */
-  private enterWest(depth: number, how: Parameters<Game['enterLevel']>[1]) {
-    const p = this.player;
-    if (!this.west) {
-      const ow = generateOverworld((Math.random() * 2 ** 31) | 0);
-      // the Den of Evil's mouth leads down to the crypt, as the wilderness's stairs do, until there is a den
-      const cave = ow.entrances.find((e) => e.kind === 'cave');
-      if (cave) ow.stairs = { x: cave.x, z: cave.z };
-      // the wilderness's depth: its stairs lead to the crypt's first floor, and the camp is a waypoint away
-      this.west = new Level(WILD_MAPS, ow.seed, ow);
-    } else if (this.level !== this.west) this.west.reenter();
-    const level = this.west;
-    const ow = level.layout as Overworld;
-    const here = this.level === level;
-    // the camp's start; the wilderness (the debug panel's next map) is just past the camp's gate
-    const gate = ow.seams.find((s) => s.a === CAMP_AREA);
-    let spawn: P2 = depth === 0 || how === 'start' || how === 'respawn' || !gate ? ow.start : { x: 3 * gate.tb.x - 2 * gate.ta.x, z: 3 * gate.tb.z - 2 * gate.ta.z };
-    if (how === 'portal') {
-      const far = level.objects.find((o) => o.kind === 'portal' && !level.inTown(o.pos));
-      if (here && far && level.inTown(p.pos)) {
-        // through the camp's end, back to where it was opened on this map: both ends close
-        spawn = { x: far.pos.x + 1, z: far.pos.z + 0.8 };
-        level.objects = level.objects.filter((o) => o.kind !== 'portal');
-        this.portalLevel = null;
-      } else {
-        // into the camp: its end by the start, back to where it was opened, out on this map or below
-        if (here) this.portalLevel = level;
-        const back = this.portalLevel ?? level;
-        level.objects = level.objects.filter((o) => !(o.kind === 'portal' && level.inTown(o.pos)));
-        const pt = { x: ow.start.x - 2.5, z: ow.start.z + 0.5 };
-        const portal = new WorldObject('portal', pt, `传送门 · ${back === level && far ? level.areaAt(far.pos.x, far.pos.z).name : levelLabel(back.depth)}`, 0.6);
-        portal.dest = back.depth;
-        level.objects.push(portal);
-        spawn = { x: pt.x + 1.2, z: pt.z + 0.6 };
+  private levelFor(id: number, fresh = false): Level | null {
+    if (id === CAMP_AREA && GALLERY) return (this.gallery ??= new Level(0, this.worldSeed));
+    if (WEST_AREAS.includes(id)) {
+      if (!this.west) {
+        const ow = generateOverworld(this.worldSeed);
+        // Blood Moor and Cold Plains are as hard as the old wilderness, depth WILD_MAPS
+        this.west = new Level(WILD_MAPS, ow.seed, ow);
       }
+      return this.west;
     }
-    if (here) this.teleportWithin(spawn);
-    else {
-      this.level = level;
-      this.placePlayer(spawn);
-      this.hooks.levelChanged(level);
-      this.updateArea(true);
-      if (level.inTown(p.pos)) this.layOutUnplaced(level);
+    if (id === DEN_OF_EVIL) {
+      // its own seed from the world's, so a reload finds the same den
+      const seed = (Math.imul(this.worldSeed ^ 0x0de0f, 0x9e3779b1) + DEN_OF_EVIL) >>> 0;
+      return (this.den ??= new Level(WILD_MAPS, seed, generateDen(seed)));
     }
-    if (level.inTown(p.pos)) this.refreshShop();
-    this.save();
+    if (trialFloor(id) === undefined) return null;
+    const depth = depthForArea(id)!;
+    // like D2: going back to the floor you left (waypoint, after dying) finds it as you left it
+    if (!fresh && this.lastDungeon?.depth === depth) return this.lastDungeon;
+    return (this.lastDungeon = new Level(depth, newSeed()));
   }
 
   /**
-   * Move the hero elsewhere on this map without leaving it (later: a waypoint, a town portal or
-   * respawning on one big map): the view jumps there and a new area is announced, nothing is rebuilt.
+   * Go to area `id`, onto the map that holds it, arriving `how`: by a stair or an exit at the way
+   * back to where they came from, by waypoint beside its waypoint, through a town portal at its
+   * other end, else where the area starts. On the map the hero is on already it is a jump
+   * (teleportWithin): nothing is rebuilt. False when this build has no map of it
+   */
+  enterArea(id: number, how: Arrival): boolean {
+    if (how === 'portal') return this.throughPortal(id);
+    const level = this.levelFor(id, how === 'stairs');
+    if (!level) return false;
+    const at = this.arrival(level, id, how, this.area?.id);
+    this.arrive(level, at.pos, true, at.facing);
+    return true;
+  }
+
+  /** the old way in, by depth (?dev&lvl, tools): 0 the camp, WILD_MAPS Blood Moor, deeper the trial ground's floors */
+  enterLevel(depth: number, how: Arrival) {
+    this.enterArea(areaForDepth(depth).id, how);
+  }
+
+  /** the debug panel's trial ground: floor `floor` of the endless dungeon, made anew, played in difficulty `d` */
+  enterTrial(floor: number, d?: Difficulty) {
+    if (d !== undefined) this.setDifficulty(d);
+    this.sfx.play('env.waypoint', { pos: this.player.pos });
+    this.enterArea(dungeonArea(floor), 'stairs');
+  }
+
+  /**
+   * The hero set down at `at` on `level`: a jump on the map they're on, else onto it, its view built
+   * anew; a map kept from earlier is found as it was left, its survivors healed and home again
+   * (`reenter`, not through a town portal)
+   */
+  private arrive(level: Level, at: P2, reenter: boolean, facing?: number) {
+    const p = this.player;
+    this.atClosed = null;
+    if (level === this.level) this.teleportWithin(at);
+    else {
+      if (reenter) level.reenter();
+      this.level = level;
+      this.placePlayer(at);
+      this.hooks.levelChanged(level);
+      // a new level is always announced, even in the same area as the last
+      this.updateArea(true);
+    }
+    if (facing !== undefined) p.facing = facing;
+    const here = this.area?.id ?? CAMP_AREA;
+    if (trialFloor(here) !== undefined) p.depthReached = Math.max(p.depthReached, depthForArea(here)!);
+    this.save();
+  }
+
+  /** where on `level` the hero comes to area `id` by `how`, coming from area `from` */
+  private arrival(level: Level, id: number, how: Arrival, from?: number): { pos: P2; facing?: number } {
+    // by the way back to where they came from, a step in from it, facing in
+    if ((how === 'stairs' || how === 'exit') && from !== undefined) {
+      const back = level.objects.find((o) => (o.kind === 'stairs' || o.kind === 'exit') && o.dest === from && level.areaAt(o.pos.x, o.pos.z).id === id);
+      if (back?.inward) {
+        const d = back.radius + 1.6;
+        return { pos: { x: back.pos.x + back.inward.x * d, z: back.pos.z + back.inward.z * d }, facing: Math.atan2(back.inward.x, back.inward.z) };
+      }
+    }
+    // by waypoint, beside it (D2Game OBJECTS/ObjMode.cpp OBJMODE_TravelViaWaypoint warps the hero to the waypoint)
+    const wp = how === 'waypoint' ? this.waypointIn(level, id) : undefined;
+    if (wp) return { pos: { x: wp.pos.x + 1.2, z: wp.pos.z + 0.6 } };
+    return { pos: this.areaStart(level, id) };
+  }
+
+  /** area `id`'s waypoint on `level`, if it has one there */
+  private waypointIn(level: Level, id: number): WorldObject | undefined {
+    return level.objects.find((o) => o.kind === 'waypoint' && level.areaAt(o.pos.x, o.pos.z).id === id);
+  }
+
+  /**
+   * Where area `id` starts on `level`: the map's start if it's in it (the camp's, a dungeon's), else
+   * beside its waypoint, else a couple of steps in from the seam on the camp's side (Blood Moor past
+   * the camp's gate), else its tile nearest the start
+   */
+  private areaStart(level: Level, id: number): P2 {
+    const L = level.layout;
+    if (level.areaAt(L.start.x, L.start.z).id === id) return L.start;
+    const wp = this.waypointIn(level, id);
+    if (wp) return { x: wp.pos.x + 1.2, z: wp.pos.z + 0.6 };
+    const ow = L as Partial<Overworld>;
+    const rank = (a: number) => ow.order?.indexOf(a) ?? 0;
+    const seam = ow.seams?.filter((sm) => sm.a === id || sm.b === id).sort((x, y) => rank(x.a === id ? x.b : x.a) - rank(y.a === id ? y.b : y.a))[0];
+    if (seam) {
+      const [inside, out] = seam.b === id ? [seam.tb, seam.ta] : [seam.ta, seam.tb];
+      return { x: 3 * inside.x - 2 * out.x, z: 3 * inside.z - 2 * out.z };
+    }
+    return level.wayTo(id, L.start)?.pos ?? L.start;
+  }
+
+  /**
+   * Through the town portal: from its far end into the camp, where its other end stands by the
+   * start; from that end back to where it was opened, both ends closing (D2: the portal closes once
+   * its owner comes back through it). On one map either way is a jump. With no portal open the way
+   * back goes as a waypoint would
+   */
+  private throughPortal(id: number): boolean {
+    const L = this.portalLevel;
+    const far = L?.objects.find((o) => o.kind === 'portal' && !L.inTown(o.pos));
+    if (id === CAMP_AREA) {
+      const camp = this.levelFor(CAMP_AREA)!;
+      camp.objects = camp.objects.filter((o) => !(o.kind === 'portal' && camp.inTown(o.pos)));
+      const s = camp.layout.start;
+      const pt = { x: s.x - 2.5, z: s.z + 0.5 };
+      const there = far && L ? L.areaAt(far.pos.x, far.pos.z) : undefined;
+      const portal = new WorldObject('portal', pt, `传送门 · ${there?.name ?? '?'}`, 0.6);
+      portal.dest = there?.id ?? CAMP_AREA;
+      camp.objects.push(portal);
+      this.arrive(camp, { x: pt.x + 1.2, z: pt.z + 0.6 }, false);
+      return true;
+    }
+    this.closePortals();
+    if (!L || !far) return this.enterArea(id, 'waypoint');
+    this.arrive(L, { x: far.pos.x + 1, z: far.pos.z + 0.8 }, false);
+    return true;
+  }
+
+  /** the hero's town portal gone, both its ends, wherever they are */
+  private closePortals() {
+    for (const L of [this.west, this.den, this.gallery, this.lastDungeon, this.portalLevel]) if (L) L.objects = L.objects.filter((o) => o.kind !== 'portal');
+    this.portalLevel = null;
+  }
+
+  /**
+   * Move the hero elsewhere on this map without leaving it (a waypoint, a town portal or respawning
+   * on the overworld): the view jumps there and a new area is announced, nothing is rebuilt.
    */
   teleportWithin(pos: P2) {
     this.placePlayer(pos);
@@ -354,6 +400,12 @@ export class Game {
     if (area === this.area && !entered) return;
     const prev = this.area;
     this.area = area;
+    // into the camp, by any way in: the merchant has new stock, as D2's do each time the hero comes
+    // back to town, and what fits nowhere waits by the stash
+    if (area.kind === 'town' && (entered || prev?.kind !== 'town')) {
+      this.refreshShop();
+      this.layOutUnplaced(this.level);
+    }
     this.sfx.enterArea(area);
     this.hooks.areaChanged(area, prev);
   }
@@ -364,17 +416,19 @@ export class Game {
    */
   private layOutUnplaced(level: Level) {
     const p = this.player;
-    if (!p.unplaced.length) return;
-    const stash = level.objects.find((o) => o.kind === 'stash');
+    // the camp is kept while the game lasts: what lies there already stays where it is
+    const fresh = p.unplaced.filter((it) => !level.ground.some((g) => g.item === it));
+    if (!fresh.length) return;
+    const stash = level.objects.find((o) => o.kind === 'stash' && level.inTown(o.pos));
     const at = stash ? stash.pos : level.layout.start;
-    p.unplaced.forEach((it, i) => {
-      const a = (i / p.unplaced.length) * Math.PI * 2;
+    fresh.forEach((it, i) => {
+      const a = (i / fresh.length) * Math.PI * 2;
       const r = 1.6 + (i % 2) * 0.7;
       const spot = level.map.nearestWalkable(at.x + Math.sin(a) * r, at.z + Math.cos(a) * r) ?? at;
       level.ground.push(new GroundItem(spot, it, 0));
     });
-    const unknown = p.unplaced.filter(isUnknown).length;
-    if (unknown < p.unplaced.length) this.hooks.message(`${p.unplaced.length - unknown} 件物品背包和储物箱都放不下，放在了储物箱旁边`, '#c8a86a', 5);
+    const unknown = fresh.filter(isUnknown).length;
+    if (unknown < fresh.length) this.hooks.message(`${fresh.length - unknown} 件物品背包和储物箱都放不下，放在了储物箱旁边`, '#c8a86a', 5);
     if (unknown && !this.toldUnknown) {
       this.hooks.message(`${unknown} 件物品这个版本认不出，原样放在了储物箱旁边`, '#c8a86a', 5);
       this.toldUnknown = true;
@@ -404,7 +458,8 @@ export class Game {
     p.chillTime = 0;
     p.healQueue = [];
     p.manaQueue = [];
-    this.enterLevel(0, 'respawn');
+    // in the camp again, as D2 brings a dead hero back in town
+    this.enterArea(CAMP_AREA, 'respawn');
   }
 
   // ───────────────────────── frame update ─────────────────────────
@@ -463,10 +518,11 @@ export class Game {
     // exits are walked through
     if (!p.dead) {
       const exit = L.objects.find((o) => o.kind === 'exit' && dist(o.pos, p.pos) < o.radius);
-      if (exit) {
-        this.enterLevel(exit.dest, 'exit');
+      if (exit?.closed) this.tellClosed(exit);
+      else if (exit) {
+        this.enterArea(exit.dest, 'exit');
         return;
-      }
+      } else this.atClosed = null;
     }
     this.updateArea();
     // corpse cleanup
@@ -1183,11 +1239,14 @@ export class Game {
         obj.used = true;
         this.sfx.play('env.chest', { pos: obj.pos });
         this.fx.burst('chest', obj.pos);
-        const lvl = Math.max(1, this.level.floor * 2);
+        // at the level of the area it stands in, as D2 rolls a chest's treasure class by its level's
+        // (D2Game OBJECTS/ObjMode.cpp OBJMODE_DropFromChestTCWithQuality: DATATBLS_GetMonsterLevelInArea)
+        const lvl = Math.max(1, this.level.alvlAt(obj.pos));
         const drops = this.rollLoot(lvl, 1);
         drops.push({ kind: 'gold', amount: randInt(lvl * 5, lvl * 15) });
-        // the Horadric Cube waits in the first chest opened from floor 4 down (D2: the Halls of the Dead)
-        if (this.level.floor >= 4 && !p.cubeFound) {
+        // the Horadric Cube waits in the first chest opened in an area of level 4 or more (plan A2;
+        // D2's is in the Halls of the Dead, in Act 2)
+        if (lvl >= 4 && !p.cubeFound) {
           p.cubeFound = true;
           drops.push({ kind: 'item', item: createItem('cube') });
           this.hooks.message('你找到了赫拉迪姆魔盒！', '#c8a86a', 4);
@@ -1200,15 +1259,26 @@ export class Game {
         obj.used = true;
         this.sfx.play('env.barrel', { pos: obj.pos });
         this.fx.burst('barrel', obj.pos);
-        if (chance(0.35)) this.spawnDrops(obj.pos, this.rollLoot(Math.max(1, this.level.floor * 2 - 1), 0));
+        // the area's level, as a chest's
+        if (chance(0.35)) this.spawnDrops(obj.pos, this.rollLoot(Math.max(1, this.level.alvlAt(obj.pos)), 0));
         break;
       }
       case 'stairs':
-        this.enterLevel(this.level.depth + 1, 'stairs');
+        if (obj.closed) this.tellClosed(obj);
+        else this.enterArea(obj.dest, 'stairs');
         break;
-      case 'waypoint':
+      case 'waypoint': {
+        // using a waypoint activates it, in the difficulty being played (D2Game OBJECTS/ObjMode.cpp
+        // OBJECTS_OperateFunction23_Waypoint: WAYPOINTS_ActivateWaypoint on pWaypointData[nDifficulty])
+        const a = this.level.areaAt(obj.pos.x, obj.pos.z);
+        if (!p.waypoints.includes(a.id) && builtWaypoints([a.id]).includes(a.id)) {
+          p.waypoints = builtWaypoints([...p.waypoints, a.id]);
+          this.hooks.message('传送点已激活', '#c8a86a', 2);
+          this.save();
+        }
         this.hooks.openPanel('waypoint');
         break;
+      }
       case 'vendor':
         this.vendorHeal(obj);
         this.hooks.openPanel('shop');
@@ -1217,7 +1287,8 @@ export class Game {
         this.hooks.openPanel('stash');
         break;
       case 'exit':
-        this.enterLevel(obj.dest, 'exit');
+        if (obj.closed) this.tellClosed(obj);
+        else this.enterArea(obj.dest, 'exit');
         break;
       case 'shrine': {
         if (obj.used) return;
@@ -1238,10 +1309,16 @@ export class Game {
       }
       case 'portal':
         this.sfx.play('env.portal_enter', { pos: obj.pos });
-        if (this.level.inTown(obj.pos)) this.enterLevel(obj.dest, 'portal');
-        else this.enterLevel(0, 'portal');
+        this.enterArea(this.level.inTown(obj.pos) ? obj.dest : CAMP_AREA, 'portal');
         break;
     }
+  }
+
+  /** a way on to an area this build has no map of yet: said once while the hero is at it */
+  private tellClosed(obj: WorldObject) {
+    if (this.atClosed === obj) return;
+    this.atClosed = obj;
+    this.hooks.message(`通往${areaDef(obj.dest)?.name ?? '那里'}的路还没有开通`, '#aaa', 2);
   }
 
   /** like Akara in Diablo II: talking to the merchant puts life and mana back to full and cures poison, chill and the rest */
@@ -1264,13 +1341,14 @@ export class Game {
       this.hooks.message('你已经在营地里了', '#aaa', 1.5);
       return;
     }
-    L.objects = L.objects.filter((o) => o.kind !== 'portal');
+    // one town portal a hero: a new one closes the last, both its ends
+    this.closePortals();
     const p = this.player;
     const a = p.facing;
     let pt = { x: p.pos.x + Math.sin(a) * 1.5, z: p.pos.z + Math.cos(a) * 1.5 };
     if (!L.map.circleClear(pt.x, pt.z, 0.4)) pt = { ...p.pos };
     const portal = new WorldObject('portal', pt, '回城传送门', 0.6);
-    portal.dest = 0;
+    portal.dest = CAMP_AREA;
     L.objects.push(portal);
     this.portalLevel = L;
     this.fx.burst('portal', pt);
@@ -1289,20 +1367,19 @@ export class Game {
     p.intent = null;
   }
 
-  travel(depth: number) {
+  /** by waypoint to area `id`: on the map the hero is on, a jump (teleportWithin). False when this build has no map of it */
+  travel(id: number): boolean {
+    if (!this.hasMap(id)) return false;
     this.sfx.play('env.waypoint', { pos: this.player.pos });
-    this.enterLevel(depth, 'waypoint');
+    return this.enterArea(id, 'waypoint');
   }
 
   /**
    * Go to an area as a waypoint does, touched or not, for the tools (the debug panel, the bench, the
-   * bot): today to the start of its map. False when this build has no map of it
+   * bot): beside its waypoint, or where it starts. False when this build has no map of it
    */
   travelToArea(id: number): boolean {
-    const depth = depthForArea(id);
-    if (depth === undefined) return false;
-    this.travel(depth);
-    return true;
+    return this.travel(id);
   }
 
   /**

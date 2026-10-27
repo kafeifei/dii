@@ -4,6 +4,7 @@ import { SKILL_BY_ID } from '../data/skills';
 import type { Game, Picker } from '../game/game';
 import type { Level } from '../game/level';
 import type { Layout } from '../world/levelgen';
+import { CAMP_AREA } from '../world/areas';
 import type { Monster } from '../game/monster';
 import type { GroundItem, Hammer, Projectile, WorldObject } from '../game/objects';
 import { itemColor } from '../items/item';
@@ -747,7 +748,8 @@ export class Renderer implements Picker {
         };
       }
       case 'portal': {
-        const color = o.dest === 0 ? '#4a8aff' : '#ff4a4a';
+        // the far end, home to the camp, is blue; the camp's, back out, red
+        const color = o.dest === CAMP_AREA ? '#4a8aff' : '#ff4a4a';
         const { group, disc, ring } = makePortal(color);
         g.add(group);
         group.scale.setScalar(0.01);

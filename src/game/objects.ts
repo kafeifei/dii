@@ -32,10 +32,12 @@ export class WorldObject {
   name: string;
   radius: number;
   usedTime = 0;
-  /** where a portal or an exit leads (a depth) */
+  /** where a portal, an exit or stairs lead: an area (src/world/areas.ts) */
   dest = 0;
-  /** exits: into the map, the way someone arriving through it faces */
+  /** exits and stairs: into the map, the way someone arriving through it faces */
   inward?: P2;
+  /** a way on to an area this build has no map of yet: using it only says so */
+  closed?: boolean;
   /** shrines: which (src/data/shrines.ts) */
   shrine?: string;
   /** vendors: who keeps the stall (the layout's Service.npc), for what they say and the shop's title */

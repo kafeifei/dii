@@ -1,7 +1,7 @@
 import { RNG, type P2 } from '../core/math';
 import { areaDef } from './areas';
 import { Furnisher, type Prop } from './furnish';
-import type { Decor, House, Npc, Room, Service } from './levelgen';
+import type { Decor, Entrance, House, Npc, Room, Service } from './levelgen';
 import { BIG_ROCKS, TREES, clamp01, fbm, growWoods, pickWeighted, valueNoise } from './outdoors';
 import { CELL_PRESETS, campPreset, carveRuins, dressPreset, stampCamp, type CellPreset, type PresetOut, type Way } from './presets';
 import { TileMap, T_FLOOR, T_VOID, T_WALL } from './tilemap';
@@ -65,17 +65,7 @@ export interface ZoneSpec {
 }
 
 /** a way into an area that isn't part of this map: a cave mouth, or the road on to an area not built yet */
-export interface Entrance {
-  x: number;
-  z: number;
-  /** the area it leads to */
-  dest: number;
-  name: string;
-  kind: 'cave' | 'road';
-  /** into this map from it: where someone coming back appears */
-  nx: number;
-  nz: number;
-}
+export type { Entrance } from './levelgen';
 
 export interface Zone {
   area: number;

@@ -2,7 +2,7 @@ import { CLASSES, CLASS_IDS, type PlayerClass } from '../data/classes';
 import { debugEnabled } from '../game/debug';
 import type { Game } from '../game/game';
 import { deleteSave, freeSlot, listSaves, markInGame, MAX_SLOTS, setSlot } from '../game/save';
-import { levelLabel } from '../world/levelgen';
+import { areaDef } from '../world/areas';
 import { h, type UIContext } from './common';
 import { isTouchDevice } from './touch';
 
@@ -74,7 +74,7 @@ export class TitleScreen {
       for (const sv of saves) {
         const row = h('div', 'save');
         const pick = h('button', 'btn pick');
-        pick.innerHTML = `<b></b><span>${CLASSES[sv.cls].name} · ${sv.level} 级 · ${levelLabel(sv.depth)}</span>`;
+        pick.innerHTML = `<b></b><span>${CLASSES[sv.cls].name} · ${sv.level} 级 · ${areaDef(sv.area)?.label ?? areaDef(sv.area)?.name ?? '营地'}</span>`;
         pick.querySelector('b')!.textContent = sv.name;
         pick.onclick = () => start(() => ui.game.continueGame(sv.slot));
         const del = h('button', 'btn del', '✕');

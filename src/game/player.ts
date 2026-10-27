@@ -9,6 +9,7 @@ import { SKILL_BY_ID, SKILLS, type SkillDef } from '../data/skills';
 import { addStat, poisonSeconds, type StatBag, type StatKey } from '../data/stats';
 import { Grid } from '../items/grid';
 import { baseOf, globalItemStats, itemDefense, itemReqLvl, itemReqStats, paramMods, weaponDamage, type Item, type ItemMod } from '../items/item';
+import { CAMP_AREA } from '../world/areas';
 import { Actor, type Resists } from './actor';
 import type { Monster } from './monster';
 import type { Difficulty } from './save';
@@ -141,9 +142,10 @@ export class Player extends Actor {
   // potion regen queues
   healQueue: { perSec: number; left: number }[] = [];
   manaQueue: { perSec: number; left: number }[] = [];
+  /** the trial ground's deepest floor reached, as a depth of the endless dungeon */
   depthReached = 0;
-  /** the depths whose waypoints have been touched, in the difficulty being played */
-  waypoints: number[] = [0];
+  /** the areas whose waypoints have been touched in the difficulty being played, of those this build has (builtWaypoints) */
+  waypoints: number[] = [CAMP_AREA];
   /** the difficulty being played (Game.setDifficulty): nothing plays harder yet, it is saved and shown and keeps its own waypoints */
   difficulty: Difficulty = 0;
   /** a shrine's blessing (one at a time) and its seconds left */
