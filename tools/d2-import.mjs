@@ -14,13 +14,18 @@
 //   class weapons): the game has no ranged weapon attack. Kept as it is until the game moves over.
 // - src/data/d2x/*.ts, the full tables in the content scope (tools/d2/scope.mjs), one stage per
 //   module in tools/d2/: items, then characters (classes, difficulties, experience, quality
-//   ratios, NPC prices, gambling, hirelings). The game does not read them yet.
+//   ratios, NPC prices, gambling, hirelings), then world (Act 1's areas, monsters, superuniques)
+//   and treasure (every treasure class Act 1 drops from), checked against d2data's precalculated
+//   drop rates in tools/d2/validation.md. The game does not read them yet.
 import fs from 'node:fs';
 import path from 'node:path';
 import { buildCharacters } from './d2/characters.mjs';
 import { buildItems } from './d2/items.mjs';
 import { DATA, ROOT, STR, load, rows } from './d2/load.mjs';
 import { writeReport } from './d2/names.mjs';
+import { buildTreasure } from './d2/treasure.mjs';
+import { writeValidation } from './d2/validate.mjs';
+import { buildWorld } from './d2/world.mjs';
 
 const OUT = path.join(ROOT, 'src/data/d2');
 
@@ -326,6 +331,9 @@ write(
 console.log(`${weapons.length} weapons, ${prefixes.length}+${suffixes.length} affixes, ${runes.length} runes, ${gems.length} gems, ${runewords.length} runewords, ${cube.length} cube recipes, ${usedSkills.size} skills`);
 
 // ───────────────────────── the full tables ─────────────────────────
-const { bases } = await buildItems();
+const { bases, baseNames } = await buildItems();
 await buildCharacters({ bases });
+const world = await buildWorld({ bases });
+const treasure = await buildTreasure({ bases, ...world });
+await writeValidation({ ...treasure, bases, baseNames });
 writeReport();

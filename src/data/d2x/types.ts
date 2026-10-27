@@ -534,3 +534,340 @@ export interface D2xHirelingXp {
   notKillerShare: number;
   perKillCap: number;
 }
+
+// ───────────────────────── world: Act 1's areas, monsters and treasure ─────────────────────────
+
+/** one value per difficulty: normal, nightmare, hell */
+export type D2xTri<T = number> = [T, T, T];
+
+/**
+ * An Act 1 area (Levels.txt). A monster's level is its own D2xMonsterDiff.level in normal; in
+ * nightmare and hell every monster that is not a boss or noRatio takes the area's lvl instead
+ * (D2MOO Monster.cpp:196-201). Uniques, superuniques and their minions then add 3, champions 2 (see
+ * D2xMonUMod). A dropped item's level is the dropping monster's level, at least 1 (Items.cpp:1624-1640).
+ */
+export interface D2xArea {
+  id: number;
+  /** Levels.txt Name, e.g. "Act 1 - Wilderness 1" */
+  key: string;
+  name: string;
+  en: string;
+  /** area level by difficulty: the expansion's MonLvlEx columns */
+  lvl: D2xTri;
+  /** the classic game's MonLvl columns, for reference only */
+  lvlClassic: D2xTri;
+  /** D2's own size in tiles, by difficulty */
+  size: D2xTri<[number, number]>;
+  /** 1 maze (dungeon levels), 2 preset map, 3 outdoor */
+  drlg: number;
+  /** LvlTypes.txt id: the tile set */
+  levelType: number;
+  /** the area's waypoint, as its index in Act 1's waypoint list (0: the camp) */
+  waypoint?: number;
+  /** laid out together with this area */
+  depend?: number;
+  quest?: number;
+  /** warps out: where each leads, and the LvlWarp tiles (D2X_WARPS) that can stand for it (one is used) */
+  warps?: { to: number; tiles: number[] }[];
+  /**
+   * Areas it is walked to, no warp between, both ways: outdoor areas that meet edge to edge (D2MOO
+   * DrlgOutPlace.cpp:29-47) and Levels.txt's Vis entries with no warp tile, the monastery's
+   * (Monastery Gate–Outer Cloister–Barracks, Inner Cloister–Cathedral). D2 keeps the areas next to
+   * the one the player is in active with it (DrlgDrlg.cpp:235-305).
+   */
+  walk?: number[];
+  /**
+   * Monster kinds per game: numMon picked without repeats from mon in normal, nmon in nightmare and
+   * hell (only `spawns` monsters are kept, each weighted by its rarity; with rangedSpawn the first pick
+   * is retried up to 20 times for a ranged one): D2MOO MonsterRegion.cpp:944-1006.
+   */
+  numMon: number;
+  mon: string[];
+  nmon: string[];
+  /** normal difficulty's champions and uniques are made from these; nightmare and hell use the kinds spawned (MonsterChoose.cpp:156-167) */
+  umon: string[];
+  /** critters and their chance per room, % */
+  critters?: { mon: string; pct: number }[];
+  /** monster density (MonDen) by difficulty, on D2's scale for D2's area size */
+  den: D2xTri;
+  /** how many champion or unique packs, min–max by difficulty (MonUMin/MonUMax) */
+  packs: D2xTri<[number, number]>;
+  /** monsters wander between rooms */
+  wander?: true;
+  spcWalk?: number;
+  rangedSpawn?: true;
+  /** the class its chests and other containers drop, by difficulty (D2MOO ObjMode.cpp:3909-3955) */
+  chestTc: D2xTri<string>;
+  /** keys of the D2X_SUPERUNIQUES placed in it */
+  superuniques?: string[];
+}
+
+/**
+ * A monster's numbers in one difficulty (MonStats.txt). Unless the monster is noRatio, life, defense,
+ * experience, to-hit and damage are percentages of the D2X_MONLVL row at the monster's level, in the
+ * same difficulty: value = floor(monlvl × pct / 100) — DATATBLS_CalculateMonsterStatsByLevel
+ * (D2MOO MonsterTbls.cpp:562-731, with DATATBLS_ApplyRatio at 932-960). Life is then rolled in
+ * [min, max] (Monster.cpp:221-222). noRatio monsters keep these as absolute values.
+ */
+export interface D2xMonsterDiff {
+  level: number;
+  /** life min and max: % of monlvl hp */
+  hp: [number, number];
+  /** defense: % of monlvl ac */
+  ac: number;
+  /** experience: % of monlvl xp */
+  xp: number;
+  /** attack 1, attack 2, skill 1: min and max damage (% of monlvl dm) and to-hit (% of monlvl th) */
+  a1?: [number, number, number];
+  a2?: [number, number, number];
+  s1?: [number, number, number];
+  /** elemental damage added in a mode (A1, A2, S1, …): chance %, min and max (% of monlvl dm), length in frames (25 a second) */
+  el?: { mode: string; type: string; pct: number; dmg: [number, number]; len: number }[];
+  /** resists %: physical, magic, fire, lightning, cold, poison */
+  res: [number, number, number, number, number, number];
+  /** block % */
+  block: number;
+  /** % of the hero's life and mana leech that works on it */
+  drain: number;
+  /** speed change % while chilled (negative) */
+  coldEffect: number;
+  /** AI: frames between decisions, the AI's parameters aip1… (what they mean: D2X_MONSTER_AI) and its range */
+  ai: { delay: number; dist?: number; params: number[] };
+  /**
+   * Treasure classes (D2X_TREASURE_CLASSES). A superunique drops its own D2xSuperUnique.tc, a
+   * champion champ, a unique unique, anything else regular; quest replaces it while the killer has
+   * not completed the monster's questTc (MonsterMode.cpp:491-573).
+   */
+  tc: { regular?: string; champ?: string; unique?: string; quest?: string };
+}
+
+/** a monster (MonStats.txt, with its MonStats2, MonProp and MonEquip rows) */
+export interface D2xMonster {
+  id: string;
+  hcIdx: number;
+  /** the first monster of its class, and the next one up (NextInClass) */
+  base?: string;
+  next?: string;
+  /** the NameStr string key; name is ours (absent for critters, camp dummies and traps, which show none) */
+  nameKey: string;
+  name?: string;
+  en?: string;
+  /** MonType.txt type (undead, demon, fallen, …): what modifiers and skills check */
+  type?: string;
+  /** its AI (the parameters' meaning: D2X_MONSTER_AI) and sprite code */
+  ai: string;
+  code: string;
+  disabled?: true;
+  /** the area a boss belongs to */
+  area?: number;
+  spawns?: true;
+  melee?: true;
+  npc?: true;
+  town?: true;
+  killable?: true;
+  interact?: true;
+  inventory?: true;
+  switchAi?: true;
+  opensDoors?: true;
+  neverCount?: true;
+  demon?: true;
+  boss?: true;
+  primeEvil?: true;
+  flying?: true;
+  /** its numbers are absolute, not percentages of D2X_MONLVL, and its level never follows the area */
+  noRatio?: true;
+  ranged?: true;
+  noAura?: true;
+  petIgnore?: true;
+  zoo?: true;
+  deathDmg?: true;
+  noMultishot?: true;
+  noPreventHeal?: true;
+  sendSkills?: true;
+  genericSpawn?: true;
+  sparse?: true;
+  placeSpawn?: true;
+  /** can lead a pack (setBoss), and passes its modifiers to it (bossXfer) */
+  setBoss?: true;
+  bossXfer?: true;
+  noTwoHanded?: true;
+  undead?: 'low' | 'high';
+  /** 0 hostile, 1 ally, 2 neutral */
+  align: number;
+  /** how many spawn together, min–max; party: the pack a leader brings, of its minions */
+  group: [number, number];
+  party?: [number, number];
+  minions?: string[];
+  /** what it summons or hatches (nests, Blood Raven's zombies), at an offset, in a mode */
+  spawn?: { mon: string; x: number; y: number; mode?: string };
+  /** walk and run speed, D2's scale */
+  velocity: number;
+  run: number;
+  /** weight when an area picks its monster kinds */
+  rarity: number;
+  threat: number;
+  /** life regained a frame: max life × regen / 4096 (Monster.cpp:228) */
+  regen: number;
+  /** crushing-blow-like critical chance % */
+  crit?: number;
+  skillDamage?: string;
+  /** the weapon types it wields right and left */
+  arms?: (string | null)[];
+  shieldBlock?: number;
+  /** skills (D2 names), their level and the mode they play in; the difficulty adds MonsterSkillBonus (Monster.cpp:247-262) */
+  skills?: { skill: string; lvl: number; mode?: string }[];
+  /** missiles by mode: a1, a2, s1–s4, c (cast), sq (sequence) */
+  missiles?: Partial<Record<'a1' | 'a2' | 's1' | 's2' | 's3' | 's4' | 'c' | 'sq', string>>;
+  sound?: string;
+  uniqueSound?: string;
+  diff: D2xTri<D2xMonsterDiff>;
+  /** quest record and checkpoint that switch the drop to diff[].tc.quest */
+  questTc?: { quest: number; cp: number };
+  /** MonStats2: footprint in tiles, melee reach, heights, light */
+  size: [number, number];
+  meleeRng: number;
+  height: number;
+  overlayHeight: number;
+  pixHeight: number;
+  /** base weapon class of its animations (hth, 1hs, bow, …) */
+  baseW: string;
+  hitClass: number;
+  light?: { radius: number; rgb: [number, number, number] };
+  shadow?: true;
+  noMap?: true;
+  sel?: true;
+  noSel?: true;
+  alwaysSel?: true;
+  shiftSel?: true;
+  corpseSel?: true;
+  attackable?: true;
+  /** can be resurrected (by a shaman), in resurrectMode, or with resurrectSkill */
+  revive?: true;
+  resurrectMode?: string;
+  resurrectSkill?: string;
+  critter?: true;
+  small?: true;
+  large?: true;
+  soft?: true;
+  inert?: true;
+  objCol?: true;
+  deadCol?: true;
+  unflatDead?: true;
+  noUniqueShift?: true;
+  /** MonProp: properties it spawns with, by difficulty (chance %, when not always) */
+  props?: D2xTri<(D2Prop & { chance?: number })[]>;
+  /** MonEquip: items it wields from spawn (onInit) or from a monster level on; quality is D2's (6 rare) */
+  equip?: { item: string; loc: string; quality: number; level: number; onInit?: true }[];
+}
+
+/** a row of MonLvl.txt's expansion columns: what D2xMonsterDiff's percentages are of, by difficulty */
+export interface D2xMonLvl {
+  ac: D2xTri;
+  th: D2xTri;
+  hp: D2xTri;
+  dm: D2xTri;
+  xp: D2xTri;
+}
+
+/**
+ * A champion or unique modifier (MonUMod.txt; D2MOO's MONUMOD_* ids, D2Monsters.h:83-125). Every
+ * unique, superunique and champion, and their minions, get modifiers 1–4 (random name, life bonus,
+ * light, +3 levels) on top (MonsterUnique.cpp:2548-2558): leveladd adds 3 levels and makes the
+ * experience ×5 (268-275), champion takes 1 level back and 2/5 of the experience, so champions are
+ * +2 and ×3 (278-298). A superunique has its own mods plus one random one per difficulty above normal
+ * (2715-2727). xfer: minions get it too (2527).
+ */
+export interface D2xMonUMod {
+  id: number;
+  key: string;
+  disabled?: true;
+  xfer?: true;
+  /** a champion type (ghostly, fanatic, possessed, berserk) */
+  champion?: true;
+  fpick?: number;
+  /** monster types it never goes on */
+  exclude?: string[];
+  /** weight among champion and unique picks, by difficulty */
+  cpick: D2xTri;
+  upick: D2xTri;
+}
+
+/** a superunique (SuperUniques.txt) */
+export interface D2xSuperUnique {
+  key: string;
+  name: string;
+  en: string;
+  hcIdx: number;
+  /** its monster (D2X_MONSTERS) */
+  mon: string;
+  /** its own modifiers (D2X_MONUMODS ids) */
+  mods: number[];
+  /**
+   * Minions it comes with, min–max, as the table has them. They are its monster's minion1, or more
+   * of its own monster when minion1 is empty (the Countess, Corpsefire, Bonebreak); when min and max
+   * are both above 0, each goes up by the difficulty, 0–2 (D2MOO MonsterUnique.cpp:2475-2492, 2729-2735).
+   */
+  group: [number, number];
+  autoPos?: true;
+  /** can appear more than once a game */
+  stacks?: true;
+  replaceable?: true;
+  /** its drop by difficulty */
+  tc: D2xTri<string>;
+  area?: number;
+  sound?: string;
+}
+
+/** a word random unique monsters are named from */
+export interface D2xUniqueNameWord {
+  key: string;
+  name: string;
+  en: string;
+}
+
+/** an entry of a treasure class: an item code or another class, its weight, and gold's multiplier or quality overrides */
+export interface D2xTcEntry {
+  item?: string;
+  tc?: string;
+  prob: number;
+  /** gold amount × goldMul (D2's mul / 256, Items.cpp:2533-2536) */
+  goldMul?: number;
+  quality?: Partial<Record<'unique' | 'set' | 'rare' | 'magic' | 'superior' | 'normal', number>>;
+}
+
+/**
+ * A treasure class (D2R 2.7's TreasureClassEx.txt, or one of the automatic weapN/armoN/meleN/bowN/
+ * abowN). The drop (D2MOO D2GAME_DropTC_6FC51360, Items.cpp:2062-2560), for one player:
+ * - picks > 0: picks rolls in [0, total prob + noDrop); below noDrop drops nothing, else the entry
+ *   whose cumulative range holds it. With more players noDrop shrinks (2122-2164).
+ * - picks < 0: the k-th of −picks drops is the entry whose cumulative range holds k, so entries
+ *   drop prob times each, in order, at most −picks in all; noDrop is not rolled (2112-2118).
+ * - an entry naming a class runs that class with its own picks (2229-2242); a class with nothing in
+ *   it drops nothing (2106-2109). At most 6 items come out of one drop (2076-2078, 2540-2544).
+ * - quality factors (out of 1024) pass down: a sub-class uses the larger of its own and the
+ *   parent's (2244-2260); the item's quality roll lowers each chance by chance × factor / 1024
+ *   (see D2xItemRatio).
+ * - group and level: a monster's own class in nightmare and hell moves along `next` while that
+ *   class's level is at most the monster's level, unless the monster is a boss or noRatio
+ *   (MonsterTbls.cpp:975-1003, Items.cpp:2576-2592). A class named by an entry is looked up at
+ *   level 0 and never moves (Items.cpp:2231).
+ */
+export interface D2xTreasureClass {
+  group?: number;
+  level?: number;
+  picks: number;
+  noDrop?: number;
+  unique?: number;
+  set?: number;
+  rare?: number;
+  magic?: number;
+  items: D2xTcEntry[];
+  /**
+   * The next class of its group, a monster's own class moves up to. Only classes some Act 1 monster
+   * names as its own in nightmare or hell, and the upgrades it can reach, have it; absent at the end
+   * of the group or past every Act 1 monster's level. Never followed for a class an entry names.
+   */
+  next?: string;
+  /** built by the importer the way the game builds it at load */
+  auto?: true;
+}

@@ -1,5 +1,5 @@
 {
-  "Zombie": {"name":"腐尸","en":"Zombie","official":"僵尸","note":"通用名词，换同义说法以免与官方相同"},
+  "Zombie": {"name":"朽尸","en":"Zombie","official":"僵尸","note":"通用名词，换同义说法以免与官方相同；原「腐尸」是官方另一种怪（Decayed）的名字"},
   "Fallen": {"name":"堕渊魔","en":"Fallen","official":"沉沦魔","note":"沉沦→堕入深渊；本族统一用「堕渊魔」"},
   "QuillRat": {"name":"针鬃鼠","en":"Quill Rat","official":"刺毛鼠"},
   "GargantuanBeast": {"name":"巨躯魈","en":"Gargantuan Beast","official":"巨身兽","note":"巨兽一族统一用「魈」（山魈）"},
@@ -68,5 +68,9 @@
   "The Countess": {"name":"浴血女爵","en":"The Countess","official":"女伯爵"},
   "The Cow King": {"name":"牛首王","en":"The Cow King","official":"母牛之王","note":"与套装「牛首王之…」统一"},
   "The Smith": {"name":"炉匠","en":"The Smith","official":"铁匠"},
-  "Treehead WoodFist": {"name":"朽颅橡拳","en":"Treehead WoodFist","official":"树头木拳"}
+  "Treehead WoodFist": {"name":"朽颅橡拳","en":"Treehead WoodFist","official":"树头木拳"},
+  "BurningDeadMage": {"name":"焚骸咒师","en":"Burning Dead Mage","official":"烈焰亡骨法师","note":"骷髅法师一族统一用「咒师」；只作骸烬的本体出现"},
+  "Rogue": {"name":"放逐者","en":"Rogue","official":"流亡者","note":"佣兵的单位名，Rogue＝放逐者"},
+  "GargoyleTrap": {"name":"石魔机关","en":"Gargoyle Trap","official":"石像鬼陷阱","note":"墙上会喷射的兽首机关"},
+  "Flamespike the Crawler": {"name":"焰棘匍行者","en":"Flamespike the Crawler","official":"火焰脊刺","note":"锋脊妖一族；原版放在第一幕的预设里但没有区域会刷出它"}
 }

@@ -8,10 +8,13 @@ export const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '../
 const CACHE = path.join(ROOT, 'tools/.d2cache');
 export const DATA = 'https://raw.githubusercontent.com/blizzhackers/d2data/fc469993502d0498809b9fc1af140ee2a9eb8902/json/';
 export const STR = 'https://raw.githubusercontent.com/WalterCouto/D2CE/c246509f385790462979004aeeaf7a47696ed605/source/res/TXT/local/lng/strings/';
+/** D2R 2.7, the last tables before the Warlock expansion: the treasure classes are its (tools/d2/treasure.mjs); the validation report compares against the rest */
+export const REF27 = 'https://raw.githubusercontent.com/blizzhackers/d2data/0ec7650fd7641762339ea9ea44c03dec89f1777b/json/';
+const PREFIX = { [DATA]: 'data', [STR]: 'str', [REF27]: 'ref27' };
 
 export async function load(base, name) {
   fs.mkdirSync(CACHE, { recursive: true });
-  const file = path.join(CACHE, `${base === DATA ? 'data' : 'str'}-${name}.json`);
+  const file = path.join(CACHE, `${PREFIX[base]}-${name}.json`);
   if (!fs.existsSync(file)) {
     const r = await fetch(base + name + '.json');
     if (!r.ok) throw new Error(`${name}: HTTP ${r.status}`);

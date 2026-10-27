@@ -18,3 +18,12 @@ export function latestSeason(...tables) {
 }
 /** ladder-only until a season that has not ended yet (or with no end at all) */
 export const ladderOnly = (r, season) => !!r.firstLadderSeason && !(r.lastLadderSeason < season);
+
+/**
+ * Treasure classes out of scope: the Warlock expansion's (its Worldstone shards, Terrorize
+ * consumables and heralds) and the terror zones' (sunder charms and the desecrated classes: the game
+ * has no terror zones). The treasure classes come from 2.7, which has none of the expansion's (the
+ * 3.x table also wrote its classes into older ones, "Act 3 Worldstone Shard Parent Citem A" in hell's
+ * Citem A): an entry naming one is taken out.
+ */
+export const OUT_OF_SCOPE_TC = /Worldstone|Terrorize|Herald|Sunder|Desecrated/;

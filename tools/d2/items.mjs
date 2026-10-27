@@ -457,5 +457,5 @@ export async function buildItems() {
       `${runes.length} runes, ${gems.length} gems; item props name ${skills.size} skills`,
   );
   // the skills stage needs every skill an item refers to; later stages check item codes against the bases
-  return { skills: [...skills.keys()], bases: new Set(Object.keys(BASE)) };
+  return { skills: [...skills.keys()], bases: new Set(Object.keys(BASE)), baseNames: new Map(Object.entries(BASE).map(([c, b]) => [c, b.name])) };
 }
