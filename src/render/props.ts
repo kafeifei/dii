@@ -583,6 +583,9 @@ export function makeGroundItem(item: Item | null, color: string): THREE.Group {
     case 'rune':
       add(g, new THREE.BoxGeometry(0.16, 0.05, 0.2), stdMat('#5a5048', 0.6, 0, b.tint ?? '#ff9020', 0.6), 0, 0.03, 0);
       break;
+    case 'unknown':
+      add(g, new THREE.BoxGeometry(0.16, 0.05, 0.2), stdMat('#5a5048', 0.7), 0, 0.03, 0);
+      break;
   }
   return g;
 }

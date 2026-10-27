@@ -116,7 +116,10 @@ export class Player extends Actor {
   stash = new Grid(10, 10);
   /** the Horadric Cube's own 3×4 space */
   cube = new Grid(3, 4);
-  /** items from an old save that fit nowhere: they wait on the ground by the camp stash */
+  /**
+   * items from a save that fit nowhere (old saves, bigger D2 items), and the ones this build doesn't
+   * know: they wait on the ground by the camp stash
+   */
   unplaced: Item[] = [];
   /** has the cube turned up yet (it is found once) */
   cubeFound = false;

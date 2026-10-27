@@ -9,7 +9,7 @@
 // or "SMOKE FAIL <reasons>".
 
 /** the version writeSave in src/game/save.ts stamps on a save: bump it with that */
-const SAVE_V = 3;
+const SAVE_V = 4;
 /** the save slot ?dev plays in (src/game/save.ts), apart from the real characters */
 const DEV_SLOT = 'dii-save-dev';
 /** how many monsters to kill on the dungeon floor */
@@ -481,12 +481,41 @@ export default async function (page, shot, log) {
         const raw = localStorage.getItem(slot);
         const d = raw ? JSON.parse(raw) : null;
         const slots = Object.keys(localStorage).filter((k) => k.startsWith('dii-save'));
-        return { d: d && { v: d.v, name: d.name, cls: d.cls, level: d.level, depth: d.depth, inv: d.inventory?.length, skills: d.skills }, slots, name: p.name, cls: p.cls, level: p.level, inv: p.inventory.items.length, skills: p.skills };
+        const floor = game.lastDungeon;
+        return {
+          d: d && {
+            v: d.v,
+            mig: d.mig,
+            name: d.name,
+            cls: d.cls,
+            level: d.level,
+            area: d.area,
+            depth: d.depth,
+            waypoints: d.progress?.[d.difficulty]?.waypoints,
+            diffs: d.progress?.length,
+            merc: d.merc,
+            corpse: d.corpse,
+            inv: d.inventory?.length,
+            skills: d.skills,
+          },
+          slots,
+          name: p.name,
+          cls: p.cls,
+          level: p.level,
+          inv: p.inventory.items.length,
+          skills: p.skills,
+          camp: window.__smoke.campArea,
+          floorArea: floor?.areaAt(floor.layout.start.x, floor.layout.start.z).id,
+        };
       }, DEV_SLOT);
       if (!expect(s.d, `nothing saved in ${DEV_SLOT}`)) return;
       expect(s.d.v === SAVE_V, `saved as version ${s.d.v}, expected ${SAVE_V}`);
+      expect(s.d.mig && typeof s.d.mig.items === 'number' && typeof s.d.mig.world === 'number' && typeof s.d.mig.skills === 'number', `saved migration counts ${JSON.stringify(s.d.mig)}`);
       expect(s.d.name === s.name && s.d.cls === s.cls && s.d.level === s.level, `saved ${s.d.name}/${s.d.cls}/${s.d.level}, playing ${s.name}/${s.cls}/${s.level}`);
-      expect(s.d.depth === 0 && s.d.inv === s.inv, `saved depth ${s.d.depth} with ${s.d.inv} items in the bag (has ${s.inv})`);
+      expect(s.d.area === s.camp && s.d.depth === undefined && s.d.inv === s.inv, `saved area ${s.d.area} (the camp is ${s.camp}), depth ${s.d.depth}, with ${s.d.inv} items in the bag (has ${s.inv})`);
+      // the floor's waypoint was touched on the way down, kept by area for this difficulty
+      expect(s.d.diffs === 3 && s.d.waypoints?.includes(s.camp) && s.d.waypoints.includes(s.floorArea), `saved waypoints ${JSON.stringify(s.d.waypoints)} over ${s.d.diffs} difficulties, the floor is area ${s.floorArea}`);
+      expect(s.d.merc === null && s.d.corpse === null, `saved merc ${JSON.stringify(s.d.merc)}, corpse ${JSON.stringify(s.d.corpse)}`);
       expect(JSON.stringify(s.d.skills) === JSON.stringify(s.skills), 'the saved skills differ');
       expect(s.slots.length === 1, `save keys written: ${s.slots.join(', ')}`);
       facts.push(`saved v${s.d.v}`);

@@ -2,7 +2,7 @@ import { ITEM_BASES, slotsFor, type EquipSlot } from '../data/items';
 import { GEMS, RUNE_BY_ID } from '../data/legendary';
 import { createItem, findRuneword, applyRuneword } from '../items/gen';
 import type { Grid } from '../items/grid';
-import { baseOf, buyPrice, canSocket, displayName, sellPrice, type Item } from '../items/item';
+import { baseOf, buyPrice, canSocket, displayName, sellPrice, socketId, type Item } from '../items/item';
 import { h, type UIContext } from './common';
 import { CELL, itemIcon } from './icons';
 
@@ -312,10 +312,14 @@ export function renderGrid(ui: UIContext, kind: GridKind, grid: Grid): HTMLEleme
     if (it.sockets > 0) {
       const s = h('div', 'sockets');
       for (let i = 0; i < it.sockets; i++) {
-        const id = it.socketed[i];
+        const f = it.socketed[i];
+        const id = f === undefined ? undefined : socketId(f);
         const r = id ? RUNE_BY_ID[id] : null;
-        const sk = h('div', 'sock', r ? r.letter.slice(0, 1) : '');
-        if (id && GEM_COLOR[id]) sk.style.background = `radial-gradient(circle at 40% 35%, #fff 0, ${GEM_COLOR[id]} 35%, #000 100%)`;
+        // a rune or gem this build doesn't know (a later build's) still fills its socket: a question mark
+        const sk = h('div', 'sock', r ? r.letter.slice(0, 1) : typeof f === 'string' && !GEM_COLOR[f] ? '?' : '');
+        const tint = id && (GEM_COLOR[id] ?? (typeof f === 'object' ? (ITEM_BASES[id]?.tint ?? '#8a8278') : undefined));
+        // a gem in its colour, a jewel in its base's
+        if (tint) sk.style.background = `radial-gradient(circle at 40% 35%, #fff 0, ${tint} 35%, #000 100%)`;
         s.appendChild(sk);
       }
       d.appendChild(s);

@@ -1,7 +1,7 @@
-import { ITEM_BASES, categoryOf, type ItemBase, type Category } from '../data/items';
+import { ITEM_BASES, UNKNOWN_BASE, categoryOf, type ItemBase, type Category } from '../data/items';
 import { className, skillRef, skillTab } from '../data/d2/skillmap';
 import { SKILL_BY_ID } from '../data/skills';
-import { RUNE_BY_ID, RUNEWORD_BY_ID, SET_ITEMS, SOCKETABLE_BY_ID, UNIQUE_BY_ID, type Socketable } from '../data/legendary';
+import { RUNE_BY_ID, RUNEWORD_BY_ID, SET_ITEMS, SOCKETABLE_BY_ID, UNIQUE_BY_ID, isOldRuneword, type Socketable } from '../data/legendary';
 import { addStat, describeStats, INERT_STATS, PARAM_STATS, type StatBag, type StatKey } from '../data/stats';
 import { propMods, rollMax } from './props';
 
@@ -28,7 +28,7 @@ export interface Item {
   mods: ItemMod[];
   defense?: number;
   sockets: number;
-  socketed: string[];
+  socketed: Socketed[];
   uniqueId?: string;
   setItemId?: string;
   runewordId?: string;
@@ -37,9 +37,18 @@ export interface Item {
    * (rows of the rare prefix and suffix word tables): what displayName will build the name from
    * once the renamed tables fill them in. Unset on every item made so far
    */
-  prefixes?: number[];
-  suffixes?: number[];
-  rareName?: [number, number];
+  pre?: number[];
+  suf?: number[];
+  rn?: [number, number];
+  /** false until identified (a scroll, a book, Cain); unset, like every item made so far, is identified */
+  identified?: boolean;
+  /** durability left and at most; unset on items without any (and every item made so far) */
+  dur?: number;
+  maxDur?: number;
+  /** ethereal: stronger, can't be repaired */
+  eth?: boolean;
+  /** how many there are in a stack (scrolls, books' charges, keys); unset is one */
+  qty?: number;
   reqLvl: number;
   /** charges left, by skill, for "level N skill (X/Y charges)" */
   charges?: Record<string, number>;
@@ -48,6 +57,25 @@ export interface Item {
    * (its D2 runes don't raise it, only runes socketed since), and its old base's strength / dexterity
    */
   legacy?: { lvl: number; str: number; dex: number; runes: number };
+  /**
+   * On an unknown item (UNKNOWN_BASE): the item as saved, with the save's version and migration
+   * counts (src/game/save.ts), so a build that knows it can put it back and catch it up
+   */
+  raw?: {
+    v: number;
+    mig: Partial<Record<string, number>>;
+    item: unknown;
+    /** from a save the first D2 release took the old runewords apart in */
+    damaged?: boolean;
+  };
+}
+
+/** what fills a socket: a rune's or gem's base id, or a whole item with its own mods (a jewel) */
+export type Socketed = string | Item;
+
+/** the base id of what fills a socket */
+export function socketId(s: Socketed): string {
+  return typeof s === 'string' ? s : s.baseId;
 }
 
 export const RARITY_COLOR: Record<Rarity, string> = {
@@ -67,6 +95,11 @@ const INERT_COLOR = '#6a6a78';
 
 export function baseOf(item: Item): ItemBase {
   return ITEM_BASES[item.baseId];
+}
+
+/** an item this build doesn't know, standing in for the one the save had (Item.raw) */
+export function isUnknown(item: Item): boolean {
+  return item.baseId === UNKNOWN_BASE;
 }
 
 export function itemCategory(item: Item): Category | null {
@@ -91,6 +124,11 @@ export function socketMods(item: Item): ItemMod[] {
   const out: ItemMod[] = [];
   const onWeapon = itemCategory(item) === 'weapon';
   for (const id of item.socketed) {
+    // a jewel brings the mods it rolled
+    if (typeof id !== 'string') {
+      out.push(...id.mods);
+      continue;
+    }
     const s = SOCKETABLE_BY_ID[id];
     if (s) out.push(...propMods(socketList(s, item), onWeapon, rollMax));
   }
@@ -154,7 +192,7 @@ export function globalItemStats(item: Item, clvl = 1): StatBag {
 export function itemReqLvl(item: Item): number {
   let r = item.legacy ? item.legacy.lvl : item.reqLvl;
   item.socketed.forEach((id, i) => {
-    if (!item.legacy || i >= item.legacy.runes) r = Math.max(r, SOCKETABLE_BY_ID[id]?.reqLvl ?? 1);
+    if (!item.legacy || i >= item.legacy.runes) r = Math.max(r, typeof id === 'string' ? (SOCKETABLE_BY_ID[id]?.reqLvl ?? 1) : id.reqLvl);
   });
   return r;
 }
@@ -174,8 +212,8 @@ export function itemTypeName(item: Item): string {
 
 /**
  * The name an item shows, wherever one is shown. With the renamed tables it will be built from
- * the item's rows (prefixes, suffixes, rareName), so a renamed affix renames the items already
- * made; an item without them, like every one made so far, shows the name it was saved with
+ * the item's rows (pre, suf, rn), so a renamed affix renames the items already made; an item
+ * without them, like every one made so far, shows the name it was saved with
  */
 export function displayName(item: Item): string {
   return item.name;
@@ -277,9 +315,12 @@ export function tooltip(item: Item, ctx?: ReqContext, priceLine?: string): Toolt
   const name = displayName(item);
   if (item.rarity === 'runeword') {
     lines.push({ text: name, color });
-    lines.push({ text: `'${item.socketed.map((r) => RUNE_BY_ID[r]?.letter ?? '?').join('')}'`, color: RARITY_COLOR.unique });
+    lines.push({ text: `'${item.socketed.map((r) => RUNE_BY_ID[socketId(r)]?.letter ?? '?').join('')}'`, color: RARITY_COLOR.unique });
     lines.push({ text: b.name, color: SOCKETED_COLOR });
-    if (!RUNEWORD_BY_ID[item.runewordId ?? '']) lines.push({ text: '旧版符文之语（已不能再制作）', small: true, color: '#8a8278' });
+    // one this build doesn't have: an old invented one, or a later build's (its mods are on the item)
+    if (!RUNEWORD_BY_ID[item.runewordId ?? '']) {
+      lines.push({ text: isOldRuneword(item.runewordId) ? '旧版符文之语（已不能再制作）' : '这个版本没有这个符文之语（属性照常生效）', small: true, color: '#8a8278' });
+    }
   } else if (item.rarity === 'unique' || item.rarity === 'set' || item.rarity === 'rare') {
     lines.push({ text: name, color });
     lines.push({ text: b.name, color });
@@ -293,6 +334,11 @@ export function tooltip(item: Item, ctx?: ReqContext, priceLine?: string): Toolt
     if (b.rejuv) lines.push({ text: `立即回复 ${Math.round(b.rejuv * 100)}% 生命与法力` });
     lines.push({ text: '右键点击使用', small: true, color: '#999' });
     if (priceLine) lines.push({ text: priceLine, small: true });
+    return lines;
+  }
+  if (b.type === 'unknown') {
+    lines.push({ text: '这个版本认不出这件物品', color: '#aaa', small: true });
+    lines.push({ text: '它原样保存在存档里，换用认得它的版本就会恢复', color: '#aaa', small: true });
     return lines;
   }
   if (b.type === 'cube') {
@@ -348,6 +394,9 @@ export function tooltip(item: Item, ctx?: ReqContext, priceLine?: string): Toolt
 
   if (item.sockets > 0) {
     lines.push({ text: `镶孔（${item.socketed.length}/${item.sockets}）`, color: MOD_COLOR });
+    // a later build's rune or gem: it fills its socket, doing nothing here
+    const unknown = item.socketed.filter((s) => typeof s === 'string' && !SOCKETABLE_BY_ID[s]).length;
+    if (unknown) lines.push({ text: `其中 ${unknown} 个镶嵌物这个版本认不出，没有效果`, color: INERT_COLOR, small: true });
   }
   if (item.rarity === 'superior') lines.push({ text: '优质', color: '#aaa', small: true });
   if (ml.some((l) => l.color === INERT_COLOR)) lines.push({ text: '灰色属性在本作中没有效果', color: INERT_COLOR, small: true });

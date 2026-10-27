@@ -7,7 +7,7 @@ import { SKILL_BY_ID } from '../data/skills';
 import { D2_TO_GAME } from '../data/d2/skillmap';
 import { Grid } from '../items/grid';
 import { createItem, rollEquipment, rollMonsterDrops, type Drop } from '../items/gen';
-import { baseOf, type Item } from '../items/item';
+import { baseOf, isUnknown, type Item } from '../items/item';
 import { emptyPacket } from './actor';
 import { blastDamage, updateMonster } from './ai';
 import { applyDamage, monsterStrike } from './combat';
@@ -81,6 +81,8 @@ export class Game {
   lastDungeon: Level | null = null;
   /** the wilderness maps as they were left: like an area of a Diablo II game, each stays for the session */
   private wilds = new Map<number, Level>();
+  /** the unknown items by the stash were pointed out this game: they may wait there for long */
+  private toldUnknown = false;
   /** the area the hero is in (Level.areaAt), announced through hooks.areaChanged when it changes */
   area: AreaDef | null = null;
   fx: Fx = nullFx;
@@ -167,14 +169,18 @@ export class Game {
     this.portalLevel = null;
     this.wilds.clear();
     this.area = null;
+    this.toldUnknown = false;
     markInGame(true);
     // floors are regenerated; you arrive at the entrance of the floor you were on
     this.enterLevel(s.depth, 'start');
+    // said once: the save won't be written this time
+    if (s.readOnly) this.hooks.message(s.readOnly, '#ff8060', 10);
     return true;
   }
 
   save() {
-    if (this.started && this.level) writeSave(this.player, this.level.depth);
+    // the area the hero stands in, not the map's: one map may hold several
+    if (this.started && this.level) writeSave(this.player, this.level.areaAt(this.player.pos.x, this.player.pos.z).id);
   }
 
   /** `exit`: walked off the last level through an exit; you arrive by the one leading back */
@@ -282,7 +288,10 @@ export class Game {
     this.hooks.areaChanged(area, prev);
   }
 
-  /** put the items that fit nowhere (old saves, bigger D2 items) on the ground around the stash */
+  /**
+   * put the items that fit nowhere (old saves, bigger D2 items), and the ones this build doesn't
+   * know, on the ground around the stash
+   */
   private layOutUnplaced(level: Level) {
     const p = this.player;
     if (!p.unplaced.length) return;
@@ -294,7 +303,12 @@ export class Game {
       const spot = level.map.nearestWalkable(at.x + Math.sin(a) * r, at.z + Math.cos(a) * r) ?? at;
       level.ground.push(new GroundItem(spot, it, 0));
     });
-    this.hooks.message(`${p.unplaced.length} 件物品背包和储物箱都放不下，放在了储物箱旁边`, '#c8a86a', 5);
+    const unknown = p.unplaced.filter(isUnknown).length;
+    if (unknown < p.unplaced.length) this.hooks.message(`${p.unplaced.length - unknown} 件物品背包和储物箱都放不下，放在了储物箱旁边`, '#c8a86a', 5);
+    if (unknown && !this.toldUnknown) {
+      this.hooks.message(`${unknown} 件物品这个版本认不出，原样放在了储物箱旁边`, '#c8a86a', 5);
+      this.toldUnknown = true;
+    }
   }
 
   refreshShop() {

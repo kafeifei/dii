@@ -647,6 +647,10 @@ export function itemIcon(item: Item): string {
       drawRune(ctx, W, H, r?.letter ?? '?', '#ffa31a');
       break;
     }
+    // an item this build doesn't know: a plain stone with a question mark
+    case 'unknown':
+      drawRune(ctx, W, H, '?', b.tint ?? '#8a8278');
+      break;
   }
   const url = c.toDataURL();
   cache.set(key, url);

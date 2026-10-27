@@ -1,5 +1,5 @@
 import { monsterLevel } from '../data/monsters';
-import { THEMES, dungeonFloor, isWild, themeForFloor } from './levelgen';
+import { THEMES, WILD_MAPS, dungeonFloor, isWild, themeForFloor } from './levelgen';
 
 /**
  * Areas: the named places of the world, Diablo II's levels.txt rows. An area has a level (its
@@ -69,4 +69,16 @@ export function areaDef(id: number): AreaDef | undefined {
 /** the area one of today's maps is, by its depth: the camp, the wilderness or a dungeon floor */
 export function areaForDepth(depth: number): AreaDef {
   return areaDef(depth <= 0 ? CAMP_AREA : isWild(depth) ? WILD_AREA : dungeonArea(dungeonFloor(depth)))!;
+}
+
+/**
+ * The depth of today's map an area is, the other way from areaForDepth (a save keeps the area, the
+ * game still goes by depth): the wilderness is its first map. Undefined for an area this build lacks
+ */
+export function depthForArea(id: number): number | undefined {
+  if (id === CAMP_AREA) return 0;
+  // the first of its maps (isWild), when it has any
+  if (id === WILD_AREA) return WILD_MAPS > 0 ? 1 : undefined;
+  if (id > DUNGEON_AREAS) return WILD_MAPS + (id - DUNGEON_AREAS);
+  return undefined;
 }

@@ -1,0 +1,514 @@
+// Saves (src/game/save.ts). The fixtures are what the game writes: a level 12 paladin, made and
+// played through Game, saved by its own writer (version 4) in the camp, the wilderness and the
+// dungeon, then turned into what versions 1, 2 and 3 wrote at their depths 0, 1 and 5 (before
+// version 3, depth 1 was the dungeon's first floor; since, it is the wilderness). Each loads into
+// version 4 and is written back as it: every item still there (unknown ones by the stash, holding
+// themselves as saved), worn gear still usable, the points adding up, the depth an area and the
+// waypoints areas, the save's text backed up first, once. Then: migration steps and the backups
+// they leave (every one from before version 4 and the hero's first stay), unknown items catching
+// up when they come back, a version 4 round trip, newer and unbacked saves never written, and Game
+// saving the area the hero stands in.
+const KEY = 'dii-save-v1';
+const LEVEL = 12;
+/** a save's migration counts before any step */
+const ZERO = { items: 0, world: 0, skills: 0 };
+/** the backups in storage (Web Storage's own listing: Object.keys sees nothing in the Node stand-in) */
+const backups = () => {
+  const out = [];
+  for (let i = 0; i < localStorage.length; i++) if (localStorage.key(i).startsWith(`${KEY}-backup-`)) out.push(localStorage.key(i));
+  return out.sort();
+};
+const clone = (x) => JSON.parse(JSON.stringify(x));
+/** an item as a save holds it, of a base this build may not have */
+const item = (baseId, more = {}) => ({ uid: `t${Math.random().toString(36).slice(2)}`, baseId, rarity: 'normal', ilvl: 1, name: baseId, mods: [], sockets: 0, socketed: [], reqLvl: 1, ...more });
+const sum = (o) => Object.values(o ?? {}).reduce((a, b) => a + b, 0);
+/** experience before Diablo II's table (src/game/save.ts migrateXp) */
+const oldXp = (L) => (L <= 1 ? 0 : Math.floor(60 * Math.pow(L - 1, 2.3) + 100 * (L - 1)));
+
+const savedItems = (d) => {
+  const placed = [...(d.inventory ?? []), ...(d.stash ?? []), ...(d.cube ?? [])].map((p) => p.item);
+  return [...Object.values(d.equipment ?? {}), ...placed, ...(d.unplaced ?? []), ...(d.belt ?? []).flat()];
+};
+const playerItems = (p) => [...Object.values(p.equipment), ...p.inventory.items.map((x) => x.item), ...p.stash.items.map((x) => x.item), ...p.cube.items.map((x) => x.item), ...p.unplaced, ...p.belt.flat()];
+
+export default async (load) => {
+  const save = await load('/src/game/save.ts');
+  const { isUnknown, socketMods, tooltip } = await load('/src/items/item.ts');
+  const { ITEM_BASES } = await load('/src/data/items.ts');
+  const { CLASSES } = await load('/src/data/classes.ts');
+  const { createItem } = await load('/src/items/gen.ts');
+  const { Player, xpForLevel } = await load('/src/game/player.ts');
+  const { CAMP_AREA, WILD_AREA, areaForDepth, dungeonArea, depthForArea } = await load('/src/world/areas.ts');
+  const { WILD_MAPS } = await load('/src/world/levelgen.ts');
+  const { Game } = await load('/src/game/game.ts');
+  const { Sfx } = await load('/src/audio/sfx.ts');
+  const problems = [];
+  const check = (ok, what) => ok || problems.push(what);
+  const reset = () => {
+    localStorage.clear();
+    save.setSlot(0);
+  };
+  const thisBuild = () => Object.fromEntries(Object.entries(save.MIGRATIONS).map(([k, steps]) => [k, steps.length]));
+  /** stat and skill points add up for the level: a new character's, and 5 and 1 a level since */
+  const pointsOk = (d) => sum(d.base) + d.statPoints === sum(CLASSES[d.cls ?? 'paladin'].base) + 5 * (d.level - 1) && sum(d.skills) + d.skillPoints === d.level;
+  const pointsOf = (d) => `${sum(d.base)}+${d.statPoints} stat, ${sum(d.skills)}+${d.skillPoints} skill points at level ${d.level}`;
+
+  // ── the hero, as the game makes, plays and saves one ──
+  reset();
+  const game = new Game({}, new Sfx());
+  game.hooks = {
+    message() {},
+    openPanel() {},
+    levelChanged() {},
+    areaChanged() {},
+    teleported() {},
+    playerDied() {},
+    inventoryChanged() {},
+    getCursorItem: () => null,
+    setCursorItem() {},
+    hoveredGroundId: () => null,
+    levelUp() {},
+  };
+  game.newGame('存档测试', 'paladin');
+  const hero = game.player;
+  hero.gainXp(xpForLevel(LEVEL) + Math.floor((xpForLevel(LEVEL + 1) - xpForLevel(LEVEL)) / 3));
+  if (hero.level !== LEVEL) throw new Error(`the hero is level ${hero.level}, not ${LEVEL}`);
+  // a long sword's strength and dexterity, the rest kept
+  hero.base.str = 55;
+  hero.base.dex = 39;
+  hero.statPoints -= 30 + 19;
+  for (let i = 0; i < 9; i++) {
+    const s = hero.learnableSkills()[0];
+    hero.skills[s.id] = (hero.skills[s.id] ?? 0) + 1;
+    hero.skillPoints--;
+  }
+  const sword = createItem('longsword');
+  sword.sockets = 2;
+  sword.socketed = ['r01', 'r02'];
+  sword.name = `有孔的${sword.name}`;
+  hero.equipment.weapon = sword;
+  hero.equipment.head = createItem('cap');
+  hero.equipment.body = createItem('quiltedarmor');
+  const buckler = createItem('buckler');
+  buckler.sockets = 1;
+  hero.equipment.offhand = buckler;
+  for (const id of ['hp1', 'hp1', 'mp1']) hero.inventory.add(createItem(id));
+  hero.stash.add(createItem('runesword'));
+  hero.cube.add(createItem('ring'));
+  hero.cubeFound = true;
+  hero.unplaced = [createItem('amulet')];
+  hero.gold = 1200;
+  hero.stashGold = 3400;
+  hero.markDirty();
+  /** what version 4 writes at each of today's depths, played in this order, with the waypoints touched by then */
+  const at = new Map();
+  for (const depth of [0, 1, 1 + WILD_MAPS, 4 + WILD_MAPS, 5 + WILD_MAPS]) {
+    game.enterLevel(depth, 'waypoint');
+    at.set(depth, { d: JSON.parse(localStorage.getItem(KEY)), waypoints: [...hero.waypoints] });
+  }
+  game.enterLevel(0, 'waypoint');
+  if (!pointsOk(at.get(0).d)) throw new Error(`the hero's points don't add up: ${pointsOf(at.get(0).d)}`);
+
+  /**
+   * What version `v` wrote at its depth `depth`, from what version 4 writes. `v` is 1, 2 or 3, or
+   * '1d': version 1 by the first D2 release, which had the cube and took the old runewords apart
+   */
+  function oldSave(v, depth) {
+    const n = v === '1d' ? 1 : v;
+    // before version 3 there was no wilderness: the dungeon's floors were depths 1 and on
+    const today = (x) => (n < 3 && x > 0 ? x + WILD_MAPS : x);
+    const back = (x) => (n < 3 && x > WILD_MAPS ? x - WILD_MAPS : x);
+    const { d: d4, waypoints } = at.get(today(depth));
+    const d = clone(d4);
+    const o = {
+      v: n,
+      name: d.name,
+      cls: d.cls,
+      level: d.level,
+      xp: d.xp,
+      base: d.base,
+      statPoints: d.statPoints,
+      skillPoints: d.skillPoints,
+      skills: d.skills,
+      equipment: d.equipment,
+      inventory: d.inventory,
+      stash: d.stash,
+      cube: d.cube,
+      cubeFound: d.cubeFound,
+      unplaced: d.unplaced,
+      belt: d.belt,
+      gold: d.gold,
+      stashGold: d.stashGold,
+      binds: d.binds,
+      activeAura: d.activeAura,
+      depthReached: back(d.depthReached),
+      waypoints: waypoints.map(back),
+      depth,
+      life: d.life,
+      mana: d.mana,
+      time: d.time,
+    };
+    if (n < 2) {
+      // a hero from before the D2 items: an old long sword's strength and dexterity, the points kept
+      o.statPoints += o.base.str - 40 + (o.base.dex - 25);
+      o.base = { ...o.base, str: 40, dex: 25 };
+      // the old runeword Ember Oath on the long sword: whole before the D2 items, taken apart by their first release
+      o.equipment.weapon = v === '1d'
+        ? { ...o.equipment.weapon, socketed: ['r08', 'r01'] }
+        : { ...o.equipment.weapon, rarity: 'runeword', runewordId: 'rw_emberoath', name: '余烬誓言', socketed: ['r_ember', 'r_dawn'], reqLvl: 6, mods: [{ stat: 'dmgPct', value: 70 }, { stat: 'ias', value: 20 }] };
+    }
+    if (v === 1) {
+      // the old runes and bases, the old experience table, no cube and nothing by the stash yet
+      o.xp = oldXp(o.level) + Math.floor((oldXp(o.level + 1) - oldXp(o.level)) / 3);
+      for (const pl of o.stash) if (pl.item.baseId === 'runesword') pl.item = { ...pl.item, baseId: 'runeblade', name: '符文之刃' };
+      delete o.cube;
+      delete o.cubeFound;
+      delete o.unplaced;
+    }
+    if (v === '1d') delete o.unplaced;
+    // what this build doesn't have: a ring, a relic in the bag, a potion in the belt, a rune in the buckler
+    o.equipment.ring1 = item('zz_moonring', { rarity: 'magic', name: '月之戒指' });
+    o.inventory.push({ item: item('zz_relic', { mods: [{ stat: 'str', value: 5 }] }), x: 9, y: 3 });
+    o.belt[2].push(item('zz_potion'));
+    o.equipment.offhand.socketed = ['zz_rune'];
+    return o;
+  }
+
+  // ── versions 1, 2 and 3 at depths 0, 1 and 5 ──
+  for (const v of [1, '1d', 2, 3]) {
+    const n = v === '1d' ? 1 : v;
+    for (const depth of [0, 1, 5]) {
+      reset();
+      const what = `v${v} at depth ${depth}`;
+      const old = oldSave(v, depth);
+      if (!pointsOk(old)) throw new Error(`${what}: the fixture's points don't add up: ${pointsOf(old)}`);
+      const raw = JSON.stringify(old);
+      localStorage.setItem(KEY, raw);
+      const s = save.loadSave();
+      if (!s) {
+        problems.push(`${what}: didn't load`);
+        continue;
+      }
+      const p = s.player;
+      check(s.readOnly === null, `${what}: read-only (${s.readOnly})`);
+      const backup = `${KEY}-backup-0-${n}`;
+      check(backups().join() === backup && localStorage.getItem(backup) === raw, `${what}: backups ${backups().join(', ') || 'none'}, want ${backup} holding the save as it was`);
+      // where the hero was: a dungeon floor one deeper before version 3, behind the wilderness
+      const want = n < 3 && depth > 0 ? depth + WILD_MAPS : depth;
+      const area = depth === 0 ? CAMP_AREA : n < 3 ? dungeonArea(depth) : depth <= WILD_MAPS ? WILD_AREA : dungeonArea(depth - WILD_MAPS);
+      check(s.depth === want, `${what}: resumes at depth ${s.depth}, want ${want}`);
+      const wps = old.waypoints.map((w) => (n < 3 && w > 0 ? w + WILD_MAPS : w)).sort((a, b) => a - b);
+      check(p.waypoints.join() === wps.join(), `${what}: waypoints ${p.waypoints}, want ${wps}`);
+      check(pointsOk(p), `${what}: ${pointsOf(p)}`);
+      check(p.xp >= xpForLevel(LEVEL) && p.xp < xpForLevel(LEVEL + 1), `${what}: ${p.xp} experience at level ${p.level}`);
+      // every item still there, the unknown ones by the stash
+      const before = savedItems(old).length;
+      const after = playerItems(p);
+      check(after.length === before, `${what}: ${before} items saved, ${after.length} loaded`);
+      const unknown = after.filter(isUnknown);
+      check(unknown.length === 3 && unknown.every((u) => p.unplaced.includes(u)), `${what}: ${unknown.length} unknown items, ${unknown.filter((u) => p.unplaced.includes(u)).length} by the stash; want 3, all`);
+      check(
+        unknown.map((u) => u.raw?.item?.baseId).sort().join() === 'zz_moonring,zz_potion,zz_relic' && unknown.every((u) => u.raw.v === n && sum(u.raw.mig) === 0 && !!u.raw.damaged === (v === '1d')),
+        `${what}: the unknown items hold ${unknown.map((u) => `${u.raw?.item?.baseId}@v${u.raw?.v}/${JSON.stringify(u.raw?.mig)}${u.raw?.damaged ? ' damaged' : ''}`).join(', ')}`,
+      );
+      check(unknown.every((u) => u.name === '未知物品' && tooltip(u).length > 1), `${what}: an unknown item is named ${unknown[0]?.name}`);
+      const shield = p.equipment.offhand;
+      check(shield?.socketed.join() === 'zz_rune' && tooltip(shield).some((l) => l.text.includes('认不出')), `${what}: the buckler's unknown rune became ${shield?.socketed.join()}, or its tooltip doesn't say`);
+      // what the hero wears is still usable, or keeps the requirements it had
+      for (const [slot, it] of Object.entries(p.equipment)) check(p.meetsReq(it) || it.legacy, `${what}: can't use the ${it.baseId} in ${slot} (${JSON.stringify(it.legacy)})`);
+      const weapon = p.equipment.weapon;
+      if (n < 2) {
+        // the old long sword needs less than the D2 one: only its old requirements let the hero wield it
+        check(weapon?.legacy?.str === 40 && p.meetsReq(weapon) && !p.meetsReq({ ...weapon, legacy: undefined }), `${what}: the long sword's old requirements ${JSON.stringify(weapon?.legacy)}`);
+        const rwOk = weapon?.rarity === 'runeword' && weapon.runewordId === 'rw_emberoath' && weapon.socketed.join() === 'r08,r01';
+        check(rwOk && weapon.mods.length >= 2 && tooltip(weapon).some((l) => l.text.startsWith('旧版符文之语')), `${what}: Ember Oath is ${weapon?.rarity} ${weapon?.runewordId} with ${weapon?.socketed.join()} and ${weapon?.mods.length} mods`);
+      } else {
+        check(weapon?.baseId === 'longsword' && !weapon.legacy && weapon.socketed.join() === 'r01,r02' && p.meetsReq(weapon), `${what}: the weapon is ${weapon?.baseId} with ${weapon?.socketed.join()}, legacy ${JSON.stringify(weapon?.legacy)}`);
+      }
+      const big = p.stash.items.find((x) => x.item.baseId === 'runesword')?.item;
+      check(big && (v !== 1 || (big.name === ITEM_BASES.runesword.name && big.legacy?.str === 103 && big.legacy.dex === 72)), `${what}: the stashed rune sword is ${big?.name}, legacy ${JSON.stringify(big?.legacy)}`);
+
+      // written back as version 4
+      save.writeSave(p, areaForDepth(s.depth).id);
+      const d = JSON.parse(localStorage.getItem(KEY));
+      check(d.v === 4 && JSON.stringify(d.mig) === JSON.stringify(thisBuild()), `${what}: written as v${d.v}, migrations ${JSON.stringify(d.mig)}`);
+      check(d.area === area && !('depth' in d) && !('waypoints' in d), `${what}: written in area ${d.area} (want ${area}), depth ${d.depth}, waypoints ${d.waypoints}`);
+      check(d.progress?.length === 3 && [...d.progress[0].waypoints].sort().join() === [...new Set(wps.map((w) => areaForDepth(w).id))].sort().join(), `${what}: written waypoints ${JSON.stringify(d.progress)}`);
+      check(d.difficulty === 0 && d.unlocked === 0 && d.merc === null && d.corpse === null, `${what}: difficulty ${d.difficulty}/${d.unlocked}, merc ${d.merc}, corpse ${d.corpse}`);
+      check(savedItems(d).length === before && pointsOk(d), `${what}: ${savedItems(d).length} items written (${before} were saved), ${pointsOf(d)}`);
+
+      // loaded again: nothing more to migrate or back up, nothing lost
+      const again = save.loadSave();
+      check(backups().join() === backup && localStorage.getItem(backup) === raw, `${what}: loading the v4 save left backups ${backups().join(', ')}`);
+      const items2 = playerItems(again.player);
+      check(items2.length === before && items2.filter(isUnknown).length === 3, `${what}: reloaded ${items2.length} items, ${items2.filter(isUnknown).length} unknown`);
+      check(again.depth === want && again.player.waypoints.join() === p.waypoints.join(), `${what}: reloaded at depth ${again.depth}, waypoints ${again.player.waypoints}`);
+
+      // the same hero at that version again (an older build wrote it back): the first copy stays
+      localStorage.setItem(KEY, JSON.stringify({ ...old, gold: old.gold + 1 }));
+      save.loadSave();
+      check(backups().join() === backup && localStorage.getItem(backup) === raw, `${what}: a later v${n} save of the same hero replaced the backup`);
+    }
+  }
+
+  // ── a slot's backups: they outlive their character; another one's at the same version takes the key ──
+  reset();
+  const first = JSON.stringify(oldSave(3, 0));
+  localStorage.setItem(KEY, first);
+  save.loadSave();
+  save.deleteSave(0);
+  check(!localStorage.getItem(KEY) && backups().join() === `${KEY}-backup-0-3` && localStorage.getItem(`${KEY}-backup-0-3`) === first, `deleting the character left ${localStorage.getItem(KEY) ? 'the save, ' : ''}backups ${backups().join() || 'none'}`);
+  // another character in the slot, made by an older build since
+  const other = JSON.stringify({ ...oldSave(3, 0), name: '另一个' });
+  localStorage.setItem(KEY, other);
+  save.loadSave();
+  check(backups().join() === `${KEY}-backup-0-3` && localStorage.getItem(`${KEY}-backup-0-3`) === other, `another character in the slot: backups ${backups().join()}, of ${JSON.parse(localStorage.getItem(`${KEY}-backup-0-3`) ?? '{}').name}`);
+  // another slot's backup is its own
+  save.setSlot(1);
+  localStorage.setItem(`${KEY}-1`, first);
+  save.loadSave();
+  check(backups().join() === `${KEY}-backup-0-3,${KEY}-backup-1-3`, `slot 1's backup: backups ${backups().join()}`);
+
+  // ── backups over several migrations: every one from before version 4 and the hero's first stay, of the rest the latest ──
+  const stepsBefore = save.MIGRATIONS.items.length;
+  /** the backup key of a save at version 4 with the counts `mig` */
+  const tagged = (mig) => `${KEY}-backup-0-${[4, mig.items, mig.world, mig.skills].join('.')}`;
+  try {
+    for (const [label, start] of [['made at v4', clone(at.get(0).d)], ['from v3', oldSave(3, 0)]]) {
+      save.MIGRATIONS.items.length = stepsBefore;
+      reset();
+      const raw = JSON.stringify(start);
+      localStorage.setItem(KEY, raw);
+      const firstKey = start.v === 4 ? tagged({ ...start.mig, items: stepsBefore }) : `${KEY}-backup-0-3`;
+      const latest = [];
+      for (let i = 0; i < 3; i++) {
+        save.MIGRATIONS.items.push(() => {});
+        const d = JSON.parse(localStorage.getItem(KEY));
+        if (d.v === 4) latest.push(tagged(d.mig));
+        const s = save.loadSave();
+        save.writeSave(s.player, CAMP_AREA);
+        const want = [...new Set([firstKey, ...latest.slice(-1)])].sort();
+        check(backups().join() === want.join() && localStorage.getItem(firstKey) === raw, `backups ${label}, migration ${i + 1}: ${backups().join()}, want ${want.join()} with the first holding the save as it was`);
+      }
+    }
+  } finally {
+    save.MIGRATIONS.items.length = stepsBefore;
+  }
+
+  // ── migration steps: one on the items line, for the test ──
+  const seen = [];
+  /** marks every item it sees (the unknown ones it leaves alone), noting the old long sword and rune sword as it finds them */
+  const step = (d) => {
+    const all = savedItems(d).filter((it) => it && it.baseId !== 'unknown');
+    for (const it of all) it.stepped = (it.stepped ?? 0) + 1;
+    const sword = d.equipment?.weapon;
+    seen.push({ sword: sword && `${sword.baseId} ${sword.runewordId} ${sword.socketed.join()} ${!!sword.legacy}`, bases: all.map((it) => it.baseId), xp: d.xp });
+  };
+  save.MIGRATIONS.items.push(step);
+  try {
+    // an old save: the step sees it as version 4 has it, items and all
+    reset();
+    const v1 = oldSave(1, 5);
+    localStorage.setItem(KEY, JSON.stringify(v1));
+    const s1 = save.loadSave();
+    check(seen.length === 1, `v1 with a step: it ran ${seen.length} times`);
+    const sw = seen[0];
+    check(sw?.sword === 'longsword rw_emberoath r08,r01 true', `v1 with a step: the step saw the sword as ${sw?.sword}`);
+    check(sw && sw.bases.includes('runesword') && !sw.bases.some((b) => b === 'runeblade' || b.startsWith('zz_')) && sw.xp >= xpForLevel(LEVEL), `v1 with a step: it saw bases ${sw?.bases.join()} and ${sw?.xp} experience`);
+    const stepped = playerItems(s1.player).filter((it) => !isUnknown(it));
+    check(stepped.every((it) => it.stepped === 1), `v1 with a step: items stepped ${stepped.map((it) => it.stepped ?? 0).join()}`);
+    save.writeSave(s1.player, CAMP_AREA);
+    const w1 = JSON.parse(localStorage.getItem(KEY));
+    check(w1.mig.items === 1, `v1 with a step: written with migrations ${JSON.stringify(w1.mig)}`);
+    save.loadSave();
+    check(seen.length === 1 && backups().join() === `${KEY}-backup-0-1`, `v1 with a step, reloaded: the step ran ${seen.length} times, backups ${backups().join()}`);
+
+    // a version 4 save from before the step: it runs, backed up beside the hero's copy from version 3
+    reset();
+    localStorage.setItem(`${KEY}-backup-0-3`, JSON.stringify(oldSave(3, 5)));
+    const d0 = clone(at.get(5).d);
+    // and an item this build doesn't know: the step sees it put aside, as unknown, at the counts before it
+    d0.inventory.push({ item: item('zz_new'), x: 9, y: 3 });
+    localStorage.setItem(KEY, JSON.stringify(d0));
+    seen.length = 0;
+    const s0 = save.loadSave();
+    check(seen.length === 1 && s0.readOnly === null && backups().join() === `${KEY}-backup-0-3,${KEY}-backup-0-4.0.0.0`, `v4 before the step: it ran ${seen.length} times, backups ${backups().join()}`);
+    check(seen[0] && !seen[0].bases.some((b) => b.startsWith('zz_')), `v4 before the step: the step saw ${seen[0]?.bases.join()}`);
+    save.writeSave(s0.player, CAMP_AREA);
+    const w0 = JSON.parse(localStorage.getItem(KEY));
+    const aside = w0.unplaced.find((it) => it.raw?.item?.baseId === 'zz_new');
+    check(w0.mig.items === 1 && JSON.stringify(aside?.raw.mig) === JSON.stringify(ZERO), `v4 before the step: written at ${JSON.stringify(w0.mig)}, the unknown item put aside at ${JSON.stringify(aside?.raw.mig)}`);
+
+    // unknown items written at items 0, in a save at items 1: one this build knows comes back with step 0 run on it alone
+    reset();
+    const d1 = clone(at.get(5).d);
+    d1.mig = { ...d1.mig, items: 1 };
+    for (const it of savedItems(d1)) it.stepped = 1;
+    d1.inventory.push(
+      { item: item('unknown', { raw: { v: 4, mig: ZERO, item: item('shortsword', { name: '短剑' }) } }), x: 9, y: 0 },
+      // from a version 1 save: version 4's form first (the old rune), then the step
+      { item: item('unknown', { raw: { v: 1, mig: ZERO, item: item('longsword', { sockets: 1, socketed: ['r_ember'] }) } }), x: 8, y: 0 },
+      // from a save the first D2 release took apart: an old runeword again
+      { item: item('unknown', { raw: { v: 1, mig: ZERO, damaged: true, item: item('longsword', { sockets: 2, socketed: ['r08', 'r01'] }) } }), x: 6, y: 0 },
+      { item: item('unknown', { raw: { v: 1, mig: ZERO, item: item('zz_still', { socketed: ['r_ember'] }) } }), x: 7, y: 0 },
+    );
+    const held = clone(d1.inventory.at(-1).item.raw);
+    localStorage.setItem(KEY, JSON.stringify(d1));
+    seen.length = 0;
+    const s2 = save.loadSave();
+    const all = playerItems(s2.player);
+    const short = all.find((it) => it.baseId === 'shortsword');
+    const long = all.find((it) => it.baseId === 'longsword' && it.socketed.join() === 'r08');
+    const oath = all.find((it) => it.runewordId === 'rw_emberoath');
+    // the save has had the step: it runs only on each item come back, alone
+    check(seen.length === 3 && seen.every((x) => x.bases.length === 1), `back from unknown: the step ran on ${seen.map((x) => x.bases.join('+')).join(', ')}`);
+    check(short?.stepped === 1 && long?.stepped === 1 && long.legacy, `back from unknown: the short sword stepped ${short?.stepped}, the long sword ${long?.stepped} with ${long?.socketed.join()}, legacy ${JSON.stringify(long?.legacy)}`);
+    check(oath?.rarity === 'runeword' && oath.socketed.join() === 'r08,r01' && oath.stepped === 1 && oath.legacy, `back from unknown: the taken-apart Ember Oath came back as ${oath?.rarity ?? 'nothing'} ${oath?.runewordId}, stepped ${oath?.stepped}`);
+    check(playerItems(s2.player).filter((it) => !isUnknown(it)).every((it) => it.stepped === 1), `back from unknown: the rest stepped ${playerItems(s2.player).map((it) => it.stepped ?? '-').join()}`);
+    const still = all.filter((it) => isUnknown(it));
+    check(still.length === 1 && JSON.stringify(still[0].raw) === JSON.stringify(held), `back from unknown: the one still unknown holds ${JSON.stringify(still[0]?.raw)}`);
+  } finally {
+    save.MIGRATIONS.items.pop();
+  }
+
+  // ── a step that adds an item (a quest reward, say): an item come back from unknown is still itself ──
+  save.MIGRATIONS.items.push((d) => d.inventory.unshift({ item: item('hp1', { reward: true }), x: 0, y: 3 }));
+  try {
+    reset();
+    const d5 = clone(at.get(0).d);
+    d5.mig = { ...d5.mig, items: save.MIGRATIONS.items.length };
+    d5.unplaced.push(item('unknown', { raw: { v: 4, mig: { ...d5.mig, items: d5.mig.items - 1 }, item: item('shortsword', { uid: 'held', name: '短剑' }) } }));
+    localStorage.setItem(KEY, JSON.stringify(d5));
+    const got = playerItems(save.loadSave().player);
+    check(got.some((it) => it.uid === 'held' && it.baseId === 'shortsword') && !got.some((it) => it.reward || isUnknown(it)), `a step that adds an item: loaded ${got.filter((it) => it.uid === 'held' || it.reward || isUnknown(it)).map((it) => it.baseId).join() || 'neither'}`);
+  } finally {
+    save.MIGRATIONS.items.pop();
+  }
+
+  // ── version 4, round trip: what this build doesn't use comes back ──
+  reset();
+  const ring = item('ring', { mods: [{ stat: 'str', value: 3 }] });
+  const v4 = {
+    ...clone(at.get(4 + WILD_MAPS).d),
+    worldSeed: 4242,
+    unlocked: 1,
+    merc: { hire: 3, name: 7, level: 9, xp: 1234, equipment: { weapon: item('shortsword') }, dead: false },
+    corpse: { area: 17, pos: { x: 3, z: 4 }, difficulty: 0, equipment: { head: item('cap') } },
+    respec: true,
+    future: { kept: 'as is' },
+  };
+  const floorArea = areaForDepth(4 + WILD_MAPS).id;
+  v4.progress = [
+    { waypoints: [...v4.progress[0].waypoints, 17], quests: { den: 3 } },
+    { waypoints: [CAMP_AREA], quests: { andariel: 1 } },
+    { waypoints: [CAMP_AREA], quests: {} },
+  ];
+  v4.inventory = [
+    { item: item('hp1'), x: 0, y: 0 },
+    // an unknown item the player put in the bag stays there; one whose base is known now comes back as it
+    { item: item('unknown', { raw: { v: 4, mig: ZERO, item: item('zz_still_unknown') } }), x: 5, y: 0 },
+    { item: item('unknown', { raw: { v: 4, mig: ZERO, item: item('shortsword', { name: '短剑' }) } }), x: 7, y: 0 },
+    // a jewel in a socket brings its mods
+    { item: item('buckler', { sockets: 1, socketed: [ring] }), x: 2, y: 0 },
+    // a runeword a later build has keeps its mods
+    { item: item('shortsword', { rarity: 'runeword', runewordId: 'rw_later', name: '后来的符文之语', sockets: 2, socketed: ['r01', 'r02'], mods: [{ stat: 'dmgPct', value: 50 }] }), x: 8, y: 0 },
+  ];
+  localStorage.setItem(KEY, JSON.stringify(v4));
+  const s4 = save.loadSave();
+  const p4 = s4.player;
+  check(s4.readOnly === null && !backups().length, `v4: read-only ${s4.readOnly}, backups ${backups().join()}`);
+  check(s4.depth === 4 + WILD_MAPS && p4.waypoints.join() === at.get(4 + WILD_MAPS).waypoints.join(), `v4: depth ${s4.depth}, waypoints ${p4.waypoints}`);
+  check(pointsOk(p4) && p4.xp === v4.xp, `v4: ${pointsOf(p4)}, ${p4.xp} experience (saved ${v4.xp})`);
+  const kept = p4.inventory.items.find((x) => x.x === 5)?.item;
+  check(kept && isUnknown(kept) && kept.raw.item.baseId === 'zz_still_unknown', `v4: the unknown item in the bag became ${kept?.baseId}`);
+  const back = p4.inventory.items.find((x) => x.item.baseId === 'shortsword' && !x.item.runewordId);
+  check(back && back.x === 7 && !back.item.raw && back.item.name === '短剑', `v4: the unknown short sword came back as ${back?.item.baseId} at ${back?.x}`);
+  const jewelled = p4.inventory.items.find((x) => x.item.baseId === 'buckler')?.item;
+  check(jewelled && socketMods(jewelled).some((m) => m.stat === 'str' && m.value === 3), `v4: the jewel in the buckler brings ${JSON.stringify(jewelled && socketMods(jewelled))}`);
+  const later = p4.inventory.items.find((x) => x.item.runewordId)?.item;
+  check(later?.rarity === 'runeword' && later.runewordId === 'rw_later' && later.mods.length === 1, `v4: the later runeword became ${later?.rarity} ${later?.runewordId} with ${later?.mods.length} mods`);
+  const said = later ? tooltip(later).map((l) => l.text) : [];
+  check(said.some((t) => t.startsWith('这个版本没有这个符文之语')) && !said.some((t) => t.startsWith('旧版')), `v4: the later runeword's tooltip says ${said.join(' / ')}`);
+  for (const [slot, it] of Object.entries(p4.equipment)) check(p4.meetsReq(it), `v4: can't use the ${it.baseId} in ${slot}`);
+  save.writeSave(p4, floorArea);
+  const w4 = JSON.parse(localStorage.getItem(KEY));
+  check(w4.worldSeed === 4242 && w4.unlocked === 1 && w4.respec === true && w4.future?.kept === 'as is', `v4: written seed ${w4.worldSeed}, unlocked ${w4.unlocked}, respec ${w4.respec}, future ${JSON.stringify(w4.future)}`);
+  check(w4.merc?.xp === 1234 && w4.merc.equipment.weapon.baseId === 'shortsword' && w4.corpse?.equipment.head.baseId === 'cap', `v4: written merc ${JSON.stringify(w4.merc)}, corpse ${JSON.stringify(w4.corpse)}`);
+  check(w4.progress[0].waypoints.includes(17) && w4.progress[0].quests.den === 3 && w4.progress[1].quests.andariel === 1, `v4: written progress ${JSON.stringify(w4.progress)}`);
+  check(w4.area === floorArea && w4.cls === 'paladin' && w4.inventory.length === 5, `v4: written in area ${w4.area} as ${w4.cls} with ${w4.inventory.length} in the bag`);
+  const keptRaw = w4.inventory.find((x) => x.x === 5)?.item.raw;
+  check(keptRaw?.v === 4 && JSON.stringify(keptRaw.mig) === JSON.stringify(ZERO) && keptRaw.item.baseId === 'zz_still_unknown', `v4: the unknown item was written holding ${JSON.stringify(keptRaw)}`);
+  check(save.listSaves()[0]?.depth === 4 + WILD_MAPS, `v4: the title screen lists depth ${save.listSaves()[0]?.depth}`);
+
+  // ── a newer build's save: played, never written ──
+  for (const [label, d] of [
+    ['v5', { ...v4, v: 5 }],
+    ['items 99', { ...v4, mig: { items: 99, world: 0, skills: 0 } }],
+    ['a line this build lacks', { ...v4, mig: { items: 0, world: 0, skills: 0, quests: 1 } }],
+  ]) {
+    reset();
+    const raw = JSON.stringify(d);
+    localStorage.setItem(KEY, raw);
+    const s = save.loadSave();
+    check(s && typeof s.readOnly === 'string' && s.readOnly.length > 0, `newer (${label}): not read-only`);
+    if (!s) continue;
+    // its unknown items stay unknown: this build can't give them the newer build's migrations
+    check(s.player.inventory.items.filter((x) => isUnknown(x.item)).length === 2, `newer (${label}): ${s.player.inventory.items.filter((x) => isUnknown(x.item)).length} unknown items in the bag, want 2`);
+    s.player.gold += 1000;
+    save.writeSave(s.player, CAMP_AREA);
+    check(localStorage.getItem(KEY) === raw && !backups().length, `newer (${label}): written over, or backed up (${backups().join()})`);
+  }
+  // a character made afterwards is written as usual
+  reset();
+  save.writeSave(new Player({ x: 0, z: 0 }), CAMP_AREA);
+  check(JSON.parse(localStorage.getItem(KEY) ?? 'null')?.v === 4, 'a new character after a read-only one was not written');
+
+  // ── an old save that can't be backed up: played, never written ──
+  reset();
+  const raw3 = JSON.stringify(oldSave(3, 5));
+  localStorage.setItem(KEY, raw3);
+  const set = localStorage.setItem;
+  localStorage.setItem = function (k, v) {
+    if (String(k).includes('-backup-')) throw new Error('QuotaExceededError');
+    return set.call(this, k, v);
+  };
+  try {
+    const s = save.loadSave();
+    check(s && typeof s.readOnly === 'string', `no backup: read-only ${s?.readOnly}`);
+    if (s) save.writeSave(s.player, CAMP_AREA);
+    check(localStorage.getItem(KEY) === raw3, 'no backup: the old save was written over');
+  } finally {
+    localStorage.setItem = set;
+  }
+
+  // ── the unknown items by the stash are pointed out once a game, not on every way into the camp ──
+  reset();
+  localStorage.setItem(KEY, JSON.stringify(oldSave(3, 0)));
+  const msgs = [];
+  game.hooks.message = (text) => msgs.push(text);
+  game.continueGame(0);
+  game.enterLevel(1, 'waypoint');
+  game.enterLevel(0, 'waypoint');
+  game.hooks.message = () => {};
+  const told = msgs.filter((t) => t.includes('认不出')).length;
+  check(told === 1 && game.player.unplaced.filter(isUnknown).length === 3, `unknown items by the stash: told ${told} times, ${game.player.unplaced.filter(isUnknown).length} there`);
+
+  // ── Game saves the area the hero stands in: the camp's east, made wilderness for the test ──
+  reset();
+  const camp = game.level;
+  const { map } = camp.layout;
+  const east = Math.floor(map.w * 0.6);
+  const areasBefore = camp.areas.slice();
+  for (let z = 0; z < map.h; z++) for (let x = east; x < map.w; x++) camp.areas[z * map.w + x] = WILD_AREA;
+  let spot = null;
+  for (let z = 4; z < map.h - 4 && !spot; z++) for (let x = east + 2; x < map.w - 4 && !spot; x++) if (map.circleClear(x + 0.5, z + 0.5, 0.45)) spot = { x: x + 0.5, z: z + 0.5 };
+  if (!spot) throw new Error('no walkable spot in the east of the camp');
+  game.teleportWithin(spot);
+  game.save();
+  const inWild = JSON.parse(localStorage.getItem(KEY) ?? '{}').area;
+  check(inWild === WILD_AREA && depthForArea(inWild) === 1, `saved standing in the camp's wild east: area ${inWild}`);
+  camp.areas.set(areasBefore);
+
+  if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
+  console.log(`  v1 (both), v2, v3 at depths 0, 1, 5 → v4 with every item kept (3 unknown by the stash), usable gear, points adding up, backed up once; steps see v4 items, keep the first and pre-v4 backups, catch restored items up; v4 round trip; newer and unbacked saves never written`);
+};

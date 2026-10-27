@@ -120,3 +120,14 @@ export const RUNEWORDS: D2Runeword[] = D2_RUNEWORDS;
 
 export const UNIQUE_BY_ID: Record<string, UniqueDef> = Object.fromEntries(UNIQUES.map((u) => [u.id, u]));
 export const RUNEWORD_BY_ID: Record<string, RunewordDef> = Object.fromEntries(RUNEWORDS.map((r) => [r.id, r]));
+
+/**
+ * The runewords this game made up before Diablo II's (their rows are in src/game/save.ts, for old
+ * saves): items made from them keep them, but none can be made any more
+ */
+export const OLD_RUNEWORD_IDS = ['rw_emberoath', 'rw_longnight', 'rw_thunderwrath', 'rw_ironheart', 'rw_starlight', 'rw_windrunner', 'rw_abyssking'] as const;
+export type OldRunewordId = (typeof OLD_RUNEWORD_IDS)[number];
+
+export function isOldRuneword(id: string | undefined): boolean {
+  return (OLD_RUNEWORD_IDS as readonly (string | undefined)[]).includes(id);
+}

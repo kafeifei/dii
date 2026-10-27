@@ -27,7 +27,8 @@ export type ItemType =
   | 'potion'
   | 'rune'
   | 'gem'
-  | 'cube';
+  | 'cube'
+  | 'unknown';
 
 export type EquipSlot = 'head' | 'neck' | 'body' | 'weapon' | 'offhand' | 'hands' | 'waist' | 'feet' | 'ring1' | 'ring2';
 
@@ -211,6 +212,10 @@ for (const r of D2_RUNES) B.push({ id: r.id, code: r.id, name: r.name, en: r.en,
 for (const g of D2_GEMS) B.push({ id: g.id, code: g.id, name: g.name, en: g.en, type: 'gem', itype: 'gem', w: 1, h: 1, qlvl: g.qlvl, reqLvl: g.reqLvl, price: g.price, tint: GEM_TINT[g.gem] });
 // ── the Horadric Cube: found once, never sold ──
 B.push({ id: 'cube', code: 'box', name: '赫拉迪姆魔盒', en: 'Horadric Cube', type: 'cube', w: 2, h: 2, qlvl: 0, price: 0, noDrop: true, noSell: true, tint: '#c8a86a' });
+// ── what a save's item becomes when this build doesn't know its base (a newer build's, say) ──
+/** the unknown item's base: it holds the item as saved (Item.raw) until a build that knows it loads the save */
+export const UNKNOWN_BASE = 'unknown';
+B.push({ id: UNKNOWN_BASE, name: '未知物品', type: 'unknown', w: 1, h: 1, qlvl: 0, price: 0, noDrop: true, noSell: true, tint: '#8a8278' });
 
 export const ITEM_BASES: Record<string, ItemBase> = Object.fromEntries(B.map((b) => [b.id, b]));
 export const ALL_BASES = B;
