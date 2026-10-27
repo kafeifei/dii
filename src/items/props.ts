@@ -49,6 +49,17 @@ const FLAGS = new Set(['knock', 'ignore-ac', 'nofreeze', 'half-freeze', 'noheal'
 
 const CLASS_CODES = new Set(['ama', 'sor', 'nec', 'pal', 'bar', 'dru', 'ass', 'war']);
 
+/**
+ * Every property code propMods reads, for tools/d2-import.mjs to check its tables against: keep in
+ * step with the switch below. pois-max and pois-len are read together with pois-min.
+ */
+export const PROP_CODES: readonly string[] = [
+  ...Object.keys(SIMPLE), ...Object.keys(PER_LEVEL), ...Object.keys(PROC), ...CLASS_CODES,
+  'ac', 'howl', 'rep-dur', 'dmg', 'dmg-fire', 'dmg-ltng', 'dmg-cold', 'dmg-mag', 'dmg-elem',
+  'fire-min', 'fire-max', 'ltng-min', 'ltng-max', 'cold-min', 'cold-max', 'mag-min', 'mag-max',
+  'dmg-pois', 'pois-min', 'pois-max', 'pois-len', 'skill', 'oskill', 'aura', 'charged', 'skilltab',
+];
+
 export type Roll = (min: number, max: number) => number;
 export const rollRandom: Roll = (min, max) => randInt(Math.min(min, max), Math.max(min, max));
 /** the top of every range, for describing what a property can be */
