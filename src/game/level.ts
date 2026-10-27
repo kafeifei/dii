@@ -2,6 +2,7 @@ import { RNG, type P2 } from '../core/math';
 import { MONSTERS } from '../data/monsters';
 import { areaDef, areaForDepth, areaLevel, type AreaDef } from '../world/areas';
 import { bfsDistances, dungeonFloor, generateDungeon, generateGallery, generateTown, isWild, themeForFloor, type Layout } from '../world/levelgen';
+import type { TileMap } from '../world/tilemap';
 import { generateWild } from '../world/wild';
 
 /** dev showroom instead of the camp (see generateGallery) */
@@ -12,6 +13,14 @@ import { ITEM_BASES } from '../data/items';
 import { createItem } from '../items/gen';
 import { DelayedBlast, GroundItem, Hammer, Projectile, WorldObject } from './objects';
 import { SHRINES } from '../data/shrines';
+
+/** the box an area's tiles fill on a level's map: first and last column (x) and row (z), inclusive */
+export interface AreaBox {
+  x0: number;
+  z0: number;
+  x1: number;
+  z1: number;
+}
 
 export class Level {
   layout: Layout;
@@ -30,17 +39,28 @@ export class Level {
    * dungeon, the first floor's in the wilderness, 0 in the camp
    */
   floor: number;
-  /** the area each tile is in (AreaDef ids, row by row); today a map is one area, all of it */
+  /** the area each tile is in (AreaDef ids, row by row): the layout's areaOf, or the depth's one area all over */
   readonly areas: Uint16Array;
+  /**
+   * the map as monsters walk it: on a map with a town and more, the town's tiles are shut to them
+   * (D2Common Path.cpp PATH_IsTargetDestinationAllowed: a monster that may not be in town gets no
+   * path into a DUNGEON_IsRoomInTown room); otherwise the map itself
+   */
+  readonly monsterMap: TileMap;
 
-  constructor(depth: number, seed: number) {
+  /**
+   * `layout`: a map made already to host instead of the depth's own, of several areas (the West
+   * overworld, src/world/overworld.ts); its wilderness is as hard as the first floor, as wild.ts's is
+   */
+  constructor(depth: number, seed: number, layout?: Layout) {
     this.depth = depth;
     const wild = isWild(depth);
     const area = areaForDepth(depth).id;
-    this.floor = depth === 0 ? 0 : wild ? 1 : dungeonFloor(depth);
-    this.layout = depth === 0 ? (GALLERY ? generateGallery(area) : generateTown(area)) : wild ? generateWild(seed) : generateDungeon(this.floor, seed, area);
+    this.floor = layout ? 1 : depth === 0 ? 0 : wild ? 1 : dungeonFloor(depth);
+    this.layout = layout ?? (depth === 0 ? (GALLERY ? generateGallery(area) : generateTown(area)) : wild ? generateWild(seed) : generateDungeon(this.floor, seed, area));
     const L = this.layout;
-    this.areas = new Uint16Array(L.map.w * L.map.h).fill(area);
+    this.areas = L.areaOf ?? new Uint16Array(L.map.w * L.map.h).fill(area);
+    this.monsterMap = this.shutTowns();
     if (L.stairs) this.objects.push(new WorldObject('stairs', L.stairs, wild ? `通往${themeForFloor(1).name}` : `下行至第 ${this.floor + 1} 层`, 0.9));
     const shrineRng = new RNG(seed ^ 0x51ed);
     for (const s of L.shrines ?? []) {
@@ -146,6 +166,14 @@ export class Level {
       const rng = new RNG(seed ^ 0x9e3779b9 ^ (id === own ? 0 : Math.imul(id, 0x85ebca6b)));
       spawnArea(this, area, rng, { floor: this.floor, box, reach, from: L.start });
     }
+  }
+
+  /** monsters keep out of a town that shares its map (monsterMap): its tiles, if the map has others */
+  private shutTowns(): TileMap {
+    const town = new Uint8Array(this.areas.length);
+    let towns = 0;
+    for (let i = 0; i < town.length; i++) if (areaDef(this.areas[i])!.kind === 'town') (town[i] = 1), towns++;
+    return towns > 0 && towns < town.length ? this.map.without(town) : this.map;
   }
 
   /** coming back to a floor: survivors heal and go home, stray missiles are gone */

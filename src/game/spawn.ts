@@ -112,7 +112,8 @@ function placement(level: Level, area: AreaDef, rng: RNG, opts: SpawnOpts): Plac
     near(c, r) {
       for (let k = 0; k < 12; k++) {
         const p = { x: c.x + rng.range(-r, r), z: c.z + rng.range(-r, r) };
-        if (reachable(p) && map.circleClear(p.x, p.z, 0.3)) return p;
+        // monsters keep out of a town on the map (Level.monsterMap)
+        if (reachable(p) && level.monsterMap.circleClear(p.x, p.z, 0.3)) return p;
       }
       return { ...c };
     },

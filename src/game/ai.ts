@@ -154,8 +154,11 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
     return;
   }
 
+  // a hero in town is no target (D2Game AiUtil.cpp AIUTIL_CanSelectHostileTarget: not if
+  // DUNGEON_IsRoomInTown); monsters by it on the same map let them be, as if they were dead
+  const gone = p.dead || g.level.inTown(p.pos);
   if (!m.awake) {
-    if (p.dead) return;
+    if (gone) return;
     if ((dP < 10 && m.hasLos) || dP < 3) {
       m.awake = true;
       wakePack(g, m);
@@ -168,7 +171,7 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
       return;
     }
   }
-  if (p.dead) {
+  if (gone) {
     // wander back home
     if (stepToward(g, m, m.homePos, m.speed * 0.5, dt, 0.5)) m.setState('idle');
     else if (m.state !== 'move') m.setState('move');

@@ -3,8 +3,13 @@ import { findPath } from '../world/pathfinding';
 import type { Actor } from './actor';
 import type { Game } from './game';
 
+/** the map an actor walks: monsters' keeps them out of a town on it (Level.monsterMap) */
+function mapOf(g: Game, a: Actor) {
+  return a.faction === 'monster' ? g.level.monsterMap : g.level.map;
+}
+
 export function moveBy(g: Game, a: Actor, dx: number, dz: number) {
-  const map = g.level.map;
+  const map = mapOf(g, a);
   // sub-step large moves so we never tunnel through a wall
   const len = Math.hypot(dx, dz);
   const steps = Math.max(1, Math.ceil(len / 0.3));
@@ -34,7 +39,7 @@ export function stepToward(g: Game, a: Actor, target: P2, speed: number, dt: num
     a.path = null;
     return true;
   }
-  const map = g.level.map;
+  const map = mapOf(g, a);
   a.pathAge += dt;
   let waypoint: P2 = target;
   // steer straight only with a clear line: furniture can sit between nearby actors

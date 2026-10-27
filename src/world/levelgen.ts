@@ -174,6 +174,8 @@ export interface Layout {
   props: Prop[];
   wallDecor: WallDecor[];
   npcs?: Npc[];
+  /** a map of several areas (the overworld): the area of every tile, row by row; without it the map is all one area */
+  areaOf?: Uint16Array;
 }
 
 function roomCenter(r: Room): P2 {
