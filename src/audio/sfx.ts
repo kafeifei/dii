@@ -693,6 +693,11 @@ export class Sfx {
         this.noise(t, 0.5, { type: 'lowpass', f0: 400, f1: 1600, q: 0.7, gain: 0.35, attack: 0.05 });
         this.noise(t + 0.05, 0.4, { type: 'bandpass', f0: 3000, q: 0.5, gain: 0.08 });
         break;
+      case 'poison':
+        // a wet hiss, a gurgle under it
+        this.noise(t, 0.45, { type: 'bandpass', f0: r(2200, 2800), f1: 900, q: 1.2, gain: 0.16, attack: 0.03 });
+        this.tone(t + 0.04, 0.3, { type: 'sine', f0: r(220, 260), f1: 120, gain: 0.08 });
+        break;
       case 'cold':
         for (let i = 0; i < 6; i++) this.tone(t + i * 0.025, 0.4, { type: 'sine', f0: r(2500, 5000), gain: 0.04 });
         this.noise(t, 0.3, { type: 'highpass', f0: 4000, gain: 0.08 });

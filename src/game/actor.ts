@@ -10,6 +10,8 @@ export interface Resists {
   light: number;
   poison: number;
   phys: number;
+  /** a monster's magic resistance (D2's MagicResist) */
+  magic?: number;
 }
 
 export interface DamagePacket {
@@ -50,6 +52,11 @@ export interface DamagePacket {
   defDown?: number;
   /** the attacker's level, for open wounds */
   alvl?: number;
+  // ── a monster's blows ──
+  /** the attack's own to-hit, its mode's (a monster's differs by attack mode) */
+  ar?: number;
+  /** mana burned off the hero (mana burn) */
+  mana?: number;
 }
 
 export function emptyPacket(): DamagePacket {

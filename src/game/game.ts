@@ -8,6 +8,7 @@ import { D2_TO_GAME } from '../data/d2/skillmap';
 import { createItem, isGold, newGameDrops, type Drop } from '../items/gen';
 import { CAMP_VENDORS, fillStore, Store } from '../items/vendor';
 import { baseOf, displayName, isUnknown, type Item } from '../items/item';
+import { coldEnchantBurst, fireEnchantBurst, lightEnchantBolts } from './d2/monstats';
 import { charStats, potionHeal } from './d2/stats';
 import { deathPenalty, type DeathPenalty } from './d2/death';
 import { killXp } from './d2/xp';
@@ -270,21 +271,21 @@ export class Game {
     if (WEST_AREAS.includes(id)) {
       if (!this.west) {
         const ow = generateOverworld(this.worldSeed);
-        // Blood Moor and Cold Plains are as hard as the old wilderness, depth WILD_MAPS
-        this.west = new Level(WILD_MAPS, ow.seed, ow);
+        // its monsters in the difficulty played (a new difficulty is a new game: setDifficulty)
+        this.west = new Level(WILD_MAPS, ow.seed, ow, this.player.difficulty);
       }
       return this.west;
     }
     if (id === DEN_OF_EVIL) {
       // its own seed from the world's, so a reload finds the same den
       const seed = (Math.imul(this.worldSeed ^ 0x0de0f, 0x9e3779b1) + DEN_OF_EVIL) >>> 0;
-      return (this.den ??= new Level(WILD_MAPS, seed, generateDen(seed)));
+      return (this.den ??= new Level(WILD_MAPS, seed, generateDen(seed), this.player.difficulty));
     }
     if (trialFloor(id) === undefined) return null;
     const depth = depthForArea(id)!;
     // like D2: going back to the floor you left (waypoint, after dying) finds it as you left it
-    if (!fresh && this.lastDungeon?.depth === depth) return this.lastDungeon;
-    return (this.lastDungeon = new Level(depth, newSeed()));
+    if (!fresh && this.lastDungeon?.depth === depth && this.lastDungeon.difficulty === this.player.difficulty) return this.lastDungeon;
+    return (this.lastDungeon = new Level(depth, newSeed(), undefined, this.player.difficulty));
   }
 
   /**
@@ -309,7 +310,8 @@ export class Game {
 
   /** the debug panel's trial ground: floor `floor` of the endless dungeon, made anew, played in difficulty `d` */
   enterTrial(floor: number, d?: Difficulty) {
-    if (d !== undefined) this.setDifficulty(d);
+    // the new difficulty's game begins on this floor, made once (setDifficulty would make one where the hero is)
+    if (d !== undefined) this.switchDifficulty(d);
     this.sfx.play('env.waypoint', { pos: this.player.pos });
     this.enterArea(dungeonArea(floor), 'stairs');
   }
@@ -1134,14 +1136,20 @@ export class Game {
     L.hammers = L.hammers.filter((h) => !h.dead);
   }
 
-  chargedBolts(m: Monster, n: number) {
-    for (let i = 0; i < n; i++) {
-      const a = Math.random() * Math.PI * 2;
+  /**
+   * A lightning-enchanted monster's charged bolts (MONSTERUNIQUE_CastLightUniqueMissile, MonsterUnique.cpp:1139-1191):
+   * two toward each of the four ways round it, lightunique missiles at half its level with their own
+   * lightning, at their velocity (75 %, the hero's scale) for their Range, wandering as charged bolts do
+   */
+  chargedBolts(m: Monster) {
+    const b = lightEnchantBolts(m.level);
+    for (let i = 0; i < 8; i++) {
+      const a = (Math.floor(i / 2) * Math.PI) / 2 + rand(-0.5, 0.5);
       const pk = emptyPacket();
-      pk.light = randInt(1, Math.max(2, Math.floor(m.dmg[1] * 0.8)));
+      pk.light = randInt(b.light[0], b.light[1]);
       pk.source = m;
       pk.spell = true;
-      const pr = new Projectile('chargedbolt', m.pos, { x: Math.sin(a) * 5, z: Math.cos(a) * 5 }, null, 'monster', pk, 1.6, 0.2);
+      const pr = new Projectile('chargedbolt', m.pos, { x: Math.sin(a) * b.speed, z: Math.cos(a) * b.speed }, null, 'monster', pk, b.life, 0.2);
       this.level.projectiles.push(pr);
     }
     this.sfx.play('skill.lightning_cast', { pos: m.pos, vol: 0.25 });
@@ -1174,28 +1182,35 @@ export class Game {
     this.spawnDrops(m.pos, this.rollLoot((hero) => monsterLoot(m, hero)));
     // fx
     this.fx.death(m, m.def.blood, elem);
+    // its look's death cry (src/data/monsters.ts voice), a big one's or a boss's the large one
     const big = m.rank === 'boss' || m.def.scale >= LARGE_MONSTER;
-    const snd = m.def.blood === 'bone' ? 'monster.die_bone' : big ? 'monster.die_large' : m.def.model === 'imp' || m.def.model === 'shaman' ? 'monster.die_imp' : 'monster.die';
+    const snd = m.def.voice === 'bone' ? 'monster.die_bone' : big ? 'monster.die_large' : m.def.voice === 'imp' ? 'monster.die_imp' : 'monster.die';
     this.sfx.play(snd, { pos: m.pos });
-    if (m.mods.includes('fireench')) {
+    // a fire-enchanted (MonUMod 9) leader bursts as it dies, a cold-enchanted (18) one freezes round it
+    // (src/game/d2/monstats.ts): only a champion's or unique's mode change sets them off, not its minions'
+    // (MonsterUnique.cpp:1052-1058, 2016-2020: bUnique is MONTYPEFLAG_UNIQUE, which a minion hasn't)
+    if (m.has(9) && (m.rank === 'champion' || m.rank === 'unique')) {
+      const b = fireEnchantBurst(m.def.row, m.difficulty, m.level, randInt);
       const pk = emptyPacket();
-      pk.fire = randInt(m.dmg[0], m.dmg[1]) * 1.5;
+      pk.phys = b.phys;
+      pk.fire = b.fire;
       pk.spell = true;
       pk.source = m;
-      this.level.blasts.push(new DelayedBlast(m.pos, 2.4, 0.45, pk, 'monster', 'fire', m));
+      this.level.blasts.push(new DelayedBlast(m.pos, b.radius, 0.45, pk, 'monster', 'fire', m));
       setTimeout(() => {
-        this.fx.burst('fireblast', m.pos, { radius: 2.4 });
+        this.fx.burst('fireblast', m.pos, { radius: b.radius });
         this.sfx.play('skill.fire_impact', { pos: m.pos, vol: 0.7 });
       }, 400);
     }
-    if (m.mods.includes('coldench')) {
+    if (m.has(18) && (m.rank === 'champion' || m.rank === 'unique')) {
+      const b = coldEnchantBurst(m.level);
       const pk = emptyPacket();
-      pk.cold = randInt(m.dmg[0], m.dmg[1]);
-      pk.chill = 3;
+      pk.cold = randInt(b.cold[0], b.cold[1]);
+      pk.chill = b.chill;
       pk.spell = true;
       pk.source = m;
-      this.level.blasts.push(new DelayedBlast(m.pos, 3.2, 0.1, pk, 'monster', 'frost', m));
-      this.fx.burst('frostnova', m.pos, { radius: 3.2 });
+      this.level.blasts.push(new DelayedBlast(m.pos, b.radius, 0.1, pk, 'monster', 'frost', m));
+      this.fx.burst('frostnova', m.pos, { radius: b.radius });
       this.sfx.play('skill.cold_impact', { pos: m.pos, vol: 0.7 });
     }
     // imps nearby panic
@@ -1645,18 +1660,35 @@ export class Game {
 
   /**
    * Play on in another difficulty (the debug panel): its waypoints, which Diablo II keeps apart for
-   * each difficulty, its treasure classes, its area levels for chests and barrels, its resistance
-   * and death penalties. The monsters play no harder yet (src/game/spawn.ts)
+   * each difficulty, its treasure classes, its area levels, its monsters, its resistance and death
+   * penalties. In D2 that is another game, begun in the act's town: the maps are made anew in the
+   * same world (what lay on the ground goes with the old ones) and the hero starts at the camp's
+   * waypoint, not among the new difficulty's packs (a trial floor: at a new floor's start)
    */
   setDifficulty(d: Difficulty) {
     const p = this.player;
-    if (d === p.difficulty) return;
+    const here = this.level ? this.level.areaAt(p.pos.x, p.pos.z).id : undefined;
+    const was = this.level;
+    if (!this.switchDifficulty(d)) return;
+    if (was && was !== this.gallery && here !== undefined) {
+      if (trialFloor(here) !== undefined) this.enterArea(here, 'stairs');
+      else this.enterArea(CAMP_AREA, 'waypoint');
+    }
+    this.save();
+  }
+
+  /** another difficulty's game, the hero not yet moved into it: its waypoints and penalties, no maps of the old one. False if it is the one played */
+  private switchDifficulty(d: Difficulty): boolean {
+    const p = this.player;
+    if (d === p.difficulty) return false;
     // the waypoints so far stay with the difficulty they were touched in
     this.save();
     p.difficulty = d;
     // the resistances take the new difficulty's penalty
     p.markDirty();
     p.waypoints = savedWaypoints(p, d);
-    this.save();
+    this.closePortals();
+    this.west = this.den = this.lastDungeon = null;
+    return true;
   }
 }

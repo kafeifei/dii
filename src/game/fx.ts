@@ -8,6 +8,7 @@ export type FxKind =
   | 'lightning'
   | 'frostnova'
   | 'fireblast'
+  | 'poisoncloud'
   | 'levelup'
   | 'potion_hp'
   | 'potion_mp'

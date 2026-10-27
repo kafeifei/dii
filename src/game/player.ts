@@ -17,18 +17,12 @@ import { CAMP_AREA } from '../world/areas';
 import { Actor, type ActorState, type Resists } from './actor';
 import type { Corpse } from './corpse';
 import { attackAnim, blockFrames, castAnim, FRAMES_PER_SEC, hitRecoveryFrames, toSeconds, weaponClass, type AnimFrames, type AttackSpeed, type WeaponClass } from './d2/frames';
-import { attackRating, baseLife, baseMana, baseStamina, blockChance, charStats, defense, difficulty, levelUpPoints, moveVelocity, resistance } from './d2/stats';
+import { MPS_PER_VELOCITY, attackRating, baseLife, baseMana, baseStamina, blockChance, charStats, defense, difficulty, levelUpPoints, moveVelocity, resistance } from './d2/stats';
 import { addXp, MAX_LEVEL, xpForLevel } from './d2/xp';
 import type { Monster } from './monster';
 import type { Difficulty } from './save';
 
 export { MAX_LEVEL, xpForLevel };
-
-/**
- * metres a second for one point of D2's velocity: the game's run, 4.6 m/s from before D2's
- * movement, is CharStats RunVelocity 9 (walk 6 is then 3.07 m/s)
- */
-const MPS_PER_VELOCITY = 4.6 / 9;
 
 /** a normal attack's frames, with a weapon class the table lacks (a claw) swung as hand to hand */
 function attackFrames(cls: PlayerClass, wclass: WeaponClass, o: AttackSpeed): AnimFrames {
@@ -188,7 +182,7 @@ export class Player extends Actor {
   depthReached = 0;
   /** the areas whose waypoints have been touched in the difficulty being played, of those this build has (builtWaypoints) */
   waypoints: number[] = [CAMP_AREA];
-  /** the difficulty being played (Game.setDifficulty): monsters play no harder yet; it is saved and shown, keeps its own waypoints, drops from its own treasure classes and its chests at its area levels */
+  /** the difficulty being played (Game.setDifficulty): its monsters by D2's tables and its area levels; it is saved and shown, keeps its own waypoints, drops from its own treasure classes and its chests at its area levels */
   difficulty: Difficulty = 0;
   /** a shrine's blessing (one at a time) and its seconds left */
   shrine: { id: string; left: number } | null = null;

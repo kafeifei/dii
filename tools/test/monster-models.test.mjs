@@ -4,7 +4,9 @@
 // spearwoman's spear and the ranger's bow aimed at the attack's landing, every model named one the
 // game builds. The quill rat as merged: small, its walk one loop, the hind right leg (misnamed by
 // Tripo) stepping as the left one mirrored half a step later, and src/render/legs.ts QuadRig finding
-// its legs and rolling it over onto its side when it dies.
+// its legs and rolling it over onto its side when it dies. And every monster a built area or the
+// trial ground can spawn (levels.txt mon/nmon/umon, what they bring, the superuniques, Act 1's
+// bosses) has a look (src/data/monsters.ts) whose body is a model the game builds.
 import fs from 'node:fs';
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
@@ -43,6 +45,29 @@ export default async (load) => {
   const rat = monsterSpec(mon('quillrat'));
   check(rat.model === 'mon_quillrat' && rat.legs === 'quadruped' && rat.clips.move[0].clip === 'Walk', `quill rat ${rat.model} ${rat.legs}`);
   for (const m of ['mon_rogue_fallen', 'mon_quillrat']) check(built.has(m), `${m} not in the built models`);
+
+  // every monster that can spawn has a look, drawn by a built model
+  const { monsterDef, lookedMonsters } = await load('/src/data/monsters.ts');
+  const { areaList } = await load('/src/world/areas.ts');
+  const { D2X_AREAS } = await load('/src/data/d2x/areas.ts');
+  const { D2X_MONSTERS } = await load('/src/data/d2x/monsters.ts');
+  const { D2X_SUPERUNIQUES } = await load('/src/data/d2x/superuniques.ts');
+  const { Monster } = await load('/src/game/monster.ts');
+  const can = new Set(['smith', 'bloodraven', 'andariel', 'zombie2']);
+  for (const a of areaList()) {
+    const row = D2X_AREAS.find((x) => x.id === a.id);
+    for (const id of [...(row?.mon ?? []), ...(row?.nmon ?? []), ...(row?.umon ?? [])]) can.add(id);
+    for (const key of row?.superuniques ?? []) can.add(D2X_SUPERUNIQUES.find((s) => s.key === key).mon);
+  }
+  for (const id of [...can]) for (const mid of D2X_MONSTERS[id]?.minions ?? []) can.add(mid);
+  for (const d of lookedMonsters()) if (d.row.spawns && !d.boss) can.add(d.id);
+  for (const id of can) {
+    const def = monsterDef(id);
+    if (!check(def, `${id} can spawn but has no look`)) continue;
+    const s = monsterSpec(new Monster(def, def.row.diff[0].level, 'normal', { x: 0, z: 0 }));
+    check(built.has(s.model), `${id} is drawn as ${s.model}, not a built model`);
+    check(def.name && !/[A-Za-z]/.test(def.name), `${id} is named ${def.name}`);
+  }
 
   // the merged quill rat
   const file = 'models-src/ai/mon_quillrat.glb';

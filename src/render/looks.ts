@@ -9,8 +9,7 @@ export function monsterLook(m: Monster): RigLook {
   const uniq = m.rank === 'unique';
   const tint = champ ? '#4a6aff' : uniq ? '#d8a040' : null;
   const emissive = champ ? '#1a2a8a' : uniq ? '#5a3a08' : null;
-  let scale = d.scale * (champ ? 1.1 : uniq ? 1.18 : 1);
-  if (m.mods.includes('fireench')) scale *= 1;
+  const scale = d.scale * (champ ? 1.1 : uniq ? 1.18 : 1);
   const base: RigLook = {
     type: 'humanoid',
     scale,

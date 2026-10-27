@@ -18,7 +18,8 @@ export default async (load) => {
   const { Game } = await load('/src/game/game.ts');
   const { Sfx } = await load('/src/audio/sfx.ts');
   const { Monster } = await load('/src/game/monster.ts');
-  const { MONSTERS } = await load('/src/data/monsters.ts');
+  const { monsterDef } = await load('/src/data/monsters.ts');
+  const ZOMBIE = monsterDef('zombie1');
   const { createItem } = await load('/src/items/gen.ts');
   const { ITEM_BASES } = await load('/src/data/items.ts');
   const { monsterStrike, playerStrike, hitOdds, applyDamage } = await load('/src/game/combat.ts');
@@ -126,7 +127,7 @@ export default async (load) => {
   game.enterLevel(1, 'waypoint');
   {
     for (const [mlvl, shrine] of [[3, 0], [12, 0], [1, 0]]) {
-      const m = new Monster(MONSTERS.zombie, mlvl, 'normal', { ...p.pos });
+      const m = new Monster(ZOMBIE, mlvl, 'normal', { ...p.pos });
       game.level.monsters.push(m);
       const xp0 = p.xp;
       const want = X.killXp(m.xp, p.level, m.level, shrine);
@@ -140,7 +141,7 @@ export default async (load) => {
 
   // ── hit chance both ways, with the levels; a running hero is always hit and blocks a third as often ──
   {
-    const m = new Monster(MONSTERS.zombie, 5, 'normal', { x: p.pos.x + 1, z: p.pos.z });
+    const m = new Monster(ZOMBIE, 5, 'normal', { x: p.pos.x + 1, z: p.pos.z });
     game.level.monsters.push(m);
     assert.equal(hitOdds(m.ar, p.stats.def, m.level, p.level), S.hitChance(m.ar, p.stats.def, 5, p.level) / 100);
     assert.equal(hitOdds(10, 10000, 1, 1), 0.05, 'never under 5 %');
@@ -260,6 +261,88 @@ export default async (load) => {
     delete p.equipment.ring2;
     p.markDirty();
     p.setState('idle');
+  }
+
+  // ── the difficulty's divisors (DifficultyLevels.txt): leech, chill and freeze; a fire-enchanted minion doesn't burst ──
+  {
+    const near = { x: p.pos.x + 30, z: p.pos.z };
+    const mon = (id, d, rank = 'normal', mods = []) => {
+      const m = new Monster(monsterDef(id), 5, rank, { ...near }, mods, { difficulty: d });
+      m.maxLife = m.life = 1000;
+      game.level.monsters.push(m);
+      return m;
+    };
+    const hit = (m, set) => {
+      const pk = emptyPacket();
+      pk.source = p;
+      Object.assign(pk, set);
+      applyDamage(game, m, pk, p.pos);
+    };
+    // leech: 100 physical with 9 % life stolen, × Drain, the 9 in 64ths over LifeStealDivisor 1/2/3
+    // (SUnitDmg.cpp:1154-1228): a quill rat (Drain 100) 9, 4.5 (288/64), and in hell its 50 %
+    // physical resistance halves the blow, 192/64 = 3 % of 50 = 1.5; a nightmare zombie (Drain 75) 75 × 4.5 %
+    for (const [id, d, want] of [['quillrat1', 0, 9], ['quillrat1', 1, 4.5], ['quillrat1', 2, 1.5], ['zombie1', 1, 3.375]]) {
+      p.difficulty = d;
+      p.life = 1;
+      hit(mon(id, d), { phys: 100, lifeSteal: 9 });
+      assert.ok(Math.abs(p.life - 1 - want) < 1e-9, `${id} d${d}: leeched ${p.life - 1}, want ${want}`);
+    }
+    // only off the life it had: 100 into a quill rat of 20 leeches 9 % of 20
+    p.difficulty = 0;
+    p.life = 1;
+    const low = mon('quillrat1', 0);
+    low.life = 20;
+    hit(low, { phys: 100, lifeSteal: 9 });
+    assert.ok(Math.abs(p.life - 1 - 1.8) < 1e-9, `leeched ${p.life - 1} off 20 life`);
+    // the hero's chill on a fallen: its 2 s and the old bonus of 0.1 for 5 cold, over MonsterColdDivisor
+    // 1/2/4, hell's 40 % cold resistance taking 40 % off first; slowed by its ColdEffect −50/−40/−33
+    for (const [d, len, slow] of [[0, 2.1, 0.5], [1, 1.05, 0.4], [2, (2.1 * 0.6) / 4, 0.33]]) {
+      const m = mon('fallen1', d);
+      hit(m, { cold: 5, chill: 2 });
+      assert.ok(Math.abs(m.chillTime - len) < 1e-9 && m.chillAmount === slow, `fallen d${d}: chilled ${m.chillTime} s by ${m.chillAmount}`);
+    }
+    // freezing: 0.9 s (freeze 2) a plain fallen's over MonsterFreezeDivisor 1/2/4; a unique's only a chill
+    // over MonsterColdDivisor (SUnitDmg.cpp:1645-1733)
+    for (const d of [0, 1, 2]) {
+      const res = 1 - [0, 0, 40][d] / 100;
+      const div = [1, 2, 4][d];
+      const m = mon('fallen1', d);
+      hit(m, { freeze: 2 });
+      assert.ok(Math.abs(m.stunTime - (0.9 * res) / div) < 1e-9, `fallen d${d}: frozen ${m.stunTime} s`);
+      const u = mon('fallen1', d, 'unique');
+      hit(u, { freeze: 2 });
+      assert.ok(u.stunTime === 0 && Math.abs(u.chillTime - (0.9 * res) / div) < 1e-9, `unique fallen d${d}: frozen ${u.stunTime}, chilled ${u.chillTime}`);
+    }
+    // a monster's 2 s chill on the hero: less the hero's cold resistance with the difficulty's penalty
+    // (none, −40, −100: 2, 2.8, 4 s), slowed by half (SUnitDmg.cpp:85-99)
+    const caster = mon('fallen1', 0);
+    for (const d of [0, 1, 2]) {
+      p.difficulty = d;
+      p.markDirty();
+      p.chillTime = 0;
+      p.life = p.stats.maxLife;
+      const pk = emptyPacket();
+      pk.cold = 1;
+      pk.chill = 2;
+      pk.source = caster;
+      applyDamage(game, p, pk, caster.pos);
+      const want = (2 * (100 - Math.min(100, p.stats.res.cold))) / 100;
+      assert.ok(Math.abs(p.chillTime - want) < 1e-9 && p.chillAmount === 0.5, `hero d${d} (cold ${p.stats.res.cold}): chilled ${p.chillTime} s by ${p.chillAmount}`);
+    }
+    p.difficulty = 0;
+    p.markDirty();
+    p.chillTime = 0;
+    p.setState('idle');
+    // fire enchanted bursts as a unique dies, not as its minion does (MonsterUnique.cpp:1052-1058, 2016-2020)
+    const blasts = game.level.blasts.length;
+    game.killMonster(mon('fallen1', 0, 'minion', [9]), 'phys');
+    assert.equal(game.level.blasts.length, blasts, "a fire-enchanted minion's burst");
+    game.killMonster(mon('fallen1', 0, 'unique', [9]), 'phys');
+    assert.equal(game.level.blasts.length, blasts + 1, "a fire-enchanted unique's burst");
+    game.level.blasts.length = blasts;
+    game.level.monsters = game.level.monsters.filter((m) => !m.def || m.pos.x !== near.x);
+    p.life = p.stats.maxLife;
+    notes.push('leech, chill and freeze by the difficulty\'s divisors');
   }
 
   // ── stamina: running out of town spends it, D2's drain; at none the hero walks; standing brings it back ──

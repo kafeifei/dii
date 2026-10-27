@@ -31,6 +31,7 @@ export type Synth =
   | 'fire'
   | 'cold'
   | 'lightning'
+  | 'poison'
   | 'hammer'
   | 'holy'
   | 'aura'
@@ -119,6 +120,8 @@ const GROUPS = {
     cold_impact: { synth: 'cold', max: 4 },
     lightning_cast: { synth: 'lightning' },
     lightning_impact: { synth: 'lightning' },
+    /** a poison spray or spit (Andariel's, a mage's) */
+    poison_cast: { synth: 'poison', max: 3 },
     holy_cast: { synth: 'holy', max: 2 },
     /** blessed hammer */
     magic_cast: { synth: 'hammer' },

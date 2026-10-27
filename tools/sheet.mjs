@@ -1,6 +1,7 @@
 // Model contact sheet for tools/play.mjs: every monster (plus player/vendor) close-up in a few states.
-// IDS=zombie,lich STATES=idle,attack,death SHEET=out.png node tools/play.mjs tools/sheet.mjs --url http://localhost:PORT/?dev
-// An id that isn't in the monster table is taken as a body (MonsterModel) on a zombie's stats, and
+// IDS=zombie1,bloodraven STATES=idle,attack,death SHEET=out.png node tools/play.mjs tools/sheet.mjs --url http://localhost:PORT/?dev
+// Ids are D2's monsters (D2X_MONSTERS, drawn by their looks: src/data/monsters.ts). An id that isn't
+// one with a look is taken as a body (MonsterModel) on a zombie1's stats, and
 // `<id>@<n>` draws it as actor n (bodies that vary what they carry roll it by actor id). States
 // besides idle / move / attack / death: cast, hit; `<state>@<f>` stops a timed state at fraction f
 // of a 4 s run (a death at f seconds). ZOOM=2.5 looks closer (default 4.5; under 3 the hero is
@@ -9,13 +10,16 @@
 export default async function (page, shot, log) {
   const zoom = +(process.env.ZOOM || 4.5);
   const cell = +(process.env.CELL || 260);
-  const ids = (process.env.IDS || 'zombie,skeleton,skelarcher,imp,shaman,ghoul,spider,wraith,demon,hellimp,butcher,lich,overlord,player,vendor').split(',');
+  const ids = (
+    process.env.IDS ||
+    'zombie1,fallen1,fallenshaman1,quillrat1,brute1,corruptrogue1,cr_lancer1,cr_archer1,skeleton1,sk_archer1,skmage_fire1,wraith1,arach1,goatman1,bighead1,foulcrow1,vampire5,fetish1,smith,bloodraven,andariel,player,vendor'
+  ).split(',');
   const states = (process.env.STATES || 'idle,attack,move').split(',');
   await page.evaluate(async ([zoom, facing]) => {
     game.enterLevel(1, 'stairs');
     window.__Ctor = game.level.monsters[0].constructor;
     game.enterLevel(0, 'stairs');
-    window.__M = (await import('/src/data/monsters.ts')).MONSTERS;
+    window.__def = (await import('/src/data/monsters.ts')).monsterDef;
     game.level.monsters.length = 0;
     // the shots are taken in the camp, whose tiles the sim keeps monsters off (Level.monsterMap)
     game.level.monsterMap = game.level.map;
@@ -46,7 +50,8 @@ export default async function (page, shot, log) {
         else {
           const pos = { x: p.pos.x + window.__off.x, z: p.pos.z + window.__off.z };
           const [key, actor] = id.split('@');
-          target = new window.__Ctor(window.__M[key] ?? { ...window.__M.zombie, id: key, model: key, scale: 1 }, 5, 'normal', pos);
+          const def = window.__def(key);
+          target = new window.__Ctor(def ?? { ...window.__def('zombie1'), id: key, model: key, scale: 1, attack: [], cast: undefined }, def ? def.row.diff[0].level : 5, 'normal', pos);
           if (actor) target.id = +actor;
           // held still as the gallery holds its row (level.ts): the AI leaves its state alone
           target.stunTime = 1e9;

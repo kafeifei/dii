@@ -1,4 +1,5 @@
 import { chance, randInt, type P2 } from '../core/math';
+import { D2X_DIFFICULTIES } from '../data/d2x/difficulty';
 import { isBlunt } from '../data/items';
 import type { Elem } from '../data/monsters';
 import { struckArmor, wearDown } from '../items/d2/durability';
@@ -106,7 +107,8 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
   let fire = mitigate(pk.fire, resOf('fire'), mdr);
   let cold = mitigate(pk.cold, resOf('cold'), mdr);
   let light = mitigate(pk.light, resOf('light'), mdr);
-  let magic = mitigate(pk.magic, 0, mdr);
+  // a monster's magic resistance (MonStats ResMa) counts; the hero has none
+  let magic = mitigate(pk.magic, pl ? 0 : (res.magic ?? 0), mdr);
   const poison = mitigate(pk.poison, resOf('poison'));
   if (pl && b) {
     // then absorption, the % and then the flat amount, turns what it stops into life (SUnitDmg.cpp:1036-1057)
@@ -123,6 +125,8 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
     if (healed > 0) pl.life = Math.min(pl.stats.maxLife, pl.life + healed);
   }
   const total = Math.max(0, phys) + Math.max(0, fire) + Math.max(0, cold) + Math.max(0, light) + Math.max(0, magic);
+  // the leech goes by the physical damage up to the life it had (SUnitDmg.cpp:1150-1151)
+  const physTaken = Math.min(Math.max(0, phys), Math.max(0, target.life));
   target.life -= total;
   target.hitFlash = 1;
   if (pl && pl.stats.bag.dmgToMana) pl.mana = Math.min(pl.stats.maxMana, pl.mana + (total * pl.stats.bag.dmgToMana) / 100);
@@ -140,9 +144,10 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
   }
   const noFreeze = pl ? !!pl.stats.bag.cantFreeze : false;
   if ((pk.cold > 0 || pk.chill) && !noFreeze) {
-    const dur = ((pk.chill ?? 1.5) + Math.min(2, pk.cold * 0.02)) * (pl?.stats.bag.halfFreeze ? 0.5 : 1);
-    target.chillTime = Math.max(target.chillTime, isPlayer ? dur * 0.5 : dur);
-    target.chillAmount = isPlayer ? 0.35 : 0.5;
+    // the blow's cold length: a monster's its D2 frames (MonStats El, its enchantments); the hero's
+    // skills and gear (not D2's yet) their own, with the old bonus for the cold done
+    const base = pl ? (pk.chill ?? 0) : (pk.chill ?? 1.5) + Math.min(2, pk.cold * 0.02);
+    chill(target, base, resOf('cold'), !!pl?.stats.bag.halfFreeze);
   }
   const dir = from ? { x: target.pos.x - from.x, z: target.pos.z - from.z } : { x: 0, z: 0 };
   const dl = Math.hypot(dir.x, dir.z) || 1;
@@ -152,7 +157,7 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
   if (target instanceof Monster) {
     const m = target;
     m.awake = true;
-    strikeEffects(m, pk, res.phys);
+    strikeEffects(m, pk, res.phys, resOf('cold'));
     if (pk.knockback && m.rank !== 'boss') {
       const kb = pk.knockback * (m.rank === 'unique' ? 0.5 : 1);
       m.knockVel.x += dir.x * kb;
@@ -162,12 +167,15 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
     if (heavy && m.life > 0 && m.rank !== 'boss' && m.state !== 'dead') {
       m.setState('hit', m.rank === 'normal' || m.rank === 'minion' ? 0.28 : 0.15);
     }
-    // leech
+    // leech, as much of it as works on this monster (MonStats Drain), the hero's divided by the
+    // difficulty's LifeStealDivisor and ManaStealDivisor in 64ths (SUnitDmg.cpp:1154-1228)
     const src = pk.source;
     if (src instanceof Player && !src.dead) {
-      const physDone = Math.max(0, phys);
-      if (pk.lifeSteal) src.life = Math.min(src.stats.maxLife, src.life + (physDone * pk.lifeSteal) / 100);
-      if (pk.manaSteal) src.mana = Math.min(src.stats.maxMana, src.mana + (physDone * pk.manaSteal) / 100);
+      const levels = D2X_DIFFICULTIES[src.difficulty];
+      const physDone = (physTaken * m.drain) / 100;
+      const steal = (pct: number, div: number) => (physDone * Math.trunc((pct * 64) / (div || 1))) / 64 / 100;
+      if (pk.lifeSteal) src.life = Math.min(src.stats.maxLife, src.life + steal(pk.lifeSteal, levels.lifeStealDivisor));
+      if (pk.manaSteal) src.mana = Math.min(src.stats.maxMana, src.mana + steal(pk.manaSteal, levels.manaStealDivisor));
     }
     g.fx.hit(m, m.def.blood, dir, !!heavy, mainElem(pk));
     if (pk.crit) g.fx.text(m.pos, '致命一击', '#ffdd55');
@@ -176,10 +184,11 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
       g.hitstop = Math.max(g.hitstop, pk.crit ? 0.07 : 0.045);
       g.fx.shake(pk.crit ? 0.25 : 0.12);
     }
-    // lightning enchanted: charged bolts when struck
-    if (m.mods.includes('lightench') && m.life > 0 && m.specialCd <= 0) {
-      m.specialCd = 0.5;
-      g.chargedBolts(m, 4 + Math.floor(Math.random() * 3));
+    // a lightning-enchanted leader looses charged bolts when struck, not twice in 10 frames
+    // (MONSTERUNIQUE_CastLightUniqueMissile, MonsterUnique.cpp:1152-1161)
+    if (m.has(17) && (m.rank === 'champion' || m.rank === 'unique') && m.life > 0 && g.time - m.boltsAt >= 10 / 25) {
+      m.boltsAt = g.time;
+      g.chargedBolts(m);
     }
     if (m.life <= 0) g.killMonster(m, mainElem(pk));
   } else if (isPlayer) {
@@ -209,8 +218,8 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
       src.hitFlash = 0.6;
       if (src.life <= 0) g.killMonster(src, 'light');
     }
-    if (src instanceof Monster && src.mods.includes('manaburn')) p.mana = Math.max(0, p.mana - total * 0.6);
-    if (src instanceof Monster && src.mods.includes('vampiric') && src.noHealTime <= 0) src.life = Math.min(src.maxLife, src.life + total * 0.25);
+    // mana burn's (and the ghosts') mana drain
+    if (pk.mana) p.mana = Math.max(0, p.mana - pk.mana);
     if (src instanceof Monster && total > 0 && p.life > 0) g.onProc('procStruck', src);
     if (p.life <= 0) g.killPlayer();
   }
@@ -221,7 +230,7 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
  * What a weapon strike's Diablo II properties do to a monster beyond damage: crushing blow,
  * open wounds, freezing, slowing, blinding, fear, no healing, lost defense.
  */
-function strikeEffects(m: Monster, pk: DamagePacket, physRes: number) {
+function strikeEffects(m: Monster, pk: DamagePacket, physRes: number, coldRes: number) {
   const big = m.rank === 'boss' || m.rank === 'unique' || m.rank === 'champion';
   if (pk.cb && m.life > 0 && chance(pk.cb / 100)) {
     // a quarter of its current life (an eighth for bosses, champions and uniques), less physical resistance
@@ -231,10 +240,18 @@ function strikeEffects(m: Monster, pk: DamagePacket, physRes: number) {
     m.bleedDps = Math.max(m.bleedDps, openWoundsDps(pk.alvl ?? 1) / (m.rank === 'boss' ? 4 : 1));
     m.bleedTime = 8;
   }
-  if (pk.freeze && m.rank !== 'boss') {
-    const t = 0.4 + 0.25 * pk.freeze;
-    m.stunTime = Math.max(m.stunTime, t);
-    m.chillTime = Math.max(m.chillTime, t);
+  if (pk.freeze) {
+    // the hero's freeze length (not D2's yet), less the monster's cold resistance as a cold length
+    // is; a boss, champion or unique is only chilled for it, the rest frozen for it over the
+    // difficulty's MonsterFreezeDivisor if cold slows them at all (SUNITDMG_ApplyFreezeState, SUnitDmg.cpp:1645-1733;
+    // champions are MONTYPEFLAG_UNIQUE too, MonsterUnique.cpp:2464, 3000)
+    const t = (0.4 + 0.25 * pk.freeze) * (1 - Math.min(100, coldRes) / 100);
+    if (m.rank === 'boss' || m.rank === 'champion' || m.rank === 'unique' || m.def.row.boss) chill(m, t, 0, false);
+    else if (m.coldEffect < 0 && t > 0) {
+      const f = t / D2X_DIFFICULTIES[m.difficulty].monsterFreezeDivisor;
+      m.stunTime = Math.max(m.stunTime, f);
+      m.chillTime = Math.max(m.chillTime, f);
+    }
   }
   if (pk.slow) {
     m.slowTime = 3;
@@ -246,6 +263,24 @@ function strikeEffects(m: Monster, pk: DamagePacket, physRes: number) {
   if (pk.defDown) m.defLoss += pk.defDown;
 }
 
+/**
+ * A cold length (seconds) taking hold (SUNITDMG_ApplyColdState, SUnitDmg.cpp:1552-1624): less the
+ * defender's cold resistance as it applies (`res`; 769-770, 1020-1024), halved by "half freeze
+ * duration" (874-878); a monster's over the difficulty's MonsterColdDivisor, and none on one cold
+ * doesn't slow (1562-1574). The slow is the monster's MonStats ColdEffect, the hero's −50 % (85-99)
+ */
+function chill(target: Actor, len: number, res: number, half: boolean) {
+  const m = target instanceof Monster ? target : null;
+  const effect = m ? m.coldEffect : -50;
+  if (effect >= 0) return;
+  let t = (len * (100 - Math.min(100, res))) / 100;
+  if (half) t /= 2;
+  if (m) t /= D2X_DIFFICULTIES[m.difficulty].monsterColdDivisor;
+  if (t <= 0) return;
+  target.chillTime = Math.max(target.chillTime, t);
+  target.chillAmount = Math.min(0.9, -effect / 100);
+}
+
 /** Player melee strike: hit roll then damage. Returns true if hit. */
 export function playerStrike(g: Game, p: Player, m: Monster, pk: DamagePacket, arBonusPct: number): boolean {
   const d = p.stats;
@@ -254,8 +289,11 @@ export function playerStrike(g: Game, p: Player, m: Monster, pk: DamagePacket, a
   // rating, the skill's % goes with the items' on all of it (SUnitDmg.cpp:2507-2541)
   const arVs = (m.def.undead ? (b.arUndead ?? 0) : 0) + (m.def.demon ? (b.arDemon ?? 0) : 0);
   const ar = attackRating(charStats(p.cls), d.dex, (b.ar ?? 0) + arVs, (b.arPct ?? 0) + arBonusPct);
-  // "ignore target's defense" (not on bosses), else "-X% target defense"
-  const def = b.ignoreDef && m.rank !== 'boss' ? 0 : m.effectiveDefense() * (1 - Math.min(100, b.targetDef ?? 0) / 100);
+  // "ignore target's defense", not on champions, uniques or bosses; else "-X% target defense", half
+  // of it on bosses and superuniques (SUnitDmg.cpp:2477-2494)
+  const plain = m.rank === 'normal' || m.rank === 'minion';
+  const frac = Math.min(100, Math.max(0, Math.trunc((b.targetDef ?? 0) / (m.rank === 'boss' || m.superUnique ? 2 : 1))));
+  const def = b.ignoreDef && plain ? 0 : m.effectiveDefense() - Math.trunc((m.effectiveDefense() * frac) / 100);
   if (!chance(hitOdds(ar, def, p.level, m.level))) {
     g.fx.text(m.pos, '未命中', '#aaaaaa');
     return false;
@@ -277,8 +315,9 @@ function itemBroke(g: Game, p: Player, it: Item) {
 }
 
 /**
- * Monster melee/ranged attack on the player, with Diablo II's hit roll (the monster's own level,
- * rating and the hero's defense) and block; a landed melee blow wears the hero's armor
+ * Monster melee/ranged attack on the player, with Diablo II's hit roll (SUNITDMG_IsHitSuccessful,
+ * SUnitDmg.cpp:2446-2563: the attack mode's rating, pk.ar, against the hero's defense, with both
+ * levels) and block; a landed melee blow wears the hero's armor
  */
 export function monsterStrike(g: Game, m: Monster, p: Player, pk: DamagePacket, melee = false): void {
   if (p.dead) return;
@@ -286,7 +325,7 @@ export function monsterStrike(g: Game, m: Monster, p: Player, pk: DamagePacket, 
     const d = p.stats;
     // a running hero is hit by every melee blow, and blocks a third as often (SUnitDmg.cpp:2589-2595, 2719-2722)
     const running = p.runningNow();
-    if (!(melee && running) && !chance(hitOdds(m.ar, d.def, m.level, p.level))) return;
+    if (!(melee && running) && !chance(hitOdds(pk.ar ?? m.ar, d.def, m.level, p.level))) return;
     const blk = running ? Math.trunc(d.block / 3) : d.block;
     if (blk > 0 && chance(blk / 100)) {
       // the blow is stopped; the block plays (cutting into an attack or cast) when the last one is

@@ -1,5 +1,5 @@
 import { SKILLS, SKILL_BY_ID } from '../data/skills';
-import { MOD_NAMES } from '../data/monsters';
+import { UMOD_NAMES } from '../data/monsters';
 import { CHARGE_PREFIX, xpForLevel } from '../game/player';
 import { skillCost } from '../game/playerctl';
 import { baseOf } from '../items/item';
@@ -216,7 +216,8 @@ export class Hud {
       nameEl.textContent = m.displayName;
       nameEl.style.color = m.rank === 'unique' || m.rank === 'boss' ? '#c8a86a' : m.rank === 'champion' ? '#7a7aff' : '#e8e0d0';
       (this.target.querySelector('.bar > div') as HTMLElement).style.width = `${Math.max(0, m.life / m.maxLife) * 100}%`;
-      const mods = [...(m.def.undead ? ['亡灵'] : []), ...m.mods.map((x) => MOD_NAMES[x])];
+      // a champion's kind, then its or a unique's modifiers, in D2's words (MonUMod); a minion's passed-on ones aren't listed, as in D2
+      const mods = [...(m.def.undead ? ['亡灵'] : []), ...(m.rank === 'champion' || m.rank === 'unique' ? m.mods.map((x) => UMOD_NAMES[x]).filter(Boolean) : [])];
       (this.target.querySelector('.mods') as HTMLElement).textContent = mods.join(' · ');
     } else if (g.hover.object && !g.hover.ground) {
       this.target.style.display = 'block';

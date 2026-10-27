@@ -1,5 +1,6 @@
 import { RNG, type P2 } from '../core/math';
-import { MONSTERS } from '../data/monsters';
+import { lookedMonsters } from '../data/monsters';
+import type { Difficulty } from '../items/d2/types';
 import { areaDef, areaForDepth, areaLevel, isBuilt, type AreaDef } from '../world/areas';
 import { bfsDistances, dungeonFloor, generateDungeon, generateGallery, generateTown, isWild, themeForFloor, type Layout } from '../world/levelgen';
 import type { TileMap } from '../world/tilemap';
@@ -9,7 +10,7 @@ import { generateWild } from '../world/wild';
 export const GALLERY = typeof location !== 'undefined' && location.search.includes('gallery');
 import { Monster } from './monster';
 import { MonsterGrid } from './monstergrid';
-import { areaBoxes, spawnArea } from './spawn';
+import { areaBoxes, spawnArea, type SpawnReport } from './spawn';
 import { ITEM_BASES, UNKNOWN_BASE } from '../data/items';
 import { createItem } from '../items/gen';
 import { DelayedBlast, GroundItem, Hammer, Projectile, WorldObject } from './objects';
@@ -34,6 +35,10 @@ export class Level {
   objects: WorldObject[] = [];
   /** set when the renderer must rebuild static geometry */
   version = 0;
+  /** the difficulty its monsters are of (Diablo II's columns for them) */
+  readonly difficulty: Difficulty;
+  /** what each of its areas was filled with (spawnArea), by area id */
+  readonly spawned = new Map<number, SpawnReport>();
   /** the seconds the hero has spent on this map (Game.update): what its far corpses age by, none while the hero is on another */
   time = 0;
   boss: Monster | null = null;
@@ -56,10 +61,12 @@ export class Level {
   /**
    * `depth`: the old map to make (levelgen.ts: the separate camp, the old wilderness, a floor of the
    * trial ground). `layout`: a map made already to host instead, the West overworld
-   * (src/world/overworld.ts) or the Den of Evil (den.ts), as hard as the first floor, as wild.ts's is
+   * (src/world/overworld.ts) or the Den of Evil (den.ts), as hard as the first floor, as wild.ts's is.
+   * `difficulty`: the one its monsters spawn in
    */
-  constructor(depth: number, seed: number, layout?: Layout) {
+  constructor(depth: number, seed: number, layout?: Layout, difficulty: Difficulty = 0) {
     this.depth = depth;
+    this.difficulty = difficulty;
     const wild = isWild(depth);
     const area = areaForDepth(depth).id;
     this.floor = layout ? 1 : depth === 0 ? 0 : wild ? 1 : dungeonFloor(depth);
@@ -114,9 +121,10 @@ export class Level {
     for (const b of L.barrels) this.objects.push(new WorldObject('barrel', b, '木桶', 0.35));
     this.populate(seed);
     if (GALLERY && !layout && this.inTown(L.start)) {
-      // every monster in a row, held still (the stun never wears off)
-      Object.values(MONSTERS).forEach((def, i) => {
-        const m = new Monster(def, 1, 'normal', { x: 6 + (i % 9) * 5, z: 51 + Math.floor(i / 9) * 3.4 });
+      // a monster of every look in a row, held still (the stun never wears off)
+      const looks = lookedMonsters();
+      looks.filter((d, i) => looks.findIndex((o) => o.key === d.key) === i).forEach((def, i) => {
+        const m = new Monster(def, def.row.diff[0].level, 'normal', { x: 6 + (i % 9) * 5, z: 51 + Math.floor(i / 9) * 3.4 });
         m.stunTime = 1e9;
         this.monsters.push(m);
       });
@@ -139,7 +147,7 @@ export class Level {
     return areaDef(this.areas[tz * m.w + tx])!;
   }
 
-  /** the area level at a point in normal, its monsters' in every difficulty (areaLevel; a chest's goes by the difficulty played) */
+  /** the area level at a point in normal (areaLevel; a chest's goes by the difficulty played) */
   alvlAt(p: P2): number {
     return areaLevel(this.areaAt(p.x, p.z));
   }
@@ -208,7 +216,7 @@ export class Level {
       // an rng of its own, so what one area spawns never shifts another's; the map's own area keeps
       // the level's, as when every map was one area
       const rng = new RNG(seed ^ 0x9e3779b9 ^ (id === own ? 0 : Math.imul(id, 0x85ebca6b)));
-      spawnArea(this, area, rng, { floor: this.floor, box, reach, from: L.start });
+      this.spawned.set(id, spawnArea(this, area, rng, { floor: this.floor, box, reach, from: L.start }));
     }
   }
 

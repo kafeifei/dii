@@ -87,17 +87,18 @@ function roll<T>(m: Monster, list: readonly T[], salt: number): T {
 function rogueSpec(m: Monster, sc: number): ModelSpec {
   const h = 1.75 * sc;
   const base = { model: 'mon_rogue_fallen' as const, rig: 'quat' as const, height: h };
+  const atk = (own: string[]) => (m.def.attack?.length ? m.def.attack : own);
   switch (m.def.model) {
     case 'cr_lancer':
-      return { ...base, attach: [{ model: 'w_spear', hand: 'r', scale: 0.8, hold: 'level', aim: true }], clips: meshyClips(h, 1.42, 4.25, ['Thrust']) };
+      return { ...base, attach: [{ model: 'w_spear', hand: 'r', scale: 0.8, hold: 'level', aim: true }], clips: meshyClips(h, 1.42, 4.25, atk(['Thrust'])) };
     case 'cr_archer':
-      return { ...base, attach: [{ model: makeBow, hand: 'l', hold: 'pistol', aim: true }], clips: meshyClips(h, 1.42, 4.25, ['Shoot']) };
+      return { ...base, attach: [{ model: makeBow, hand: 'l', hold: 'pistol', aim: true }], clips: meshyClips(h, 1.42, 4.25, atk(['Shoot'])) };
   }
   const [rh, scale] = roll(m, ROGUE_RH, 1);
   const sh = roll(m, ROGUE_SH, 2);
   const attach: Attachment[] = [{ model: rh, hand: 'r', scale, hold: 'grip' }];
   if (sh) attach.push({ model: sh, hand: 'l', scale: 0.65, hold: 'shield' });
-  return { ...base, attach, clips: meshyClips(h, 1.42, 4.25, ['Attack']) };
+  return { ...base, attach, clips: meshyClips(h, 1.42, 4.25, atk(['Attack'])) };
 }
 
 /** a short bow in world units: limbs along ±Y bowed toward +Z (the target), the grip at the origin */
@@ -126,11 +127,15 @@ export function monsterSpec(m: Monster): ModelSpec {
   const d = m.def;
   const rank = m.rank === 'champion' || m.rank === 'unique' ? RANK_TINT[m.rank] : null;
   const sc = d.scale * (m.rank === 'champion' ? 1.1 : m.rank === 'unique' ? 1.18 : 1);
-  const ranked = (s: ModelSpec): ModelSpec => (rank ? { ...s, tint: rank.tint, tintAmount: 0.4, emissive: rank.emissive } : s);
+  // a champion's or unique's tint, else its look's own (a kind drawn on another's model)
+  const ranked = (s: ModelSpec): ModelSpec => (rank ? { ...s, tint: rank.tint, tintAmount: 0.4, emissive: rank.emissive } : d.tint ? { ...s, tint: d.tint, tintAmount: 0.45 } : s);
+  // the clips its look names for its attacks and casts (src/data/monsters.ts), else the model's own
+  const atk = (own: string[]) => (d.attack?.length ? d.attack : own);
+  const cast = (own: string[]) => (d.cast?.length ? d.cast : own);
   switch (d.model) {
     case 'zombie': {
       const h = 1.75 * sc;
-      return ranked({ model: 'mon_zombie', rig: 'quat', height: h, clips: meshyClips(h, 0.72, 4.26, ['Attack']) });
+      return ranked({ model: 'mon_zombie', rig: 'quat', height: h, clips: meshyClips(h, 0.72, 4.26, atk(['Attack'])) });
     }
     case 'skeleton': {
       const elite = m.rank !== 'normal' || m.id % 3 === 0;
@@ -143,7 +148,7 @@ export function monsterSpec(m: Monster): ModelSpec {
           m.id % 4 === 1 ? { model: 'skeleton_axe', hand: 'r', scale: 0.7, hold: 'grip' } : { model: 'skeleton_blade', hand: 'r', scale: 0.65, hold: 'grip' },
           { model: elite ? 'skeleton_shield_large_a' : 'skeleton_shield_small_a', hand: 'l', scale: 0.7, hold: 'shield' },
         ],
-        clips: meshyClips(h, 1.42, 4.34, ['Attack', 'Attack2'], { block: ['Block'], revive: 'Revive' }),
+        clips: meshyClips(h, 1.42, 4.34, atk(['Attack', 'Attack2']), { block: ['Block'], revive: 'Revive' }),
       });
     }
     case 'skelarcher': {
@@ -153,21 +158,18 @@ export function monsterSpec(m: Monster): ModelSpec {
         rig: 'quat',
         height: h,
         attach: [{ model: 'skeleton_crossbow', hand: 'r', scale: 0.7, hold: 'pistol' }],
-        clips: meshyClips(h, 1.39, 4.22, ['Attack'], { revive: 'Revive' }),
+        clips: meshyClips(h, 1.39, 4.22, atk(['Attack']), { revive: 'Revive' }),
       });
     }
     case 'imp': {
-      const hell = d.id === 'hellimp';
       const h = 1.85 * sc;
-      const base: ModelSpec = {
+      return ranked({
         model: 'mon_imp',
         rig: 'quat',
         height: h,
         attach: [{ model: 'skeleton_blade', hand: 'r', scale: 0.45, hold: 'grip' }],
-        clips: meshyClips(h, 1.42, 4.09, ['Attack', 'Attack2']),
-      };
-      if (hell && !rank) return { ...base, tint: '#ff7a20', tintAmount: 0.45, emissive: '#3a0c00' };
-      return ranked(base);
+        clips: meshyClips(h, 1.42, 4.09, atk(['Attack', 'Attack2'])),
+      });
     }
     case 'shaman': {
       const h = 1.5 * sc;
@@ -176,11 +178,11 @@ export function monsterSpec(m: Monster): ModelSpec {
         rig: 'quat',
         height: h,
         attach: [{ model: 'skeleton_staff', hand: 'r', glow: '#ff7a30', scale: 0.7, hold: 'upright' }],
-        clips: meshyClips(h, 1.25, 4.04, ['Attack'], { cast: ['Cast'] }),
+        clips: meshyClips(h, 1.25, 4.04, atk(['Attack']), { cast: cast(['Cast']) }),
       });
     }
     case 'ghoul':
-      return ranked({ model: 'mon_ghoul', rig: 'quat', height: 1.75 * sc, clips: meshyClips(1.75 * sc, 1.43, 4.69, ['Attack', 'Attack2']) });
+      return ranked({ model: 'mon_ghoul', rig: 'quat', height: 1.75 * sc, clips: meshyClips(1.75 * sc, 1.43, 4.69, atk(['Attack', 'Attack2'])) });
     case 'spider': {
       // Tripo rig (tools/tripo-merge.mjs): its walk, everything else bent in code (src/render/legs.ts),
       // over a still pose. The back legs sweep 0.44 of the body's width per 0.42 s walk cycle.
@@ -225,11 +227,11 @@ export function monsterSpec(m: Monster): ModelSpec {
         tintAmount: 0.25,
         emissive: '#0c2a48',
         opacity: 0.85,
-        clips: meshyClips(h, 1.49, 4.61, ['Attack']),
+        clips: meshyClips(h, 1.49, 4.61, atk(['Attack'])),
       });
     }
     case 'demon':
-      return ranked({ model: 'mon_demon', rig: 'quat', height: 1.45 * sc, emissive: '#2a0800', clips: meshyClips(1.45 * sc, 1.48, 4.83, ['Attack', 'Attack2']) });
+      return ranked({ model: 'mon_demon', rig: 'quat', height: 1.45 * sc, emissive: '#2a0800', clips: meshyClips(1.45 * sc, 1.48, 4.83, atk(['Attack', 'Attack2'])) });
     case 'skullfly':
       return ranked({ model: 'mon_skullfly', rig: 'quat', height: 0.95 * sc, float: 1.0, motion: 'hover', emissive: '#1a0c04', clips: NO_CLIPS });
     case 'skelmage': {
@@ -238,8 +240,8 @@ export function monsterSpec(m: Monster): ModelSpec {
         model: 'mon_skelmage',
         rig: 'quat',
         height: h,
-        attach: [{ model: 'skeleton_staff', hand: 'r', glow: '#80c0ff', scale: 0.8, hold: 'upright' }],
-        clips: meshyClips(h, 1.42, 4.34, ['Attack'], { cast: ['Cast'], revive: 'Revive' }),
+        attach: [{ model: 'skeleton_staff', hand: 'r', glow: d.missile === 'firebolt' ? '#ff7a30' : d.missile === 'poisonspit' ? '#80ff60' : '#80c0ff', scale: 0.8, hold: 'upright' }],
+        clips: meshyClips(h, 1.42, 4.34, atk(['Attack']), { cast: cast(['Cast']), revive: 'Revive' }),
       });
     }
     case 'bat':
@@ -247,38 +249,38 @@ export function monsterSpec(m: Monster): ModelSpec {
       return ranked({ model: 'mon_bat', rig: 'quat', height: 2.5 * sc, fitWidth: true, float: 0.9, motion: 'flap', clips: NO_CLIPS });
     case 'mushroom': {
       const h = 1.75 * sc;
-      return ranked({ model: 'mon_mushroom', rig: 'quat', height: h, clips: meshyClips(h, 1.33, 3.98, ['Attack']) });
+      return ranked({ model: 'mon_mushroom', rig: 'quat', height: h, clips: meshyClips(h, 1.33, 3.98, atk(['Attack'])) });
     }
     case 'yeti': {
       const h = 1.75 * sc;
-      return ranked({ model: 'mon_yeti', rig: 'quat', height: h, clips: meshyClips(h, 1.42, 4.68, ['Attack', 'Attack2']) });
+      return ranked({ model: 'mon_yeti', rig: 'quat', height: h, clips: meshyClips(h, 1.42, 4.68, atk(['Attack', 'Attack2'])) });
     }
     case 'dragon':
       return ranked({ model: 'mon_dragon', rig: 'quat', height: 2.2 * sc, fitWidth: true, float: 0.5, motion: 'flap', emissive: '#200800', clips: NO_CLIPS });
     case 'butcher': {
       const h = 1.65 * sc;
-      return {
+      return ranked({
         model: 'mon_butcher',
         rig: 'quat',
         height: h,
         attach: [{ model: 'w_cleaver', hand: 'r', scale: 0.9, hold: 'grip' }],
-        clips: meshyClips(h, 1.4, 4.15, ['Attack', 'Attack2', 'Attack3'], { charge: { clip: 'Charge', ref: (5 * h * 0.9) / 1.7 } }),
-      };
+        clips: meshyClips(h, 1.4, 4.15, atk(['Attack', 'Attack2', 'Attack3']), { charge: { clip: 'Charge', ref: (5 * h * 0.9) / 1.7 } }),
+      });
     }
     case 'lich': {
       const h = 1.7 * sc;
-      return {
+      return ranked({
         model: 'mon_lich',
         rig: 'quat',
         height: h,
         attach: [{ model: 'skeleton_staff', hand: 'r', glow: '#80d0ff', scale: 0.85, hold: 'upright' }],
         emissive: '#0a1830',
-        clips: meshyClips(h, 1.38, 4.28, ['Attack'], { cast: ['Cast'] }),
-      };
+        clips: meshyClips(h, 1.38, 4.28, atk(['Attack']), { cast: cast(['Cast']) }),
+      });
     }
     case 'overlord': {
       const h = 1.55 * sc;
-      return { model: 'mon_overlord', rig: 'quat', height: h, emissive: '#2a0600', clips: meshyClips(h, 1.37, 4.24, ['Attack', 'Attack2']) };
+      return ranked({ model: 'mon_overlord', rig: 'quat', height: h, emissive: '#2a0600', clips: meshyClips(h, 1.37, 4.24, atk(['Attack', 'Attack2'])) });
     }
   }
   return { model: 'mon_zombie', rig: 'quat', height: 1.7 * sc, clips: meshyClips(1.7 * sc, 0.72, 4.26, ['Attack']) };

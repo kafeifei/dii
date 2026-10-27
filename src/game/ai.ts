@@ -1,7 +1,11 @@
 import { chance, dist, rand, randInt, type P2 } from '../core/math';
+import { D2X_MISSILES } from '../data/d2x/missiles';
+import { D2X_MONSTER_AI } from '../data/d2x/monsters';
+import { D2X_MONUMOD_CONSTANTS } from '../data/d2x/superuniques';
 import type { ProjectileKind } from '../data/monsters';
 import { emptyPacket, type DamagePacket } from './actor';
 import { applyDamage, monsterStrike } from './combat';
+import { missileDamage, monLvl, type AttackMode } from './d2/monstats';
 import type { Game } from './game';
 import type { Monster } from './monster';
 import { moveBy, face, faceNow, stepToward } from './movement';
@@ -16,56 +20,141 @@ const PROJ_SPEED: Record<ProjectileKind, number> = {
   fireball: 8,
 };
 
-export function monsterPacket(m: Monster, mult = 1): DamagePacket {
+/** a roll between two damage ends: a whole one, unless an end is fractional (poison's totals) */
+const between = (lo: number, hi: number) => (Number.isInteger(lo) && Number.isInteger(hi) ? randInt(lo, Math.max(lo, hi)) : lo + Math.random() * Math.max(0, hi - lo));
+
+/** D2's elemental damage onto a packet, by MonStats' El types; poison's is its whole damage, cold's chills for its frames */
+function addElem(pk: DamagePacket, type: string, v: number, frames: number) {
+  switch (type) {
+    case 'fire':
+      pk.fire += v;
+      break;
+    case 'ltng':
+      pk.light += v;
+      break;
+    case 'cold':
+      pk.cold += v;
+      if (frames > 0) pk.chill = Math.max(pk.chill ?? 0, frames / 25);
+      break;
+    case 'pois':
+      pk.poison += v;
+      if (frames > 0) pk.poisonLen = frames / 25;
+      break;
+    case 'mag':
+      pk.magic += v;
+      break;
+    case 'mana':
+      pk.mana = (pk.mana ?? 0) + v;
+      break;
+  }
+}
+
+/** MonUMod constants 28 and 31: a spectral hit's damage, 66–100 % of MonLvl's (MonsterUnique.cpp:1392-1396) */
+const SPECTRAL = [D2X_MONUMOD_CONSTANTS[28].value, D2X_MONUMOD_CONSTANTS[31].value];
+
+/**
+ * A blow of a monster's in an attack mode (MonsterMode.cpp:216-330): its physical damage and to-hit
+ * at its level, the mode's elemental damage on its chance, its modifiers' on every blow (the
+ * enchantments, ghostly's cold, mana burn), and a spectral hit's random element (MonsterUnique.cpp:1351-1427)
+ */
+export function monsterPacket(m: Monster, mode: AttackMode = m.mode, mult = 1): DamagePacket {
   const pk = emptyPacket();
-  const base = randInt(m.dmg[0], m.dmg[1]) * mult;
-  const elem = m.def.meleeElem ?? 'phys';
-  if (elem === 'phys') pk.phys = base;
-  else if (elem === 'poison') {
-    pk.phys = base * 0.5;
-    pk.poison = base * 2;
-  } else {
-    pk.phys = base * 0.4;
-    pk[elem] = base * 0.8;
+  const a = m.attack(mode);
+  if (a) {
+    pk.phys = randInt(a.min, Math.max(a.min, a.max)) * mult;
+    pk.ar = a.ar;
+  } else pk.ar = m.ar;
+  // the mode's elements this blow, by type: D2 sets each one's stats, so a later one of a type stands
+  const el = new Map<string, { v: number; frames: number }>();
+  for (const e of m.elems(mode)) {
+    if (e.pct < 100 && !chance(e.pct / 100)) continue;
+    el.set(e.type, { v: between(e.min, e.max), frames: e.frames });
   }
-  if (m.mods.includes('fireench')) pk.fire += base * 0.6;
-  if (m.mods.includes('coldench')) {
-    pk.cold += base * 0.5;
-    pk.chill = 2;
+  if (m.has(27) && (m.rank === 'champion' || m.rank === 'unique')) {
+    // one of fire, lightning, magic, cold, poison at MonLvl's damage × 66–100 %, set over the mode's own
+    // of that element; cold and poison last 40 frames more than the mode's own did. Poison's is a rate
+    // in 256ths of a point a frame (STAT_POISONMINDAM), so its whole damage is that × its frames / 256
+    const dm = monLvl(Math.max(1, m.level)).dm[m.difficulty];
+    const type = ['fire', 'ltng', 'mag', 'cold', 'pois'][randInt(0, 4)];
+    const v = randInt(Math.trunc((dm * SPECTRAL[0]) / 100), Math.trunc((dm * SPECTRAL[1]) / 100));
+    const long = type === 'cold' || type === 'pois';
+    const frames = long ? (el.get(type)?.frames ?? 0) + 40 : 0;
+    el.set(type, { v: type === 'pois' ? (v * frames) / 256 : v, frames });
   }
-  if (m.mods.includes('lightench')) pk.light += randInt(1, Math.ceil(base * 1.2));
+  for (const [type, e] of el) addElem(pk, type, e.v * mult, e.frames);
+  const plus = m.plus;
+  if (plus.fire) pk.fire += randInt(plus.fire[0], plus.fire[1]) * mult;
+  if (plus.light) pk.light += randInt(plus.light[0], plus.light[1]) * mult;
+  if (plus.cold) addElem(pk, 'cold', randInt(plus.cold[0], plus.cold[1]) * mult, plus.coldFrames ?? 0);
+  if (plus.mana) pk.mana = (pk.mana ?? 0) + randInt(plus.mana[0], plus.mana[1]);
   pk.source = m;
   return pk;
 }
 
-export function shoot(g: Game, m: Monster, kind: ProjectileKind, at: P2, spread = 0, mult = 1) {
+/**
+ * A missile of a monster's (its D2 missile, src/game/d2/monstats.ts monsterMissile) toward `at`: its
+ * own damage at its level, and the share of the shooting mode's blow it carries (SrcDamage); one
+ * without ToHit always lands. A champion or unique with multiple shots looses two more beside it
+ * (MONSTERUNIQUE_CreateMultishotMissiles, MonsterUnique.cpp:1592-1657).
+ */
+export function shoot(g: Game, m: Monster, at: P2, spread = 0, mult = 1) {
+  const kind: ProjectileKind = m.def.missile ?? 'arrow';
   const speed = PROJ_SPEED[kind];
-  const d = dist(m.pos, at) || 1;
-  let dx = (at.x - m.pos.x) / d;
-  let dz = (at.z - m.pos.z) / d;
-  if (spread) {
-    const c = Math.cos(spread);
-    const s = Math.sin(spread);
-    [dx, dz] = [dx * c - dz * s, dx * s + dz * c];
-  }
-  const pk = monsterPacket(m);
-  const elem = m.def.projectileElem ?? 'phys';
-  const total = (pk.phys + pk.fire + pk.cold + pk.light) * mult;
+  const ms = m.missile();
+  const own = ms && missileDamage(ms.missile, ms.level);
   const out = emptyPacket();
   out.source = m;
-  if (elem === 'phys') out.phys = total;
-  else if (elem === 'poison') out.poison = total * 2.5;
-  else if (elem === 'magic') out.magic = total;
-  else {
-    out[elem] = total * 0.9;
-    out.phys = total * 0.1;
+  if (ms && own) {
+    if (own.src > 0) {
+      const blow = monsterPacket(m, ms.mode, own.src * mult);
+      Object.assign(out, blow);
+    } else out.ar = m.attack(ms.mode)?.ar ?? m.ar;
+    out.phys += between(own.phys[0], own.phys[1]) * mult;
+    if (own.elem) addElem(out, own.elem.type, between(own.elem.min, own.elem.max) * mult, own.elem.seconds * 25);
+    out.spell = !D2X_MISSILES[ms.missile].toHit;
+  } else Object.assign(out, monsterPacket(m, m.mode, mult));
+  const fire = (a: number) => {
+    const d = dist(m.pos, at) || 1;
+    let dx = (at.x - m.pos.x) / d;
+    let dz = (at.z - m.pos.z) / d;
+    if (a) {
+      const c = Math.cos(a);
+      const s = Math.sin(a);
+      [dx, dz] = [dx * c - dz * s, dx * s + dz * c];
+    }
+    const start = { x: m.pos.x + dx * (m.radius + 0.2), z: m.pos.z + dz * (m.radius + 0.2) };
+    const p = new Projectile(kind, start, { x: dx * speed, z: dz * speed }, m, 'monster', { ...out }, 1.6, kind === 'fireball' ? 0.35 : 0.22);
+    if (kind === 'fireball') p.splash = 1.6;
+    g.level.projectiles.push(p);
+  };
+  fire(spread);
+  if (m.has(29) && (m.rank === 'champion' || m.rank === 'unique')) {
+    fire(spread + 0.18);
+    fire(spread - 0.18);
   }
-  if (elem === 'cold') out.chill = 2;
-  const start = { x: m.pos.x + dx * (m.radius + 0.2), z: m.pos.z + dz * (m.radius + 0.2) };
-  const p = new Projectile(kind, start, { x: dx * speed, z: dz * speed }, m, 'monster', out, 1.6, kind === 'fireball' ? 0.35 : 0.22);
-  if (kind === 'fireball') p.splash = 1.6;
-  g.level.projectiles.push(p);
-  g.sfx.play(kind === 'arrow' ? 'combat.arrow' : kind === 'iceshard' ? 'skill.cold_cast' : 'skill.fire_cast', { pos: m.pos, vol: 0.5 });
+  g.sfx.play(kind === 'arrow' ? 'combat.arrow' : kind === 'iceshard' ? 'skill.cold_cast' : kind === 'lightning' ? 'skill.lightning_cast' : kind === 'poisonspit' ? 'skill.poison_cast' : 'skill.fire_cast', { pos: m.pos, vol: 0.5 });
+}
+
+/**
+ * The melee mode of a blow: A1 or A2 by its AI's "Attack1 (% Chance), else Attack2" parameter
+ * (MonAI.txt), evenly when it has none, A1 alone when it has no A2 of its own
+ */
+function meleeMode(m: Monster): AttackMode {
+  const t = m.def.row.diff[m.difficulty];
+  const shot = m.missile()?.mode;
+  const modes = (['a1', 'a2'] as const).filter((k) => t[k] && k !== shot);
+  if (modes.length < 2) return modes[0] ?? 'a1';
+  const k = (D2X_MONSTER_AI[m.def.row.ai] ?? []).findIndex((p) => p?.startsWith('"Attack1 (% Chance), else Attack2'));
+  const pct = k >= 0 ? (t.ai.params[k] ?? 50) : 50;
+  return chance(pct / 100) ? 'a1' : 'a2';
+}
+
+/** start a blow, a shot or a raise, in the state its look plays it in */
+function begin(m: Monster, action: Monster['action'], slow: number) {
+  m.action = action;
+  if (action === 'melee') m.mode = meleeMode(m);
+  const state = action === 'raise' ? 'cast' : action === 'shoot' ? (m.def.shootIn ?? 'attack') : 'attack';
+  m.setState(state, 1 / (m.attackSpeed * slow));
 }
 
 function wakePack(g: Game, m: Monster) {
@@ -101,6 +190,8 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
       return;
     }
   }
+  // D2's regen: STAT_HPREGEN a frame (Monster.cpp:228), none for champions and uniques, none while it can't heal
+  if (m.regen > 0 && m.life < m.maxLife && m.noHealTime <= 0) m.life = Math.min(m.maxLife, m.life + m.regen * dt);
   m.attackCd -= dt;
   m.specialCd -= dt;
   m.losTimer -= dt;
@@ -148,6 +239,7 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
     faceNow(m, p.pos);
     if (Math.random() < 0.5) g.fx.burst('dust', m.pos);
     if (dP < m.def.range + p.radius + 0.2 || m.chargeTime <= 0) {
+      m.action = 'melee';
       m.setState('attack', 0.45);
       m.actionFired = false;
     }
@@ -162,7 +254,7 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
     if ((dP < 10 && m.hasLos) || dP < 3) {
       m.awake = true;
       wakePack(g, m);
-      if (m.rank === 'boss') {
+      if (m.rank === 'boss' || m === g.level.boss) {
         g.sfx.play('monster.boss_wake', { pos: m.pos });
         g.hooks.message(`${m.displayName} 被惊醒了！`, '#c8a86a');
         g.say('boss_near');
@@ -174,7 +266,7 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
   }
   if (gone) {
     // wander back home
-    if (stepToward(g, m, m.homePos, m.speed * 0.5, dt, 0.5)) m.setState('idle');
+    if (stepToward(g, m, m.homePos, m.walkSpeed, dt, 0.5)) m.setState('idle');
     else if (m.state !== 'move') m.setState('move');
     return;
   }
@@ -203,7 +295,7 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
       // no swinging across furniture: within reach but blocked means walk around
       if (dP <= meleeReach && m.hasLos) {
         face(m, p.pos, dt, 10);
-        if (m.attackCd <= 0) m.setState('attack', 1 / (m.attackSpeed * slow));
+        if (m.attackCd <= 0) begin(m, 'melee', slow);
         else if (m.state !== 'idle') m.setState('idle');
       } else {
         stepToward(g, m, p.pos, m.speed * slow, dt, m.hasLos ? meleeReach * 0.9 : 0.3);
@@ -215,20 +307,25 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
     case 'shaman': {
       if (m.def.ai === 'shaman' && shamanResurrect(g, m)) return;
       const range = m.def.range;
-      if (dP < 3.2 && m.hasLos) {
+      // one with a blow of its own (the quill rat's bite) strikes when the hero is at arm's reach
+      const blow = m.modes().some((k) => k !== m.missile()?.mode);
+      if (blow && dP <= meleeReach && m.hasLos && m.attackCd <= 0) {
+        face(m, p.pos, dt, 10);
+        begin(m, 'melee', slow);
+      } else if (dP < 3.2 && m.hasLos) {
         // back off
         const away = { x: m.pos.x + (m.pos.x - p.pos.x), z: m.pos.z + (m.pos.z - p.pos.z) };
         const before = { ...m.pos };
-        stepToward(g, m, away, m.speed * 0.8 * slow, dt, 0.2, 200);
-        if (dist(before, m.pos) < 0.01 && m.attackCd <= 0) m.setState('attack', 1 / (m.attackSpeed * slow));
+        stepToward(g, m, away, m.walkSpeed * slow, dt, 0.2, 200);
+        if (dist(before, m.pos) < 0.01 && m.attackCd <= 0) begin(m, 'shoot', slow);
         else if (m.state !== 'move') m.setState('move');
       } else if (dP <= range && m.hasLos) {
         face(m, p.pos, dt, 10);
-        if (m.attackCd <= 0) m.setState('attack', 1 / (m.attackSpeed * slow));
+        if (m.attackCd <= 0) begin(m, 'shoot', slow);
         else if (m.state !== 'idle') {
           // strafe a little
           const side = { x: m.pos.x + (p.pos.z - m.pos.z) * 0.3 * m.strafeDir, z: m.pos.z - (p.pos.x - m.pos.x) * 0.3 * m.strafeDir };
-          stepToward(g, m, side, m.speed * 0.4 * slow, dt, 0.2, 100);
+          stepToward(g, m, side, m.walkSpeed * 0.5 * slow, dt, 0.2, 100);
           if (chance(dt * 0.5)) m.strafeDir *= -1;
         }
       } else {
@@ -242,7 +339,7 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
 
 function fireAction(g: Game, m: Monster) {
   const p = g.player;
-  if (m.state === 'cast') {
+  if (m.action === 'raise') {
     // resurrect handled by the cast target
     const corpse = m.target as Monster | null;
     if (corpse && corpse.dead) {
@@ -258,26 +355,21 @@ function fireAction(g: Game, m: Monster) {
     m.target = null;
     return;
   }
-  if (m.def.ai === 'ranged' || (m.def.ai === 'shaman' && m.def.projectile)) {
-    // lead the target a little
-    const lead = { x: p.pos.x, z: p.pos.z };
-    shoot(g, m, m.def.projectile!, lead);
-    if (m.rank === 'unique') {
-      shoot(g, m, m.def.projectile!, lead, 0.18);
-      shoot(g, m, m.def.projectile!, lead, -0.18);
-    }
+  if (m.action === 'shoot') {
+    shoot(g, m, { x: p.pos.x, z: p.pos.z });
     return;
   }
-  if (m.def.ai === 'boss' && m.def.projectile && dist(m.pos, p.pos) > m.def.range + p.radius + 0.6) {
-    for (let i = -2; i <= 2; i++) shoot(g, m, m.def.projectile, p.pos, i * 0.16);
+  const big = m.rank === 'boss' || m === g.level.boss;
+  if (m.def.ai === 'boss' && m.def.missile && dist(m.pos, p.pos) > m.def.range + p.radius + 0.6) {
+    for (let i = -2; i <= 2; i++) shoot(g, m, p.pos, i * 0.16);
     return;
   }
   // melee
   const reach = m.def.range + p.radius + 0.7;
   if (dist(m.pos, p.pos) <= reach) {
-    const pk = monsterPacket(m, m.rank === 'boss' && m.chargeTime > -1 ? 1.3 : 1);
+    const pk = monsterPacket(m, m.mode, big && m.chargeTime > -1 ? 1.3 : 1);
     monsterStrike(g, m, p, pk, true);
-    if (m.rank === 'boss') g.fx.shake(0.15);
+    if (big) g.fx.shake(0.15);
   }
   g.sfx.play('monster.swing', { pos: m.pos });
 }
@@ -285,11 +377,13 @@ function fireAction(g: Game, m: Monster) {
 function shamanResurrect(g: Game, m: Monster): boolean {
   if (m.specialCd > 0) return false;
   for (const o of g.level.monstersNear(m.pos, 7)) {
-    if (!o.dead || !o.corpseRaisable || o.deathTime < 1.2 || o.def.model !== 'imp') continue;
+    // its Resurrect raises the Fallen (AiThink.cpp's FallenShaman AI)
+    if (!o.dead || !o.corpseRaisable || o.deathTime < 1.2 || o.def.key !== 'fallen') continue;
     if (o.killedBy === 'fire' || o.killedBy === 'cold') continue;
     if (dist(o.pos, m.pos) > 7) continue;
     m.target = o;
     o.corpseRaisable = false; // reserved
+    m.action = 'raise';
     m.setState('cast', 0.8);
     faceNow(m, o.pos);
     m.specialCd = rand(5, 8);
@@ -329,7 +423,7 @@ function bossSpecial(g: Game, m: Monster, dP: number): boolean {
       if (m.hasLos && dP < 11) {
         faceNow(m, p.pos);
         // a fan of five: at range most of it misses, up close it still hurts
-        for (let i = -2; i <= 2; i++) shoot(g, m, 'iceshard', p.pos, i * 0.17, 0.55);
+        for (let i = -2; i <= 2; i++) shoot(g, m, p.pos, i * 0.17, 0.55);
         m.setState('attack', 0.8);
         m.actionFired = true;
         m.specialCd = rand(3, 4.5);
@@ -339,13 +433,16 @@ function bossSpecial(g: Game, m: Monster, dP: number): boolean {
     }
     case 'overlord': {
       if (dP < 4) {
+        // Andariel's spray stands in as this burst: her blow's damage, as poison
+        const blow = monsterPacket(m, 'a1');
         const pk = emptyPacket();
-        pk.fire = randInt(m.dmg[0], m.dmg[1]) * 1.1;
+        pk.poison = (blow.phys + blow.poison) * 1.1;
+        pk.poisonLen = 2;
         pk.source = m;
         pk.spell = true;
-        g.level.blasts.push(new DelayedBlast({ ...m.pos }, 4, 0.5, pk, 'monster', 'fire', m));
-        g.fx.burst('fireblast', m.pos, { radius: 4 });
-        g.sfx.play('skill.fire_impact', { pos: m.pos });
+        g.level.blasts.push(new DelayedBlast({ ...m.pos }, 4, 0.5, pk, 'monster', 'poison', m));
+        g.fx.burst('poisoncloud', m.pos, { radius: 4 });
+        g.sfx.play('skill.poison_cast', { pos: m.pos });
         m.setState('attack', 0.8);
         m.actionFired = true;
         m.specialCd = rand(5, 7);
@@ -353,7 +450,7 @@ function bossSpecial(g: Game, m: Monster, dP: number): boolean {
       }
       if (m.hasLos && dP < 12) {
         faceNow(m, p.pos);
-        for (let i = -1; i <= 1; i++) shoot(g, m, 'fireball', p.pos, i * 0.25, 0.7);
+        for (let i = -1; i <= 1; i++) shoot(g, m, p.pos, i * 0.25, 0.7);
         m.setState('attack', 0.8);
         m.actionFired = true;
         m.specialCd = rand(2.5, 4);

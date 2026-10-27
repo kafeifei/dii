@@ -130,7 +130,7 @@ export class DelayedBlast {
     public delay: number,
     public dmg: DamagePacket,
     public faction: Faction,
-    public kind: 'fire' | 'frost' | 'lightning' | 'holy',
+    public kind: 'fire' | 'frost' | 'lightning' | 'holy' | 'poison',
     public source: Actor | null,
   ) {}
   done = false;

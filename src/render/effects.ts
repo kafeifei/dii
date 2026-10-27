@@ -282,6 +282,17 @@ export class Effects implements Fx {
         this.shake(0.2);
         break;
       }
+      case 'poisoncloud': {
+        const r = opts.radius ?? 3;
+        this.ring(pos, '#70d040', 0.3, r, 0.6, 1);
+        for (let i = 0; i < 44; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const s = Math.random() * r * 1.8;
+          this.add.spawn({ x, y: 0.4, z, vx: Math.sin(a) * s, vy: 0.4 + Math.random() * 0.8, vz: Math.cos(a) * s, color: Math.random() < 0.5 ? '#60c030' : '#a0e060', size: 0.45 + Math.random() * 0.4, life: 0.9, drag: 2, gravity: -0.6 });
+        }
+        this.flash(pos, '#60c030', 25, 0.4, r * 2.5);
+        break;
+      }
       case 'levelup': {
         this.ring(pos, '#ffd24a', 0.3, 3, 0.9, 1);
         for (let i = 0; i < 60; i++) {

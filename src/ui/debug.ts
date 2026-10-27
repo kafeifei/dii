@@ -59,7 +59,7 @@ export class DebugPanel {
     const map = this.group(panel, '地图');
     this.areaRow(map, '前往', '直接去，不激活那里的传送点');
     this.trialRow(map, '试炼场', '无尽地下城的一层，每次进都重新生成，用来试高等级的怪物和掉落');
-    this.choice(map, '难度', DIFFICULTIES.map((d): Choice<Difficulty> => [d, DIFFICULTY_NAME[d]]), () => this.game.player.difficulty, (d) => this.difficulty(d), '传送点、掉落表和宝箱的物品等级按难度分开，怪物还照普通');
+    this.choice(map, '难度', DIFFICULTIES.map((d): Choice<Difficulty> => [d, DIFFICULTY_NAME[d]]), () => this.game.player.difficulty, (d) => this.difficulty(d), '传送点、掉落表、宝箱的物品等级和怪物都按难度；换难度就是换一局：地图重新生成，从营地出发');
 
     this.el = el;
   }
@@ -162,7 +162,7 @@ export class DebugPanel {
 
   private difficulty(d: Difficulty) {
     this.game.setDifficulty(d);
-    this.done(`难度：${DIFFICULTY_NAME[d]}（换成这个难度的传送点、掉落表和宝箱的物品等级，怪物不变）`);
+    this.done(`难度：${DIFFICULTY_NAME[d]}（新开一局，回到营地；传送点、掉落表、宝箱和怪物都换成这个难度的）`);
   }
 
   private done(text: string) {

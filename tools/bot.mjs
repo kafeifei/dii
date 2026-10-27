@@ -272,7 +272,7 @@ export default async function (page, shot, log) {
           stats.deaths++;
           const around = g.level.monsters.filter((m) => !m.dead && Math.hypot(m.pos.x - pl.pos.x, m.pos.z - pl.pos.z) < 7);
           const desc = {};
-          for (const m of around) { const k = `${m.def.id}/${m.rank}${m.mods.length ? '(' + m.mods.join('+') + ')' : ''}`; desc[k] = (desc[k] ?? 0) + 1; }
+          for (const m of around) { const k = `${m.def.id}/${m.rank}${m.mods.length ? '(' + m.modText() + ')' : ''}`; desc[k] = (desc[k] ?? 0) + 1; }
           stats.timeline.push(`death in ${cur.key} lvl ${pl.level} t=${Math.round(simTime)} by ${JSON.stringify(desc)} proj=${g.level.projectiles.length}`);
           stats.deathList.push({ area: cur.key, lvl: pl.level, causes: desc, proj: g.level.projectiles.length });
           g.respawn();

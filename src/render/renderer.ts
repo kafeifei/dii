@@ -1575,7 +1575,8 @@ export class Renderer implements Picker {
       b.rig.update(step, this.anim(m, m.speed * m.slowFactor(), m.def.blood, Math.max(m.hitFlash, hover ? 0.12 : 0)));
       // elemental enchant auras
       if (!m.dead && m.mods.length && Math.random() < dt * 10) {
-        const c = m.mods.includes('fireench') ? '#ff6010' : m.mods.includes('coldench') ? '#80c8ff' : m.mods.includes('lightench') ? '#ffff80' : null;
+        // fire, cold and lightning enchanted (MonUMod 9, 18, 17)
+        const c = m.has(9) ? '#ff6010' : m.has(18) ? '#80c8ff' : m.has(17) ? '#ffff80' : null;
         if (c) this.fx.add.spawn({ x: m.pos.x + (Math.random() - 0.5) * 0.6, y: 0.2 + Math.random() * 1.2, z: m.pos.z + (Math.random() - 0.5) * 0.6, vy: 0.8, color: c, size: 0.18, life: 0.6 });
       }
     }
