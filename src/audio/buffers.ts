@@ -110,6 +110,25 @@ export function toMono(ctx: BaseAudioContext, buf: AudioBuffer): AudioBuffer {
   return out;
 }
 
+/** how much of an effect's start is let play before its sound: the pipeline trims its files to this */
+export const LEAD = 0.005;
+
+/**
+ * Seconds of silence before a decoded effect's sound (its first sample 40 dB under its peak, as the
+ * pipeline trims), less LEAD: what to skip so that it sounds when it's played. 0 for the pipeline's
+ * files where the browser drops the AAC encoder's priming as the MP4's edit list asks (Chrome and
+ * WebKit on a Mac do); about 0.044 s where it would keep it (Apple's encoder primes 2112 frames),
+ * which iOS hasn't been measured for.
+ */
+export function leadIn(d: Float32Array, rate: number): number {
+  let pk = 0;
+  for (let i = 0; i < d.length; i++) pk = Math.max(pk, Math.abs(d[i]));
+  const thr = pk * 0.01;
+  let i = 0;
+  while (i < d.length && Math.abs(d[i]) < thr) i++;
+  return Math.max(0, i / rate - LEAD);
+}
+
 /** which of the decoded variants plays: at random, but not the last one again while there's another */
 export function pickVariant(ready: readonly number[], last: number | undefined, rand: () => number): number {
   const pool = ready.length > 1 ? ready.filter((i) => i !== last) : ready;

@@ -1,5 +1,5 @@
 import type { P2 } from '../core/math';
-import { Buffers, pickVariant, toMono } from './buffers';
+import { Buffers, leadIn, pickVariant, toMono } from './buffers';
 import { FILES, type SoundFiles } from './files';
 import { Players, Stream, type Track } from './music';
 import { Score, seedOf } from './score';
@@ -176,6 +176,8 @@ export class Sfx {
   private failed = new Set<FileId>();
   /** each id's last variant, not to be played twice running */
   private lastVariant = new Map<FileId, number>();
+  /** each decoded effect's silence before its sound (leadIn), skipped when it plays */
+  private leads = new WeakMap<AudioBuffer, number>();
   /** asked to preload before there was an AudioContext to decode with: done when they are, after the first click */
   private early: { ids: Set<FileId>; done: Promise<void>; resolve: () => void } | null = null;
   /** each ambience layer's take for its next play: chosen when it's preloaded, so that's the one decoded */
@@ -355,8 +357,8 @@ export class Sfx {
       const vary = def.vary ?? (id.startsWith('ui.') ? 0 : VARY);
       src.playbackRate.value = (opts.pitch ?? 1) * (1 + (Math.random() * 2 - 1) * vary);
       src.connect(gain);
-      src.start(now + 0.005);
-      this.end = now + 0.005 + rec.buf.duration / src.playbackRate.value;
+      src.start(now + 0.005, rec.lead);
+      this.end = now + 0.005 + (rec.buf.duration - rec.lead) / src.playbackRate.value;
     } else {
       this.out = gain;
       this.pitch = opts.pitch ?? 1;
@@ -366,10 +368,11 @@ export class Sfx {
   }
 
   /**
-   * One of the id's recorded variants to play now, and its level; null to synthesize it: it has no
-   * files, they failed, or none is decoded yet (the first play starts decoding them all).
+   * One of the id's recorded variants to play now, its level, and where in it to start; null to
+   * synthesize it: it has no files, they failed, or none is decoded yet (the first play starts
+   * decoding them all).
    */
-  private variant(id: SoundId): { buf: AudioBuffer; gain: number } | null {
+  private variant(id: SoundId): { buf: AudioBuffer; gain: number; lead: number } | null {
     const f = this.files[id];
     if (!f || !this.recorded(id)) return null;
     // an id's variants go together: playing one keeps them all from being evicted
@@ -381,7 +384,8 @@ export class Sfx {
     if (!ready.length) return null;
     const i = pickVariant(ready, this.lastVariant.get(id), Math.random);
     this.lastVariant.set(id, i);
-    return { buf: this.buffers.get(fileUrl(f.files[i]))!, gain: f.gain ?? 1 };
+    const buf = this.buffers.get(fileUrl(f.files[i]))!;
+    return { buf, gain: f.gain ?? 1, lead: this.leads.get(buf) ?? 0 };
   }
 
   /** it has recordings, and they haven't failed */
@@ -390,8 +394,9 @@ export class Sfx {
   }
 
   /**
-   * Fetch and decode: an effect folded to mono, as Sfx places it; a loop kept as recorded. Every
-   * error names the file.
+   * Fetch and decode: an effect folded to mono, as Sfx places it, and what silence it starts with
+   * (a browser that keeps the AAC encoder's priming would play every effect 44 ms late); a loop kept
+   * as recorded, its loop points past any priming. Every error names the file.
    */
   private async decode(url: string, mono: boolean): Promise<AudioBuffer> {
     const res = await fetch(url);
@@ -405,7 +410,10 @@ export class Sfx {
     } catch (e) {
       throw new Error(`${url}: ${(e as Error).message}`);
     }
-    return mono ? toMono(this.ctx!, buf) : buf;
+    if (!mono) return buf;
+    const m = toMono(this.ctx!, buf);
+    this.leads.set(m, leadIn(m.getChannelData(0), m.sampleRate));
+    return m;
   }
 
   /** decode all of an effect's takes: false (and the id given up on for the session) if one won't load */

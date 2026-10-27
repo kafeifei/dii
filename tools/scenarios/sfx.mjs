@@ -8,12 +8,14 @@
 // (the screen's right and half its width, after a resize and a zoom too), and the area's bed and
 // music start with the AudioContext on the first click. Then recordings, served by this scenario
 // as WAVs to a fresh Sfx given its own manifest: an effect decoded to mono, played as recorded a
-// little off pitch, its variants taking turns, synthesized until it's decoded and for good if its
-// file is missing; the decoded buffers kept to a budget; an ambience loop played round its loop
-// points with no gap, the bed when it's missing; a music track streamed through an <audio> element
-// and crossfaded to the next area's composed music, which also stands in for a missing track. And
+// little off pitch, its variants taking turns, its leading silence (an AAC priming left in)
+// skipped, synthesized until it's decoded and for good if its file is missing; the decoded buffers
+// kept to a budget; an ambience loop played round its loop points with no gap, the bed when it's
+// missing; a music track streamed through an <audio> element and crossfaded to the next area's
+// composed music, which also stands in for a missing track. And
 // the composed music: the same samples for the same area, another piece for another, heard but
-// quiet. The last line is "SFX OK <summary>" or "SFX FAIL <reasons>".
+// quiet. Last, the game's own recordings against the synthesized sounds they replace, level for
+// level (shippedLevels). The last line is "SFX OK <summary>" or "SFX FAIL <reasons>".
 
 /** a WAV of `secs` seconds, 16-bit, the same in both channels */
 function wav(secs, fn, rate = 44100) {
@@ -44,6 +46,8 @@ const tone = (hz, amp) => (t) => amp * Math.sin(2 * Math.PI * hz * t);
 const RECORDINGS = {
   'hit_a.wav': wav(0.4, tone(2000, 0.1)),
   'hit_b.wav': wav(0.4, tone(2500, 0.1)),
+  // an effect as it would decode where a browser kept the AAC encoder's priming: 44 ms late
+  'primed.wav': wav(0.4, (t) => (t < 0.049 ? 0 : tone(2000, 0.1)(t - 0.049))),
   // a loop between 0.5 and 2.5 s, silent before (an encoder's priming) and after (its padding)
   'loop.wav': wav(3, (t) => (t >= 0.5 && t < 2.5 ? tone(300, 0.3)(t) : 0)),
   'music.wav': wav(8, tone(220, 0.2)),
@@ -124,6 +128,8 @@ export default async function (page, shot, log) {
       let sfx;
       try {
         sfx = new Sfx();
+        // the synthesized recipes, whatever recordings the game ships
+        sfx.files = {};
         before?.(sfx);
         sfx.ensure();
         sfx.setView(view.right, view.halfWidth);
@@ -203,6 +209,7 @@ export default async function (page, shot, log) {
     const MANIFEST = {
       'combat.hit': { files: ['__test/hit_a.wav', '__test/hit_b.wav'] },
       'monster.die': { files: ['__test/missing.wav'] },
+      'env.barrel': { files: ['__test/primed.wav'] },
       'amb.town': { files: ['__test/loop.wav'], loop: { start: 0.5, end: 2.5 } },
       'amb.wild': { files: ['__test/missing_loop.wav'] },
     };
@@ -285,6 +292,17 @@ export default async function (page, shot, log) {
     check(s.failed.has('monster.die'), 'a missing file is not given up on');
     s.play('monster.die');
     check(stats(await render(s)).peak > 0.01, 'a sound whose file is missing is silent, not synthesized');
+    // the priming left in: skipped, so the sound starts as one with none does, but for the 5 ms of
+    // lead the pipeline leaves before a sound (src/audio/buffers.ts LEAD), not 44 ms later
+    const onsetOf = async (id) => {
+      s = offline(0.6);
+      await s.preload([id]);
+      s.play(id);
+      return (await render(s)).findIndex((v) => Math.abs(v) > 0.005) / RATE;
+    };
+    const late = (await onsetOf('env.barrel')) - (await onsetOf('combat.hit'));
+    facts.primedLate = `${(late * 1000).toFixed(1)} ms`;
+    check(late > 0.003 && late < 0.007, `an effect with 44 ms of priming left in sounds ${(late * 1000).toFixed(1)} ms after one with none, not 5`);
     // the budget: room for one take, so the other goes
     s = offline(0.6);
     s.buffers.setBudget(Math.round(0.4 * RATE) * 4);
@@ -368,7 +386,122 @@ export default async function (page, shot, log) {
     await live.ctx.close();
     return { fails, facts };
   });
-  fails.push(...res.fails, ...rec.fails, ...errors);
+  const lv = await shippedLevels(ev);
+  fails.push(...res.fails, ...rec.fails, ...lv.fails, ...errors);
   await shot('sfx');
-  log(fails.length ? `SFX FAIL ${fails.join(' | ')}` : `SFX OK peaks as UI ${JSON.stringify(res.facts)}; recorded ${JSON.stringify(rec.facts)}; zoom ${zoomed.toFixed(2)}`);
+  log(fails.length ? `SFX FAIL ${fails.join(' | ')}` : `SFX OK peaks as UI ${JSON.stringify(res.facts)}; recorded ${JSON.stringify(rec.facts)}; shipped against what they replace ${JSON.stringify(lv.facts)}; zoom ${zoomed.toFixed(2)}`);
+}
+
+/** how far a shipped recording may be from the level of what it replaces, in dB */
+const MATCH_DB = 3;
+/** the level themes standing in for areas (src/audio/sounds.ts), to find the area a loop is played in */
+const AREAS = ['town', 'wild', 'crypt', 'cave', 'ice', 'hell'];
+
+/**
+ * The game's own recordings (src/audio/files.ts) against what they replace, rendered offline through
+ * the whole chain the game plays them by (their level and gain, the master, its compressor): an
+ * effect against its synthesized recipe, as UI, by its momentary loudness (BS.1770's 400 ms, so a
+ * short sound counts as heard); an area's ambience loops against its synthesized bed, integrated
+ * once both have faded in, the music muted. The loudness is measured here in Node with the meter the
+ * pipeline normalizes by (tools/audio/dsp.mjs). Each must be within MATCH_DB: the synthesized mix is
+ * the one balanced by ear, and a recording normalized to -16 LUFS once played 23 dB over its recipe.
+ * A shipped id the game can't play this way (a voice line, for now) fails: nothing vouches for it.
+ */
+async function shippedLevels(ev) {
+  const { RATE, loudness } = await import('../audio/dsp.mjs');
+  const { SOUNDS, areaSound } = await import('../../src/audio/sounds.ts');
+  const files = await ev(() => window.game.sfx.files);
+  const fails = [];
+  const facts = {};
+  const jobs = [];
+  const loops = new Map();
+  for (const id of Object.keys(files)) {
+    if (id in SOUNDS) jobs.push({ kind: 'sfx', id, ids: [id] });
+    else if (id.startsWith('amb.')) {
+      const area = AREAS.find((a) => areaSound(a).amb?.includes(id));
+      if (!area) fails.push(`shipped ${id}: no area plays it`);
+      else loops.set(area, [...(loops.get(area) ?? []), id]);
+    } else if (id.startsWith('music.')) facts[id] = 'streamed music: not compared';
+    else fails.push(`shipped ${id}: nothing in the game plays it`);
+  }
+  for (const [area, ids] of loops) jobs.push({ kind: 'amb', id: ids.join('+'), area, ids });
+  const out = await ev(
+    async ({ jobs, RATE }) => {
+      const Sfx = window.game.sfx.constructor;
+      const files = window.game.sfx.files;
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      const b64 = (f) => {
+        const u = new Uint8Array(f.buffer, f.byteOffset, f.byteLength);
+        let s = '';
+        for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode(...u.subarray(i, i + 0x8000));
+        return btoa(s);
+      };
+      /** `go` run with Math.random seeded, so the recipe and the take's pitch come out the same each time */
+      const seeded = (go) => {
+        const real = Math.random;
+        let seed = 20261026;
+        Math.random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+        try {
+          return go();
+        } finally {
+          Math.random = real;
+        }
+      };
+      async function render(job, recorded) {
+        const secs = job.kind === 'sfx' ? 3 : 8;
+        const realAC = window.AudioContext;
+        window.AudioContext = function () {
+          return new OfflineAudioContext(2, RATE * secs, RATE);
+        };
+        let s;
+        try {
+          s = seeded(() => {
+            const s = new Sfx();
+            s.files = recorded ? Object.fromEntries(job.ids.map((id) => [id, files[id]])) : {};
+            s.ensure();
+            return s;
+          });
+        } finally {
+          window.AudioContext = realAC;
+        }
+        s.musicBus.gain.value = 0;
+        if (recorded) await s.preload(job.ids);
+        const failed = job.ids.filter((id) => s.failed.has(id));
+        seeded(() => (job.kind === 'sfx' ? s.play(job.id) : s.enterArea(job.area)));
+        // the loops start once their (preloaded) takes resolve
+        if (job.kind === 'amb') await wait(50);
+        const buf = await s.ctx.startRendering();
+        return { failed, chs: [b64(buf.getChannelData(0)), b64(buf.getChannelData(1))] };
+      }
+      const res = [];
+      for (const job of jobs) res.push({ ...job, gain: job.ids.map((id) => files[id].gain ?? 1), rec: await render(job, true), synth: await render(job, false) });
+      return res;
+    },
+    { jobs, RATE },
+  );
+  const pcm = (b64) => {
+    const b = Buffer.from(b64, 'base64');
+    return new Float32Array(b.buffer, b.byteOffset, b.byteLength / 4);
+  };
+  for (const r of out) {
+    if (r.rec.failed.length) {
+      fails.push(`shipped ${r.rec.failed.join(', ')}: wouldn't load`);
+      continue;
+    }
+    const level = (chs) => {
+      const c = chs.map(pcm);
+      return r.kind === 'sfx' ? loudness(c, 'momentary') : loudness(c.map((x) => x.subarray(3 * RATE)), 'integrated');
+    };
+    const rec = level(r.rec.chs);
+    const synth = level(r.synth.chs);
+    const d = rec - synth;
+    const against = r.kind === 'sfx' ? 'its synthesized sound' : `the ${r.area} bed`;
+    facts[r.id] = `${rec.toFixed(1)} vs ${synth.toFixed(1)} LUFS ${r.kind === 'sfx' ? 'momentary' : 'integrated'} (${d >= 0 ? '+' : ''}${d.toFixed(1)} dB, gain ${r.gain.join('/')})`;
+    if (!(Math.abs(d) <= MATCH_DB)) {
+      // the gain that would match, the compressor aside
+      const want = r.gain.map((g) => +(g * 10 ** (-d / 20)).toPrecision(2));
+      fails.push(`shipped ${r.id}: ${d.toFixed(1)} dB ${d > 0 ? 'louder' : 'quieter'} than ${against} (${facts[r.id]}): gain ${want.join('/')} in tools/audio/list.mjs would match`);
+    }
+  }
+  return { fails, facts };
 }

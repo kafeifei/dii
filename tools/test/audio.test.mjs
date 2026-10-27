@@ -1,6 +1,7 @@
 // The file-based audio engine and the composed music, without an AudioContext: the manifest of
 // recordings (src/audio/files.ts) names real ids and files; the decoded-buffer cache keeps to its
 // budget, oldest first, sparing what's pinned, and decodes each file once; variants don't repeat;
+// an effect's leading silence (an AAC priming left in) is skipped;
 // every area kind has its music; walking from area to area, an ambience or a music starts only
 // where it changes; a Karplus–Strong string is in tune, decays and is the same for the same seed;
 // the composer writes the same piece for the same area, in its mode, sparse but never silent for
@@ -18,7 +19,7 @@ const MINUTES = 10;
 export default async (load) => {
   const { SOUNDS, AREA_FILES, areaSound, areaFiles } = await load('/src/audio/sounds.ts');
   const { FILES } = await load('/src/audio/files.ts');
-  const { Buffers, BUDGET, bytesOf, pickVariant } = await load('/src/audio/buffers.ts');
+  const { Buffers, BUDGET, bytesOf, pickVariant, leadIn, LEAD } = await load('/src/audio/buffers.ts');
   const { SCORES, Composer, pluck, mulberry, seedOf, midiHz, STRING_RATE, ROOM_MAX } = await load('/src/audio/score.ts');
   const { Sfx, MAX_RATE } = await load('/src/audio/sfx.ts');
   const { areaKey } = await load('/src/audio/sounds.ts');
@@ -28,7 +29,7 @@ export default async (load) => {
 
   // the manifest: ids the game knows, files that are there, sane loop points
   for (const [id, f] of Object.entries(FILES)) {
-    check(id in SOUNDS || AREA_FILES.includes(id), `files.ts: ${id} is neither a sound id nor an area's recording`);
+    check(id in SOUNDS || AREA_FILES.includes(id) || /^voice\.[a-z0-9_]+\.[a-z0-9_]+$/.test(id), `files.ts: ${id} is neither a sound id, an area's recording nor a voice line`);
     check(Array.isArray(f.files) && f.files.length > 0, `files.ts: ${id} has no files`);
     for (const file of f.files ?? []) {
       check(AUDIO_EXT.test(file) && !file.startsWith('/') && !file.split('/').includes('..'), `files.ts: ${id}: ${file} is not an audio file under public/audio/`);
@@ -94,6 +95,16 @@ export default async (load) => {
     check(seen.size === ready.length, `variants ${ready}: only ${[...seen]} ever played`);
   }
   check(pickVariant([3], 3, rand) === 3, 'the only variant ready was not played again');
+
+  // an effect's silence before its sound, skipped when it plays: none in a file trimmed as the
+  // pipeline does, the AAC priming's 44 ms where a browser would keep it
+  const R = 48000;
+  const ping = (silent) => Float32Array.from({ length: silent + R / 4 }, (_, i) => (i < silent ? 0 : 0.5 * Math.sin((i - silent) * 0.2) * Math.exp(-(i - silent) / 4000)));
+  const trimmed = leadIn(ping(Math.round(LEAD * R)), R);
+  const primed = leadIn(ping(Math.round(LEAD * R) + 2112), R);
+  check(trimmed < 0.0005, `a trimmed effect skips ${trimmed} s`);
+  check(Math.abs(primed - 2112 / R) < 0.0005, `an effect with the priming kept skips ${primed} s, not ${2112 / R}`);
+  check(leadIn(new Float32Array(100), R) === 0, 'a silent buffer is skipped into');
 
   // the areas' music: the camp, the wilderness and the dungeons each their own, the title quiet
   for (const [key, t] of Object.entries(THEMES)) {

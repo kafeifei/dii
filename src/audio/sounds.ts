@@ -182,8 +182,10 @@ export type Bed = 'town' | 'dungeon' | 'none';
 export type AmbId = `amb.${string}`;
 /** a recorded music track, streamed */
 export type MusicId = `music.${string}`;
-/** what can have recorded files: an effect, an ambience loop, a music track */
-export type FileId = SoundId | AmbId | MusicId;
+/** a recorded line of speech, one speaker's (tools/audio/list.mjs): voice.<speaker>.<line> */
+export type VoiceId = `voice.${string}`;
+/** what can have recorded files: an effect, an ambience loop, a music track, a voice line */
+export type FileId = SoundId | AmbId | MusicId | VoiceId;
 
 /** the music Sfx composes where an area has no recorded track (src/audio/score.ts) */
 export type ScoreKind = 'town' | 'outdoor' | 'dungeon';

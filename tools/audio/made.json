@@ -1,0 +1,49 @@
+{
+  "amb.town.1": {
+    "key": "8a97b3a41728",
+    "proc": "91230d819215",
+    "kind": "loop",
+    "model": "eleven_text_to_sound_v3",
+    "prompt": "camp ambience: a crackling campfire close by, a soft steady wind over an open moor, no voices, no music",
+    "credits": 150,
+    "date": "2026-10-26",
+    "secs": 13.5,
+    "lufs": -24,
+    "peak": -1,
+    "limited": 3.7,
+    "loop": {
+      "start": 0.25,
+      "end": 13.25
+    },
+    "encoder": "aac_at"
+  },
+  "combat.swing.1": {
+    "key": "f0692c3fe5db",
+    "proc": "0cc25dc95d8b",
+    "kind": "sfx",
+    "model": "eleven_text_to_sound_v3",
+    "prompt": "a single fast sword swing whoosh through the air, close, dry, no impact, no music",
+    "credits": 6,
+    "date": "2026-10-26",
+    "secs": 0.183,
+    "lufs": -16,
+    "peak": -1,
+    "limited": 5.1,
+    "encoder": "aac_at"
+  },
+  "item.gold.1": {
+    "key": "fbf06505f6ab",
+    "proc": "5faac8d6c0a0",
+    "kind": "sfx",
+    "model": "eleven_text_to_sound_v3",
+    "prompt": "a small handful of gold coins dropped onto a stone floor, a few bright metallic clinks, close, dry, no music",
+    "credits": 8,
+    "date": "2026-10-26",
+    "secs": 0.713,
+    "lufs": -19.3,
+    "peak": -1,
+    "limited": 6,
+    "short": 3.3,
+    "encoder": "aac_at"
+  }
+}
