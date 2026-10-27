@@ -5,6 +5,7 @@ import type { Level } from '../game/level';
 import type { ObjKind } from '../game/objects';
 import { baseOf, displayName, itemColor, type Item } from '../items/item';
 import type { Renderer } from '../render/renderer';
+import type { AreaDef } from '../world/areas';
 import { Automap } from './automap';
 import { renderChar } from './character';
 import { h, type LeftPanel, type RightPanel, type UIContext } from './common';
@@ -111,6 +112,15 @@ export class UI implements GameHooks, UIContext {
     this.labels.clear();
     if (this.left === 'shop' || this.left === 'stash' || this.left === 'waypoint') this.left = null;
     this.dirty = true;
+  }
+
+  areaChanged(area: AreaDef) {
+    // the area's name on the way in, as Diablo II shows it
+    this.hud.message(area.name, '#d8c8a0', 3);
+  }
+
+  teleported() {
+    this.renderer.snapCamera();
   }
 
   playerDied() {
@@ -329,9 +339,10 @@ export class UI implements GameHooks, UIContext {
     // under the sky the dark past the hero's light comes with the night: deepest in the wilderness
     const outdoor = !!g.level.layout.theme.outdoor;
     const day = outdoor ? 1 - r.night : 0;
-    const dark = (outdoor ? (g.level.depth === 0 ? 10 : 8 + d.lightRadius * 0.7) : 7 + d.lightRadius * 0.7) * r.pxPerUnit;
+    const town = g.level.inTown(p.pos);
+    const dark = (outdoor ? (town ? 10 : 8 + d.lightRadius * 0.7) : 7 + d.lightRadius * 0.7) * r.pxPerUnit;
     const radius = dark + day * 9 * r.pxPerUnit;
-    const a = (outdoor ? (g.level.depth === 0 ? 0.4 : 0.6) : 0.85) * (1 - day * 0.8);
+    const a = (outdoor ? (town ? 0.4 : 0.6) : 0.85) * (1 - day * 0.8);
     this.vignette.style.background = `radial-gradient(circle at ${ps.x}px ${ps.y}px, rgba(0,0,0,0) ${radius * 0.55}px, rgba(0,0,0,${a * 0.6}) ${radius}px, rgba(0,0,0,${a}) ${radius * 1.6}px)`;
 
     this.tooltip.dropStale();

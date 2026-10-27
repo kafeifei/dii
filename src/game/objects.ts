@@ -38,6 +38,8 @@ export class WorldObject {
   inward?: P2;
   /** shrines: which (src/data/shrines.ts) */
   shrine?: string;
+  /** vendors: who keeps the stall (the layout's Service.npc), for what they say and the shop's title */
+  npc?: string;
   constructor(kind: ObjKind, pos: P2, name: string, radius = 0.5) {
     this.kind = kind;
     this.pos = { ...pos };

@@ -54,8 +54,9 @@ const results = (s) => literals(s.replace(/[=!]==?\s*('[^'\n]*'|"[^"\n]*")|('[^'
 
 export default async (load) => {
   const { SOUNDS, PRIORITY, areaSound } = await load('/src/audio/sounds.ts');
-  const { spatial, earGains, voiceToSteal, PAN_MAX } = await load('/src/audio/sfx.ts');
-  const { THEMES } = await load('/src/world/levelgen.ts');
+  const { Sfx, spatial, earGains, voiceToSteal, PAN_MAX } = await load('/src/audio/sfx.ts');
+  const { THEMES, WILD_MAPS, isWild, dungeonFloor, themeForFloor } = await load('/src/world/levelgen.ts');
+  const { areaForDepth } = await load('/src/world/areas.ts');
   const problems = [];
   const check = (ok, what) => ok || problems.push(what);
 
@@ -107,13 +108,29 @@ export default async (load) => {
   check(calls > 50, `only ${calls} sfx.play calls found`);
   for (const id of ids) check(used.has(id), `${id}: nothing plays it`);
 
-  // the beds: today a level's theme stands for its area
-  for (const [key, t] of Object.entries(THEMES)) {
-    const want = t.outdoor ? 'town' : 'dungeon';
-    check(areaSound(key).bed === want, `the ${key} theme plays ${areaSound(key).bed}, not ${want}`);
+  // the beds, by area: the camp's wind and fire under the sky (as each map's theme is outdoor), a
+  // drone underground; the camp, the wilderness and a floor of each dungeon theme
+  for (const depth of [0, ...Array.from({ length: WILD_MAPS }, (_, i) => i + 1), ...[1, 5, 9, 13].map((f) => WILD_MAPS + f)]) {
+    const theme = depth === 0 ? THEMES.town : isWild(depth) ? THEMES.wild : themeForFloor(dungeonFloor(depth));
+    const want = theme.outdoor ? 'town' : 'dungeon';
+    const a = areaForDepth(depth);
+    check(areaSound(a).bed === want, `${a.name} (area ${a.id}) plays ${areaSound(a).bed}, not ${want}`);
   }
   check(areaSound('title').bed === 'none', `the title screen plays ${areaSound('title').bed}`);
-  check(areaSound('nowhere').bed === 'none', `an unknown area plays ${areaSound('nowhere').bed}`);
+  check(areaSound('nowhere').bed === 'none', `an unknown screen plays ${areaSound('nowhere').bed}`);
+
+  // from area to area a bed starts only when it changes: the drone plays on from floor to floor
+  // (into the cave too), the wind from the camp out into the wilderness. Node has no AudioContext,
+  // so one is pretended and only the beds enterArea asks for are watched
+  const sfx = new Sfx();
+  const started = [];
+  sfx.ctx = {};
+  sfx.startBed = (bed) => started.push(bed);
+  const walk = [0, 1, WILD_MAPS + 1, WILD_MAPS + 2, WILD_MAPS + 5, 0].map(areaForDepth);
+  for (const a of walk) sfx.enterArea(a);
+  sfx.enterArea('title');
+  const beds = started.join(' ');
+  check(beds === 'town dungeon town none', `${walk.map((a) => a.key).join(' > ')} > title started the beds ${beds}, want town dungeon town none`);
 
   // the listener at the origin; the screen's right along +x, 12 m to its edge
   const at = { x: 0, z: 0 };

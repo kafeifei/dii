@@ -4,7 +4,8 @@
 // seeded so that two renders synthesize the same samples, and compares each ear's peak: a sound at
 // the listener is exactly as loud as the same sound played as UI; one to the side keeps its near
 // ear and turns the far one down, all the way at the screen's edge; a far sound doesn't swallow a
-// near one of the same recipe. Then the game's own Sfx: the renderer hands it the camera's view
+// near one of the same recipe; a bed plays on into the next area when it's the same bed (the
+// areas made by the game's own Level). Then the game's own Sfx: the renderer hands it the camera's view
 // (the screen's right and half its width, after a resize and a zoom too), and the area's bed starts
 // with the AudioContext on the first click. The last line is "SFX OK <summary>" or "SFX FAIL <reasons>".
 
@@ -47,9 +48,9 @@ export default async function (page, shot, log) {
   fails.push(...(await viewCheck(`zoomed to ${zoomed.toFixed(2)}`)));
 
   // the bed: the game entered the camp before there was an AudioContext, and it starts on the first click
-  const before = await ev(() => ({ ctx: !!window.game.sfx.ctx, area: window.game.sfx.area, theme: window.game.level.layout.theme.key }));
+  const before = await ev(() => ({ ctx: !!window.game.sfx.ctx, area: window.game.sfx.area?.name, same: window.game.sfx.area === window.game.area }));
   if (before.ctx) fails.push('an AudioContext before any click');
-  if (before.area !== before.theme) fails.push(`Sfx's area is ${before.area}, the level's ${before.theme}`);
+  if (!before.same) fails.push(`Sfx's area is ${before.area}, not the hero's`);
   await page.mouse.click(640, 400);
   await page.waitForTimeout(300);
   const after = await ev(() => ({ ctx: window.game.sfx.ctx?.state ?? null, bed: !!window.game.sfx.amb }));
@@ -94,6 +95,16 @@ export default async function (page, shot, log) {
     }
     const near = (a, b, rel = 1e-4) => Math.abs(a - b) <= rel * Math.max(Math.abs(a), Math.abs(b), 1e-9);
     const PAN_MAX = 0.7;
+    // today's first maps' areas, from the game's own Level: the camp, the wilderness, two dungeon floors
+    const Level = g.level.constructor;
+    const areas = [];
+    for (let d = 0; areas.filter((a) => a.kind === 'dungeon').length < 2; d++) {
+      const lv = new Level(d, 1);
+      areas.push(lv.areaAt(lv.layout.start.x, lv.layout.start.z));
+    }
+    const camp = areas[0];
+    const wild = areas.find((a) => a.kind === 'outdoor');
+    const [floor1, floor2] = areas.filter((a) => a.kind === 'dungeon');
 
     for (const id of ['combat.hit', 'item.drop_unique', 'monster.die', 'player.level_up']) {
       const ui = await render((s) => s.play(id));
@@ -140,9 +151,21 @@ export default async function (page, shot, log) {
     // an area entered before the AudioContext: its bed starts with it
     const early = await render(
       () => {},
-      (s) => s.enterArea('crypt'),
+      (s) => s.enterArea(floor1),
     );
-    if (!early.bed) fails.push('the crypt entered before ensure(): no bed after it');
+    if (!early.bed) fails.push(`${floor1.name} entered before ensure(): no bed after it`);
+    // from area to area the same bed plays on (floor to floor, the camp out into the wilderness);
+    // another one takes over
+    const kept = [];
+    await render((s) => {
+      for (const a of [floor1, floor2, camp, wild, floor1]) {
+        const last = s.amb;
+        s.enterArea(a);
+        if (last) kept.push(`${a.key} ${s.amb === last ? 'kept' : 'new'}`);
+      }
+    });
+    const want = `${floor2.key} kept,${camp.key} new,${wild.key} kept,${floor1.key} new`;
+    if (kept.join() !== want) fails.push(`walking the areas the beds went ${kept.join()}, want ${want}`);
     return { fails, facts };
   });
   fails.push(...res.fails, ...errors);

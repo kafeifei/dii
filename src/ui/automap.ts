@@ -1,7 +1,6 @@
 import { SHRINE_BY_ID } from '../data/shrines';
 import type { Game } from '../game/game';
 import { T_FLOOR, T_PROP, T_WALL } from '../world/tilemap';
-import { levelLabel } from '../world/levelgen';
 import { h } from './common';
 
 /**
@@ -110,7 +109,7 @@ export class Automap {
     };
     for (const o of g.level.objects) {
       // the way out of the camp is always marked, explored or not
-      const campExit = o.kind === 'exit' && g.level.depth === 0;
+      const campExit = o.kind === 'exit' && g.level.inTown(o.pos);
       if (!campExit && !map.explored[Math.floor(o.pos.z) * map.w + Math.floor(o.pos.x)]) continue;
       if (campExit) {
         const k = (performance.now() / 1200) % 1;
@@ -138,7 +137,8 @@ export class Automap {
     const ctx = this.minimap.getContext('2d')!;
     const p = this.game.player;
     this.drawMapTo(ctx, 4, p.pos.x, p.pos.z, 32, 240, 240);
-    this.minimapLabel.textContent = levelLabel(this.game.level.depth);
+    const area = this.game.level.areaAt(p.pos.x, p.pos.z);
+    this.minimapLabel.textContent = area.label ?? area.name;
   }
 
   private drawAutomap() {

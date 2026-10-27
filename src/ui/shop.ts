@@ -41,7 +41,9 @@ export function renderStash(ui: UIContext, L: HTMLElement) {
 
 export function renderShop(ui: UIContext, L: HTMLElement) {
   L.innerHTML = '';
-  L.appendChild(h('h2', '', '商人 · 艾莉娜'));
+  // titled with the merchant's object, which the layout's vendor service names
+  const vendor = ui.game.level.objects.find((o) => o.kind === 'vendor');
+  L.appendChild(h('h2', '', vendor?.name ?? '商人'));
   addClose(ui, L, 'left');
   L.appendChild(renderGrid(ui, 'shop', ui.game.shop));
   L.appendChild(h('div', 'goldline', `<span>你的金币：${ui.game.player.gold}</span><span style="color:#8a8278;font-size:12px">点击购买 · 把物品放进来出售</span>`));

@@ -362,7 +362,7 @@ export function generateWild(seed: number): Layout {
 
   const exits: Exit[] = [{ x: exitX + 0.5, z: Math.floor(roadZ(exitX)) + 0.5, dest: 0, name: THEMES.town.name, nx: 1, nz: 0 }];
   return {
-    map, theme, start, stairs: crypt, rooms: [], spawnRooms: rooms, torches: [], decor: furn.decor, chests, barrels,
-    pillars: new Set(), campfire, exits, ground, shrines, elites, props, wallDecor: [],
+    map, theme, start, stairs: crypt, waypoints: [], rooms: [], spawnRooms: rooms, torches: [], decor: furn.decor, chests, barrels,
+    pillars: new Set(), services: campfire ? [{ kind: 'campfire', pos: campfire }] : [], exits, ground, shrines, elites, props, wallDecor: [],
   };
 }

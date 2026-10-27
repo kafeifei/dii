@@ -129,12 +129,28 @@ export interface Exit {
   nz: number;
 }
 
+/** a waypoint and the area it serves (one big map will have a waypoint in each of several areas) */
+export interface Waypoint {
+  area: number;
+  pos: P2;
+}
+
+/** what a place offers the hero: the town's people and the stash, a campfire to warm by */
+export type ServiceKind = 'vendor' | 'stash' | 'campfire' | 'healer' | 'smith' | 'gambler' | 'identify' | 'hire';
+
+export interface Service {
+  kind: ServiceKind;
+  pos: P2;
+  /** who offers it, when it's someone: their name */
+  npc?: string;
+}
+
 export interface Layout {
   map: TileMap;
   theme: Theme;
   start: P2;
   stairs?: P2;
-  waypoint?: P2;
+  waypoints: Waypoint[];
   rooms: Room[];
   spawnRooms: Room[];
   torches: Torch[];
@@ -142,9 +158,8 @@ export interface Layout {
   chests: P2[];
   barrels: P2[];
   pillars: Set<number>;
-  vendor?: P2;
-  stash?: P2;
-  campfire?: P2;
+  /** the camp's merchant and stash, and the campfires (the camp's, the wilderness's monster camps) */
+  services: Service[];
   exits?: Exit[];
   /** outdoor maps: per tile, how much grass, dirt, road and stone (four bytes, 0-255); the renderer blends their textures */
   ground?: Uint8Array;
@@ -259,8 +274,8 @@ function torchSpots(map: TileMap, room: Room): Torch[] {
   return spots;
 }
 
-/** `floor` is the dungeon's own floor number (dungeonFloor) */
-export function generateDungeon(floor: number, seed: number): Layout {
+/** `floor` is the dungeon's own floor number (dungeonFloor), `area` the area its waypoint is in */
+export function generateDungeon(floor: number, seed: number, area: number): Layout {
   const rng = new RNG(seed);
   const theme = themeForFloor(floor);
   const size = 60 + Math.min(floor * 2, 30);
@@ -419,16 +434,17 @@ export function generateDungeon(floor: number, seed: number): Layout {
   decor.push(...furn.decor);
 
   return {
-    map, theme, start, stairs, waypoint, rooms, spawnRooms, torches, decor, chests, barrels, pillars, bossRoom,
-    props: furn.props, wallDecor: furn.wall,
+    map, theme, start, stairs, waypoints: [{ area, pos: waypoint }], rooms, spawnRooms, torches, decor, chests, barrels, pillars, bossRoom,
+    services: [], props: furn.props, wallDecor: furn.wall,
   };
 }
 
 /**
  * Dev showroom (?dev&gallery): every furniture model in rows under the camp lighting, wall pieces
  * along the north wall and the procedural decor in the last row, for reviewing art side by side.
+ * It stands in for the camp, in the camp's `area`.
  */
-export function generateGallery(): Layout {
+export function generateGallery(area: number): Layout {
   const rng = new RNG(7);
   const size = 64;
   const map = new TileMap(size, size);
@@ -462,11 +478,13 @@ export function generateGallery(): Layout {
   }));
   return {
     map, theme: THEMES.town, start, rooms: [], spawnRooms: [], torches, decor, chests: [{ x: 6, z: y + rowD + 6 }], barrels: [{ x: 9, z: y + rowD + 6 }],
-    pillars: new Set(), stash: { x: 12, z: y + rowD + 6 }, waypoint: { x: 40, z: y + rowD + 6 }, stairs: { x: 46, z: y + rowD + 6 }, props: furn.props, wallDecor: furn.wall, npcs: [],
+    pillars: new Set(), services: [{ kind: 'stash', pos: { x: 12, z: y + rowD + 6 } }], waypoints: [{ area, pos: { x: 40, z: y + rowD + 6 } }],
+    stairs: { x: 46, z: y + rowD + 6 }, props: furn.props, wallDecor: furn.wall, npcs: [],
   };
 }
 
-export function generateTown(): Layout {
+/** the camp, laid out by hand; `area` is the camp's area, its waypoint's */
+export function generateTown(area: number): Layout {
   const rng = new RNG(1337);
   const theme = THEMES.town;
   const size = 46;
@@ -602,8 +620,13 @@ export function generateTown(): Layout {
   }
 
   const torches: Torch[] = [];
+  const services: Service[] = [
+    { kind: 'vendor', pos: vendor, npc: '艾莉娜' },
+    { kind: 'stash', pos: stash },
+    { kind: 'campfire', pos: campfire },
+  ];
   return {
-    map, theme, start, waypoint, rooms: [], spawnRooms: [], torches, decor, chests: [], barrels: [],
-    pillars: new Set(), vendor, stash, campfire, exits: [gate], ground, houses, props: [...furn.props, ...woods.props], wallDecor: [], npcs,
+    map, theme, start, waypoints: [{ area, pos: waypoint }], rooms: [], spawnRooms: [], torches, decor, chests: [], barrels: [],
+    pillars: new Set(), services, exits: [gate], ground, houses, props: [...furn.props, ...woods.props], wallDecor: [], npcs,
   };
 }

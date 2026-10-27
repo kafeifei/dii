@@ -22,12 +22,17 @@ import type { Elem } from '../data/monsters';
 import { loadSave, markInGame, setSlot, writeSave } from './save';
 import { debugOpts } from './debug';
 import { isWild, levelLabel } from '../world/levelgen';
+import type { AreaDef } from '../world/areas';
 import { SHRINE_BY_ID } from '../data/shrines';
 
 export interface GameHooks {
   message(text: string, color?: string, dur?: number): void;
   openPanel(kind: 'shop' | 'stash' | 'waypoint'): void;
   levelChanged(level: Level): void;
+  /** the hero came into an area: on entering a level (prev is the last level's), or walking or teleporting into another */
+  areaChanged(area: AreaDef, prev: AreaDef | null): void;
+  /** the hero jumped across the map without leaving it: the view goes there at once */
+  teleported(): void;
   playerDied(): void;
   inventoryChanged(): void;
   getCursorItem(): Item | null;
@@ -76,6 +81,8 @@ export class Game {
   lastDungeon: Level | null = null;
   /** the wilderness maps as they were left: like an area of a Diablo II game, each stays for the session */
   private wilds = new Map<number, Level>();
+  /** the area the hero is in (Level.areaAt), announced through hooks.areaChanged when it changes */
+  area: AreaDef | null = null;
   fx: Fx = nullFx;
   hooks!: GameHooks;
   picker!: Picker;
@@ -144,6 +151,7 @@ export class Game {
     this.lastDungeon = null;
     this.portalLevel = null;
     this.wilds.clear();
+    this.area = null;
     markInGame(true);
     this.enterLevel(0, 'start');
   }
@@ -158,6 +166,7 @@ export class Game {
     this.lastDungeon = null;
     this.portalLevel = null;
     this.wilds.clear();
+    this.area = null;
     markInGame(true);
     // floors are regenerated; you arrive at the entrance of the floor you were on
     this.enterLevel(s.depth, 'start');
@@ -199,7 +208,7 @@ export class Game {
       facing = Math.atan2(back.inward.x, back.inward.z);
     }
     if (how === 'portal') {
-      if (depth === 0) {
+      if (level.inTown(spawn)) {
         // create the return portal in town
         const pt = { x: level.layout.start.x - 2.5, z: level.layout.start.z + 0.5 };
         const portal = new WorldObject('portal', pt, `传送门 · ${levelLabel(this.portalLevel?.depth ?? 1)}`, 0.6);
@@ -215,9 +224,42 @@ export class Game {
         this.portalLevel = null;
       }
     }
-    const safe = level.map.nearestWalkable(spawn.x, spawn.z) ?? spawn;
-    p.pos = { ...safe };
+    this.placePlayer(spawn);
     p.facing = facing;
+    if (level.inTown(p.pos)) {
+      this.refreshShop();
+      this.layOutUnplaced(level);
+    } else {
+      p.depthReached = Math.max(p.depthReached, depth);
+      // arriving activates the area's waypoint (the wilderness has none: the camp is a walk away)
+      if (level.areaAt(p.pos.x, p.pos.z).waypoint && !p.waypoints.includes(depth)) {
+        p.waypoints.push(depth);
+        p.waypoints.sort((a, b) => a - b);
+        if (how !== 'start') this.hooks.message('传送点已激活', '#c8a86a', 2);
+      }
+    }
+    this.hooks.levelChanged(level);
+    // a new level is always announced, even in the same area as the last
+    this.updateArea(true);
+    this.save();
+  }
+
+  /**
+   * Move the hero elsewhere on this map without leaving it (later: a waypoint, a town portal or
+   * respawning on one big map): the view jumps there and a new area is announced, nothing is rebuilt.
+   */
+  teleportWithin(pos: P2) {
+    this.placePlayer(pos);
+    this.hooks.teleported();
+    this.updateArea();
+  }
+
+  /** the hero set down on walkable ground near `pos`, standing still, whatever they were doing dropped */
+  private placePlayer(pos: P2) {
+    const p = this.player;
+    const safe = this.level.map.nearestWalkable(pos.x, pos.z) ?? pos;
+    p.pos = { ...safe };
+    p.prevPos = { ...safe };
     p.intent = null;
     p.path = null;
     p.setState('idle');
@@ -226,24 +268,18 @@ export class Game {
     p.chargeTarget = null;
     this.playerAction = null;
     this.lmbMode = 'none';
-    if (depth > 0) {
-      p.depthReached = Math.max(p.depthReached, depth);
-      // the wilderness has no waypoint: the camp is a walk away
-      if (!isWild(depth) && !p.waypoints.includes(depth)) {
-        p.waypoints.push(depth);
-        p.waypoints.sort((a, b) => a - b);
-        if (how !== 'start') this.hooks.message('传送点已激活', '#c8a86a', 2);
-      }
-    } else {
-      this.refreshShop();
-      this.layOutUnplaced(level);
-    }
     this.sfx.setListener(p.pos);
-    // until levels have areas of their own (Level.areaAt), the theme stands for one
-    this.sfx.enterArea(level.layout.theme.key);
-    this.hooks.levelChanged(level);
-    this.hooks.message(level.name, '#d8c8a0', 3);
-    this.save();
+  }
+
+  /** announce the hero's area when it changed (or always, `entered` a level): its banner and its ambience */
+  private updateArea(entered = false) {
+    const p = this.player;
+    const area = this.level.areaAt(p.pos.x, p.pos.z);
+    if (area === this.area && !entered) return;
+    const prev = this.area;
+    this.area = area;
+    this.sfx.enterArea(area);
+    this.hooks.areaChanged(area, prev);
   }
 
   /** put the items that fit nowhere (old saves, bigger D2 items) on the ground around the stash */
@@ -348,6 +384,7 @@ export class Game {
         return;
       }
     }
+    this.updateArea();
     // corpse cleanup
     if (L.monsters.length > 0 && Math.random() < 0.02) {
       L.monsters = L.monsters.filter((m) => !m.dead || m.deathTime < 40);
@@ -1089,7 +1126,7 @@ export class Game {
         this.hooks.openPanel('waypoint');
         break;
       case 'vendor':
-        this.vendorHeal();
+        this.vendorHeal(obj);
         this.hooks.openPanel('shop');
         break;
       case 'stash':
@@ -1117,14 +1154,14 @@ export class Game {
       }
       case 'portal':
         this.sfx.play('env.portal_enter', { pos: obj.pos });
-        if (this.level.depth === 0) this.enterLevel(obj.dest, 'portal');
+        if (this.level.inTown(obj.pos)) this.enterLevel(obj.dest, 'portal');
         else this.enterLevel(0, 'portal');
         break;
     }
   }
 
   /** like Akara in Diablo II: talking to the merchant puts life and mana back to full and cures poison, chill and the rest */
-  private vendorHeal() {
+  private vendorHeal(vendor: WorldObject) {
     const p = this.player;
     const s = p.stats;
     if (p.life >= s.maxLife && p.mana >= s.maxMana && p.poisonTime <= 0 && p.chillTime <= 0 && p.bleedTime <= 0 && p.slowTime <= 0) return;
@@ -1134,12 +1171,12 @@ export class Game {
     this.fx.burst('potion_hp', p.pos);
     this.fx.burst('potion_mp', p.pos);
     this.sfx.play('env.vendor_heal', { pos: p.pos });
-    this.hooks.message('艾莉娜为你恢复了生命与法力', '#c8a86a', 2);
+    this.hooks.message(`${vendor.npc ?? '商人'}为你恢复了生命与法力`, '#c8a86a', 2);
   }
 
   openTownPortal() {
     const L = this.level;
-    if (L.depth === 0) {
+    if (L.inTown(this.player.pos)) {
       this.hooks.message('你已经在营地里了', '#aaa', 1.5);
       return;
     }
@@ -1159,7 +1196,7 @@ export class Game {
   castTownPortal() {
     const p = this.player;
     if (p.dead || !(p.state === 'idle' || p.state === 'move')) return;
-    if (this.level.depth === 0) {
+    if (this.level.inTown(p.pos)) {
       this.hooks.message('你已经在营地里了', '#aaa', 1.5);
       return;
     }

@@ -4,8 +4,9 @@
 // Reloads the page with empty storage, then plays a short run through the real UI and the game's
 // own API: the HUD and every panel, the debug panel's cheats, loot, the camp's services, the
 // wilderness and the first dungeon floor (every skill cast, kills and their drops), a town portal
-// there and back, and the save. Page errors and console errors count from the reload on, and fail
-// the run. The last line is "SMOKE OK <summary>" or "SMOKE FAIL <reasons>".
+// there and back, a jump within the camp (Game.teleportWithin), and the save. Page errors and
+// console errors count from the reload on, and fail the run. The last line is "SMOKE OK <summary>"
+// or "SMOKE FAIL <reasons>".
 
 /** the version writeSave in src/game/save.ts stamps on a save: bump it with that */
 const SAVE_V = 3;
@@ -248,9 +249,12 @@ export default async function (page, shot, log) {
     async wild() {
       const s = await ev(() => {
         game.travel(1);
-        return { depth: game.level.depth, exit: game.level.objects.some((o) => o.kind === 'exit' && o.dest === 0), stairs: game.level.objects.some((o) => o.kind === 'stairs'), monsters: game.level.monsters.length };
+        window.__smoke.wildArea = game.area.id;
+        const banners = [...document.querySelectorAll('#messages > div')].filter((e) => e.textContent === game.area.name).length;
+        return { depth: game.level.depth, area: game.area.kind, banners, exit: game.level.objects.some((o) => o.kind === 'exit' && o.dest === 0), stairs: game.level.objects.some((o) => o.kind === 'stairs'), monsters: game.level.monsters.length };
       });
-      expect(s.depth === 1, `travel(1) went to depth ${s.depth}`);
+      expect(s.depth === 1 && s.area === 'outdoor', `travel(1) went to depth ${s.depth}, a ${s.area} area`);
+      expect(s.banners === 1, `the wilderness's name shown ${s.banners} times on the way in`);
       expect(s.exit && s.stairs, `the wilderness has exit ${s.exit}, stairs ${s.stairs}`);
       expect(s.monsters > 0, 'no monsters in the wilderness');
       await frames();
@@ -411,6 +415,63 @@ export default async function (page, shot, log) {
         return game.level.depth;
       });
       expect(depth === 0, `travel(0) went to depth ${depth}`);
+    },
+
+    async teleport() {
+      // the camp's east part made wilderness for the test: a jump into it moves the view with the hero
+      // and announces the area without rebuilding the scene; walking back is noticed by the frame loop
+      const s = await ev(() => {
+        const S = window.__smoke;
+        const L = game.level;
+        const map = L.map;
+        const p = game.player;
+        S.campArea = game.area.id;
+        S.areasBefore = L.areas.slice();
+        const east = Math.floor(map.w * 0.6);
+        for (let z = 0; z < map.h; z++) for (let x = east; x < map.w; x++) L.areas[z * map.w + x] = S.wildArea;
+        const spotIn = (x0, x1) => {
+          for (let z = 4; z < map.h - 4; z++) for (let x = x0; x < x1; x++) if (map.circleClear(x + 0.5, z + 0.5, 0.45)) return { x: x + 0.5, z: z + 0.5 };
+          return null;
+        };
+        const out = spotIn(east + 2, map.w - 4);
+        S.home = spotIn(4, east - 2);
+        if (!out || !S.home) return { error: 'no walkable spots either side of the camp' };
+        let builds = 0;
+        const build = renderer.buildLevel;
+        renderer.buildLevel = (...a) => {
+          builds++;
+          return build.apply(renderer, a);
+        };
+        const view = renderer.levelGroup.children[0];
+        game.teleportWithin(out);
+        renderer.buildLevel = build;
+        const cam = renderer.camTarget;
+        return {
+          moved: S.dist(p.pos, out),
+          cam: Math.hypot(cam.x - out.x, cam.z - out.z),
+          area: game.area.id,
+          sfx: game.sfx.area === game.area,
+          town: L.inTown(p.pos),
+          same: game.level === L && renderer.levelGroup.children[0] === view,
+          builds,
+          banner: [...document.querySelectorAll('#messages > div')].some((e) => e.textContent === game.area.name),
+        };
+      });
+      if (s.error) throw new Error(s.error);
+      expect(s.moved < 0.01 && s.cam < 0.01, `the jump left the hero ${s.moved.toFixed(2)} m and the camera ${s.cam.toFixed(2)} m off the spot`);
+      expect(s.area === (await ev(() => window.__smoke.wildArea)) && s.sfx && !s.town, `after the jump: area ${s.area}, the sound's the same ${s.sfx}, in town ${s.town}`);
+      expect(s.same && s.builds === 0, `the jump rebuilt the scene (${s.builds} builds)`);
+      expect(s.banner, "the wilderness's name wasn't shown after the jump");
+      await frames();
+      await shot('teleport');
+      // walked back in (put there): the next frames see the camp again
+      await ev(() => {
+        const p = game.player;
+        p.pos = { ...window.__smoke.home };
+        p.prevPos = { ...p.pos };
+      });
+      await until((a) => game.area.id === a, await ev(() => window.__smoke.campArea), 'the camp to be noticed after walking back');
+      await ev(() => game.level.areas.set(window.__smoke.areasBefore));
     },
 
     async save() {

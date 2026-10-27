@@ -1,5 +1,6 @@
 import { RNG, type P2 } from '../core/math';
-import { ALL_MODS, MONSTERS, UNIQUE_FIRST, UNIQUE_SECOND, bossForDepth, monsterLevel, type MonsterDef, type MonsterMod } from '../data/monsters';
+import { ALL_MODS, MONSTERS, UNIQUE_FIRST, UNIQUE_SECOND, bossForDepth, type MonsterDef, type MonsterMod } from '../data/monsters';
+import { areaDef, areaForDepth, type AreaDef } from '../world/areas';
 import { bfsDistances, dungeonFloor, generateDungeon, generateGallery, generateTown, isWild, themeForFloor, type Layout, type Room } from '../world/levelgen';
 import { generateWild } from '../world/wild';
 
@@ -22,21 +23,23 @@ export class Level {
   objects: WorldObject[] = [];
   /** set when the renderer must rebuild static geometry */
   version = 0;
-  name: string;
   boss: Monster | null = null;
   /**
    * the dungeon floor this level is as hard as, for its monsters and loot: its own floor in the
    * dungeon, the first floor's in the wilderness, 0 in the camp
    */
   floor: number;
+  /** the area each tile is in (AreaDef ids, row by row); today a map is one area, all of it */
+  readonly areas: Uint16Array;
 
   constructor(depth: number, seed: number) {
     this.depth = depth;
     const wild = isWild(depth);
+    const area = areaForDepth(depth).id;
     this.floor = depth === 0 ? 0 : wild ? 1 : dungeonFloor(depth);
-    this.layout = depth === 0 ? (GALLERY ? generateGallery() : generateTown()) : wild ? generateWild(seed) : generateDungeon(this.floor, seed);
-    this.name = depth === 0 || wild ? this.layout.theme.name : `${this.layout.theme.name} · 第 ${this.floor} 层`;
+    this.layout = depth === 0 ? (GALLERY ? generateGallery(area) : generateTown(area)) : wild ? generateWild(seed) : generateDungeon(this.floor, seed, area);
     const L = this.layout;
+    this.areas = new Uint16Array(L.map.w * L.map.h).fill(area);
     if (L.stairs) this.objects.push(new WorldObject('stairs', L.stairs, wild ? `通往${themeForFloor(1).name}` : `下行至第 ${this.floor + 1} 层`, 0.9));
     const shrineRng = new RNG(seed ^ 0x51ed);
     for (const s of L.shrines ?? []) {
@@ -51,12 +54,20 @@ export class Level {
       o.inward = { x: e.nx, z: e.nz };
       this.objects.push(o);
     }
-    if (L.waypoint) this.objects.push(new WorldObject('waypoint', L.waypoint, '传送点', 0.8));
-    if (L.vendor) this.objects.push(new WorldObject('vendor', L.vendor, '商人 · 艾莉娜', 0.5));
-    if (L.stash) this.objects.push(new WorldObject('stash', L.stash, '储物箱', 0.8));
+    for (const w of L.waypoints) this.objects.push(new WorldObject('waypoint', w.pos, '传送点', 0.8));
+    // the town's people and the stash are used where they stand; a campfire is only to look at
+    for (const s of L.services) {
+      if (s.kind === 'vendor') {
+        const o = new WorldObject('vendor', s.pos, s.npc ? `商人 · ${s.npc}` : '商人', 0.5);
+        o.npc = s.npc;
+        this.objects.push(o);
+      } else if (s.kind === 'stash') {
+        this.objects.push(new WorldObject('stash', s.pos, '储物箱', 0.8));
+      }
+    }
     for (const c of L.chests) this.objects.push(new WorldObject('chest', c, '宝箱', 0.45));
     for (const b of L.barrels) this.objects.push(new WorldObject('barrel', b, '木桶', 0.35));
-    if (depth > 0) this.populate(seed);
+    if (!this.inTown(L.start)) this.populate(seed);
     else if (GALLERY) {
       // every monster in a row, held still (the stun never wears off)
       Object.values(MONSTERS).forEach((def, i) => {
@@ -75,6 +86,24 @@ export class Level {
     return this.layout.map;
   }
 
+  /** the area at a point; off the map, the nearest tile's */
+  areaAt(x: number, z: number): AreaDef {
+    const m = this.layout.map;
+    const tx = Math.min(m.w - 1, Math.max(0, Math.floor(x)));
+    const tz = Math.min(m.h - 1, Math.max(0, Math.floor(z)));
+    return areaDef(this.areas[tz * m.w + tx])!;
+  }
+
+  /** the area level at a point: its monsters' and its loot's (normal, until there are difficulties) */
+  alvlAt(p: P2): number {
+    return this.areaAt(p.x, p.z).alvl[0];
+  }
+
+  /** whether a point is in a town: no monsters there, the merchant restocks on the way in, no town portal out */
+  inTown(p: P2): boolean {
+    return this.areaAt(p.x, p.z).kind === 'town';
+  }
+
   private populate(seed: number) {
     const rng = new RNG(seed ^ 0x9e3779b9);
     const L = this.layout;
@@ -84,7 +113,7 @@ export class Level {
       return L.map.walkableAt(p.x, p.z) && reach[i] >= 0;
     };
     const f = this.floor;
-    const mlvl = monsterLevel(f);
+    const mlvl = this.alvlAt(L.start);
     const pool = Object.values(MONSTERS).filter((m) => m.weight > 0 && f >= m.minDepth && f <= m.maxDepth);
     const pickDef = (): MonsterDef => {
       let total = 0;

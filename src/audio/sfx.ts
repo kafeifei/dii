@@ -1,5 +1,5 @@
 import type { P2 } from '../core/math';
-import { areaSound, PRIORITY, SOUNDS, type AreaId, type Bed, type SoundDef, type SoundId, type Synth } from './sounds';
+import { areaSound, PRIORITY, SOUNDS, type Bed, type Place, type SoundDef, type SoundId, type Synth } from './sounds';
 
 /**
  * All sounds are synthesized at runtime with WebAudio — no audio assets. Game code plays them by
@@ -110,7 +110,7 @@ export class Sfx {
   private noiseBuf!: AudioBuffer;
   private amb: { stop: () => void } | null = null;
   /** the hero's area: its bed plays, or starts with the AudioContext on the first click */
-  private area: AreaId | null = null;
+  private area: Place | null = null;
   /** each recipe's last start, and how loud it was */
   private lastPlay: Partial<Record<Synth, { t: number; level: number }>> = {};
   private voices: Voice[] = [];
@@ -398,11 +398,15 @@ export class Sfx {
   }
 
   /** the hero is in another area: its bed fades in over the last one's (and later its music) */
-  enterArea(area: AreaId) {
+  enterArea(area: Place) {
     if (area === this.area) return;
+    const was = this.area === null ? null : areaSound(this.area).bed;
     this.area = area;
+    const bed = areaSound(area).bed;
+    // the same bed plays on into the next area (floor to floor, the camp out into the wilderness)
+    if (bed === was) return;
     // no AudioContext before the first click: ensure() starts the bed then
-    if (this.ctx) this.startBed(areaSound(area).bed);
+    if (this.ctx) this.startBed(bed);
   }
 
   /** the looping bed: 'dungeon' drone or 'town' wind+fire, fading in over the last one */

@@ -1,3 +1,5 @@
+import type { AreaDef, AreaKind } from '../world/areas';
+
 /**
  * Every sound the game plays, under a stable id: `category.name`. Game code names the event
  * (sfx.play('combat.hit', { pos })), never how it sounds, so recorded files can take over one id
@@ -163,11 +165,11 @@ export const SOUNDS = Object.fromEntries(
 ) as Record<SoundId, SoundDef>;
 
 /**
- * Where the hero is, for its ambience and (later) its music. The game names the area; until levels
- * have areas of their own, a level's theme key stands in for it ('town' the camp, 'wild', 'crypt'…).
- * Off the map, a named screen such as 'title'.
+ * Where the hero is, for its ambience and (later) its music: an area (src/world/areas.ts), which
+ * sounds like its kind until areas are given sounds of their own (by key); or off the map, a named
+ * screen such as 'title'. Only the area's type is needed here, not the maps that make areas.
  */
-export type AreaId = string | number;
+export type Place = AreaDef | string;
 
 /** the looping beds Sfx synthesizes */
 export type Bed = 'town' | 'dungeon' | 'none';
@@ -177,19 +179,16 @@ export interface AreaSound {
   bed: Bed;
 }
 
-const AREAS: Record<string, AreaSound> = {
+/** the beds by the kind of area: wind and a campfire under the sky, a low drone underground */
+const BEDS: Record<AreaKind, Bed> = { town: 'town', outdoor: 'town', dungeon: 'dungeon' };
+
+/** the screens off the map */
+const SCREENS: Record<string, AreaSound> = {
   title: { bed: 'none' },
-  // the camp and the wilderness: wind and a campfire
-  town: { bed: 'town' },
-  wild: { bed: 'town' },
-  // the dungeon floors: a low drone
-  crypt: { bed: 'dungeon' },
-  cave: { bed: 'dungeon' },
-  ice: { bed: 'dungeon' },
-  hell: { bed: 'dungeon' },
 };
 
-/** an area nobody has given a sound is quiet */
-export function areaSound(area: AreaId): AreaSound {
-  return AREAS[String(area)] ?? { bed: 'none' };
+/** a screen nobody has given a sound is quiet */
+export function areaSound(place: Place): AreaSound {
+  if (typeof place === 'string') return SCREENS[place] ?? { bed: 'none' };
+  return { bed: BEDS[place.kind] };
 }

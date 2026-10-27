@@ -518,8 +518,8 @@ export class Renderer implements Picker {
     const walls = new THREE.InstancedMesh(wallGeo, [sideMat, sideMat, topMat, topMat, sideMat, sideMat], wallTiles.length);
     i = 0;
     for (const [x, y] of wallTiles) {
-      // the camp's palisade is uneven; the wilderness's walls are ruins, broken down low
-      const hJ = theme.key === 'wild' ? 0.2 + Math.random() * 0.4 : level.depth === 0 ? 0.85 + Math.random() * 0.25 : 0.96 + Math.random() * 0.08;
+      // the town's palisade is uneven; the wilderness's walls are ruins, broken down low
+      const hJ = level.areaAt(x + 0.5, y + 0.5).kind === 'town' ? 0.85 + Math.random() * 0.25 : theme.key === 'wild' ? 0.2 + Math.random() * 0.4 : 0.96 + Math.random() * 0.08;
       m4.compose(new THREE.Vector3(x + 0.5, 0, y + 0.5), new THREE.Quaternion(), new THREE.Vector3(1, hJ, 1));
       walls.setMatrixAt(i, m4);
       const v = 0.8 + Math.random() * 0.25;
@@ -616,7 +616,11 @@ export class Renderer implements Picker {
     this.levelGroup.add(this.mist.group);
     // static objects get views lazily in sync()
     this.syncObjects(level, 0);
-    // snap camera
+    this.snapCamera();
+  }
+
+  /** the camera on the hero at once instead of following (a level built, a jump across the map) */
+  snapCamera() {
     const p = this.game.player;
     this.camTarget.set(p.pos.x, 0, p.pos.z);
   }
@@ -1259,8 +1263,9 @@ export class Renderer implements Picker {
     for (const f of this.flameSpots) {
       if (Math.random() < dt * 6) this.fx.add.spawn({ x: f.x + (Math.random() - 0.5) * 0.08, y: f.y + 0.05, z: f.z + (Math.random() - 0.5) * 0.08, vy: 0.7, color: '#ffa040', size: 0.14, life: 0.5 });
     }
-    if (level.layout.campfire) {
-      const c = level.layout.campfire;
+    for (const s of level.layout.services) {
+      if (s.kind !== 'campfire') continue;
+      const c = s.pos;
       for (let k = 0; k < 3; k++) {
         if (Math.random() < dt * 30) this.fx.add.spawn({ x: c.x + (Math.random() - 0.5) * 0.5, y: 0.2, z: c.z + (Math.random() - 0.5) * 0.5, vy: 1.4 + Math.random(), vx: (Math.random() - 0.5) * 0.3, color: Math.random() < 0.5 ? '#ff6010' : '#ffb040', size: 0.4 + Math.random() * 0.3, life: 0.7, gravity: -0.5 });
       }
