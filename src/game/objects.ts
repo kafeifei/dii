@@ -43,6 +43,8 @@ export class WorldObject {
   shrine?: string;
   /** vendors: who keeps the stall (the layout's Service.npc), for what they say and the shop's title */
   npc?: string;
+  /** and their MonStats id (Service.npcId), which their quests and lines go by */
+  npcId?: string;
   /** the hero's body (src/game/corpse.ts), for 'corpse' */
   corpse?: Corpse;
   constructor(kind: ObjKind, pos: P2, name: string, radius = 0.5) {

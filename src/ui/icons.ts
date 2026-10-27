@@ -1,4 +1,5 @@
 import { ITEM_BASES, lookOf, staffGem } from '../data/items';
+import type { QuestIcon } from '../data/quests';
 import { GEMS as GEM_DEFS, RUNE_BY_ID } from '../data/legendary';
 import { SKILL_BY_ID } from '../data/skills';
 import type { Item } from '../items/item';
@@ -712,6 +713,155 @@ export function skillIcon(id: string): string {
   ctx.shadowBlur = 8;
   ctx.fillStyle = '#fff8e8';
   ctx.fillText(glyph + '︎', S / 2, S / 2 + 3);
+  const url = c.toDataURL();
+  cache.set(key, url);
+  return url;
+}
+
+/**
+ * A quest's picture in the quest log, a medallion: the cave of the Den of Evil, the sisters' graves,
+ * the caged sage, the tower, the smith's hammer, the horned demon. The log dims or marks it by its state.
+ */
+export function questIcon(kind: QuestIcon): string {
+  const key = `quest-${kind}`;
+  const hit = cache.get(key);
+  if (hit) return hit;
+  const S = 96;
+  const c = document.createElement('canvas');
+  c.width = S;
+  c.height = S;
+  const ctx = c.getContext('2d')!;
+  const bg = ctx.createRadialGradient(S * 0.5, S * 0.42, 4, S / 2, S / 2, S * 0.5);
+  bg.addColorStop(0, '#3a2c1e');
+  bg.addColorStop(1, '#0a0705');
+  ctx.beginPath();
+  ctx.arc(S / 2, S / 2, S * 0.46, 0, Math.PI * 2);
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.save();
+  ctx.clip();
+  const poly = (pts: number[][], fill: string | CanvasGradient) => {
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => (i ? ctx.lineTo(x * S, y * S) : ctx.moveTo(x * S, y * S)));
+    ctx.closePath();
+    ctx.fillStyle = fill;
+    ctx.fill();
+    outline(ctx);
+  };
+  const dot = (x: number, y: number, r: number, fill: string, glow = 0) => {
+    ctx.shadowColor = fill;
+    ctx.shadowBlur = glow;
+    ctx.beginPath();
+    ctx.arc(x * S, y * S, r * S, 0, Math.PI * 2);
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  };
+  switch (kind) {
+    case 'den': {
+      // a mound of rock, its mouth black, eyes in the dark
+      poly([[0.05, 0.86], [0.2, 0.5], [0.38, 0.34], [0.6, 0.32], [0.8, 0.48], [0.95, 0.86]], '#5a4632');
+      ctx.beginPath();
+      ctx.moveTo(0.3 * S, 0.86 * S);
+      ctx.quadraticCurveTo(0.3 * S, 0.5 * S, 0.5 * S, 0.5 * S);
+      ctx.quadraticCurveTo(0.7 * S, 0.5 * S, 0.7 * S, 0.86 * S);
+      ctx.fillStyle = '#050302';
+      ctx.fill();
+      dot(0.44, 0.68, 0.025, '#ff3010', 8);
+      dot(0.56, 0.68, 0.025, '#ff3010', 8);
+      break;
+    }
+    case 'graves': {
+      ctx.fillStyle = '#2a2018';
+      ctx.fillRect(0, 0.8 * S, S, 0.2 * S);
+      const stone = (x: number, w: number, top: number) => {
+        ctx.beginPath();
+        ctx.moveTo((x - w / 2) * S, 0.82 * S);
+        ctx.lineTo((x - w / 2) * S, (top + w / 2) * S);
+        ctx.arc(x * S, (top + w / 2) * S, (w / 2) * S, Math.PI, 0);
+        ctx.lineTo((x + w / 2) * S, 0.82 * S);
+        ctx.closePath();
+        ctx.fillStyle = metalGrad(ctx, (x - w / 2) * S, 0, (x + w / 2) * S, 0, '#8a8478');
+        ctx.fill();
+        outline(ctx);
+      };
+      stone(0.3, 0.22, 0.42);
+      stone(0.68, 0.26, 0.34);
+      // a cross between them
+      ctx.fillStyle = '#6a5a44';
+      ctx.fillRect(0.47 * S, 0.3 * S, 0.06 * S, 0.52 * S);
+      ctx.fillRect(0.38 * S, 0.42 * S, 0.24 * S, 0.06 * S);
+      break;
+    }
+    case 'cain': {
+      // a wooden cage, an old man behind its bars
+      dot(0.5, 0.36, 0.09, '#a8a090');
+      poly([[0.32, 0.86], [0.4, 0.48], [0.6, 0.48], [0.68, 0.86]], '#5a5a6a');
+      ctx.fillStyle = '#d8d0c0';
+      ctx.fillRect(0.45 * S, 0.42 * S, 0.1 * S, 0.12 * S);
+      ctx.strokeStyle = '#7a5428';
+      ctx.lineWidth = S * 0.04;
+      ctx.strokeRect(0.18 * S, 0.16 * S, 0.64 * S, 0.72 * S);
+      ctx.lineWidth = S * 0.025;
+      for (const x of [0.3, 0.42, 0.58, 0.7]) {
+        ctx.beginPath();
+        ctx.moveTo(x * S, 0.16 * S);
+        ctx.lineTo(x * S, 0.88 * S);
+        ctx.stroke();
+      }
+      break;
+    }
+    case 'tower': {
+      poly([[0, 0.92], [0.2, 0.78], [0.8, 0.78], [1, 0.92]], '#2a2218');
+      poly([[0.36, 0.82], [0.38, 0.26], [0.62, 0.26], [0.64, 0.82]], '#5c5248');
+      for (const x of [0.36, 0.45, 0.54]) {
+        ctx.fillStyle = '#5c5248';
+        ctx.fillRect(x * S, 0.18 * S, 0.08 * S, 0.09 * S);
+        ctx.strokeRect(x * S, 0.18 * S, 0.08 * S, 0.09 * S);
+      }
+      ctx.fillStyle = '#ffb040';
+      ctx.shadowColor = '#ff8020';
+      ctx.shadowBlur = 10;
+      ctx.fillRect(0.46 * S, 0.4 * S, 0.08 * S, 0.12 * S);
+      ctx.shadowBlur = 0;
+      break;
+    }
+    case 'hammer': {
+      ctx.save();
+      ctx.translate(S / 2, S / 2);
+      ctx.rotate(-0.6);
+      ctx.fillStyle = '#5a3a20';
+      ctx.fillRect(-0.04 * S, -0.18 * S, 0.08 * S, 0.62 * S);
+      ctx.strokeRect(-0.04 * S, -0.18 * S, 0.08 * S, 0.62 * S);
+      ctx.fillStyle = metalGrad(ctx, 0, -0.36 * S, 0, -0.14 * S, '#a8a8b0');
+      ctx.fillRect(-0.26 * S, -0.36 * S, 0.52 * S, 0.2 * S);
+      ctx.strokeRect(-0.26 * S, -0.36 * S, 0.52 * S, 0.2 * S);
+      ctx.restore();
+      for (const [x, y] of [[0.2, 0.3], [0.26, 0.2], [0.14, 0.42], [0.32, 0.12]]) dot(x, y, 0.012, '#ffc060', 6);
+      break;
+    }
+    case 'demon': {
+      // a horned head, its eyes poison green
+      poly([[0.3, 0.42], [0.12, 0.14], [0.38, 0.34]], '#6a2a3a');
+      poly([[0.7, 0.42], [0.88, 0.14], [0.62, 0.34]], '#6a2a3a');
+      ctx.beginPath();
+      ctx.ellipse(0.5 * S, 0.56 * S, 0.22 * S, 0.28 * S, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#4a1a2a';
+      ctx.fill();
+      outline(ctx);
+      dot(0.41, 0.52, 0.035, '#60ff40', 10);
+      dot(0.59, 0.52, 0.035, '#60ff40', 10);
+      ctx.fillStyle = '#60c040';
+      for (const x of [0.44, 0.5, 0.56]) ctx.fillRect(x * S, 0.7 * S, 0.02 * S, (0.08 + (x === 0.5 ? 0.06 : 0)) * S);
+      break;
+    }
+  }
+  ctx.restore();
+  ctx.beginPath();
+  ctx.arc(S / 2, S / 2, S * 0.46, 0, Math.PI * 2);
+  ctx.strokeStyle = '#8a7040';
+  ctx.lineWidth = 4;
+  ctx.stroke();
   const url = c.toDataURL();
   cache.set(key, url);
   return url;

@@ -1,4 +1,5 @@
 import { RNG, type P2 } from '../core/math';
+import { D2X_MONSTERS } from '../data/d2x/monsters';
 import { dressRooms, Furnisher, PROP_DEFS, WALL_DEFS, type Prop, type WallDecor } from './furnish';
 import { clamp01, fbm, growWoods, valueNoise } from './outdoors';
 import { TileMap, T_FLOOR, T_PROP, T_VOID, T_WALL } from './tilemap';
@@ -171,7 +172,15 @@ export interface Service {
   pos: P2;
   /** who offers it, when it's someone: their name */
   npc?: string;
+  /** and their MonStats id, which their quests and lines go by (akara) */
+  npcId?: string;
 }
+
+/**
+ * The camp's merchant: Akara's counterpart (D2 has her heal and sell the staves, potions, scrolls
+ * and tomes; this one keeps Charsi's shelves too), named by her row (tools/d2-names/npcs.json)
+ */
+const MERCHANT = D2X_MONSTERS.akara;
 
 export interface Layout {
   map: TileMap;
@@ -670,7 +679,7 @@ export function generateTown(area: number): Layout {
 
   const torches: Torch[] = [];
   const services: Service[] = [
-    { kind: 'vendor', pos: vendor, npc: '艾莉娜' },
+    { kind: 'vendor', pos: vendor, npc: MERCHANT.name, npcId: MERCHANT.id },
     { kind: 'stash', pos: stash },
     { kind: 'campfire', pos: campfire },
   ];

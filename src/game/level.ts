@@ -105,6 +105,7 @@ export class Level {
       if (s.kind === 'vendor') {
         const o = new WorldObject('vendor', s.pos, s.npc ? `商人 · ${s.npc}` : '商人', 0.5);
         o.npc = s.npc;
+        o.npcId = s.npcId;
         this.objects.push(o);
       } else if (s.kind === 'stash') {
         this.objects.push(new WorldObject('stash', s.pos, '储物箱', 0.8));

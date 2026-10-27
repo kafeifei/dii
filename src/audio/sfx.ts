@@ -746,6 +746,12 @@ export class Sfx {
       case 'death':
         [220, 207, 196, 185].forEach((f, i) => this.tone(t + i * 0.35, 1.2, { type: 'sawtooth', f0: f, f1: f * 0.9, gain: 0.1, attack: 0.05 }));
         break;
+      case 'quest':
+        // a low horn call, minor then resolving, over a struck bell
+        [[196, 0], [233, 0.22], [294, 0.44], [392, 0.7]].forEach(([f, d]) => this.tone(t + d, 1.6 - d, { type: 'triangle', f0: f, gain: 0.11, attack: 0.04 }));
+        [[98, 0], [147, 0.7]].forEach(([f, d]) => this.tone(t + d, 1.8, { type: 'sawtooth', f0: f, gain: 0.05, attack: 0.08 }));
+        for (const f of [523, 1312, 2092]) this.tone(t + 0.7, 2.2, { type: 'sine', f0: f, gain: 0.05 });
+        break;
       default:
         // every Synth has its recipe above
         name satisfies never;

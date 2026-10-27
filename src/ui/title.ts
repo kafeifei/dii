@@ -40,7 +40,7 @@ export class TitleScreen {
       <button class="btn title-settings">设置</button>
       <div class="help title-help">
         <b>左键</b> 移动 / 攻击 / 拾取 · <b>Shift+左键</b> 原地攻击 · <b>右键</b> 释放右键技能 · <b>Q W E R</b> 技能快捷键<br/>
-        <b>1-4</b> 腰带药剂 · <b>I</b> 背包 · <b>C</b> 角色 · <b>T</b> 技能树 · <b>P</b> 回城传送门 · <b>Tab</b> 地图 · <b>滚轮</b> 缩放 · <b>Esc</b> 菜单<br/>
+        <b>1-4</b> 腰带药剂 · <b>I</b> 背包 · <b>C</b> 角色 · <b>T</b> 技能树 · <b>L</b> 任务 · <b>P</b> 回城传送门 · <b>Tab</b> 地图 · <b>滚轮</b> 缩放 · <b>Esc</b> 菜单<br/>
         背包内 <b>右键</b> 使用/装备 · <b>Ctrl+左键</b> 快速出售或存取 · 把符文放到有孔装备上即可镶嵌
       </div>`;
     (t.querySelector('.title-settings') as HTMLButtonElement).onclick = () => openSettings();
@@ -161,7 +161,7 @@ export class PauseMenu {
           isTouchDevice()
             ? TOUCH_HELP
             : `<b>左键</b> 移动 / 攻击 / 拾取 · <b>Shift+左键</b> 原地攻击 · <b>右键</b> 右键技能 · <b>Q W E R</b> 技能快捷键（点击技能栏可更换）<br/>
-        <b>1-4</b> 腰带药剂 · <b>I</b> 背包 · <b>C</b> 角色 · <b>T</b> 技能树 · <b>P</b> 回城 · <b>Tab</b> 地图 · <b>滚轮</b> 缩放`
+        <b>1-4</b> 腰带药剂 · <b>I</b> 背包 · <b>C</b> 角色 · <b>T</b> 技能树 · <b>L</b> 任务 · <b>P</b> 回城 · <b>Tab</b> 地图 · <b>滚轮</b> 缩放`
         }<br/>
         光环同一时间只能开启一个 · 第 4、8、12… 层有首领 · 暗金/套装/符文掉落时会有特殊音效
       </div>`;

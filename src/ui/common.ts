@@ -7,7 +7,7 @@ import type { SkillPicker } from './hud';
 import type { Tooltip } from './tooltip';
 import type { TouchControls } from './touch';
 
-export type LeftPanel = 'char' | 'stash' | 'shop' | 'waypoint' | 'cube' | null;
+export type LeftPanel = 'char' | 'stash' | 'shop' | 'waypoint' | 'cube' | 'quests' | null;
 export type RightPanel = 'inv' | 'skills' | null;
 
 /**
@@ -26,6 +26,8 @@ export interface UIContext {
   right: RightPanel;
   /** the panels, the belt and the skill slots are drawn again on the next frame */
   dirty: boolean;
+  /** a quest moved on since the quest log was last opened: its button says so */
+  questNews: boolean;
   /** the items on show by uid, for their tooltips (refilled on every redraw) */
   readonly itemByUid: Map<string, Item>;
   message(text: string, color?: string, dur?: number): void;

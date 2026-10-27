@@ -42,6 +42,7 @@ export class Hud {
       ['char', '角', '角色 (C)'],
       ['inv', '包', '背包 (I)'],
       ['skills', '技', '技能树 (T)'],
+      ['quests', '任', '任务日志 (L)'],
       ['portal', '门', '回城传送 (P)'],
       ['map', '图', '地图 (Tab)'],
       ['menu', '≡', '菜单 (Esc)'],
@@ -170,6 +171,8 @@ export class Hud {
     }
     this.btns.char.classList.toggle('notify', p.statPoints > 0);
     this.btns.skills.classList.toggle('notify', p.skillPoints > 0);
+    // news in the quest log: a quest moved on, or one done it hasn't shown yet
+    this.btns.quests.classList.toggle('notify', ui.questNews || ui.game.quests.unseen().length > 0);
   }
 
   /** every frame: the orbs, the xp bar, the skill slots' cooldowns and costs, the hint, the target, the messages */

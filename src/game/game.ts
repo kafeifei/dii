@@ -31,6 +31,8 @@ import { CAMP_AREA, DEN_OF_EVIL, areaDef, areaForDepth, areaLevel, builtWaypoint
 import { BUILT as WEST_AREAS, generateOverworld, type Overworld } from '../world/overworld';
 import { generateDen } from '../world/den';
 import { SHRINE_BY_ID } from '../data/shrines';
+import { Quests } from './quests/control';
+import type { Topic } from './quests/quest';
 
 export interface GameHooks {
   message(text: string, color?: string, dur?: number): void;
@@ -46,6 +48,13 @@ export interface GameHooks {
   setCursorItem(item: Item | null): void;
   hoveredGroundId(): number | null;
   levelUp(): void;
+  /**
+   * a townsperson spoken to: their menu, after `opening`, a line a quest has them say at once
+   * (Game.talkTo). Without it (the node tests) the merchant's shop opens, as before there were menus
+   */
+  npcMenu?(obj: WorldObject, opening: Topic | null): void;
+  /** a quest moved on: the quest log has news */
+  questsChanged?(): void;
 }
 
 export interface Picker {
@@ -175,6 +184,8 @@ export class Game {
   private leftKind = new Map<AreaKind, number>();
   /** the hero has been underground this game: enter_dungeon is said the first time */
   private wentUnder = false;
+  /** the quests of this game, made with it from the hero's record in the difficulty played (src/game/quests) */
+  quests = new Quests(this);
 
   constructor(
     public input: Input,
@@ -248,6 +259,25 @@ export class Game {
     this.wentUnder = false;
     this.lastDeath = null;
     newGameDrops();
+    this.startQuests();
+  }
+
+  /** the quests as a game starts, from the hero's record in the difficulty played (QUESTS_QuestInit) */
+  private startQuests() {
+    this.quests = new Quests(this);
+    this.quests.start();
+  }
+
+  /** the map this game keeps that holds area `id`, if it has been made yet (none is made here) */
+  mapOf(id: number): Level | null {
+    if (WEST_AREAS.includes(id)) return this.west;
+    if (id === DEN_OF_EVIL) return this.den;
+    return null;
+  }
+
+  /** whether a quest has lit `level` up (the Den of Evil, cleared in this game) */
+  isLit(level: Level): boolean {
+    return this.quests.lights(level);
   }
 
   save() {
@@ -462,7 +492,9 @@ export class Game {
     this.sfx.enterArea(area, how === 'walk');
     // decode what's heard here and in the areas next to it, so it plays recorded from the first time
     void this.sfx.preload(soundsNear(area, this.areasNext(area), isNight(this.clock), p.cls));
-    const line = this.arrivalLine(area, prev, how);
+    // the quests hear of it (ChangedLevel); one may give the hero a line of its own to say
+    const quest = this.quests.areaChanged(area, prev);
+    const line = (prev && how !== 'respawn' && quest) || this.arrivalLine(area, prev, how);
     if (prev && prev.kind !== area.kind) this.leftKind.set(prev.kind, this.time);
     if (area.kind === 'dungeon') this.wentUnder = true;
     if (line) this.say(line);
@@ -603,6 +635,7 @@ export class Game {
     updatePlayer(this, p, dt);
     // self-repairing items mend a point now and then
     p.mendItems(dt);
+    this.quests.update(dt);
     // only the monsters near the hero act; the rest are out of play until the hero comes back
     // (MonsterGrid), and so cost nothing. They go in the grid's order, cell by cell, not the list's:
     // one added to the level during a step would wait for the next (none is: spawn.ts fills a map
@@ -1172,6 +1205,8 @@ export class Game {
     if (d.manaPerKill) p.mana = Math.min(d.maxMana, p.mana + d.manaPerKill);
     // loot
     this.spawnDrops(m.pos, this.rollLoot((hero) => monsterLoot(m, hero)));
+    // the quests count it (MonsterKilled): the Den of Evil's last one done
+    this.quests.monsterKilled(m);
     // fx
     this.fx.death(m, m.def.blood, elem);
     const big = m.rank === 'boss' || m.def.scale >= LARGE_MONSTER;
@@ -1224,7 +1259,8 @@ export class Game {
   /** loot from a monster or a container (src/game/loot.ts) for the hero, rolled once more for each extra pass the debug panel asks for */
   private rollLoot(roll: (hero: Finder) => Item[]): Drop[] {
     const s = this.player.stats;
-    const hero: Finder = { mf: s.mf, gf: s.gf, difficulty: this.player.difficulty };
+    const p = this.player;
+    const hero: Finder = { mf: s.mf, gf: s.gf, difficulty: p.difficulty, quests: p.quests[p.difficulty] };
     const drops: Drop[] = [];
     for (let i = 0; i < debugOpts.loot; i++) for (const item of roll(hero)) drops.push({ kind: 'item', item });
     return drops;
@@ -1535,8 +1571,7 @@ export class Game {
         break;
       }
       case 'vendor':
-        this.vendorHeal(obj);
-        this.hooks.openPanel('shop');
+        this.talkTo(obj);
         break;
       case 'stash':
         this.hooks.openPanel('stash');
@@ -1578,6 +1613,35 @@ export class Game {
     if (this.atClosed === obj) return;
     this.atClosed = obj;
     this.hooks.message(`通往${areaDef(obj.dest)?.name ?? '那里'}的路还没有开通`, '#aaa', 2);
+  }
+
+  /**
+   * Speaking to a townsperson, as in Diablo II: Akara's heal first (D2GAME_NPC_Heal, SUnitNpc.cpp:
+   * 2784-2802), then the line a quest has them say at once, if any (QUESTS_NPCActivateSpeeches: a
+   * SCROLLMENU_MESSAGE line, such as Akara giving the Den of Evil), then their menu. That line is
+   * returned (the tests hear it through npcSpoke)
+   */
+  talkTo(obj: WorldObject): Topic | null {
+    this.vendorHeal(obj);
+    const opening = obj.npcId ? this.quests.opening(obj.npcId) : null;
+    if (this.hooks.npcMenu) this.hooks.npcMenu(obj, opening);
+    else this.hooks.openPanel('shop');
+    return opening;
+  }
+
+  /** what the townsperson says under 交谈: a quest's word for the hero, else their small talk */
+  npcTalk(obj: WorldObject): Topic | null {
+    return obj.npcId ? this.quests.talk(obj.npcId) : null;
+  }
+
+  /** a townsperson's line heard to the end, or cut short: a quest given, a reward handed over */
+  npcSpoke(topic: Topic) {
+    this.quests.spoke(topic);
+  }
+
+  /** the hero turned from a townsperson (their menu shut) */
+  npcLeft(obj: WorldObject) {
+    if (obj.npcId) this.quests.left(obj.npcId);
   }
 
   /** like Akara in Diablo II: talking to the merchant puts life and mana back to full and cures poison, chill and the rest */
@@ -1657,6 +1721,8 @@ export class Game {
     // the resistances take the new difficulty's penalty
     p.markDirty();
     p.waypoints = savedWaypoints(p, d);
+    // a game in another difficulty: its quests from that difficulty's record (D2 plays a difficulty a game)
+    this.startQuests();
     this.save();
   }
 }

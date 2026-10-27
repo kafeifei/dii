@@ -541,7 +541,9 @@ export default async (load) => {
   const w4 = JSON.parse(localStorage.getItem(KEY));
   check(w4.worldSeed === 4242 && w4.unlocked === 1 && w4.respec === true && w4.future?.kept === 'as is', `v4: written seed ${w4.worldSeed}, unlocked ${w4.unlocked}, respec ${w4.respec}, future ${JSON.stringify(w4.future)}`);
   check(w4.merc?.xp === 1234 && w4.merc.equipment.weapon.baseId === 'ssd' && w4.corpse?.equipment.head.baseId === 'cap', `v4: written merc ${JSON.stringify(w4.merc)}, corpse ${JSON.stringify(w4.corpse)}`);
-  check(w4.progress[0].waypoints.includes(17) && w4.progress[0].quests.den === 3 && w4.progress[1].quests.andariel === 1, `v4: written progress ${JSON.stringify(w4.progress)}`);
+  // quests this build doesn't know keep their flags, read as D2 reads a record for a new game: a
+  // reward left waiting (den: granted and pending) is from an earlier game (src/game/quests/record.ts loadQuestRecord)
+  check(w4.progress[0].waypoints.includes(17) && w4.progress[0].quests.den === (3 | 0x8000) && w4.progress[1].quests.andariel === 1, `v4: written progress ${JSON.stringify(w4.progress)}`);
   check(w4.area === floorArea && w4.cls === 'paladin' && w4.inventory.length === 5, `v4: written in area ${w4.area} as ${w4.cls} with ${w4.inventory.length} in the bag`);
   const keptRaw = w4.inventory.find((x) => x.x === 5)?.item.raw;
   check(keptRaw?.v === 4 && JSON.stringify(keptRaw.mig) === JSON.stringify(ZERO) && keptRaw.item.baseId === 'zz_still_unknown', `v4: the unknown item was written holding ${JSON.stringify(keptRaw)}`);

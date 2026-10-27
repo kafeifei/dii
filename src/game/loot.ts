@@ -14,6 +14,7 @@ import { chestTc, monsterTc, type TcRank } from '../items/d2/treasure';
 import type { Difficulty, Rand } from '../items/d2/types';
 import { areaLevel, type AreaDef } from '../world/areas';
 import type { Monster, MonsterRank } from './monster';
+import { questTcDone, type QuestRecord } from './quests/record';
 
 /**
  * Each of the game's monsters (src/data/monsters.ts) as the Act 1 monster (D2X_MONSTERS) it is
@@ -54,11 +55,12 @@ export function d2MonsterOf(defId: string): D2xMonster | undefined {
   return D2X_MONSTERS[D2_MONSTER_OF[defId] ?? ''];
 }
 
-/** who the drop is for: the killer's magic find and gold find, and the difficulty played */
+/** who the drop is for: the killer's magic find and gold find, the difficulty played and their quest record in it */
 export interface Finder {
   mf: number;
   gf: number;
   difficulty: Difficulty;
+  quests?: QuestRecord;
 }
 
 /**
@@ -71,16 +73,18 @@ const TC_RANK: Record<MonsterRank, TcRank> = { normal: 'regular', minion: 'regul
 const SUPERUNIQUES = new Map(D2X_SUPERUNIQUES.map((s) => [s.key, s]));
 
 /**
- * The class a game monster drops from, at its level and rank (d2/treasure.ts monsterTc). A
- * superunique (Monster.superUnique, its pack's leader) drops its SuperUniques.txt class as its own
- * MonStats.txt monster, whatever it stands in for (MonsterMode.cpp:507-517)
+ * The class a game monster drops from, at its level and rank (d2/treasure.ts monsterTc), for a
+ * killer with the quest record `quests` in that difficulty. A superunique (Monster.superUnique, its
+ * pack's leader) drops its SuperUniques.txt class as its own MonStats.txt monster, whatever it
+ * stands in for (MonsterMode.cpp:507-517). A monster with a quest class (Andariel's Andarielq)
+ * drops that until the killer has done its quest (MonsterMode.cpp:536-568, record.ts questTcDone):
+ * with no record, every kill is the first.
  */
-export function monsterLootTc(m: Pick<Monster, 'def' | 'rank' | 'level' | 'superUnique'>, difficulty: Difficulty): string | undefined {
+export function monsterLootTc(m: Pick<Monster, 'def' | 'rank' | 'level' | 'superUnique'>, difficulty: Difficulty, quests?: QuestRecord): string | undefined {
   const su = m.superUnique ? SUPERUNIQUES.get(m.superUnique) : undefined;
   const mon = su ? D2X_MONSTERS[su.mon] : d2MonsterOf(m.def.id);
-  // the game keeps no quest records yet: every kill counts as the first (Andariel's classes are her
-  // quest one anyway); questDone comes from the hero's quest flags once there are some (MonsterMode.cpp:536-568)
-  return mon && monsterTc(mon, { difficulty, rank: TC_RANK[m.rank], mlvl: m.level, su });
+  const questDone = mon?.questTc ? questTcDone(quests, mon.questTc) : undefined;
+  return mon && monsterTc(mon, { difficulty, rank: TC_RANK[m.rank], mlvl: m.level, su, questDone });
 }
 
 /**
@@ -89,7 +93,7 @@ export function monsterLootTc(m: Pick<Monster, 'def' | 'rank' | 'level' | 'super
  * Items.cpp:1624-1633)
  */
 export function monsterLoot(m: Pick<Monster, 'def' | 'rank' | 'level' | 'superUnique'>, hero: Finder, rng: Rand = MATH_RAND): Item[] {
-  const tc = monsterLootTc(m, hero.difficulty);
+  const tc = monsterLootTc(m, hero.difficulty, hero.quests);
   if (!tc) return [];
   return dropTc(tc, m.level, { mf: hero.mf, gf: hero.gf, difficulty: hero.difficulty, hellBovine: D2_MONSTER_OF[m.def.id] === 'hellbovine', rng });
 }
