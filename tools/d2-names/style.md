@@ -32,5 +32,6 @@
 - `prefixes.json`、`suffixes.json`：魔法前缀、后缀（字串键，automagic 也用这两份）；`rare-prefixes.json`、`rare-suffixes.json`：稀有名的两个词库。
 - `bases.json`：名字里带专有名词的底材和任务物品（物品代码）。其余底材、宝石沿用官方的通用名；符文不起名，一律叫「N 号符文」。
 - `monsters.json`、`areas.json`、`npcs.json`、`quests.json`：怪物和超级暗金怪、区域、NPC、任务。
+- `mercenaries.json`：佣兵的人名（Hireling 的 NameFirst…NameLast 之间的字串键，如 `merc01`）和佣兵类型名（字串键，如 `RogueScout`）。技能树名（「火系法术」「防御光环」这类）是通用词，沿用官方叫法。
 
 `node tools/d2-import.mjs` 只收录有名字的行，没名字的列在 `report.md` 里；名字和官方译名相同、或者含有术语表替换掉的官方音译时，导入直接报错。

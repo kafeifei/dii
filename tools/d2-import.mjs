@@ -13,9 +13,11 @@
 //   weapons are taken (no bows, crossbows, throwing weapons or javelins, and no Amazon or Assassin
 //   class weapons): the game has no ranged weapon attack. Kept as it is until the game moves over.
 // - src/data/d2x/*.ts, the full tables in the content scope (tools/d2/scope.mjs), one stage per
-//   module in tools/d2/. The game does not read them yet.
+//   module in tools/d2/: items, then characters (classes, difficulties, experience, quality
+//   ratios, NPC prices, gambling, hirelings). The game does not read them yet.
 import fs from 'node:fs';
 import path from 'node:path';
+import { buildCharacters } from './d2/characters.mjs';
 import { buildItems } from './d2/items.mjs';
 import { DATA, ROOT, STR, load, rows } from './d2/load.mjs';
 import { writeReport } from './d2/names.mjs';
@@ -324,5 +326,6 @@ write(
 console.log(`${weapons.length} weapons, ${prefixes.length}+${suffixes.length} affixes, ${runes.length} runes, ${gems.length} gems, ${runewords.length} runewords, ${cube.length} cube recipes, ${usedSkills.size} skills`);
 
 // ───────────────────────── the full tables ─────────────────────────
-await buildItems();
+const { bases } = await buildItems();
+await buildCharacters({ bases });
 writeReport();

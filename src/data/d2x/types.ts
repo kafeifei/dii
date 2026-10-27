@@ -303,3 +303,234 @@ export interface D2xGem extends D2xSocketable {
   grade: number;
   next?: string;
 }
+
+// ───────────────────────── characters, difficulty, economy ─────────────────────────
+// D2MOO references are to github.com/ThePhrozenKeep/D2MOO at commit d9d394f.
+
+/**
+ * A class (CharStats.txt). A new hero has these attributes, life vit + hpadd, mana ene and stamina
+ * `stamina` (D2MOO PlayerStats.cpp:42-53); the per-point growth only applies to points added after
+ * that. Growth is in whole points (the table keeps quarters); D2 keeps the fractions and shows the
+ * floored total.
+ */
+export interface D2xClass {
+  /** PlayerClass.txt row: ama 0, sor 1, nec 2, pal 3, bar 4, dru 5, ass 6 */
+  id: number;
+  en: string;
+  str: number;
+  dex: number;
+  vit: number;
+  /** D2's "int" (energy) */
+  ene: number;
+  stamina: number;
+  hpadd: number;
+  lifePerLvl: number;
+  manaPerLvl: number;
+  staminaPerLvl: number;
+  lifePerVit: number;
+  staminaPerVit: number;
+  manaPerEne: number;
+  statPerLvl: number;
+  skillPerLvl: number;
+  /** attack rating = to-hit stats + 5 × (dex − 7) + toHitFactor (D2MOO Units.cpp:2407-2430) */
+  toHitFactor: number;
+  /** block % with a shield = (blockFactor + block stats) × (dex − 15) / (2 × level), at most 75 (Units.cpp:2462-2478) */
+  blockFactor: number;
+  /** seconds the base regeneration takes to refill mana from empty, before mana recovery bonuses (PlrModes.cpp:1207-1219) */
+  manaRegen: number;
+  /** walk and run speed, on the scale of monstats Velocity and Run */
+  walk: number;
+  run: number;
+  /** stamina a second running outside town; × (torso armor speed / 10 + 1, floored) (PlrModes.cpp:265-286) */
+  runDrain: number;
+  /** % of a healing and a mana potion's effect (D2R columns) */
+  hpPotion: number;
+  mpPotion: number;
+  /** D2R column, absent from D2MOO: by its name the shortest delay between casts, in frames (25 a second) */
+  minCastDelay: number;
+  light: number;
+  /** the skill a new hero starts with (D2 skill name) */
+  startSkill?: string;
+  /**
+   * The three skill trees: id is the skilltab property's parameter (class id × 3 + page − 1), page
+   * the tree's SkillPage in SkillDesc.txt; name is the +skills line's wording (a generic term).
+   */
+  tabs: { id: number; page: 1 | 2 | 3; name: string; en: string }[];
+  /** the starting kit: base code, count and where worn (rarm right hand, larm left) */
+  items: { code: string; n: number; loc?: string }[];
+}
+
+/** a difficulty (DifficultyLevels.txt); percentages are whole percent */
+export interface D2xDifficulty {
+  id: 'normal' | 'nightmare' | 'hell';
+  /** added to the hero's resistances */
+  resistPenalty: number;
+  /** % of the current level's experience span lost on death, never below the level's start (D2MOO Player.cpp:774-791) */
+  deathXpLoss: number;
+  /** added to monster skill levels (Monster.cpp:481) */
+  monsterSkillBonus: number;
+  /** freeze and chill lengths on monsters are divided by these (SUnitDmg.cpp:1570-1573, 1688-1690), curse lengths on them by aiCurseDivisor (SkillNec.cpp:464-466, 521-523) */
+  monsterFreezeDivisor: number;
+  monsterColdDivisor: number;
+  aiCurseDivisor: number;
+  /** the hero's life and mana leech is divided by these (SUnitDmg.cpp:1176-1187) */
+  lifeStealDivisor: number;
+  manaStealDivisor: number;
+  /** % of their monumod damage and to-hit bonuses uniques and champions keep (MonsterUnique.cpp:306-310, 690-694) */
+  uniqueDamageBonus: number;
+  championDamageBonus: number;
+  /**
+   * % of the damage dealt, by attacker vs target: D2R's columns for what D2MOO hard-codes (17 vs
+   * players, 25 hireling vs hireling, 200 and 400 from prime evils to revived units; SUnitDmg.cpp:814-862)
+   */
+  playerVsPlayer: number;
+  playerVsMerc: number;
+  playerVsPrimeEvil: number;
+  hitReactBufferVsPlayer: number;
+  hitReactBufferVsMonster: number;
+  mercVsPlayer: number;
+  mercVsMerc: number;
+  /** a hireling's damage % against bosses (D2's HireableBossDamagePercent) */
+  mercVsBoss: number;
+  mercMaxStun: number;
+  primeEvilVsPlayer: number;
+  primeEvilVsMerc: number;
+  primeEvilVsPet: number;
+  petVsPlayer: number;
+  /** a monster's death explosion: max damage % of its max life, min 60 % of that (MonsterMode.cpp:890-899) */
+  corpseExplosionDamage: number;
+  /** fire enchanted's death explosion, % (D2R column) */
+  fireEnchantExplosionDamage: number;
+  /** Static Field takes monsters no lower than this % of their life (SkillSor.cpp:427) */
+  staticFieldMin: number;
+  /**
+   * Gambling (D2MOO SUnitNpc.cpp:2440-2556): item level = hero level − 5…+4, kept to 5–99; the
+   * base is picked evenly from D2X_GAMBLE among those of qlvl ≤ item level, but the first two
+   * offers are a ring and an amulet; it becomes exceptional with odds gambleUber × (item level −
+   * exceptional qlvl) + 1 in 10000, failing that elite with gambleUltra × (… − elite qlvl) + 1;
+   * then unique, set or rare with odds gambleUnique, gambleSet, gambleRare in 100000, else magic.
+   */
+  gambleRare: number;
+  gambleSet: number;
+  gambleUnique: number;
+  gambleUber: number;
+  gambleUltra: number;
+  /** resistances never go below this */
+  resistFloor: number;
+}
+
+/**
+ * Experience from a kill by level difference (D2MOO SUNITDMG_ComputeExperienceGain, SUnitDmg.cpp:3044-3076):
+ * a monster at or below the hero's level gives lower[min(hero − monster, 10)] of its experience; one
+ * above gives higher[min(monster − hero, 10)] while the hero is below ratioFrom, and hero / monster of
+ * it from then on. D2 floors each product.
+ */
+export interface D2xXpLevelDiff {
+  lower: number[];
+  higher: number[];
+  ratioFrom: number;
+}
+
+/**
+ * Quality odds of a dropped item (D2MOO Items.cpp:2329-2458), tried in order unique, set, rare (where
+ * the type can be rare), magic, superior, normal, else low quality: chance = (ratio − (item level −
+ * base qlvl) / div, floored) × 128, at least min; less the treasure class's quality factor (chance ×
+ * factor / 1024); the quality is hit when a roll in [0, chance) is below 128. Magic find divides the
+ * unique, set, rare and magic chances with diminishing returns.
+ */
+export interface D2xItemRatio {
+  /** exceptional or elite weapons and armor */
+  uber: boolean;
+  /** bases whose own item type is for one class */
+  cls: boolean;
+  unique: { ratio: number; div: number; min: number };
+  set: { ratio: number; div: number; min: number };
+  rare: { ratio: number; div: number; min: number };
+  magic: { ratio: number; div: number; min: number };
+  superior: { ratio: number; div: number };
+  normal: { ratio: number; div: number };
+}
+
+/**
+ * An NPC's prices (NPC.txt), as fractions of the item's value; D2 floors each step (D2MOO
+ * Items.cpp:2387-2497). maxPay caps what the NPC pays for one item, by difficulty.
+ */
+export interface D2xNpcPrices {
+  heroBuys: number;
+  heroSells: number;
+  repair: number;
+  maxPay: [number, number, number];
+  /** once the quest's reward is granted or pending, these multiply on top */
+  quests?: { quest: string; heroBuys: number; heroSells: number; repair: number }[];
+}
+
+/**
+ * One level band of a hireling (Hireling.txt). With levelUps = hireling level − band level, each stat
+ * is base + levelUps × perLvl, floored; life at least 40, str and dex at least 10, max damage at
+ * least 1 (D2MOO MonsterAI.cpp:217-254). Experience to reach level L is xpPerLvl × L² × (L + 1)
+ * (Monsters.cpp:394-397).
+ */
+export interface D2xHirelingBand {
+  level: number;
+  /** hire price: gold × (100 + 15 × levelUps) / 100, at least gold (Monsters.cpp:129-133) */
+  gold: number;
+  xpPerLvl: number;
+  hp: number;
+  hpPerLvl: number;
+  def: number;
+  defPerLvl: number;
+  str: number;
+  strPerLvl: number;
+  dex: number;
+  dexPerLvl: number;
+  ar: number;
+  arPerLvl: number;
+  dmg: [number, number];
+  dmgPerLvl: number;
+  /** fire, cold, lightning, poison */
+  resist: [number, number, number, number];
+  resistPerLvl: [number, number, number, number];
+  /**
+   * Skill level = level + levelUps × lvlPerLvl, floored, kept to 0–32, once the hireling's level
+   * reaches the skill's reqLvl (MonsterAI.cpp:262-279). mode is the animation mode it plays in
+   * (4: attack 1); chance and chancePerLvl weight the AI's choice of skill (D2MOO does not read them yet).
+   */
+  skills: { skill: string; reqLvl: number; mode: number; chance: number; chancePerLvl: number; level: number; lvlPerLvl: number }[];
+}
+
+export interface D2xHireling {
+  id: number;
+  /** the difficulty it is hired in: 0 normal, 1 nightmare, 2 hell */
+  difficulty: 0 | 1 | 2;
+  element: 'fire' | 'cold';
+  /** monstats id of the unit, and of the NPC who hires it out */
+  monster: string;
+  seller: string;
+  /** the class it counts as (D2R column): its skills are this class's */
+  cls: string;
+  /** our name for the kind of hireling */
+  type?: string;
+  /** keys into D2X_HIRELING_NAMES, one picked per hireling on offer */
+  names: string[];
+  defaultChance: number;
+  /**
+   * D2R column, absent from D2MOO: by its name, how far above the hero an offered hireling's level
+   * may be. D2MOO offers band level + 0…4, no higher than the hero (Monsters.cpp:99-109).
+   */
+  maxLvlAbove: number;
+  /** resurrection cost: min(max, mul × level² / div) (Monsters.cpp:400-410 has the same) */
+  resurrect: { mul: number; div: number; max: number };
+  /** level bands, lowest first: the first is the one on offer */
+  bands: D2xHirelingBand[];
+}
+
+/**
+ * A hireling's experience: it earns from kills like a hero of its level (the D2X_XP_LEVEL_DIFF and
+ * D2X_XP_RATIO rules), notKillerShare of that when someone else made the kill (SUnitDmg.cpp:2983-2988),
+ * at most perKillCap of its current level's span per kill (SUnitDmg.cpp:3124), up to maxLevel.
+ */
+export interface D2xHirelingXp {
+  maxLevel: number;
+  notKillerShare: number;
+  perKillCap: number;
+}

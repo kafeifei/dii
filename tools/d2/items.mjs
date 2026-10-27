@@ -456,6 +456,6 @@ export async function buildItems() {
       `${quality.length} superior mods, ${uniques.length} uniques, ${sets.length} sets with ${setItems.length} pieces, ${runewords.length} runewords, ` +
       `${runes.length} runes, ${gems.length} gems; item props name ${skills.size} skills`,
   );
-  // the skills stage needs every skill an item refers to
-  return { skills: [...skills.keys()] };
+  // the skills stage needs every skill an item refers to; later stages check item codes against the bases
+  return { skills: [...skills.keys()], bases: new Set(Object.keys(BASE)) };
 }

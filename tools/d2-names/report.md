@@ -26,3 +26,4 @@
 - sets，术士资料片新增（D2CE 无字串）（3）：`Warlord's Glory`、`Bane's Garments`、`Horazon's Splendor`
 - runes，术士技能（2）：`Runeword3`、`Runeword157`
 - runes，术士资料片新增（D2CE 无字串）（3）：`Runeword180`、`Runeword181`、`Runeword182`
+- charstats，术士资料片新增（1）：`war`
