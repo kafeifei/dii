@@ -3,12 +3,16 @@ import { CLASSES, type PlayerClass } from '../data/classes';
 import { D2_CLASS, D2_TO_GAME, skillTab } from '../data/d2/skillmap';
 import { D2_XP, D2_XP_RATIO } from '../data/d2/progression';
 import { EQUIP_SLOTS, ITEM_BASES, type EquipSlot } from '../data/items';
+import { D2X_CLASSES } from '../data/d2x/classes';
 import { SET_ITEMS } from '../data/legendary';
 import { SHRINE_BY_ID } from '../data/shrines';
 import { SKILL_BY_ID, SKILLS, type SkillDef } from '../data/skills';
-import { addStat, poisonSeconds, type StatBag, type StatKey } from '../data/stats';
+import { addStat, PARAM_STATS, poisonSeconds, type StatBag, type StatKey } from '../data/stats';
 import { Grid } from '../items/grid';
-import { baseOf, globalItemStats, itemDefense, itemReqLvl, itemReqStats, paramMods, weaponDamage, type Item, type ItemMod } from '../items/item';
+import type { D2Prop } from '../data/d2x/types';
+import { setBonuses } from '../items/d2/legendary';
+import { propMods, rollMax } from '../items/props';
+import { baseOf, classCode, globalItemStats, isIdentified, itemCategory, itemDefense, itemReqLvl, meetsReqs, paramMods, weaponDamage, type Item, type ItemMod } from '../items/item';
 import { Actor, type Resists } from './actor';
 import type { Monster } from './monster';
 import type { Difficulty } from './save';
@@ -137,6 +141,8 @@ export class Player extends Actor {
   binds: (string | null)[] = ['attack', null, null, null, null, null];
   d!: Derived;
   private dirty = true;
+  /** worn items the hero no longer meets the requirements of, which give nothing (D2's IFLAG_NOEQUIP: recalc) */
+  private noEquip = new Set<Item>();
   cooldowns: Record<string, number> = {};
   // potion regen queues
   healQueue: { perSec: number; left: number }[] = [];
@@ -249,7 +255,7 @@ export class Player extends Actor {
     const items = [...Object.values(this.equipment), ...this.inventory.items.map((x) => x.item)].filter((x): x is Item => !!x);
     const out: { item: Item; param: string; missing: number; lvl: number }[] = [];
     for (const item of items) {
-      for (const m of item.mods) {
+      for (const m of paramMods(item)) {
         if (m.stat !== 'charged' || !m.param) continue;
         const missing = m.value - (item.charges?.[m.param] ?? m.value);
         if (missing > 0) out.push({ item, param: m.param, missing, lvl: m.lvl ?? 1 });
@@ -266,24 +272,78 @@ export class Player extends Actor {
     return def.prereqs.every((p) => (this.skills[p] ?? 0) > 0);
   }
 
+  /** whether the hero can use the item (items/item.ts meetsReqs) */
   meetsReq(item: Item): boolean {
-    const b = baseOf(item);
     const d = this.stats;
-    const req = itemReqStats(item);
-    if (b.cls && b.cls !== this.cls) return false;
-    return this.level >= itemReqLvl(item) && d.str >= req.str && d.dex >= req.dex;
+    return meetsReqs(item, { level: this.level, str: d.str, dex: d.dex, cls: this.cls });
+  }
+
+  /** the charms in the bag that count: identified, their level met (D2: charms work from the inventory only) */
+  activeCharms(): Item[] {
+    return this.inventory.items
+      .map((x) => x.item)
+      .filter((it) => ITEM_BASES[it.baseId]?.type === 'charm' && isIdentified(it) && this.level >= itemReqLvl(it, classCode(this.cls)));
+  }
+
+  /** whether a worn item gives nothing because the hero no longer meets its requirements (recalc) */
+  unusable(item: Item): boolean {
+    if (this.dirty) this.recalc();
+    return this.noEquip.has(item);
+  }
+
+  /**
+   * What is worn that works, D2GAME_ITEMS_UpdateInventoryItems's way (ItemMode.cpp:1995-2091): in
+   * slot order an item the hero no longer meets the requirements of is flagged unusable and its
+   * strength and dexterity leave at once; then each flagged one the hero now meets comes back, again
+   * until none does. A worn item's own strength and dexterity count toward its own requirements
+   * (ITEMS_CheckStatRequirement outside equipping, Items.cpp:1019-1040), the sets' bonuses don't
+   * (they follow from what works). An item taken off loses its flag (D2 clears it as an item goes
+   * on, ItemMode.cpp:1617-1619).
+   */
+  private usableWorn(charms: Item[]): Item[] {
+    const L = this.level;
+    const worn = EQUIP_SLOTS.map((s) => this.equipment[s]).filter((it): it is Item => !!it);
+    for (const it of this.noEquip) if (!worn.includes(it)) this.noEquip.delete(it);
+    const strDex = (it: Item) => {
+      const g = globalItemStats(it, L);
+      return [(g.str ?? 0) + (g.allAttr ?? 0), (g.dex ?? 0) + (g.allAttr ?? 0)];
+    };
+    const who = { level: L, str: this.base.str, dex: this.base.dex, cls: this.cls };
+    const count = (it: Item, k: number) => {
+      const [s, d] = strDex(it);
+      who.str += k * s;
+      who.dex += k * d;
+    };
+    for (const it of [...charms, ...worn]) if (!this.noEquip.has(it)) count(it, 1);
+    for (const it of worn) {
+      if (this.noEquip.has(it) || meetsReqs(it, who)) continue;
+      this.noEquip.add(it);
+      count(it, -1);
+    }
+    for (let again = true; again; ) {
+      again = false;
+      for (const it of worn) {
+        if (!this.noEquip.has(it) || !meetsReqs(it, who)) continue;
+        this.noEquip.delete(it);
+        count(it, 1);
+        again = true;
+      }
+    }
+    return worn.filter((it) => !this.noEquip.has(it));
   }
 
   recalc() {
     this.dirty = false;
     const bag: StatBag = {};
-    const eq = this.equipment;
     // items
     const setCounts: Record<string, number> = {};
     const params: { item: Item; mod: ItemMod }[] = [];
-    for (const slot of EQUIP_SLOTS) {
-      const it = eq[slot];
-      if (!it) continue;
+    // what is worn and works, and the charms in the bag, which work from there
+    const charms = this.activeCharms();
+    const worn = this.usableWorn(charms);
+    const usable = new Set(worn);
+    const eq = Object.fromEntries(EQUIP_SLOTS.map((s) => [s, usable.has(this.equipment[s]!) ? this.equipment[s] : null])) as typeof this.equipment;
+    for (const it of [...worn, ...charms]) {
       const g = globalItemStats(it, this.level);
       for (const k in g) addStat(bag, k as StatKey, g[k as StatKey]!);
       for (const mod of paramMods(it)) params.push({ item: it, mod });
@@ -292,6 +352,34 @@ export class Player extends Actor {
         if (s) setCounts[s.set.id] = (setCounts[s.set.id] ?? 0) + 1;
       }
     }
+    // Diablo II's sets: each worn set item's green slots and its set's partial and full bonuses,
+    // by the pieces that work (Items.cpp:4459 skips a piece flagged unusable; d2/legendary.ts
+    // setBonuses), as the tooltip counts them (item.ts setLines). A slot's enhanced defense and
+    // damage are its own item's (its ITEMSET stat list, Items.cpp:7423-7491): an armor's defense, a
+    // weapon's damage, and off a weapon the hero's damage % as the item's own would be
+    const setWorn = worn.filter((it) => it.setRow !== undefined);
+    const sets = setBonuses(setWorn);
+    const setProps: D2Prop[] = sets.sets.flatMap((s) => [...s.partial, ...s.full]);
+    const localPct = new Map<Item, { def: number; dmg: number }>();
+    setWorn.forEach((it, i) => {
+      sets.slots[i].forEach((on, k) => {
+        if (!on) return;
+        for (const p of it.setBonus?.[k] ?? []) {
+          if ((p.c === 'ac%' && it.defense !== undefined) || (p.c === 'dmg%' && itemCategory(it) === 'weapon')) {
+            const l = localPct.get(it) ?? { def: 0, dmg: 0 };
+            if (p.c === 'ac%') l.def += p.min;
+            else l.dmg += p.min;
+            localPct.set(it, l);
+          } else setProps.push(p);
+        }
+      });
+    });
+    for (const m of propMods(setProps, true, rollMax)) {
+      if (PARAM_STATS.has(m.stat)) params.push({ item: setWorn[0], mod: m });
+      // a set's damage % goes on the hero's damage, not one weapon's
+      else addStat(bag, m.stat === 'dmgPct' ? 'dmgPctGlobal' : m.stat, m.perLvl ? Math.floor((m.value * this.level) / 8) : m.value);
+    }
+    // the old invented sets, by count
     for (const sid in setCounts) {
       const set = Object.values(SET_ITEMS).find((s) => s.set.id === sid)!.set;
       for (const [cnt, bonus] of Object.entries(set.bonuses)) {
@@ -419,7 +507,7 @@ export class Player extends Actor {
     let dexBonus = 0;
     if (w) {
       const wb = baseOf(w);
-      [wMin, wMax] = weaponDamage(w, L);
+      [wMin, wMax] = weaponDamage(w, L, false, localPct.get(w)?.dmg ?? 0);
       apsBase = wb.speed ?? 1.4;
       // D2: most weapons gain 1% damage per strength point, daggers 0.75% per strength and dexterity
       if (wb.strBonus !== undefined) {
@@ -435,15 +523,16 @@ export class Player extends Actor {
     let def = Math.floor(dex / 4);
     for (const slot of EQUIP_SLOTS) {
       const it = eq[slot];
-      if (it && it.defense !== undefined) def += itemDefense(it);
+      if (it && it.defense !== undefined) def += itemDefense(it, L, localPct.get(it)?.def ?? 0);
     }
     def += bag.def ?? 0;
     def = Math.floor(def * (1 + (shieldDefPct + (blessing?.defPct ?? 0)) / 100));
 
     const sh = eq.offhand;
     let block = 0;
-    if (sh) {
-      const bb = baseOf(sh).block ?? 0;
+    if (sh && baseOf(sh).type === 'shield') {
+      // the shield's block with the class's BlockFactor (CharStats.txt), into the game's own curve
+      const bb = (baseOf(sh).block ?? 0) + (D2X_CLASSES[classCode(this.cls) ?? '']?.blockFactor ?? 0);
       block = clamp(((bb + (bag.block ?? 0)) * (dex + 15)) / (L * 2 + 20) * 0.9, 0, 75);
     }
 

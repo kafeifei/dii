@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ITEM_BASES } from '../data/items';
+import { ITEM_BASES, lookOf } from '../data/items';
 import type { DecorKind } from '../world/levelgen';
 import type { Item } from '../items/item';
 import { assets, type ModelKey } from './assets';
@@ -466,11 +466,15 @@ export function heldModel(b: (typeof ITEM_BASES)[string]): [ModelKey, number] | 
     case 'staff':
       return ['w_staff', 0.8];
     case 'spear':
+    case 'javelin':
       return ['w_spear', 0.85];
+    case 'throwing':
+    case 'claw':
+      return ['w_dagger', 0.65];
     case 'polearm':
       return ['w_halberd', 0.85];
     case 'shield':
-      return [b.id === 'towershield' || b.id === 'gothicshield' ? 'skeleton_shield_large_a' : 'skeleton_shield_small_a', 0.7];
+      return [lookOf(b.id) === 'towershield' || lookOf(b.id) === 'gothicshield' ? 'skeleton_shield_large_a' : 'skeleton_shield_small_a', 0.7];
   }
   return null;
 }
@@ -583,6 +587,19 @@ export function makeGroundItem(item: Item | null, color: string): THREE.Group {
     case 'rune':
       add(g, new THREE.BoxGeometry(0.16, 0.05, 0.2), stdMat('#5a5048', 0.6, 0, b.tint ?? '#ff9020', 0.6), 0, 0.03, 0);
       break;
+    case 'bow':
+    case 'crossbow':
+      add(g, new THREE.TorusGeometry(0.42, 0.02, 4, 12, Math.PI), stdMat('#6a4a24', 0.8), 0, 0.03, 0, Math.PI / 2, 0, 0);
+      break;
+    case 'charm':
+    case 'jewel':
+      add(g, new THREE.OctahedronGeometry(0.06), m, 0, 0.06, 0);
+      break;
+    case 'scroll':
+    case 'tome':
+    case 'key':
+    case 'quiver':
+    case 'misc':
     case 'unknown':
       add(g, new THREE.BoxGeometry(0.16, 0.05, 0.2), stdMat('#5a5048', 0.7), 0, 0.03, 0);
       break;

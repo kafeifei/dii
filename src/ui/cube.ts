@@ -1,3 +1,4 @@
+import { ITEM_BASES } from '../data/items';
 import { transmute } from '../items/cube';
 import { addClose, h, type UIContext } from './common';
 import { renderGrid } from './inventory';
@@ -6,7 +7,8 @@ import { renderGrid } from './inventory';
 export function renderCube(ui: UIContext, L: HTMLElement) {
   const p = ui.game.player;
   L.innerHTML = '';
-  L.appendChild(h('h2', '', '赫拉迪姆魔盒'));
+  // our name for it (d2x Misc.txt box)
+  L.appendChild(h('h2', '', ITEM_BASES.box.name));
   addClose(ui, L, 'left');
   const wrap = h('div', 'cube-wrap');
   wrap.appendChild(renderGrid(ui, 'cube', p.cube));

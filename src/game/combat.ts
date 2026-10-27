@@ -200,6 +200,13 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
       src.hitFlash = 0.6;
       if (src.life <= 0) g.killMonster(src, 'phys');
     }
+    // "attacker takes lightning damage": the same for melee hits, less the attacker's lightning resistance
+    const lt = p.stats.bag.lightThorns ?? 0;
+    if (src instanceof Monster && lt > 0 && !pk.spell && !src.dead) {
+      src.life -= lt * (1 - Math.min(100, src.resists().light) / 100);
+      src.hitFlash = 0.6;
+      if (src.life <= 0) g.killMonster(src, 'light');
+    }
     if (src instanceof Monster && src.mods.includes('manaburn')) p.mana = Math.max(0, p.mana - total * 0.6);
     if (src instanceof Monster && src.mods.includes('vampiric') && src.noHealTime <= 0) src.life = Math.min(src.maxLife, src.life + total * 0.25);
     if (src instanceof Monster && total > 0 && p.life > 0) g.onProc('procStruck', src);

@@ -1,7 +1,7 @@
 import type { PlayerClass } from '../classes';
 import { CLASSES } from '../classes';
+import { D2X_SKILL_REFS, D2X_SKILLS } from '../d2x/skills';
 import { SKILL_BY_ID } from '../skills';
-import { D2_SKILLS } from './skills';
 
 /** Diablo II skills this game has, by their D2 name */
 export const D2_TO_GAME: Record<string, string> = {
@@ -50,10 +50,11 @@ export function skillRef(param: string): SkillRef {
   const own = SKILL_BY_ID[param];
   if (own) return { id: own.id, name: own.name, cls: own.cls === 'sorceress' ? 'sor' : 'pal', reqLvl: own.reqLevel };
   const id = D2_TO_GAME[param];
-  const d2 = D2_SKILLS[param];
   if (id) {
     const g = SKILL_BY_ID[id];
     return { id, name: g.name, cls: g.cls === 'sorceress' ? 'sor' : 'pal', reqLvl: g.reqLevel };
   }
+  // our names for every other skill an item names (src/data/d2x, never the official strings)
+  const d2 = D2X_SKILLS[param] ?? D2X_SKILL_REFS[param];
   return { name: d2?.name ?? param, cls: d2?.cls ?? null, reqLvl: d2?.reqLvl ?? 1 };
 }

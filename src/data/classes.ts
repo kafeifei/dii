@@ -13,7 +13,7 @@ export interface ClassDef {
   mana0: number;
   manaPerLvl: number;
   trees: [string, string, string];
-  /** starting kit */
+  /** starting kit: D2 base codes */
   weapon: string;
   offhand: string | null;
   firstSkill: string;
@@ -31,8 +31,8 @@ export const CLASSES: Record<PlayerClass, ClassDef> = {
     mana0: 10,
     manaPerLvl: 1.5,
     trees: ['战斗技能', '进攻光环', '防御光环'],
-    weapon: 'shortsword',
-    offhand: 'buckler',
+    weapon: 'ssd',
+    offhand: 'buc',
     firstSkill: 'sacred_strike',
   },
   sorceress: {
@@ -47,7 +47,7 @@ export const CLASSES: Record<PlayerClass, ClassDef> = {
     mana0: 10,
     manaPerLvl: 2,
     trees: ['火焰法术', '闪电法术', '冰冷法术'],
-    weapon: 'shortstaff',
+    weapon: 'sst',
     offhand: null,
     firstSkill: 'fire_bolt',
   },

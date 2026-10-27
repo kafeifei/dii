@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ITEM_BASES, staffGem } from '../data/items';
+import { ITEM_BASES, lookOf, staffGem } from '../data/items';
 import type { Monster } from '../game/monster';
 import type { Player } from '../game/player';
 import type { Item } from '../items/item';
@@ -346,7 +346,7 @@ function meshyGear(p: Player): Attachment[] {
   // spears and polearms are taller than their bearer: kept upright like a staff
   else if (held) attach.push({ model: held[0], hand: 'r', glow, scale: held[1], hold: wb!.type === 'spear' || wb!.type === 'polearm' ? 'upright' : 'grip' });
   if (eq.offhand) {
-    const large = eq.offhand.baseId === 'towershield' || eq.offhand.baseId === 'gothicshield';
+    const large = lookOf(eq.offhand.baseId) === 'towershield' || lookOf(eq.offhand.baseId) === 'gothicshield';
     attach.push({ model: large ? 'skeleton_shield_large_a' : 'skeleton_shield_small_a', hand: 'l', scale: 0.7, hold: 'shield' });
   }
   return attach;
@@ -386,7 +386,7 @@ function aiPlayerSpec(p: Player): ModelSpec {
   else if (wb?.type === 'axe') attach.push({ model: twoHanded ? 'axe_2handed' : 'axe_1handed', hand: 'r', glow, scale: 0.75 });
   else if (wb) attach.push({ model: () => makeMace(twoHanded, glow), hand: 'r' });
   if (eq.offhand) {
-    const large = eq.offhand.baseId === 'towershield' || eq.offhand.baseId === 'gothicshield';
+    const large = lookOf(eq.offhand.baseId) === 'towershield' || lookOf(eq.offhand.baseId) === 'gothicshield';
     attach.push({ model: large ? 'skeleton_shield_large_a' : 'skeleton_shield_small_a', hand: 'l', scale: 0.75 });
   }
   return {
@@ -425,7 +425,7 @@ export function playerSpec(p: Player): ModelSpec {
     show.push(glowMesh);
   } else if (wb?.type === 'axe') attach.push({ model: twoHanded ? 'axe_2handed' : 'axe_1handed', hand: 'r', glow });
   else if (wb) attach.push({ model: () => makeMace(twoHanded, glow), hand: 'r' });
-  if (eq.offhand) show.push(SHIELD_MESH[eq.offhand.baseId] ?? 'Round_Shield');
+  if (eq.offhand) show.push(SHIELD_MESH[lookOf(eq.offhand.baseId)] ?? 'Round_Shield');
   if (eq.head) show.push('Knight_Helmet');
   const body = eq.body;
   if (body && (body.rarity === 'rare' || body.rarity === 'unique' || body.rarity === 'set' || body.rarity === 'runeword')) show.push('Knight_Cape');

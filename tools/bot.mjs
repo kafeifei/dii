@@ -208,8 +208,8 @@ export default async function (page, shot, log) {
     };
     const drink = (kind) => {
       const pl = p();
-      for (let i = 0; i < 4; i++) if (pl.belt[i].length && (kind === 'hp' ? (pl.belt[i][0].baseId.startsWith('hp') || pl.belt[i][0].baseId.startsWith('rejuv')) : pl.belt[i][0].baseId.startsWith('mp'))) { g.useBelt(i); stats.potionsUsed++; return true; }
-      const inv = pl.inventory.items.find((x) => x.item.baseId.startsWith(kind) || (kind === 'hp' && x.item.baseId.startsWith('rejuv')));
+      for (let i = 0; i < 4; i++) if (pl.belt[i].length && (kind === 'hp' ? (pl.belt[i][0].baseId.startsWith('hp') || pl.belt[i][0].baseId.startsWith('rv')) : pl.belt[i][0].baseId.startsWith('mp'))) { g.useBelt(i); stats.potionsUsed++; return true; }
+      const inv = pl.inventory.items.find((x) => x.item.baseId.startsWith(kind) || (kind === 'hp' && x.item.baseId.startsWith('rv')));
       if (inv) { pl.inventory.remove(inv.item); g.drink(inv.item); stats.potionsUsed++; return true; }
       return false;
     };
@@ -222,7 +222,8 @@ export default async function (page, shot, log) {
       pl.gold += pl.level * 100;
       spend();
       for (let i = 0; i < 60; i++) {
-        const it = rollEquipment(pl.level, { quality: 2 });
+        // identified, as gear found and worn on the way would be
+        const it = rollEquipment(pl.level, { quality: 2, identified: true });
         if (pl.inventory.add(it) && !tryEquip(it)) pl.inventory.remove(it);
       }
       pl.life = pl.stats.maxLife;

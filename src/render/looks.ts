@@ -1,4 +1,4 @@
-import { ITEM_BASES } from '../data/items';
+import { ITEM_BASES, lookOf } from '../data/items';
 import type { Monster } from '../game/monster';
 import type { Player } from '../game/player';
 import type { RigLook, ShieldShape, WeaponShape, HelmShape } from './rig';
@@ -139,7 +139,7 @@ export function playerLook(p: Player): RigLook {
 function paladinLook(p: Player): RigLook {
   const eq = p.equipment;
   const body = eq.body;
-  const armorInfo = body ? ARMOR_COLORS[body.baseId] : undefined;
+  const armorInfo = body ? ARMOR_COLORS[lookOf(body.baseId)] : undefined;
   const w = eq.weapon;
   const sh = eq.offhand;
   const helm = eq.head;
@@ -161,12 +161,12 @@ function paladinLook(p: Player): RigLook {
     armor: armorInfo ? armorInfo[0] : null,
     metal: armorInfo ? armorInfo[1] : 0,
     head: 'human',
-    helm: helmShape(helm?.baseId),
+    helm: helmShape(helm ? lookOf(helm.baseId) : undefined),
     helmColor: helm ? (helm.rarity === 'unique' ? '#b89a5a' : '#8a8a90') : undefined,
     weapon: weaponShape(w?.baseId),
     weaponColor: w?.rarity === 'unique' || w?.rarity === 'runeword' ? '#d8c8a0' : '#c0c0c8',
     weaponGlow: wGlowColor,
-    shield: shieldShape(sh?.baseId),
+    shield: shieldShape(sh ? lookOf(sh.baseId) : undefined),
     shieldColor: sh?.rarity === 'unique' ? '#7a5a20' : sh?.rarity === 'set' ? '#2a4a2a' : '#5a3a22',
     shieldTrim: '#b0b0b8',
     cape: body && (body.rarity === 'unique' || body.rarity === 'set' || body.rarity === 'runeword' || body.rarity === 'rare') ? '#6a1414' : null,

@@ -4,49 +4,13 @@
 import { importTs, rows, tables } from './load.mjs';
 import { WARLOCK, isWarlockTab } from './scope.mjs';
 
-/** property codes the game does not read yet, and why: the item system (A2) works these off */
+/**
+ * property codes the game does not read, and why. The item system (src/items/props.ts) reads every
+ * other one: what it has no effect for yet it maps to a stat the tooltip greys (本游戏未实现).
+ */
 export const KNOWN_UNMAPPED = {
-  // per-level forms with no PER_LEVEL entry (eighths per level; attack rating in halves)
-  'abs-cold/lvl': 'cold absorb per level',
-  'abs-fire/lvl': 'fire absorb per level',
-  'ac%/lvl': 'enhanced defense per level',
-  'att-dem/lvl': 'attack rating against demons per level',
-  'att-und/lvl': 'attack rating against undead per level',
-  'dmg%/lvl': 'enhanced maximum damage per level',
-  'dmg-cold/lvl': 'maximum cold damage per level (set bonuses)',
-  'dmg-fire/lvl': 'maximum fire damage per level (set bonuses)',
-  'dmg-ltng/lvl': 'maximum lightning damage per level (set bonuses)',
-  'res-cold/lvl': 'cold resist per level',
-  'res-fire/lvl': 'fire resist per level',
-  'res-ltng/lvl': 'lightning resist per level',
-  'res-pois/lvl': 'poison resist per level',
-  'regen-stam/lvl': 'stamina regeneration per level',
-  'stam/lvl': 'maximum stamina per level',
-  // stats the game has no StatKey for yet
-  'dmg-norm': 'adds min-max damage as one pair (props.ts reads dmg, dmg-min and dmg-max)',
-  'ac-hth': 'defense against melee',
-  addxp: 'experience gained',
-  'light-thorns': 'attacker takes lightning damage',
-  'res-mag': 'magic resist',
-  'res-all-max': 'maximum of all resistances',
-  randclassskill: 'skill levels of a random class',
-  'skill-rand': 'levels of a random skill from an id range',
-  reanimate: 'slain monsters rise as a given monster',
-  'cold-len': 'chill length in frames: the game chills for a fixed time',
-  'pierce-immunity-cold': 'sunders cold immunity: monsters have no immunities yet',
-  'pierce-immunity-fire': 'sunders fire immunity: monsters have no immunities yet',
-  'pierce-immunity-light': 'sunders lightning immunity: monsters have no immunities yet',
-  'pierce-immunity-poison': 'sunders poison immunity: monsters have no immunities yet',
-  'pierce-immunity-damage': 'sunders physical immunity: monsters have no immunities yet',
-  'pierce-immunity-magic': 'sunders magic immunity: monsters have no immunities yet',
-  // item state the item system adds: durability, quantity, sockets
-  dur: 'maximum durability',
-  'dur%': 'maximum durability percent',
-  'rep-quant': 'replenishes quantity (throwing weapons)',
-  stack: 'larger stacks',
-  sock: 'comes with sockets',
-  magicarrow: 'fires magic arrows: needs bow attacks',
-  // looks only
+  'cold-len': 'chill length in frames: the game chills for a fixed time (dmg-cold and cold-min/max still read)',
+  // looks only: the tooltip has no line for them either (ItemStatCost has no descfunc)
   bloody: 'extra blood, visuals only',
   fade: 'fade state, visuals only',
   state: 'a full-set glow state, visuals only',

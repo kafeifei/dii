@@ -183,6 +183,17 @@ export interface DropSpec extends QualityRoll {
   dropped?: Set<number>;
   /** a hell bovine's drop: only they drop Cow King's Leathers (ItemsMagic.cpp:840) */
   hellBovine?: boolean;
+  /**
+   * ITEMDROPFLAG_NEVERETH (Items.cpp:230): never ethereal. D2 sets it on a vendor's stock and the
+   * starting kit (Items.cpp:1475 from SUnitNpc.cpp:206, 2562 and Player.cpp:180) and on cube
+   * outputs without the eth flag (PlrTrade.cpp:789-795)
+   */
+  noEth?: boolean;
+  /**
+   * ITEMDROPFLAG_NOSOCKETS (Items.cpp:196): no sockets rolled. The starting kit (Player.cpp:180) and
+   * cube outputs without the sock flag (PlrTrade.cpp:779-786)
+   */
+  noSockets?: boolean;
 }
 
 export interface QualityDrop {
@@ -248,7 +259,7 @@ export function pickSuperior(b: D2Base, rng: Rand): D2xQualityMod | undefined {
 }
 
 /** a new item's durability: up to half off its base's (Items.cpp:656-658, 684-686) */
-function newDurability(b: D2Base, rng: Rand): { dur: number; maxDur: number } {
+export function newDurability(b: D2Base, rng: Rand): { dur: number; maxDur: number } {
   const maxDur = Math.min(b.dur!, 255);
   const half = b.dur! >> 1;
   return { dur: Math.min(roll(rng, half) + half, 255), maxDur };
@@ -323,6 +334,7 @@ export function dropQuality(spec: DropSpec, rng: Rand): QualityDrop {
   // 5% ethereal: weapons and armor with durability, not low quality, set or quest (Items.cpp:228-260):
   // half the most durability plus one, and full
   if (
+    !spec.noEth &&
     durable &&
     (isWeapon(b) || isArmor(b)) &&
     out.quality !== 'low' &&
@@ -335,7 +347,7 @@ export function dropQuality(spec: DropSpec, rng: Rand): QualityDrop {
     out.dur = out.maxDur;
   }
 
-  if (out.quality === 'normal' || out.quality === 'superior') out.sockets = rollSockets(b, spec.ilvl, spec.difficulty, rng);
+  if ((out.quality === 'normal' || out.quality === 'superior') && !spec.noSockets) out.sockets = rollSockets(b, spec.ilvl, spec.difficulty, rng);
   return out;
 }
 

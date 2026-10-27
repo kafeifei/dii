@@ -1161,3 +1161,38 @@ export interface D2xState {
   /** the taken skills whose D2 server code sets or checks it by id, where no table column names it */
   code?: string[];
 }
+
+// ───────────────────────── item tooltips ─────────────────────────
+
+/** one stat a property code sets (Properties.txt funcN, statN, valN): the func says how the value lands */
+export interface D2xPropStat {
+  func: number;
+  stat?: string;
+  /** the func's fixed parameter: a class id for class skills (func 21), a tab for war-tab-rand */
+  val?: number;
+}
+
+/**
+ * A stat's tooltip line (ItemStatCost.txt). Lines go highest pri first; func is the descfunc, val
+ * the descval (0 no value, 1 before the string, 2 after), pos / neg the strings for a positive and
+ * a negative value (neg only where it differs), str2 the second string (per-level stats' "(based on
+ * character level)"). A group (grp, the dgrp columns) is one line for all its stats when they are
+ * all there with the same value: all attributes, all resistances. op, opParam and opBase are how
+ * the stat counts (op 2–5 per-level: value × base >> param).
+ */
+export interface D2xStatDesc {
+  id: number;
+  pri?: number;
+  func?: number;
+  val?: number;
+  pos?: string;
+  neg?: string;
+  str2?: string;
+  grp?: number;
+  grpFunc?: number;
+  grpVal?: number;
+  grpPos?: string;
+  op?: number;
+  opParam?: number;
+  opBase?: string;
+}

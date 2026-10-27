@@ -6,6 +6,8 @@
 // ItemsMagic.cpp and ItemMode.cpp are D2Game's, ItemMods.cpp D2Common's.
 import { D2X_AUTOMAGIC, D2X_PREFIXES, D2X_SUFFIXES } from '../../data/d2x/affixes';
 import { D2X_RARE_PREFIXES, D2X_RARE_SUFFIXES } from '../../data/d2x/rare';
+import { D2X_SKILL_REFS, D2X_SKILLS } from '../../data/d2x/skills';
+import { D2X_PROPERTIES } from '../../data/d2x/statdesc';
 import type { D2Prop, D2xAffix, D2xRareWord } from '../../data/d2x/types';
 import { CLASS_SKILL_BY_NAME, CLASS_SKILLS } from './classskills';
 import { d2Base, isType, ownType } from './bases';
@@ -336,13 +338,41 @@ export function rollAffixes(drop: QualityDrop, spec: AffixSpec, rng: Rand): Affi
 
 // ───────────────────────── level requirement ─────────────────────────
 
-export type ReqItem = Pick<D2Item, 'baseId' | 'quality' | 'prefixes' | 'suffixes' | 'autoAffix' | 'staffMods' | 'uniqueRow' | 'setRow' | 'socketed'>;
+export type ReqItem = Pick<D2Item, 'baseId' | 'quality' | 'prefixes' | 'suffixes' | 'autoAffix' | 'staffMods' | 'uniqueRow' | 'setRow' | 'socketed' | 'props'>;
+
+/** a skill's Skills.txt reqlevel and class, by D2 name (classskills.ts for the few class skills d2x leaves out) */
+function skillReq(name: string): { lvl: number; cls?: string } {
+  const s = D2X_SKILLS[name] ?? D2X_SKILL_REFS[name];
+  if (s) return { lvl: s.reqLvl, cls: s.cls };
+  const c = CLASS_SKILL_BY_NAME[name];
+  return { lvl: c?.[1] ?? 0, cls: c ? Object.keys(CLASS_SKILLS).find((k) => CLASS_SKILLS[k].includes(c)) : undefined };
+}
+
+/** whether a property sets the stat (Properties.txt stat1…7) */
+const sets = (code: string, stat: string) => D2X_PROPERTIES[code]?.some((s) => s.stat === stat) ?? false;
+
+/**
+ * The item's own stats as D2 lists them (STATLIST_CopyStats on the item): its rolled properties and
+ * staff mods; before its properties are rolled, its unique's or set item's row (a skill's level
+ * doesn't depend on the roll)
+ */
+function ownStats(item: ReqItem): D2Prop[] {
+  const rows =
+    item.props ??
+    (item.quality === 'unique' && item.uniqueRow !== undefined ? UNIQUE_BY_ID.get(item.uniqueRow)?.props : undefined) ??
+    (item.quality === 'set' && item.setRow !== undefined ? SET_ITEM_BY_ID.get(item.setRow)?.props : undefined) ??
+    [];
+  return [...rows, ...(item.staffMods ?? [])];
+}
 
 /**
  * The level to use an item (D2Common Items.cpp:1214-1441 ITEMS_GetRequiredLevel): the highest of
  * its affixes' levelreq (classlevelreq for a hero of the row's class), magic and rare items' with
  * the automagic row's; crafted items that plus 10 and 3 per affix, at most 98; a unique or set item
- * its row's. At least the base's, its socketed items' and each staff mod skill's.
+ * its row's. At least the base's, its socketed items' and the reqlevel of each skill it gives:
+ * "+N to a skill" (item_singleskill: staff mods, a unique's or runeword's) as the skill's, "+N to
+ * any skill" (item_nonclassskill, oskill) 6 more unless the hero is of the skill's class
+ * (1400-1433). Then plus a recipe's item_levelreq (1435), at least 0.
  */
 export function requiredLevel(item: ReqItem, heroCls?: string): number {
   const req = (a: D2xAffix) => (a.reqCls && a.reqCls === heroCls ? (a.reqClsLvl ?? 0) : a.reqLvl);
@@ -374,8 +404,15 @@ export function requiredLevel(item: ReqItem, heroCls?: string): number {
   }
   lvl = Math.max(lvl, d2Base(item.baseId).reqLvl);
   for (const s of item.socketed) lvl = Math.max(lvl, typeof s === 'string' ? d2Base(s).reqLvl : requiredLevel(s, heroCls));
-  for (const m of item.staffMods ?? []) lvl = Math.max(lvl, CLASS_SKILL_BY_NAME[m.p as string]?.[1] ?? 0);
-  return lvl;
+  let add = 0;
+  for (const p of ownStats(item)) {
+    if (sets(p.c, 'item_singleskill')) lvl = Math.max(lvl, skillReq(String(p.p)).lvl);
+    else if (sets(p.c, 'item_nonclassskill')) {
+      const s = skillReq(String(p.p));
+      lvl = Math.max(lvl, s.cls && s.cls === heroCls ? s.lvl : s.lvl + 6);
+    } else if (sets(p.c, 'item_levelreq')) add += p.min;
+  }
+  return Math.max(lvl + add, 0);
 }
 
 /** every property the item's affix rows and staff mods give, for rolling its stats */

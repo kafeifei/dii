@@ -1,7 +1,10 @@
-import { D2_RUNEWORDS } from './d2/runewords';
-import { D2_GEMS, D2_RUNES } from './d2/socketables';
-import type { D2Gem, D2Rune, D2Runeword } from './d2/types';
+import { D2X_RUNEWORDS } from './d2x/runewords';
+import { D2X_GEMS, D2X_RUNES } from './d2x/socketables';
+import type { D2xGem, D2xRune, D2xRuneword } from './d2x/types';
 import type { StatKey } from './stats';
+
+// The uniques and sets this game made up before Diablo II's (items from old saves still carry them:
+// Item.uniqueId, Item.setItemId), and Diablo II's runes, gems and runewords from src/data/d2x.
 
 type ModRange = [StatKey, number, number];
 
@@ -105,18 +108,18 @@ export const SETS: SetDef[] = [
 export const SET_ITEMS: Record<string, { set: SetDef; item: SetItemDef }> = {};
 for (const s of SETS) for (const it of s.items) SET_ITEMS[it.id] = { set: s, item: it };
 
-// ─────────── runes, gems and runewords: Diablo II's own (src/data/d2) ───────────
+// ─────────── runes, gems and runewords: Diablo II's own (src/data/d2x) ───────────
 
 /** a rune or gem: what it gives in a weapon, in a helm or body armor, and in a shield */
-export type Socketable = D2Rune | D2Gem;
+export type Socketable = D2xRune | D2xGem;
 
-export const RUNES: D2Rune[] = D2_RUNES;
-export const GEMS: D2Gem[] = D2_GEMS;
-export const RUNE_BY_ID: Record<string, D2Rune> = Object.fromEntries(D2_RUNES.map((r) => [r.id, r]));
-export const SOCKETABLE_BY_ID: Record<string, Socketable> = Object.fromEntries([...D2_RUNES, ...D2_GEMS].map((r) => [r.id, r]));
+export const RUNES: D2xRune[] = D2X_RUNES;
+export const GEMS: D2xGem[] = D2X_GEMS;
+export const RUNE_BY_ID: Record<string, D2xRune> = Object.fromEntries(D2X_RUNES.map((r) => [r.id, r]));
+export const SOCKETABLE_BY_ID: Record<string, Socketable> = Object.fromEntries([...D2X_RUNES, ...D2X_GEMS].map((r) => [r.id, r]));
 
-export type RunewordDef = D2Runeword;
-export const RUNEWORDS: D2Runeword[] = D2_RUNEWORDS;
+export type RunewordDef = D2xRuneword;
+export const RUNEWORDS: D2xRuneword[] = D2X_RUNEWORDS;
 
 export const UNIQUE_BY_ID: Record<string, UniqueDef> = Object.fromEntries(UNIQUES.map((u) => [u.id, u]));
 export const RUNEWORD_BY_ID: Record<string, RunewordDef> = Object.fromEntries(RUNEWORDS.map((r) => [r.id, r]));

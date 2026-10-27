@@ -147,4 +147,9 @@ export default async (load) => {
   eq(Q.maxSockets(d2Base('7p7'), 85, 1), 4, 'war pike in nightmare');
   ok(Q.maxSockets(d2Base('cap'), 10, 2) <= 2, 'cap');
   for (let i = 0; i < 300; i++) eq(Q.dropQuality({ code: 'jav', ilvl: 50, quality: 'normal', difficulty: 2 }, rng).sockets, 0, 'stacks take no sockets');
+  // ITEMDROPFLAG_NEVERETH and NOSOCKETS (Items.cpp:196, 230): the starting kit, vendors, the cube
+  for (let i = 0; i < 1000; i++) {
+    const d = Q.dropQuality({ code: 'hax', ilvl: 30, quality: 'normal', noEth: true, noSockets: true }, rng);
+    ok(!d.eth && !d.sockets, 'never ethereal, no sockets');
+  }
 };

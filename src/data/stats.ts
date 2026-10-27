@@ -103,6 +103,9 @@ export type StatKey =
   | 'poisonLenRes'
   | 'demonHeal'
   | 'fireSkills' // +X to fire skills (any class)
+  | 'dmgMaxPct' // enhanced maximum damage, local to weapon (dmg%/lvl)
+  | 'xpPct' // experience gained %
+  | 'lightThorns' // attacker takes lightning damage
   // stored on items but with no effect in this game (no durability, stamina or ranged attacks)
   | 'indestructible'
   | 'repDur'
@@ -113,6 +116,13 @@ export type StatKey =
   | 'pierceArrow'
   | 'explosiveArrow'
   | 'chargeNoConsume'
+  | 'defMelee' // defense vs melee: the game's monsters don't tell melee from missiles yet
+  | 'resMagic'
+  | 'reanimate'
+  | 'repQuant'
+  | 'extraStack'
+  | 'magicArrow'
+  | 'sunder' // monster immunities broken: monsters have no immunities yet
   // with a parameter on the item mod (a skill, a class, a skill tab): never in a StatBag
   | 'skill' // +X to one skill, own class only
   | 'oskill' // +X to a skill, any class
@@ -133,7 +143,12 @@ export type StatBag = Partial<Record<StatKey, number>>;
 export const PARAM_STATS = new Set<StatKey>(['skill', 'oskill', 'skillTab', 'clsSkills', 'aura', 'procHit', 'procStruck', 'procAttack', 'procKill', 'procDeath', 'procLevelUp', 'charged']);
 
 /** stats this game records but that do nothing here, shown greyed in tooltips */
-export const INERT_STATS = new Set<StatKey>(['defMissile', 'indestructible', 'repDur', 'ethereal', 'stamina', 'staminaDrain', 'staminaRegen', 'pierceArrow', 'explosiveArrow', 'chargeNoConsume', 'rip']);
+export const INERT_STATS = new Set<StatKey>([
+  'defMissile', 'repDur', 'ethereal', 'stamina', 'staminaDrain', 'staminaRegen', 'pierceArrow', 'explosiveArrow', 'chargeNoConsume', 'rip',
+  'defMelee', 'resMagic', 'reanimate', 'repQuant', 'extraStack', 'magicArrow', 'sunder',
+  // vendor prices are the game's own until the shops take D2's (item.ts sellPrice, buyPrice); no poison skills here
+  'cheap', 'extraPoison',
+]);
 
 export function addStat(bag: StatBag, key: StatKey, v: number) {
   bag[key] = (bag[key] ?? 0) + v;
@@ -255,6 +270,11 @@ const SINGLE: Partial<Record<StatKey, string>> = {
   pierceArrow: '+{0}% 穿刺攻击',
   explosiveArrow: '射出爆炸箭或弩矢',
   chargeNoConsume: '+{0}% 几率终结技不消耗充能层数',
+  dmgMaxPct: '+{0}% 强化最大伤害',
+  xpPct: '+{0}% 获得的经验',
+  lightThorns: '攻击者受到 {0} 点闪电伤害',
+  defMelee: '+{0} 近战防御',
+  resMagic: '魔法抗性 +{0}%',
 };
 
 function fmt(tpl: string, ...v: number[]): string {
@@ -291,6 +311,7 @@ export function describeStats(bag: StatBag, skip: StatKey[] = []): string[] {
     'absFire', 'absFirePct', 'absCold', 'absColdPct', 'absLight', 'absLightPct', 'absMagic',
     'cantFreeze', 'halfFreeze', 'poisonLenRes', 'thorns', 'lifePerKill', 'manaPerKill', 'demonHeal', 'mf', 'gf', 'cheap', 'lightRadius', 'ease',
     'indestructible', 'repDur', 'ethereal', 'stamina', 'staminaDrain', 'staminaRegen', 'pierceArrow', 'explosiveArrow', 'chargeNoConsume', 'rip',
+    'dmgMaxPct', 'xpPct', 'lightThorns', 'defMelee', 'resMagic',
   ];
   // all resists equal → collapse
   if (!used.has('resAll') && bag.resFire && bag.resFire === bag.resCold && bag.resFire === bag.resLight && bag.resFire === bag.resPoison) {

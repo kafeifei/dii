@@ -464,6 +464,9 @@ body {
 .gitem.set {
   background: rgba(30, 130, 30, 0.28);
 }
+.gitem.crafted {
+  background: rgba(160, 90, 10, 0.28);
+}
 .gitem.hl {
   outline: 1px solid #c8a86a;
   box-shadow: 0 0 8px rgba(200, 168, 106, 0.7);
@@ -546,8 +549,15 @@ body {
 .eqslot.set {
   background: rgba(30, 130, 30, 0.25);
 }
+.eqslot.crafted {
+  background: rgba(160, 90, 10, 0.25);
+}
 .eqslot.hl {
   outline: 1px solid #c8a86a;
+}
+/* worn but giving nothing: after the quality colours so it wins */
+.eqslot.unusable {
+  background: rgba(160, 20, 20, 0.35);
 }
 
 .goldline {

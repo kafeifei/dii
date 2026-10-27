@@ -9,7 +9,7 @@ import { generateWild } from '../world/wild';
 const GALLERY = typeof location !== 'undefined' && location.search.includes('gallery');
 import { Monster } from './monster';
 import { areaBoxes, spawnArea } from './spawn';
-import { ITEM_BASES } from '../data/items';
+import { ITEM_BASES, UNKNOWN_BASE } from '../data/items';
 import { createItem } from '../items/gen';
 import { DelayedBlast, GroundItem, Hammer, Projectile, WorldObject } from './objects';
 import { SHRINES } from '../data/shrines';
@@ -97,7 +97,7 @@ export class Level {
         this.monsters.push(m);
       });
       // and one of every item base lying on the floor
-      Object.keys(ITEM_BASES).forEach((id, i) => {
+      Object.keys(ITEM_BASES).filter((id) => id !== UNKNOWN_BASE).forEach((id, i) => {
         this.ground.push(new GroundItem({ x: 5.5 + (i % 40) * 1.3, z: 36 + Math.floor(i / 40) * 1.6 }, createItem(id)));
       });
     }

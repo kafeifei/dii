@@ -1,8 +1,8 @@
 import { ITEM_BASES, slotsFor, type EquipSlot } from '../data/items';
 import { GEMS, RUNE_BY_ID } from '../data/legendary';
-import { createItem, findRuneword, applyRuneword } from '../items/gen';
+import { createItem, applyRuneword } from '../items/gen';
 import type { Grid } from '../items/grid';
-import { baseOf, buyPrice, canSocket, displayName, sellPrice, socketId, type Item } from '../items/item';
+import { baseOf, buyPrice, canSocket, displayName, isIdentified, sellPrice, socketId, type Item } from '../items/item';
 import { h, type UIContext } from './common';
 import { CELL, itemIcon } from './icons';
 
@@ -11,11 +11,18 @@ import { CELL, itemIcon } from './icons';
 
 type GridKind = 'inv' | 'stash' | 'shop' | 'cube';
 
-/** runes and gems go into sockets */
+/** runes, gems and (identified) jewels go into sockets */
 const socketable = (it: Item) => {
   const t = baseOf(it).type;
-  return t === 'rune' || t === 'gem';
+  return t === 'rune' || t === 'gem' || (t === 'jewel' && isIdentified(it));
 };
+/** what the shop has as many of as you like: potions, scrolls and tomes (a copy is bought) */
+const restocks = (it: Item) => {
+  const t = baseOf(it).type;
+  return t === 'potion' || t === 'scroll' || t === 'tome';
+};
+/** identify scrolls and the tome of identify (Misc.txt spell 1) */
+const identifies = (it: Item) => it.baseId === 'isc' || it.baseId === 'ibk';
 const GEM_COLOR: Record<string, string> = Object.fromEntries(GEMS.map((g) => [g.id, ITEM_BASES[g.id].tint ?? '#fff']));
 
 // paper doll layout (x, y, w, h in px)
@@ -33,16 +40,49 @@ const DOLL: Record<EquipSlot, [number, number, number, number, string]> = {
 };
 
 // ─────────────────────────── item ops ───────────────────────────
-function socketInto(ui: UIContext, target: Item, rune: Item): boolean {
-  if (!canSocket(target) || !socketable(rune)) return false;
-  target.socketed.push(rune.baseId);
-  const rw = findRuneword(target);
-  if (rw) {
-    applyRuneword(target, rw);
+function socketInto(ui: UIContext, target: Item, filler: Item): boolean {
+  if (!canSocket(target) || !socketable(filler)) return false;
+  // a rune or gem goes in by its code, a jewel whole, with what it rolled
+  target.socketed = [...target.socketed, baseOf(filler).type === 'jewel' ? filler : filler.baseId];
+  if (target.socketed.length === target.sockets && applyRuneword(target)) {
     ui.message(`符文之语：${displayName(target)}！`, '#c8a86a', 4);
     ui.sfx.play('item.runeword');
   } else ui.sfx.play('item.socket');
   ui.game.player.markDirty();
+  return true;
+}
+
+/** the scroll or tome a right-click picked to identify with: the next item clicked */
+let identifier: Item | null = null;
+
+function startIdentify(ui: UIContext, scroll: Item) {
+  if (baseOf(scroll).type === 'tome' && (scroll.qty ?? 0) <= 0) {
+    ui.message('鉴定之书里没有卷轴了', '#ff6060', 1.5);
+    return;
+  }
+  identifier = scroll;
+  ui.message('点一件未辨识的物品鉴定它', '#c8a86a', 2);
+  ui.sfx.play('ui.click');
+}
+
+/** identify `target` with the picked scroll or tome: a scroll is used up, a tome loses one charge (D2 Misc.txt spell 1) */
+function identifyWith(ui: UIContext, target: Item): boolean {
+  const s = identifier;
+  identifier = null;
+  if (!s || s === target) return false;
+  if (isIdentified(target)) {
+    ui.message('这件物品不用鉴定', '#aaa', 1.2);
+    return true;
+  }
+  const p = ui.game.player;
+  if (baseOf(s).type === 'tome') s.qty = Math.max(0, (s.qty ?? 1) - 1);
+  else if (!p.inventory.remove(s) && !p.stash.remove(s) && !p.cube.remove(s)) return false;
+  target.identified = true;
+  target.name = displayName(target);
+  p.markDirty();
+  ui.message(`鉴定了：${displayName(target)}`, '#c8a86a', 2);
+  ui.sfx.play('item.socket');
+  ui.dirty = true;
   return true;
 }
 
@@ -73,7 +113,11 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
       openCube(ui);
       return;
     }
-    if (b.type === 'potion') {
+    if (identifies(it)) {
+      startIdentify(ui, it);
+      return;
+    }
+    if (b.type === 'potion' && ui.game.drinkable(it)) {
       grid.remove(it);
       ui.game.drink(it);
     } else if (kind === 'inv') {
@@ -83,9 +127,21 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
     return;
   }
   if (e.button !== 0) return;
+  if (identifier) {
+    if (under && kind !== 'shop' && identifyWith(ui, under.item)) return;
+    identifier = null;
+  }
 
   if (ui.cursorItem) {
     const c = ui.cursorItem;
+    // a scroll of identify into the tome: one more charge, up to its stack's most (D2)
+    if (under && c.baseId === 'isc' && under.item.baseId === 'ibk' && (under.item.qty ?? 0) < (baseOf(under.item).stack?.[1] ?? 20)) {
+      under.item.qty = (under.item.qty ?? 0) + 1;
+      ui.cursorItem = null;
+      ui.sfx.play('item.move');
+      ui.dirty = true;
+      return;
+    }
     if (kind === 'shop') {
       sell(ui, c);
       ui.cursorItem = null;
@@ -172,13 +228,13 @@ function buy(ui: UIContext, it: Item) {
     return;
   }
   const b = baseOf(it);
-  const copy = b.type === 'potion' ? createItem(b.id) : it;
+  const copy = restocks(it) ? createItem(b.id) : it;
   if (!(b.type === 'potion' && ui.game.beltInsert(copy)) && !p.inventory.add(copy)) {
     ui.message('背包已满', '#ff6060');
     return;
   }
   p.gold -= price;
-  if (b.type !== 'potion') ui.game.shop.remove(it);
+  if (!restocks(it)) ui.game.shop.remove(it);
   ui.sfx.play('ui.coins');
   ui.dirty = true;
 }
@@ -192,7 +248,7 @@ function sell(ui: UIContext, it: Item) {
   }
   const v = sellPrice(it);
   p.gold += v;
-  if (baseOf(it).type !== 'potion') ui.game.shop.add(it);
+  if (!restocks(it)) ui.game.shop.add(it);
   ui.message(`出售 ${displayName(it)}：+${v} 金币`, '#e8d890', 1.5);
   ui.sfx.play('ui.coins');
 }
@@ -202,6 +258,8 @@ function equipError(ui: UIContext, it: Item, slot: EquipSlot): string | null {
   const p = ui.game.player;
   const b = baseOf(it);
   if (!slotsFor(b.type).includes(slot)) return '无法装备在这里';
+  if (!isIdentified(it)) return '未辨识的物品不能装备';
+  if (b.noUse) return `不能使用：${b.noUse}`;
   if (!p.meetsReq(it)) return '不满足装备需求';
   if (slot === 'offhand') {
     const w = p.equipment.weapon;
@@ -268,6 +326,10 @@ function onEquipDown(ui: UIContext, slot: EquipSlot, e: PointerEvent) {
     }
     return;
   }
+  if (identifier) {
+    if (cur && identifyWith(ui, cur)) return;
+    identifier = null;
+  }
   if (ui.cursorItem) {
     const c = ui.cursorItem;
     if (cur && socketable(c) && canSocket(cur)) {
@@ -299,7 +361,8 @@ export function renderGrid(ui: UIContext, kind: GridKind, grid: Grid): HTMLEleme
   for (const pl of grid.items) {
     const it = pl.item;
     const b = baseOf(it);
-    const d = h('div', `gitem ${it.rarity}${b.type !== 'potion' && b.type !== 'cube' && !socketable(it) && kind !== 'shop' && !p.meetsReq(it) ? ' unusable' : ''}`);
+    const wearable = slotsFor(b.type).length > 0 || b.type === 'charm';
+    const d = h('div', `gitem ${it.rarity}${wearable && kind !== 'shop' && !p.meetsReq(it) ? ' unusable' : ''}`);
     d.style.left = `${pl.x * CELL + 1}px`;
     d.style.top = `${pl.y * CELL + 1}px`;
     d.style.width = `${b.w * CELL}px`;
@@ -315,8 +378,8 @@ export function renderGrid(ui: UIContext, kind: GridKind, grid: Grid): HTMLEleme
         const f = it.socketed[i];
         const id = f === undefined ? undefined : socketId(f);
         const r = id ? RUNE_BY_ID[id] : null;
-        // a rune or gem this build doesn't know (a later build's) still fills its socket: a question mark
-        const sk = h('div', 'sock', r ? r.letter.slice(0, 1) : typeof f === 'string' && !GEM_COLOR[f] ? '?' : '');
+        // a rune shows its number; one or a gem this build doesn't know (a later build's) still fills its socket: a question mark
+        const sk = h('div', 'sock', r ? r.glyph : typeof f === 'string' && !GEM_COLOR[f] ? '?' : '');
         const tint = id && (GEM_COLOR[id] ?? (typeof f === 'object' ? (ITEM_BASES[id]?.tint ?? '#8a8278') : undefined));
         // a gem in its colour, a jewel in its base's
         if (tint) sk.style.background = `radial-gradient(circle at 40% 35%, #fff 0, ${tint} 35%, #000 100%)`;
@@ -345,7 +408,8 @@ export function renderInventory(ui: UIContext, R: HTMLElement): void {
   for (const slot of Object.keys(DOLL) as EquipSlot[]) {
     const [x, y, w, hh, label] = DOLL[slot];
     const it = p.equipment[slot];
-    const s = h('div', `eqslot ${it ? it.rarity : ''}`);
+    // red while it gives nothing: worn, but the hero no longer meets its requirements (D2's unusable flag)
+    const s = h('div', `eqslot ${it ? it.rarity : ''}${it && p.unusable(it) ? ' unusable' : ''}`);
     s.style.left = `${x}px`;
     s.style.top = `${y}px`;
     s.style.width = `${w}px`;

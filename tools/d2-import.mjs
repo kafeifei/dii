@@ -10,17 +10,19 @@
 // Our names for the proper nouns are in tools/d2-names (see tools/d2/names.mjs).
 //
 // Two outputs:
-// - src/data/d2/*.ts, what the game reads today: weapons, magic affixes, runes, gems, runewords,
-//   Horadric Cube recipes, experience and the rune/gem treasure classes. Only melee and caster
-//   weapons are taken (no bows, crossbows, throwing weapons or javelins, and no Amazon or Assassin
-//   class weapons): the game has no ranged weapon attack. Kept as it is until the game moves over.
+// - src/data/d2/*.ts, the first import: weapons, magic affixes, runes, gems, runewords, Horadric
+//   Cube recipes, experience and the rune/gem treasure classes (melee and caster weapons only).
+//   The game's items are on src/data/d2x now; these stay for what still reads them: the cube's
+//   recipes, experience and the Good classes, and old saves (src/items/legacy.ts: the weapon ids,
+//   affix strings and runeword ids items were made with then).
 // - src/data/d2x/*.ts, the full tables in the content scope (tools/d2/scope.mjs), one stage per
 //   module in tools/d2/: items, then characters (classes, difficulties, experience, quality
 //   ratios, NPC prices, gambling, hirelings), then world (Act 1's areas, monsters, the classes'
 //   pets, superuniques) and treasure (every treasure class Act 1 drops from), checked against
 //   d2data's precalculated drop rates in tools/d2/validation.md, then skills (the two classes'
 //   trees, Act 1's monster, modifier and hireling skills, the names of every other skill items
-//   carry or roll, their missiles and states, the calc tables). The game does not read them yet.
+//   carry or roll, their missiles and states, the calc tables), then the item tooltips' stat
+//   descriptions and strings (tools/d2/statdesc.mjs).
 import fs from 'node:fs';
 import path from 'node:path';
 import { buildCharacters } from './d2/characters.mjs';
@@ -28,6 +30,7 @@ import { buildItems } from './d2/items.mjs';
 import { DATA, ROOT, STR, load, rows } from './d2/load.mjs';
 import { writeReport } from './d2/names.mjs';
 import { buildSkills } from './d2/skills.mjs';
+import { buildStatDesc } from './d2/statdesc.mjs';
 import { buildTreasure } from './d2/treasure.mjs';
 import { writeValidation } from './d2/validate.mjs';
 import { buildWorld } from './d2/world.mjs';
@@ -341,5 +344,6 @@ const { hirelingSkills } = await buildCharacters({ bases });
 const world = await buildWorld({ bases });
 const treasure = await buildTreasure({ bases, ...world });
 await buildSkills({ itemSkills, staffMods, hirelingSkills, ...world, bases });
+await buildStatDesc();
 await writeValidation({ ...treasure, bases, baseNames });
 writeReport();

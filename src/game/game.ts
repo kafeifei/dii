@@ -2,12 +2,12 @@ import type { Input } from '../core/input';
 import { chance, dist, rand, randInt, type P2 } from '../core/math';
 import type { Sfx } from '../audio/sfx';
 import { CLASSES, type PlayerClass } from '../data/classes';
-import { ITEM_BASES } from '../data/items';
 import { SKILL_BY_ID } from '../data/skills';
 import { D2_TO_GAME } from '../data/d2/skillmap';
 import { Grid } from '../items/grid';
-import { createItem, rollEquipment, rollMonsterDrops, type Drop } from '../items/gen';
-import { baseOf, isUnknown, type Item } from '../items/item';
+import { createItem, isGold, makeGold, newGameDrops, potionsFor, rollEquipment, rollMonsterDrops, type Drop } from '../items/gen';
+import { baseOf, displayName, isUnknown, type Item } from '../items/item';
+import { charStats, potionHeal } from './d2/stats';
 import { emptyPacket } from './actor';
 import { blastDamage, updateMonster } from './ai';
 import { applyDamage, monsterStrike } from './combat';
@@ -169,6 +169,7 @@ export class Game {
     this.west = null;
     this.area = null;
     markInGame(true);
+    newGameDrops();
     this.enterLevel(0, 'start');
   }
 
@@ -186,6 +187,7 @@ export class Game {
     this.area = null;
     this.toldUnknown = false;
     markInGame(true);
+    newGameDrops();
     // floors are regenerated; you arrive at the entrance of the floor you were on
     this.enterLevel(s.depth, 'start');
     // said once: the save won't be written this time
@@ -384,11 +386,13 @@ export class Game {
   refreshShop() {
     this.shop = new Grid(10, 10);
     const lvl = Math.max(1, this.player.level);
-    const potions = ['hp1', 'hp2', 'hp3', 'hp4', 'mp1', 'mp2', 'mp3', 'mp4'].filter((id) => ITEM_BASES[id].qlvl <= lvl + 4);
-    for (const id of potions) this.shop.add(createItem(id));
+    const potions = [...potionsFor(lvl + 4, 'hp'), ...potionsFor(lvl + 4, 'mp')];
+    // identify scrolls and the tome (D2: Akara and Cain's trade; here the one merchant's for now)
+    for (const id of [...potions, 'isc', 'ibk']) this.shop.add(createItem(id));
     const count = randInt(9, 14);
     for (let i = 0; i < count; i++) {
-      const it = rollEquipment(Math.min(40, lvl + randInt(0, 3)), { mf: 0 });
+      // D2's vendors sell their stock identified
+      const it = rollEquipment(Math.min(40, lvl + randInt(0, 3)), { mf: 0, identified: true });
       if (it.rarity === 'unique' || it.rarity === 'set') continue;
       this.shop.add(it);
     }
@@ -969,6 +973,8 @@ export class Game {
     if (diff > 5) xp *= [0.81, 0.62, 0.43, 0.24][diff - 6] ?? 0.05;
     else if (diff < -5) xp *= p.level / m.level;
     xp *= 1 + (p.shrine ? (SHRINE_BY_ID[p.shrine.id].xpPct ?? 0) : 0) / 100;
+    // "+X% experience gained" (ItemStatCost item_addexperience: D2Game adds it to each kill's experience)
+    xp *= 1 + (p.stats.bag.xpPct ?? 0) / 100;
     const gained = p.gainXp(Math.floor(xp * debugOpts.xp));
     if (gained > 0) {
       this.onProc('procLevelUp', null);
@@ -1031,7 +1037,7 @@ export class Game {
   private rollLoot(mlvl: number, quality: number): Drop[] {
     const s = this.player.stats;
     const drops: Drop[] = [];
-    for (let i = 0; i < debugOpts.loot; i++) drops.push(...rollMonsterDrops(mlvl, quality, s.mf, s.gf));
+    for (let i = 0; i < debugOpts.loot; i++) drops.push(...rollMonsterDrops(mlvl, quality, s.mf, s.gf, this.player.difficulty));
     return drops;
   }
 
@@ -1075,8 +1081,9 @@ export class Game {
           break;
         }
       }
-      if (d.kind === 'gold') {
-        this.level.ground.push(new GroundItem(spot, null, d.amount, pos));
+      if (isGold(d.item)) {
+        // gold lies as a pile, picked up into the purse
+        this.level.ground.push(new GroundItem(spot, null, d.item.qty ?? 1, pos));
       } else {
         this.level.ground.push(new GroundItem(spot, d.item, 0, pos));
         const it = d.item;
@@ -1145,15 +1152,26 @@ export class Game {
     }
   }
 
+  /** a potion this game has an effect for: healing, mana, rejuvenation (not stamina, antidote, thawing yet) */
+  drinkable(item: Item): boolean {
+    const b = baseOf(item);
+    return b.type === 'potion' && !!(b.heal || b.manaHeal || b.rejuv);
+  }
+
   drink(item: Item) {
     const p = this.player;
     const b = baseOf(item);
+    // D2's potions: their Misc.txt amount over their length, by the class's share (CharStats
+    // HealthPotionPercent / ManaPotionPercent: game/d2/stats.ts potionHeal)
+    const cs = charStats(p.cls);
     if (b.heal) {
-      p.healQueue.push({ perSec: b.heal / 3, left: 3 });
+      const sec = b.healSec ?? 3;
+      p.healQueue.push({ perSec: potionHeal(cs, 'life', b.heal) / sec, left: sec });
       this.fx.burst('potion_hp', p.pos);
     }
     if (b.manaHeal) {
-      p.manaQueue.push({ perSec: b.manaHeal / 3, left: 3 });
+      const sec = b.manaSec ?? 3;
+      p.manaQueue.push({ perSec: potionHeal(cs, 'mana', b.manaHeal) / sec, left: sec });
       this.fx.burst('potion_mp', p.pos);
     }
     if (b.rejuv) {
@@ -1169,7 +1187,7 @@ export class Game {
     const p = this.player;
     if (p.dead) return;
     const stack = p.belt[col];
-    if (!stack || !stack.length) return;
+    if (!stack || !stack.length || !this.drinkable(stack[0])) return;
     const item = stack.shift()!;
     this.drink(item);
     this.hooks.inventoryChanged();
@@ -1185,12 +1203,13 @@ export class Game {
         this.fx.burst('chest', obj.pos);
         const lvl = Math.max(1, this.level.floor * 2);
         const drops = this.rollLoot(lvl, 1);
-        drops.push({ kind: 'gold', amount: randInt(lvl * 5, lvl * 15) });
+        drops.push({ kind: 'item', item: makeGold(randInt(lvl * 5, lvl * 15)) });
         // the Horadric Cube waits in the first chest opened from floor 4 down (D2: the Halls of the Dead)
         if (this.level.floor >= 4 && !p.cubeFound) {
           p.cubeFound = true;
-          drops.push({ kind: 'item', item: createItem('cube') });
-          this.hooks.message('你找到了赫拉迪姆魔盒！', '#c8a86a', 4);
+          const box = createItem('box');
+          drops.push({ kind: 'item', item: box });
+          this.hooks.message(`你找到了${displayName(box)}！`, '#c8a86a', 4);
         }
         this.spawnDrops(obj.pos, drops);
         break;

@@ -39,13 +39,15 @@ export class Tooltip {
     if (ui.cursorItem && holder.dataset.src !== 'shop') {
       if (baseOf(item).type === 'cube') return this.show([{ text: '放进魔盒', color: '#c8a86a' }], e.clientX, e.clientY);
       // still show the target's tooltip when socketing
-      if (!(baseOf(ui.cursorItem).type === 'rune' && canSocket(item))) return this.hide();
+      const t = baseOf(ui.cursorItem).type;
+      if (!((t === 'rune' || t === 'gem' || t === 'jewel') && canSocket(item))) return this.hide();
     }
     const p = ui.game.player;
     let price: string | undefined;
     if (holder.dataset.src === 'shop') price = `购买价格：${buyPrice(item)} 金币`;
     else if (ui.left === 'shop' && (holder.dataset.src === 'inv')) price = `出售价格：${sellPrice(item)} 金币（${ui.touch ? '拿起后放进商店出售' : 'Ctrl+点击出售'}）`;
-    this.show(tooltip(item, { level: p.level, str: p.stats.str, dex: p.stats.dex, cls: p.cls }, price), e.clientX, e.clientY);
+    const worn = Object.values(p.equipment).filter((x) => !!x);
+    this.show(tooltip(item, { level: p.level, str: p.stats.str, dex: p.stats.dex, cls: p.cls, worn }, price), e.clientX, e.clientY);
   }
 
   show(lines: TooltipLine[], x: number, y: number) {

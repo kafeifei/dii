@@ -1,5 +1,5 @@
-// The item the Diablo II item system (A2) builds: Item plus the save-v4 fields. Nothing outside
-// src/items/d2 uses it yet; the integration branch moves Item itself onto these fields.
+// The item the Diablo II item system (A2) builds: the game's Item (src/items/item.ts), which carries
+// these save-v4 fields, as these modules see it, its quality and identification set.
 import type { D2Prop, D2xArmor, D2xMisc, D2xWeapon } from '../../data/d2x/types';
 import type { Item } from '../item';
 

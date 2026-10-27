@@ -1,4 +1,4 @@
-import { ITEM_BASES, staffGem } from '../data/items';
+import { ITEM_BASES, lookOf, staffGem } from '../data/items';
 import { GEMS as GEM_DEFS, RUNE_BY_ID } from '../data/legendary';
 import { SKILL_BY_ID } from '../data/skills';
 import type { Item } from '../items/item';
@@ -83,7 +83,7 @@ function drawStaff(ctx: CanvasRenderingContext2D, w: number, h: number, kind: st
   ctx.moveTo(cx - w * 0.06, h * 0.97);
   ctx.quadraticCurveTo(cx + w * 0.12, h * 0.55, cx, h * 0.16);
   ctx.stroke();
-  ctx.strokeStyle = ITEM_BASES[kind]?.tiers?.[0] === 'gnarledstaff' ? '#6a5030' : '#7a5230';
+  ctx.strokeStyle = lookOf(ITEM_BASES[kind]?.tiers?.[0]) === 'gnarledstaff' ? '#6a5030' : '#7a5230';
   ctx.lineWidth = Math.max(2, w * 0.09);
   ctx.stroke();
   const gem = staffGem(kind);
@@ -579,6 +579,8 @@ export function itemIcon(item: Item): string {
   switch (b.type) {
     case 'sword':
     case 'dagger':
+    case 'claw':
+    case 'throwing':
       drawSword(ctx, W, H, b.w > 1 || !!b.twoHanded, metal);
       break;
     case 'axe':
@@ -588,14 +590,19 @@ export function itemIcon(item: Item): string {
       drawMace(ctx, W, H, 'club', metal);
       break;
     case 'mace':
-      drawMace(ctx, W, H, b.tiers?.[0] ?? b.id, metal);
+      drawMace(ctx, W, H, lookOf(b.tiers?.[0] ?? b.id), metal);
       break;
     case 'hammer':
       drawMace(ctx, W, H, 'warhammer', metal);
       break;
     case 'spear':
     case 'polearm':
-      drawPole(ctx, W, H, b.type, metal);
+    case 'javelin':
+      drawPole(ctx, W, H, b.type === 'polearm' ? 'polearm' : 'spear', metal);
+      break;
+    case 'bow':
+    case 'crossbow':
+      drawStaff(ctx, W, H, '');
       break;
     case 'wand':
     case 'scepter':
@@ -616,25 +623,31 @@ export function itemIcon(item: Item): string {
       drawStaff(ctx, W, H, b.id);
       break;
     case 'shield':
-      drawShield(ctx, W, H, b.id, item.rarity === 'unique' ? '#7a5a20' : item.rarity === 'set' ? '#2a5a2a' : '#6a3a1e');
+      drawShield(ctx, W, H, lookOf(b.id), item.rarity === 'unique' ? '#7a5a20' : item.rarity === 'set' ? '#2a5a2a' : '#6a3a1e');
       break;
     case 'helm':
-      drawHelm(ctx, W, H, b.id);
+      drawHelm(ctx, W, H, lookOf(b.id));
       break;
     case 'armor':
-      drawArmor(ctx, W, H, b.id);
+      drawArmor(ctx, W, H, lookOf(b.id));
       break;
     case 'gloves':
-      drawGloves(ctx, W, H, b.id);
+      drawGloves(ctx, W, H, lookOf(b.id));
       break;
     case 'boots':
-      drawBoots(ctx, W, H, b.id);
+      drawBoots(ctx, W, H, lookOf(b.id));
       break;
     case 'belt':
       drawBelt(ctx, W, H);
       break;
     case 'ring':
       drawRing(ctx, W, H, gem);
+      break;
+    case 'charm':
+      drawAmulet(ctx, W, H, gem);
+      break;
+    case 'jewel':
+      drawGem(ctx, W, H, gem, 2, false);
       break;
     case 'amulet':
       drawAmulet(ctx, W, H, gem);
@@ -644,12 +657,16 @@ export function itemIcon(item: Item): string {
       break;
     case 'rune': {
       const r = RUNE_BY_ID[b.id];
-      drawRune(ctx, W, H, r?.letter ?? '?', '#ffa31a');
+      drawRune(ctx, W, H, r?.glyph ?? '?', '#ffa31a');
       break;
     }
     // an item this build doesn't know: a plain stone with a question mark
     case 'unknown':
       drawRune(ctx, W, H, '?', b.tint ?? '#8a8278');
+      break;
+    // scrolls, tomes, keys and the rest: a stone marked with the first character of its name
+    default:
+      drawRune(ctx, W, H, b.name.slice(0, 1), '#c8b890');
       break;
   }
   const url = c.toDataURL();
