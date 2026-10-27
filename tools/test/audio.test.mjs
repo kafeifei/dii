@@ -3,7 +3,7 @@
 // budget, oldest first, sparing what's pinned, and decodes each file once; variants don't repeat;
 // an effect's leading silence (an AAC priming left in) is skipped;
 // every area kind has its music; walking from area to area, an ambience or a music starts only
-// where it changes; under the sky, the night has its own loops from dusk to dawn, the day's
+// where it changes, and a track still fading out is brought back rather than begun anew; under the sky, the night has its own loops from dusk to dawn, the day's
 // standing in for those not recorded; a Karplus–Strong string is in tune, decays and is the same
 // for the same seed; the composer writes the same piece for the same area, in its mode, sparse but
 // never silent for long; and the reverbs are short. tools/scenarios/sfx.mjs and audio.mjs play the
@@ -153,6 +153,34 @@ export default async (load) => {
   const looped = { 'amb.town': { files: ['town.m4a'] }, 'amb.wild': { files: ['wild.m4a'] } };
   const want = 'music camp, amb amb.town, music wild, amb amb.wild, music denofevil, amb dungeon, music camp, amb amb.town, music title, amb none';
   check(walk(looped) === want, `with the camp's and the wilderness's loops, walking the areas started: ${walk(looped)}; want ${want}`);
+
+  // to and fro over the camp's seam with recorded tracks: back before the last area's track has
+  // faded out, that one is brought back (Track.revive) and not begun anew, Blood Moor's playing on
+  // into Cold Plains; one that has let go of its element (revive false), or can't be brought back
+  // (the composed music), is begun anew
+  const seam = (revive) => {
+    const sfx = new Sfx();
+    const log = [];
+    sfx.files = { 'music.town': { files: ['t.m4a'] }, 'music.wild': { files: ['w.m4a'] } };
+    sfx.ctx = {};
+    // streams can play (Players): soundOf names the recorded tracks
+    sfx.players = {};
+    let n = 0;
+    sfx.track = (area) => {
+      const name = `${areaKey(area)}${++n}`;
+      log.push(`new ${name}`);
+      return { stop: () => log.push(`stop ${name}`), revive: revive && (() => (log.push(`back ${name}`), revive())) };
+    };
+    sfx.ambience = () => ({ stop() {} });
+    for (const a of [camp, moor, camp, moor, plains, camp]) sfx.enterArea(a);
+    return log.join(', ');
+  };
+  const SEAM = {
+    'brought back': [() => true, 'new camp1, stop camp1, new wild2, stop wild2, back camp1, stop camp1, back wild2, stop wild2, back camp1'],
+    'let go': [() => false, 'new camp1, stop camp1, new wild2, stop wild2, back camp1, new camp3, stop camp3, back wild2, new wild4, stop wild4, back camp3, new camp5'],
+    composed: [null, 'new camp1, stop camp1, new wild2, stop wild2, new camp3, stop camp3, new wild4, stop wild4, new camp5'],
+  };
+  for (const [what, [revive, wantSeam]] of Object.entries(SEAM)) check(seam(revive) === wantSeam, `to and fro over the seam, ${what}: ${seam(revive)}; want ${wantSeam}`);
 
   // the night: the sky's dusk and dawn half over; past dusk the camp and the wilderness play their
   // night's loops, slowly crossfaded where the hero is; with no night recorded the day's play on;

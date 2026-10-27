@@ -122,14 +122,15 @@ export function dcBlock(chs) {
 /**
  * Cut the silence off both ends: before the first sample `lead` dB under the peak and after the last
  * one `tail` dB under it (a tail is let ring longer than an attack is let in), neither threshold
- * lower than `floor` dBFS, keeping `pre` and `post` seconds round them. Null if it's all silence.
+ * lower than `floor` dBFS, keeping `pre` and `post` seconds round them; `lead` null keeps the
+ * start as it is (music: only its tail is cut). Null if it's all silence.
  */
 export function trimSilence(chs, { lead = -40, tail = -50, floor = -70, pre = 0.005, post = 0.05 } = {}) {
   const n = chs[0].length;
   const pk = peak(chs);
   if (pk === 0) return null;
   const at = (i) => chs.reduce((m, c) => Math.max(m, Math.abs(c[i])), 0);
-  const a0 = Math.max(pk * lin(lead), lin(floor));
+  const a0 = lead === null ? 0 : Math.max(pk * lin(lead), lin(floor));
   const b0 = Math.max(pk * lin(tail), lin(floor));
   let a = 0;
   while (a < n && at(a) < a0) a++;
@@ -226,6 +227,47 @@ export function normalize(chs, { lufs, how, ceiling = -1, maxLimit = 6, region }
     out = limit(scale(chs, lin(g)), lin(ceiling));
   }
   return result(out, g, Math.max(0, pk + g - ceiling));
+}
+
+/**
+ * A slow hand on the fader, for music heard under everything else: wherever its short-term loudness
+ * (3 s, BS.1770) passes its integrated loudness by more than `over` LU, it's brought down by
+ * 1 - 1/`ratio` of the excess, the cut eased in and out over `ease` seconds so nothing pumps. The
+ * quiet passages are left as they are; only the loudest swells come down. Returns the PCM and the
+ * most it cut, in dB.
+ */
+export function ride(chs, { over = 3, ratio = 3, ease = 2 } = {}) {
+  const n = chs[0].length;
+  const hop = RATE / 10;
+  const half = (3 * RATE) / 2;
+  if (n < 2 * half) return { chs, cut: 0 };
+  const s = powerSums(chs);
+  const mean = (a, b) => (s[b] - s[a]) / (b - a);
+  const integrated = loudness(chs, 'integrated');
+  // the cut wanted at each hop, from the 3 s around it
+  const pts = Math.floor(n / hop) + 1;
+  const want = new Float64Array(pts);
+  for (let k = 0; k < pts; k++) {
+    const c = Math.min(Math.max(k * hop, half), n - half);
+    const excess = lufsOf(mean(c - half, c + half)) - integrated - over;
+    want[k] = excess > 0 ? excess * (1 - 1 / ratio) : 0;
+  }
+  // held for the ease on either side, then averaged over it: down before a swell, back up after it
+  const r = Math.max(1, Math.round((ease * RATE) / hop));
+  const around = (a, k) => a.subarray(Math.max(0, k - r), Math.min(pts, k + r + 1));
+  const held = want.map((_, k) => Math.max(...around(want, k)));
+  const cut = held.map((_, k) => avg(Array.from(around(held, k))));
+  const out = chs.map((c) => {
+    const o = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const f = i / hop;
+      const k = Math.min(pts - 2, Math.floor(f));
+      const db = cut[k] + (cut[k + 1] - cut[k]) * (f - k);
+      o[i] = c[i] * lin(-db);
+    }
+    return o;
+  });
+  return { chs: out, cut: Math.max(...cut) };
 }
 
 /**

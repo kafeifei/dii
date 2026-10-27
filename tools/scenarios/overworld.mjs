@@ -5,7 +5,8 @@
 // camp > Blood Moor > Cold Plains with no level rebuilt. Through each seam's opening the air turns
 // from the one area's to the other's (src/render/arealooks.ts: half each at the opening, all one
 // area past AIR_SEAM), the ground wears the three areas' looks, the minimap and the music the hero's
-// area names follow, and stepping to and fro over a seam doesn't say the area's name again
+// area names follow (the sound started with a click: its recorded track streaming, or with none
+// shipped, its composed music), and stepping to and fro over a seam doesn't say the area's name again
 // (src/ui/banner.ts). Then 30 s of sim by the camp's edge, a pack
 // of Blood Moor's monsters woken just outside it: 10 s with the hero out there, 20 s with them just
 // inside; no monster may ever stand on a camp tile. Page and console errors fail the run. Shots:
@@ -25,6 +26,8 @@ const PACK = 25;
 const AIR_SEAM = 12;
 /** the music each area names (src/audio/sounds.ts, by levels.json SoundEnv) */
 const MUSIC = { 1: 'music.town', 2: 'music.wild', 3: 'music.wild' };
+/** and the music composed in its place where it has no recording (src/audio/score.ts) */
+const SCORE = { 1: 'town', 2: 'outdoor', 3: 'outdoor' };
 
 export default async function (page, shot, log) {
   const t0 = Date.now();
@@ -107,6 +110,9 @@ export default async function (page, shot, log) {
       facts.push(`seed ${s.seed}, ${s.size}, ${s.monsters} monsters`);
       await frames();
       await shot('camp-start');
+      // the sound on, as a player's first click starts it: the music then follows the hero
+      await page.mouse.click(640, 400);
+      await until(() => game.sfx.ctx?.state === 'running' && game.sfx.music, null, 'the sound to start');
     },
 
     async walk() {
@@ -228,6 +234,9 @@ export default async function (page, shot, log) {
             shares: renderer.airShares.map((x) => ({ area: x.area, w: x.w })),
             mist: renderer.atmos.mist.opacity,
             music: game.sfx.playing.music,
+            // what plays: the stream's file, or the composed music's kind
+            track: game.sfx.music?.el?.getAttribute('src')?.split('/').pop() ?? game.sfx.music?.kind ?? null,
+            files: game.sfx.files[game.sfx.playing.music]?.files ?? null,
             sfx: game.sfx.area === game.area,
           }));
           const share = (a) => r.shares.find((x) => x.area === a)?.w ?? 0;
@@ -241,6 +250,8 @@ export default async function (page, shot, log) {
           }
           expect(r.minimap === r.label, `${what} ${k} tiles on the minimap says ${r.minimap}, not ${r.label}`);
           expect(r.sfx && r.music === MUSIC[r.area], `${what} ${k} tiles on the sound names ${r.music} for area ${r.area} (Sfx's area is the hero's: ${r.sfx})`);
+          const plays = r.files ? r.files.includes(r.track) : r.track === SCORE[r.area];
+          expect(plays, `${what} ${k} tiles on ${r.track ?? 'nothing'} plays, not ${r.files ? r.files.join(' or ') : `the ${SCORE[r.area]} music composed`}`);
         }
       }
       expect(mist[1] < mist[2] && mist[2] < mist[3], `the mist camp ${mist[1]}, moor ${mist[2]}, plains ${mist[3]}`);

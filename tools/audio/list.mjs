@@ -1,8 +1,10 @@
-// What tools/ai-audio.mjs asks ElevenLabs for. Each entry is one id the game plays (src/audio/sounds.ts):
-//   id        a sound id ('combat.swing'), an area's ambience ('amb.town'), or a voice line
-//             ('voice.<speaker>.<line>')
+// What tools/ai-audio.mjs asks ElevenLabs for, and the music it ships. Each entry is one id the game
+// plays (src/audio/sounds.ts):
+//   id        a sound id ('combat.swing'), an area's ambience ('amb.town') or music ('music.town'), or
+//             a voice line ('voice.<speaker>.<line>')
 //   kind      'sfx' a one-shot effect, mono; 'loop' an ambience, stereo, made seamless; 'voice' a line
-//             spoken by a speaker below, mono
+//             spoken by a speaker below, mono; 'music' an area's track, stereo, made with ACE-Step 1.5
+//             on a GPU machine (tools/audio/acestep.py), not by ElevenLabs: it costs no credits
 //   prompt    what the effect or ambience sounds like (sfx, loop), in English: ElevenLabs follows that best
 //   text      the line, as spoken (voice); every character counts a credit
 //   duration  seconds asked for (sfx, loop; 0.5 to 30, default 1 and 20), 'auto' to let the model pick:
@@ -14,10 +16,32 @@
 //   gain      times its level in the game (src/audio/files.ts): every take is normalized alike, and
 //             this sets it in the mix where the synthesized sound it replaces sat. tools/scenarios/
 //             sfx.mjs renders both and fails past 3 dB apart, naming the gain that would match
-//   lufs      its loudness instead of the kind's (sfx -16 short-term, voice -18, loop -24 integrated)
+//   lufs      its loudness instead of the kind's (sfx -16 short-term, voice -18, loop -24 and music
+//             -18 integrated)
 //   model     pin a model instead of the tool's choice
 // Changing what an entry asks for (prompt, text, duration, influence, voice, model) makes its takes
 // again, at a cost; gain only rewrites files.ts, lufs only processes the kept raw output again.
+//
+// A music entry is the job ACE-Step was given, in the list's terms, and the takes of it that ship:
+//   prompt    ACE-Step's caption: the style, the instruments, the mood, in English, under 512 characters
+//   bpm       its tempo, 30 to 300
+//   key       its key, a note and major or minor ('D minor', 'F# major')
+//   time      beats in a bar: 2, 3, 4 or 6
+//   duration  seconds asked for, 10 to 600 (the takes stop a few seconds short, and are trimmed)
+//   model     the DiT model ('acestep-v15-turbo', 'acestep-v15-xl-sft')
+//   lm        the language model that plans the piece ('acestep-5Hz-lm-1.7B')
+//   steps, guidance, shift
+//             the sampler, where it's not the model's (tools/audio/music.mjs sampler(): turbo 8 steps,
+//             guidance 1, that is none; the others 64 and 7; shift 3)
+//   takes     the takes that ship, in the order Stream plays them (one loops): each its seed, and any
+//             of the fields above where it differs from the entry's. Take n is public/audio/<id>.<n>.m4a,
+//             processed from the raw take under audio-src/acestep/ whose sidecar records the same
+//             caption, bpm, key, time, duration, seed, model, lm and sampler, whatever it's called
+//   gain      as above, where the music composed in its place sat (src/audio/score.ts): tools/scenarios/
+//             sfx.mjs fails past 1.5 dB apart, and unless it's under the ambience it plays over and
+//             well under the fighting, its swells too (UNDER_FIGHT_DB), naming the gain that would be
+// Swapping a take is editing it here and putting its raw take and sidecar under audio-src/acestep/
+// (the run reports any it can't find, to generate with tools/audio/acestep.py; --jobs writes them).
 
 import fs from 'node:fs';
 
@@ -149,6 +173,68 @@ export default [
     prompt: 'wild moor at night ambience: a cold wind over open grassland, crickets chirping steadily, grass rustling, no birds, no voices, no music',
     duration: 16,
     gain: 0.36,
+  },
+
+  // ---- music: each sound environment's track (src/audio/sounds.ts ENVIRONS), played as Diablo II
+  // plays its songs (d2data sounds.json music_town_1, music_wilderness, music_caves: Stream 1, Loop 1,
+  // Is2D 1): streamed in stereo, looped, never placed in the world. The takes were picked by an LM
+  // listening back to each and by their measured features. Each gain puts the track where the music
+  // composed in its place sat (some -45 LUFS through the music bus: tools/scenarios/sfx.mjs), the
+  // camp's a little under it: its guitar's swells came within 1.3 dB of the fighting
+  {
+    id: 'music.town',
+    kind: 'music',
+    prompt:
+      'dark medieval fantasy village theme for a video game, slow melancholic solo acoustic guitar, fingerpicked nylon strings with a phrygian flamenco feel, soft low ambient pads, distant hand drum, sparse and lonely, lots of space and reverb, weary refuge in a hostile land, instrumental',
+    bpm: 66,
+    key: 'D minor',
+    time: 3,
+    duration: 150,
+    model: 'acestep-v15-xl-sft',
+    lm: 'acestep-5Hz-lm-1.7B',
+    takes: [
+      // a nylon guitar's slow fingerpicking in E minor, a cello joining it midway, from a job of its own
+      {
+        seed: 111,
+        prompt:
+          'solo acoustic guitar for a dark fantasy video game camp, slow rubato fingerpicking on steel strings, phrygian and flamenco touches, long pauses between phrases, a faint low drone underneath, wind-swept and weary, melancholic, intimate, room reverb, no drums, instrumental',
+        bpm: 60,
+        key: 'E minor',
+      },
+      // solo nylon guitar in D minor, Spanish classical arpeggios: the two play in turn
+      { seed: 101 },
+    ],
+    gain: 0.12,
+  },
+  {
+    id: 'music.wild',
+    kind: 'music',
+    // dark ambient: long cello and viola pads, vast and uneasy, hardly a beat
+    prompt:
+      'dark ambient fantasy wilderness soundtrack for a video game, ominous low string drones, eerie wordless distant choir pads, sparse deep tribal drum hits, faint plucked guitar notes, desolate moor at dusk, slow building tension, cinematic, haunting reverb, instrumental',
+    bpm: 60,
+    key: 'A minor',
+    time: 4,
+    duration: 150,
+    model: 'acestep-v15-xl-sft',
+    lm: 'acestep-5Hz-lm-1.7B',
+    takes: [{ seed: 201 }],
+    gain: 0.12,
+  },
+  {
+    id: 'music.dungeon',
+    kind: 'music',
+    // a sub-bass drone and choir-like pads in a cavern
+    prompt:
+      'dark ambient cave soundtrack for a video game, deep rumbling drones, metallic scrapes and resonant clangs, low dissonant strings, distant echoing percussion, unsettling and claustrophobic underground horror ambience, sparse, heavy reverb, instrumental',
+    bpm: 60,
+    key: 'C minor',
+    time: 4,
+    duration: 150,
+    model: 'acestep-v15-turbo',
+    lm: 'acestep-5Hz-lm-1.7B',
+    takes: [{ seed: 302 }],
+    gain: 0.11,
   },
 
   // ---- the heroes' voices

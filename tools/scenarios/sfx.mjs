@@ -12,12 +12,13 @@
 // little off pitch, its variants taking turns, its leading silence (an AAC priming left in)
 // skipped, synthesized until it's decoded and for good if its file is missing; the decoded buffers
 // kept to a budget; an ambience loop played round its loop points with no gap, the bed when it's
-// missing; a music track streamed through an <audio> element and crossfaded to the next area's
-// composed music, which also stands in for a missing track; a line spoken at its own pitch once
+// missing; a music track streamed through an <audio> element, faded in to its gain and crossfaded
+// to the next area's composed music, which also stands in for a missing track; a line spoken at its own pitch once
 // it's decoded, never over another, and not at all without a recording. And
 // the composed music: the same samples for the same area, another piece for another, heard but
 // quiet. Last, the game's own recordings against the synthesized sounds they replace, level for
-// level, and the hero's lines against its loudest cues (shippedLevels). The last line is
+// level, its music against the music composed in its place and under the ambience and the fighting
+// it's heard with, and the hero's lines against its loudest cues (shippedLevels). The last line is
 // "SFX OK <summary>" or "SFX FAIL <reasons>".
 
 /** a WAV of `secs` seconds, 16-bit, the same in both channels */
@@ -107,10 +108,15 @@ export default async function (page, shot, log) {
   if (!before.same) fails.push(`Sfx's area is ${before.area}, not the hero's`);
   await page.mouse.click(640, 400);
   await page.waitForTimeout(300);
-  const after = await ev(() => ({ ctx: window.game.sfx.ctx?.state ?? null, bed: !!window.game.sfx.amb, music: window.game.sfx.music?.kind ?? null }));
+  // the music: the camp's track streamed (the file it plays), or the camp's composed music
+  const after = await ev(() => {
+    const s = window.game.sfx;
+    return { ctx: s.ctx?.state ?? null, bed: !!s.amb, music: s.music?.kind ?? s.music?.el?.getAttribute('src') ?? null, track: s.files['music.town']?.files ?? null };
+  });
   if (!after.ctx) fails.push('no AudioContext after a click');
   if (!after.bed) fails.push(`no bed playing in ${before.area} after the first click`);
-  if (before.kind === 'town' && after.music !== 'town') fails.push(`the camp plays ${after.music} music, not the camp's`);
+  const campMusic = after.track ? after.track.some((f) => after.music?.endsWith(`/audio/${f}`)) : after.music === 'town';
+  if (before.kind === 'town' && !campMusic) fails.push(`the camp plays ${after.music} music, not the camp's (${after.track?.join(', ') ?? 'town'})`);
 
   const res = await ev(async () => {
     const g = window.game;
@@ -440,6 +446,12 @@ export default async function (page, shot, log) {
     await wait(1500);
     check(live.failed.has('music.wild') && live.music?.kind === 'outdoor', `a missing track: ${live.music?.kind ?? 'nothing'} plays, given up on ${live.failed.has('music.wild')}`);
     live.music?.stop(0);
+    // a track fades in to its gain, as a loop plays at its own
+    const Stream = stream?.constructor;
+    const quiet = Stream && new Stream(live.ctx, live.players, [url('music.wav')], 0.2, () => {}, 0.4);
+    await wait(1200);
+    check(quiet && Math.abs(quiet.gain.gain.value - 0.4) < 1e-3, `a track at gain 0.4 faded in to ${quiet?.gain.gain.value}`);
+    quiet?.stop(0);
     live.amb?.stop();
     await live.ctx.close();
     return { fails, facts };
@@ -465,7 +477,11 @@ const LINE_MATCH_DB = 4;
  * synthesized bed, integrated once both have faded in, the music muted. The loudness is measured here
  * in Node with the meter the pipeline normalizes by (tools/audio/dsp.mjs). Each must be within
  * MATCH_DB: the synthesized mix is the one balanced by ear, and a recording normalized to -16 LUFS
- * once played 23 dB over its recipe. The heroes' lines (HERO_LINES) have nothing synthesized to match:
+ * once played 23 dB over its recipe. A music track is held closer, to MUSIC_MATCH_DB of the music
+ * composed in its place (musicLevels), which plays wherever it won't: it's heard for minutes on end.
+ * And it's heard as MUSIC_LEVEL in src/audio/sfx.ts has it: under the ambience of each area it plays
+ * in, well under the fighting (FIGHT), its loudest swells under it still (UNDER_FIGHT_DB).
+ * The heroes' lines (HERO_LINES) have nothing synthesized to match:
  * each, played as the game says it (LINE), is held to LINE_MATCH_DB of the loudest of the cues they
  * go with (LINE_CUES, synthesized), as the hero's loudest sounds. Any other shipped id the game can't
  * play this way fails: nothing vouches for it.
@@ -485,6 +501,8 @@ async function shippedLevels(ev) {
   const jobs = [];
   const loops = new Map();
   const heroLines = [];
+  /** the music tracks, and the areas that compose their music while they have none */
+  const tracks = [];
   /** voice.<class>.<line>, a moment the game has a line for */
   const heroLine = (id) => {
     const [v, who, line, more] = id.split('.');
@@ -502,13 +520,22 @@ async function shippedLevels(ev) {
         loop.ids.push(id);
         loops.set(at, loop);
       }
-    } else if (id.startsWith('music.')) facts[id] = 'streamed music: not compared';
-    else if (heroLine(id)) heroLines.push(id);
+    } else if (id.startsWith('music.')) {
+      const areas = AREAS.filter((a) => areaSound(a).music === id);
+      if (!areas.length) fails.push(`shipped ${id}: no area plays it`);
+      else tracks.push({ id, areas });
+    } else if (heroLine(id)) heroLines.push(id);
     else fails.push(`shipped ${id}: nothing in the game plays it`);
   }
   for (const id of heroLines) jobs.push({ kind: 'line', id, ids: [id] });
   for (const id of LINE_CUES) jobs.push({ kind: 'cue', id, ids: [] });
   for (const { area, night, ids } of loops.values()) jobs.push({ kind: 'amb', id: ids.join('+'), area, night, ids });
+  // the ambience a track is heard over where it plays: the area's loops by day and by night, those
+  // measured above (rendered where they're first played); with none recorded, its synthesized bed (the den)
+  const layersOf = (a, night) => ((night ? areaSound(a).night : areaSound(a).amb) ?? []).filter((id) => files[id]).join('+');
+  for (const { areas } of tracks) for (const a of areas) if (!layersOf(a, false)) jobs.push({ kind: 'bed', id: `bed:${a.key}`, area: a, night: false, ids: [] });
+  // the fighting the music is under
+  for (const id of FIGHT) if (!files[id]) jobs.push({ kind: 'blow', id, ids: [] });
   const out = await ev(
     async ({ jobs, RATE }) => {
       const Sfx = window.game.sfx.constructor;
@@ -532,7 +559,9 @@ async function shippedLevels(ev) {
         }
       };
       async function render(job, recorded) {
-        const secs = job.kind === 'amb' ? 8 : job.kind === 'sfx' || job.kind === 'cue' ? 3 : 4;
+        const inArea = job.kind === 'amb' || job.kind === 'bed';
+        const short = job.kind === 'sfx' || job.kind === 'cue' || job.kind === 'blow';
+        const secs = inArea ? 8 : short ? 3 : 4;
         const realAC = window.AudioContext;
         window.AudioContext = function () {
           return new OfflineAudioContext(2, RATE * secs, RATE);
@@ -553,17 +582,17 @@ async function shippedLevels(ev) {
         const failed = job.ids.filter((id) => s.failed.has(id));
         // midnight, for the night's loops
         if (job.night) s.setTime(0);
-        seeded(() => (job.kind === 'amb' ? s.enterArea(job.area) : s.play(job.id)));
+        seeded(() => (inArea ? s.enterArea(job.area) : s.play(job.id)));
         // the loops start once their (preloaded) takes resolve, a line once its take is checked as decoded
-        if (job.kind !== 'sfx' && job.kind !== 'cue') await wait(50);
+        if (!short) await wait(50);
         const buf = await s.ctx.startRendering();
         return { failed, chs: [b64(buf.getChannelData(0)), b64(buf.getChannelData(1))] };
       }
       const res = [];
       for (const job of jobs) {
         const one = { ...job, gain: job.ids.map((id) => files[id].gain ?? 1) };
-        // a line has nothing synthesized, a cue is only its synthesized self
-        if (job.kind !== 'cue') one.rec = await render(job, true);
+        // a line has nothing synthesized; a cue, a bed and an unrecorded blow are only their synthesized selves
+        if (job.kind === 'sfx' || job.kind === 'amb' || job.kind === 'line') one.rec = await render(job, true);
         if (job.kind !== 'line') one.synth = await render(job, false);
         res.push(one);
       }
@@ -590,7 +619,7 @@ async function shippedLevels(ev) {
     facts['voice.*'] = `${lines.length} hero lines ${Math.min(...lines).toFixed(1)} to ${Math.max(...lines).toFixed(1)} dB (mean ${mean.toFixed(1)}) against ${cue.id}, ${cue.lufs.toFixed(1)} LUFS momentary`;
   }
   for (const r of out) {
-    if (r.kind === 'cue') continue;
+    if (!r.rec) continue;
     if (r.rec.failed.length) {
       fails.push(`shipped ${r.rec.failed.join(', ')}: wouldn't load`);
       continue;
@@ -611,5 +640,166 @@ async function shippedLevels(ev) {
       fails.push(`shipped ${r.id}: ${d.toFixed(1)} dB ${d > 0 ? 'louder' : 'quieter'} than ${against} (${facts[r.id]}): gain ${want.join('/')} in tools/audio/list.mjs would match`);
     }
   }
+  // what the music is heard with: each area's ambience (its loops by day and by night, or its bed),
+  // integrated as above, and the fighting, the loudest 400 ms of a blow or a death as recorded (or
+  // synthesized, where it isn't), the middle one of them
+  const integrated = (chs) => loudness(chs.map((c) => pcm(c).subarray(3 * RATE)), 'integrated');
+  const ambOf = (area) =>
+    [false, true].flatMap((night) => {
+      const ids = layersOf(area, night);
+      const r = ids ? out.find((x) => x.kind === 'amb' && x.night === night && x.ids.join('+') === ids) : !night && out.find((x) => x.kind === 'bed' && x.area.key === area.key);
+      return r ? [{ what: `${area.key} ${r.kind === 'bed' ? 'bed' : night ? 'by night' : 'by day'}`, lufs: integrated((r.rec ?? r.synth).chs) }] : [];
+    });
+  const blows = FIGHT.map((id) => {
+    const r = out.find((x) => (x.kind === 'sfx' || x.kind === 'blow') && x.id === id);
+    return { id, lufs: momentary((r.rec && !r.rec.failed.length ? r.rec : r.synth).chs) };
+  }).sort((a, b) => a.lufs - b.lufs);
+  const fight = (blows[(blows.length - 1) >> 1].lufs + blows[blows.length >> 1].lufs) / 2;
+  facts.fighting = `${fight.toFixed(1)} LUFS momentary (${blows.map((b) => `${b.id} ${b.lufs.toFixed(1)}`).join(', ')})`;
+  for (const r of await musicLevels(ev, tracks, RATE)) {
+    if (r.failed) {
+      fails.push(`shipped ${r.id}: ${r.failed}`);
+      continue;
+    }
+    // heard as MUSIC_LEVEL (src/audio/sfx.ts) has it: under the ambience of each area it plays in,
+    // and never over the fighting, its level well under it, as the music composed in its place sits,
+    // and its loudest 3 s under it still
+    const ambs = r.areas.flatMap(ambOf);
+    const level = r.recorded.reduce((a, b) => (b.lufs > a.lufs ? b : a));
+    const loudest = r.recorded.reduce((a, b) => (b.short > a.short ? b : a));
+    const quietest = ambs.reduce((a, b) => (b.lufs < a.lufs ? b : a), ambs[0]);
+    const room = [
+      { why: `${UNDER_AMB_DB} dB under the ambience of ${quietest?.what}, ${quietest?.lufs.toFixed(1)}`, db: (quietest?.lufs ?? Infinity) - UNDER_AMB_DB - level.lufs },
+      { why: `${UNDER_FIGHT_DB} dB under the fighting, ${fight.toFixed(1)}`, db: fight - UNDER_FIGHT_DB - level.lufs },
+      { why: `its loudest 3 s (${loudest.short.toFixed(1)}, ${loudest.file}) ${LOUDEST_UNDER_FIGHT_DB} dB under the fighting`, db: fight - LOUDEST_UNDER_FIGHT_DB - loudest.short },
+    ];
+    const scoreLoudest = Math.max(...r.composed.map((c) => c.short));
+    facts[`${r.id} heard with`] = `ambience ${ambs.map((a) => `${a.what} ${a.lufs.toFixed(1)}`).join(', ')}; ${(fight - level.lufs).toFixed(1)} dB under the fighting, its loudest 3 s ${(fight - loudest.short).toFixed(1)} (composed ${(fight - scoreLoudest).toFixed(1)})`;
+    if (!ambs.length) fails.push(`shipped ${r.id}: no ambience measured where it plays`);
+    const short = room.filter((x) => !(x.db >= 0));
+    if (short.length) {
+      const most = Math.min(...short.map((x) => x.db));
+      // two figures, rounded down: rounded to the nearest it could still fall short
+      const want = r.gain * 10 ** (most / 20);
+      const step = 10 ** (Math.floor(Math.log10(want)) - 1);
+      fails.push(`shipped ${r.id} (${level.lufs.toFixed(1)} LUFS integrated, ${level.file}): not ${short.map((x) => x.why).join(', nor ')}: gain ${+(Math.floor(want / step) * step).toPrecision(2)} in tools/audio/list.mjs would be`);
+    }
+    const composed = r.composed.reduce((s, c) => s + c.lufs, 0) / r.composed.length;
+    const ds = r.recorded.map((x) => x.lufs - composed);
+    const d = ds.reduce((s, x) => s + x, 0) / ds.length;
+    const each = r.composed.map((c) => `${c.key} ${c.lufs.toFixed(1)}`).join(', ');
+    facts[r.id] = `${r.recorded.map((x) => x.lufs.toFixed(1)).join('/')} vs ${composed.toFixed(1)} LUFS integrated composed (${each}; ${d >= 0 ? '+' : ''}${d.toFixed(1)} dB, gain ${r.gain})`;
+    const worst = ds.reduce((m, x) => (Math.abs(x) > Math.abs(m) ? x : m), 0);
+    if (!(Math.abs(worst) <= MUSIC_MATCH_DB)) {
+      fails.push(`shipped ${r.id}: ${worst.toFixed(1)} dB ${worst > 0 ? 'louder' : 'quieter'} than the music composed in its place (${facts[r.id]}): gain ${+(r.gain * 10 ** (-d / 20)).toPrecision(2)} in tools/audio/list.mjs would match`);
+    }
+  }
   return { fails, facts };
+}
+
+/** how far a shipped track may be from the music composed in its place, in dB */
+const MUSIC_MATCH_DB = 1.5;
+/** the blows and deaths of a fight, the loudest sounds the music must stay under */
+const FIGHT = ['combat.hit', 'combat.hit_heavy', 'combat.hit_bone', 'combat.block', 'monster.die', 'monster.die_imp', 'monster.die_large', 'monster.die_bone'];
+/**
+ * How far a track's integrated loudness is under the ambience it plays over, and under the fighting
+ * (the middle one of FIGHT, momentary), at least; and how far its loudest 3 s is under the fighting.
+ * The music composed in its place sits 6 to 7 dB under the fighting; a recording, with more to its
+ * swells, is held there too, and its swells kept under the blows.
+ */
+const UNDER_AMB_DB = 1;
+const UNDER_FIGHT_DB = 6;
+const LOUDEST_UNDER_FIGHT_DB = 1.5;
+/** seconds of composed music measured, once it has faded in (MUSIC_IN, src/audio/sfx.ts) */
+const SCORE_SECS = 90;
+const SCORE_FROM = 6;
+
+/**
+ * Each music track against the music composed in its place (src/audio/score.ts), rendered offline
+ * through the chain the game plays both by (the music bus, the master, its compressor), the
+ * ambience muted: every take of the track whole, as an <audio> element streams it into its gain
+ * (Stream: an OfflineAudioContext can't stream, so the file is decoded and played into the same
+ * gain), and the score of each area that plays the track, from its fade-in on. Integrated loudness,
+ * by the meter the pipeline normalizes by (tools/audio/dsp.mjs), here measured in the page: a take
+ * is two and a half minutes, too much PCM to hand back to Node.
+ */
+function musicLevels(ev, tracks, RATE) {
+  if (!tracks.length) return [];
+  return ev(
+    async ({ tracks, RATE, SECS, FROM }) => {
+      const { loudness } = await import('/tools/audio/dsp.mjs');
+      const Sfx = window.game.sfx.constructor;
+      const files = window.game.sfx.files;
+      const seeded = (go) => {
+        const real = Math.random;
+        let seed = 20261026;
+        Math.random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+        try {
+          return go();
+        } finally {
+          Math.random = real;
+        }
+      };
+      /** a fresh Sfx rendering `secs` offline, nothing in it but music */
+      const fresh = (secs) => {
+        const realAC = window.AudioContext;
+        window.AudioContext = function () {
+          return new OfflineAudioContext(2, Math.round(RATE * secs), RATE);
+        };
+        try {
+          return seeded(() => {
+            const s = new Sfx();
+            s.files = {};
+            s.ensure();
+            s.ambBus.gain.value = 0;
+            return s;
+          });
+        } finally {
+          window.AudioContext = realAC;
+        }
+      };
+      /** its integrated loudness, and its loudest 3 s (short) and 400 ms (momentary) */
+      const lufsOf = (buf, from = 0) => {
+        const chs = [buf.getChannelData(0).subarray(from * RATE), buf.getChannelData(1).subarray(from * RATE)];
+        return { lufs: loudness(chs, 'integrated'), short: loudness(chs, 'short'), momentary: loudness(chs, 'momentary') };
+      };
+      const out = [];
+      for (const { id, areas } of tracks) {
+        const f = files[id];
+        const gain = f.gain ?? 1;
+        const composed = [];
+        for (const area of areas) {
+          const s = fresh(SECS);
+          seeded(() => s.enterArea(area));
+          s.music.advance(SECS);
+          composed.push({ key: area.key, ...lufsOf(await s.ctx.startRendering(), FROM) });
+        }
+        const recorded = [];
+        let failed = null;
+        for (const file of f.files) {
+          let data;
+          try {
+            // served where the dev server serves public/
+            const res = await fetch(`/audio/${file}`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            data = await new OfflineAudioContext(2, 1, RATE).decodeAudioData(await res.arrayBuffer());
+          } catch (e) {
+            failed = `${file} wouldn't load (${e.message})`;
+            break;
+          }
+          const s = fresh(data.duration);
+          const src = s.ctx.createBufferSource();
+          src.buffer = data;
+          const g = s.ctx.createGain();
+          g.gain.value = gain;
+          src.connect(g).connect(s.musicBus);
+          src.start(0);
+          recorded.push({ file, ...lufsOf(await s.ctx.startRendering()) });
+        }
+        out.push({ id, areas, gain, composed, recorded, failed });
+      }
+      return out;
+    },
+    { tracks, RATE, SECS: SCORE_SECS, FROM: SCORE_FROM },
+  );
 }

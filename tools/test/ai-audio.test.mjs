@@ -5,11 +5,21 @@
 // repeating the body sample for sample; the manifest's loop points are those made.json recorded; and
 // every recording in public/audio/ has a record in made.json and a credit in CREDITS.md naming what
 // it was made from; the heroes' script (tools/audio/voice-lines.md) has the moments HERO_LINES names,
-// and the list asks for its words.
+// and the list asks for its words. The music (tools/audio/music.mjs): an entry is checked against
+// what ACE-Step takes; a take's raw output is the one whose sidecar records its request, sampler
+// and all, whatever it's called and in whatever folder (linked in, too); and the tool itself, run
+// on a list of its own in a scratch checkout: no ElevenLabs, a take it finds processed (stereo,
+// trimmed, at its loudness, its true peak under -1 dBFS once encoded, named ACE-Step, no loop
+// points, its gain in the manifest, credited with its seed, dated when it was made), one it doesn't
+// reported to generate on a GPU machine and written as a job, without failing the run; another raw
+// take in its place processed again; a take whose entry changed plays on, stale.
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { RATE, dbOf, deinterleave, interleave, limit, loopBody, loudness, makeLoop, normalize, normalizeLoop, padLoop, peak, trimSilence } from '../audio/dsp.mjs';
+import { RATE, dbOf, deinterleave, interleave, limit, loopBody, loudness, makeLoop, normalize, normalizeLoop, padLoop, peak, ride, trimSilence } from '../audio/dsp.mjs';
+import { findRaw, jobsFor, matches, musicRequest, sidecarOf, sidecars, validateMusic } from '../audio/music.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -69,6 +79,25 @@ export default async (load) => {
   const loud = limit([Float32Array.from({ length: 4800 }, (_, i) => Math.sin(i / 7) * 2)], 0.5);
   check(peak(loud) <= 0.5 + 1e-6, `the limiter let ${peak(loud)} through a 0.5 ceiling`);
 
+  // music ridden: 20 s quiet, 6 s 10 dB louder, 20 s quiet again. The rise comes down (by 2/3 of
+  // what it's over the integrated loudness and 3 LU), the quiet passages stay as they were, and the
+  // cut eases in and out rather than stepping
+  const rise = Float32Array.from({ length: 46 * RATE }, (_, i) => 0.05 * Math.sin((2 * Math.PI * 330 * i) / RATE) * (i >= 20 * RATE && i < 26 * RATE ? 3.162 : 1));
+  const ridden = ride([rise, rise], { over: 3, ratio: 3, ease: 2 });
+  const lufsIn = (c, a, b) => loudness(c.map((x) => x.subarray(a * RATE, b * RATE)), 'integrated');
+  const rose = lufsIn([rise, rise], 21, 25) - lufsIn([rise, rise], 2, 6);
+  const fell = lufsIn(ridden.chs, 21, 25) - lufsIn(ridden.chs, 2, 6);
+  check(rose > 9.9 && fell < rose - 2 && fell > 3, `a 10 dB swell ridden to ${fell.toFixed(1)} dB over the quiet, cut ${ridden.cut.toFixed(1)}`);
+  check(Math.abs(lufsIn(ridden.chs, 2, 6) - lufsIn([rise, rise], 2, 6)) < 0.05 && Math.abs(lufsIn(ridden.chs, 40, 44) - lufsIn([rise, rise], 40, 44)) < 0.05, 'the quiet passages were ridden too');
+  let worstStep = 0;
+  // the gain at each 10 ms, read where the tone is well away from a zero crossing
+  const gainAt = (i) => {
+    while (Math.abs(rise[i]) < 0.02) i++;
+    return dbOf(Math.abs(ridden.chs[0][i] / rise[i]));
+  };
+  for (let i = RATE; i + RATE / 100 < ridden.chs[0].length - RATE; i += RATE / 100) worstStep = Math.max(worstStep, Math.abs(gainAt(i + RATE / 100) - gainAt(i)));
+  check(worstStep < 0.5, `the cut stepped by ${worstStep.toFixed(2)} dB in 10 ms`);
+
   // silence off both ends, keeping the margins
   const pad = new Float32Array(RATE / 2);
   const burst = Float32Array.from([...pad, ...tone(0.2, 440, 0.5), ...pad]);
@@ -76,6 +105,9 @@ export default async (load) => {
   const want = Math.round(0.2 * RATE) + Math.round(0.005 * RATE) + Math.round(0.05 * RATE);
   check(Math.abs(trimmed[0].length - want) < 60, `trimmed to ${trimmed[0].length} frames, not about ${want}`);
   check(trimSilence([new Float32Array(100)]) === null, 'a silent take was not given up on');
+  // music: only the tail
+  const tailOnly = trimSilence([burst], { lead: null, post: 0.05 });
+  check(tailOnly[0].length === pad.length + Math.round(0.25 * RATE) && tailOnly[0][0] === 0, `trimmed at the tail alone to ${tailOnly[0].length} frames`);
 
   // a loop: the body's end runs into its start, the padding repeats the body
   const hum = (ch) => Float32Array.from({ length: 5 * RATE }, (_, i) => 0.3 * Math.sin((2 * Math.PI * (220 + ch * 3) * i) / RATE) + 0.01 * rnd());
@@ -150,5 +182,273 @@ export default async (load) => {
     });
   }
 
+  // the music that ships: made by ACE-Step, credited as such with its seed, streamed whole (no loop points)
+  for (const e of list.filter((e) => e.kind === 'music')) {
+    check(!validateMusic(e).length, `tools/audio/list.mjs: ${validateMusic(e).join('; ')}`);
+    e.takes.forEach((_, i) => {
+      const name = `${e.id}.${i + 1}`;
+      const m = made[name];
+      if (!m) return;
+      const req = musicRequest(e, i + 1);
+      check(m.kind === 'music' && m.model === `ACE-Step 1.5 ${req.model} + ${req.lm}` && m.seed === req.seed, `made.json: ${name} was made by ${m.model}, seed ${m.seed}`);
+      const row = credits.split('\n').find((l) => l.startsWith(`| \`${name}.m4a\` |`));
+      check(!!row && row.includes('| 音乐 |') && row.includes(`种子 ${m.seed}`) && !row.includes('elevenlabs'), `CREDITS.md: ${name}: ${row}`);
+    });
+    if (FILES[e.id]) check(!FILES[e.id].loop, `files.ts: ${e.id} has loop points: Stream loops the whole file`);
+  }
+  if (shipped.some((f) => f.startsWith('music.'))) check(credits.includes('音乐由 ACE-Step 1.5 生成'), 'public/audio/CREDITS.md does not say 音乐由 ACE-Step 1.5 生成');
+
+  musicEntries(check);
+  musicRaw(check);
+  musicRun(check);
+
   if (problems.length) throw new Error(problems.join('\n'));
 };
+
+/** a music entry as the list has them: the camp's two takes, the second from a job of its own */
+const ENTRY = {
+  id: 'music.test',
+  kind: 'music',
+  prompt: 'a slow solo guitar, instrumental',
+  bpm: 66,
+  key: 'D minor',
+  time: 3,
+  duration: 150,
+  model: 'acestep-v15-turbo',
+  lm: 'acestep-5Hz-lm-1.7B',
+  takes: [{ seed: 101 }, { seed: 113, prompt: 'a lonely guitar, instrumental', key: 'E minor' }],
+  gain: 0.5,
+};
+
+/** an entry is held to what ACE-Step takes (acestep/constants.py), its takes each by seed */
+function musicEntries(check) {
+  check(validateMusic(ENTRY).length === 0, `a good entry: ${validateMusic(ENTRY).join('; ')}`);
+  const bad = (change, want) => {
+    const e = { ...ENTRY, ...change };
+    const p = validateMusic(e).join('; ');
+    check(want.test(p), `${JSON.stringify(change)}: "${p}", not ${want}`);
+  };
+  bad({ id: 'tune.test' }, /music\.<name>/);
+  bad({ bpm: 10 }, /bpm 10 is not 30 to 300/);
+  bad({ key: 'H minor' }, /key H minor/);
+  bad({ time: 5 }, /time 5 is not 2, 3, 4, 6/);
+  bad({ duration: 5 }, /duration 5 is not 10 to 600/);
+  bad({ lm: undefined }, /needs its lm/);
+  bad({ takes: [] }, /needs its takes/);
+  bad({ seed: 4 }, /a seed is a take's/);
+  bad({ variants: 2 }, /variants is not a field/);
+  bad({ takes: [{ seed: 1.5 }] }, /seed 1.5 is not a whole number/);
+  bad({ takes: [{ seed: 7, caption: 'x' }] }, /caption is not a field of a take/);
+  bad({ takes: [{ seed: 7 }, { seed: 7 }] }, /the same take as an earlier one/);
+  bad({ gain: 0 }, /gain 0/);
+  // ACE-Step's caption is under 512 characters, counted as Python does
+  bad({ prompt: 'x'.repeat(512) }, /the prompt is 512 characters: ACE-Step's caption is under 512/);
+  check(!validateMusic({ ...ENTRY, prompt: '琴'.repeat(511) }).length, `a caption of 511 characters: ${validateMusic({ ...ENTRY, prompt: '琴'.repeat(511) }).join('; ')}`);
+  bad({ steps: 0 }, /steps 0 is not a whole number/);
+  bad({ guidance: -1 }, /guidance -1 is not a number over 0/);
+  bad({ takes: [{ seed: 7, shift: '3' }] }, /shift 3 is not a number over 0/);
+  // a take's own fields over its entry's; the same take another seed is another take
+  const r2 = musicRequest(ENTRY, 2);
+  check(r2.seed === 113 && r2.key === 'E minor' && r2.bpm === 66 && r2.prompt.startsWith('a lonely'), `take 2 asks for ${JSON.stringify(r2)}`);
+  // the sampler: the model's, unless the list gives it
+  check(r2.steps === 8 && r2.guidance === 1 && r2.shift === 3, `a turbo take is sampled ${r2.steps} steps, guidance ${r2.guidance}, shift ${r2.shift}`);
+  const xl = musicRequest({ ...ENTRY, model: 'acestep-v15-xl-sft' }, 1);
+  check(xl.steps === 64 && xl.guidance === 7 && xl.shift === 3, `an XL take is sampled ${xl.steps} steps, guidance ${xl.guidance}, shift ${xl.shift}`);
+  const own = musicRequest({ ...ENTRY, guidance: 5, takes: [{ seed: 1, steps: 32 }] }, 1);
+  check(own.steps === 32 && own.guidance === 5 && own.shift === 3, `a take's own sampler: ${JSON.stringify(own)}`);
+  check(validateMusic({ ...ENTRY, takes: [{ seed: 7 }, { seed: 7, steps: 16 }] }).length === 0, 'another sampler is another take');
+  // the jobs for acestep.py are entries of the list, with only the takes asked for, each with its sampler
+  const jobs = jobsFor([{ e: ENTRY, n: 2 }]);
+  check(jobs.length === 1 && jobs[0].id === 'music.test' && jobs[0].bpm === 66 && JSON.stringify(jobs[0].takes) === JSON.stringify([{ ...ENTRY.takes[1], steps: 8, guidance: 1, shift: 3 }]) && !('gain' in jobs[0]), `the job for take 2: ${JSON.stringify(jobs)}`);
+}
+
+/** a take's raw output: the sidecar that records its request, whatever the file's called and wherever it's linked from */
+function musicRaw(check) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dii-acestep-'));
+  const box = fs.mkdtempSync(path.join(os.tmpdir(), 'dii-acestep-box-'));
+  try {
+    const put = (rel, meta, wav = true) => {
+      const p = path.join(dir, rel);
+      fs.mkdirSync(path.dirname(p), { recursive: true });
+      fs.writeFileSync(`${p}.json`, typeof meta === 'string' ? meta : JSON.stringify(meta));
+      if (wav) fs.writeFileSync(`${p}.wav`, '');
+    };
+    const one = musicRequest(ENTRY, 1);
+    // as the generator writes them: ACE-Step's caption, the time signature as a string, the job's other fields
+    const car = { id: 'music.test', takes: 3, first: 4, ...sidecarOf(one), time: '3', secs: 56.2 };
+    put('turbo/music.test.6', { ...car, seed: 102 });
+    put('turbo/music.test.9', car);
+    put('xl/music.test.1', { ...car, model: 'acestep-v15-xl-sft' });
+    put('turbo/broken', '{ not json');
+    put('turbo/jobs', [car]);
+    put('turbo/lost', car, false);
+    check(matches(car, one) && !matches({ ...car, seed: 102 }, one) && !matches({ ...car, caption: `${car.caption}.` }, one), 'a sidecar matches its own request and no other');
+    const { lm: _, ...noLm } = car;
+    check(!matches(noLm, one), 'a sidecar that leaves the LM out matches');
+    // sampled otherwise, it's another take; one that doesn't say (gen-reference.py's) was sampled as its model is
+    check(!matches({ ...car, steps: 16 }, one) && !matches({ ...car, guidance: 3 }, one), 'a take sampled otherwise matches');
+    const { steps: _s, guidance: _g, shift: _h, ...unsampled } = car;
+    const xlOne = musicRequest({ ...ENTRY, model: 'acestep-v15-xl-sft' }, 1);
+    check(matches(unsampled, one) && !matches({ ...unsampled, model: xlOne.model }, one), "a sidecar that doesn't give its sampler isn't read as its model's");
+    check(matches({ ...unsampled, model: xlOne.model }, xlOne) && !matches({ ...car, model: xlOne.model }, xlOne), "an XL take isn't told by its sampler");
+    // the GPU machine's output linked in: walked once, however it's linked
+    const two = musicRequest(ENTRY, 2);
+    fs.writeFileSync(path.join(box, 'music.test.2.json'), JSON.stringify({ id: 'music.test', ...sidecarOf(two) }));
+    fs.writeFileSync(path.join(box, 'music.test.2.wav'), '');
+    fs.symlinkSync(box, path.join(dir, 'from-box'));
+    fs.symlinkSync(box, path.join(dir, 'turbo/again'));
+    fs.symlinkSync(dir, path.join(dir, 'xl/up'));
+    fs.symlinkSync(path.join(dir, 'gone'), path.join(dir, 'broken-link'));
+    const cars = sidecars(dir);
+    check(cars.length === 4, `${cars.length} sidecars read, not the 4 with a take beside them: ${cars.map((c) => path.relative(dir, c.json)).join(' ')}`);
+    check(findRaw(cars, one)?.wav === path.join(dir, 'turbo/music.test.9.wav'), `take 1 found as ${findRaw(cars, one)?.wav}`);
+    check(findRaw(cars, { ...one, model: 'acestep-v15-xl-sft' })?.wav === path.join(dir, 'xl/music.test.1.wav'), 'the XL take not told from the turbo one');
+    check(findRaw(cars, two)?.wav === path.join(dir, 'from-box/music.test.2.wav'), `take 2, in a folder linked in, found as ${findRaw(cars, two)?.wav}`);
+    check(findRaw(cars, musicRequest({ ...ENTRY, takes: [{ seed: 5 }] }, 1)) === null, 'a take found, though nothing made it');
+    check(sidecars(path.join(dir, 'none')).length === 0, 'a missing folder has sidecars');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(box, { recursive: true, force: true });
+  }
+}
+
+/**
+ * A WAV of 16-bit stereo at 48 kHz: `secs` of a quiet chord, then `silence` s of it gone; or with
+ * `clicks`, a quiet tone and a burst of square wave four times a second, which AAC rings 2 dB over
+ */
+function wav(secs, silence, clicks = false) {
+  const n = Math.round((secs + silence) * RATE);
+  const b = Buffer.alloc(44 + n * 4);
+  b.write('RIFF', 0);
+  b.writeUInt32LE(36 + n * 4, 4);
+  b.write('WAVEfmt ', 8);
+  b.writeUInt32LE(16, 16);
+  b.writeUInt16LE(1, 20);
+  b.writeUInt16LE(2, 22);
+  b.writeUInt32LE(RATE, 24);
+  b.writeUInt32LE(RATE * 4, 28);
+  b.writeUInt16LE(4, 32);
+  b.writeUInt16LE(16, 34);
+  b.write('data', 36);
+  b.writeUInt32LE(n * 4, 40);
+  for (let i = 0; i < n; i++) {
+    const t = i / RATE;
+    const chord = 0.2 * Math.sin(2 * Math.PI * 147 * t) + 0.1 * Math.sin(2 * Math.PI * 220 * t) * (1 + Math.sin(t));
+    const click = 0.03 * Math.sin(2 * Math.PI * 147 * t) + (t % 0.25 < 0.003 ? 0.8 * Math.sign(Math.sin(2 * Math.PI * 2500 * t)) : 0);
+    const v = t < secs ? (clicks ? click : chord) : 0;
+    b.writeInt16LE(Math.round(v * 32767), 44 + i * 4);
+    b.writeInt16LE(Math.round(v * 0.8 * 32767), 46 + i * 4);
+  }
+  return b;
+}
+
+/**
+ * The tool on a list of its own, in a scratch checkout of it: what it writes, what it reports, and
+ * that music never asks ElevenLabs (no key here: it would fail to reach it)
+ */
+function musicRun(check) {
+  const has = (cmd) => spawnSync(cmd, ['-version'], { stdio: 'ignore' }).status === 0;
+  if (!has('ffmpeg') || !has('ffprobe')) {
+    console.log('     (ai-audio: no ffmpeg, so the music run is skipped)');
+    return;
+  }
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dii-ai-audio-'));
+  try {
+    for (const f of ['tools/ai-audio.mjs', 'tools/audio/dsp.mjs', 'tools/audio/music.mjs']) {
+      fs.mkdirSync(path.dirname(path.join(tmp, f)), { recursive: true });
+      fs.copyFileSync(path.join(root, f), path.join(tmp, f));
+    }
+    fs.mkdirSync(path.join(tmp, 'src/audio'), { recursive: true });
+    fs.writeFileSync(path.join(tmp, 'src/audio/files.ts'), "import type { FileId } from './sounds';\n\nexport const FILES: Partial<Record<FileId, SoundFiles>> = {};\n");
+    const list = (entry) => fs.writeFileSync(path.join(tmp, 'tools/audio/list.mjs'), `export const SPEAKERS = {};\nexport default [${JSON.stringify(entry)}];\n`);
+    const run = (...args) => {
+      const r = spawnSync(process.execPath, [path.join(tmp, 'tools/ai-audio.mjs'), ...args], { encoding: 'utf8', env: { ...process.env, AUDIO_SRC: path.join(tmp, 'audio-src'), ELEVENLABS_API_KEY: 'none' } });
+      return { code: r.status, out: `${r.stdout}${r.stderr}` };
+    };
+    const short = { ...ENTRY, duration: 12 };
+    list(short);
+    // take 1 is there, under a name of its own; take 2 isn't
+    const raw = path.join(tmp, 'audio-src/acestep/turbo/music.test.6');
+    fs.mkdirSync(path.dirname(raw), { recursive: true });
+    fs.writeFileSync(`${raw}.wav`, wav(9, 3));
+    fs.writeFileSync(`${raw}.json`, JSON.stringify({ id: 'music.test', ...sidecarOf(musicRequest(short, 1)), time: '3' }));
+    // made on another machine and copied keeping its time (scp -p): its sidecar doesn't say when
+    const madeAt = new Date(2026, 0, 2, 12);
+    for (const ext of ['wav', 'json']) fs.utimesSync(`${raw}.${ext}`, madeAt, madeAt);
+
+    const dry = run('--dry');
+    check(dry.code === 0, `--dry exited ${dry.code}: ${dry.out}`);
+    check(/music to generate on a GPU machine with tools\/audio\/acestep\.py: 1: music\.test\.2\b/.test(dry.out), `--dry doesn't list take 2 to generate: ${dry.out}`);
+    check(/to process again \(free\): 1: music\.test\.1\b/.test(dry.out), `--dry doesn't list take 1 to process: ${dry.out}`);
+    check(!/ElevenLabs/.test(dry.out) && /to make: 0 takes/.test(dry.out), `--dry on music asked ElevenLabs: ${dry.out}`);
+
+    const jobs = path.join(tmp, 'jobs.json');
+    const made = run('--jobs', jobs);
+    check(made.code === 0, `the run exited ${made.code}: ${made.out}`);
+    check(/music\.test\.2 .*seed 113/.test(made.out), `the run doesn't report take 2 to generate: ${made.out}`);
+    const job = fs.existsSync(jobs) ? JSON.parse(fs.readFileSync(jobs, 'utf8')) : null;
+    check(job?.length === 1 && job[0].takes.length === 1 && job[0].takes[0].seed === 113 && job[0].takes[0].steps === 8 && job[0].prompt === short.prompt, `the jobs written: ${JSON.stringify(job)}`);
+    const record = () => JSON.parse(fs.readFileSync(path.join(tmp, 'tools/audio/made.json'), 'utf8'))['music.test.1'];
+    const rec = record();
+    check(rec?.kind === 'music' && rec.model === 'ACE-Step 1.5 acestep-v15-turbo + acestep-5Hz-lm-1.7B' && rec.seed === 101 && rec.steps === 8 && rec.prompt === short.prompt, `made.json: ${JSON.stringify(rec)}`);
+    check(rec?.date === '2026-01-02', `made.json: dated ${rec?.date}, not 2026-01-02, when its files were made`);
+    check(rec?.credits === undefined && rec?.raw === 'acestep/turbo/music.test.6.wav' && /^[0-9a-f]{12}$/.test(rec?.rawHash ?? ''), `made.json: a music take cost ${rec?.credits} credits, from ${rec?.raw} (${rec?.rawHash})`);
+    // trimmed of its 3 s of silence (the cut a tenth of a second past the last sound), at its loudness, never limited
+    check(Math.abs(rec?.secs - 9.1) < 0.1 && rec?.lufs === -18 && rec?.limited === undefined, `the take came out ${rec?.secs} s at ${rec?.lufs} LUFS, limited ${rec?.limited}`);
+    const m4a = path.join(tmp, 'public/audio/music.test.1.m4a');
+    /** the file's true peak as ffmpeg's ebur128 reads it (to a tenth of a dB) */
+    const ebur = () => Number(/True peak:\s+Peak:\s+(-?[\d.]+) dBFS/.exec(spawnSync('ffmpeg', ['-hide_banner', '-nostdin', '-nostats', '-i', m4a, '-af', 'ebur128=peak=true', '-f', 'null', '-'], { encoding: 'utf8' }).stderr)?.[1]);
+    check(rec?.truePeak <= -1 && ebur() <= -1, `music.test.1.m4a's true peak: ${rec?.truePeak} dBFS as made.json has it, ${ebur()} as ebur128 reads it`);
+    const probe = fs.existsSync(m4a) ? execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'stream=channels,bit_rate:format_tags=comment,title', '-of', 'json', m4a], { encoding: 'utf8' }) : '{}';
+    const info = JSON.parse(probe);
+    const tags = info.format?.tags ?? {};
+    check(info.streams?.[0]?.channels === 2 && Math.abs(info.streams[0].bit_rate / 1000 - 128) < 8, `music.test.1.m4a: ${probe}`);
+    check(/ACE-Step 1\.5/.test(tags.title) && /ACE-Step 1\.5 acestep-v15-turbo \+ acestep-5Hz-lm-1\.7B, seed 101/.test(tags.comment) && !/elevenlabs/i.test(probe), `music.test.1.m4a is tagged ${JSON.stringify(tags)}`);
+    const files = fs.readFileSync(path.join(tmp, 'src/audio/files.ts'), 'utf8');
+    check(files.includes("  'music.test': { files: ['music.test.1.m4a'], gain: 0.5 },"), `files.ts: ${files}`);
+    const credits = fs.readFileSync(path.join(tmp, 'public/audio/CREDITS.md'), 'utf8');
+    check(credits.includes('音乐由 ACE-Step 1.5 生成') && credits.includes('音效与配音由 ElevenLabs 生成'), 'CREDITS.md names ACE-Step for the music, and ElevenLabs for the rest');
+    check(credits.includes(`| \`music.test.1.m4a\` | 音乐 | ${short.prompt}（66 BPM，D minor，每小节 3 拍，12 秒） | ACE-Step 1.5 acestep-v15-turbo + acestep-5Hz-lm-1.7B，种子 101 | — |`), `CREDITS.md: ${credits.split('\n').find((l) => l.includes('music.test.1'))}`);
+
+    // once more: up to date, nothing processed again
+    const again = run('--dry');
+    check(/up to date: 1/.test(again.out) && /to process again \(free\): 0/.test(again.out), `run again: ${again.out}`);
+
+    // another raw take in its place, recorded alike (made again, on another machine): processed again.
+    // Clicks the codec rings 2 dB over, so the file comes out over -1 dBFS and is limited lower; its
+    // sidecar says when it was made
+    fs.writeFileSync(`${raw}.wav`, wav(9, 3, true));
+    const at = '2026-03-04T12:00:00+0000';
+    fs.writeFileSync(`${raw}.json`, JSON.stringify({ id: 'music.test', ...sidecarOf(musicRequest(short, 1)), at }));
+    const swapped = run('--dry');
+    check(/to process again \(free\): 1: music\.test\.1\b/.test(swapped.out), `another raw take in its place isn't processed again: ${swapped.out}`);
+    const clicks = run();
+    const rec2 = record();
+    check(clicks.code === 0 && /music\.test\.1: -?[\d.]+ dBFS true peak once encoded: limited at -[\d.]+ dBFS instead/.test(clicks.out), `the clicks weren't limited lower (exit ${clicks.code}): ${clicks.out}`);
+    check(rec2?.rawHash !== rec?.rawHash && rec2?.truePeak <= -1 && ebur() <= -1 && rec2?.limited > 0, `the clicks: ${JSON.stringify(rec2)}, ${ebur()} dBFS true peak as ebur128 reads it`);
+    check(rec2?.date === new Date(at).toLocaleDateString('sv'), `made.json: dated ${rec2?.date}, not ${at} as its sidecar says`);
+    check(/up to date: 1/.test(run('--dry').out), 'the clicks processed again on the next run');
+
+    // --redo with no raw take to process again: says so, and leaves the file
+    fs.renameSync(path.join(tmp, 'audio-src/acestep'), path.join(tmp, 'audio-src/away'));
+    const redo = run('--redo', 'music.test');
+    check(redo.code === 0 && /music\.test\.1: --redo asks to process it again, but its raw take isn't in \S*audio-src\/acestep: the file stays as it is/.test(redo.out) && !/older recipe/.test(redo.out), `--redo without the raw take: ${redo.out}`);
+    check(record()?.rawHash === rec2?.rawHash && fs.existsSync(m4a), '--redo without the raw take changed the take');
+    fs.renameSync(path.join(tmp, 'audio-src/away'), path.join(tmp, 'audio-src/acestep'));
+
+    // another seed for take 1, not made yet: the take there plays on, credited as made, and the run doesn't fail
+    list({ ...short, takes: [{ seed: 999 }, short.takes[1]] });
+    const stale = run();
+    check(stale.code === 0, `a stale take failed the run: ${stale.out}`);
+    check(/stale: music\.test\.1 was made from what its entry asked before: it plays on, credited as made, until its new take is generated \(tools\/audio\/acestep\.py\)/.test(stale.out), `not reported stale: ${stale.out}`);
+    check(/music\.test\.1 .*seed 999/.test(stale.out), `the new take 1 isn't reported to generate: ${stale.out}`);
+    check(fs.readFileSync(path.join(tmp, 'src/audio/files.ts'), 'utf8').includes("files: ['music.test.1.m4a']") && fs.existsSync(m4a), 'the stale take was dropped');
+
+    // a bad entry stops the run, naming what's wrong
+    list({ ...short, bpm: 400 });
+    const bad = run('--dry');
+    check(bad.code === 1 && /list: music\.test take 1: bpm 400 is not 30 to 300/.test(bad.out), `a bad entry: exit ${bad.code}, ${bad.out}`);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}

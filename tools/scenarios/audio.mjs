@@ -13,7 +13,11 @@
 // pinned while it plays; the loop plays round its loop points, in stereo; a music track streams
 // through one of two reused <audio> elements into WebAudio, and one refused until a click comes in
 // from silence; the composed music and the bed play on from one dungeon floor to the next; a missing
-// track is replaced by the composed music; an interrupted AudioContext is resumed on the next click.
+// track is replaced by the composed music; back in an area before its track has faded out, that
+// track is brought back, and a third track at once takes the element fading out, not the one
+// playing; an interrupted AudioContext is resumed on the next click. Last, the game's own tracks
+// (shippedMusic): each broken in its own way gives way to the composed music, and as they ship each
+// streams as media from its first take, never decoded whole.
 // The last line is "AUDIO OK <summary>" or "AUDIO FAIL <reasons>".
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -74,6 +78,8 @@ export default async function (page, shot, log) {
   // before the click, none of them is decoded (the camp's ambience, preloaded for the context)
   const shipped = await page.evaluate(() => {
     const n = Object.keys(window.game.sfx.files).length;
+    // kept for the shipped tracks' turn (10)
+    window.__shipped = window.game.sfx.files;
     window.game.sfx.files = {};
     return n;
   });
@@ -323,14 +329,20 @@ export default async function (page, shot, log) {
     facts.afterLeaving = `${snd.buffers.bytes} B at a budget of 0`;
     check(snd.buffers.bytes === 0, `${snd.buffers.bytes} bytes still decoded after leaving with a budget of 0`);
     snd.buffers.setBudget(32 * 1024 * 1024);
-    // three tracks in quick succession: the third takes the element given out longest ago
+    // to and fro: the wilderness, the camp, the wilderness again before its track has faded out:
+    // that track is brought back on its element, not begun anew on the other
     snd.enterArea(wild);
     const t1 = snd.music;
     snd.enterArea(town);
     const t2 = snd.music;
     snd.enterArea(wild);
     const t3 = snd.music;
-    check(t3.el === t1.el && t2.el !== t1.el && t1.el.getAttribute('src') !== null, 'three tracks at once: the third did not take the first one\'s element');
+    check(t3 === t1 && t2.el !== t1.el && t1.el.getAttribute('src') !== null, `back in the wilderness before its track faded out: ${t3 === t1 ? 'the same track' : 'another track'}, on ${t3.el === t1.el ? 'its' : 'another'} element`);
+    // a third track while both elements are held: it takes the camp's, fading out, and not the
+    // wilderness's, playing again though it was given out first
+    const t4 = new t1.constructor(ctx, snd.players, [url('music.m4a')], 0.2, () => {});
+    check(t4.el === t2.el && t1.el.getAttribute('src') !== null && snd.music === t1, `a third track at once took ${t4.el === t1.el ? 'the playing track\'s element' : 'no element held'}`);
+    t4.stop(0);
     snd.enterArea(crypt);
 
     // 8. interrupted (WebKit, a phone call): the next click resumes it
@@ -356,6 +368,9 @@ export default async function (page, shot, log) {
     snd.files = {};
     return { fails, facts };
   }, early);
+  const own = await shippedMusic(page, warnings);
+  res.fails.push(...own.fails);
+  Object.assign(res.facts, own.facts);
   await shot('audio');
   for (const [k, v] of Object.entries(res.facts)) log(`  ${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`);
   log(`  served ${served} recordings; warnings:\n    ${warnings.join('\n    ') || 'none'}`);
@@ -365,5 +380,140 @@ export default async function (page, shot, log) {
     const w = warnings.find((x) => x.startsWith(`sound ${id}:`));
     if (!w || !words.every((x) => w.includes(x))) res.fails.push(`the warning for ${id}: ${w ?? 'none'}, not naming ${words.join(' and ')}`);
   }
-  log(res.fails.length ? `AUDIO FAIL ${res.fails.join(' | ')}` : `AUDIO OK ${res.facts.ctx}, takes ${res.facts.takesPlayed}, decoded in ${res.facts.decodeMs} ms, budget ${res.facts.budget2}, music rms ${res.facts.musicRms}, late fade ${res.facts.lateFade}`);
+  log(res.fails.length ? `AUDIO FAIL ${res.fails.join(' | ')}` : `AUDIO OK ${res.facts.ctx}, takes ${res.facts.takesPlayed}, decoded in ${res.facts.decodeMs} ms, budget ${res.facts.budget2}, music rms ${res.facts.musicRms}, late fade ${res.facts.lateFade}; shipped music ${res.facts.shippedMusic}`);
+}
+
+/** what each shipped track is made to be (10): its first file missing, or not audio, or a later take missing */
+const BREAK = { 'music.wild': 'missing', 'music.dungeon': 'not audio', 'music.town': 'a later take missing' };
+
+/**
+ * 10. The game's own tracks (src/audio/files.ts), from the dev server as they ship. First each one
+ * broken in its own way (BREAK, by routing its file): the area plays its composed music instead,
+ * after the takes before it where a later one is missing, with a warning naming the file. Then as
+ * they are: each streams from its first take, on one of the pooled elements, its file fetched as
+ * media (200 or 206, audio/mp4) and never decoded whole, and is heard on the music bus.
+ */
+async function shippedMusic(page, warnings) {
+  const fails = [];
+  const facts = {};
+  const music = await page.evaluate(() => Object.fromEntries(Object.entries(window.__shipped).filter(([id]) => id.startsWith('music.'))));
+  for (const id of Object.keys(BREAK)) if (!music[id]) fails.push(`the game ships no ${id}`);
+  if (fails.length) return { fails, facts };
+  /** the file each is broken by */
+  const broken = {};
+  for (const [id, how] of Object.entries(BREAK)) {
+    const files = music[id].files;
+    const file = how === 'a later take missing' ? files.at(-1) : files[0];
+    if (how === 'a later take missing' && files.length < 2) {
+      fails.push(`${id} has one take: no later one to miss`);
+      continue;
+    }
+    broken[id] = file;
+    await page.route(`**/audio/${file}`, (route) => (how === 'not audio' ? route.fulfill({ status: 200, contentType: 'audio/mp4', body: 'not audio, only text served as audio/mp4' }) : route.fulfill({ status: 404, contentType: 'text/plain', body: 'not here' })));
+  }
+  const bad = await page.evaluate(
+    async ({ broken }) => {
+      const snd = window.game.sfx;
+      const fails = [];
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      const until = async (fn, ms) => {
+        const t0 = performance.now();
+        while (!fn()) {
+          if (performance.now() - t0 > ms) return false;
+          await wait(20);
+        }
+        return true;
+      };
+      const { areaDef, dungeonArea, CAMP_AREA, WILD_AREA } = await import('/src/world/areas.ts');
+      const [town, wild, crypt] = [CAMP_AREA, WILD_AREA, dungeonArea(1)].map(areaDef);
+      snd.files = window.__shipped;
+      for (const id of Object.keys(broken)) snd.failed.delete(id);
+      // from the title screen, so the first area is a change (the crypt is where the hero was left)
+      snd.enterArea('title');
+      const KIND = { 'music.wild': ['outdoor', wild], 'music.dungeon': ['dungeon', crypt], 'music.town': ['town', town] };
+      for (const [id, file] of Object.entries(broken)) {
+        const [kind, area] = KIND[id];
+        snd.enterArea(area);
+        if (id === 'music.town') {
+          // its first take plays; run to its end, the next is missing
+          const first = snd.music;
+          const ok = await until(() => first?.el && !first.el.paused && first.el.currentTime > 0.3, 5000);
+          if (!ok || !first.el.getAttribute('src').endsWith(snd.files[id].files[0])) fails.push(`${id}: its first take doesn't play before the missing one (${first?.el?.getAttribute('src')})`);
+          else first.el.currentTime = first.el.duration - 0.3;
+        }
+        if (!(await until(() => snd.failed.has(id) && snd.music?.kind === kind, 6000))) fails.push(`${id} with ${file} broken: ${snd.music?.kind ?? snd.music?.el?.getAttribute('src') ?? 'nothing'} plays, given up on ${snd.failed.has(id)}`);
+        await wait(300);
+      }
+      return fails;
+    },
+    { broken },
+  );
+  fails.push(...bad);
+  await page.unrouteAll({ behavior: 'wait' });
+  for (const [id, file] of Object.entries(broken)) {
+    const w = warnings.find((x) => x.startsWith(`sound ${id}:`) && x.includes(file));
+    if (!w || !w.includes('the composed music instead')) fails.push(`${id} with ${file} ${BREAK[id]}: the warning ${w ?? 'none'}`);
+  }
+
+  // as they ship
+  const media = [];
+  const onResponse = (r) => {
+    const u = new URL(r.url());
+    if (/^\/audio\/music\.[^/]+\.m4a$/.test(u.pathname)) media.push({ file: u.pathname.split('/').pop(), status: r.status(), type: r.headers()['content-type'], as: r.request().resourceType() });
+  };
+  page.on('response', onResponse);
+  const ok = await page.evaluate(async () => {
+    const snd = window.game.sfx;
+    const ctx = snd.ctx;
+    const fails = [];
+    const heard = {};
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const until = async (fn, ms) => {
+      const t0 = performance.now();
+      while (!fn()) {
+        if (performance.now() - t0 > ms) return false;
+        await wait(20);
+      }
+      return true;
+    };
+    const { areaDef, dungeonArea, CAMP_AREA, WILD_AREA } = await import('/src/world/areas.ts');
+    const AREA = { 'music.town': CAMP_AREA, 'music.wild': WILD_AREA, 'music.dungeon': dungeonArea(1) };
+    const tap = ctx.createAnalyser();
+    tap.fftSize = 8192;
+    snd.musicBus.connect(tap);
+    const level = () => {
+      const d = new Float32Array(tap.fftSize);
+      tap.getFloatTimeDomainData(d);
+      return Math.sqrt(d.reduce((s, v) => s + v * v, 0) / d.length);
+    };
+    const decoded = [];
+    const decode = snd.buffers.decode;
+    snd.buffers.decode = (u, mono) => (decoded.push(u), decode(u, mono));
+    for (const id of Object.keys(AREA)) snd.failed.delete(id);
+    snd.enterArea('title');
+    for (const [id, a] of Object.entries(AREA)) {
+      snd.enterArea(areaDef(a));
+      const m = snd.music;
+      const first = `/audio/${snd.files[id].files[0]}`;
+      if (!(await until(() => m?.el && !m.el.paused && m.el.currentTime > 1, 6000))) {
+        fails.push(`${id}: ${m?.el ? `${m.el.getAttribute('src')} paused ${m.el.paused} at ${m.el.currentTime}` : `no stream (${m?.kind})`}`);
+        continue;
+      }
+      if (!m.el.getAttribute('src').endsWith(first) || !snd.players.all.some((p) => p.el === m.el)) fails.push(`${id} streams ${m.el.getAttribute('src')}, not ${first} on a pooled element`);
+      heard[id] = level();
+      if (!(heard[id] > 1e-4)) fails.push(`${id} isn't heard on the music bus: rms ${heard[id]}`);
+    }
+    if (decoded.some((u) => u.includes('/audio/music.'))) fails.push(`music decoded whole: ${decoded.join(', ')}`);
+    snd.buffers.decode = decode;
+    snd.musicBus.disconnect(tap);
+    snd.files = {};
+    return { fails, heard: Object.entries(heard).map(([id, v]) => `${id} ${(20 * Math.log10(v)).toFixed(1)} dBFS`).join(', ') };
+  });
+  page.off('response', onResponse);
+  fails.push(...ok.fails);
+  const wrong = media.filter((m) => !(m.status === 200 || m.status === 206) || m.type !== 'audio/mp4' || m.as !== 'media');
+  if (!media.length || wrong.length) fails.push(`the shipped tracks' requests: ${JSON.stringify(wrong.length ? wrong : media)}`);
+  // (a file the page streamed a moment ago may come from the media cache, with no request)
+  facts.shippedMusic = `${Object.entries(broken).map(([id, f]) => `${f} ${BREAK[id]}: composed`).join(', ')}; as shipped, ${ok.heard} fading in on the bus, ${media.length} requests (${[...new Set(media.map((m) => `${m.file} ${m.status} ${m.type} as ${m.as}`))].join(', ')})`;
+  return { fails, facts };
 }

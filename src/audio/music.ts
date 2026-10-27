@@ -8,6 +8,11 @@ export interface Track {
   stop(fade: number): void;
   /** after a click: start again what the browser wouldn't play without one */
   resume?(): void;
+  /**
+   * fading out still, fade in again over at most `fade` seconds, played on from where it is; false
+   * once it has let go of what it played on
+   */
+  revive?(fade: number): boolean;
 }
 
 /** an <audio> element routed into WebAudio for good, and the gain a stream fades it with */
@@ -18,9 +23,17 @@ interface Player {
   owner: Stream | null;
   /** when it was last given to one, for taking back the one held longest */
   since: number;
+  /** while its stream fades out: when it began to (the AudioContext's time), so the quietest is taken first */
+  fading: number | null;
 }
 
 const EVENTS = ['playing', 'ended', 'error'];
+
+/** `a` is to be taken back before `b`: fading out before playing, and of either, the longest */
+function sooner(a: Player, b: Player): boolean {
+  if ((a.fading === null) !== (b.fading === null)) return a.fading !== null;
+  return a.fading !== null ? a.fading < b.fading! : a.since < b.since;
+}
 
 /**
  * The <audio> elements the music streams through, made on the first click and used over and over:
@@ -41,7 +54,7 @@ export class Players {
       const gain = ctx.createGain();
       gain.gain.value = 0;
       ctx.createMediaElementSource(el).connect(gain).connect(bus);
-      this.all.push({ el, gain, owner: null, since: 0 });
+      this.all.push({ el, gain, owner: null, since: 0, fading: null });
     }
     this.unlock();
   }
@@ -52,15 +65,20 @@ export class Players {
     for (const p of this.all) if (!p.owner) p.el.load();
   }
 
-  /** an element for `owner`: a free one, or failing that the one given out longest ago, cut short */
+  /**
+   * An element for `owner`: a free one, or failing that one cut short: the one fading out longest,
+   * the quietest by now, else the one given out longest ago. Not by when it was given alone: a
+   * stream brought back (Stream.revive) may be the oldest and playing still.
+   */
   take(owner: Stream): Player {
     let p = this.all.find((q) => !q.owner);
     if (!p) {
-      p = this.all.reduce((a, b) => (b.since < a.since ? b : a));
+      p = this.all.reduce((a, b) => (sooner(b, a) ? b : a));
       p.owner!.lose();
     }
     p.owner = owner;
     p.since = ++this.gave;
+    p.fading = null;
     return p;
   }
 }
@@ -74,6 +92,8 @@ export class Stream implements Track {
   private p: Player;
   private i = 0;
   private stopped = false;
+  /** how many times it was stopped: only the last stop's fade out lets go of the element */
+  private stops = 0;
   /** it has started playing, and fading in */
   private heard = false;
 
@@ -84,6 +104,8 @@ export class Stream implements Track {
     private fade: number,
     /** it can't be played (missing, undecodable): the area gets its composed music instead */
     private onFail: (e: Error) => void,
+    /** the level it fades in to: the track's gain (src/audio/files.ts), as an effect's or a loop's */
+    private level = 1,
   ) {
     const p = (this.p = players.take(this));
     const g = p.gain.gain;
@@ -114,17 +136,21 @@ export class Stream implements Track {
       const t = this.ctx.currentTime;
       g.cancelScheduledValues(t);
       g.setValueAtTime(0, t);
-      g.linearRampToValueAtTime(1, t + this.fade);
-    } else if (e.type === 'ended') {
-      this.i = (this.i + 1) % this.urls.length;
-      el.src = this.urls[this.i];
-      this.resume();
-    } else if (e.type === 'error') {
+      g.linearRampToValueAtTime(this.level, t + this.fade);
+    } else if (e.type === 'ended') this.next();
+    else if (e.type === 'error') {
       const code = el.error?.code;
       // what a dev server or an SPA host serves for a missing file (its index page) can't be decoded
       const why = code === 4 ? ' (missing, or not audio)' : '';
       this.onFail(new Error(`${this.urls[this.i]}: media error ${code ?? '?'}${why}`));
     }
+  }
+
+  /** the next take, at the end of one */
+  private next() {
+    this.i = (this.i + 1) % this.urls.length;
+    this.p.el.src = this.urls[this.i];
+    this.resume();
   }
 
   resume() {
@@ -136,15 +162,41 @@ export class Stream implements Track {
   stop(fade: number) {
     if (this.stopped) return;
     this.stopped = true;
+    const n = ++this.stops;
     const g = this.p.gain.gain;
     const t = this.ctx.currentTime;
+    this.p.fading = t;
     g.cancelScheduledValues(t);
     g.setValueAtTime(g.value, t);
     g.linearRampToValueAtTime(0, t + fade);
     setTimeout(() => {
-      // unless a newer stream has taken its element already
-      if (this.p.owner === this) this.release();
+      // unless it was brought back since (revive), or a newer stream has taken its element already
+      if (this.stopped && this.stops === n && this.p.owner === this) this.release();
     }, fade * 1000 + 100);
+  }
+
+  /**
+   * The hero is back before it has faded out (over a seam, to and fro): it comes in again from the
+   * level it had got down to, played on from where it is, rather than cut off for a new stream of
+   * the same track begun at its start. False once it has let go of its element.
+   */
+  revive(fade: number): boolean {
+    if (!this.stopped || this.p.owner !== this) return false;
+    this.stopped = false;
+    this.p.fading = null;
+    // one that hasn't started yet fades in when it does ('playing')
+    if (this.heard) {
+      const g = this.p.gain.gain;
+      const t = this.ctx.currentTime;
+      const from = g.value;
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(from, t);
+      g.linearRampToValueAtTime(this.level, t + fade * Math.max(0, 1 - from / this.level));
+    }
+    // a take that ran out while it faded (its 'ended' unheeded) gives way to the next
+    if (this.p.el.ended) this.next();
+    else this.resume();
+    return true;
   }
 
   /** a newer stream needs its element: let go of it at once */
@@ -163,5 +215,6 @@ export class Stream implements Track {
     gain.gain.cancelScheduledValues(this.ctx.currentTime);
     gain.gain.setValueAtTime(0, this.ctx.currentTime);
     this.p.owner = null;
+    this.p.fading = null;
   }
 }

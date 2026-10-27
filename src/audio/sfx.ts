@@ -251,6 +251,11 @@ export class Sfx {
   private night = false;
   /** the area's music playing */
   private music: Track | null = null;
+  /**
+   * the last area's music, fading out, and what it is (soundOf): back over the seam before it's
+   * gone, it fades in again where it was (Track.revive) and isn't begun anew
+   */
+  private leaving: { music: string; track: Track } | null = null;
   /** what the ambience and the music playing are (soundOf): the next area's play on where they're the same */
   private now = { amb: '', music: '' };
   /** the <audio> elements recorded music streams through, made on the first click */
@@ -829,8 +834,10 @@ export class Sfx {
     const amb = now.amb !== this.now.amb;
     // the music first: the bed's level depends on whether there is any
     if (music) {
+      const back = this.leaving?.music === now.music ? this.leaving.track : null;
       this.music?.stop(MUSIC_OUT);
-      this.music = this.track(area);
+      this.leaving = this.music ? { music: this.now.music, track: this.music } : null;
+      this.music = back?.revive?.(MUSIC_IN) ? back : this.track(area);
     }
     if (amb) {
       this.amb?.stop(fade ?? AMB_OUT);
@@ -929,13 +936,20 @@ export class Sfx {
     const id = s.music;
     const f = id && this.files[id];
     if (!id || !f || !this.recorded(id) || !this.players) return compose();
-    const stream: Stream = new Stream(ctx, this.players, f.files.map(fileUrl), MUSIC_IN, (e) => {
-      this.fail(id, e);
-      if (this.music !== stream) return;
-      stream.stop(1);
-      this.music = compose();
-      this.now.music = this.soundOf(s).music;
-    });
+    const stream: Stream = new Stream(
+      ctx,
+      this.players,
+      f.files.map(fileUrl),
+      MUSIC_IN,
+      (e) => {
+        this.fail(id, e);
+        if (this.music !== stream) return;
+        stream.stop(1);
+        this.music = compose();
+        this.now.music = this.soundOf(s).music;
+      },
+      f.gain ?? 1,
+    );
     return stream;
   }
 

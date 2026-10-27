@@ -1,8 +1,10 @@
 # 声音来源
 
-**音效与配音由 ElevenLabs 生成**（[elevenlabs.io](https://elevenlabs.io)）：音效和环境声用它的文字生成音效（Sound Effects），配音用文字转语音（Text to Speech）和它的预置音色。账号是免费档：按 ElevenLabs 的条款，免费档生成的内容不能商用，发布时要注明 elevenlabs.io。每个文件的元数据里也写着 elevenlabs.io。
+**音效与配音由 ElevenLabs 生成**（[elevenlabs.io](https://elevenlabs.io)）：音效和环境声用它的文字生成音效（Sound Effects），配音用文字转语音（Text to Speech）和它的预置音色。账号是免费档：按 ElevenLabs 的条款，免费档生成的内容不能商用，发布时要注明 elevenlabs.io。这些文件的元数据里也写着 elevenlabs.io。
 
-这些文件由 `tools/ai-audio.mjs` 按 `tools/audio/list.mjs` 生成：ElevenLabs 的原始输出留在 `audio-src/`（不入库），再用 ffmpeg 和 `tools/audio/dsp.mjs` 后期处理（去掉首尾静音、响度归一，环境声做成无缝循环）后编码成 AAC（.m4a）。没有录音的声音仍由代码实时合成（`src/audio/sfx.ts`），音乐是代码现场作曲的（`src/audio/score.ts`）。
+**音乐由 ACE-Step 1.5 生成**（[github.com/ACE-Step/ACE-Step-1.5](https://github.com/ACE-Step/ACE-Step-1.5)）：代码和模型权重都是 MIT 许可，生成的音频可以自由使用。音乐是在我们自己的 GPU 机器上用 `tools/audio/acestep.py` 生成的，不经过 ElevenLabs；每首的提示词（caption）、速度、调性、拍号、模型和种子见下表，这些文件的元数据里写的是 ACE-Step。
+
+这些文件由 `tools/ai-audio.mjs` 按 `tools/audio/list.mjs` 生成：原始输出留在 `audio-src/`（不入库），再用 ffmpeg 和 `tools/audio/dsp.mjs` 后期处理（去掉首尾静音、响度归一，环境声做成无缝循环，音乐淡出）后编码成 AAC（.m4a）。没有录音的声音仍由代码实时合成（`src/audio/sfx.ts`），还没有录音的区域，音乐由代码现场作曲（`src/audio/score.ts`）。
 
 本文件由 `tools/ai-audio.mjs` 生成，不要手改。`public/audio/` 里的每个录音都在下表，提示词或台词是生成它时用的那一版。
 
@@ -77,6 +79,10 @@
 | `amb.town_night.1.m4a` | 环境声（循环） | camp at night ambience: a crackling campfire close by, crickets chirping in the grass, a soft night wind, a distant owl, no voices, no music | eleven_text_to_sound_v3 | — | 2026-10-26 |
 | `amb.wild.1.m4a` | 环境声（循环） | wild moor by day ambience: a steady cold wind over open grassland, grass rustling, a few distant birds calling far away, no voices, no music | eleven_text_to_sound_v3 | — | 2026-10-26 |
 | `amb.wild_night.1.m4a` | 环境声（循环） | wild moor at night ambience: a cold wind over open grassland, crickets chirping steadily, grass rustling, no birds, no voices, no music | eleven_text_to_sound_v3 | — | 2026-10-26 |
+| `music.town.1.m4a` | 音乐 | solo acoustic guitar for a dark fantasy video game camp, slow rubato fingerpicking on steel strings, phrygian and flamenco touches, long pauses between phrases, a faint low drone underneath, wind-swept and weary, melancholic, intimate, room reverb, no drums, instrumental（60 BPM，E minor，每小节 3 拍，150 秒） | ACE-Step 1.5 acestep-v15-xl-sft + acestep-5Hz-lm-1.7B，种子 111 | — | 2026-10-27 |
+| `music.town.2.m4a` | 音乐 | dark medieval fantasy village theme for a video game, slow melancholic solo acoustic guitar, fingerpicked nylon strings with a phrygian flamenco feel, soft low ambient pads, distant hand drum, sparse and lonely, lots of space and reverb, weary refuge in a hostile land, instrumental（66 BPM，D minor，每小节 3 拍，150 秒） | ACE-Step 1.5 acestep-v15-xl-sft + acestep-5Hz-lm-1.7B，种子 101 | — | 2026-10-27 |
+| `music.wild.1.m4a` | 音乐 | dark ambient fantasy wilderness soundtrack for a video game, ominous low string drones, eerie wordless distant choir pads, sparse deep tribal drum hits, faint plucked guitar notes, desolate moor at dusk, slow building tension, cinematic, haunting reverb, instrumental（60 BPM，A minor，每小节 4 拍，150 秒） | ACE-Step 1.5 acestep-v15-xl-sft + acestep-5Hz-lm-1.7B，种子 201 | — | 2026-10-27 |
+| `music.dungeon.1.m4a` | 音乐 | dark ambient cave soundtrack for a video game, deep rumbling drones, metallic scrapes and resonant clangs, low dissonant strings, distant echoing percussion, unsettling and claustrophobic underground horror ambience, sparse, heavy reverb, instrumental（60 BPM，C minor，每小节 4 拍，150 秒） | ACE-Step 1.5 acestep-v15-turbo + acestep-5Hz-lm-1.7B，种子 302 | — | 2026-10-27 |
 | `voice.paladin.bag_full.1.m4a` | 配音 | 「行囊已经满了。」 | eleven_v4 | Brian | 2026-10-26 |
 | `voice.sorceress.bag_full.1.m4a` | 配音 | 「没地方放了。」 | eleven_v4 | Lily | 2026-10-26 |
 | `voice.paladin.cant_carry.1.m4a` | 配音 | 「我带不了更多了。」 | eleven_v4 | Brian | 2026-10-26 |

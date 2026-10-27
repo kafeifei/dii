@@ -1,33 +1,46 @@
 // Recorded sounds from ElevenLabs: effects, ambience loops and voice lines, by the list in
-// tools/audio/list.mjs. Writes public/audio/<id>.<n>.m4a (take n of the id), the game's manifest
-// src/audio/files.ts and public/audio/CREDITS.md.
+// tools/audio/list.mjs; and the areas' music, made with ACE-Step 1.5 on a GPU machine
+// (tools/audio/acestep.py), which this only processes. Writes public/audio/<id>.<n>.m4a (take n of
+// the id), the game's manifest src/audio/files.ts and public/audio/CREDITS.md.
 //
 //   node tools/ai-audio.mjs --dry [id…]          what would be generated, and the credits it would take
 //   node tools/ai-audio.mjs --budget 6000 [id…]  generate it, stopping before this month's usage passes 6000
 //   node tools/ai-audio.mjs [id…]                only process again what's kept, and rewrite the manifest
-//     id…       just these ids, or those under a prefix ending in '.' (combat. voice.paladin.)
-//     --redo    make the chosen ids' takes again, though they're made (needs ids)
+//     id…       just these ids, or those under a prefix ending in '.' (combat. voice.paladin. music.)
+//     --redo    make the chosen ids' takes again, though they're made (needs ids); music is
+//               processed again from its raw take
 //     --prune   delete files in public/audio/ that no take in the list makes any more, and those
 //               made.json has no record of (they couldn't be credited)
+//     --jobs f  write the music takes there's no raw take of as a jobs file for tools/audio/acestep.py
 //
 // It can be stopped and run again: a take is asked for once. tools/audio/made.json (committed) says
 // what each file in public/audio/ was made from (the prompt or line too, for its credit), so another
 // checkout doesn't pay for it again; a take whose entry has changed since plays on, credited as it
-// was made, until --budget makes it again;
+// was made, until --budget makes it again (music: until its new take is in audio-src/acestep/);
 // audio-src/ (AUDIO_SRC, not committed) keeps ElevenLabs' raw output, to process again for free, and
 // the state: each raw take, and the credits spent this month. The API key is in the macOS keychain
 // (service elevenlabs-api-key), or ELEVENLABS_API_KEY.
 //
+// Music never calls ElevenLabs and costs no credits. A take's raw output is the one under
+// audio-src/acestep/ whose sidecar records what the list asks for (tools/audio/music.mjs), whatever
+// it's called; one there's none of is reported, to generate on a GPU machine, and the run goes on.
+// made.json keeps a hash of the raw take it was processed from, so another one found in its place
+// (made alike, but on another machine, say) is processed again.
+//
 // Processing (tools/audio/dsp.mjs): a DC blocker; effects and lines folded to mono, their silence
 // trimmed and their ends faded; loudness to the kind's target (effects -16 LUFS short-term, lines -18,
-// ambience -24 integrated) under a -1 dBFS ceiling; an ambience crossfaded into a seamless loop, its
-// loop points recorded. Then AAC in .m4a: 64 kbps mono, 96 kbps stereo.
-import { execFileSync } from 'node:child_process';
+// ambience -24 integrated, music -18 integrated) under a -1 dBFS ceiling (music -1.5); an ambience
+// crossfaded into a seamless loop, its loop points recorded; music kept stereo, the model's silence
+// cut off its end, its loudest swells ridden down (dsp.mjs ride), a short fade in and a 3 s fade out, no loop points (Stream loops the file, or
+// plays the next). Then AAC in .m4a: 64 kbps mono, 96 kbps stereo, music 128 kbps; the music's file
+// read back, its true peak under -1 dBFS, or limited lower and encoded again.
+import { execFileSync, spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { RATE, dcBlock, deinterleave, fade, interleave, loopBody, normalize, normalizeLoop, onset, padLoop, peak, toMono, trimSilence } from './audio/dsp.mjs';
+import { RATE, ride, dcBlock, deinterleave, fade, interleave, loopBody, normalize, normalizeLoop, onset, padLoop, peak, toMono, trimSilence } from './audio/dsp.mjs';
+import { describeMusic, findRaw, jobsFor, musicModel, musicRequest, sidecars, validateMusic } from './audio/music.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LIST = path.join(ROOT, 'tools/audio/list.mjs');
@@ -39,6 +52,8 @@ const SRC = path.resolve(process.env.AUDIO_SRC ?? path.join(ROOT, 'audio-src'));
 const RAW = path.join(SRC, 'raw');
 const STATE = path.join(SRC, 'state.json');
 const TMP = path.join(SRC, 'tmp');
+/** the music's raw takes, each with its sidecar (tools/audio/acestep.py), in folders of any name */
+const ACESTEP = path.join(SRC, 'acestep');
 
 /** credits a second of sound effect, as measured on the free tier (the character-cost header) */
 const SFX_RATE = 10;
@@ -65,10 +80,19 @@ const KINDS = {
   voice: { channels: 1, kbps: 64, lufs: -18, how: 'integrated', maxLimit: 3, trim: { lead: -45, tail: -50, pre: 0.03, post: 0.12 }, fadeIn: 0.01 },
   // a bed under everything, limited further: a campfire's odd loud pop stood 34 dB over its loudness
   loop: { duration: 20, influence: 0.3, channels: 2, kbps: 96, lufs: -24, how: 'integrated', maxLimit: 14, crossfade: 2, pad: 0.25 },
+  // ACE-Step's takes stop dead 5 to 12 s short of the duration asked for, with a click or two in the
+  // quiet after: cut at the last sound 50 dB under the peak, then faded out, as the track gives way
+  // to its next take or to itself; they start at once, so the fade in only spares a click. Their
+  // level in the mix is the entry's gain (Stream), so they're normalized like the voice. The codec
+  // rings over what it's given: limited at -1 dBFS, music.town.2 came out of AAC at -0.9 true peak,
+  // so it's limited at -1.5 and the file read back held under -1 (truePeak), or limited lower again
+  music: { channels: 2, kbps: 128, lufs: -18, how: 'integrated', maxLimit: 3, ceiling: -1.5, truePeak: -1, trim: { lead: null, tail: -50, post: 0.1 }, fadeIn: 0.05, fadeOut: 3, ride: { over: 3, ratio: 3, ease: 2 } },
 };
 
 const args = process.argv.slice(2);
-const FLAGS = ['dry', 'budget', 'redo', 'prune'];
+const FLAGS = ['dry', 'budget', 'redo', 'prune', 'jobs'];
+/** the flags followed by a value */
+const VALUED = ['--budget', '--jobs'];
 for (const a of args.filter((a) => a.startsWith('--'))) if (!FLAGS.includes(a.slice(2))) fail(`${a}? The flags are ${FLAGS.map((f) => `--${f}`).join(' ')}`);
 const flag = (k) => args.includes(`--${k}`);
 const opt = (k) => {
@@ -79,8 +103,10 @@ const DRY = flag('dry');
 const REDO = flag('redo');
 const PRUNE = flag('prune');
 const BUDGET = opt('budget') === undefined ? undefined : Number(opt('budget'));
-const filters = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--budget');
+const JOBS = opt('jobs');
+const filters = args.filter((a, i) => !a.startsWith('--') && !VALUED.includes(args[i - 1]));
 if (BUDGET !== undefined && !(BUDGET >= 0)) fail(`--budget ${opt('budget')}: a number of credits`);
+if (flag('jobs') && (!JOBS || JOBS.startsWith('--'))) fail('--jobs <file>: where to write the jobs for tools/audio/acestep.py');
 if (REDO && !filters.length) fail('--redo makes the chosen ids again: name them');
 
 function fail(msg) {
@@ -96,6 +122,8 @@ function writeAtomic(file, data) {
   fs.renameSync(`${file}.tmp`, file);
 }
 const hash = (o) => crypto.createHash('sha1').update(JSON.stringify(o)).digest('hex').slice(0, 12);
+/** a file's content, as hash names it */
+const fileHash = (file) => crypto.createHash('sha1').update(fs.readFileSync(file)).digest('hex').slice(0, 12);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---- the list
@@ -122,6 +150,11 @@ function validate(list) {
     seen.add(e.id);
     if (!KINDS[e.kind]) {
       problems.push(`${where}: kind ${e.kind} is not ${Object.keys(KINDS).join(', ')}`);
+      continue;
+    }
+    if (e.kind === 'music') {
+      problems.push(...validateMusic(e));
+      if (sounds && !sounds.AREA_FILES.includes(e.id)) console.warn(`${where}: no area plays it yet (src/audio/sounds.ts)`);
       continue;
     }
     if (e.variants !== undefined && !(Number.isInteger(e.variants) && e.variants >= 1)) problems.push(`${where}: variants ${e.variants}`);
@@ -153,9 +186,13 @@ function speakerOf(e) {
   return e.voice ?? e.id.split('.')[1];
 }
 
-/** what's asked of ElevenLabs for take n, from the list alone: when it changes, the take is made again */
+/**
+ * what's asked of ElevenLabs for take n, from the list alone: when it changes, the take is made
+ * again. A music take's is what ACE-Step was asked: it picks another raw take
+ */
 function request(e, n) {
   const k = KINDS[e.kind];
+  if (e.kind === 'music') return musicRequest(e, n);
   if (e.kind === 'voice') {
     const sp = SPEAKERS[speakerOf(e)];
     return { kind: 'voice', text: e.text, voice: sp.voice, settings: { ...sp.settings, ...e.settings }, lang: sp.lang ?? 'zh', model: e.model ?? sp.model, n };
@@ -170,7 +207,7 @@ function processing(e, key) {
 }
 
 function takesOf(e) {
-  return Array.from({ length: e.variants ?? 1 }, (_, i) => {
+  return Array.from({ length: e.kind === 'music' ? e.takes.length : (e.variants ?? 1) }, (_, i) => {
     const n = i + 1;
     const req = request(e, n);
     const key = hash(req);
@@ -312,6 +349,17 @@ let aacEncoder;
  */
 const encoder = () => (aacEncoder ??= /\baac_at\b/.test(execFileSync('ffmpeg', ['-hide_banner', '-encoders'], { encoding: 'utf8' })) ? 'aac_at' : 'aac');
 
+/**
+ * A file's true peak in dBFS, read back as a player would: its peak 4x oversampled (ITU-R BS.1770-4
+ * Annex 2), resampled to 192 kHz as ffmpeg's ebur128 does for its true peak
+ */
+function truePeak(file) {
+  const r = spawnSync('ffmpeg', ['-hide_banner', '-nostdin', '-nostats', '-i', file, '-af', `aresample=${RATE * 4},astats=measure_perchannel=none:measure_overall=Peak_level`, '-f', 'null', '-'], { encoding: 'utf8', maxBuffer: 1 << 24 });
+  const m = /Peak level dB: (-?inf|-?\d+(?:\.\d+)?)/.exec(r.stderr ?? '');
+  if (r.status !== 0 || !m) throw new Error(`${file}: ffmpeg gave no true peak: ${(r.stderr ?? r.error?.message ?? '').slice(-300)}`);
+  return m[1].endsWith('inf') ? -Infinity : Number(m[1]);
+}
+
 /** raw take to public/audio/<file>: what's in it, for made.json */
 function processTake(t, raw) {
   const k = KINDS[t.e.kind];
@@ -319,6 +367,8 @@ function processTake(t, raw) {
   let chs = dcBlock(decode(raw, 2));
   let loop;
   let level;
+  /** the music normalized under a lower ceiling, and let be limited that much more, so it keeps its loudness */
+  let lower;
   if (t.e.kind === 'loop') {
     // every take of an id loops at the same points: as long as the duration asked for
     if (t.req.duration !== 'auto') chs = chs.map((c) => c.subarray(0, Math.round(t.req.duration * RATE)));
@@ -326,6 +376,17 @@ function processTake(t, raw) {
     const made = padLoop(level.chs, p);
     chs = made.chs;
     loop = { start: +(made.start / RATE).toFixed(6), end: +(made.end / RATE).toFixed(6) };
+  } else if (t.e.kind === 'music') {
+    // faded before it's measured, so it ends at its loudness
+    chs = trimSilence(chs, k.trim);
+    if (!chs) throw new Error(`${t.name}: the take is silent`);
+    // its loudest swells brought down, so it can sit under the fighting at the level of the music
+    // composed in its place (tools/scenarios/sfx.mjs): the XL takes swelled 7 LU over their loudness
+    const rode = ride(chs, k.ride);
+    const faded = fade(rode.chs, k.fadeIn, k.fadeOut);
+    lower = (ceiling) => normalize(faded, { lufs: p.lufs, how: k.how, ceiling, maxLimit: k.maxLimit + k.ceiling - ceiling });
+    level = lower(k.ceiling);
+    chs = level.chs;
   } else {
     chs = trimSilence(k.channels === 1 ? toMono(chs) : chs, k.trim);
     if (!chs) throw new Error(`${t.name}: the take is silent`);
@@ -335,10 +396,31 @@ function processTake(t, raw) {
   fs.mkdirSync(TMP, { recursive: true });
   const pcm = path.join(TMP, `${t.name}.f32`);
   const tmp = path.join(TMP, t.file);
-  fs.writeFileSync(pcm, interleave(chs));
-  // the free tier's terms: what's published names elevenlabs.io
-  const tags = ['-metadata', `title=${t.name} (elevenlabs.io)`, '-metadata', 'comment=Generated with ElevenLabs, elevenlabs.io'];
-  ffmpeg(['-y', '-f', 'f32le', '-ar', String(RATE), '-ac', String(chs.length), '-i', pcm, '-c:a', encoder(), '-b:a', `${k.kbps}k`, '-map_metadata', '-1', ...tags, '-movflags', '+faststart', tmp]);
+  // the free tier's terms: what's published names elevenlabs.io; the music names what made it
+  const tags =
+    t.e.kind === 'music'
+      ? ['-metadata', `title=${t.name} (ACE-Step 1.5)`, '-metadata', `comment=Generated with ${musicModel(t.req)}, seed ${t.req.seed}: github.com/ACE-Step/ACE-Step-1.5`]
+      : ['-metadata', `title=${t.name} (elevenlabs.io)`, '-metadata', 'comment=Generated with ElevenLabs, elevenlabs.io'];
+  const encode = () => {
+    fs.writeFileSync(pcm, interleave(chs));
+    ffmpeg(['-y', '-f', 'f32le', '-ar', String(RATE), '-ac', String(chs.length), '-i', pcm, '-c:a', encoder(), '-b:a', `${k.kbps}k`, '-map_metadata', '-1', ...tags, '-movflags', '+faststart', tmp]);
+  };
+  encode();
+  // the codec's overshoot is limited away, not turned down: under a ceiling that far below the PCM's
+  // peak (which may be under the ceiling already: a click rang 2 dB over itself), and a tenth of a
+  // dB more, as it doesn't come down dB for dB; encoded again
+  let tp;
+  if (k.truePeak !== undefined) {
+    let ceiling = k.ceiling;
+    for (let tries = 0; (tp = truePeak(tmp)) > k.truePeak; tries++) {
+      if (tries === 3) throw new Error(`${t.name}: still ${tp.toFixed(2)} dBFS true peak once encoded, over ${k.truePeak}, limited at ${ceiling.toFixed(2)}`);
+      ceiling = Math.min(ceiling, level.peak) - (tp - k.truePeak + 0.1);
+      console.log(`  ${t.name}: ${tp.toFixed(2)} dBFS true peak once encoded: limited at ${ceiling.toFixed(2)} dBFS instead`);
+      level = lower(ceiling);
+      chs = level.chs;
+      encode();
+    }
+  }
   // read it back as a browser would (the edit list drops the encoder's priming): same length, same place
   const back = decode(tmp, chs.length);
   const extra = back[0].length - chs[0].length;
@@ -358,7 +440,8 @@ function processTake(t, raw) {
   const round = (x) => (Number.isFinite(x) ? +x.toFixed(1) : null);
   // short of its loudness only when limited by all the kind allows (dsp.mjs normalize)
   const over = (x, min) => (x >= min ? round(x) : undefined);
-  return { secs, lufs: round(level.lufs), peak: round(level.peak), limited: over(level.limited, 0.05), short: over(level.short, 0.25), loop, encoder: encoder() };
+  // peak: the PCM's before it's encoded; truePeak: the file's, as it ships (music)
+  return { secs, lufs: round(level.lufs), peak: round(level.peak), truePeak: tp === undefined ? undefined : +tp.toFixed(2), limited: over(level.limited, 0.05), short: over(level.short, 0.25), loop, encoder: encoder() };
 }
 
 // ---- the manifest and the credits
@@ -403,8 +486,13 @@ function writeManifest(list, made) {
   return lines.length;
 }
 
-const KIND_NAME = { sfx: '音效', loop: '环境声（循环）', voice: '配音' };
+const KIND_NAME = { sfx: '音效', loop: '环境声（循环）', voice: '配音', music: '音乐' };
 const cell = (s) => String(s).replace(/\|/g, '\\|').replace(/\n/g, ' ');
+/** a credit's prompt and model: a music take's job and seed with them, which made it as much as its caption */
+const creditOf = (m) =>
+  m.kind === 'music'
+    ? { what: `${m.prompt}（${m.bpm} BPM，${m.scale}，每小节 ${m.time} 拍，${m.duration} 秒）`, model: `${m.model}，种子 ${m.seed}` }
+    : { what: m.kind === 'voice' ? `「${m.text}」` : m.prompt, model: m.model };
 
 /**
  * Every recording in public/audio/, as made.json says it was made: they all ship, so each is credited,
@@ -415,17 +503,23 @@ function credits(list, made) {
   const files = shipped();
   const listed = list.flatMap(takesOf).map((t) => t.file).filter((f) => files.includes(f));
   const rows = [];
+  let music = false;
   for (const f of [...listed, ...files.filter((f) => !listed.includes(f))]) {
     const m = made[f.replace(/\.m4a$/, '')];
     if (!m) continue;
-    const what = m.kind === 'voice' ? `「${m.text}」` : m.prompt;
-    rows.push(`| \`${f}\` | ${KIND_NAME[m.kind]} | ${cell(what ?? '?')} | ${m.model ?? '?'} | ${m.voice ?? '—'} | ${m.date ?? '?'} |`);
+    music ||= m.kind === 'music';
+    const { what, model } = creditOf(m);
+    rows.push(`| \`${f}\` | ${KIND_NAME[m.kind]} | ${cell(what ?? '?')} | ${cell(model ?? '?')} | ${m.voice ?? '—'} | ${m.date ?? '?'} |`);
   }
+  const ace = music
+    ? `\n**音乐由 ACE-Step 1.5 生成**（[github.com/ACE-Step/ACE-Step-1.5](https://github.com/ACE-Step/ACE-Step-1.5)）：代码和模型权重都是 MIT 许可，生成的音频可以自由使用。音乐是在我们自己的 GPU 机器上用 \`tools/audio/acestep.py\` 生成的，不经过 ElevenLabs；每首的提示词（caption）、速度、调性、拍号、模型和种子见下表，这些文件的元数据里写的是 ACE-Step。\n`
+    : '';
+  const score = music ? '还没有录音的区域，音乐由代码现场作曲' : '音乐是代码现场作曲的';
   return `# 声音来源
 
-**音效与配音由 ElevenLabs 生成**（[elevenlabs.io](https://elevenlabs.io)）：音效和环境声用它的文字生成音效（Sound Effects），配音用文字转语音（Text to Speech）和它的预置音色。账号是免费档：按 ElevenLabs 的条款，免费档生成的内容不能商用，发布时要注明 elevenlabs.io。每个文件的元数据里也写着 elevenlabs.io。
-
-这些文件由 \`tools/ai-audio.mjs\` 按 \`tools/audio/list.mjs\` 生成：ElevenLabs 的原始输出留在 \`audio-src/\`（不入库），再用 ffmpeg 和 \`tools/audio/dsp.mjs\` 后期处理（去掉首尾静音、响度归一，环境声做成无缝循环）后编码成 AAC（.m4a）。没有录音的声音仍由代码实时合成（\`src/audio/sfx.ts\`），音乐是代码现场作曲的（\`src/audio/score.ts\`）。
+**音效与配音由 ElevenLabs 生成**（[elevenlabs.io](https://elevenlabs.io)）：音效和环境声用它的文字生成音效（Sound Effects），配音用文字转语音（Text to Speech）和它的预置音色。账号是免费档：按 ElevenLabs 的条款，免费档生成的内容不能商用，发布时要注明 elevenlabs.io。这些文件的元数据里也写着 elevenlabs.io。
+${ace}
+这些文件由 \`tools/ai-audio.mjs\` 按 \`tools/audio/list.mjs\` 生成：原始输出留在 \`audio-src/\`（不入库），再用 ffmpeg 和 \`tools/audio/dsp.mjs\` 后期处理（去掉首尾静音、响度归一，环境声做成无缝循环，音乐淡出）后编码成 AAC（.m4a）。没有录音的声音仍由代码实时合成（\`src/audio/sfx.ts\`），${score}（\`src/audio/score.ts\`）。
 
 本文件由 \`tools/ai-audio.mjs\` 生成，不要手改。\`public/audio/\` 里的每个录音都在下表，提示词或台词是生成它时用的那一版。
 
@@ -445,12 +539,28 @@ for (const t of list.flatMap(takesOf)) {
   if (m?.key === t.key && m.prompt === undefined && m.text === undefined) Object.assign(m, askedFor(t.req));
 }
 const state = readJson(STATE, { takes: {}, period: null });
+let cars;
+/** a music take's raw output: the take under audio-src/acestep/ whose sidecar records its request */
+const musicRaw = (t) => findRaw((cars ??= sidecars(ACESTEP)), t.req);
 const rawOf = (t) => {
+  if (t.e.kind === 'music') return musicRaw(t)?.wav ?? null;
   const s = state.takes[t.name];
   return s?.key === t.key && s.raw && fs.existsSync(path.join(SRC, s.raw)) ? path.join(SRC, s.raw) : null;
 };
+/**
+ * A music take whose raw take here isn't the one its file was processed from: its sidecar says the
+ * same, but it's another recording (made again on another GPU, say). None here says nothing: the
+ * file stands, as made.json records it
+ */
+const rawChanged = (t, m) => {
+  if (t.e.kind !== 'music') return false;
+  const raw = musicRaw(t);
+  return !!raw && fileHash(raw.wav) !== m.rawHash;
+};
 
 const toMake = [];
+/** music takes there's no raw take of: made on a GPU machine (tools/audio/acestep.py), not here */
+const toGenerate = [];
 const toProcess = [];
 const cantProcess = [];
 let upToDate = 0;
@@ -458,19 +568,36 @@ for (const e of list.filter(chosen)) {
   for (const t of takesOf(e)) {
     const m = made[t.name];
     const out = fs.existsSync(path.join(OUT, t.file));
-    if (REDO) toMake.push(t);
-    else if (m?.key === t.key && out && m.proc === t.proc) upToDate++;
+    const music = e.kind === 'music';
+    if (REDO && !music) toMake.push(t);
+    else if (!REDO && m?.key === t.key && out && m.proc === t.proc && !rawChanged(t, m)) upToDate++;
     else if (rawOf(t)) toProcess.push(t);
     else if (m?.key === t.key && out) cantProcess.push(t);
-    else toMake.push(t);
+    else (music ? toGenerate : toMake).push(t);
   }
 }
 if (filters.length && !list.some(chosen)) fail(`no id in the list matches ${filters.join(' ')}`);
-for (const t of cantProcess) console.warn(`${t.name}: processed by an older recipe, and its raw take isn't in ${path.relative(ROOT, RAW)} to process again`);
+const GPU = 'to generate on a GPU machine with tools/audio/acestep.py';
+/** a path as it's shown: from the checkout, where it's in it */
+const shown = (p) => (path.relative(ROOT, p).startsWith('..') ? p : path.relative(ROOT, p));
+for (const t of cantProcess) {
+  // (only music gets here with --redo: the rest is made again)
+  const why = made[t.name].proc === t.proc ? '--redo asks to process it again' : 'processed by an older recipe';
+  console.warn(`${t.name}: ${why}, but its raw take isn't in ${shown(t.e.kind === 'music' ? ACESTEP : RAW)}: the file stays as it is`);
+}
+if (toGenerate.length) {
+  console.log(`music ${GPU} (no sidecar under ${shown(ACESTEP)} records them; --jobs <file> writes their jobs):`);
+  for (const t of toGenerate) console.log(`  music ${t.name.padEnd(30)} ${describeMusic(t.req).slice(0, 150)}`);
+}
+if (JOBS) {
+  writeAtomic(JOBS, `${JSON.stringify(jobsFor(toGenerate), null, 2)}\n`);
+  console.log(`${JOBS}: ${toGenerate.length} music takes for tools/audio/acestep.py`);
+}
 
 let sub = null;
-// the paid API only when it's to be used (or for --dry): processing again works offline
-if ((toMake.length && BUDGET !== undefined) || DRY) {
+// the paid API only when it's to be used (or for --dry, unless it's music alone): processing again works offline
+const eleven = list.some((e) => chosen(e) && e.kind !== 'music');
+if ((toMake.length && BUDGET !== undefined) || (DRY && eleven)) {
   try {
     sub = await usage();
     if (toMake.some((t) => t.req.kind === 'voice')) await speechInfo();
@@ -501,6 +628,7 @@ const upTo = worst > total ? `, up to ${worst}` : '';
 if (DRY) {
   console.log(`to make: ${toMake.length} takes, ~${total} credits${upTo}`);
   for (const t of toMake) console.log(describe(t));
+  if (toGenerate.length) console.log(`music ${GPU}: ${toGenerate.length}: ${toGenerate.map((t) => t.name).join(' ')}`);
   console.log(`to process again (free): ${toProcess.length}${toProcess.length ? `: ${toProcess.map((t) => t.name).join(' ')}` : ''}`);
   console.log(`up to date: ${upToDate}`);
   if (sub) {
@@ -516,6 +644,23 @@ let errors = 0;
 const saveState = () => writeAtomic(STATE, `${JSON.stringify(state, null, 2)}\n`);
 const saveMade = () => writeAtomic(MADE, `${JSON.stringify(Object.fromEntries(Object.entries(made).sort(([a], [b]) => a.localeCompare(b))), null, 2)}\n`);
 
+/**
+ * What made a music take, from its sidecar: ACE-Step's models, the seed, the job and the sampler, the
+ * raw take's hash, and when: the sidecar's time (tools/audio/acestep.py writes it), else its files'
+ * (gen-reference.py's don't say), which is when they were made where they were copied keeping it
+ * (scp -p, as the README's commands do), else when they were copied. It cost no credits
+ */
+function musicGen(t) {
+  const { json, wav, meta } = musicRaw(t);
+  const r = t.req;
+  const at = Date.parse(meta.at);
+  return {
+    model: musicModel(r),
+    at: Number.isFinite(at) ? at : Math.min(fs.statSync(json).mtimeMs, fs.statSync(wav).mtimeMs),
+    extra: { seed: r.seed, bpm: r.bpm, scale: r.key, time: r.time, duration: r.duration, steps: r.steps, guidance: r.guidance, shift: r.shift, raw: path.relative(SRC, wav), rawHash: fileHash(wav) },
+  };
+}
+
 /** process the raw take and record it in made.json; `gen` is what made it, or its record in the state */
 function processOne(t, raw, gen) {
   const info = processTake(t, raw);
@@ -526,6 +671,7 @@ function processOne(t, raw, gen) {
     model: gen.model,
     voice: gen.voice,
     ...askedFor(t.req),
+    ...gen.extra,
     credits: gen.cost,
     // the local day (sv's dates are YYYY-MM-DD)
     date: new Date(gen.at ?? Date.now()).toLocaleDateString('sv'),
@@ -534,7 +680,8 @@ function processOne(t, raw, gen) {
   saveMade();
   const m = made[t.name];
   const notes = [m.limited && `limited ${m.limited} dB`, m.short && `${m.short} dB short of ${processing(t.e, t.key).lufs}`, m.loop && `loop ${m.loop.start}–${m.loop.end} s`].filter(Boolean);
-  console.log(`  ${t.name}: ${m.secs} s, ${m.lufs} LUFS, peak ${m.peak} dBFS${notes.map((n) => `, ${n}`).join('')}`);
+  const tp = m.truePeak === undefined ? '' : ` (${m.truePeak} true peak once encoded)`;
+  console.log(`  ${t.name}: ${m.secs} s, ${m.lufs} LUFS, peak ${m.peak} dBFS${tp}${notes.map((n) => `, ${n}`).join('')}`);
 }
 
 if (toMake.length && BUDGET === undefined) {
@@ -583,7 +730,7 @@ if (toMake.length && BUDGET === undefined) {
 for (const t of toProcess) {
   try {
     console.log(`  process ${t.name}`);
-    processOne(t, rawOf(t), state.takes[t.name]);
+    processOne(t, rawOf(t), t.e.kind === 'music' ? musicGen(t) : state.takes[t.name]);
   } catch (e) {
     console.error(`  ${t.name}: ${e.message}`);
     errors++;
@@ -605,7 +752,8 @@ for (const f of shipped()) {
 }
 if (PRUNE) saveMade();
 for (const t of list.flatMap((e) => present(e, made)).filter((t) => isStale(t, made))) {
-  console.log(`stale: ${t.name} was made from what its entry asked before: it plays on, credited as made, until --budget makes it again`);
+  const until = t.e.kind === 'music' ? `its new take is generated (tools/audio/acestep.py) and put under ${shown(ACESTEP)}` : '--budget makes it again';
+  console.log(`stale: ${t.name} was made from what its entry asked before: it plays on, credited as made, until ${until}`);
 }
 
 const ids = writeManifest(list, made);
