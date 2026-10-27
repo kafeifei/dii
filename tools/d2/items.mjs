@@ -5,7 +5,7 @@
 import { list, numbered, record, rows, rows27, strings, tables, writeD2x } from './load.mjs';
 import { exclude, glossaryOfficial, names } from './names.mjs';
 import { SKILL_PROPS, coverage, propReader } from './props.mjs';
-import { WARLOCK, WARLOCK_SETS, WARLOCK_TYPES, ladderOnly, latestSeason } from './scope.mjs';
+import { WARLOCK, WARLOCK_SETS, WARLOCK_TYPES, latestSeason, stillLadderOnly } from './scope.mjs';
 
 /** the NPCs that have shop columns in the base tables, by their internal names */
 const NPCS = ['Charsi', 'Gheed', 'Akara', 'Fara', 'Lysander', 'Drognan', 'Hratli', 'Alkor', 'Ormus', 'Elzix', 'Asheara', 'Cain', 'Halbu', 'Jamella', 'Larzuk', 'Malah', 'Anya'];
@@ -18,12 +18,16 @@ const WARLOCK_ROW = '术士资料片新增（D2CE 无字串）';
 export async function buildItems() {
   const [weaponsJ, armorJ, miscJ, itypesJ, prefixJ, suffixJ, autoJ, rarePreJ, rareSufJ, qualityJ, lowJ, uniqueJ, setItemsJ, setsJ, runesJ, gemsJ, beltsJ] =
     await tables('weapons', 'armor', 'misc', 'itemtypes', 'magicprefix', 'magicsuffix', 'automagic', 'rareprefix', 'raresuffix', 'qualityitems', 'lowqualityitems', 'uniqueitems', 'setitems', 'sets', 'runes', 'gems', 'belts');
-  // the bases and uniques the expansion changed are read as 2.7 has them (see rows27)
-  const [W27, A27, M27, U27] = await Promise.all([rows27('weapons', 'code'), rows27('armor', 'code'), rows27('misc', 'code'), rows27('uniqueitems', '*ID')]);
+  // the bases, uniques and sets the expansion changed are read as 2.7 has them (see rows27); season
+  // 15 also gave Angelic Raiment's full set +1 to all skills (Sets.txt FCode5 allskills, not in 2.7)
+  const [W27, A27, M27, U27, SI27, SET27, RW27] = await Promise.all([
+    rows27('weapons', 'code'), rows27('armor', 'code'), rows27('misc', 'code'), rows27('uniqueitems', '*ID'), rows27('setitems', 'index'), rows27('sets', 'index'), rows27('runes', 'Name'),
+  ]);
   const S = await strings('item-names', 'item-runes', 'item-nameaffixes');
   const { prop, isWarlock, unknownSkills, skillOf } = await propReader();
   const cover = coverage();
   const season = latestSeason(uniqueJ, setItemsJ, runesJ);
+  const season27 = latestSeason([...U27.values()], [...SI27.values()], [...RW27.values()]);
   /** official names of the proper nouns: none of them may reach the generated data */
   const officialNames = new Set();
   const official = (key) => {
@@ -92,14 +96,17 @@ export async function buildItems() {
     }
     return Object.keys(o).length ? o : undefined;
   }
-  /** generic base names keep the official name; proper nouns in them come from bases.json */
+  /**
+   * Generic base names keep the official strings; proper nouns in them come from bases.json, with
+   * our English name. Runes are numbered: "N 号符文", "Rune N".
+   */
   function baseName(r, en) {
-    if (r.type === 'rune') return `${runeNum(r.code)} 号符文`;
+    if (r.type === 'rune') return { name: `${runeNum(r.code)} 号符文`, nameEn: `Rune ${runeNum(r.code)}` };
     if (baseNames.has(r.code)) {
       renamed.add(r.code);
-      return baseNames.get(r.code, en, official(r.namestr));
+      return baseNames.named(r.code, en, official(r.namestr));
     }
-    return S.zh[r.namestr];
+    return S.zh[r.namestr] ? { name: S.zh[r.namestr] } : undefined;
   }
   const BASE = {};
   function base(kind, r) {
@@ -109,10 +116,10 @@ export async function buildItems() {
       return;
     }
     const en = S.en[r.namestr] ?? r.name;
-    const name = baseName(r, en);
+    const nm = baseName(r, en);
     // rows with no official string and no name of ours: unused leftovers and Warlock-era materials
-    if (!name) return exclude(kind, 'D2CE 无字串（术士资料片新增或未用的行）', r.code);
-    const o = { code: r.code, name, en, type: r.type };
+    if (!nm) return baseNames.has(r.code) ? undefined : exclude(kind, 'D2CE 无字串（术士资料片新增或未用的行）', r.code);
+    const o = { code: r.code, ...nm, en, type: r.type };
     if (r.type2) o.type2 = r.type2;
     o.w = r.invwidth;
     o.h = r.invheight;
@@ -206,9 +213,9 @@ export async function buildItems() {
     if (!all.length) return exclude(where, '没有物品类型（未用的行）', idx);
     const itypes = all.filter(typeOk);
     if (!itypes.length) return exclude(where, '只用于术士物品', idx);
-    const n = (typeof nm === 'function' ? nm(r.Name) : nm).get(r.Name, S.en[r.Name], official(r.Name));
+    const n = (typeof nm === 'function' ? nm(r.Name) : nm).named(r.Name, S.en[r.Name], official(r.Name));
     if (!n) return;
-    const a = { id: +idx, name: n, en: S.en[r.Name], level: r.level ?? 0 };
+    const a = { id: +idx, ...n, en: S.en[r.Name], level: r.level ?? 0 };
     if (r.maxlevel) a.maxLevel = r.maxlevel;
     a.reqLvl = r.levelreq ?? 0;
     // a hero of this class needs classlevelreq instead (D2MOO ITEMS_GetLevelRequirement): the charged
@@ -244,9 +251,9 @@ export async function buildItems() {
     for (const [idx, r] of Object.entries(t)) {
       if (!r.name) continue;
       const en = S.en[r.name] ?? nm.en(r.name);
-      const n = nm.get(r.name, en, official(r.name));
+      const n = nm.named(r.name, en, official(r.name));
       if (!n) continue;
-      const o = { id: +idx, name: n, en };
+      const o = { id: +idx, ...n, en };
       o.itypes = numbered(r, 7, (i) => `itype${i}`).map((i) => r[`itype${i}`]).filter(typeOk);
       const et = numbered(r, 4, (i) => `etype${i}`).map((i) => r[`etype${i}`]).filter(typeOk);
       if (et.length) o.etypes = et;
@@ -277,13 +284,13 @@ export async function buildItems() {
     // by *ID: index repeats (Azurewrath's unused first row, the eight Rainbow Facets). 2.7 calls the
     // drop flag "enabled", the 3.x tables "spawnable".
     const old = U27.get(pinned['*ID']);
-    const r = old ? { ...old, spawnable: old.enabled, firstLadderSeason: pinned.firstLadderSeason, lastLadderSeason: pinned.lastLadderSeason } : pinned;
+    const r = old ? { ...old, spawnable: old.enabled } : pinned;
     if (S.zh[r.index] === undefined) {
       exclude('uniqueitems', WARLOCK_ROW, r.index);
       continue;
     }
-    if (ladderOnly(r, season)) {
-      exclude('uniqueitems', `天梯第 ${r.firstLadderSeason} 赛季专属`, r.index);
+    if (stillLadderOnly(pinned, season, old, season27)) {
+      exclude('uniqueitems', `天梯第 ${pinned.firstLadderSeason} 赛季专属`, r.index);
       continue;
     }
     if (!BASE[r.code]) {
@@ -300,9 +307,9 @@ export async function buildItems() {
       exclude('uniqueitems', '没有属性（未用的行）', r.index);
       continue;
     }
-    const name = uniqueNames.get(r.index, S.en[r.index], official(r.index));
-    if (!name) continue;
-    const u = { id: r['*ID'], key: r.index, name, en: S.en[r.index], code: r.code, lvl: r.lvl ?? 0, reqLvl: r['lvl req'] ?? 0, rarity: r.rarity ?? 0, spawnable: !!r.spawnable };
+    const nm = uniqueNames.named(r.index, S.en[r.index], official(r.index));
+    if (!nm) continue;
+    const u = { id: r['*ID'], key: r.index, ...nm, en: S.en[r.index], code: r.code, lvl: r.lvl ?? 0, reqLvl: r['lvl req'] ?? 0, rarity: r.rarity ?? 0, spawnable: !!r.spawnable };
     if (r['cost mult']) u.costMult = r['cost mult'];
     if (r['cost add']) u.costAdd = r['cost add'];
     if (r.carry1) u.carry1 = true;
@@ -318,13 +325,16 @@ export async function buildItems() {
   const byLine = (t) => rows(t).sort((a, b) => a.lineNumber - b.lineNumber);
   const setItems = [];
   const pieces = {};
-  for (const r of byLine(setItemsJ)) {
+  for (const pinned of byLine(setItemsJ)) {
+    // 2.7's SetItems.txt has no spawnable column: every set item there drops
+    const old = SI27.get(pinned.index);
+    const r = old ? { ...old, spawnable: 1 } : pinned;
     if (WARLOCK_SETS.has(r.set) || S.zh[r.index] === undefined) {
       exclude('setitems', WARLOCK_ROW, r.index);
       continue;
     }
-    if (ladderOnly(r, season)) {
-      exclude('setitems', `天梯第 ${r.firstLadderSeason} 赛季专属`, r.index);
+    if (stillLadderOnly(pinned, season, old, season27)) {
+      exclude('setitems', `天梯第 ${pinned.firstLadderSeason} 赛季专属`, r.index);
       continue;
     }
     if (!BASE[r.item]) {
@@ -341,9 +351,9 @@ export async function buildItems() {
       exclude('setitems', '术士技能', r.index);
       continue;
     }
-    const name = setNames.get(r.index, S.en[r.index], official(r.index));
-    if (!name) continue;
-    const o = { id: r['*ID'], key: r.index, set: r.set, name, en: S.en[r.index], code: r.item, lvl: r.lvl ?? 0, reqLvl: r['lvl req'] ?? 0, rarity: r.rarity ?? 0, spawnable: !!r.spawnable };
+    const nm = setNames.named(r.index, S.en[r.index], official(r.index));
+    if (!nm) continue;
+    const o = { id: r['*ID'], key: r.index, set: r.set, ...nm, en: S.en[r.index], code: r.item, lvl: r.lvl ?? 0, reqLvl: r['lvl req'] ?? 0, rarity: r.rarity ?? 0, spawnable: !!r.spawnable };
     if (r['cost mult']) o.costMult = r['cost mult'];
     if (r['cost add']) o.costAdd = r['cost add'];
     o.props = ps;
@@ -354,7 +364,8 @@ export async function buildItems() {
     (pieces[r.set] ??= []).push(r.index);
   }
   const sets = [];
-  for (const r of byLine(setsJ)) {
+  for (const pinned of byLine(setsJ)) {
+    const r = SET27.get(pinned.index) ?? pinned;
     if (WARLOCK_SETS.has(r.index) || S.zh[r.index] === undefined) {
       exclude('sets', WARLOCK_ROW, r.index);
       continue;
@@ -369,10 +380,10 @@ export async function buildItems() {
       if (ps.length) partial.push({ n, props: ps });
     }
     const full = props(r, 8, (i) => `FCode${i}`, (i) => `FParam${i}`, (i) => `FMin${i}`, (i) => `FMax${i}`);
-    const name = setNames.get(r.index, S.en[r.index], official(r.index));
-    if (!name) continue;
+    const nm = setNames.named(r.index, S.en[r.index], official(r.index));
+    if (!nm) continue;
     cover.add('sets', [...partial.flatMap((p) => p.props), ...full]);
-    sets.push({ id: r.index, name, en: S.en[r.index], pieces: pieces[r.index], partial, full });
+    sets.push({ id: r.index, ...nm, en: S.en[r.index], pieces: pieces[r.index], partial, full });
   }
 
   // ───────────────────────── runes, gems, runewords ─────────────────────────
@@ -389,7 +400,7 @@ export async function buildItems() {
     if (m.type === 'rune') {
       official(r.code);
       const num = runeNum(r.code);
-      runes.push({ id: r.code, num, name: b.name, glyph: String(num), en: b.en, ...o });
+      runes.push({ id: r.code, num, name: b.name, nameEn: b.nameEn, glyph: String(num), en: b.en, ...o });
     } else if (GEM_TYPES[m.type]) {
       gems.push({ id: r.code, name: b.name, en: b.en, gem: GEM_TYPES[m.type], grade: +m.type2.slice(3), ...o, ...(b.next ? { next: b.next } : {}) });
     }
@@ -404,7 +415,7 @@ export async function buildItems() {
       exclude('runes', WARLOCK_ROW, r.Name);
       continue;
     }
-    if (ladderOnly(r, season)) {
+    if (stillLadderOnly(r, season, RW27.get(r.Name), season27)) {
       exclude('runes', `天梯第 ${r.firstLadderSeason} 赛季专属`, r.Name);
       continue;
     }
@@ -414,9 +425,9 @@ export async function buildItems() {
       exclude('runes', '术士技能', r.Name);
       continue;
     }
-    const name = rwNames.get(r.Name, S.en[r.Name] ?? r['*Rune Name'], official(r.Name));
-    if (!name) continue;
-    const o = { id: r.Name, name, en: S.en[r.Name] ?? r['*Rune Name'], runes: rs.map(runeNum) };
+    const nm = rwNames.named(r.Name, S.en[r.Name] ?? r['*Rune Name'], official(r.Name));
+    if (!nm) continue;
+    const o = { id: r.Name, ...nm, en: S.en[r.Name] ?? r['*Rune Name'], runes: rs.map(runeNum) };
     o.itypes = numbered(r, 6, (i) => `itype${i}`).map((i) => r[`itype${i}`]).filter(typeOk);
     const et = numbered(r, 3, (i) => `etype${i}`).map((i) => r[`etype${i}`]).filter(typeOk);
     if (et.length) o.etypes = et;

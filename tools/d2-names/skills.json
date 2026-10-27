@@ -1,8 +1,8 @@
 {
-  "Valkyrie": {"name":"英灵战女","en":"Valkyrie","official":"女武神","note":"召唤一名幽灵女战士；北欧神话里的称谓，换成英灵与战女"},
-  "Oak Sage": {"name":"古橡贤灵","en":"Oak Sage","official":"橡木智灵","note":"德鲁伊的橡树之灵，「智」换「贤」、加「古」"},
-  "Heart of Wolverine": {"name":"貂熊之魄","en":"Heart of Wolverine","official":"狼獾之心","note":"wolverine 取另一通名「貂熊」，心→魄"},
-  "Spirit of Barbs": {"name":"刺藤之魂","en":"Spirit of Barbs","official":"棘灵","note":"荆棘之灵，换作刺藤"},
-  "Shadow Warrior": {"name":"孪影死士","en":"Shadow Warrior","official":"影身战士","note":"刺客召出的影子分身：孪生之影，战士换作死士"},
-  "Shadow Master": {"name":"孪影宗主","en":"Shadow Master","official":"影身大师","note":"影身战士的高阶，同用「孪影」；大师换作一派之主"}
+  "Valkyrie": {"name":"英灵战女","nameEn":"Spirit Warmaiden","en":"Valkyrie","official":"女武神","note":"召唤一名幽灵女战士；北欧神话里的称谓，换成英灵与战女"},
+  "Oak Sage": {"name":"古橡贤灵","nameEn":"Elder Oak Spirit","en":"Oak Sage","official":"橡木智灵","note":"德鲁伊的橡树之灵，「智」换「贤」、加「古」"},
+  "Heart of Wolverine": {"name":"貂熊之魄","nameEn":"Soul of the Glutton","en":"Heart of Wolverine","official":"狼獾之心","note":"wolverine 取另一通名「貂熊」，心→魄"},
+  "Spirit of Barbs": {"name":"刺藤之魂","nameEn":"Soul of the Briar Vine","en":"Spirit of Barbs","official":"棘灵","note":"荆棘之灵，换作刺藤"},
+  "Shadow Warrior": {"name":"孪影死士","nameEn":"Twinshade Deathsworn","en":"Shadow Warrior","official":"影身战士","note":"刺客召出的影子分身：孪生之影，战士换作死士"},
+  "Shadow Master": {"name":"孪影宗主","nameEn":"Twinshade Hierarch","en":"Shadow Master","official":"影身大师","note":"影身战士的高阶，同用「孪影」；大师换作一派之主"}
 }

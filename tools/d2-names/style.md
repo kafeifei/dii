@@ -26,7 +26,7 @@
 每条输出 `{ "id", "en", "official", "name", "note" }`：`official` 就是输入里的 `zh`，`name` 是新名字，`note` 可以为空。官方中文为空时，参考英文起名。
 
 ## 名字放在哪里
-起好的名字按类别存在本目录的 `<类别>.json` 里，以原版内部键为键：`"键": {"name", "en", "official", "note"}`（`official`、`note` 为空时省略）。这些文件就是名字的唯一来源，直接在里面改。
+起好的名字按类别存在本目录的 `<类别>.json` 里，以原版内部键为键：`"键": {"name", "nameEn", "en", "official", "note"}`（`official`、`note` 为空时省略）。`nameEn` 是我们的英文名，规则见 `style-en.md`；音译的英文写法在 `glossary-en.json`（`newEn`），和 `glossary.json` 一一对应。这些文件就是名字的唯一来源，直接在里面改。
 
 - `uniques.json`：暗金（UniqueItems 的 index）；`sets.json`：套装和套装部件（Sets / SetItems 的 index）；`runewords.json`：符文之语（Runes 的 Name，如 `Runeword1`）。
 - `prefixes.json`、`suffixes.json`：魔法前缀、后缀（字串键，automagic 也用这两份）；`rare-prefixes.json`、`rare-suffixes.json`：稀有名的两个词库。
@@ -36,4 +36,6 @@
 - `skills.json`：技能（Skills.txt 的 skill 列，如 `Valkyrie`）。火球术、冰封球这类通用叫法沿用官方译名，不用收；只收带专有名词意味的（召唤物、灵体之类的称谓，比如女武神、橡木智灵）。名字取自符文之语字串的技能（迷狂的变身）自动用 `runewords.json` 里的名字。怪物技能游戏里不显示名字，不用起。
 - `mercenaries.json`：佣兵的人名（Hireling 的 NameFirst…NameLast 之间的字串键，如 `merc01`）和佣兵类型名（字串键，如 `RogueScout`）。技能树名（「火系法术」「防御光环」这类）是通用词，沿用官方叫法。
 
-`node tools/d2-import.mjs` 只收录有名字的行，没名字的列在 `report.md` 里；名字和官方译名相同、或者含有术语表替换掉的官方音译时，导入直接报错。
+`bases.json` 里 D2CE 没有中文字串的通用名（抗性卷轴这类）标 `"generic": true`：只有中文名，英文沿用官方的。
+
+`node tools/d2-import.mjs` 只收录中英文名都有的行，缺名字的列在 `report.md` 里；名字和官方译名相同、或者含有术语表替换掉的官方音译时，导入直接报错。

@@ -6,10 +6,12 @@
 //
 // Prints the counts left after the scope filters, then one line per check; exits 1 if any fails.
 // What it holds the data to:
-// - the scope: no Warlock-era or still-ladder-only row, and every row as D2R 2.7 (the last tables
-//   before the Warlock expansion) has it, for the values the game reads;
+// - the scope: no Warlock-era row, none ladder-only both now and in D2R 2.7 (the last tables before
+//   the Warlock expansion), and every row as 2.7 has it, for the values the game reads;
 // - the names: every unique, set and runeword in scope is named or listed in tools/d2-names/report.md,
 //   no official proper noun anywhere, runes "N 号符文";
+// - the English names (tools/d2-names/style-en.md): every renamed row has one, never Blizzard's,
+//   plain ASCII in Title Case, the glossary's forms, no two alike;
 // - the units: charstats quarters, monster stats as monlvl percentages through D2MOO's ApplyRatio,
 //   the expansion columns, HitShift, manashift and frames in skills;
 // - the drops: Andariel's and the Countess' items per kill against d2data's tcprecalc, worked out
@@ -157,20 +159,35 @@ check('every unique, set item, set and runeword has a D2CE string (none came wit
   ...X.D2X_RUNEWORDS.filter((r) => noString(r.id)).map((r) => r.id),
 ]);
 const season = latestSeason(uniqueJ, setItemsJ, runesJ);
+const season27 = latestSeason(R27.uniqueitems, R27.setitems, R27.runes);
 // uniques by *ID: index repeats (Azurewrath's unused first row, the eight Rainbow Facets)
 const U33 = by(uniqueJ, '*ID');
 const SI33 = by(setItemsJ, 'index');
 const RW33 = by(runesJ, 'Name');
-check(`nothing ladder-only in the pinned tables (latest season ${season})`, [
-  ...X.D2X_UNIQUES.filter((u) => ladderOnly(U33.get(u.id), season)).map((u) => u.key),
-  ...X.D2X_SET_ITEMS.filter((s) => ladderOnly(SI33.get(s.key), season)).map((s) => s.key),
-  ...X.D2X_RUNEWORDS.filter((r) => ladderOnly(RW33.get(r.id), season)).map((r) => r.id),
+const [U27, SI27, RW27] = [by(R27.uniqueitems, '*ID'), by(R27.setitems, 'index'), by(R27.runes, 'Name')];
+// left out only when ladder-only both now and in 2.7, before the Warlock expansion (a row 2.7 lacks: now)
+const stillLadder = (pinned, old) => ladderOnly(pinned, season) && (!old || ladderOnly(old, season27));
+check(`nothing ladder-only both in the pinned tables (latest season ${season}) and in 2.7 (latest season ${season27})`, [
+  ...X.D2X_UNIQUES.filter((u) => stillLadder(U33.get(u.id), U27.get(u.id))).map((u) => u.key),
+  ...X.D2X_SET_ITEMS.filter((s) => stillLadder(SI33.get(s.key), SI27.get(s.key))).map((s) => s.key),
+  ...X.D2X_RUNEWORDS.filter((r) => stillLadder(RW33.get(r.id), RW27.get(r.id))).map((r) => r.id),
 ]);
-// season 15 made nine old uniques and Angelic Raiment ladder-only; the 2.6 runewords are not any more
-check(
-  "season 15's ladder-only uniques and set items are left out",
-  ['Gravenspine', 'Bane Ash', 'Pluckeye', 'Bloodletter', 'Angelic Sickle', 'Angelic Halo'].filter((k) => has(X.D2X_UNIQUES, 'key', k) || has(X.D2X_SET_ITEMS, 'key', k)),
-);
+// Season 15 made nine old uniques and Angelic Raiment ladder-only (lastLadderSeason 15 and 16 in the
+// pinned tables) and changed some: The Battlebranch's item level went from 34 to 30, the full set
+// got +1 to all skills. 2.7 has them as ordinary items, and they are in as 2.7 has them.
+{
+  const s15 = ['Gravenspine', 'The Battlebranch', 'Bane Ash', 'Pluckeye', 'Piercerib', 'Blinkbats Form', 'The Ward', 'Manald Heal', 'Bloodletter'];
+  const angelic = ['Angelic Sickle', 'Angelic Mantle', 'Angelic Halo', 'Angelic Wings'];
+  const raiment = X.D2X_SETS.find((s) => s.id === 'Angelical Raiment');
+  const bad = [
+    ...s15.filter((k) => !has(X.D2X_UNIQUES, 'key', k)),
+    ...angelic.filter((k) => !has(X.D2X_SET_ITEMS, 'key', k)),
+    ...(raiment ? [] : ['set Angelical Raiment']),
+    ...(X.D2X_UNIQUES.find((u) => u.key === 'The Battlebranch')?.lvl === 34 ? [] : ['The Battlebranch: not item level 34']),
+    ...(raiment?.full.some((p) => p.c === 'allskills') ? ['Angelical Raiment: the full set has +1 to all skills'] : []),
+  ];
+  check("season 15's ladder-only uniques and Angelic Raiment are in, as 2.7 has them (The Battlebranch item level 34, no +1 to all skills for the full set)", bad);
+}
 check('the 2.6 runewords, ladder-only until season 14, are in', ['Bulwark', 'Cure', 'Ground', 'Hearth', 'Temper', 'Mosaic', 'Metamorphosis'].filter((en) => !has(X.D2X_RUNEWORDS, 'en', en)));
 check(
   'every treasure class entry is a class in the data or an imported base, none out of scope',
@@ -460,7 +477,6 @@ section('Names');
     else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) k === 'name' && typeof x === 'string' ? named.push([where, x]) : walk(x, `${where}.${k}`);
   };
   for (const [k, v] of Object.entries(X)) walk(v, k);
-  for (const [k, v] of Object.entries(X.D2X_HIRELING_NAMES)) named.push([`D2X_HIRELING_NAMES.${k}`, v]);
   for (const h of X.D2X_HIRELINGS) if (h.type) named.push([`D2X_HIRELINGS ${h.id} type`, h.type]);
   // the official strings of what we rename: uniques, sets, runewords, affixes, rare words, monsters, areas, NPCs, hirelings
   const world = await strings('monsters', 'levels', 'npcs', 'mercenaries');
@@ -500,6 +516,119 @@ section('Names');
     ...X.D2X_GEMS.filter((g) => g.name !== S.zh[g.id]).map((g) => `${g.id} ${g.name}`),
     ...BASES.filter((b) => !renamedBases[b.code] && b.type !== 'rune' && !official.has(b.name.trim())).map((b) => `${b.code} ${b.name}`),
   ]);
+}
+
+// ───────────────────────── English names ─────────────────────────
+section('English names');
+{
+  // case, "the", apostrophes, spaces and hyphens aside, as tools/d2-names/style-en.md compares
+  const norm = (s) => s.toLowerCase().replace(/\bthe\b/g, '').replace(/['’\s-]/g, '');
+  const ours = (f) => JSON.parse(fs.readFileSync(path.join(ROOT, `tools/d2-names/${f}.json`), 'utf8'));
+  const renamedBases = ours('bases');
+  const renamedSkills = ours('skills');
+  const merc = await strings('mercenaries');
+  // every row whose name is ours, with D2's English: { where, group, zh, nameEn, en }
+  const of = (where, group, arr, key) => arr.map((x) => ({ where: `${where} ${key(x)}`, group, zh: x.name, nameEn: x.nameEn, en: x.en }));
+  // a skill named by a runeword's string takes our runeword names (Delirium's change)
+  const runewordOf = new Map(X.D2X_RUNEWORDS.map((r) => [r.name, r]));
+  const allSkills = Object.entries({ ...X.D2X_SKILLS, ...X.D2X_SKILL_REFS });
+  const hire27 = new Map(rows(R27.hireling).filter((h) => h.Version === 100).map((h) => [h.Id, h]));
+  const renamed = [
+    ...of('unique', 'items', X.D2X_UNIQUES, (u) => u.key),
+    ...of('set item', 'items', X.D2X_SET_ITEMS, (s) => s.key),
+    ...of('set', 'items', X.D2X_SETS, (s) => s.id),
+    ...of('runeword', 'items', X.D2X_RUNEWORDS, (r) => r.id),
+    ...of('rune', 'runes', X.D2X_RUNES, (r) => r.id),
+    ...of('prefix', 'prefixes', X.D2X_PREFIXES, (a) => a.id),
+    ...of('suffix', 'suffixes', X.D2X_SUFFIXES, (a) => a.id),
+    ...of('automagic', 'automagic', X.D2X_AUTOMAGIC, (a) => a.id),
+    ...of('rare prefix', 'rare prefixes', X.D2X_RARE_PREFIXES, (w) => w.id),
+    ...of('rare suffix', 'rare suffixes', X.D2X_RARE_SUFFIXES, (w) => w.id),
+    ...of('base', 'bases', BASES.filter((b) => renamedBases[b.code] && !renamedBases[b.code].generic), (b) => b.code),
+    ...of('monster', 'monsters', Object.values(X.D2X_MONSTERS).filter((m) => m.name), (m) => m.id),
+    ...of('superunique', 'superuniques', X.D2X_SUPERUNIQUES, (s) => s.key),
+    ...of('area', 'areas', X.D2X_AREAS, (a) => a.id),
+    ...['prefix', 'suffix', 'title'].flatMap((k) => of(`unique monster ${k}`, `unique monster ${k}${k === 'title' ? 's' : 'es'}`, X.D2X_UNIQUE_NAMES[k], (w) => w.key)),
+    ...Object.entries(X.D2X_HIRELING_NAMES).map(([k, v]) => ({ where: `hireling name ${k}`, group: 'hireling names', zh: v.name, nameEn: v.nameEn, en: merc.en[k] })),
+    ...X.D2X_HIRELINGS.filter((h) => h.type).map((h) => ({ where: `hireling ${h.id} type`, group: 'hireling types', zh: h.type, nameEn: h.typeEn, en: hire27.get(h.id)?.Hireling })),
+    // skills.json's, and a skill whose name is a runeword's
+    ...allSkills.filter(([n, s]) => s.name && (renamedSkills[n] || runewordOf.has(s.name))).map(([n, s]) => ({ where: `skill ${n}`, group: 'skills', zh: s.name, nameEn: s.nameEn, en: s.en })),
+  ];
+  const named = renamed.filter((r) => r.nameEn);
+  check(`every renamed row (${renamed.length}) has an English name of ours, nameEn`, renamed.filter((r) => !r.nameEn).map((r) => `${r.where} ${r.zh}`));
+  // generic words keep the official English: no nameEn on them
+  check('no nameEn on a generic row (gems, generic bases, generic skills)', [
+    ...X.D2X_GEMS.filter((g) => g.nameEn).map((g) => g.id),
+    ...BASES.filter((b) => b.nameEn && b.type !== 'rune' && !(renamedBases[b.code] && !renamedBases[b.code].generic)).map((b) => b.code),
+    ...allSkills.filter(([n, s]) => s.nameEn && !(renamedSkills[n] || runewordOf.has(s.name))).map(([n]) => n),
+  ]);
+  check(
+    "a skill named by a runeword has the runeword's English name too",
+    allSkills.filter(([, s]) => runewordOf.has(s.name) && s.nameEn !== runewordOf.get(s.name).nameEn).map(([n, s]) => `${n} ${s.nameEn}`),
+  );
+  check('nameEn is never the official English (case, "the", apostrophes, spaces and hyphens aside)', named.filter((r) => r.en && norm(r.nameEn) === norm(r.en)).map((r) => `${r.where} ${r.nameEn} = ${r.en}`));
+  // nor, for a whole name (not a word of an affix or a composed name, where "Steel" or "Fiend" is an
+  // ordinary word), any other row's official English: uniques, sets, runewords, monsters, areas, NPCs
+  const world = await strings('monsters', 'levels', 'npcs');
+  const officialEn = new Map();
+  for (const r of [...rows(uniqueJ), ...rows(setItemsJ), ...rows(setsJ)]) if (S.en[r.index]) officialEn.set(norm(S.en[r.index]), S.en[r.index]);
+  for (const r of rows(runesJ)) if (r.complete && (S.en[r.Name] ?? r['*Rune Name'])) officialEn.set(norm(S.en[r.Name] ?? r['*Rune Name']), S.en[r.Name] ?? r['*Rune Name']);
+  for (const v of Object.values(world.en)) if (v && v.trim().length > 3) officialEn.set(norm(v), v);
+  const WORDS = new Set(['prefixes', 'suffixes', 'automagic', 'rare prefixes', 'rare suffixes', 'unique monster prefixes', 'unique monster suffixes', 'unique monster titles']);
+  check('a whole name is no official English name of a unique, set, runeword, monster, area or NPC', named.filter((r) => !WORDS.has(r.group) && officialEn.has(norm(r.nameEn))).map((r) => `${r.where} ${r.nameEn} = ${officialEn.get(norm(r.nameEn))}`));
+  check('nameEn is plain ASCII', named.filter((r) => !/^[\x20-\x7E]+$/.test(r.nameEn)).map((r) => `${r.where} ${r.nameEn}`));
+  // Title Case: every word capitalised but the small ones inside a name ("of", "the", …)
+  const SMALL = new Set(['of', 'the', 'a', 'an', 'and', 'or', 'nor', 'in', 'on', 'at', 'to', 'for', 'from', 'with', 'by']);
+  const titleCase = (s) => s.split(' ').every((w, i) => /^[A-Z0-9]/.test(w) || (SMALL.has(w) && (i > 0 || /^(of|the) /.test(s))));
+  check('nameEn is in Title Case (a suffix starts with "of", a monster title with "the")', named.filter((r) => !titleCase(r.nameEn)).map((r) => `${r.where} ${r.nameEn}`));
+  // the grammar of the slots: magic suffixes "of …", prefixes never (automagic as D2's English of the
+  // row); rare and monster name words one word; monster titles "the" and one word, after the name
+  const grammar = [];
+  for (const r of named) {
+    const g = r.group;
+    const ofSuffix = /^of /.test(r.nameEn);
+    if (g === 'suffixes' && !ofSuffix) grammar.push(`${r.where} ${r.nameEn}: a suffix starts with "of"`);
+    if (g === 'prefixes' && ofSuffix) grammar.push(`${r.where} ${r.nameEn}: a prefix does not start with "of"`);
+    if (g === 'automagic' && ofSuffix !== /^of /.test(r.en)) grammar.push(`${r.where} ${r.nameEn}: "${r.en}" is a ${ofSuffix ? 'prefix' : 'suffix'}`);
+    if (['rare prefixes', 'rare suffixes', 'unique monster prefixes', 'unique monster suffixes'].includes(g) && /\s/.test(r.nameEn)) grammar.push(`${r.where} ${r.nameEn}: one word`);
+    if (g === 'unique monster titles' && !/^the [A-Z]\S*$/.test(r.nameEn)) grammar.push(`${r.where} ${r.nameEn}: "the" and one word`);
+  }
+  check('affix and name-word grammar: suffixes "of …", prefixes not, rare and monster name words one word, titles "the …"', grammar);
+  // No two rows share one: across uniques, set items, sets and runewords, and within each other group
+  // (rows of one name string share theirs: affixes and rare words by name, the quest bases their unique's)
+  const dups = [];
+  const byGroup = new Map();
+  for (const r of named) {
+    const k = r.nameEn.toLowerCase();
+    const seen = byGroup.get(r.group) ?? byGroup.set(r.group, new Map()).get(r.group);
+    const prev = seen.get(k);
+    if (prev && prev.en !== r.en) dups.push(`${r.where} and ${prev.where}: ${r.nameEn}`);
+    else seen.set(k, r);
+  }
+  check('no two names alike: none across uniques, set items, sets and runewords, none inside another group', dups);
+  // the glossary: every transliteration has its English form, and the names use it
+  const glossary = ours('glossary');
+  const glossaryEn = ours('glossary-en');
+  const gBad = [];
+  for (const g of glossary) {
+    const e = glossaryEn.find((x) => x.new === g.new && x.en === g.en && x.official === g.official);
+    if (!e?.newEn || !/^[\x20-\x7E]+$/.test(e.newEn)) gBad.push(`${g.en} ${g.new}: no ASCII newEn in glossary-en.json`);
+  }
+  if (glossaryEn.length !== glossary.length) gBad.push(`glossary-en.json has ${glossaryEn.length} terms, glossary.json ${glossary.length}`);
+  check(`glossary-en.json gives every term of glossary.json (${glossary.length}) an English form`, gBad);
+  // where our Chinese name uses a transliteration of the glossary, our English uses its English form
+  const forms = glossaryEn.filter((g) => g.newEn);
+  check(
+    'transliterated names use the glossary: where our Chinese has its form, our English has its English form',
+    named.flatMap((r) => forms.filter((g) => r.zh.includes(g.new) && !r.nameEn.includes(g.newEn)).map((g) => `${r.where} ${r.zh} ${r.nameEn}: ${g.new} is ${g.newEn}`)),
+  );
+  // and no English name keeps one of D2's (its people, places and powers: Horadric, Akara, Zakarum, …)
+  // ("tarn" is also English, a mountain lake: Beryl's Tarn-Green is its colour; Tarnhelm is still D2's)
+  const blizzard = glossaryEn.flatMap((g) => g.en.split(/ \/ | \(|\)/).map((t) => t.trim()).filter((t) => t && t !== 'Tarn').map((t) => ({ t, g })));
+  check(
+    "no English name keeps a name of D2's the glossary replaces",
+    named.flatMap((r) => blizzard.filter(({ t }) => new RegExp(`(^|[^A-Za-z])${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z])`).test(r.nameEn)).map(({ t, g }) => `${r.where} ${r.nameEn}: ${t} is ${g.newEn}`)),
+  );
 }
 
 // ───────────────────────── characters ─────────────────────────

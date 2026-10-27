@@ -1,9 +1,9 @@
 {
-  "Akara": {"name":"亚珈萝","en":"Akara","official":"阿卡拉","note":"术语表"},
-  "Charsi": {"name":"查茜","en":"Charsi","official":"恰西","note":"术语表"},
-  "Gheed": {"name":"吉伊得","en":"Gheed","official":"基德","note":"术语表"},
-  "Kashya": {"name":"迦霞","en":"Kashya","official":"卡夏","note":"术语表"},
-  "Warriv": {"name":"沃里弗","en":"Warriv","official":"瓦瑞夫","note":"术语表"},
-  "DeckardCain": {"name":"戴克尔·喀因","en":"Deckard Cain","official":"迪卡德·凯恩","note":"术语表"},
-  "navi": {"name":"菲萝薇","en":"Flavie","official":"弗拉维","note":"新音译，术语表新增"}
+  "Akara": {"name":"亚珈萝","nameEn":"Yajalo","en":"Akara","official":"阿卡拉","note":"术语表"},
+  "Charsi": {"name":"查茜","nameEn":"Chashi","en":"Charsi","official":"恰西","note":"术语表"},
+  "Gheed": {"name":"吉伊得","nameEn":"Jiyed","en":"Gheed","official":"基德","note":"术语表"},
+  "Kashya": {"name":"迦霞","nameEn":"Jiasha","en":"Kashya","official":"卡夏","note":"术语表"},
+  "Warriv": {"name":"沃里弗","nameEn":"Worlif","en":"Warriv","official":"瓦瑞夫","note":"术语表"},
+  "DeckardCain": {"name":"戴克尔·喀因","nameEn":"Daikor Kahin","en":"Deckard Cain","official":"迪卡德·凯恩","note":"术语表"},
+  "navi": {"name":"菲萝薇","nameEn":"Feilowei","en":"Flavie","official":"弗拉维","note":"新音译，术语表新增"}
 }
