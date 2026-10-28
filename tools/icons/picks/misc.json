@@ -1,6 +1,616 @@
 {
+ "invamu1": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: the short chain stays inside the cell (s101 and s303 touch the top) (similarity 0.26)"
+ },
+ "invamu2": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: the beaded rim and bail ring both read; no edge flag (similarity 0.31)"
+ },
+ "invamu3": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: diamond plaque, green stone and cord loop all there (similarity 0.26)"
+ },
+ "invbbb": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: clearly a book: page block on two sides, straps and buckles (similarity 0.27)"
+ },
+ "invbbk": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: the only seed whose blue bookmark shows (similarity 0.32)"
+ },
+ "invbet": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: the fullest heap, ember cracks at 2x; s101's smoke wisp is a stray piece at 1x (similarity 0.20)"
+ },
+ "invbox": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: dark panels framed in brass, a raised diamond on each panel (similarity 0.35)"
+ },
+ "invbrnz": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: side view with the brain stem, reads at 1x (similarity 0.34)"
+ },
+ "invbsc": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: the blue cord shows at 1x; the same pose as invrsc s404 (similarity 0.23)"
+ },
+ "invceh": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: pale yellow heap, apart from the other essences by colour; the sparks did not come out in any seed (similarity 0.31)"
+ },
+ "invch1": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: the notches read at 1x; s303's cord touches the edge (similarity 0.29)"
+ },
+ "invch2": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: the cleanest tablet, the feather small; s101 has a shadow flag (similarity 0.29)"
+ },
+ "invch3": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: three tines, spiral grooves and copper wire (similarity 0.33)"
+ },
+ "invch5": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: the bones fan out under the lashing, the feather on top (similarity 0.31)"
+ },
+ "invch7": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: the largest pouch, the cinched top reads at 1x (similarity 0.22)"
+ },
+ "invch8": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: rows of punched dots read at 2x (similarity 0.28)"
+ },
+ "invch9": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: deep red-ochre zigzags; no shadow flag (s101, s202) (similarity 0.30)"
+ },
+ "invear": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: helix and lobe read at 1x (similarity 0.28)"
+ },
+ "inveye": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: the biggest, clearest eye at 1x; the nerve is lost at 34 px anyway (similarity 0.21)"
+ },
+ "invfang": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: the root shows, so it is a tooth, not a crescent (s101, s303) (similarity 0.22)"
+ },
+ "invfed": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: the most contrast of the four green-black heaps (similarity 0.28)"
+ },
+ "invflag": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: the largest banner of the four (similarity 0.16)"
+ },
+ "invgbi": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: crested songbird on its pedestal, long tail (similarity 0.30)"
+ },
+ "invgld": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: the sample round's gold words (similarity 0.31)"
+ },
+ "invgsba": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: chipped: s404 for all six, a whole small crystal in each colour (similarity 0.23)"
+ },
+ "invgsbb": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: flawed: s404 for all six, the crack reads (similarity 0.26)"
+ },
+ "invgsbc": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: normal: s101 for all six, an upright oval apart from the flawless square (similarity 0.28)"
+ },
+ "invgsbd": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: flawless: s101 for all six, the cushion square with clear facets (similarity 0.26)"
+ },
+ "invgsbe": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: perfect: s404 for all six, one kite-shaped brilliant through the set (similarity 0.22)"
+ },
+ "invgsga": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: chipped: s404 for all six, a whole small crystal in each colour (similarity 0.17)"
+ },
+ "invgsgb": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: flawed: s404 for all six, the crack reads (similarity 0.24)"
+ },
+ "invgsgc": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: normal: s101 for all six, an upright oval apart from the flawless square (similarity 0.28)"
+ },
+ "invgsgd": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: flawless: s101 for all six, the cushion square with clear facets (similarity 0.22)"
+ },
+ "invgsge": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: perfect: s404 for all six, one kite-shaped brilliant through the set (similarity 0.25)"
+ },
+ "invgsra": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: chipped: s404 for all six, a whole small crystal in each colour (similarity 0.21)"
+ },
+ "invgsrb": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: flawed: s404 for all six, the crack reads (similarity 0.31)"
+ },
+ "invgsrc": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: normal: s101 for all six, an upright oval apart from the flawless square (similarity 0.29)"
+ },
+ "invgsrd": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: flawless: s101 for all six, the cushion square with clear facets (similarity 0.29)"
+ },
+ "invgsre": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: perfect: s404 for all six, one kite-shaped brilliant through the set (similarity 0.30)"
+ },
+ "invgsva": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: chipped: s404 for all six, a whole small crystal in each colour (similarity 0.22)"
+ },
+ "invgsvb": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: flawed: s404 for all six, the crack reads (similarity 0.25)"
+ },
+ "invgsvc": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: normal: s101 for all six, an upright oval apart from the flawless square (similarity 0.23)"
+ },
+ "invgsvd": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: flawless: s101 for all six, the cushion square with clear facets (similarity 0.24)"
+ },
+ "invgsve": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: perfect: s404 for all six, one kite-shaped brilliant through the set (similarity 0.25)"
+ },
+ "invgswa": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: chipped: s404 for all six, a whole small crystal in each colour (similarity 0.16)"
+ },
+ "invgswb": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: flawed: s404 for all six, the crack reads (similarity 0.27)"
+ },
+ "invgswc": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: normal: s101 for all six, an upright oval apart from the flawless square (similarity 0.27)"
+ },
+ "invgswd": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: flawless: s101 for all six, the cushion square with clear facets (similarity 0.27)"
+ },
+ "invgswe": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: perfect: s404 for all six, one kite-shaped brilliant through the set (similarity 0.20)"
+ },
+ "invgsya": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: chipped: s404 for all six, a whole small crystal in each colour (similarity 0.20)"
+ },
+ "invgsyb": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: flawed: s404 for all six, the crack reads (similarity 0.25)"
+ },
+ "invgsyc": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: normal: s101 for all six, an upright oval apart from the flawless square (similarity 0.20)"
+ },
+ "invgsyd": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: flawless: s101 for all six, the cushion square with clear facets (similarity 0.24)"
+ },
+ "invgsye": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: perfect: s404 for all six, one kite-shaped brilliant through the set (similarity 0.21)"
+ },
+ "invhorn": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: ridged base, smooth curve (similarity 0.26)"
+ },
+ "invhp3": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: similarity 0.29 (s303 is 0.40); the same seed as the mana potion invmp3"
+ },
+ "invhp4": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: the cord net shows; the same seed as invmp4 (similarity 0.27)"
+ },
+ "invhp5": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: faceted body and pewter collar; the same seed as invmp5 (similarity 0.31)"
+ },
+ "invhrb": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: the fullest bundle with its twine (similarity 0.26)"
+ },
+ "invhrt": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: vessel stumps on top read at 1x (similarity 0.32)"
+ },
+ "invhscr": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: the red cord shows; stains, no writing (similarity 0.25)"
+ },
+ "invjbi": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: hands in the sleeves; robed figure on its plinth (similarity 0.33)"
+ },
+ "invjw1": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: the claws read at 1x, unlike s101 (similarity 0.29)"
+ },
+ "invjw2": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: the facets show; a set gem by its beaded bezel (similarity 0.30)"
+ },
+ "invjw5": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: the thick notched bezel sets it apart from the loose rubies (similarity 0.30)"
+ },
+ "invkey": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: large bow, diagonal; s303 lost its bit (P2) (similarity 0.28)"
+ },
+ "invmp3": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: the same seed as invhp3 (similarity 0.29)"
+ },
+ "invmp4": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: the cord net shows; the same seed as invhp4 (similarity 0.26)"
+ },
+ "invmp5": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: the same seed as invhp5 (similarity 0.35)"
+ },
+ "invmph": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: the biggest thorned bow; reads as a key at 1x (similarity 0.26)"
+ },
+ "invmss": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: the wire bands show, the broadest shard (similarity 0.19)"
+ },
+ "invnps": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: the herb sprig at the neck shows (similarity 0.31)"
+ },
+ "invpot": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: the brass cage reads at 2x (similarity 0.26)"
+ },
+ "invramn": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.25)"
+ },
+ "invrber": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.24)"
+ },
+ "invrbk": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: oxblood tome with the ochre ribbon, spine and clasp (similarity 0.30)"
+ },
+ "invrcham": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.23)"
+ },
+ "invrdol": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.23)"
+ },
+ "invrel": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.23)"
+ },
+ "invreld": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.27)"
+ },
+ "invreth": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.24)"
+ },
+ "invrfal": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.26)"
+ },
+ "invrgul": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.27)"
+ },
+ "invrhel": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.23)"
+ },
  "invrin1": {
   "run": 1,
   "seed": 101
+ },
+ "invrin2": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: riveted iron band, green cabochon (similarity 0.31)"
+ },
+ "invrin3": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: the black stone shows (similarity 0.32; s101 is 0.38)"
+ },
+ "invrin4": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: the serpent head on top reads (similarity 0.29)"
+ },
+ "invrin5": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: slim band, moonstone in its bezel (similarity 0.33)"
+ },
+ "invrio": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.20)"
+ },
+ "invrist": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.24)"
+ },
+ "invrith": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.26)"
+ },
+ "invrjo": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.18)"
+ },
+ "invrko": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.17)"
+ },
+ "invrlem": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.22)"
+ },
+ "invrlo": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.25)"
+ },
+ "invrlum": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.28)"
+ },
+ "invrmal": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.19)"
+ },
+ "invrnef": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.28)"
+ },
+ "invrohm": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.24)"
+ },
+ "invrort": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.22)"
+ },
+ "invrpul": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.22)"
+ },
+ "invrral": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.20)"
+ },
+ "invrsc": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: the same pose as the town portal scroll (invbsc s404), the ochre tie and amber seal tell them apart at 1x (similarity 0.26)"
+ },
+ "invrshae": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.26)"
+ },
+ "invrsol": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.26)"
+ },
+ "invrsur": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.20)"
+ },
+ "invrtal": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.23)"
+ },
+ "invrthul": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.26)"
+ },
+ "invrtir": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.25)"
+ },
+ "invrum": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.21)"
+ },
+ "invrvex": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.23)"
+ },
+ "invrzod": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.24)"
+ },
+ "invscb": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: curled top and bottom edges, the faint ring of dots, nothing legible (similarity 0.26)"
+ },
+ "invskf": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: grey, cracked and chipped: the flawed grade reads (similarity 0.30)"
+ },
+ "invskl": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: whole, ivory, glossy (similarity 0.34)"
+ },
+ "invsku": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: the sample round's skull words, frontal (similarity 0.32)"
+ },
+ "invtoa": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: the plainest arms: the engraving reads as wear, not letters, at 2x (similarity 0.29)"
+ },
+ "invvpl": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: similarity 0.34 (s303 is 0.40)"
+ },
+ "invvps": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: the widest of the four jars (similarity 0.25)"
+ },
+ "invwps": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: slim bottle, cream liquid (similarity 0.31)"
+ },
+ "invxyz": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: pale gold liquid, apart from every other potion; no seed made the double bulb (similarity 0.26)"
+ },
+ "invyps": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: the sheepskin wrap and the orange glow both read at 1x (similarity 0.17)"
  }
 }

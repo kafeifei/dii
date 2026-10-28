@@ -1,0 +1,422 @@
+{
+ "invch4": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.26-0.29",
+  "scores": {
+   "s101": 0.2812,
+   "s202": 0.255,
+   "s303": 0.286,
+   "s404": 0.2896
+  },
+  "reason": "Every seed paints a cartoon dog-treat bone (a shaft with two knobs at each end): comic beside the other charms, and not the knucklebone the words asked for, a shape the model doesn't know.",
+  "fix": {
+   "desc": "A small charm: a little triangular arrowhead of knapped black flint, its flaked faces catching the light, its base bound with a few tight turns of dark blue-dyed thread that end in a short loop and a little tassel, point down.",
+   "fill": 0.85,
+   "note": "a new object for the third small charm: a flint point reads at 34 px and is unlike the bone disc (invch1) and the pouch (invch7)",
+   "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+  }
+ },
+ "invch6": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.18-0.25",
+  "scores": {
+   "s101": 0.2271,
+   "s202": 0.2176,
+   "s303": 0.2488,
+   "s404": 0.1767
+  },
+  "reason": "Every seed is a bare dark stick, 3-4 px wide at 1x and nearly lost on the dark grid: it reads as a wand or a staff, not a talisman. The grand charm line is a broad flat talisman that fills its 1x3 cell.",
+  "fix": {
+   "desc": "A grand charm: a tall narrow talisman of smoke-darkened tan hide stretched and laced with thongs onto a frame of two straight twigs, filling most of the frame's width, painted down its middle with a column of faded ochre dots and short bars, three small bone beads and a little curved claw hanging on thongs from its bottom edge. Shown upright, flat, front view.",
+   "fill": 1,
+   "note": "broad and flat as the line is, but our own object: hide on a twig frame, apart from the antler (invch3) and the slate (invch9)",
+   "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+  }
+ },
+ "invhp1": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.21-0.31",
+  "scores": {
+   "s101": 0.2608,
+   "s202": 0.214,
+   "s303": 0.3142,
+   "s404": 0.2779
+  },
+  "reason": "The narrow vial at fill 0.62 is 4-5 px wide at 1x, a sliver on the grid, for the most common potion of all.",
+  "fix": {
+   "desc": "A minor healing potion: a small stubby vial of thin clear hand-blown glass, about half as wide as it is tall, with a rounded bottom, a short neck and a plain cork, filled with glowing scarlet liquid, cheap and plain.",
+   "fill": 0.72,
+   "note": "stubby and larger (fill 0.72, the tiers rising to 0.95) so it reads at 34 px; clear glass (greenish glass turned the mana vial teal); the same words as invmp1 but the colour",
+   "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+  }
+ },
+ "invhp2": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.27-0.32",
+  "scores": {
+   "s101": 0.3134,
+   "s202": 0.2902,
+   "s303": 0.3225,
+   "s404": 0.2748
+  },
+  "reason": "The pebble flask came out as the healing potion's round-bellied flask with a short neck (invhp3, the sample round's words), only smaller: at 1x the light and the plain potion can't be told apart.",
+  "fix": {
+   "desc": "A light healing potion: a small flask of hand-blown glass shaped like a low cone, a broad flat bottom and straight sides sloping in to a short narrow neck, a plain cork tied with string, filled with glowing scarlet liquid.",
+   "fill": 0.78,
+   "note": "each tier its own outline: vial, cone, round, pear, faceted; the same words as invmp2 but the colour",
+   "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+  }
+ },
+ "invjaw": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.20-0.24",
+  "scores": {
+   "s101": 0.1966,
+   "s202": 0.2012,
+   "s303": 0.2357,
+   "s404": 0.2224
+  },
+  "reason": "Every seed paints a whole beast skull with both jaws (s303 a jaw under a horn), never the lone lower jaw the item is: the words' 'no skull' doesn't hold without a shape.",
+  "fix": {
+   "desc": "A jawbone: the lower jaw bone of a large beast on its own, seen from the side: a long low bar of yellowed cracked bone with a row of uneven worn teeth along its top edge, two long curved canines at its front end, and at its back end the bone rising into a tall flat hinge plate with a rounded knob on top; no upper jaw, no skull, no eye sockets.",
+   "guide": "jawbone",
+   "fill": 0.85,
+   "guideSpec": "new: a generic shape of our own in box/guides.py on the 768x768 canvas (not jawbone-cap, the helm's): a long low horizontal bar across the lower middle, about 0.7 of the width and 0.12 of the height, a row of small bumps along its top with two taller hooked bumps at its left end, and at its right end a plate rising to about 0.6 of the height, leaning back a little, a round knob at its top",
+   "shape": "jawbone: a long low bar with a row of tooth bumps on top, two tall hooked ones at the left end, a tall hinge plate rising at the right end",
+   "note": "side view, level: the bone's own anatomy, not the original's diagonal pose",
+   "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+  }
+ },
+ "invjw3": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.25-0.25",
+  "scores": {
+   "s101": 0.2539,
+   "s202": 0.2526,
+   "s303": 0.2495,
+   "s404": 0.2518
+  },
+  "reason": "A square violet gem in four small prongs: at 1x the same violet square as the flawless amethyst (invgsvd s101), the prongs only ticks at the corners; a jewel has to read as a set gem, not a loose one.",
+  "fix": {
+   "desc": "A jewel: a small square-cut gem of muted violet in the middle of a broad bronze mount shaped like a four-petalled flower, each petal wider than the gem and curling up over its edge, the mount clearly larger than the gem, no loop, no chain, seen from the front.",
+   "fill": 0.8,
+   "note": "the mount is the jewel's part, so it is the bigger shape",
+   "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+  }
+ },
+ "invjw4": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.27-0.29",
+  "scores": {
+   "s101": 0.29,
+   "s202": 0.2931,
+   "s303": 0.2909,
+   "s404": 0.267
+  },
+  "reason": "An oval green gem in a thin gold wire: at 1x the same green oval as the emerald (invgsgc s101), the wire invisible.",
+  "fix": {
+   "desc": "A jewel: a small oval faceted gem of deep green in the middle of a wide setting of twisted gold wire coiled into a ring of small loops around it like a little wreath, the wire setting about twice the gem's width, no loop, no chain, seen from the front.",
+   "fill": 0.8,
+   "note": "the setting twice the gem's width so it reads at 34 px",
+   "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+  }
+ },
+ "invjw6": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.20-0.25",
+  "scores": {
+   "s101": 0.2037,
+   "s202": 0.2546,
+   "s303": 0.235,
+   "s404": 0.2485
+  },
+  "reason": "A slim grey marquise in hair-thin iron claws: at 1x a faint grey sliver, the claws lost, nothing that says it is set.",
+  "fix": {
+   "desc": "A jewel: a broad pointed-oval faceted gem of pale smoky grey quartz held in a heavy frame of blackened iron running round its whole edge, four thick iron claws gripping it at its ends and sides, the frame clearly visible, no loop, no chain, seen from the front.",
+   "fill": 0.85,
+   "note": "a broader gem, a heavy frame",
+   "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+  }
+ },
+ "invmp1": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.26-0.29",
+  "scores": {
+   "s101": 0.2617,
+   "s202": 0.2636,
+   "s303": 0.2891,
+   "s404": 0.2594
+  },
+  "reason": "The same sliver as the healing vial, and through the greenish glass the liquid comes out dull teal: at 1x s404 nearly disappears.",
+  "fix": {
+   "desc": "A minor mana potion: a small stubby vial of thin clear hand-blown glass, about half as wide as it is tall, with a rounded bottom, a short neck and a plain cork, filled with glowing cobalt-blue liquid, cheap and plain.",
+   "fill": 0.72,
+   "note": "as invhp1",
+   "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+  }
+ },
+ "invmp2": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.25-0.28",
+  "scores": {
+   "s101": 0.2464,
+   "s202": 0.2838,
+   "s303": 0.2764,
+   "s404": 0.2802
+  },
+  "reason": "As invhp2: the same round flask as the mana potion (invmp3), only smaller.",
+  "fix": {
+   "desc": "A light mana potion: a small flask of hand-blown glass shaped like a low cone, a broad flat bottom and straight sides sloping in to a short narrow neck, a plain cork tied with string, filled with glowing cobalt-blue liquid.",
+   "fill": 0.78,
+   "note": "as invhp2",
+   "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+  }
+ },
+ "invquil": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.18-0.25",
+  "scores": {
+   "s101": 0.1793,
+   "s202": 0.2137,
+   "s303": 0.2542,
+   "s404": 0.2249
+  },
+  "reason": "The word quill made every seed a writing feather with vanes; the item is a beast's spine, a bare needle-like spike.",
+  "fix": {
+   "desc": "A long needle-like spine shed by a beast: a smooth straight round spike, thickest a little behind its middle, tapering to a needle point at one end and to a rough broken root at the other, banded along its length in alternating dark brown and pale cream rings, no feather, no vanes, no barbs, lying diagonally.",
+   "fill": 0.9,
+   "note": "the word quill is left out: it paints a feather",
+   "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+  }
+ },
+ "invsbk": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.28-0.34",
+  "scores": {
+   "s101": 0.3249,
+   "s202": 0.3049,
+   "s303": 0.2849,
+   "s404": 0.3431
+  },
+  "reason": "s202, s303 and s404 paint an iron-banded wooden chest with a hasp lock (the words' riveted bands and hasp made a strongbox); s101 is a squat cube whose pages are a thin strip, so at 1x and 2x it is a box too. All four are the same oxblood leather as Lam Esen's tome (invbbb s404), the other 2x2 book.",
+  "fix": {
+   "desc": "A book of skill: a thick heavy book lying flat at a three-quarter view from above, clearly a book, much wider and longer than it is thick: its thick cream page block showing along the front and the right side, a rounded spine at the left, bound in worn dark slate-blue leather over boards, small iron caps on its corners, a tooled double border around the cover, one narrow iron clasp across the fore-edge, no lettering.",
+   "fill": 0.9,
+   "note": "no bands or hasp (they made a chest); slate blue keeps it apart from Lam Esen's red-brown tome",
+   "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+  }
+ },
+ "invskc": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.26-0.32",
+  "scores": {
+   "s101": 0.3018,
+   "s202": 0.2802,
+   "s303": 0.2613,
+   "s404": 0.319
+  },
+  "reason": "The words asked for a broken skull with no jaw and a piece of the cranium gone; every seed paints a whole yellowed skull with its jaw, so the chipped grade is only a smaller copy of the skull (invsku) and the grade doesn't read.",
+  "fix": {
+   "desc": "A chipped skull gem: a small broken human skull of dull yellowed bone in a three-quarter view, a jagged piece broken out of the left side of its cranium leaving a dark hole, deep cracks spreading from the hole, no lower jaw, its upper teeth chipped.",
+   "guide": "chipped-skull",
+   "fill": 0.6,
+   "guideSpec": "new: a generic shape of our own in box/guides.py on the 768x768 canvas: a skull in three-quarter view, a rounded cranium with a jagged notch bitten out of its upper left, two dark eye holes and a nose hole, a short upper jaw ending in a straight row of teeth, nothing below it",
+   "shape": "chipped-skull: a three-quarter skull with a jagged notch out of its upper left, no lower jaw",
+   "note": "the break is a hole on one side, not the whole top gone",
+   "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+  }
+ },
+ "invskz": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.31-0.32",
+  "scores": {
+   "s101": 0.3064,
+   "s202": 0.3246,
+   "s303": 0.3239,
+   "s404": 0.3151
+  },
+  "reason": "The gold veins are a faint stain at 4x and gone at 2x and 1x: the perfect skull reads the same as the flawless skull (invskl s202) and the skull (invsku s101), so the top grade has no cue.",
+  "fix": {
+   "desc": "A perfect skull gem: a whole human skull with its lower jaw, carved from flawless milky white stone, glossy like a gem, its cranium crossed by bold branching veins of bright tarnished gold like mended cracks, the eye sockets lit by a faint warm golden glow from within, no gem set in it.",
+   "fill": 0.92,
+   "note": "bold gold veins and lit sockets are the grade's cue",
+   "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+  }
+ },
+ "invsple": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.18-0.24",
+  "scores": {
+   "s101": 0.2437,
+   "s202": 0.179,
+   "s303": 0.2077,
+   "s404": 0.2233
+  },
+  "reason": "A glossy dark red almond with no organ detail: at 1x and 2x it reads as a bean or a seed (s202's seam like a coffee bean), not as an organ beside the heart and the brain.",
+  "fix": {
+   "desc": "A spleen: a soft organ shaped like a thick flattened crescent, its outer edge smoothly curved and its inner edge notched, dark purplish red with a pale bluish sheen of membrane, the cut stumps of three thick pale blood vessels sticking out of the notch, wet and glistening, a few thin pale veins across it.",
+   "fill": 0.8,
+   "note": "the cut vessels, as on the heart, make it an organ",
+   "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+  }
+ },
+ "invtail": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.18-0.23",
+  "scores": {
+   "s101": 0.176,
+   "s202": 0.1936,
+   "s303": 0.2292,
+   "s404": 0.189
+  },
+  "reason": "All four seeds coil the tail into a neat S: at 1x it reads as the letter S or a worm, and with no cut end showing it is a whole snake, not a severed tail.",
+  "fix": {
+   "desc": "A severed tail: a thick scaly reptile tail on its own, its broad raw cut end at the upper right showing dark red flesh around a pale bone, sweeping down in one loose curve like a hook and tapering to a thin whip-like tip at the lower left, small dark green-brown scales with paler ridged scales along its underside, no head, not coiled.",
+   "fill": 0.9,
+   "note": "one hook, not an S, and the cut end in view",
+   "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+  }
+ },
+ "invtes": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.17-0.23",
+  "scores": {
+   "s101": 0.1657,
+   "s202": 0.21,
+   "s303": 0.2179,
+   "s404": 0.2275
+  },
+  "reason": "'Twisted into a tight spiral' made a flat round coil: all four seeds read as a cinnamon roll or a rose, not as a heap of dust like the other three essences (invbet, invceh, invfed).",
+  "fix": {
+   "desc": "An essence: a small cone-shaped heap of fine dark violet dust, the same kind of heap as the other essences, one shallow groove winding up around it from its base to its peak like a screw thread, faint violet glints in the groove, a thin twisting wisp of pale violet vapour rising from its peak.",
+   "fill": 0.8,
+   "note": "the twist is a groove and a wisp, so the outline stays a heap",
+   "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+  }
+ },
+ "invtrch": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.16-0.18",
+  "scores": {
+   "s101": 0.1647,
+   "s202": 0.1798,
+   "s303": 0.1648,
+   "s404": 0.1619
+  },
+  "reason": "Every seed is a thin stick with a candle-sized flame: at 1x a dark line with an orange dot that reads as a candle or a stick, not a torch. The 1x2 unique charm shows this picture too, so the flame is the part that has to read.",
+  "fix": {
+   "desc": "A burning torch: a stout rough wooden club, thicker toward its head, its head a thick bundle of tarred rags bound with a twisted iron band, burning with a big roaring orange flame as tall as a third of the whole torch, licking up from the head, a few sparks. Shown upright, the flame at the top.",
+   "fill": 1,
+   "note": "a stout club and a big flame, so it reads at 34 px",
+   "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+  }
+ }
+}

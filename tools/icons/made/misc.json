@@ -1,4 +1,2440 @@
 {
+ "invamu1": {
+  "run": 4,
+  "seed": 202,
+  "kind": "variant",
+  "w": 1,
+  "h": 1,
+  "prompt": "An amulet: a large teardrop-shaped bronze pendant set with a big blue stone, filling most of the frame, a short loop of fine chain at its top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invamu1.webp",
+    "sha1": "9b6c4dc23f62"
+   },
+   "1x": {
+    "file": "public/icons/items/invamu1.1x.webp",
+    "sha1": "201f8c5e682e"
+   }
+  }
+ },
+ "invamu2": {
+  "run": 4,
+  "seed": 404,
+  "kind": "variant",
+  "w": 1,
+  "h": 1,
+  "prompt": "An amulet: a round medallion of tarnished silver with a raised rim of tiny beads and an amber cabochon in its centre, filling most of the frame, a small bail ring and a short loop of fine chain at its top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invamu2.webp",
+    "sha1": "a6c8311a2fda"
+   },
+   "1x": {
+    "file": "public/icons/items/invamu2.1x.webp",
+    "sha1": "dd1ab7321f46"
+   }
+  }
+ },
+ "invamu3": {
+  "run": 4,
+  "seed": 101,
+  "kind": "variant",
+  "w": 1,
+  "h": 1,
+  "prompt": "An amulet: a diamond-shaped plaque of dark bronze with an engraved border and a square-cut deep green stone in its centre, filling most of the frame, a small bail ring and a short loop of leather cord at its top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invamu3.webp",
+    "sha1": "bc6fbc272a70"
+   },
+   "1x": {
+    "file": "public/icons/items/invamu3.1x.webp",
+    "sha1": "791a48bc4ec1"
+   }
+  }
+ },
+ "invbbb": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "An ancient tome: a huge heavy book lying at a three-quarter view, its thick ragged vellum pages yellowed with age, the cover of dark red-brown leather over boards, cracked and peeling at the corners, iron studs along the spine, two leather straps with tarnished silver buckles across the fore-edge, no lettering. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invbbb.webp",
+    "sha1": "c04021a131a9"
+   },
+   "1x": {
+    "file": "public/icons/items/invbbb.1x.webp",
+    "sha1": "84e22d3c2a46"
+   }
+  }
+ },
+ "invbbk": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 2,
+  "prompt": "A thick tome bound in worn tan leather standing upright, front cover facing the viewer, brass corner guards and a clasp, a faded blue cloth bookmark. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invbbk.webp",
+    "sha1": "5e682b9d69af"
+   },
+   "1x": {
+    "file": "public/icons/items/invbbk.1x.webp",
+    "sha1": "1096f2168879"
+   }
+  }
+ },
+ "invbet": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "An essence: a small heap of fine smouldering ash-red dust, glowing ember-orange in its cracks, a thin wisp of smoke rising from its peak. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invbet.webp",
+    "sha1": "003f3d434f65"
+   },
+   "1x": {
+    "file": "public/icons/items/invbet.1x.webp",
+    "sha1": "db63f7430f84"
+   }
+  }
+ },
+ "invbox": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A puzzle box: a cube of dark wood framed in tarnished brass, each face divided into interlocking panels engraved with geometric patterns, seen at a three-quarter view from above. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invbox.webp",
+    "sha1": "ce4d0f46bc49"
+   },
+   "1x": {
+    "file": "public/icons/items/invbox.1x.webp",
+    "sha1": "97f353ae8c65"
+   }
+  }
+ },
+ "invbrnz": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A brain: a whole wrinkled brain, pinkish grey with darker folds, wet and glistening, seen from the side. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invbrnz.webp",
+    "sha1": "0488e6632cab"
+   },
+   "1x": {
+    "file": "public/icons/items/invbrnz.1x.webp",
+    "sha1": "697c5298db17"
+   }
+  }
+ },
+ "invbsc": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rolled parchment scroll with a slightly torn edge, tied in the middle with a blue cord and sealed with blue wax, lying diagonally. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invbsc.webp",
+    "sha1": "363cc002a229"
+   },
+   "1x": {
+    "file": "public/icons/items/invbsc.1x.webp",
+    "sha1": "c2ff124d70b0"
+   }
+  }
+ },
+ "invceh": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "An essence: a small heap of fine pale yellow crystalline dust, tiny crackling pale blue sparks leaping over its surface. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invceh.webp",
+    "sha1": "5e00844d03de"
+   },
+   "1x": {
+    "file": "public/icons/items/invceh.1x.webp",
+    "sha1": "5e7b2728c4c7"
+   }
+  }
+ },
+ "invch1": {
+  "run": 4,
+  "seed": 202,
+  "kind": "variant",
+  "w": 1,
+  "h": 1,
+  "prompt": "A small charm: a small round talisman disk carved from ivory-coloured bone with a hole near its edge, a simple notched pattern carved in its face, a short knotted cord through the hole. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invch1.webp",
+    "sha1": "a9b9554fc5d0"
+   },
+   "1x": {
+    "file": "public/icons/items/invch1.1x.webp",
+    "sha1": "75a7552ae35e"
+   }
+  }
+ },
+ "invch2": {
+  "run": 4,
+  "seed": 202,
+  "kind": "variant",
+  "w": 1,
+  "h": 2,
+  "prompt": "A larger charm: a flat carved stone idol tablet with grooved geometric markings, bound with a leather thong and a small feather. Shown upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invch2.webp",
+    "sha1": "9e5940806083"
+   },
+   "1x": {
+    "file": "public/icons/items/invch2.1x.webp",
+    "sha1": "437bc2c63fb1"
+   }
+  }
+ },
+ "invch3": {
+  "run": 4,
+  "seed": 202,
+  "kind": "variant",
+  "w": 1,
+  "h": 3,
+  "prompt": "A grand charm: a tall talisman carved from a weathered grey-white antler, cracked and soot-stained, carved with spiral grooves, bound with copper wire and a few beads, no face, ivory-grey, not yellow. Shown upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invch3.webp",
+    "sha1": "79c5a7bae9df"
+   },
+   "1x": {
+    "file": "public/icons/items/invch3.1x.webp",
+    "sha1": "c80ee3c41674"
+   }
+  }
+ },
+ "invch5": {
+  "run": 4,
+  "seed": 303,
+  "kind": "variant",
+  "w": 1,
+  "h": 2,
+  "prompt": "A larger charm: a bundle of small bird bones and one long dark crow feather lashed together at the top with red-dyed sinew and a few clay beads. Shown upright, the lashing at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invch5.webp",
+    "sha1": "55c081026bc1"
+   },
+   "1x": {
+    "file": "public/icons/items/invch5.1x.webp",
+    "sha1": "165f293ae2e8"
+   }
+  }
+ },
+ "invch7": {
+  "run": 4,
+  "seed": 404,
+  "kind": "variant",
+  "w": 1,
+  "h": 1,
+  "prompt": "A small charm: a tiny round-bellied leather pouch cinched shut at the top with a cord, a single carved bone bead threaded on the cord, worn dark with handling. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invch7.webp",
+    "sha1": "69521cc1c448"
+   },
+   "1x": {
+    "file": "public/icons/items/invch7.1x.webp",
+    "sha1": "4f5f889780da"
+   }
+  }
+ },
+ "invch8": {
+  "run": 4,
+  "seed": 101,
+  "kind": "variant",
+  "w": 1,
+  "h": 2,
+  "prompt": "A larger charm: a narrow plaque of hammered copper gone green with verdigris, punched with rows of small dots, its rounded top pierced with a hole holding a leather loop. Shown upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invch8.webp",
+    "sha1": "d1b05a6bdcb5"
+   },
+   "1x": {
+    "file": "public/icons/items/invch8.1x.webp",
+    "sha1": "26b6c0fb0af9"
+   }
+  }
+ },
+ "invch9": {
+  "run": 4,
+  "seed": 303,
+  "kind": "variant",
+  "w": 1,
+  "h": 3,
+  "prompt": "A grand charm: a tall narrow slab of dark grey slate with chipped edges, carved with deep spiral and zigzag grooves filled with faded red ochre, a hole at the top with a leather thong through it. Shown upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invch9.webp",
+    "sha1": "5e5d65892566"
+   },
+   "1x": {
+    "file": "public/icons/items/invch9.1x.webp",
+    "sha1": "4c0dc05309d9"
+   }
+  }
+ },
+ "invear": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "An ear: a single severed human ear seen from the side, pale greyish flesh, a ragged dark cut edge with dried blood. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invear.webp",
+    "sha1": "52491623a994"
+   },
+   "1x": {
+    "file": "public/icons/items/invear.1x.webp",
+    "sha1": "d9a368d1ced1"
+   }
+  }
+ },
+ "inveye": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "An eyeball: a whole wet glistening eyeball, a yellowed white with fine red veins, an amber-gold iris and a dark pupil, a short stringy optic nerve trailing from its back. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/inveye.webp",
+    "sha1": "f30d5593a276"
+   },
+   "1x": {
+    "file": "public/icons/items/inveye.1x.webp",
+    "sha1": "aee1b309643a"
+   }
+  }
+ },
+ "invfang": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A fang: one long curved fang of yellowed ivory, smooth and sharp, its root end rough and darkened. Shown upright, the point at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invfang.webp",
+    "sha1": "16cff59d06f2"
+   },
+   "1x": {
+    "file": "public/icons/items/invfang.1x.webp",
+    "sha1": "eb672c62d1fd"
+   }
+  }
+ },
+ "invfed": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "An essence: a small heap of damp sickly green-black dust, oozing and bubbling, a faint green vapour hanging above it. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invfed.webp",
+    "sha1": "31d97e24deed"
+   },
+   "1x": {
+    "file": "public/icons/items/invfed.1x.webp",
+    "sha1": "cc6438533e2e"
+   }
+  }
+ },
+ "invflag": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A small war standard: a short dark wooden pole with an iron spike on top and a crossbar from which hangs a tattered square banner of oxblood-red cloth with a fringed lower edge, no emblem. Shown upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invflag.webp",
+    "sha1": "1e4531fd54f8"
+   },
+   "1x": {
+    "file": "public/icons/items/invflag.1x.webp",
+    "sha1": "0e622f25fc39"
+   }
+  }
+ },
+ "invgbi": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 2,
+  "prompt": "A golden bird: a small statuette of a long-tailed bird cast in tarnished gold, standing on a short round pedestal, its head raised with a small crest, wings folded close to its body, its long tail feathers sweeping down behind the pedestal, finely engraved feathers. Shown upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgbi.webp",
+    "sha1": "1f9f143d678b"
+   },
+   "1x": {
+    "file": "public/icons/items/invgbi.1x.webp",
+    "sha1": "2a72ea973219"
+   }
+  }
+ },
+ "invgld": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A small pile of old worn bright gold coins with warm glints, stamped with crude faces. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgld.webp",
+    "sha1": "863fb02d3a34"
+   },
+   "1x": {
+    "file": "public/icons/items/invgld.1x.webp",
+    "sha1": "101f7634cb19"
+   }
+  }
+ },
+ "invgsba": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A small chipped sapphire: a rough broken fragment of dull deep blue crystal with uneven edges and cloudy inclusions. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsba.webp",
+    "sha1": "feaeb5fb06c1"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsba.1x.webp",
+    "sha1": "a76152c2efa7"
+   }
+  }
+ },
+ "invgsbb": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A flawed sapphire: a small lopsided deep blue stone crudely ground into a few uneven facets, cloudy in places, with a visible crack running across it. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsbb.webp",
+    "sha1": "6ad4e8739e25"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsbb.1x.webp",
+    "sha1": "603f803ab14b"
+   }
+  }
+ },
+ "invgsbc": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A sapphire: a medium oval deep blue gemstone with a flat table on top and neat rows of step-cut facets around it, fairly clear with a few faint inclusions. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsbc.webp",
+    "sha1": "3a8cd0abc841"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsbc.1x.webp",
+    "sha1": "08d9de394fcd"
+   }
+  }
+ },
+ "invgsbd": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A flawless sapphire: a large cushion-cut deep blue gemstone, a rounded square with many clean bright facets, clear and unclouded. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsbd.webp",
+    "sha1": "d4bf6407cfee"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsbd.1x.webp",
+    "sha1": "10119dc75461"
+   }
+  }
+ },
+ "invgsbe": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A perfect sapphire: a large flawless brilliant-cut deep blue gemstone with many sharp facets. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsbe.webp",
+    "sha1": "f408ac56935b"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsbe.1x.webp",
+    "sha1": "e6e95ca3488d"
+   }
+  }
+ },
+ "invgsga": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A small chipped emerald: a rough broken fragment of dull deep green crystal with uneven edges and cloudy inclusions. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsga.webp",
+    "sha1": "cb526b7ea58b"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsga.1x.webp",
+    "sha1": "347cf690b838"
+   }
+  }
+ },
+ "invgsgb": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A flawed emerald: a small lopsided deep green stone crudely ground into a few uneven facets, cloudy in places, with a visible crack running across it. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsgb.webp",
+    "sha1": "ee49f160e0ee"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsgb.1x.webp",
+    "sha1": "c2f832460240"
+   }
+  }
+ },
+ "invgsgc": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "An emerald: a medium oval deep green gemstone with a flat table on top and neat rows of step-cut facets around it, fairly clear with a few faint inclusions. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsgc.webp",
+    "sha1": "b2f1f1a9b5cf"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsgc.1x.webp",
+    "sha1": "fa879f3f23ba"
+   }
+  }
+ },
+ "invgsgd": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A flawless emerald: a large cushion-cut deep green gemstone, a rounded square with many clean bright facets, clear and unclouded. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsgd.webp",
+    "sha1": "c0a4f25e0fa6"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsgd.1x.webp",
+    "sha1": "11ebbe082501"
+   }
+  }
+ },
+ "invgsge": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A perfect emerald: a large flawless brilliant-cut deep green gemstone with many sharp facets. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsge.webp",
+    "sha1": "6f34610be04f"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsge.1x.webp",
+    "sha1": "02549c3fd930"
+   }
+  }
+ },
+ "invgsra": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A small chipped ruby: a rough broken fragment of dull deep red crystal with uneven edges and cloudy inclusions. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsra.webp",
+    "sha1": "445f21e35c31"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsra.1x.webp",
+    "sha1": "d0212d5f4f59"
+   }
+  }
+ },
+ "invgsrb": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A flawed ruby: a small lopsided deep red stone crudely ground into a few uneven facets, cloudy in places, with a visible crack running across it. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsrb.webp",
+    "sha1": "aae409aff63a"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsrb.1x.webp",
+    "sha1": "6ddcae4c7dda"
+   }
+  }
+ },
+ "invgsrc": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A ruby: a medium oval deep red gemstone with a flat table on top and neat rows of step-cut facets around it, fairly clear with a few faint inclusions. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsrc.webp",
+    "sha1": "7191599aee3d"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsrc.1x.webp",
+    "sha1": "9f800255828c"
+   }
+  }
+ },
+ "invgsrd": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A flawless ruby: a large cushion-cut deep red gemstone, a rounded square with many clean bright facets, clear and unclouded. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsrd.webp",
+    "sha1": "a9e87c505c57"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsrd.1x.webp",
+    "sha1": "1927e7984b9e"
+   }
+  }
+ },
+ "invgsre": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A perfect ruby: a large flawless brilliant-cut deep red gemstone with many sharp facets. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsre.webp",
+    "sha1": "e0883584af87"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsre.1x.webp",
+    "sha1": "08b54030c52a"
+   }
+  }
+ },
+ "invgsva": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A small chipped amethyst: a rough broken fragment of dull violet crystal with uneven edges and cloudy inclusions. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsva.webp",
+    "sha1": "a893bc019770"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsva.1x.webp",
+    "sha1": "94d9f04bc1ff"
+   }
+  }
+ },
+ "invgsvb": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A flawed amethyst: a small lopsided violet stone crudely ground into a few uneven facets, cloudy in places, with a visible crack running across it. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsvb.webp",
+    "sha1": "17d0cf9f80f9"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsvb.1x.webp",
+    "sha1": "00085c97e635"
+   }
+  }
+ },
+ "invgsvc": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "An amethyst: a medium oval violet gemstone with a flat table on top and neat rows of step-cut facets around it, fairly clear with a few faint inclusions. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsvc.webp",
+    "sha1": "83b2cac1a541"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsvc.1x.webp",
+    "sha1": "e44a5e089d95"
+   }
+  }
+ },
+ "invgsvd": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A flawless amethyst: a large cushion-cut violet gemstone, a rounded square with many clean bright facets, clear and unclouded. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsvd.webp",
+    "sha1": "f96811289330"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsvd.1x.webp",
+    "sha1": "560c766a3440"
+   }
+  }
+ },
+ "invgsve": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A perfect amethyst: a large flawless brilliant-cut violet gemstone with many sharp facets. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsve.webp",
+    "sha1": "10a8f63e780c"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsve.1x.webp",
+    "sha1": "dc31733e6ce8"
+   }
+  }
+ },
+ "invgswa": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A small chipped diamond: a rough broken fragment of dull greyish colourless crystal with uneven edges and cloudy inclusions. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgswa.webp",
+    "sha1": "3ec11865e19c"
+   },
+   "1x": {
+    "file": "public/icons/items/invgswa.1x.webp",
+    "sha1": "34dbd876cc6a"
+   }
+  }
+ },
+ "invgswb": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A flawed diamond: a small lopsided clear colourless stone crudely ground into a few uneven facets, cloudy in places, with a visible crack running across it. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgswb.webp",
+    "sha1": "e8b43e85be2a"
+   },
+   "1x": {
+    "file": "public/icons/items/invgswb.1x.webp",
+    "sha1": "1449ce15c125"
+   }
+  }
+ },
+ "invgswc": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A diamond: a medium oval clear colourless gemstone with a flat table on top and neat rows of step-cut facets around it, fairly clear with a few faint inclusions. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgswc.webp",
+    "sha1": "d8c68ab3d37c"
+   },
+   "1x": {
+    "file": "public/icons/items/invgswc.1x.webp",
+    "sha1": "d5f5a2d0db35"
+   }
+  }
+ },
+ "invgswd": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A flawless diamond: a large cushion-cut clear colourless gemstone, a rounded square with many clean bright facets, clear and unclouded. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgswd.webp",
+    "sha1": "03a60188344e"
+   },
+   "1x": {
+    "file": "public/icons/items/invgswd.1x.webp",
+    "sha1": "08d45ef6b04d"
+   }
+  }
+ },
+ "invgswe": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A perfect diamond: a large flawless brilliant-cut clear colourless gemstone with many sharp facets. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgswe.webp",
+    "sha1": "3dc2f87cabbd"
+   },
+   "1x": {
+    "file": "public/icons/items/invgswe.1x.webp",
+    "sha1": "d3fff21ba4dc"
+   }
+  }
+ },
+ "invgsya": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A small chipped topaz: a rough broken fragment of dull honey-yellow crystal with uneven edges and cloudy inclusions. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsya.webp",
+    "sha1": "ca0ec6e42464"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsya.1x.webp",
+    "sha1": "e765e2fe1dd7"
+   }
+  }
+ },
+ "invgsyb": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A flawed topaz: a small lopsided honey-yellow stone crudely ground into a few uneven facets, cloudy in places, with a visible crack running across it. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsyb.webp",
+    "sha1": "c6632a51968e"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsyb.1x.webp",
+    "sha1": "3571dd74b8d1"
+   }
+  }
+ },
+ "invgsyc": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A topaz: a medium oval honey-yellow gemstone with a flat table on top and neat rows of step-cut facets around it, fairly clear with a few faint inclusions. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsyc.webp",
+    "sha1": "4256f033dcbf"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsyc.1x.webp",
+    "sha1": "b7a16ece4641"
+   }
+  }
+ },
+ "invgsyd": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A flawless topaz: a large cushion-cut honey-yellow gemstone, a rounded square with many clean bright facets, clear and unclouded. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsyd.webp",
+    "sha1": "76cdf93b68a6"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsyd.1x.webp",
+    "sha1": "041e7df477a7"
+   }
+  }
+ },
+ "invgsye": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A perfect topaz: a large flawless brilliant-cut honey-yellow gemstone with many sharp facets. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsye.webp",
+    "sha1": "a47f48426219"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsye.1x.webp",
+    "sha1": "8b0206dbe0f4"
+   }
+  }
+ },
+ "invhorn": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A horn: a single curved beast horn, thick at its base with deep ridged growth rings, tapering in a smooth curve to a sharp point, weathered grey-brown with a darker tip. Shown upright, the point at the top curving to the left. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invhorn.webp",
+    "sha1": "a9b5133ea013"
+   },
+   "1x": {
+    "file": "public/icons/items/invhorn.1x.webp",
+    "sha1": "71b50a02eb52"
+   }
+  }
+ },
+ "invhp3": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A healing potion: a round-bellied flask of thick hand-blown glass with small bubbles, slightly lopsided and grimy, a short neck and a wax-dipped cork, filled with bright glowing scarlet liquid lit from within. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invhp3.webp",
+    "sha1": "129964353eb7"
+   },
+   "1x": {
+    "file": "public/icons/items/invhp3.1x.webp",
+    "sha1": "6ecf446e79a7"
+   }
+  }
+ },
+ "invhp4": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A greater healing potion: a large pear-shaped flask of thick hand-blown glass with a long neck and a wax-dipped cork, a net of knotted brown cord around its belly, filled with bright glowing scarlet liquid lit from within. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invhp4.webp",
+    "sha1": "b2b2fc3e4786"
+   },
+   "1x": {
+    "file": "public/icons/items/invhp4.1x.webp",
+    "sha1": "0af80386d8bc"
+   }
+  }
+ },
+ "invhp5": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A super healing potion: a large heavy flask of thick glass cut into flat facets like a gemstone, a tarnished pewter collar and stopper, filled with intensely glowing deep scarlet liquid lit from within. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invhp5.webp",
+    "sha1": "e34b6e7f06f8"
+   },
+   "1x": {
+    "file": "public/icons/items/invhp5.1x.webp",
+    "sha1": "9571479dc1e4"
+   }
+  }
+ },
+ "invhrb": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A herb: a small bundle of dried herb sprigs with grey-green leaves and tiny pale seed heads, the stems tied together with twine. Shown upright, the leaves at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invhrb.webp",
+    "sha1": "69922a46899a"
+   },
+   "1x": {
+    "file": "public/icons/items/invhrb.1x.webp",
+    "sha1": "3a2fe29f9185"
+   }
+  }
+ },
+ "invhrt": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A heart: a whole human heart, dark red muscle streaked with paler fat, the cut stumps of thick vessels at its top, wet and glistening. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invhrt.webp",
+    "sha1": "4f6b8d33d895"
+   },
+   "1x": {
+    "file": "public/icons/items/invhrt.1x.webp",
+    "sha1": "e8fdc7bb7f78"
+   }
+  }
+ },
+ "invhscr": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A scroll on two upright wooden rollers, opened sideways: the yellowed parchment wound onto a roller at the left and a roller at the right, spread between them as a wide stretch of blank stained parchment, each roller's ends capped with dark brass knobs, a red cord hanging loose from one roller. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "scroll",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invhscr.webp",
+    "sha1": "6b3755fab06d"
+   },
+   "1x": {
+    "file": "public/icons/items/invhscr.1x.webp",
+    "sha1": "9d18310262a9"
+   }
+  }
+ },
+ "invjbi": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 2,
+  "prompt": "A jade figurine: a small statuette carved from muted green jade, a standing robed figure with its hands hidden in its wide sleeves and a plain, simply carved face, on a small round plinth of the same jade. Shown upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invjbi.webp",
+    "sha1": "1c5f5af32574"
+   },
+   "1x": {
+    "file": "public/icons/items/invjbi.1x.webp",
+    "sha1": "3ebce80cfaad"
+   }
+  }
+ },
+ "invjw1": {
+  "run": 4,
+  "seed": 303,
+  "kind": "variant",
+  "w": 1,
+  "h": 1,
+  "prompt": "A jewel: a faceted teardrop gem of deep orange held in a small open setting of six tarnished brass claws, no loop, no chain, seen from the front. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invjw1.webp",
+    "sha1": "19f0243442b0"
+   },
+   "1x": {
+    "file": "public/icons/items/invjw1.1x.webp",
+    "sha1": "69db42f4e6f8"
+   }
+  }
+ },
+ "invjw2": {
+  "run": 4,
+  "seed": 101,
+  "kind": "variant",
+  "w": 1,
+  "h": 1,
+  "prompt": "A jewel: a round faceted gem of dark sea-blue in a plain bezel of dark silver ringed with tiny beads, no loop, no chain, seen from the front. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invjw2.webp",
+    "sha1": "9e38ec53ae2c"
+   },
+   "1x": {
+    "file": "public/icons/items/invjw2.1x.webp",
+    "sha1": "6065da19a54d"
+   }
+  }
+ },
+ "invjw5": {
+  "run": 4,
+  "seed": 101,
+  "kind": "variant",
+  "w": 1,
+  "h": 1,
+  "prompt": "A jewel: a hexagonal faceted gem of deep blood red in a thick hexagonal bronze bezel with notched edges, no loop, no chain, seen from the front. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invjw5.webp",
+    "sha1": "a528f4f6c351"
+   },
+   "1x": {
+    "file": "public/icons/items/invjw5.1x.webp",
+    "sha1": "b11fac8f6142"
+   }
+  }
+ },
+ "invkey": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "An old skeleton key of pale worn iron with bright edge highlights: a large round bow, a thick shaft and a simple bit, lying diagonally. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invkey.webp",
+    "sha1": "42be72f5ce0b"
+   },
+   "1x": {
+    "file": "public/icons/items/invkey.1x.webp",
+    "sha1": "89412adc689d"
+   }
+  }
+ },
+ "invmp3": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A mana potion: a round-bellied flask of thick hand-blown glass with small bubbles, slightly lopsided and grimy, a short neck and a wax-dipped cork, filled with bright glowing cobalt-blue liquid lit from within. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invmp3.webp",
+    "sha1": "cb9bb285771c"
+   },
+   "1x": {
+    "file": "public/icons/items/invmp3.1x.webp",
+    "sha1": "18f11164ad86"
+   }
+  }
+ },
+ "invmp4": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A greater mana potion: a large pear-shaped flask of thick hand-blown glass with a long neck and a wax-dipped cork, a net of knotted brown cord around its belly, filled with bright glowing cobalt-blue liquid lit from within. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invmp4.webp",
+    "sha1": "2c759a673a95"
+   },
+   "1x": {
+    "file": "public/icons/items/invmp4.1x.webp",
+    "sha1": "4bd2053d400d"
+   }
+  }
+ },
+ "invmp5": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A super mana potion: a large heavy flask of thick glass cut into flat facets like a gemstone, a tarnished pewter collar and stopper, filled with intensely glowing deep cobalt-blue liquid lit from within. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invmp5.webp",
+    "sha1": "a5cd35602b1f"
+   },
+   "1x": {
+    "file": "public/icons/items/invmp5.1x.webp",
+    "sha1": "c5e9f7a19083"
+   }
+  }
+ },
+ "invmph": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 2,
+  "prompt": "A long heavy key of blackened iron: at the top a large ring-shaped bow with three short thorns pointing inward from its rim, a long shaft with two raised collars, at the bottom a broad square bit cut with deep notches. Shown upright, the bow at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invmph.webp",
+    "sha1": "5272d04b827c"
+   },
+   "1x": {
+    "file": "public/icons/items/invmph.1x.webp",
+    "sha1": "5333792c2407"
+   }
+  }
+ },
+ "invmss": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A soulstone: a long jagged crystal shard of dark smoky crimson, faceted and translucent, glowing faintly red from deep inside, its broad end bound with a few turns of blackened wire, lying diagonally. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invmss.webp",
+    "sha1": "28361136098a"
+   },
+   "1x": {
+    "file": "public/icons/items/invmss.1x.webp",
+    "sha1": "13ffefcd03dc"
+   }
+  }
+ },
+ "invnps": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "An antidote potion: a small square-shouldered bottle of thick dark green glass with a cork, a sprig of dried herb tied to its neck with twine, murky green liquid inside. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invnps.webp",
+    "sha1": "b07837797b05"
+   },
+   "1x": {
+    "file": "public/icons/items/invnps.1x.webp",
+    "sha1": "742d6df61ad7"
+   }
+  }
+ },
+ "invpot": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "An elixir: a small round flask with a tall narrow neck, held in a cage of tarnished brass filigree, a brass stopper, filled with shimmering silver-grey liquid like quicksilver. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invpot.webp",
+    "sha1": "0e5f7fc8a7d0"
+   },
+   "1x": {
+    "file": "public/icons/items/invpot.1x.webp",
+    "sha1": "45371a7340cd"
+   }
+  }
+ },
+ "invramn": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a rounded pebble of mottled grey-green serpentine stone, smooth and waxy, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invramn.webp",
+    "sha1": "a0844d68c710"
+   },
+   "1x": {
+    "file": "public/icons/items/invramn.1x.webp",
+    "sha1": "c3bc4043217b"
+   }
+  }
+ },
+ "invrber": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a polished rounded stone of black stone with a dark crimson glow deep in the cracks of its rim, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrber.webp",
+    "sha1": "fe1b2e6edc76"
+   },
+   "1x": {
+    "file": "public/icons/items/invrber.1x.webp",
+    "sha1": "be4246c37b0d"
+   }
+  }
+ },
+ "invrbk": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 2,
+  "prompt": "A thick tome standing upright, front cover facing the viewer, bound in worn dark oxblood-red leather, iron corner guards and a strap clasp, no lettering, a faded ochre-yellow ribbon bookmark hanging from the bottom. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrbk.webp",
+    "sha1": "7ac8067892e9"
+   },
+   "1x": {
+    "file": "public/icons/items/invrbk.1x.webp",
+    "sha1": "178ea5142611"
+   }
+  }
+ },
+ "invrcham": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a polished rounded stone of black onyx banded with thin grey lines around its edge, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrcham.webp",
+    "sha1": "f71476d806a1"
+   },
+   "1x": {
+    "file": "public/icons/items/invrcham.1x.webp",
+    "sha1": "3b3bba909558"
+   }
+  }
+ },
+ "invrdol": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a smooth rounded stone of grey-violet porphyry with small pale crystal flecks, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrdol.webp",
+    "sha1": "25503007ecda"
+   },
+   "1x": {
+    "file": "public/icons/items/invrdol.1x.webp",
+    "sha1": "a9d68932f553"
+   }
+  }
+ },
+ "invrel": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a rounded irregular river pebble of warm brown-grey stone with a flat smooth blank face and a chipped rim, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrel.webp",
+    "sha1": "8d9578828d12"
+   },
+   "1x": {
+    "file": "public/icons/items/invrel.1x.webp",
+    "sha1": "7c2145941152"
+   }
+  }
+ },
+ "invreld": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a rounded flat pebble of pale sandy-buff sandstone, gritty and worn soft at the edges, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invreld.webp",
+    "sha1": "7777cbea1ca1"
+   },
+   "1x": {
+    "file": "public/icons/items/invreld.1x.webp",
+    "sha1": "d01ab82e32fa"
+   }
+  }
+ },
+ "invreth": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: an egg-shaped pebble of cool blue-grey limestone, pitted at the rim, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invreth.webp",
+    "sha1": "9913a2e5a6e2"
+   },
+   "1x": {
+    "file": "public/icons/items/invreth.1x.webp",
+    "sha1": "94c1f8b228dd"
+   }
+  }
+ },
+ "invrfal": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a smooth rounded stone of charcoal grey stone flecked with tiny glints of mica, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrfal.webp",
+    "sha1": "7847085ecc04"
+   },
+   "1x": {
+    "file": "public/icons/items/invrfal.1x.webp",
+    "sha1": "a6da264c2aba"
+   }
+  }
+ },
+ "invrgul": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a polished rounded stone of black bloodstone speckled with small dark red spots, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrgul.webp",
+    "sha1": "e86776afd6ac"
+   },
+   "1x": {
+    "file": "public/icons/items/invrgul.1x.webp",
+    "sha1": "764627029c61"
+   }
+  }
+ },
+ "invrhel": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a smooth rounded stone of dark green-black stone threaded with thin pale veins near its rim, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrhel.webp",
+    "sha1": "b6e73690ce13"
+   },
+   "1x": {
+    "file": "public/icons/items/invrhel.1x.webp",
+    "sha1": "5308a33301f9"
+   }
+  }
+ },
  "invrin1": {
   "run": 1,
   "seed": 101,
@@ -25,6 +2461,1108 @@
    "1x": {
     "file": "public/icons/items/invrin1.1x.webp",
     "sha1": "a524a63489d8"
+   }
+  }
+ },
+ "invrin2": {
+  "run": 4,
+  "seed": 101,
+  "kind": "variant",
+  "w": 1,
+  "h": 1,
+  "prompt": "A ring: a thick band of dark pitted iron with a raised setting holding a round smooth green cabochon stone, seen at a three-quarter angle. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrin2.webp",
+    "sha1": "2a03ece47ff0"
+   },
+   "1x": {
+    "file": "public/icons/items/invrin2.1x.webp",
+    "sha1": "594c43daaad4"
+   }
+  }
+ },
+ "invrin3": {
+  "run": 4,
+  "seed": 303,
+  "kind": "variant",
+  "w": 1,
+  "h": 1,
+  "prompt": "A ring: a band carved from yellowed bone, notched all around its outside, set with a small polished black stone, seen at a three-quarter angle. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrin3.webp",
+    "sha1": "774587121b03"
+   },
+   "1x": {
+    "file": "public/icons/items/invrin3.1x.webp",
+    "sha1": "4ec8b4fedac4"
+   }
+  }
+ },
+ "invrin4": {
+  "run": 4,
+  "seed": 404,
+  "kind": "variant",
+  "w": 1,
+  "h": 1,
+  "prompt": "A ring: a band of tarnished bronze shaped as a coiled serpent biting its own tail, two tiny dull red stones for eyes, seen at a three-quarter angle. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrin4.webp",
+    "sha1": "47d858c6bb8f"
+   },
+   "1x": {
+    "file": "public/icons/items/invrin4.1x.webp",
+    "sha1": "288c2225c214"
+   }
+  }
+ },
+ "invrin5": {
+  "run": 4,
+  "seed": 101,
+  "kind": "variant",
+  "w": 1,
+  "h": 1,
+  "prompt": "A ring: a slim band of tarnished silver with a tall bezel holding a large oval milky blue-grey moonstone, seen at a three-quarter angle. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrin5.webp",
+    "sha1": "6b794fd294cd"
+   },
+   "1x": {
+    "file": "public/icons/items/invrin5.1x.webp",
+    "sha1": "a68f563b2fb8"
+   }
+  }
+ },
+ "invrio": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a smooth rounded stone of dusky blue-grey stone with a soft satin sheen, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrio.webp",
+    "sha1": "545c4e5ae126"
+   },
+   "1x": {
+    "file": "public/icons/items/invrio.1x.webp",
+    "sha1": "923986301a57"
+   }
+  }
+ },
+ "invrist": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a polished rounded stone of dark smoky quartz, translucent at its thin edges, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrist.webp",
+    "sha1": "3f88c4882837"
+   },
+   "1x": {
+    "file": "public/icons/items/invrist.1x.webp",
+    "sha1": "cb0ef97474d6"
+   }
+  }
+ },
+ "invrith": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a rounded pebble of greenish-grey river stone with a thin pale quartz line around its edge, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrith.webp",
+    "sha1": "675e759f331e"
+   },
+   "1x": {
+    "file": "public/icons/items/invrith.1x.webp",
+    "sha1": "b123474dcc71"
+   }
+  }
+ },
+ "invrjo": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a polished rounded stone of dark stone with a faint pearly sheen and thin gold veins near its rim, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrjo.webp",
+    "sha1": "782f7a708b85"
+   },
+   "1x": {
+    "file": "public/icons/items/invrjo.1x.webp",
+    "sha1": "0ef613359d97"
+   }
+  }
+ },
+ "invrko": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a smooth rounded stone of dense dark brown stone banded like agate around its edge, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrko.webp",
+    "sha1": "a619ac33638d"
+   },
+   "1x": {
+    "file": "public/icons/items/invrko.1x.webp",
+    "sha1": "09da1d7a9e9e"
+   }
+  }
+ },
+ "invrlem": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a smooth rounded stone of deep oxblood-brown stone, waxy and smooth, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrlem.webp",
+    "sha1": "644beda0c047"
+   },
+   "1x": {
+    "file": "public/icons/items/invrlem.1x.webp",
+    "sha1": "af58dd5b67c1"
+   }
+  }
+ },
+ "invrlo": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a polished rounded stone of black stone with fine veins of tarnished gold around its rim, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrlo.webp",
+    "sha1": "c174c98c69a4"
+   },
+   "1x": {
+    "file": "public/icons/items/invrlo.1x.webp",
+    "sha1": "4e1dac300928"
+   }
+  }
+ },
+ "invrlum": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a smooth rounded stone of dark olive stone with thin gold-brown veins near its rim, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrlum.webp",
+    "sha1": "1558d0f2595e"
+   },
+   "1x": {
+    "file": "public/icons/items/invrlum.1x.webp",
+    "sha1": "3327e092327d"
+   }
+  }
+ },
+ "invrmal": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a polished rounded stone of black basalt with a soft sheen and faint silver veins near its rim, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrmal.webp",
+    "sha1": "e73343c5a88f"
+   },
+   "1x": {
+    "file": "public/icons/items/invrmal.1x.webp",
+    "sha1": "67d22584e911"
+   }
+  }
+ },
+ "invrnef": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a squat rounded pebble of reddish-brown sandstone with faint paler bands, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrnef.webp",
+    "sha1": "b79ba136d055"
+   },
+   "1x": {
+    "file": "public/icons/items/invrnef.1x.webp",
+    "sha1": "ea86ba7a964f"
+   }
+  }
+ },
+ "invrohm": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a polished rounded stone of deep black-green jade with a faint glow at its edges, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrohm.webp",
+    "sha1": "75be8e9ac0e3"
+   },
+   "1x": {
+    "file": "public/icons/items/invrohm.1x.webp",
+    "sha1": "40a81b7e2641"
+   }
+  }
+ },
+ "invrort": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a thick rounded pebble of dark grey flint with a pale chalky crust around its edge, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrort.webp",
+    "sha1": "f4c4ea59d3bd"
+   },
+   "1x": {
+    "file": "public/icons/items/invrort.1x.webp",
+    "sha1": "bda75648767f"
+   }
+  }
+ },
+ "invrpul": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a smooth rounded stone of dark slate-blue stone with a faint frost of pale veins around its rim, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrpul.webp",
+    "sha1": "a970c08ddfe8"
+   },
+   "1x": {
+    "file": "public/icons/items/invrpul.1x.webp",
+    "sha1": "6aa75048a3b9"
+   }
+  }
+ },
+ "invrral": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a rounded pebble of dull red-brown jasper, worn smooth, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrral.webp",
+    "sha1": "cd1b9857d647"
+   },
+   "1x": {
+    "file": "public/icons/items/invrral.1x.webp",
+    "sha1": "5af996e1d705"
+   }
+  }
+ },
+ "invrsc": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rolled parchment scroll with a slightly torn edge, tied in the middle with an ochre-yellow cord and sealed with amber wax, lying diagonally. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrsc.webp",
+    "sha1": "751e455e2f59"
+   },
+   "1x": {
+    "file": "public/icons/items/invrsc.1x.webp",
+    "sha1": "0f3d326f4a07"
+   }
+  }
+ },
+ "invrshae": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a smooth oval stone of deep brown-black river stone ringed with a thin pale band, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrshae.webp",
+    "sha1": "447e3f3fb9ed"
+   },
+   "1x": {
+    "file": "public/icons/items/invrshae.1x.webp",
+    "sha1": "ba4900973926"
+   }
+  }
+ },
+ "invrsol": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a smooth rounded stone of dark grey basalt with a few pale speckles, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrsol.webp",
+    "sha1": "9c3fe2a9fb79"
+   },
+   "1x": {
+    "file": "public/icons/items/invrsol.1x.webp",
+    "sha1": "2edeb68aba8e"
+   }
+  }
+ },
+ "invrsur": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a polished rounded stone of blue-black stone with a deep glint of tiny starry flecks, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrsur.webp",
+    "sha1": "5682b0ed5895"
+   },
+   "1x": {
+    "file": "public/icons/items/invrsur.1x.webp",
+    "sha1": "74b99a5829f6"
+   }
+  }
+ },
+ "invrtal": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a broad rounded pebble of ochre-brown ironstone, rusty in its pits, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrtal.webp",
+    "sha1": "9301668ae5e3"
+   },
+   "1x": {
+    "file": "public/icons/items/invrtal.1x.webp",
+    "sha1": "2feb33aa87f4"
+   }
+  }
+ },
+ "invrthul": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a rounded pebble of dark grey slate, its edges layered and flaking, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrthul.webp",
+    "sha1": "9649fdbfb269"
+   },
+   "1x": {
+    "file": "public/icons/items/invrthul.1x.webp",
+    "sha1": "24a6a3611f78"
+   }
+  }
+ },
+ "invrtir": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: an oval pebble of speckled grey granite, rough at the rim, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrtir.webp",
+    "sha1": "c8b038875c84"
+   },
+   "1x": {
+    "file": "public/icons/items/invrtir.1x.webp",
+    "sha1": "75fde823994d"
+   }
+  }
+ },
+ "invrum": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a smooth rounded stone of dark umber stone with a thin rim of rust-red veins, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrum.webp",
+    "sha1": "65e121e7d036"
+   },
+   "1x": {
+    "file": "public/icons/items/invrum.1x.webp",
+    "sha1": "233aea817c53"
+   }
+  }
+ },
+ "invrvex": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a polished rounded stone of glassy black obsidian with a sharp shell-like chipped rim, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrvex.webp",
+    "sha1": "4c1dde4aaaf1"
+   },
+   "1x": {
+    "file": "public/icons/items/invrvex.1x.webp",
+    "sha1": "72b0bd1f80dc"
+   }
+  }
+ },
+ "invrzod": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rune stone: a polished rounded stone of black stone smooth as glass, a thin vein of tarnished gold running around its rim and a faint warm glow at its edges, its face flat, smooth and blank, no frame, no square border, not a tile. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrzod.webp",
+    "sha1": "aee7fdcfa147"
+   },
+   "1x": {
+    "file": "public/icons/items/invrzod.1x.webp",
+    "sha1": "c8fe74fa1d81"
+   }
+  }
+ },
+ "invscb": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A loose sheet of old parchment, yellowed and stained, its edges ragged and torn, its top and bottom edges curling over, creased across the middle, marked with faint faded brown ink strokes and a small drawn ring of dots, nothing legible. Seen from the front. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invscb.webp",
+    "sha1": "adf2fe0447d6"
+   },
+   "1x": {
+    "file": "public/icons/items/invscb.1x.webp",
+    "sha1": "688473c7e25c"
+   }
+  }
+ },
+ "invskf": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A flawed skull gem: a small cracked human skull of weathered grey-white bone without its lower jaw, a few chips and hairline cracks. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invskf.webp",
+    "sha1": "7a0fed084508"
+   },
+   "1x": {
+    "file": "public/icons/items/invskf.1x.webp",
+    "sha1": "dd5ca5e22dba"
+   }
+  }
+ },
+ "invskl": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A flawless skull gem: a whole human skull with its lower jaw, carved from flawless polished ivory-white stone, glossy like a gem, deep dark eye sockets, no cracks. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invskl.webp",
+    "sha1": "afc9eacc5f1e"
+   },
+   "1x": {
+    "file": "public/icons/items/invskl.1x.webp",
+    "sha1": "12205010baa5"
+   }
+  }
+ },
+ "invsku": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A skull gem: a small smooth polished human skull carved from milky bone-white stone, glossy like a gem, dark eye sockets. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invsku.webp",
+    "sha1": "f8be89fdb15b"
+   },
+   "1x": {
+    "file": "public/icons/items/invsku.1x.webp",
+    "sha1": "85769d01da20"
+   }
+  }
+ },
+ "invtoa": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A token: a small heavy tau-cross token cast in dull silver-grey pewter, shaped like a capital letter T, its three arms of even thickness each ending in a small rounded knob, a little pale blue stone set where the arms meet, worn engraved lines along the arms, standing upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "tau-token",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invtoa.webp",
+    "sha1": "252434cfcce0"
+   },
+   "1x": {
+    "file": "public/icons/items/invtoa.1x.webp",
+    "sha1": "bf829d2d02c8"
+   }
+  }
+ },
+ "invvpl": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A full rejuvenation potion: a large squat round flask of thick hand-blown glass, wider than it is tall, a short neck ringed with a tarnished pewter collar and a wax-dipped cork, filled to the brim with bright glowing magenta-violet liquid lit from within. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invvpl.webp",
+    "sha1": "a9570f6cc9fa"
+   },
+   "1x": {
+    "file": "public/icons/items/invvpl.1x.webp",
+    "sha1": "cc141cc795b1"
+   }
+  }
+ },
+ "invvps": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A rejuvenation potion: a small squat hand-blown glass vial, wider than it is tall, with a short neck and a wax-dipped cork, filled with glowing magenta-violet liquid lit from within. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invvps.webp",
+    "sha1": "6a0b15b2bd07"
+   },
+   "1x": {
+    "file": "public/icons/items/invvps.1x.webp",
+    "sha1": "5379cbcef1ad"
+   }
+  }
+ },
+ "invwps": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A stamina potion: a slim tall bottle of clear hand-blown glass with sloping shoulders, a narrow neck and a cork tied with string, filled with cloudy pale cream-yellow liquid. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invwps.webp",
+    "sha1": "7864f72caccb"
+   },
+   "1x": {
+    "file": "public/icons/items/invwps.1x.webp",
+    "sha1": "6791e2ed37f7"
+   }
+  }
+ },
+ "invxyz": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A potion of life: a gourd-shaped bottle of pale hand-blown glass, a small round bulb above a large round bulb, a carved wooden stopper, filled with softly glowing pale gold liquid like honey. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invxyz.webp",
+    "sha1": "780e2a83e1b4"
+   },
+   "1x": {
+    "file": "public/icons/items/invxyz.1x.webp",
+    "sha1": "375475b3145c"
+   }
+  }
+ },
+ "invyps": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A thawing potion: a small flat round flask of thick glass, half wrapped in a strip of shaggy sheepskin tied with a leather cord, filled with warm glowing ember-orange liquid. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invyps.webp",
+    "sha1": "d8d2b381bcf8"
+   },
+   "1x": {
+    "file": "public/icons/items/invyps.1x.webp",
+    "sha1": "c354186af1bf"
    }
   }
  }
