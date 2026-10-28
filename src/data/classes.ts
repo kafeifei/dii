@@ -11,9 +11,7 @@ export interface ClassDef {
   /** a new hero's attributes: CharStats.txt's; life, mana and stamina follow from its growth (game/d2/stats.ts) */
   base: { str: number; dex: number; vit: number; ene: number };
   trees: [string, string, string];
-  /** starting kit: D2 base codes */
-  weapon: string;
-  offhand: string | null;
+  /** the starting kit is CharStats.txt's (src/items/gen.ts starterKit) */
   firstSkill: string;
 }
 
@@ -31,8 +29,6 @@ export const CLASSES: Record<PlayerClass, ClassDef> = {
     desc: '剑盾在手的圣光战士，以光环庇护自身、削弱敌人。',
     base: startAttrs('pal'),
     trees: ['战斗技能', '进攻光环', '防御光环'],
-    weapon: 'ssd',
-    offhand: 'buc',
     firstSkill: 'sacred_strike',
   },
   sorceress: {
@@ -42,8 +38,6 @@ export const CLASSES: Record<PlayerClass, ClassDef> = {
     desc: '驾驭火焰、闪电与冰霜的施法者，身躯脆弱，法力充沛。',
     base: startAttrs('sor'),
     trees: ['火焰法术', '闪电法术', '冰冷法术'],
-    weapon: 'sst',
-    offhand: null,
     firstSkill: 'fire_bolt',
   },
 };

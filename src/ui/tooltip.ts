@@ -2,6 +2,7 @@ import { SKILL_BY_ID } from '../data/skills';
 import { CHARGE_PREFIX } from '../game/player';
 import { isSocketFiller } from '../items/d2/sockets';
 import { baseOf, canSocket, displayName, tooltip, type TooltipLine } from '../items/item';
+import { fillableTome, isBookScroll, tomeRoom } from '../items/tomes';
 import { buyPrice, repairCost, sellPrice } from '../items/vendor';
 import { escapeHtml, h, type UIContext } from './common';
 import { isRepairing } from './inventory';
@@ -47,9 +48,15 @@ export class Tooltip {
     const p = ui.game.player;
     const ctx = p.tradeCtx();
     const src = holder.dataset.src;
-    let price: string | undefined;
-    if (src === 'shop') price = `购买价格：${buyPrice(ui.game.shop, item, ctx)} 金币`;
-    else if (ui.left === 'shop' && isRepairing() && (src === 'inv' || src === 'eq')) {
+    let price: string | string[] | undefined;
+    if (src === 'shop') {
+      const each = buyPrice(ui.game.shop, item, ctx);
+      // a scroll for a tome in the bag with room goes into it; shift + right-click fills it (vendor.ts buyIntoTome)
+      const tome = isBookScroll(item) ? fillableTome(p.inventory, item) : undefined;
+      price = tome
+        ? [`购买价格：${each} 金币（放进背包里的${displayName(tome)}）`, `${ui.touch ? '长按' : 'Shift+右键'}补满：${tomeRoom(tome)} 张，${tomeRoom(tome) * each} 金币`]
+        : `购买价格：${each} 金币`;
+    } else if (ui.left === 'shop' && isRepairing() && (src === 'inv' || src === 'eq')) {
       const c = repairCost(item, ctx);
       price = c ? `修理价格：${c} 金币` : item.eth ? '无形物品无法修理' : '不需要修理';
     } else if (ui.left === 'shop' && src === 'inv') {

@@ -15,6 +15,7 @@ import { SET_BY_ID, SET_ITEM_BY_ID, UNIQUE_BY_ID as D2_UNIQUES, setBonuses, slot
 import { socketBlock } from './d2/sockets';
 import type { D2Quality } from './d2/types';
 import { ITEM_STATE_CODES, modProps, propMods, rollMax } from './props';
+import { bookOf, IDENTIFY_SPELL, tomeCharges, TOWN_PORTAL_SPELL } from './tomes';
 
 /** an item's quality as shown: Diablo II's qualities, and runewords (a normal or superior item with a runeword) */
 export type Rarity = 'low' | 'normal' | 'superior' | 'magic' | 'rare' | 'unique' | 'set' | 'crafted' | 'runeword';
@@ -717,7 +718,7 @@ function setLines(item: Item, ctx: ReqContext | undefined, clvl: number): Toolti
  * ethereal and sockets; unidentified, the properties are hidden. Set items add their green bonuses
  * by what of the set is worn.
  */
-export function tooltip(item: Item, ctx?: ReqContext, priceLine?: string): TooltipLine[] {
+export function tooltip(item: Item, ctx?: ReqContext, priceLine?: string | string[]): TooltipLine[] {
   const b = baseOf(item);
   const lines: TooltipLine[] = [];
   const color = itemColor(item);
@@ -737,7 +738,7 @@ export function tooltip(item: Item, ctx?: ReqContext, priceLine?: string): Toolt
     lines.push({ text: b.name, color });
   }
   const price = () => {
-    if (priceLine) lines.push({ text: priceLine, small: true });
+    for (const text of typeof priceLine === 'string' ? [priceLine] : (priceLine ?? [])) lines.push({ text, small: true });
     return lines;
   };
 
@@ -770,10 +771,15 @@ export function tooltip(item: Item, ctx?: ReqContext, priceLine?: string): Toolt
       return price();
     }
     case 'scroll':
-    case 'tome':
-      if (b.stack) lines.push({ text: fmt(S.ItemStats1i, item.qty ?? 1, b.stack[1]) });
-      lines.push({ text: b.id === 'isc' || b.id === 'ibk' ? '右键点击，再点一件未辨识的物品' : NOT_IN_GAME, small: true, color: b.id === 'isc' || b.id === 'ibk' ? '#999' : INERT_COLOR });
+    case 'tome': {
+      // a tome's charges as D2 shows a stack's (数量: n/20), then what reading it does and how it fills
+      if (b.stack) lines.push({ text: fmt(S.ItemStats1i, tomeCharges(item), b.stack[1]) });
+      const row = bookOf(b.id);
+      const use = row?.spell === IDENTIFY_SPELL ? '右键点击，再点一件未辨识的物品' : row?.spell === TOWN_PORTAL_SPELL ? '右键点击打开回城传送门' : null;
+      lines.push({ text: use ?? NOT_IN_GAME, small: true, color: use ? '#999' : INERT_COLOR });
+      if (row && b.type === 'tome') lines.push({ text: `把${ITEM_BASES[row.scroll]?.name ?? '卷轴'}放到书上补充，买的、捡的会自动放进来`, small: true, color: '#999' });
       return price();
+    }
     case 'key':
     case 'quiver':
       if (b.stack) lines.push({ text: fmt(S.ItemStats1i, item.qty ?? 1, b.stack[1]) });

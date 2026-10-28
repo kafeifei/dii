@@ -5,14 +5,16 @@
 // magic find and the treasure class's quality ratios, then affixes, uniques, set items and their
 // properties.
 import { pick, weightedPick } from '../core/math';
+import type { PlayerClass } from '../data/classes';
 import { D2_GOOD_TCS } from '../data/d2/progression';
+import { D2X_CLASSES } from '../data/d2x/classes';
 import { D2X_TREASURE_CLASSES } from '../data/d2x/treasure';
 import { EQUIPPABLE_BASES, ITEM_BASES, categoryOf, itypeMatches, type ItemBase } from '../data/items';
 import { GEMS } from '../data/legendary';
 import type { TcQuality } from './d2/quality';
 import { evalTc, goldAmount, TC_MAX_ITEMS, type TcOpts } from './d2/treasure';
 import type { D2Quality, Difficulty, Rand } from './d2/types';
-import { type Item } from './item';
+import { classCode, type Item } from './item';
 import { applyRunewordTo, makeItem, MATH_RAND, type MakeSpec } from './make';
 
 /**
@@ -194,13 +196,26 @@ export function applyRuneword(item: Item, runeIlvl = item.ilvl): boolean {
   return applyRunewordTo(item, runeIlvl);
 }
 
-/** the starting kit's weapon and shield, and potions */
-export function starterKit(weapon: string, offhand: string | null): { weapon: Item; offhand: Item | null; potions: Item[] } {
-  return {
-    weapon: createItem(weapon),
-    offhand: offhand ? createItem(offhand) : null,
-    potions: ['hp1', 'hp1', 'hp1', 'hp1', 'mp1', 'mp1'].map((id) => createItem(id)),
-  };
+/**
+ * A new hero's kit, Diablo II's from CharStats.txt item1 … item10 (PLAYER_CreateStartItem, D2Game
+ * Player.cpp:167-266): normal, identified, never ethereal, no sockets, at full durability, what D2
+ * wears in the right and left hands worn. A beltable item goes in the belt where it fits, the rest
+ * in the bag: the four minor healing potions in the belt; the scrolls of town portal and identify
+ * are beltable too, but D2's beltless belt is full by then and they go in the bag, as here, whose
+ * belt takes potions only
+ */
+export function starterKit(cls: PlayerClass): { weapon?: Item; offhand?: Item; belt: Item[]; bag: Item[] } {
+  const kit: { weapon?: Item; offhand?: Item; belt: Item[]; bag: Item[] } = { belt: [], bag: [] };
+  for (const { code, n, loc } of D2X_CLASSES[classCode(cls)!]?.items ?? []) {
+    for (let i = 0; i < n; i++) {
+      const it = createItem(code, 'normal', 1, { repaired: true });
+      if (loc === 'rarm' && !kit.weapon) kit.weapon = it;
+      else if (loc === 'larm' && !kit.offhand) kit.offhand = it;
+      else if (ITEM_BASES[code]?.type === 'potion') kit.belt.push(it);
+      else kit.bag.push(it);
+    }
+  }
+  return kit;
 }
 
 export function isEquipment(item: Item): boolean {

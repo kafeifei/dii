@@ -3,6 +3,7 @@ import { MOD_NAMES } from '../data/monsters';
 import { CHARGE_PREFIX, xpForLevel } from '../game/player';
 import { skillCost } from '../game/playerctl';
 import { baseOf } from '../items/item';
+import { townPortalsIn } from '../items/tomes';
 import { bindSkill, bindUsable, h, SLOT_KEYS, type UIContext } from './common';
 import { itemIcon, skillIcon } from './icons';
 
@@ -51,6 +52,8 @@ export class Hud {
       const b = h('button', 'hbtn', `${label}<span class="badge">!</span>`);
       b.title = title;
       b.onclick = () => button(k);
+      // the town portals the bag holds, as D2 shows a tome's on its skill's icon
+      if (k === 'portal') b.appendChild(h('span', 'count'));
       buttons.appendChild(b);
       this.btns[k] = b;
     }
@@ -169,6 +172,10 @@ export class Hud {
       if (!ui.touch) s.onclick = () => ui.picker.open(i, s);
       this.skillsEl.appendChild(s);
     }
+    const portals = townPortalsIn(p.inventory);
+    (this.btns.portal.querySelector('.count') as HTMLElement).textContent = String(portals);
+    this.btns.portal.classList.toggle('empty', !portals);
+    this.btns.portal.title = `回城传送 (P)：背包里还有 ${portals} 次`;
     this.btns.char.classList.toggle('notify', p.statPoints > 0);
     this.btns.skills.classList.toggle('notify', p.skillPoints > 0);
     // news in the quest log: a quest moved on, or one done it hasn't shown yet

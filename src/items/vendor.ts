@@ -17,6 +17,7 @@ import type { D2Base, D2Quality, Difficulty, Rand } from './d2/types';
 import { Grid } from './grid';
 import type { Item } from './item';
 import { makeItem, MATH_RAND } from './make';
+import { addCharges, fillableTome, isBookScroll, tomeRoom } from './tomes';
 
 /** who the camp's stall stands in for, in the order their shelves are filled */
 export const CAMP_VENDORS: readonly D2xNpc[] = ['charsi', 'akara'];
@@ -275,6 +276,27 @@ export function takeFromStore(store: Store, item: Item): Item {
   if (store.perm.has(item)) return { ...structuredClone(item), uid: uid('i') };
   store.remove(item);
   return item;
+}
+
+/**
+ * Buying a scroll while the bag holds a tome of its kind with room (SUNITNPC_BuyItem, D2Game
+ * SUnitNpc.cpp:1392-1430 as D2MOO decompiles it, with sub_6FC4B430, ItemMode.cpp:5661-5702): it
+ * goes straight into the tome, at the scroll's price. `fill` (shift + right-click) buys as many as
+ * the tome has room for and the gold pays for, each at that price. Paid from the gold carried, as
+ * every purchase at the stall is. The scroll stays on the shelf when it is a permanent one, as all
+ * of Akara's are. Null when there is no such tome: it is bought the usual way; n 0 when the gold
+ * doesn't stretch to one
+ */
+export function buyIntoTome(store: Store, scroll: Item, bag: Grid, purse: Purse, ctx: TradeCtx = {}, fill = false): { tome: Item; n: number; spent: number } | null {
+  if (!isBookScroll(scroll)) return null;
+  const tome = fillableTome(bag, scroll);
+  if (!tome) return null;
+  const each = buyPrice(store, scroll, ctx);
+  const n = Math.min(fill ? Math.floor(purse.gold / each) : purse.gold >= each ? 1 : 0, tomeRoom(tome));
+  if (n <= 0 || !pay(purse, n * each, false)) return { tome, n: 0, spent: 0 };
+  addCharges(tome, n);
+  if (!store.perm.has(scroll)) store.remove(scroll);
+  return { tome, n, spent: n * each };
 }
 
 /**

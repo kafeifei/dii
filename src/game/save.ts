@@ -5,7 +5,9 @@ import { D2_RUNEWORDS } from '../data/d2/runewords';
 import { isOldRuneword, type OldRunewordId } from '../data/legendary';
 import type { StatKey } from '../data/stats';
 import { uid } from '../core/math';
+import { createItem } from '../items/gen';
 import { isUnknown, type Item } from '../items/item';
+import { townPortalFrom } from '../items/tomes';
 import { OLD_BASES, toD2Item } from '../items/legacy';
 import type { Grid, Placed } from '../items/grid';
 import { Player, xpForLevel } from './player';
@@ -219,10 +221,31 @@ export const MIGRATIONS: Record<keyof MigrationCounts, ((d: SaveV4) => void)[]> 
         }
       }
     },
+    // 2: a town portal takes a scroll of town portal or a charge of its tome now; it was free on its
+    // key (P). A hero whose bag holds neither is given a tome of town portal, once, so nobody is left
+    // stranded out in the wilds by the change. Nothing is taken from anyone
+    (d) => giveTownPortal(d),
   ],
   world: [],
   skills: [],
 };
+
+/**
+ * Items migration 2: a tome of town portal with as many charges as its Misc.txt spawnstack (5)
+ * into the bag of a hero with no town portal to read there (tomes.ts townPortalFrom): where it
+ * fits, else by the camp stash with whatever else fits nowhere
+ */
+function giveTownPortal(d: SaveV4) {
+  if (!Array.isArray(d.inventory)) d.inventory = [];
+  const bag = new Player({ x: 0, z: 0 }).inventory;
+  for (const pl of d.inventory) if (pl && typeof pl === 'object' && pl.item && typeof pl.item === 'object' && ITEM_BASES[pl.item.baseId]) bag.place(pl.item, pl.x, pl.y);
+  if (townPortalFrom(bag)) return;
+  const tome = createItem('tbk');
+  tome.qty = ITEM_BASES.tbk.stack?.[2] ?? 5;
+  const at = bag.findSpace(tome);
+  if (at) d.inventory.push({ item: tome, x: at.x, y: at.y });
+  else d.unplaced = [...(Array.isArray(d.unplaced) ? d.unplaced : []), tome];
+}
 
 /** the items migration that moved items onto D2 codes: saves before it name bases by the game's old ids */
 const D2_BASES_STEP = 1;

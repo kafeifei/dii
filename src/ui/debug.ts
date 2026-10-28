@@ -3,9 +3,10 @@ import type { Game } from '../game/game';
 import { MAX_LEVEL, xpForLevel } from '../game/player';
 import { DIFFICULTIES, type Difficulty } from '../game/save';
 import { EQUIPPABLE_BASES } from '../data/items';
-import { rollEquipment, rollGem, rollRune, type Drop } from '../items/gen';
+import { createItem, rollEquipment, rollGem, rollRune, type Drop } from '../items/gen';
 import { displayName, isIdentified, type Item, type Rarity } from '../items/item';
 import { makeItem } from '../items/make';
+import { tomeMax } from '../items/tomes';
 import { CAMP_AREA, areaDef, areaLevel, areaList, dungeonArea, nextArea, trialFloor, type AreaDef } from '../world/areas';
 
 type Choice<T> = [T, string];
@@ -51,6 +52,7 @@ export class DebugPanel {
     this.actions(loot, '指定品质', (['magic', 'rare', 'set', 'unique'] as Rarity[]).map((r): Action => [RARITY_NAME[r]!, () => this.dropRarity(r)]));
     this.actions(loot, '符文和宝石', [['符文 ×3', () => this.dropRunes()], ['宝石 ×3', () => this.dropGems()]]);
     this.actions(loot, '鉴定', [['全部鉴定', () => this.identifyAll()]], '背包、储物箱和身上未辨识的物品');
+    this.actions(loot, '卷轴之书', [['城镇传送', () => this.dropTome('tbk')], ['鉴定', () => this.dropTome('ibk')]], '满的一本掉在脚下；捡起时背包里有同种没满的书，就补进那本');
 
     const rate = this.group(panel, '倍率');
     this.choice(rate, '经验', [[1, '×1'], [2, '×2'], [5, '×5'], [10, '×10'], [100, '×100']] as Choice<number>[], () => debugOpts.xp, (v) => (debugOpts.xp = v), '杀怪得到的经验');
@@ -134,6 +136,13 @@ export class DebugPanel {
     for (const it of all) it.identified = true;
     p.markDirty();
     this.done(`鉴定了 ${all.length} 件物品`);
+  }
+
+  /** a tome of `code` with all the charges it holds */
+  private dropTome(code: string) {
+    const tome = createItem(code);
+    tome.qty = tomeMax(tome);
+    this.drop([tome], `一本满的${displayName(tome)}`);
   }
 
   private dropRunes() {
