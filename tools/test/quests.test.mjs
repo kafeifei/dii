@@ -25,8 +25,7 @@ export default async (load) => {
   const save = await load('/src/game/save.ts');
   const { Game } = await load('/src/game/game.ts');
   const { Sfx } = await load('/src/audio/sfx.ts');
-  const { D2_MONSTER_OF, monsterLootTc } = await load('/src/game/loot.ts');
-  const { MONSTERS } = await load('/src/data/monsters.ts');
+  const { monsterLootTc } = await load('/src/game/loot.ts');
   const { D2X_MONSTERS } = await load('/src/data/d2x/monsters.ts');
   const { CAMP_AREA, WILD_AREA, DEN_OF_EVIL } = await load('/src/world/areas.ts');
   const F = R.QFLAG;
@@ -54,9 +53,9 @@ export default async (load) => {
   check([...R.rewardedQuests({ a1q1: 1, a1q4: 2, a1q2: 4 })].sort().join() === 'a1q1,a1q4', 'rewarded quests (granted or pending)');
 
   // ── quest drops (MonsterMode.cpp:536-568): a monster's quest class until the record says done.
-  // D2R gives Andariel (the floor bosses' stand-in, quest 6 at checkpoint 1) Andarielq as her
-  // regular class too, so for the test her regular one is another for a moment ──
-  const andy = { def: MONSTERS.overlord, rank: 'boss', level: 30 };
+  // D2R gives Andariel (quest 6 at checkpoint 1) Andarielq as her regular class too, so for the
+  // test her regular one is another for a moment ──
+  const andy = { def: { row: D2X_MONSTERS.andariel }, rank: 'boss', level: 30 };
   const row = D2X_MONSTERS.andariel.diff[0].tc;
   const regular = row.regular;
   row.regular = 'Act 1 H2H A';
@@ -71,14 +70,9 @@ export default async (load) => {
     row.regular = regular;
   }
 
-  // ── what counts in a level (MonsterRegion.cpp) ──
-  const as = (row) => {
-    D2_MONSTER_OF.__test = row;
-    const k = countsInLevel({ def: { id: '__test' } });
-    delete D2_MONSTER_OF.__test;
-    return k;
-  };
-  check(countsInLevel({ def: MONSTERS.zombie }) && countsInLevel({ def: { id: 'no_such_row' } }), 'hostile monsters, and ones with no row, count');
+  // ── what counts in a level (MonsterRegion.cpp), by the monster's MonStats row ──
+  const as = (id) => countsInLevel({ def: { row: D2X_MONSTERS[id] } });
+  check(as('zombie1') && as('fallen1') && as('fallenshaman1') && as('quillrat1'), 'hostile monsters count');
   check(!as('rat') && !as('akara'), 'a critter or an ally counts');
   check(!as('trap-horzmissile'), 'a neverCount monster counts');
 
@@ -235,15 +229,19 @@ export default async (load) => {
   game.enterArea(CAMP_AREA, 'waypoint');
   game.setDifficulty(1);
   check(word(1) === 0 && den().playable && game.quests.hasNews('akara') && game.quests.log('a1q1').state === 'none', `nightmare: word ${word(1)}`);
-  // the den kept from normal, its monsters dead there, doesn't finish nightmare's quest at the next kill
-  game.killMonster(game.mapOf(WILD_AREA).monsters.find((m) => !m.dead), 'phys');
-  check(!has(F.REWARDPENDING, 1) && monstersLeft(game.mapOf(DEN_OF_EVIL)) === 0, `nightmare's quest done by normal's dead: word ${word(1)}`);
+  // another game: normal's maps, its den cleared there, are gone; a kill on nightmare's moor doesn't finish it
+  check(game.mapOf(DEN_OF_EVIL) === null && game.area.id === CAMP_AREA, `normal's den kept into nightmare: ${game.mapOf(DEN_OF_EVIL) !== null}, in area ${game.area.id}`);
+  game.teleportWithin(pastGate());
+  const nmMoor = game.level.monsters.find((m) => !m.dead && countsInLevel(m));
+  if (nmMoor) game.killMonster(nmMoor, 'phys');
+  check(nmMoor?.difficulty === 1 && !has(F.REWARDPENDING, 1) && den().last !== 4, `nightmare's quest done by a kill on its moor: word ${word(1)}, monster in difficulty ${nmMoor?.difficulty}`);
   game.save();
   game.continueGame();
   game.enterArea(CAMP_AREA, 'waypoint');
   // walked into the den without Akara's word: the quest starts there (A1Q1.cpp:446-478)
   game.enterArea(DEN_OF_EVIL, 'stairs');
   check(has(F.ENTERAREA, 1) && !has(F.STARTED, 1) && den().last === 2 && !game.quests.hasNews('akara'), `nightmare's den unasked: word ${word(1)}, status ${den().last}`);
+  check(monstersLeft(game.level) > 6 && game.level.monsters.every((m) => m.difficulty === 1), `nightmare's den: ${monstersLeft(game.level)} nightmare monsters`);
   clearDen(0);
   check(has(F.REWARDPENDING, 1) && (word(0) & 1) === 1 && !has(F.REWARDPENDING, 0), `nightmare cleared: ${word(1)}, normal ${word(0)}`);
   // not collected: saved, the next game offers it (D2: reward pending reads as completed before)

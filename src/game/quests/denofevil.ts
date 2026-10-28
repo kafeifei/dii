@@ -5,8 +5,8 @@
 import { DEN_LINES, DEN_LOG } from '../../data/dialogue';
 import { QUEST_BY_KEY } from '../../data/quests';
 import { CAMP_AREA, DEN_OF_EVIL, type AreaDef } from '../../world/areas';
+import type { D2xMonster } from '../../data/d2x/types';
 import type { Level } from '../level';
-import { d2MonsterOf } from '../loot';
 import type { Monster } from '../monster';
 import { QuestScript, fillLine, type LogEntry, type QuestHost, type Topic } from './quest';
 import { QFLAG, resetIntermediateStateFlags } from './record';
@@ -22,17 +22,17 @@ const BACK_TICKS = 9;
 const FEW = 5;
 
 /**
- * Whether a monster counts toward clearing its level: those whose MonStats row is neverCount are
- * never counted in (MONSTERREGION_RegisterSpawnedMonster, MonsterRegion.cpp:1107-1118, the flag as
- * MonsterSpawn.cpp:740-745 passes it), and only a hostile one's death is counted
- * (MONSTERREGION_RecordMonsterKill, 1145-1153): so a critter or an ally (MonStats align 2 or 1)
- * never holds the quest up. The monster's row is the one it drops as (loot.ts d2MonsterOf); one
- * with none counts. D2 also leaves out what is summoned in play (the spawn's flag 8), which this
- * build's monsters never are.
+ * Whether a monster counts toward clearing its level, by its MonStats row (Monster.def.row): one
+ * whose row is neverCount is never counted in (MONSTERREGION_RegisterSpawnedMonster,
+ * MonsterRegion.cpp:1107-1118, the flag as MonsterSpawn.cpp:740-745 passes it), and only a hostile
+ * one's death is counted (MONSTERREGION_RecordMonsterKill, 1142-1153): so a critter or an ally
+ * (MonStats align 2 or 1) never holds the quest up. A shaman's raised Fallen counts again, its kill
+ * undone (SKILLS_ResurrectUnit, SkillMonst.cpp:1254-1287: MONSTERREGION_UndoMonsterKill), and so
+ * does what is summoned in play without the spawn's flag 8, as a nest's spawn (SkillMonst.cpp:697-735).
  */
-export function countsInLevel(m: Monster): boolean {
-  const row = d2MonsterOf(m.def.id);
-  return !row || (row.align === 0 && !row.neverCount);
+export function countsInLevel(m: { def: { row: Pick<D2xMonster, 'align' | 'neverCount'> } }): boolean {
+  const row = m.def.row;
+  return row.align === 0 && !row.neverCount;
 }
 
 /** whether `m`, one of the den map's monsters, counts in the den's monster region (pMonReg[LEVEL_DENOFEVIL], A1Q1.cpp:330) */
@@ -58,22 +58,14 @@ export class DenOfEvil extends QuestScript {
   private credited = false;
   /** the hero had the reward in this game, since last leaving town (tPlayerGUIDs) */
   private rewardedHere = false;
-  /**
-   * a den made before this quest's game began: the debug panel changed the difficulty, keeping the
-   * maps, and its monsters lived and died in the last difficulty. D2 plays one difficulty a game,
-   * so it isn't counted; the next game's den is
-   */
-  private readonly oldDen: Level | null;
 
   constructor(host: QuestHost) {
     super(QUEST_BY_KEY.a1q1, host);
-    this.oldDen = host.mapOf(DEN_OF_EVIL);
   }
 
-  /** the den of this game, once made */
+  /** the den of this game, once made (a game's maps are made anew with it, its quests begun: Game.newWorld, setDifficulty) */
   private get den(): Level | null {
-    const den = this.host.mapOf(DEN_OF_EVIL);
-    return den && den !== this.oldDen ? den : null;
+    return this.host.mapOf(DEN_OF_EVIL);
   }
 
   start() {
