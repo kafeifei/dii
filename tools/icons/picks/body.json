@@ -1,6 +1,94 @@
 {
+ "invbrs": {
+  "run": 4,
+  "seed": 101
+ },
+ "invchn": {
+  "run": 4,
+  "seed": 202
+ },
+ "invgth": {
+  "run": 4,
+  "seed": 303
+ },
+ "invhbl": {
+  "run": 4,
+  "seed": 101
+ },
+ "invhbt": {
+  "run": 4,
+  "seed": 404
+ },
+ "invhgl": {
+  "run": 4,
+  "seed": 101
+ },
+ "invhla": {
+  "run": 4,
+  "seed": 303
+ },
+ "invlbl": {
+  "run": 4,
+  "seed": 101
+ },
+ "invlbt": {
+  "run": 4,
+  "seed": 404
+ },
+ "invlea": {
+  "run": 4,
+  "seed": 303
+ },
+ "invlgl": {
+  "run": 4,
+  "seed": 101
+ },
+ "invmbl": {
+  "run": 4,
+  "seed": 202
+ },
+ "invmbt": {
+  "run": 4,
+  "seed": 101
+ },
+ "invmgl": {
+  "run": 4,
+  "seed": 101
+ },
  "invplt": {
   "run": 1,
   "seed": 303
+ },
+ "invqlt": {
+  "run": 4,
+  "seed": 202
+ },
+ "invscl": {
+  "run": 4,
+  "seed": 404
+ },
+ "invstu": {
+  "run": 4,
+  "seed": 202
+ },
+ "invtbl": {
+  "run": 4,
+  "seed": 202
+ },
+ "invtbt": {
+  "run": 4,
+  "seed": 202
+ },
+ "invtgl": {
+  "run": 4,
+  "seed": 101
+ },
+ "invvbl": {
+  "run": 4,
+  "seed": 404
+ },
+ "invvgl": {
+  "run": 4,
+  "seed": 101
  }
 }
