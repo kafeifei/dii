@@ -1,4 +1,5 @@
 import { bindName, SLOT_KEYS } from './common';
+import { openQuestLog } from './questlog';
 import { saveSettings } from './settings';
 import type { UI } from './ui';
 
@@ -18,6 +19,11 @@ export function pressButton(ui: UI, k: string) {
     case 'skills':
       ui.right = ui.right === 'skills' ? null : 'skills';
       ui.sfx.play(ui.right ? 'ui.open' : 'ui.close');
+      break;
+    case 'quests':
+      ui.left = ui.left === 'quests' ? null : 'quests';
+      if (ui.left) openQuestLog(ui);
+      ui.sfx.play(ui.left ? 'ui.open' : 'ui.close');
       break;
     case 'portal':
       ui.sfx.play('ui.click');
@@ -52,6 +58,13 @@ export function onKey(ui: UI, e: KeyboardEvent) {
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (e.code === 'Backquote' && ui.debugPanel && !ui.game.player.dead) {
     ui.openDebug();
+    return;
+  }
+  // a townsperson's line is cut short, then their menu left (D2: Esc)
+  if (ui.npc.isOpen && (k === 'Escape' || (k === ' ' && ui.npc.talking))) {
+    e.preventDefault();
+    if (ui.npc.talking) ui.npc.skip();
+    else ui.npc.close();
     return;
   }
   if (k === 'Escape') {
@@ -90,6 +103,10 @@ export function onKey(ui: UI, e: KeyboardEvent) {
       break;
     case 'p':
       pressButton(ui, 'portal');
+      break;
+    // the quest log: D2's key for it is Q, here one of the skill keys (Q, W, E, R)
+    case 'l':
+      pressButton(ui, 'quests');
       break;
     case 'Tab':
       e.preventDefault();

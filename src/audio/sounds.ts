@@ -45,7 +45,8 @@ export type Synth =
   | 'socket'
   | 'charge'
   | 'boss'
-  | 'death';
+  | 'death'
+  | 'quest';
 
 /** who keeps a voice when every one is busy: a critical sound always plays, however far away */
 export type Priority = 'low' | 'normal' | 'high' | 'critical';
@@ -182,6 +183,8 @@ const GROUPS = {
     cant_use: { synth: 'nomana', max: 1, prio: 'high' },
     /** the cube had no recipe for that */
     denied: { synth: 'nomana', max: 1, prio: 'high' },
+    /** a quest's goal reached: D2's quest sound (its sound 35, A1Q1.cpp:402-410) */
+    quest_done: { synth: 'quest', max: 1, prio: 'critical' },
   },
   env: {
     chest: { synth: 'chest', max: 2 },

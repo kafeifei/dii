@@ -5,6 +5,7 @@ import { SKILL_BY_ID } from '../data/skills';
 import { emptyPacket, type DamagePacket } from './actor';
 import { applyDamage, playerPierce, playerStrike, playerWeaponPacket } from './combat';
 import type { Game } from './game';
+import type { Item } from '../items/item';
 import type { Monster } from './monster';
 import { DelayedBlast, Hammer, Projectile, type ProjKind } from './objects';
 import { face, faceNow, moveBy, stepToward } from './movement';
@@ -24,6 +25,8 @@ export interface PlayerAction {
   point: P2;
   /** cast from an item's charges: at this level */
   lvl?: number;
+  /** a town portal: the tome or scroll it is read from */
+  item?: Item;
 }
 
 export function weaponReach(p: Player): number {
@@ -494,7 +497,7 @@ function fireSpellNow(g: Game, p: Player, act: PlayerAction) {
       break;
     }
     case 'townportal': {
-      g.openTownPortal();
+      g.readTownPortal(act.item);
       break;
     }
   }

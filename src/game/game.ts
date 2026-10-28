@@ -5,9 +5,10 @@ import { DROP_SOUND, ENTER_LINE, LARGE_MONSTER, heroLine, isNight, soundsNear, t
 import { CLASSES, type PlayerClass } from '../data/classes';
 import { SKILL_BY_ID } from '../data/skills';
 import { D2_TO_GAME } from '../data/d2/skillmap';
-import { createItem, isGold, newGameDrops, type Drop } from '../items/gen';
+import { createItem, isGold, newGameDrops, starterKit, type Drop } from '../items/gen';
 import { CAMP_VENDORS, fillStore, Store } from '../items/vendor';
 import { baseOf, displayName, isUnknown, type Item } from '../items/item';
+import { fillableTome, isBookScroll, isTome, isTownPortal, mergeTome, readable, readFrom, scrollIntoTome, tomeCharges, tomeMax, townPortalFrom } from '../items/tomes';
 import { coldEnchantBurst, fireEnchantBurst, lightEnchantBolts } from './d2/monstats';
 import { charStats, potionHeal } from './d2/stats';
 import { deathPenalty, type DeathPenalty } from './d2/death';
@@ -32,6 +33,8 @@ import { CAMP_AREA, DEN_OF_EVIL, areaDef, areaForDepth, areaLevel, builtWaypoint
 import { BUILT as WEST_AREAS, generateOverworld, type Overworld } from '../world/overworld';
 import { generateDen } from '../world/den';
 import { SHRINE_BY_ID } from '../data/shrines';
+import { Quests } from './quests/control';
+import type { Topic } from './quests/quest';
 
 export interface GameHooks {
   message(text: string, color?: string, dur?: number): void;
@@ -47,6 +50,13 @@ export interface GameHooks {
   setCursorItem(item: Item | null): void;
   hoveredGroundId(): number | null;
   levelUp(): void;
+  /**
+   * a townsperson spoken to: their menu, after `opening`, a line a quest has them say at once
+   * (Game.talkTo). Without it (the node tests) the merchant's shop opens, as before there were menus
+   */
+  npcMenu?(obj: WorldObject, opening: Topic | null): void;
+  /** a quest moved on: the quest log has news */
+  questsChanged?(): void;
 }
 
 export interface Picker {
@@ -182,6 +192,8 @@ export class Game {
   private leftKind = new Map<AreaKind, number>();
   /** the hero has been underground this game: enter_dungeon is said the first time */
   private wentUnder = false;
+  /** the quests of this game, made with it from the hero's record in the difficulty played (src/game/quests) */
+  quests = new Quests(this);
 
   constructor(
     public input: Input,
@@ -198,14 +210,17 @@ export class Game {
     p.name = name || cd.defaultName;
     p.cls = cls;
     p.base = { ...cd.base };
-    p.equipment.weapon = createItem(cd.weapon);
-    if (cd.offhand) p.equipment.offhand = createItem(cd.offhand);
-    p.belt[0].push(createItem('hp1'));
-    p.belt[1].push(createItem('hp1'));
-    p.belt[2].push(createItem('mp1'));
-    p.belt[3].push(createItem('hp1'));
-    p.inventory.add(createItem('hp1'));
-    p.inventory.add(createItem('mp1'));
+    // Diablo II's kit from CharStats.txt (gen.ts starterKit): the weapon and shield worn, the
+    // potions in the belt, a column each, the scrolls of town portal and identify in the bag
+    const kit = starterKit(cls);
+    if (kit.weapon) p.equipment.weapon = kit.weapon;
+    if (kit.offhand) p.equipment.offhand = kit.offhand;
+    for (const it of kit.belt) {
+      const col = p.belt.find((c) => c.length < p.beltRows());
+      if (col) col.push(it);
+      else p.inventory.add(it);
+    }
+    for (const it of kit.bag) p.inventory.add(it);
     p.gold = 50;
     p.skills[cd.firstSkill] = 1;
     p.skillPoints = 0;
@@ -255,6 +270,25 @@ export class Game {
     this.wentUnder = false;
     this.lastDeath = null;
     newGameDrops();
+    this.startQuests();
+  }
+
+  /** the quests as a game starts, from the hero's record in the difficulty played (QUESTS_QuestInit) */
+  private startQuests() {
+    this.quests = new Quests(this);
+    this.quests.start();
+  }
+
+  /** the map this game keeps that holds area `id`, if it has been made yet (none is made here) */
+  mapOf(id: number): Level | null {
+    if (WEST_AREAS.includes(id)) return this.west;
+    if (id === DEN_OF_EVIL) return this.den;
+    return null;
+  }
+
+  /** whether a quest has lit `level` up (the Den of Evil, cleared in this game) */
+  isLit(level: Level): boolean {
+    return this.quests.lights(level);
   }
 
   save() {
@@ -470,7 +504,9 @@ export class Game {
     this.sfx.enterArea(area, how === 'walk');
     // decode what's heard here and in the areas next to it, so it plays recorded from the first time
     void this.sfx.preload(soundsNear(area, this.areasNext(area), isNight(this.clock), p.cls));
-    const line = this.arrivalLine(area, prev, how);
+    // the quests hear of it (ChangedLevel); one may give the hero a line of its own to say
+    const quest = this.quests.areaChanged(area, prev);
+    const line = (prev && how !== 'respawn' && quest) || this.arrivalLine(area, prev, how);
     if (prev && prev.kind !== area.kind) this.leftKind.set(prev.kind, this.time);
     if (area.kind === 'dungeon') this.wentUnder = true;
     if (line) this.say(line);
@@ -614,6 +650,7 @@ export class Game {
     updatePlayer(this, p, dt);
     // self-repairing items mend a point now and then
     p.mendItems(dt);
+    this.quests.update(dt);
     // only the monsters near the hero act; the rest are out of play until the hero comes back
     // (MonsterGrid), and so cost nothing. They go in the grid's order, cell by cell, not the list's:
     // one added to the level during a step would wait for the next (none is: spawn.ts fills a map
@@ -1220,6 +1257,8 @@ export class Game {
     if (d.manaPerKill) p.mana = Math.min(d.maxMana, p.mana + d.manaPerKill);
     // loot
     if (!m.noXp) this.spawnDrops(m.pos, this.rollLoot((hero) => monsterLoot(m, hero)));
+    // the quests count it (MonsterKilled): the Den of Evil's last one done
+    this.quests.monsterKilled(m);
     // fx
     this.fx.death(m, m.def.blood, elem);
     // its look's death cry (src/data/monsters.ts voice), a big one's or a boss's the large one
@@ -1275,7 +1314,8 @@ export class Game {
   /** loot from a monster or a container (src/game/loot.ts) for the hero, rolled once more for each extra pass the debug panel asks for */
   private rollLoot(roll: (hero: Finder) => Item[]): Drop[] {
     const s = this.player.stats;
-    const hero: Finder = { mf: s.mf, gf: s.gf, difficulty: this.player.difficulty };
+    const p = this.player;
+    const hero: Finder = { mf: s.mf, gf: s.gf, difficulty: p.difficulty, quests: p.quests[p.difficulty] };
     const drops: Drop[] = [];
     for (let i = 0; i < debugOpts.loot; i++) for (const item of roll(hero)) drops.push({ kind: 'item', item });
     return drops;
@@ -1472,11 +1512,31 @@ export class Game {
       return;
     }
     const item = gi.item!;
-    if (this.beltInsert(item) || p.inventory.add(item)) {
+    const taken = () => {
       L.ground.splice(idx, 1);
       const k = p.unplaced.indexOf(item);
       if (k >= 0) p.unplaced.splice(k, 1);
       this.sfx.play('item.pickup', { pos: gi.pos });
+    };
+    // a scroll goes into a tome of its kind in the bag with room, a tome's charges into one (the
+    // rest stay on it, on the ground), as D2 picks them up (ItemMode.cpp:1173-1191, tomes.ts)
+    const tome = isBookScroll(item) ? fillableTome(p.inventory, item) : undefined;
+    if (tome && scrollIntoTome(item, tome)) {
+      taken();
+      this.hooks.message(`${displayName(item)}放进了${displayName(tome)}（${tomeCharges(tome)}/${tomeMax(tome)}）`, '#c8a86a', 1.2);
+      this.hooks.inventoryChanged();
+      return;
+    }
+    const merged = isTome(item) ? mergeTome(p.inventory, item) : undefined;
+    if (merged) {
+      if (merged.gone) taken();
+      else this.sfx.play('item.pickup', { pos: gi.pos });
+      this.hooks.message(`${displayName(item)}的卷轴并进了背包里的那本（${tomeCharges(merged.into)}/${tomeMax(merged.into)}）`, '#c8a86a', 1.2);
+      this.hooks.inventoryChanged();
+      return;
+    }
+    if (this.beltInsert(item) || p.inventory.add(item)) {
+      taken();
       // a find worth a word, the first time it's picked up
       const find: HeroLine | null = item.rarity === 'unique' ? 'unique' : item.rarity === 'set' ? 'set_item' : baseOf(item).type === 'rune' ? 'rune' : null;
       if (find && !this.remarked.has(item)) {
@@ -1586,8 +1646,7 @@ export class Game {
         break;
       }
       case 'vendor':
-        this.vendorHeal(obj);
-        this.hooks.openPanel('shop');
+        this.talkTo(obj);
         break;
       case 'stash':
         this.hooks.openPanel('stash');
@@ -1631,6 +1690,35 @@ export class Game {
     this.hooks.message(`通往${areaDef(obj.dest)?.name ?? '那里'}的路还没有开通`, '#aaa', 2);
   }
 
+  /**
+   * Speaking to a townsperson, as in Diablo II: Akara's heal first (D2GAME_NPC_Heal, SUnitNpc.cpp:
+   * 2784-2802), then the line a quest has them say at once, if any (QUESTS_NPCActivateSpeeches: a
+   * SCROLLMENU_MESSAGE line, such as Akara giving the Den of Evil), then their menu. That line is
+   * returned (the tests hear it through npcSpoke)
+   */
+  talkTo(obj: WorldObject): Topic | null {
+    this.vendorHeal(obj);
+    const opening = obj.npcId ? this.quests.opening(obj.npcId) : null;
+    if (this.hooks.npcMenu) this.hooks.npcMenu(obj, opening);
+    else this.hooks.openPanel('shop');
+    return opening;
+  }
+
+  /** what the townsperson says under 交谈: a quest's word for the hero, else their small talk */
+  npcTalk(obj: WorldObject): Topic | null {
+    return obj.npcId ? this.quests.talk(obj.npcId) : null;
+  }
+
+  /** a townsperson's line heard to the end, or cut short: a quest given, a reward handed over */
+  npcSpoke(topic: Topic) {
+    this.quests.spoke(topic);
+  }
+
+  /** the hero turned from a townsperson (their menu shut) */
+  npcLeft(obj: WorldObject) {
+    if (obj.npcId) this.quests.left(obj.npcId);
+  }
+
   /** like Akara in Diablo II: talking to the merchant puts life and mana back to full and cures poison, chill and the rest */
   private vendorHeal(vendor: WorldObject) {
     const p = this.player;
@@ -1666,7 +1754,13 @@ export class Game {
     this.sfx.play('env.portal_open', { pos: pt });
   }
 
-  castTownPortal() {
+  /**
+   * Read a town portal (the P key, or a right-click on a tome or scroll of town portal): the hero
+   * casts it from `from`, else from the bag's tome of town portal, then a scroll of it (tomes.ts
+   * townPortalFrom). Nothing to read it from, or a tome with no charge left: the hero says so. In the
+   * camp nothing is read, as D2's town portal fails there and uses nothing
+   */
+  castTownPortal(from?: Item) {
     const p = this.player;
     if (p.dead || !(p.state === 'idle' || p.state === 'move')) return;
     if (this.level.inTown(p.pos)) {
@@ -1674,9 +1768,36 @@ export class Game {
       this.say('cant_here');
       return;
     }
+    const src = from ?? townPortalFrom(p.inventory);
+    if (!src || !isTownPortal(src) || !readable(src)) return this.noTownPortal(src);
     p.setState('cast', 0.7);
-    this.playerAction = { skill: 'townportal', target: null, point: { ...p.pos } };
+    this.playerAction = { skill: 'townportal', target: null, point: { ...p.pos }, item: src };
     p.intent = null;
+  }
+
+  /**
+   * The cast town portal opens: its scroll is used up, or its tome loses a charge, now (a cast cut
+   * short uses none). Read from `from` while the hero still holds it with something left to read,
+   * else from what the bag has now
+   */
+  readTownPortal(from?: Item) {
+    const p = this.player;
+    if (this.level.inTown(p.pos)) return;
+    const grids = [p.inventory, p.stash, p.cube];
+    const held = from && grids.some((g) => g.contains(from)) && readable(from) ? from : townPortalFrom(p.inventory);
+    if (!held || !readFrom(grids, held)) return this.noTownPortal(from);
+    this.openTownPortal();
+    this.hooks.inventoryChanged();
+  }
+
+  /**
+   * No town portal to read: the hero says so (a message: no recorded line of theirs is for it), an
+   * empty tome that it has nothing left
+   */
+  private noTownPortal(tome?: Item) {
+    const empty = tome && isTome(tome);
+    this.hooks.message(empty ? `${displayName(tome)}里没有卷轴了` : '没有城镇传送卷轴了', '#ff6060', 1.5);
+    this.sfx.play('ui.cant_use');
   }
 
   /** by waypoint to area `id`: on the map the hero is on, a jump (teleportWithin). False when this build has no map of it */
@@ -1725,6 +1846,8 @@ export class Game {
     p.waypoints = savedWaypoints(p, d);
     this.closePortals();
     this.west = this.den = this.lastDungeon = null;
+    // a game in another difficulty: its quests from that difficulty's record (D2 plays a difficulty a game)
+    this.startQuests();
     return true;
   }
 }

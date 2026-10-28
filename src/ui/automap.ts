@@ -240,6 +240,22 @@ export class Automap {
       else if (o.kind === 'portal') dot(o.pos.x, o.pos.z, '#ff4040', scale * 1.2);
       else if (o.kind === 'vendor' || o.kind === 'stash') dot(o.pos.x, o.pos.z, '#40ff60', scale);
       else if (o.kind === 'shrine' && !o.used) dot(o.pos.x, o.pos.z, '#80e0ff', scale * 1.2);
+      // a townsperson with quest news: their yellow mark, upright on the map turned 45° (the CSS)
+      if (o.npcId && g.quests.hasNews(o.npcId)) {
+        const size = Math.max(11, scale * 3.2);
+        ctx.save();
+        ctx.translate(ox + o.pos.x * scale, oy + o.pos.z * scale);
+        ctx.rotate(-Math.PI / 4);
+        ctx.font = `900 ${size}px "Noto Serif SC", serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#000';
+        ctx.strokeText('!', 0, -scale);
+        ctx.fillStyle = '#ffd030';
+        ctx.fillText('!', 0, -scale);
+        ctx.restore();
+      }
     }
     const p = g.player;
     for (const m of g.level.monstersNear(p.pos, 12)) {

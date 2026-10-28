@@ -2,7 +2,8 @@ import type { Sfx } from '../audio/sfx';
 import { debugEnabled } from '../game/debug';
 import type { Game, GameHooks } from '../game/game';
 import type { Level } from '../game/level';
-import type { ObjKind } from '../game/objects';
+import type { ObjKind, WorldObject } from '../game/objects';
+import type { Topic } from '../game/quests/quest';
 import { baseOf, displayName, itemColor, type Item } from '../items/item';
 import type { Renderer } from '../render/renderer';
 import type { AreaDef } from '../world/areas';
@@ -17,6 +18,8 @@ import { CELL, itemIcon } from './icons';
 import { renderInventory } from './inventory';
 import { onKey, pressButton } from './keys';
 import { GroundLabels } from './labels';
+import { NpcMarks, NpcPanel } from './npc';
+import { renderQuestLog } from './questlog';
 import { applySettings, SettingsPanel, type Settings } from './settings';
 import { renderShop, renderStash, renderWaypoints } from './shop';
 import { SkillTree } from './skilltree';
@@ -37,6 +40,7 @@ export class UI implements GameHooks, UIContext {
   left: LeftPanel = null;
   right: RightPanel = null;
   dirty = true;
+  questNews = false;
   readonly itemByUid = new Map<string, Item>();
   /** phone controls, on touch screens */
   touch: TouchControls | null = null;
@@ -50,6 +54,9 @@ export class UI implements GameHooks, UIContext {
   menu!: PauseMenu;
   settingsPanel!: SettingsPanel;
   debugPanel: DebugPanel | null = null;
+  /** a townsperson's menu and lines (src/ui/npc.ts) */
+  npc!: NpcPanel;
+  private marks: NpcMarks;
   private labels: GroundLabels;
   private skillTree: SkillTree;
   private title!: TitleScreen;
@@ -73,6 +80,7 @@ export class UI implements GameHooks, UIContext {
   ) {
     this.root = document.getElementById('ui')!;
     this.labels = new GroundLabels(this, renderer, document.getElementById('labels')!);
+    this.marks = new NpcMarks(this, renderer, document.getElementById('labels')!);
     this.vignette = document.getElementById('vignette')!;
     this.skillTree = new SkillTree(this);
     this.build();
@@ -109,10 +117,23 @@ export class UI implements GameHooks, UIContext {
     this.sfx.play('ui.open');
   }
 
+  /** a townsperson spoken to (Game.talkTo): what a quest has them say at once, then their menu */
+  npcMenu(obj: WorldObject, opening: Topic | null) {
+    this.npc.open(obj, opening);
+  }
+
+  /** a quest moved on: its news waits on the log's button, unless the log is open to show it */
+  questsChanged() {
+    if (this.left !== 'quests') this.questNews = true;
+    this.dirty = true;
+  }
+
   levelChanged(level: Level) {
     this.renderer.buildLevel(level);
     this.banner.jump();
     this.labels.clear();
+    this.marks.clear();
+    this.npc.close(true);
     if (this.left === 'shop' || this.left === 'stash' || this.left === 'waypoint') this.left = null;
     this.dirty = true;
   }
@@ -158,6 +179,8 @@ export class UI implements GameHooks, UIContext {
     this.hud = new Hud(this, r, (k) => pressButton(this, k));
     this.automap = new Automap(this.game, r);
     this.banner = new AreaBanner(r);
+    this.npc = new NpcPanel(this, this.renderer);
+    r.appendChild(this.npc.el);
 
     this.leftEl = h('div', 'panel left ui-block');
     this.rightEl = h('div', 'panel right ui-block');
@@ -259,7 +282,7 @@ export class UI implements GameHooks, UIContext {
   private updateInteract() {
     const n = this.game.touchNear;
     const t = this.touch!;
-    if (!n || this.game.player.dead || this.left || this.right) t.setInteract(null);
+    if (!n || this.game.player.dead || this.left || this.right || this.npc.isOpen) t.setInteract(null);
     else if (n.ground) t.setInteract('拾取', displayName(n.ground.item!), itemColor(n.ground.item!));
     else t.setInteract(USE_VERB[n.obj.kind], n.obj.name);
   }
@@ -290,6 +313,9 @@ export class UI implements GameHooks, UIContext {
         break;
       case 'cube':
         renderCube(this, this.leftEl);
+        break;
+      case 'quests':
+        renderQuestLog(this, this.leftEl);
         break;
     }
     if (this.right === 'inv') renderInventory(this, this.rightEl);
@@ -322,6 +348,7 @@ export class UI implements GameHooks, UIContext {
       return;
     }
     const p = g.player;
+    this.npc.update(dt);
     if (this.touch) this.updateInteract();
     // close shop/stash when walking away
     if ((this.left === 'shop' || this.left === 'stash' || this.left === 'waypoint') && g.level) {
@@ -355,6 +382,7 @@ export class UI implements GameHooks, UIContext {
 
     this.tooltip.dropStale();
     this.labels.update();
+    this.marks.update();
     this.automap.update(dt);
     this.banner.update();
   }

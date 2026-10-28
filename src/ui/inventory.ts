@@ -5,7 +5,8 @@ import { isSocketFiller, socketBlock, type SocketBlock } from '../items/d2/socke
 import type { Grid } from '../items/grid';
 import { baseOf, displayName, isIdentified, isUnknown, socketId, type Item } from '../items/item';
 import { insertFiller } from '../items/make';
-import { buyPrice, repairCost, repairOne, sellPrice, shelveSold, takeFromStore } from '../items/vendor';
+import { isTownPortal, readable, readFrom, scrollIntoTome } from '../items/tomes';
+import { buyIntoTome, buyPrice, repairCost, repairOne, sellPrice, shelveSold, takeFromStore } from '../items/vendor';
 import type { HeroLine } from '../audio/sounds';
 import { h, type UIContext } from './common';
 import { CELL, itemIcon } from './icons';
@@ -103,7 +104,7 @@ function repairWith(ui: UIContext, it: Item): boolean {
 let identifier: Item | null = null;
 
 function startIdentify(ui: UIContext, scroll: Item) {
-  if (baseOf(scroll).type === 'tome' && (scroll.qty ?? 0) <= 0) {
+  if (!readable(scroll)) {
     ui.message('鉴定之书里没有卷轴了', '#ff6060', 1.5);
     return;
   }
@@ -122,8 +123,7 @@ function identifyWith(ui: UIContext, target: Item): boolean {
     return true;
   }
   const p = ui.game.player;
-  if (baseOf(s).type === 'tome') s.qty = Math.max(0, (s.qty ?? 1) - 1);
-  else if (!p.inventory.remove(s) && !p.stash.remove(s) && !p.cube.remove(s)) return false;
+  if (!readFrom([p.inventory, p.stash, p.cube], s)) return false;
   target.identified = true;
   target.name = displayName(target);
   p.markDirty();
@@ -154,7 +154,8 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
   if (e.button === 2) {
     if (!under || ui.cursorItem) return;
     const it = under.item;
-    if (kind === 'shop') return buy(ui, it);
+    // shift + right-click fills the bag's tome with the scroll bought (D2's multibuy); on a phone, the long press
+    if (kind === 'shop') return buy(ui, it, e.shiftKey || e.pointerType === 'touch');
     const b = baseOf(it);
     if (b.type === 'cube') {
       openCube(ui);
@@ -162,6 +163,12 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
     }
     if (identifies(it)) {
       startIdentify(ui, it);
+      return;
+    }
+    // a tome or scroll of town portal: read, the hero casts it (Game.castTownPortal)
+    if (isTownPortal(it)) {
+      ui.game.castTownPortal(it);
+      ui.dirty = true;
       return;
     }
     if (b.type === 'potion' && ui.game.drinkable(it)) {
@@ -186,9 +193,8 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
 
   if (ui.cursorItem) {
     const c = ui.cursorItem;
-    // a scroll of identify into the tome: one more charge, up to its stack's most (D2)
-    if (under && c.baseId === 'isc' && under.item.baseId === 'ibk' && (under.item.qty ?? 0) < (baseOf(under.item).stack?.[1] ?? 20)) {
-      under.item.qty = (under.item.qty ?? 0) + 1;
+    // a scroll onto its tome (identify's or town portal's): one more charge, up to the tome's most (tomes.ts)
+    if (under && kind !== 'shop' && scrollIntoTome(c, under.item)) {
       ui.cursorItem = null;
       ui.sfx.play('item.move');
       ui.dirty = true;
@@ -273,10 +279,29 @@ function openCube(ui: UIContext) {
   ui.sfx.play('ui.open');
 }
 
-/** buy from the shelf at its NPC's price (vendor.ts): a permanent item's copy, anything else itself */
-function buy(ui: UIContext, it: Item) {
+/**
+ * buy from the shelf at its NPC's price (vendor.ts): a permanent item's copy, anything else itself.
+ * A scroll goes into the bag's tome of its kind while it has room; `fill`, as many as it takes and
+ * the gold pays for (vendor.ts buyIntoTome)
+ */
+function buy(ui: UIContext, it: Item, fill = false) {
   const p = ui.game.player;
   const store = ui.game.shop;
+  const into = buyIntoTome(store, it, p.inventory, p, p.tradeCtx(), fill);
+  if (into) {
+    if (!into.n) {
+      ui.message('金币不足', '#ff6060');
+      ui.sfx.play('ui.no_gold');
+      ui.game.say('no_gold');
+      return;
+    }
+    ui.message(`${into.n} 张${displayName(it)}放进了${displayName(into.tome)}（${into.tome.qty}/${baseOf(into.tome).stack?.[1]}）：−${into.spent} 金币`, '#e8d890', 1.5);
+    ui.sfx.play('ui.coins');
+    // its tooltip offered to fill the tome as it was: the next move shows it as it is
+    ui.tooltip.hide();
+    ui.dirty = true;
+    return;
+  }
   const price = buyPrice(store, it, p.tradeCtx());
   if (p.gold < price) {
     ui.message('金币不足', '#ff6060');

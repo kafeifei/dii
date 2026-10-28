@@ -5,11 +5,14 @@ import { D2_RUNEWORDS } from '../data/d2/runewords';
 import { isOldRuneword, type OldRunewordId } from '../data/legendary';
 import type { StatKey } from '../data/stats';
 import { uid } from '../core/math';
+import { createItem } from '../items/gen';
 import { isUnknown, type Item } from '../items/item';
+import { townPortalFrom } from '../items/tomes';
 import { OLD_BASES, toD2Item } from '../items/legacy';
 import type { Grid, Placed } from '../items/grid';
 import { Player, xpForLevel } from './player';
 import { bodyItems, type Corpse } from './corpse';
+import { loadQuestRecord, type QuestRecords } from './quests/record';
 import { WILD_MAPS } from '../world/levelgen';
 import { CAMP_AREA, areaForDepth, builtWaypoints, isBuilt } from '../world/areas';
 
@@ -104,7 +107,10 @@ export const DIFFICULTIES: readonly Difficulty[] = [0, 1, 2];
 export interface DifficultySave {
   /** the areas whose waypoint has been touched, by area id (src/world/areas.ts) */
   waypoints: number[];
-  /** each quest's progress, by quest key */
+  /**
+   * each quest's word of Diablo II's quest flags, by quest key (a1q1…: src/game/quests/record.ts),
+   * as written in the game played; loading resets what belonged to that game (loadQuestRecord)
+   */
   quests: Record<string, number>;
 }
 
@@ -215,10 +221,31 @@ export const MIGRATIONS: Record<keyof MigrationCounts, ((d: SaveV4) => void)[]> 
         }
       }
     },
+    // 2: a town portal takes a scroll of town portal or a charge of its tome now; it was free on its
+    // key (P). A hero whose bag holds neither is given a tome of town portal, once, so nobody is left
+    // stranded out in the wilds by the change. Nothing is taken from anyone
+    (d) => giveTownPortal(d),
   ],
   world: [],
   skills: [],
 };
+
+/**
+ * Items migration 2: a tome of town portal with as many charges as its Misc.txt spawnstack (5)
+ * into the bag of a hero with no town portal to read there (tomes.ts townPortalFrom): where it
+ * fits, else by the camp stash with whatever else fits nowhere
+ */
+function giveTownPortal(d: SaveV4) {
+  if (!Array.isArray(d.inventory)) d.inventory = [];
+  const bag = new Player({ x: 0, z: 0 }).inventory;
+  for (const pl of d.inventory) if (pl && typeof pl === 'object' && pl.item && typeof pl.item === 'object' && ITEM_BASES[pl.item.baseId]) bag.place(pl.item, pl.x, pl.y);
+  if (townPortalFrom(bag)) return;
+  const tome = createItem('tbk');
+  tome.qty = ITEM_BASES.tbk.stack?.[2] ?? 5;
+  const at = bag.findSpace(tome);
+  if (at) d.inventory.push({ item: tome, x: at.x, y: at.y });
+  else d.unplaced = [...(Array.isArray(d.unplaced) ? d.unplaced : []), tome];
+}
 
 /** the items migration that moved items onto D2 codes: saves before it name bases by the game's old ids */
 const D2_BASES_STEP = 1;
@@ -465,16 +492,17 @@ const readOnly = new WeakSet<Player>();
 export function writeSave(p: Player, area: number, worldSeed?: number) {
   if (readOnly.has(p)) return;
   const KEY = keyFor(slot);
-  // what this build doesn't play yet (progress, the mercenary) is written from the save
-  // loaded or last written: a line that moves one onto Player or Game must write it from there instead
+  // what this build doesn't play yet (the mercenary, the other difficulties' waypoints) is written
+  // from the save loaded or last written: a line that moves one onto Player or Game must write it from there instead
   const prev = loaded.get(p);
   const difficulty = p.difficulty;
-  const progress: SaveV4['progress'] = prev?.progress ?? [newProgress(), newProgress(), newProgress()];
+  // the quests from the hero, every difficulty's (the records keep the quests this build doesn't know)
+  const progress = DIFFICULTIES.map((d) => ({ ...newProgress(), ...prev?.progress?.[d], quests: { ...p.quests[d] } })) as SaveV4['progress'];
   // waypoints in areas this build doesn't have (an old dungeon floor's, a later build's) stay touched
-  const touched = progress[difficulty]?.waypoints ?? [];
+  const touched = Array.isArray(progress[difficulty].waypoints) ? progress[difficulty].waypoints : [];
   const usable = builtWaypoints(touched);
   const others = touched.filter((a) => !usable.includes(a));
-  progress[difficulty] = { ...progress[difficulty], quests: progress[difficulty]?.quests ?? {}, waypoints: [...new Set([...others, ...p.waypoints])] };
+  progress[difficulty].waypoints = [...new Set([...others, ...p.waypoints])];
   const data: SaveV4 = {
     ...prev,
     v: SAVE_V,
@@ -786,6 +814,8 @@ export function loadSave(): Loaded | null {
   p.depthReached = d.depthReached ?? 0;
   p.difficulty = DIFFICULTIES.includes(d.difficulty) ? d.difficulty : 0;
   p.waypoints = builtWaypoints(d.progress?.[p.difficulty]?.waypoints ?? []);
+  // each difficulty's quest record, for a new game (D2 reads all three so: PlrSave2.cpp:1615-1621)
+  p.quests = DIFFICULTIES.map((x) => loadQuestRecord(d.progress?.[x]?.quests)) as QuestRecords;
   // the body left on dying waits in the camp, with no experience on it (src/game/corpse.ts)
   p.corpses = [];
   const body = d.corpse && typeof d.corpse === 'object' ? d.corpse : null;

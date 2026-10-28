@@ -20,6 +20,7 @@ import { attackAnim, blockFrames, castAnim, FRAMES_PER_SEC, hitRecoveryFrames, t
 import { MPS_PER_VELOCITY, attackRating, baseLife, baseMana, baseStamina, blockChance, charStats, defense, difficulty, levelUpPoints, moveVelocity, resistance } from './d2/stats';
 import { addXp, MAX_LEVEL, xpForLevel } from './d2/xp';
 import type { Monster } from './monster';
+import { newQuestRecords, rewardedQuests, type QuestRecords } from './quests/record';
 import type { Difficulty } from './save';
 
 export { MAX_LEVEL, xpForLevel };
@@ -191,6 +192,8 @@ export class Player extends Actor {
   waypoints: number[] = [CAMP_AREA];
   /** the difficulty being played (Game.setDifficulty): its monsters by D2's tables and its area levels; it is saved and shown, keeps its own waypoints, drops from its own treasure classes and its chests at its area levels */
   difficulty: Difficulty = 0;
+  /** the quest record of each difficulty, normal, nightmare and hell (src/game/quests/record.ts), as D2 keeps one each (pQuestData[3]) */
+  quests: QuestRecords = newQuestRecords();
   /** a shrine's blessing (one at a time) and its seconds left */
   shrine: { id: string; left: number } | null = null;
   // movement / action target
@@ -327,7 +330,7 @@ export class Player extends Actor {
 
   /** what the hero's prices go by: the difficulty and "reduces all vendor prices" (D2's item_reducedprices) */
   tradeCtx(): TradeCtx {
-    return { difficulty: this.difficulty, reduced: this.stats.bag.cheap ?? 0 };
+    return { difficulty: this.difficulty, reduced: this.stats.bag.cheap ?? 0, quests: rewardedQuests(this.quests[this.difficulty]) };
   }
 
   canLearn(def: SkillDef): boolean {

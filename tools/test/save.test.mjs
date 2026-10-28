@@ -3,9 +3,10 @@
 // ground's floors (the endless dungeon's, at its depths), then turned into what versions 1, 2 and 3
 // wrote at their depths 0, 1 and 5 (before version 3, depth 1 was the dungeon's first floor; since,
 // it is the wilderness), their items on the game's own base ids as they were before the D2 bases
-// (items migration 1). Each loads into version 4, in the camp whatever its depth, and is written
-// back as it: every item still there on a D2 base (unknown ones by the stash, holding themselves as
-// saved), worn gear still usable, the points adding up, the waypoints areas (the dungeon's kept in
+// (items migration 1), without the scrolls those builds didn't have. Each loads into version 4, in
+// the camp whatever its depth, and is written back as it: every item still there on a D2 base
+// (unknown ones by the stash, holding themselves as saved), and a tome of town portal (items
+// migration 2: portals were free then), once, worn gear still usable, the points adding up, the waypoints areas (the dungeon's kept in
 // the save, the camp's the only one listed), the save's text backed up first, once. Then: the 32 old
 // armor bases and the rest of the old ids onto their D2 bases, keeping defense and requirements;
 // migration steps and the backups they leave (every one from before version 4 and the hero's first
@@ -45,14 +46,20 @@ const asOld = (it) => {
   if (it.legacy) o.legacy = it.legacy;
   return o;
 };
+/** the scrolls and tomes of the kit: no build before the D2 bases had any */
+const SCROLLS = new Set(['tsc', 'isc', 'tbk', 'ibk']);
+const notScroll = (it) => !SCROLLS.has(it?.baseId);
 /** every item of a save written by a build before the D2 bases */
 const oldItems = (d) => {
   for (const k of Object.keys(d.equipment ?? {})) d.equipment[k] = asOld(d.equipment[k]);
+  for (const k of ['inventory', 'stash', 'cube']) if (d[k]) d[k] = d[k].filter((pl) => notScroll(pl.item));
   for (const list of [d.inventory, d.stash, d.cube]) for (const pl of list ?? []) pl.item = asOld(pl.item);
-  if (d.unplaced) d.unplaced = d.unplaced.map(asOld);
-  if (d.belt) d.belt = d.belt.map((col) => col.map(asOld));
+  if (d.unplaced) d.unplaced = d.unplaced.filter(notScroll).map(asOld);
+  if (d.belt) d.belt = d.belt.map((col) => col.filter(notScroll).map(asOld));
   return d;
 };
+/** the tome of town portal items migration 2 gives a hero with no town portal in the bag, with its 5 charges */
+const giftOf = (p) => p.inventory.items.map((x) => x.item).find((it) => it.baseId === 'tbk' && it.qty === 5);
 
 export default async (load) => {
   const save = await load('/src/game/save.ts');
@@ -227,10 +234,10 @@ export default async (load) => {
       check(p.waypoints.join() === String(CAMP_AREA), `${what}: waypoints ${p.waypoints}, want the camp's`);
       check(pointsOk(p), `${what}: ${pointsOf(p)}`);
       check(p.xp >= xpForLevel(LEVEL) && p.xp < xpForLevel(LEVEL + 1), `${what}: ${p.xp} experience at level ${p.level}`);
-      // every item still there, the unknown ones by the stash
+      // every item still there, the unknown ones by the stash, and a tome of town portal in the bag
       const before = savedItems(old).length;
       const after = playerItems(p);
-      check(after.length === before, `${what}: ${before} items saved, ${after.length} loaded`);
+      check(after.length === before + 1 && giftOf(p), `${what}: ${before} items saved, ${after.length} loaded, the tome of town portal ${!!giftOf(p)}`);
       const unknown = after.filter(isUnknown);
       check(unknown.length === 3 && unknown.every((u) => p.unplaced.includes(u)), `${what}: ${unknown.length} unknown items, ${unknown.filter((u) => p.unplaced.includes(u)).length} by the stash; want 3, all`);
       check(
@@ -269,13 +276,13 @@ export default async (load) => {
       check(d.area === CAMP_AREA && !('depth' in d) && !('waypoints' in d), `${what}: written in area ${d.area}, depth ${d.depth}, waypoints ${d.waypoints}`);
       check(d.progress?.length === 3 && [...d.progress[0].waypoints].sort().join() === [...new Set(wps.map((w) => areaForDepth(w).id))].sort().join(), `${what}: written waypoints ${JSON.stringify(d.progress)}`);
       check(d.difficulty === 0 && d.unlocked === 0 && d.merc === null && d.corpse === null, `${what}: difficulty ${d.difficulty}/${d.unlocked}, merc ${d.merc}, corpse ${d.corpse}`);
-      check(savedItems(d).length === before && pointsOk(d), `${what}: ${savedItems(d).length} items written (${before} were saved), ${pointsOf(d)}`);
+      check(savedItems(d).length === before + 1 && pointsOk(d), `${what}: ${savedItems(d).length} items written (${before} were saved, and the tome), ${pointsOf(d)}`);
 
-      // loaded again: nothing more to migrate or back up, nothing lost
+      // loaded again: nothing more to migrate or back up, nothing lost, no second tome
       const again = save.loadSave();
       check(backups().join() === backup && localStorage.getItem(backup) === raw, `${what}: loading the v4 save left backups ${backups().join(', ')}`);
       const items2 = playerItems(again.player);
-      check(items2.length === before && items2.filter(isUnknown).length === 3, `${what}: reloaded ${items2.length} items, ${items2.filter(isUnknown).length} unknown`);
+      check(items2.length === before + 1 && items2.filter(isUnknown).length === 3, `${what}: reloaded ${items2.length} items, ${items2.filter(isUnknown).length} unknown`);
       check(again.area === CAMP_AREA && again.player.waypoints.join() === p.waypoints.join(), `${what}: reloaded in area ${again.area}, waypoints ${again.player.waypoints}`);
 
       // the same hero at that version again (an older build wrote it back): the first copy stays
@@ -310,7 +317,7 @@ export default async (load) => {
     localStorage.setItem(KEY, JSON.stringify(o));
     const s = save.loadSave();
     const all = playerItems(s.player);
-    check(all.length === savedItems(o).length, `old bases: ${savedItems(o).length} items saved, ${all.length} loaded`);
+    check(all.length === savedItems(o).length + 1, `old bases: ${savedItems(o).length} items saved, ${all.length} loaded (with the tome)`);
     const byUid = new Map(all.map((it) => [it.uid, it]));
     for (const m of made) {
       const it = byUid.get(m.uid);
@@ -436,11 +443,12 @@ export default async (load) => {
 
     // a version 4 save from before the D2 bases: both steps run, the test's seeing D2 bases
     reset();
-    localStorage.setItem(KEY, JSON.stringify({ ...oldItems(clone(at.get(5).d)), mig: ZERO }));
+    const pre = { ...oldItems(clone(at.get(5).d)), mig: ZERO };
+    localStorage.setItem(KEY, JSON.stringify(pre));
     seen.length = 0;
     const s0b = save.loadSave();
     check(seen.length === 1 && seen[0].sword === 'lsd undefined r01,r02 false' && seen[0].bases.every((b) => ITEM_BASES[b]) && s0b.readOnly === null, `v4 before the D2 bases: the step saw ${seen[0]?.sword}, ${seen[0]?.bases.join()}`);
-    check(playerItems(s0b.player).length === savedItems(at.get(5).d).length && backups().join() === tagged(ZERO), `v4 before the D2 bases: ${playerItems(s0b.player).length} items (saved ${savedItems(at.get(5).d).length}), backups ${backups().join()}`);
+    check(playerItems(s0b.player).length === savedItems(pre).length + 1 && giftOf(s0b.player) && backups().join() === tagged(ZERO), `v4 before the D2 bases: ${playerItems(s0b.player).length} items (saved ${savedItems(pre).length}, and the tome), backups ${backups().join()}`);
 
     // unknown items written at items 0, in a save past the test step: one this build knows comes back
     // with the steps it missed (the D2 bases, the test's) run on it alone
@@ -464,8 +472,9 @@ export default async (load) => {
     const short = all.find((it) => it.baseId === 'ssd');
     const long = all.find((it) => it.baseId === 'lsd' && it.socketed.join() === 'r08');
     const oath = all.find((it) => it.runewordId === 'rw_emberoath');
-    // the save has had the step: it runs only on each item come back, alone
-    check(seen.length === 3 && seen.every((x) => x.bases.length === 1), `back from unknown: the step ran on ${seen.map((x) => x.bases.join('+')).join(', ')}`);
+    // the save has had the step: it runs only on each item come back, alone (with the tome items step 2
+    // gives the bag it stands in, which goes with it)
+    check(seen.length === 3 && seen.every((x) => x.bases.filter((b) => b !== 'tbk').length === 1), `back from unknown: the step ran on ${seen.map((x) => x.bases.join('+')).join(', ')}`);
     check(short?.stepped === 1 && long?.stepped === 1 && long.legacy, `back from unknown: the short sword stepped ${short?.stepped}, the long sword ${long?.stepped} with ${long?.socketed.join()}, legacy ${JSON.stringify(long?.legacy)}`);
     check(oath?.rarity === 'runeword' && oath.socketed.join() === 'r08,r01' && oath.stepped === 1 && oath.legacy, `back from unknown: the taken-apart Ember Oath came back as ${oath?.rarity ?? 'nothing'} ${oath?.runewordId}, stepped ${oath?.stepped}`);
     check(playerItems(s2.player).filter((it) => !isUnknown(it)).every((it) => it.stepped === 1), `back from unknown: the rest stepped ${playerItems(s2.player).map((it) => it.stepped ?? '-').join()}`);
@@ -541,7 +550,9 @@ export default async (load) => {
   const w4 = JSON.parse(localStorage.getItem(KEY));
   check(w4.worldSeed === 4242 && w4.unlocked === 1 && w4.respec === true && w4.future?.kept === 'as is', `v4: written seed ${w4.worldSeed}, unlocked ${w4.unlocked}, respec ${w4.respec}, future ${JSON.stringify(w4.future)}`);
   check(w4.merc?.xp === 1234 && w4.merc.equipment.weapon.baseId === 'ssd' && w4.corpse?.equipment.head.baseId === 'cap', `v4: written merc ${JSON.stringify(w4.merc)}, corpse ${JSON.stringify(w4.corpse)}`);
-  check(w4.progress[0].waypoints.includes(17) && w4.progress[0].quests.den === 3 && w4.progress[1].quests.andariel === 1, `v4: written progress ${JSON.stringify(w4.progress)}`);
+  // quests this build doesn't know keep their flags, read as D2 reads a record for a new game: a
+  // reward left waiting (den: granted and pending) is from an earlier game (src/game/quests/record.ts loadQuestRecord)
+  check(w4.progress[0].waypoints.includes(17) && w4.progress[0].quests.den === (3 | 0x8000) && w4.progress[1].quests.andariel === 1, `v4: written progress ${JSON.stringify(w4.progress)}`);
   check(w4.area === floorArea && w4.cls === 'paladin' && w4.inventory.length === 5, `v4: written in area ${w4.area} as ${w4.cls} with ${w4.inventory.length} in the bag`);
   const keptRaw = w4.inventory.find((x) => x.x === 5)?.item.raw;
   check(keptRaw?.v === 4 && JSON.stringify(keptRaw.mig) === JSON.stringify(ZERO) && keptRaw.item.baseId === 'zz_still_unknown', `v4: the unknown item was written holding ${JSON.stringify(keptRaw)}`);
@@ -636,5 +647,5 @@ export default async (load) => {
   check(inWild.area === WILD_AREA && inWild.worldSeed === game.worldSeed, `saved standing out past the camp gate: area ${inWild.area}, seed ${inWild.worldSeed} (the game's ${game.worldSeed})`);
 
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
-  console.log(`  v1 (both), v2, v3 at depths 0, 1, 5 → v4 in the camp on D2 bases with every item kept (3 unknown by the stash), usable gear, points adding up, backed up once; every old base onto its D2 one with its defense, mods and old requirements; steps see v4 items, keep the first and pre-v4 backups, catch restored items up; v4 round trip, resuming in a built area or the camp; newer and unbacked saves never written`);
+  console.log(`  v1 (both), v2, v3 at depths 0, 1, 5 → v4 in the camp on D2 bases with every item kept (3 unknown by the stash) and a tome of town portal once, usable gear, points adding up, backed up once; every old base onto its D2 one with its defense, mods and old requirements; steps see v4 items, keep the first and pre-v4 backups, catch restored items up; v4 round trip, resuming in a built area or the camp; newer and unbacked saves never written`);
 };

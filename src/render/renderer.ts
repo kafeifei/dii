@@ -64,6 +64,12 @@ const RANKED_SIZE = 1.2;
  */
 const GROUND_SEAM = 2;
 const AIR_SEAM = 12;
+/**
+ * How much more sky light a level a quest has lit gets (the Den of Evil cleared). D2 brightens the
+ * den on the client (its packet 0x89); how much isn't in D2MOO, so this is by eye: about a dusk
+ * outdoors, the hero's light still the brightest thing in it
+ */
+const LIT_BOOST = 2.2;
 /** a wall's height as a share of WALL_H, by how it's built: at least the first, up to the first and the second */
 const WALL_HEIGHT: Record<WallKind, [number, number]> = { palisade: [0.85, 0.25], ruins: [0.2, 0.4], wall: [0.96, 0.08] };
 /** how much further than the view reaches on the ground a view is made: a tall thing below its edge shows */
@@ -331,6 +337,10 @@ export class Renderer implements Picker {
   private dynGroup = new THREE.Group();
   private occ: OccUniforms = { uPlayer: { value: new THREE.Vector3() }, uCamDir: { value: new THREE.Vector2(Math.sin(CAM_YAW), Math.cos(CAM_YAW)) } };
   private hemi = new THREE.HemisphereLight('#4a5070', '#100808', 0.4);
+  /** the sky light underground, as the level's theme sets it */
+  private hemiBase = 0.4;
+  /** how far a quest has lit this level up, 0 to 1, easing toward Game.isLit */
+  private lit = 0;
   private dir = new THREE.DirectionalLight('#8090c0', 0.3);
   /** fill on the camera side of the hero, so the faces we see are lit */
   private playerLight = new THREE.PointLight('#ffd0a0', 30, 13, 1.4);
@@ -649,7 +659,8 @@ export class Renderer implements Picker {
     this.post.setGrade(GRADES[theme.key] ?? GRADES.crypt);
     this.hemi.color.set(theme.ambient);
     this.hemi.groundColor.set('#0a0606');
-    this.hemi.intensity = theme.ambientIntensity * 2.8;
+    this.hemiBase = this.hemi.intensity = theme.ambientIntensity * 2.8;
+    this.lit = this.game.isLit(level) ? 1 : 0;
     const outdoor = !!theme.outdoor;
     this.dir.color.set(outdoor ? '#8aa0d8' : theme.ambient);
     this.dir.intensity = outdoor ? 0.9 : 0.25;
@@ -1451,6 +1462,11 @@ export class Renderer implements Picker {
     const shares = this.oneLook ? this.onlyShare(level) : areaShares(level.areas, level.map.w, level.map.h, pp.x, pp.z, AIR_SEAM, this.airShares);
     blendAtmos(shares, this.lookById, this.atmos);
     if (level.layout.theme.outdoor) this.applySky(skyAt(g.clock));
+    else {
+      // a level a quest has lit (the Den of Evil cleared: D2's QUESTS_TriggerFX) brightens over a few seconds
+      this.lit += ((g.isLit(level) ? 1 : 0) - this.lit) * Math.min(1, dt * 0.7);
+      this.hemi.intensity = this.hemiBase * (1 + LIT_BOOST * this.lit);
+    }
     this.dir.position.set(this.camTarget.x + this.sunOffset.x, this.sunOffset.y, this.camTarget.z + this.sunOffset.z);
     this.dir.target.position.set(this.camTarget.x, 0, this.camTarget.z);
     this.occ.uPlayer.value.set(pp.x, 0, pp.z);

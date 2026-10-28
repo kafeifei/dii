@@ -309,7 +309,7 @@ body {
 }
 .hud-buttons {
   display: grid;
-  grid-template-columns: repeat(3, 34px);
+  grid-template-columns: repeat(4, 34px);
   gap: 3px;
   pointer-events: auto;
 }
@@ -346,6 +346,22 @@ body {
 }
 .hbtn.notify .badge {
   display: block;
+}
+/* the town portals left in the bag, on the portal button */
+.hbtn .count {
+  position: absolute;
+  right: 2px;
+  bottom: 1px;
+  font-size: 9px;
+  line-height: 9px;
+  color: #e8d890;
+  pointer-events: none;
+}
+.hbtn.empty {
+  color: #6a5a44;
+}
+.hbtn.empty .count {
+  color: #ff6060;
 }
 
 /* ───────── target bar ───────── */
@@ -1515,7 +1531,7 @@ html {
   position: fixed;
   top: calc(6px + var(--sat));
   right: calc(14px + var(--sar) + 100px * var(--hs));
-  grid-template-columns: repeat(3, 38px);
+  grid-template-columns: repeat(4, 38px);
   transform: scale(var(--hs));
   transform-origin: top right;
 }
@@ -1866,4 +1882,244 @@ html {
   .settings-panel {
     max-height: none;
   }
+}
+
+/* ───────── townsfolk (src/ui/npc.ts): their menu over them, their lines scrolling up a box, the mark of quest news ───────── */
+#npc {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 15;
+}
+.npc-menu {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: none;
+  min-width: 150px;
+  padding: 6px 4px 8px;
+  background: rgba(8, 6, 4, 0.86);
+  border: 1px solid var(--edge);
+  box-shadow: 0 0 0 1px #000, 0 6px 24px rgba(0, 0, 0, 0.8);
+  text-align: center;
+  will-change: transform;
+}
+.npc-menu.open {
+  display: block;
+}
+.npc-name {
+  color: var(--gold);
+  font-size: 16px;
+  letter-spacing: 2px;
+  padding: 2px 10px 6px;
+  border-bottom: 1px solid #3a2e20;
+  margin-bottom: 4px;
+}
+.npc-opt {
+  font-size: 15px;
+  color: #e8e0d0;
+  padding: 5px 14px;
+  cursor: pointer;
+  letter-spacing: 2px;
+}
+.npc-opt:hover {
+  color: #ffd890;
+  background: rgba(90, 70, 40, 0.35);
+}
+.npc-opt.cancel {
+  color: var(--muted);
+}
+.dialogue {
+  position: absolute;
+  left: 50%;
+  top: max(30px, 4vh);
+  transform: translateX(-50%);
+  width: min(560px, 92vw);
+  display: none;
+  padding: 8px 18px 10px;
+  background: rgba(6, 4, 3, 0.92);
+  border: 1px solid var(--edge);
+  box-shadow: 0 0 0 1px #000, 0 10px 40px rgba(0, 0, 0, 0.85);
+  cursor: pointer;
+}
+.dialogue.open {
+  display: block;
+}
+/* a phone on its side: below the HUD buttons, left of the skill wheel (at 844×390 they reach y 77 and x 604) */
+.touch .dialogue {
+  --free: calc(100vw - var(--sal) - var(--sar) - 30px - 230px * var(--hs));
+  top: calc(var(--sat) + 84px * var(--hs));
+  left: calc(12px + var(--sal) + max(0px, (var(--free) - 560px) / 2));
+  transform: none;
+  width: min(560px, var(--free));
+}
+.dlg-name {
+  color: var(--gold);
+  font-size: 15px;
+  letter-spacing: 3px;
+  text-align: center;
+  margin-bottom: 6px;
+}
+.dlg-view {
+  position: relative;
+  height: calc(1.75em * 4);
+  overflow: hidden;
+  font-size: 16px;
+  /* the rows fade in at the bottom and out at the top, as the line scrolls up through them */
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+}
+.dlg-text {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  line-height: 1.75;
+  color: #ece4d4;
+  text-align: center;
+  text-shadow: 0 1px 2px #000;
+  will-change: transform;
+}
+.dlg-skip {
+  display: block;
+  margin: 4px 0 0 auto;
+  font-size: 12px;
+  padding: 2px 12px;
+}
+.npc-mark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  font-size: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+.npc-mark::before {
+  content: '!';
+  position: absolute;
+  left: -9px;
+  bottom: 0;
+  width: 18px;
+  text-align: center;
+  font: 900 30px/1 'Noto Serif SC', serif;
+  color: #ffd030;
+  text-shadow: 0 0 2px #000, 0 0 8px rgba(255, 190, 40, 0.8), 0 2px 2px #000;
+  animation: npc-mark 1.4s ease-in-out infinite;
+}
+@keyframes npc-mark {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* ───────── the quest log (src/ui/questlog.ts) ───────── */
+.qgrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px 6px;
+  margin: 6px 4px 12px;
+}
+.qcell {
+  text-align: center;
+  cursor: pointer;
+  padding: 4px 2px;
+  border: 1px solid transparent;
+}
+.qcell.on {
+  border-color: #6a5432;
+  background: rgba(70, 52, 28, 0.35);
+}
+.qicon img {
+  width: 72px;
+  height: 72px;
+  display: block;
+  margin: 0 auto;
+}
+.qname {
+  font-size: 13px;
+  margin-top: 3px;
+  color: var(--text);
+}
+.qcell.off .qicon img {
+  filter: grayscale(1) brightness(0.32);
+}
+.qcell.off .qname {
+  color: #5a5248;
+}
+.qcell.none .qicon img {
+  filter: grayscale(0.7) brightness(0.55);
+}
+.qcell.none .qname {
+  color: var(--muted);
+}
+.qcell.active .qicon img,
+.qcell.reward .qicon img {
+  filter: drop-shadow(0 0 6px rgba(255, 190, 80, 0.7));
+}
+.qcell.done .qicon {
+  position: relative;
+}
+.qcell.done .qicon img {
+  filter: sepia(0.6) brightness(0.75);
+}
+.qcell.done .qicon::after {
+  content: '✓';
+  position: absolute;
+  right: 18px;
+  bottom: -2px;
+  font: 900 22px/1 sans-serif;
+  color: #ffd24a;
+  text-shadow: 0 0 3px #000, 0 1px 2px #000;
+}
+.qcell.fresh .qicon img {
+  animation: quest-done 1.6s ease-out 2;
+}
+@keyframes quest-done {
+  0% { filter: brightness(2.2) drop-shadow(0 0 14px #ffd060); transform: scale(1.12); }
+  100% { filter: sepia(0.6) brightness(0.75); transform: scale(1); }
+}
+.qdetail {
+  border-top: 1px solid #3a2e20;
+  padding: 10px 6px 0;
+  text-align: center;
+}
+.qtitle {
+  color: var(--gold);
+  font-size: 17px;
+  letter-spacing: 3px;
+}
+.qstate {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 2px 0 8px;
+  letter-spacing: 2px;
+}
+.qdetail.active .qstate,
+.qdetail.reward .qstate {
+  color: #ffd890;
+}
+.qdetail.done .qstate {
+  color: #9ad070;
+}
+.qtext {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #e0d8c8;
+}
+.qfoot {
+  margin-top: auto;
+  font-size: 11px;
+  color: #5a5248;
+  text-align: center;
+  padding-top: 8px;
+}
+/* phones: smaller pictures, so the picked quest's words show without scrolling */
+.touch .qgrid {
+  gap: 2px 4px;
+  margin: 0 4px 6px;
+}
+.touch .qicon img {
+  width: 52px;
+  height: 52px;
 }
