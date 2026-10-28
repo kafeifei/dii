@@ -1,6 +1,232 @@
 {
+ "invssd": {
+  "desc": "A plain short sword: a straight double-edged blade of dull forged iron with a few nicks, a simple flat iron cross-guard, a grip wrapped in brown leather, a round iron pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+  "note": "the sample round's ssd words (round 2), kept so the prompt is the one approved; its sample scored 0.42 against the original (review band): a plain straight blade, look at it side by side"
+ },
+ "invwsd": {
+  "desc": "A war sword, a heavy one-handed arming sword: a straight broad double-edged blade of even width with a deep fuller along most of its length and a short triangular point, a thick straight cross-guard with squared ends, a grip bound in cord, a faceted eight-sided pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+  "note": "vs short sword: broader and longer, deep fuller, eight-sided pommel; vs long sword: even-width blade, square guard ends"
+ },
+ "invlsd": {
+  "desc": "A knightly long sword: a long slender straight double-edged blade with a narrow fuller and a sharp tapering point, a long straight cross-guard whose arms widen into flat spatula-shaped ends, a one-hand grip bound in leather, a disc-shaped wheel pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+  "note": "vs war sword: slender tapering blade, spatula guard ends, wheel pommel; vs bastard sword: one-hand grip"
+ },
+ "invbsd": {
+  "desc": "A broad sword: a very wide straight double-edged blade, almost a hand wide at the base, with nearly parallel edges, a broad rounded-triangular point and a wide shallow fuller down the middle; a short thick straight cross-guard; a one-hand grip wrapped in leather; a large flat pommel with five rounded lobes along its top. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+  "note": "the widest one-hand blade; the lobed pommel is ours and sets it apart"
+ },
+ "invbsw": {
+  "desc": "A hand-and-a-half sword: a long straight double-edged blade that tapers evenly to a sharp point, a fuller down its upper half, a plain straight cross-guard with slightly flared ends, a long waisted grip, narrower in the middle and long enough for one or two hands, wrapped in leather cord, a tall faceted pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+  "note": "vs two-handed sword: no ricasso or lugs, waisted grip, tall faceted pommel"
+ },
+ "inv2hs": {
+  "desc": "A two-handed sword: a long straight double-edged blade with a shallow fuller, and just above the guard a short blunt ricasso wrapped in leather with a pair of small pointed parrying lugs; a long straight cross-guard of square iron bar; a very long grip for two hands, a quarter of the whole length, bound in leather with raised bands; a pear-shaped iron pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+  "note": "the leather-wrapped ricasso with lugs and the very long grip set it apart from the bastard sword and the claymore"
+ },
+ "invclm": {
+  "desc": "A claymore, a great two-handed sword of the highlands: a long straight double-edged blade, short iron langets over the blade's base, a long cross-guard whose two straight arms slope up toward the blade at an angle, each arm ending in a small cluster of four iron rings, a long two-hand grip bound in leather, a round flattened pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+  "note": "a claymore's forward-sloping quillons are its defining part; the ring-cluster ends are ours"
+ },
+ "invgis": {
+  "desc": "A giant sword, crude and oversized as if forged for a giant: a long, very thick straight blade of hammer-marked dark iron with uneven edges and a wide blunt-looking point, a massive straight cross-guard like a square iron bar, a short thick grip wrapped in rawhide, a big lumpy round iron pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+  "note": "crude and thick where the other long swords are fine"
+ },
+ "invgsd": {
+  "desc": "A great sword, the largest of the two-handed swords: a very long and very broad straight double-edged blade, wide at the base and tapering to a point, with a deep wide fuller; a heavy wide straight cross-guard of flat iron with downturned square ends; a long two-hand grip bound in leather; a large heavy disc pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+  "note": "2x4: the broad blade and wide guard fill the two columns; no lugs (those are the two-handed sword's)"
+ },
+ "invflb": {
+  "desc": "A flamberge, a great two-handed sword with a flame-shaped blade: both edges of the long straight blade ripple in many small regular waves along its whole length, like a frozen flame of plain steel, no fire; a long straight cross-guard with plain rounded ends; a long two-hand grip bound in cord; a heavy pear-shaped pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+  "guide": true,
+  "shape": "a long straight two-handed sword whose two edges undulate in about twelve small even waves from guard to point; a long straight cross-guard; a long grip; a pear pommel",
+  "note": "the wavy edge is the defining part; klein may draw it straight or draw real flames"
+ },
+ "invcrs": {
+  "desc": "A crystal sword: the blade a single long shard of clouded pale quartz, smoky grey-white and translucent, faceted down its length like a natural crystal, with slightly uneven edges, broad at the base and grown straight to a sharp point; set into a plain iron cross-guard with short square arms, a grip wrapped in dark leather and a small iron pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+  "material": false,
+  "note": "smoky grey-white quartz, our own colour; material off: the blade isn't iron"
+ },
+ "invflc": {
+  "desc": "A falchion, a heavy single-edged chopping sword: the back of the blade straight, the cutting edge swelling outward toward the end so the blade is widest near the tip, then sweeping up in a curve to meet the back at a sharp point, like a long cleaver; a short straight iron cross-guard, a plain grip bound in leather, a flat disc pommel. Shown upright, point at the top, the pommel at the bottom, side view.",
+  "guide": true,
+  "shape": "a single-edged blade: straight back on the left, the right edge bulging out toward the top and curving up to a point at the back; a short straight guard, a short grip, a disc pommel",
+  "note": "klein tends to draw any sword as a straight double-edged one"
+ },
+ "invscm": {
+  "desc": "A scimitar: a broad single-edged blade with a strong curve, narrow at the hilt and widening toward a sharp upswept point, its back a smooth unbroken curve; a short straight cross-guard with small ball ends and no knuckle guard; a plain straight grip wrapped in leather, a round cap pommel. Shown upright, point at the top, the pommel at the bottom, side view.",
+  "note": "vs sabre: broad, strongly curved, widening to the tip, no knuckle bow"
+ },
+ "invsbr": {
+  "desc": "A cavalry sabre: a long slender single-edged blade with a gentle even curve and a narrow fuller along the back; a knuckle-bow hand guard, a curved iron bar running from the cross-guard down around the grip to the pommel; a ridged leather grip; a small cap pommel. Shown upright, point at the top, the pommel at the bottom, side view.",
+  "note": "vs scimitar: slender, gently curved, the knuckle bow (ours) sets it apart"
+ },
+ "invdgr": {
+  "desc": "A plain dagger: a straight double-edged blade with a raised central ridge, tapering evenly to a sharp point, a short straight iron cross-guard with small knob ends, a grip wrapped in brown leather, a round iron pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+  "note": "the plain one of the knives: double-edged, a cross-guard"
+ },
+ "invdir": {
+  "desc": "A dirk, a long thrusting dagger: a narrow single-edged blade with a thick straight back tapering to a needle point, no cross-guard, only a small iron collar; a swelling grip of dark wood bound with three iron rings, a flat round iron cap on top of the pommel. Shown upright, point at the top, the pommel at the bottom, side view.",
+  "note": "vs dagger: single-edged, no cross-guard, ringed wooden grip"
+ },
+ "invbld": {
+  "desc": "A long fighting knife: a long straight single-edged blade with a straight back and a clipped point where the back curves down to the tip in its last fifth, a short fuller along the back, a small oval iron guard, a grip of stacked leather washers, a small round iron butt cap. Shown upright, point at the top, the butt at the bottom, side view.",
+  "note": "1x3, the longest knife; the clipped point and stacked-leather grip set it apart from the dagger and the dirk"
+ },
+ "invkrs": {
+  "desc": "A kris dagger: a narrow double-edged blade with seven deep, regular waves along its whole length from base to point, widening at its base into a flared asymmetric guard-piece that juts out to one side; a carved wooden hilt bent forward at the top like a pistol grip, set in a small cup-shaped iron ferrule. Shown upright, point at the top, the hilt at the bottom, side view.",
+  "guide": true,
+  "shape": "a narrow dagger whose blade waves like a snake in seven even curves to the point; its base flared out to one side; a short hilt bent to one side at its end",
+  "note": "the wavy blade is the defining part; klein may straighten it"
+ },
+ "invtkn": {
+  "desc": "A throwing knife forged from a single piece of steel: a narrow double-edged blade, a slim handle wrapped in cord, a ring at the end. Shown upright, point at the top.",
+  "note": "the sample round's tkf words (round 2), kept so the prompt is the one approved"
+ },
+ "invbkf": {
+  "desc": "A double-ended throwing knife balanced around its middle: a short grip at the centre wrapped in cord, and two identical straight leaf-shaped double-edged blades, one pointing straight up and one straight down, mirrored, forged from one piece of steel with the grip, no guard. Shown upright, front view.",
+  "note": "a blade at each end, balanced on the grip; ours are straight and mirrored"
+ },
  "inv2ax": {
   "desc": "A heavy double-bladed battle axe: two broad crescent iron blades back to back, riveted to a long wooden haft bound with leather and iron rings. Shown upright, the blades at the top, front view.",
   "note": "the sample round's 2ax words (round 2, approved)"
+ },
+ "invhax": {
+  "desc": "A woodcutter's hatchet seen from the side: one wedge-shaped iron blade sticking out to the right of the haft only, nothing on the left side but a short square poll, mounted on a short straight ash-wood haft wrapped with leather near the bottom. Shown upright, axe head at the top.",
+  "note": "the sample round's hax words (round 2), kept so the prompt is the one approved"
+ },
+ "invaxe": {
+  "desc": "A one-handed fighting axe: a single iron blade on the right of the haft, narrow at the neck and flaring wide both up and down into a broad fan with a long curved cutting edge and straight sides; behind the haft on the left a short straight four-sided spike; the head held by two riveted iron straps running down the haft; a straight wooden haft with a leather-wrapped grip at the bottom and a small iron butt cap. Shown upright, the axe head at the top, side view.",
+  "note": "vs hand axe: a wide fan blade and a back spike; vs war axe: lighter, straight-sided fan"
+ },
+ "invwax": {
+  "desc": "A heavy one-handed war axe: a single thick iron blade on the right of the haft whose cutting edge is a deep half-moon, its wide neck reinforced by a riveted iron collar, a short flat hammer face on the left; a straight wooden haft wrapped in a spiral of rawhide from top to bottom. Shown upright, the axe head at the top, side view.",
+  "note": "the thickest one-hand blade: half-moon edge, riveted collar, hammer back"
+ },
+ "invlax": {
+  "desc": "A large two-handed axe: one big iron blade on the right of the haft shaped like a broad trapezoid with square corners, its straight cutting edge longer than the blade is deep; a thick iron socket; a long straight wooden haft bound with three iron rings at intervals and ending in a round iron knob. Shown upright, the axe head at the top, side view.",
+  "note": "the straight-edged trapezoid blade sets it apart from the other single-bladed axes"
+ },
+ "invbrx": {
+  "desc": "A broad axe: a single very wide, thin iron blade on the right of the haft, its long straight cutting edge running almost parallel to the haft, the blade's lower corner drawn far down along the haft into a long beard, its upper corner square; nothing behind the haft but a plain socket; a long, slightly curved wooden haft for two hands with a swelling at the butt. Shown upright, the axe head at the top, side view.",
+  "note": "the long beard running down the haft is a broad axe's defining part"
+ },
+ "invgix": {
+  "desc": "An enormous single-bladed two-handed axe: one huge iron blade on the right shaped like a deep crescent, its upper horn rising high above the head and its lower horn sweeping far down along the haft; behind the haft on the left a heavy square hammer block; a short four-sided spike on top; a long thick wooden haft with an iron collar under the head and a leather grip low down. Shown upright, the head at the top, side view.",
+  "note": "the largest single blade, horns up and down, a hammer block behind"
+ },
+ "invbtx": {
+  "desc": "A two-handed battle axe: a double head of two iron blades back to back, each narrow at the haft and sweeping downward into a long hooked lower point, so the head is shaped like a bat's spread wings, their upper edges straight; a short square spike on top of the head; a long straight wooden haft bound with iron bands and a leather grip low down. Shown upright, the head at the top, front view.",
+  "note": "vs double axe (broad round crescents): hooked, down-swept blades with straight tops"
+ },
+ "invgax": {
+  "desc": "A huge two-handed great axe: a double head of two enormous moon-shaped blades of plain hammer-marked iron back to back, each taller than it is wide and a third of the whole length, their edges deep half circles; a short pointed spike on top between them and a thick socket ring; a long thick wooden haft with iron bands, a leather grip and an iron butt spike. Shown upright, the head at the top, front view.",
+  "note": "2x4, the biggest double head; plain hammered iron, no ornament"
+ },
+ "invmpi": {
+  "desc": "A military pick, a war pick for piercing armour: a small iron head on top of a long straight haft, made of a long slender spike on the right that curves gently downward like a bird's beak and a short square hammer face on the left; iron langets riveted down from the head; a leather grip near the butt and a small iron butt cap. Shown upright, the head at the top, side view.",
+  "guide": true,
+  "shape": "a long straight haft topped by a lopsided T: a long thin beak curving down to the right, a short square stub to the left",
+  "note": "klein is likely to draw a two-ended mining pick or a scythe"
+ },
+ "invtax": {
+  "desc": "A small throwing axe: a short slim wooden haft and a compact iron head, a single blade on the right that flares into a curved edge, its upper edge straight and its lower corner curving down, a short round poll on the left, a leather wrap at the end of the haft. Shown upright, the axe head at the top, side view.",
+  "note": "1x2: shorter and lighter than the hand axe, a flared blade and a round poll"
+ },
+ "invbal": {
+  "desc": "A throwing axe made to fly true: a slim straight haft longer than a forearm, with a rounded knob at its butt and a thin cord wrap where it is held; on top a light iron head: on the right a single narrow blade on a long neck that flares into a curved edge, on the left a heavy rounded counterweight knob. Shown upright, the axe head at the top, side view.",
+  "note": "the long-necked blade and the counterweight knob, our own; a single blade where the others are double or broad"
+ },
+ "invclb": {
+  "desc": "A heavy wooden club: a cudgel cut from a single crooked oak bough of weathered brown wood, thick and knobbly at the top with knots and the stub of a sawn-off branch, tapering down to a narrow handle wrapped in dark rawhide, the bark mostly worn away, no metal at all. Shown upright, the thick end at the top, side view.",
+  "material": false,
+  "note": "material off: no iron on a plain club"
+ },
+ "invspc": {
+  "desc": "A spiked club: a thick wooden cudgel whose swollen top end is driven through with rows of square iron nails sticking out on every side, held by two riveted iron bands, the lower end a narrow handle wrapped in leather. Shown upright, the spiked end at the top, side view.",
+  "note": "vs club: iron nails and bands; vs morning star: a wooden head"
+ },
+ "invmac": {
+  "desc": "A one-handed war mace: a slender wooden haft bound with iron bands, and at its top a big heavy flanged iron head, a fifth of the whole length, made of seven thick flat flanges. Shown upright, head at the top, side view.",
+  "note": "the sample round's mac words (round 2), kept so the prompt is the one approved; the sample round's mace guide drew a spear point and is not kept"
+ },
+ "invmst": {
+  "desc": "A morning star: a short stout wooden haft bound with iron, topped by a heavy egg-shaped iron head covered all over in rows of short thick pyramid spikes, with one longer spike on its very top. Shown upright, the head at the top, side view.",
+  "note": "vs mace: a spiked egg head, not flanges"
+ },
+ "invfla": {
+  "desc": "A flail: a short wooden handle with an iron cap, a short iron chain hanging from its top end to a round spiked iron ball resting beside the handle. Shown upright, handle vertical, the ball and chain at the top.",
+  "note": "the sample round's fla words (round 2), kept so the prompt is the one approved"
+ },
+ "invwhm": {
+  "desc": "A war hammer on a long slim haft: a small heavy iron head made of a square striking face with a cross-cut surface on the left, a long slightly down-curved spike on the right and a short spear point on top; long iron langets riveted down the haft below the head; a leather grip near the butt. Shown upright, the head at the top, side view.",
+  "note": "vs military pick: a big hammer face and a top point; vs maul: a small head on a slim haft"
+ },
+ "invmau": {
+  "desc": "A heavy two-handed maul: a large rectangular block of iron as its head, longer than it is tall, with two flat square striking faces and chamfered edges, held to the top of a long thick wooden haft by iron straps riveted down the haft; a leather grip low on the haft and an iron ring at the butt. Shown upright, the head at the top, side view.",
+  "note": "2x4: the iron-block maul"
+ },
+ "invgma": {
+  "desc": "A great maul: a massive two-handed hammer whose head is a big roughly squared block of grey granite, chipped at the corners, clamped to the top of a thick wooden haft by riveted iron straps over it and lashed on with rawhide; the haft short and thick with a leather grip. Shown upright, the head at the top, side view.",
+  "note": "our own design: a stone head, to stand apart from the iron maul"
+ },
+ "invktr": {
+  "desc": "A katar, a punch dagger held in the fist: a broad flat triangular double-edged blade with a thick central ridge, pointing straight up; its base is fixed onto an H-shaped iron hilt below it: two long parallel side bars running down from the ends of the blade's base, joined between them by two short crossbar grips wrapped in leather, a small riveted iron plate where the blade meets the frame. Shown upright, the point at the top, front view, empty, no hand.",
+  "guide": true,
+  "shape": "a tall triangle on top of a narrow H: two long parallel side bars hanging from the triangle's base, joined by two short crossbars",
+  "note": "the H-frame grip is what makes it a katar and not a dagger"
+ },
+ "invskr": {
+  "desc": "A scissors katar, a punch dagger with a split blade: two long narrow double-edged blades joined at their base by one large round pivot rivet and opened apart in a narrow V like open shears, set onto an H-shaped iron hilt below it: two long parallel side bars running down from the pivot, joined between them by two short leather-wrapped crossbar grips. Shown upright, the blade tips at the top, front view, empty, no hand.",
+  "guide": true,
+  "shape": "a narrow V of two long thin blades opening up from one round pivot, on top of the same narrow H frame as the katar's",
+  "note": "vs katar: two thin blades opened in a V; vs claws: two, not three, from one pivot"
+ },
+ "invclw": {
+  "desc": "Fighting claws worn on the fist: three long, slim, slightly curved steel blades like an animal's talons, side by side and spreading a little apart, rising from a crossbar on top of an H-shaped iron hilt below it: two long parallel side bars running down from the crossbar, joined between them by a leather-wrapped grip bar, with a leather wrist strap. Shown upright, the blade tips at the top, front view, empty, no hand.",
+  "guide": true,
+  "shape": "three long thin slightly curved prongs rising side by side from a short crossbar, over a narrow H frame of two side bars and one grip",
+  "note": "three parallel talons over the H-frame"
+ },
+ "invaxf": {
+  "desc": "A fist weapon worn over the hand: a curved iron knuckle plate on top carrying a broad crescent hatchet blade that arches over the knuckles, its sharp edge facing up and its two horns pointing down at the sides; below it a U-shaped iron frame running down along the forearm, with a leather-wrapped hand grip bar across it and two leather wrist straps with iron buckles. Shown upright, the blade at the top, front view, empty, no hand.",
+  "guide": true,
+  "shape": "a wide crescent arching over the top, horns down, above a narrow U-shaped frame twice as tall with one crossbar and two straps",
+  "note": "the line is the hatchet hands and the cestus: a blade arched over the knuckles on a fist frame"
+ },
+ "invg33": {
+  "desc": "A sacred ritual dagger of a jungle people: a slim straight double-edged blade, long and narrow like a stretched leaf, with a fine central ridge; a small cross-guard of two curled bronze leaves; a grip of smooth pale bone carved with a spiral groove; a pommel set with a round dull green stone, and a short tassel of dark feathers hanging from it. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+  "material": false,
+  "note": "the quest's sacred dagger; material off: bone, bronze and stone, not common iron"
+ },
+ "invd33": {
+  "desc": "A crude fake of a sacred ritual dagger: a slim leaf-shaped blade of dull soft pewter-grey metal, slightly bent at the tip; a small guard of two flat bent tin leaves; a grip of plain painted wood imitating carved bone, the paint flaking; a lump of cloudy green glass in place of a pommel stone; cheap and badly made. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+  "material": false,
+  "note": "the decoy: our sacred dagger (invg33) copied cheaply; it has no original picture on any site"
+ },
+ "invhmr": {
+  "desc": "A small enchanted smith's hammer: a short haft of dark polished wood bound with iron near the head and wrapped in leather at the grip; a compact steel head with one flat square striking face and a wedge-shaped cross-peen on the other side, its cheeks cut with fine geometric grooves around a small inset pale blue stone that glows faintly. Shown upright, the head at the top, side view.",
+  "note": "the quest's smithing hammer, 1x2"
+ },
+ "invhfh": {
+  "desc": "A huge forge hammer from an infernal smithy: a heavy rectangular head of soot-black iron with two square faces, its surface split by fine cracks glowing a dull ember orange from within; a thick iron collar ringed with blunt studs where the head meets the haft; a long haft of black iron wrapped in charred leather, ending in a heavy iron knob. Shown upright, the head at the top, side view.",
+  "material": false,
+  "note": "vs maul: black iron with ember cracks on an iron haft; material off: not plain grey iron and wood"
+ },
+ "invleg": {
+  "desc": "A crude wooden peg leg used as a club, the object on its own, no person and no foot: at the top a deep wooden socket cup, wider than the rest and shaped like a short funnel, padded inside with old stained cloth, two leather straps with iron buckles hanging from its rim; below it a straight turned wooden peg bound with rawhide where it joins the cup, tapering down to a worn iron-shod tip. Shown upright, the socket at the top, side view.",
+  "note": "a prosthetic peg leg; watch for a human leg or foot in the paintings"
+ },
+ "invqf1": {
+  "desc": "A priest's ceremonial flail: a straight haft of dark wood wrapped in strips of faded cloth, capped at the top with an iron finial shaped like a small onion dome and at the bottom with a plain iron pommel; from the top hang three short chains, each ending in a small round spiked iron ball, the three balls hanging at different heights beside the haft. Shown upright, the haft vertical, the chains and balls at the top.",
+  "guide": true,
+  "shape": "a vertical haft; from its top three short chains to three small spiked balls hanging beside it at different heights",
+  "note": "the quest flail, plain; three chains is more than klein keeps without a shape"
+ },
+ "invqf2": {
+  "desc": "A priest's ceremonial flail made into a holy relic: a straight haft wound with strips of old oxblood cloth and tarnished gilt wire, a tarnished gold finial on top and a gold pommel; from the top hang three short chains, each ending in a spiked head of tarnished gold shaped like a small open filigree cage with a dark relic inside it glowing a faint warm red. Shown upright, the haft vertical, the chains and heads at the top.",
+  "material": false,
+  "guide": true,
+  "shape": "the same as invqf1's: a vertical haft, three short chains from its top to three small spiked heads at different heights",
+  "note": "the same flail after the quest's relics are joined to it (invqf1 gilded); material off: gilded"
  }
 }
