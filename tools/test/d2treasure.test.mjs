@@ -449,6 +449,15 @@ export default async (load) => {
   eq(L.monsterLootTc({ ...zombie('unique', 3), superUnique: 'Corpsefire' }, 0), 'Act 1 Super A', "Corpsefire drops its superunique class");
   eq(L.monsterLootTc({ ...zombie('unique', 3), superUnique: 'Corpsefire' }, 1), T.monsterTc(D2X_MONSTERS.zombie1, { difficulty: 1, rank: 'unique', mlvl: 3, su: D2X_SUPERUNIQUES.find((s) => s.key === 'Corpsefire') }), "Corpsefire's class in nightmare");
   ok(L.monsterLootTc({ ...zombie('unique', 3), superUnique: 'Corpsefire' }, 1).startsWith('Act 1 (N) Super'), "Corpsefire's nightmare class is a Super one");
+  // the monster's own difficulty, the one its game is in, not the killer's (MonsterMode.cpp:491-573, pGame->nDifficulty)
+  ok(L.monsterLootTc({ ...zombie('unique', 3), superUnique: 'Corpsefire', difficulty: 1 }).startsWith('Act 1 (N) Super'), "a nightmare Corpsefire's class by its own difficulty");
+  {
+    const hellZombie = { ...zombie('champion', 70), difficulty: 2 };
+    const normalHero = { mf: 0, gf: 0, difficulty: 0 };
+    let ilvls = 0;
+    for (let i = 0; i < 50; i++) for (const it of L.monsterLoot(hellZombie, normalHero)) if (it.ilvl === 70) ilvls++;
+    ok(ilvls > 0 && L.monsterLootTc(hellZombie).includes('(H)'), `a hell champion killed by a hero whose finder says normal drops from ${L.monsterLootTc(hellZombie)}`);
+  }
   eq(L.monsterLootTc({ def: monsterDef('andariel'), rank: 'boss', level: 30 }, 0), 'Andarielq', 'Andariel drops her quest class');
   eq(L.monsterLootTc({ def: monsterDef('quillrat1'), rank: 'normal', level: 1 }, 0), 'Quill 1', 'a quill rat drops its own class');
   eq(L.monsterLootTc({ def: monsterDef('fallenshaman1'), rank: 'normal', level: 2 }, 0), 'Act 1 Cast A', "a shaman drops a caster's");

@@ -15,12 +15,14 @@ import { areaLevel, type AreaDef } from '../world/areas';
 import type { MonsterRank } from './monster';
 import { questTcDone, type QuestRecord } from './quests/record';
 
-/** what a drop needs of a monster: its D2 row (Monster.def.row), rank, level and superunique */
+/** what a drop needs of a monster: its D2 row (Monster.def.row), rank, level, superunique and the difficulty it was made in */
 export interface Dropper {
   def: { row: D2xMonster };
   rank: MonsterRank;
   level: number;
   superUnique?: string;
+  /** its own (Monster.difficulty): its game's, D2's pGame->nDifficulty; the finder's when not given */
+  difficulty?: Difficulty;
 }
 
 /** who the drop is for: the killer's magic find and gold find, the difficulty played and their quest record in it */
@@ -41,13 +43,13 @@ const TC_RANK: Record<MonsterRank, TcRank> = { normal: 'regular', minion: 'regul
 const SUPERUNIQUES = new Map(D2X_SUPERUNIQUES.map((s) => [s.key, s]));
 
 /**
- * The class a monster drops from, at its level and rank (d2/treasure.ts monsterTc), for a killer
- * with the quest record `quests` in that difficulty. A superunique (Monster.superUnique, its pack's
+ * The class a monster drops from, at its level and rank (d2/treasure.ts monsterTc), in `difficulty`
+ * (the monster's own when not given), for a killer with the quest record `quests` in that difficulty. A superunique (Monster.superUnique, its pack's
  * leader) drops its SuperUniques.txt class (MonsterMode.cpp:507-517). A monster with a quest class
  * (Andariel's Andarielq) drops that until the killer has done its quest (MonsterMode.cpp:536-568,
  * record.ts questTcDone): with no record, every kill is the first.
  */
-export function monsterLootTc(m: Dropper, difficulty: Difficulty, quests?: QuestRecord): string | undefined {
+export function monsterLootTc(m: Dropper, difficulty: Difficulty = m.difficulty ?? 0, quests?: QuestRecord): string | undefined {
   const su = m.superUnique ? SUPERUNIQUES.get(m.superUnique) : undefined;
   const mon = su ? D2X_MONSTERS[su.mon] : m.def.row;
   const questDone = mon?.questTc ? questTcDone(quests, mon.questTc) : undefined;
@@ -57,12 +59,14 @@ export function monsterLootTc(m: Dropper, difficulty: Difficulty, quests?: Quest
 /**
  * A dead monster's drop (MONSTERMODE_DropTreasure, MonsterMode.cpp:491-573): its class's items at
  * its level, the item level of whatever a monster drops (ITEMS_GetItemLevelForNewItem,
- * Items.cpp:1624-1633)
+ * Items.cpp:1624-1633), in the difficulty the monster is of (its game's: Monster.difficulty), the
+ * killer's magic and gold find
  */
 export function monsterLoot(m: Dropper, hero: Finder, rng: Rand = MATH_RAND): Item[] {
-  const tc = monsterLootTc(m, hero.difficulty, hero.quests);
+  const difficulty = m.difficulty ?? hero.difficulty;
+  const tc = monsterLootTc(m, difficulty, hero.quests);
   if (!tc) return [];
-  return dropTc(tc, m.level, { mf: hero.mf, gf: hero.gf, difficulty: hero.difficulty, hellBovine: m.def.row.id === 'hellbovine', rng });
+  return dropTc(tc, m.level, { mf: hero.mf, gf: hero.gf, difficulty, hellBovine: m.def.row.id === 'hellbovine', rng });
 }
 
 /**
