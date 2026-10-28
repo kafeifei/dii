@@ -64,10 +64,20 @@
   "seed": 202,
   "note": "s202: three tines, spiral grooves and copper wire (similarity 0.33)"
  },
+ "invch4": {
+  "run": 5,
+  "seed": 707,
+  "note": "s707: the broadest flint point, its flaked faces and the blue tassel read at 1x (similarity 0.22)"
+ },
  "invch5": {
   "run": 4,
   "seed": 303,
   "note": "s303: the bones fan out under the lashing, the feather on top (similarity 0.31)"
+ },
+ "invch6": {
+  "run": 5,
+  "seed": 808,
+  "note": "s808: the twig frame shows at top and bottom, the dot column, beads and claw read at 1x (similarity 0.22)"
  },
  "invch7": {
   "run": 4,
@@ -274,6 +284,16 @@
   "seed": 404,
   "note": "s404: ridged base, smooth curve (similarity 0.26)"
  },
+ "invhp1": {
+  "run": 5,
+  "seed": 404,
+  "note": "s404: a stubby clear vial, the brightest red of the eight; the same seed as invmp1 (similarity 0.27)"
+ },
+ "invhp2": {
+  "run": 5,
+  "seed": 808,
+  "note": "s808: the broadest cone, apart from the vial and the round flask at 1x; the same seed as invmp2 (similarity 0.28)"
+ },
  "invhp3": {
   "run": 4,
   "seed": 202,
@@ -304,6 +324,11 @@
   "seed": 404,
   "note": "s404: the red cord shows; stains, no writing (similarity 0.25)"
  },
+ "invjaw": {
+  "run": 5,
+  "seed": 707,
+  "note": "s707: the lower jaw alone: tooth row, two canines, the hinge plate leaning back; reads at 1x (similarity 0.19)"
+ },
  "invjbi": {
   "run": 4,
   "seed": 303,
@@ -319,15 +344,40 @@
   "seed": 101,
   "note": "s101: the facets show; a set gem by its beaded bezel (similarity 0.30)"
  },
+ "invjw3": {
+  "run": 5,
+  "seed": 303,
+  "note": "s303: the largest violet stone of the eight in the bronze flower mount (similarity 0.28)"
+ },
+ "invjw4": {
+  "run": 5,
+  "seed": 101,
+  "note": "s101: the clearest green stone in the twisted wire wreath (similarity 0.27)"
+ },
  "invjw5": {
   "run": 4,
   "seed": 101,
   "note": "s101: the thick notched bezel sets it apart from the loose rubies (similarity 0.30)"
  },
+ "invjw6": {
+  "run": 5,
+  "seed": 202,
+  "note": "s202: the broadest stone, its iron frame and claws show at 1x (similarity 0.28)"
+ },
  "invkey": {
   "run": 4,
   "seed": 404,
   "note": "s404: large bow, diagonal; s303 lost its bit (P2) (similarity 0.28)"
+ },
+ "invmp1": {
+  "run": 5,
+  "seed": 404,
+  "note": "s404: the same seed as invhp1, the blue reads at 1x; its shadow flag is the glass, clean on sand (similarity 0.31)"
+ },
+ "invmp2": {
+  "run": 5,
+  "seed": 808,
+  "note": "s808: the same seed as invhp2 (similarity 0.28)"
  },
  "invmp3": {
   "run": 4,
@@ -363,6 +413,11 @@
   "run": 4,
   "seed": 404,
   "note": "s404: the brass cage reads at 2x (similarity 0.26)"
+ },
+ "invquil": {
+  "run": 5,
+  "seed": 707,
+  "note": "s707: the boldest dark and cream bands, a bare spine with no vanes (similarity 0.27)"
  },
  "invramn": {
   "run": 4,
@@ -563,10 +618,20 @@
   "seed": 202,
   "note": "s202: a round flat blank face for the game's name, no marks that could read as strokes (similarity 0.24)"
  },
+ "invsbk": {
+  "run": 5,
+  "seed": 606,
+  "note": "s606: a thick book: rounded banded spine, page block on two sides, tooled border, corner caps; slate blue apart from invbbb (similarity 0.26)"
+ },
  "invscb": {
   "run": 4,
   "seed": 303,
   "note": "s303: curled top and bottom edges, the faint ring of dots, nothing legible (similarity 0.26)"
+ },
+ "invskc": {
+  "run": 5,
+  "seed": 202,
+  "note": "s202: the jagged break out of the cranium cuts the outline, no jaw, small as the chipped grades are (similarity 0.33)"
  },
  "invskf": {
   "run": 4,
@@ -583,10 +648,30 @@
   "seed": 101,
   "note": "s101: the sample round's skull words, frontal (similarity 0.32)"
  },
+ "invskz": {
+  "run": 5,
+  "seed": 404,
+  "note": "s404: bold gold veins and glowing sockets, the perfect grade's cue at 1x (similarity 0.35)"
+ },
+ "invsple": {
+  "run": 5,
+  "seed": 101,
+  "note": "s101: a crescent organ with cut vessel stumps and pale veins, not a bean (similarity 0.22)"
+ },
+ "invtail": {
+  "run": 5,
+  "seed": 606,
+  "note": "s606: one hook from the raw cut end to a whip tip, scaly ridges (similarity 0.24)"
+ },
  "invtoa": {
   "run": 4,
   "seed": 404,
   "note": "s404: the plainest arms: the engraving reads as wear, not letters, at 2x (similarity 0.29)"
+ },
+ "invtrch": {
+  "run": 5,
+  "seed": 303,
+  "note": "s303: the stoutest club and the biggest flame (similarity 0.20)"
  },
  "invvpl": {
   "run": 4,
