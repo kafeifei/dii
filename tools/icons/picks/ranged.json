@@ -1,6 +1,82 @@
 {
+ "invam1": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: antler tines, spotted hide grip and feathers all there; the SH flag is grey wood, no residue on a bright backdrop (similarity 0.24)"
+ },
+ "invcbw": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: clean ears and grip, the string straight; s303 has a stray diagonal string, s202/s404 a loose thong at the grip (similarity 0.23)"
+ },
+ "invgpl": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: the brightest green, no shadow flag; a single round bulb rather than the gourd, which reads fine (invopl's fix keeps the same flask) (similarity 0.33)"
+ },
+ "invgpm": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: the green glow shows through the net at 1x; s101/s202 go muddy (similarity 0.26)"
+ },
+ "invgps": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: crossed straps, glowing swirl and ring cap; pairs with invops s101 (similarity 0.32)"
+ },
+ "invhxb": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: rope-lashed prod, rack and an L crank; s202/s404 turned the crank into a coil spring (similarity 0.30)"
+ },
+ "invlbw": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a linen-whipped grip at the middle as described; s101/s404 sit the grip low, s303 goes blue-grey at the tips (similarity 0.28)"
+ },
+ "invlwb": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: clean riser and limbs; s202 has tags on the string, s303 a sword-like crossguard, s404 red stains (similarity 0.27)"
+ },
+ "invlxb": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: the dark butt wrap gives the slim pale tiller weight at 1x; s303 has a stray bit on the string (similarity 0.21)"
+ },
+ "invmxb": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: iron and wooden tiller, the approved sample's words and seed (similarity 0.28)"
+ },
+ "invopm": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: orange glow and fuse keep it apart from the red netted healing flask (invhp4) at 1x (similarity 0.27)"
+ },
+ "invops": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: crossed straps and fuse, pairs with invgps s101 (similarity 0.24)"
+ },
+ "invqvr": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: the slimmest tube with its strap reads as a quiver; s101 is squat like a pot, s303/s404 heavier (similarity 0.28)"
+ },
+ "invrxb": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: the box magazine shows its slot and iron straps, the lever beside the tiller; s303 has a stray hook on the box (similarity 0.23)"
+ },
  "invsbw": {
   "run": 1,
-  "seed": 202
+  "seed": 202,
+  "note": "the approved sample round's pick, kept (similarity 0.32)"
+ },
+ "invswb": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: the straight riser with its shelf notch reads at 1x; s404 has a loose leather flap (similarity 0.25)"
  }
 }

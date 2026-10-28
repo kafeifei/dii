@@ -1,4 +1,410 @@
 {
+ "invam1": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A huntress's stag bow, tall and slender: a single stave of weathered grey-brown ash in a gentle curve, its tips turning slightly forward, each tip capped with a short forked tine of pale stag antler that holds the string, the grip wrapped in spotted deer hide with the hair still on, two small barred feathers hanging from a thong below the grip, a thin straight string. Shown upright, side view, the string on the left. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "stag-bow",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": true
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invam1.webp",
+    "sha1": "5486fc3f9016"
+   },
+   "1x": {
+    "file": "public/icons/items/invam1.1x.webp",
+    "sha1": "2cf105e59560"
+   }
+  }
+ },
+ "invcbw": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 3,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A composite horse-archer's bow of horn, wood and sinew: short limbs covered in dark brown birch bark, a slim leather-wrapped grip at the middle, and at each end a stiff straight ear of pale horn that bends sharply forward, away from the string, with a small bone string bridge at the bend; the string runs straight between the two bridges and along the ears to their tips. A recurve with angled ears, not a plain D. Shown upright, side view, the string on the left. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "composite-bow",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invcbw.webp",
+    "sha1": "1bca105306d8"
+   },
+   "1x": {
+    "file": "public/icons/items/invcbw.1x.webp",
+    "sha1": "995582e19c5a"
+   }
+  }
+ },
+ "invgpl": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A throwing flask of foul gas: a small gourd-shaped bottle of thick greenish glass, two round bulbs with the lower one larger, filled with murky bilious green liquid full of small bubbles, a thin scum of yellow-green on its surface, a cork stopper sealed under a scrap of leather tied round the neck with twine. Shown upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgpl.webp",
+    "sha1": "24cfca538808"
+   },
+   "1x": {
+    "file": "public/icons/items/invgpl.1x.webp",
+    "sha1": "fa570404da92"
+   }
+  }
+ },
+ "invgpm": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A throwing flask of choking gas: a pear-shaped glass bottle with a long narrow neck, wrapped in a net of knotted brown cord, filled with cloudy poison-green liquid that glows faintly from within, dark wax poured thick over the cork and running down the neck. Shown upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgpm.webp",
+    "sha1": "5a41afb11593"
+   },
+   "1x": {
+    "file": "public/icons/items/invgpm.1x.webp",
+    "sha1": "1596b42c0172"
+   }
+  }
+ },
+ "invgps": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A heavy gas bomb: a round glass globe filled with thick swirling poison-green liquid glowing from within, held in a cage of riveted iron straps that cross over it, an iron cap on top with a small ring. Shown upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgps.webp",
+    "sha1": "1bfdf1f774e2"
+   },
+   "1x": {
+    "file": "public/icons/items/invgps.1x.webp",
+    "sha1": "3e2a0e8e84be"
+   }
+  }
+ },
+ "invhxb": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A heavy siege crossbow seen from directly above, lying flat: a broad thick wooden tiller bound with iron bands, a plain square butt, no shoulder stock; across the front a short massive steel prod lashed to the tiller with thick cord bindings; a big iron stirrup at the very front tip; the thick string pulled back to a heavy nut, forming a V that points toward the butt; and at the butt a winding crank: a toothed iron rack running along the tiller to a small iron gear box with an L-shaped crank handle sticking out to one side. The prod at the top, the butt at the bottom. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "heavy-crossbow",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invhxb.webp",
+    "sha1": "d0184e0889bb"
+   },
+   "1x": {
+    "file": "public/icons/items/invhxb.1x.webp",
+    "sha1": "d6535e711490"
+   }
+  }
+ },
+ "invlbw": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A tall longbow cut from a single stave of yew: a simple D of even curve, the limbs thick and rounded at the middle and tapering evenly to slim tips capped with small horn nocks, a narrow grip whipped with linen cord and no leather, knots and grain lines in the wood, a thin straight pale string from tip to tip. Shown upright, side view, the string on the left, the bow arching to the right. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "long-bow",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invlbw.webp",
+    "sha1": "c07348657c30"
+   },
+   "1x": {
+    "file": "public/icons/items/invlbw.1x.webp",
+    "sha1": "521e26dca813"
+   }
+  }
+ },
+ "invlwb": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A tall heavy long war bow: a straight rigid middle section of thick dark oak, a quarter of its length, with an arrow shelf carved into it and leather wrapped round the grip; from each end of it a long thinner limb of pale ash backed with dark sinew, bound with cord at the joint, curving back toward the string to horn nocks; a thick twisted string. Straight in the middle and curved only at the ends. Shown upright, side view, the string on the left. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "long-war-bow",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invlwb.webp",
+    "sha1": "d58079d33041"
+   },
+   "1x": {
+    "file": "public/icons/items/invlwb.1x.webp",
+    "sha1": "f3a9fcc1cc5a"
+   }
+  }
+ },
+ "invlxb": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 3,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A light hunting crossbow seen from directly above, lying flat: a slim straight tiller of pale wood tapering toward a narrow butt, no shoulder stock and no pistol grip; across its front end a thin prod of horn and wood lashed to the tiller with cord, its two tips curving forward; no stirrup; the string drawn back to a small round nut a third of the way down the tiller, forming a V that points toward the butt; a short iron trigger lever under the rear half. The prod at the top, the butt at the bottom. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "light-crossbow",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invlxb.webp",
+    "sha1": "ff95ecad5193"
+   },
+   "1x": {
+    "file": "public/icons/items/invlxb.1x.webp",
+    "sha1": "d3025ea97156"
+   }
+  }
+ },
+ "invmxb": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 3,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A heavy medieval crossbow seen from directly above, lying flat: a straight narrow rectangular wooden tiller of even width with a plain square butt end, no shoulder stock and no pistol grip; a short thick steel prod crossing the front end like the bar of a letter T; an iron stirrup loop at the very front tip; the string pulled back from the prod tips to a round nut a third of the way down the tiller, forming a V that points toward the butt; a long thin iron lever along the rear half. The prod at the top, the butt at the bottom. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "crossbow",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invmxb.webp",
+    "sha1": "6a20faa4dbbe"
+   },
+   "1x": {
+    "file": "public/icons/items/invmxb.1x.webp",
+    "sha1": "5141118a4a14"
+   }
+  }
+ },
+ "invopm": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A fire bomb: a pear-shaped glass bottle with a long narrow neck, wrapped in a net of knotted brown cord, filled with glowing orange liquid like molten embers, a short twisted fuse cord sticking up out of a wax plug in the neck. Shown upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invopm.webp",
+    "sha1": "7a921413a1e5"
+   },
+   "1x": {
+    "file": "public/icons/items/invopm.1x.webp",
+    "sha1": "9104c431b35e"
+   }
+  }
+ },
+ "invops": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A heavy fire bomb: a round glass globe filled with bright churning orange-yellow liquid glowing from within like a furnace, held in a cage of riveted iron straps that cross over it, an iron cap on top with a short fuse cord. Shown upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invops.webp",
+    "sha1": "3f5c5856d83b"
+   },
+   "1x": {
+    "file": "public/icons/items/invops.1x.webp",
+    "sha1": "26155c54ac81"
+   }
+  }
+ },
+ "invqvr": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 3,
+  "prompt": "A quiver of arrows: a tall round quiver of stiff brown leather on a wooden base, a tooled band around its mouth and another around its foot, a leather carrying strap fastened down one side with iron rings, and a bundle of about a dozen arrows standing in it, their shafts and fletchings sticking out of the top, grey goose feathers and russet barred feathers. Shown upright, the open end at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invqvr.webp",
+    "sha1": "1d93144f7861"
+   },
+   "1x": {
+    "file": "public/icons/items/invqvr.1x.webp",
+    "sha1": "15071f0b9e7d"
+   }
+  }
+ },
+ "invrxb": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 3,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A repeating crossbow seen from above, tilted a little so the right side of its magazine shows: a straight wooden tiller with a plain square butt, a short prod of wood and horn across its front end, and riding on top of the tiller's front half a long narrow wooden box magazine bound with iron straps, the fletched ends of a few bolts showing in the slot along its top; the string runs back from the prod tips into a notch in the magazine; a long wooden lever joined by an iron pin to the magazine's rear runs back beside the tiller to a pivot near the butt. The prod at the top, the butt at the bottom. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "repeating-crossbow",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrxb.webp",
+    "sha1": "0a614269f316"
+   },
+   "1x": {
+    "file": "public/icons/items/invrxb.1x.webp",
+    "sha1": "70a2229ee619"
+   }
+  }
+ },
  "invsbw": {
   "run": 1,
   "seed": 202,
@@ -25,6 +431,35 @@
    "1x": {
     "file": "public/icons/items/invsbw.1x.webp",
     "sha1": "58cec4d37fc1"
+   }
+  }
+ },
+ "invswb": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 3,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A heavy short war bow: a straight rigid middle section of thick dark oak, a third of its length, with a small arrow shelf carved into it and leather wrapped round the grip, and from each end of it a thinner limb of pale ash backed with dark sinew, bound with cord at the joint, curving back toward the string to horn nocks; a thick twisted string. Straight in the middle and curved only at the ends, unlike a plain D. Shown upright, side view, the string on the left. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "war-bow",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invswb.webp",
+    "sha1": "f1fe9ad593bb"
+   },
+   "1x": {
+    "file": "public/icons/items/invswb.1x.webp",
+    "sha1": "1e01b35195c1"
    }
   }
  }
