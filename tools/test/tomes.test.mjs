@@ -2,8 +2,10 @@
 // charge, up to the tome's 20 and only its own kind; bought while the bag holds a tome of its kind
 // with room it goes straight in at the scroll's price, shift + right-click buying as many as the tome
 // takes and the gold pays for; picked up it goes in too, and a tome picked up pours its charges into
-// the bag's (the rest left on the ground). A town portal reads the tome first, then a scroll, using
-// the charge as it opens; with nothing to read the hero says so, in the camp nothing is read. A new
+// the bag's (the rest left on the ground). A town portal reads the tome first, then a scroll in the
+// bag, then one in the belt, using the charge as it opens; the belt's are counted too, and a belt
+// column used reads its scroll, what's above it coming down; with nothing to read the hero says so,
+// in the camp nothing is read. A new
 // hero starts with CharStats.txt's kit; an old hero with no town portal in the bag is given a tome
 // of town portal once. The tooltips show the charges and how to read and fill them.
 const DT = 1 / 60;
@@ -272,6 +274,28 @@ export default async (load) => {
   p.setState('hit', 0.2);
   for (let i = 0; i < 30; i++) game.update(DT);
   check(t.qty === 5, `a cast cut short used a charge: tome ${t.qty}`);
+  // the belt's scrolls: counted, and read by the key once the bag has none to read
+  {
+    const keep = p.belt;
+    const b1 = createItem('tsc');
+    const b2 = createItem('tsc');
+    const pot = createItem('hp1');
+    p.belt = [[], [b1], [b2, pot], []];
+    t.qty = 2;
+    const n = T.townPortalsIn(p.inventory, p.belt);
+    check(n === 4 && T.townPortalFrom(p.inventory, p.belt) === t, `a tome of 2 and 2 scrolls in the belt: ${n} counted, read from ${T.townPortalFrom(p.inventory, p.belt)?.baseId}`);
+    t.qty = 0;
+    check(T.townPortalFrom(p.inventory, p.belt) === b1 && cast() && !p.belt[1].length && p.belt[2].length === 2 && portals() === 1, `the tome empty, the key: the belt's first scroll used ${!p.belt[1].length}`);
+    // its column used, as D2's belt: the scroll at the bottom read, the potion above it come down
+    game.useBelt(2);
+    const casting = p.state === 'cast';
+    for (let i = 0; i < 90 && p.state === 'cast'; i++) game.update(DT);
+    check(casting && p.belt[2].length === 1 && p.belt[2][0] === pot && portals() === 1, `the belt's column used: ${p.belt[2].map((x) => x.baseId).join()} left`);
+    said.length = 0;
+    check(!cast() && said.includes('没有城镇传送卷轴了') && T.townPortalsIn(p.inventory, p.belt) === 0, `none left anywhere: said ${said.join(' / ')}`);
+    p.belt = keep;
+    t.qty = 5;
+  }
 
   // ── tooltips: the charges, the right-click hint, how to fill it ──
   const lines = (it) => tooltip(it, { level: 1, str: 10, dex: 10, cls: 'paladin', worn: [] }).map((l) => l.text);
@@ -312,5 +336,5 @@ export default async (load) => {
   localStorage.clear();
 
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
-  console.log(`  charges to 20 by kind; bought into the tome, shift-filled (${facts.join('; ')}); picked up into it, tomes poured together; the portal reads the tome, then a scroll, as it opens; D2's kit; old heroes a tome once; tooltips`);
+  console.log(`  charges to 20 by kind; bought into the tome, shift-filled (${facts.join('; ')}); picked up into it, tomes poured together; the portal reads the tome, then a scroll, the bag's then the belt's, as it opens; D2's kit; old heroes a tome once; tooltips`);
 };

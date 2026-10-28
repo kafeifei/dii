@@ -165,7 +165,8 @@ export default async function (page, shot, log) {
       const isK = (it) => it.baseId.startsWith(kind) || (kind === 'hp' && it.baseId.startsWith('rv'));
       return p().belt.reduce((n, c) => n + c.filter(isK).length, 0) + bag().filter(isK).length;
     };
-    const tpCharges = () => T.townPortalsIn(p().inventory);
+    // what the P key reads: the bag's tomes and scrolls, and a scroll put in the belt
+    const tpCharges = () => T.townPortalsIn(p().inventory, p().belt);
     const idFrom = () => bag().find((it) => (it.baseId === 'ibk' && T.tomeCharges(it) > 0) || it.baseId === 'isc');
     const freeCells = () => {
       const inv = p().inventory;

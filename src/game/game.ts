@@ -1961,10 +1961,11 @@ export class Game {
   }
 
   /**
-   * Read a town portal (the P key, or a right-click on a tome or scroll of town portal): the hero
-   * casts it from `from`, else from the bag's tome of town portal, then a scroll of it (tomes.ts
-   * townPortalFrom). Nothing to read it from, or a tome with no charge left: the hero says so. In the
-   * camp nothing is read, as D2's town portal fails there and uses nothing
+   * Read a town portal (the P key, a right-click on a tome or scroll of town portal, or its belt
+   * column used): the hero casts it from `from`, else from the bag's tome of town portal, then a
+   * scroll of it in the bag, then one in the belt (tomes.ts townPortalFrom). Nothing to read it
+   * from, or a tome with no charge left: the hero says so. In the camp nothing is read, as D2's town
+   * portal fails there and uses nothing
    */
   castTownPortal(from?: Item) {
     const p = this.player;
@@ -1974,7 +1975,7 @@ export class Game {
       this.say('cant_here');
       return;
     }
-    const src = from ?? townPortalFrom(p.inventory);
+    const src = from ?? townPortalFrom(p.inventory, p.belt);
     if (!src || !isTownPortal(src) || !readable(src)) return this.noTownPortal(src);
     p.setState('cast', 0.7);
     this.playerAction = { skill: 'townportal', target: null, point: { ...p.pos }, item: src };
@@ -1983,13 +1984,13 @@ export class Game {
 
   /**
    * The cast town portal opens: its scroll is used up, or its tome loses a charge, now (a cast cut
-   * short uses none). Read from `from` while the hero still holds it with something left to read,
-   * else from what the bag has now
+   * short uses none). Read from `from` while the hero still holds it, in a grid or the belt, with
+   * something left to read, else from what the bag and the belt have now
    */
   readTownPortal(from?: Item) {
     const p = this.player;
     if (this.level.inTown(p.pos)) return;
-    const held = from && this.holds(from) && readable(from) ? from : townPortalFrom(p.inventory);
+    const held = from && this.holds(from) && readable(from) ? from : townPortalFrom(p.inventory, p.belt);
     if (!held || !this.readHeld(held)) return this.noTownPortal(from);
     this.openTownPortal();
     this.hooks.inventoryChanged();

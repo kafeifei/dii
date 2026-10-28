@@ -175,10 +175,11 @@ export class Hud {
       if (!ui.touch) s.onclick = () => ui.picker.open(i, s);
       this.skillsEl.appendChild(s);
     }
-    const portals = townPortalsIn(p.inventory);
+    // what the P key reads from: the bag's tomes and scrolls of town portal, the belt's scrolls (tomes.ts townPortalFrom)
+    const portals = townPortalsIn(p.inventory, p.belt);
     (this.btns.portal.querySelector('.count') as HTMLElement).textContent = String(portals);
     this.btns.portal.classList.toggle('empty', !portals);
-    this.btns.portal.title = `回城传送 (P)：背包里还有 ${portals} 次`;
+    this.btns.portal.title = `回城传送 (P)：背包和腰带里还有 ${portals} 次`;
     this.btns.char.classList.toggle('notify', p.statPoints > 0);
     this.btns.skills.classList.toggle('notify', p.skillPoints > 0);
     // news in the quest log: a quest moved on, or one done it hasn't shown yet

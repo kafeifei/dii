@@ -277,7 +277,28 @@ export default async function (page, shot, log) {
       await until(() => window.__t.tome().qty === 18, null, 'P to read the tome');
       const p = await ev(() => ({ scrolls: window.__t.bag().filter((it) => it.baseId === 'tsc').length, portals: game.level.objects.filter((o) => o.kind === 'portal').length }));
       expect(p.scrolls === 1 && p.portals === 1, `P: ${JSON.stringify(p)}`);
-      facts.push('the tome right-clicked and P: 20 → 19 → 18, the scroll kept');
+      // the tome emptied and the bag's scroll put in the belt: the HUD counts it, and P reads it there
+      await until(() => game.player.state === 'idle' || game.player.state === 'move', null, 'the cast to end');
+      const belted = await ev(() => {
+        const pl = game.player;
+        window.__t.tome().qty = 0;
+        const s = window.__t.bag().find((it) => it.baseId === 'tsc');
+        pl.inventory.remove(s);
+        for (const it of pl.belt[3].splice(0)) pl.inventory.add(it);
+        pl.belt[3].push(s);
+        game.hooks.dirty = true;
+        return s.uid;
+      });
+      await frames(4);
+      const hud = await ev(() => document.querySelector('.hbtn .count')?.textContent);
+      expect(hud === '1', `a scroll in the belt only: the HUD counts ${hud}`);
+      await page.keyboard.press('p');
+      await until((uid) => !game.player.belt[3].some((it) => it.uid === uid), belted, "P to read the belt's scroll");
+      const b = await ev(() => ({ portals: game.level.objects.filter((o) => o.kind === 'portal').length, count: document.querySelector('.hbtn .count')?.textContent, tome: window.__t.tome().qty }));
+      expect(b.portals === 1 && b.tome === 0, `P with the scroll in the belt: ${JSON.stringify(b)}`);
+      await frames(4);
+      await shot('portal-from-belt');
+      facts.push("the tome right-clicked and P: 20 → 19 → 18, the scroll kept; the tome empty, P read the belt's scroll");
     },
 
     async phone() {

@@ -125,16 +125,30 @@ export function mergeTome(bag: Grid, tome: Item): { into: Item; gone: boolean } 
   return { into, gone: moved === have };
 }
 
-/** the town portal the bag would read: a tome of town portal with a charge first, then a scroll of town portal */
-export function townPortalFrom(bag: Grid): Item | undefined {
+/** a belt's columns, each a stack whose first item is the bottom one (Player.belt) */
+type Belt = readonly (readonly Item[])[];
+
+/**
+ * The town portal the hero would read (the P key): a tome of town portal in the bag with a charge
+ * first, then a scroll of it in the bag, then one in the belt, the lowest of the first column that
+ * has one. D2 has no one key for it: its hotkeys cast the tome's skill (Book of Townportal) or the
+ * scroll's (Scroll of Townportal), and each reads the first such item in the hero's item list, the
+ * one held longest, from the bag or the belt alike (SKILLS_SrvDo113_Scroll_Book, D2Game
+ * SkillItem.cpp:898-956: node page 1 the bag, read by sub_6FC47D30; 2 the belt, by sub_6FC49220).
+ * The one key here takes the tome first, the skill D2's players bind, and a scroll after it, the
+ * bag's before the belt's: no list order is kept
+ */
+export function townPortalFrom(bag: Grid, belt: Belt = []): Item | undefined {
   const items = bag.items.map((p) => p.item);
-  return items.find((it) => isTome(it) && isTownPortal(it) && tomeCharges(it) > 0) ?? items.find((it) => isBookScroll(it) && isTownPortal(it));
+  const scroll = (it: Item) => isBookScroll(it) && isTownPortal(it);
+  return items.find((it) => isTome(it) && isTownPortal(it) && tomeCharges(it) > 0) ?? items.find(scroll) ?? belt.flat().find(scroll);
 }
 
-/** how many town portals the bag holds: its scrolls of town portal and its tomes' charges */
-export function townPortalsIn(bag: Grid): number {
+/** how many town portals the hero holds: the bag's scrolls of town portal and its tomes' charges, and the belt's scrolls */
+export function townPortalsIn(bag: Grid, belt: Belt = []): number {
   let n = 0;
   for (const { item } of bag.items) if (isTownPortal(item)) n += isTome(item) ? tomeCharges(item) : 1;
+  for (const it of belt.flat()) if (isBookScroll(it) && isTownPortal(it)) n++;
   return n;
 }
 
