@@ -291,17 +291,17 @@ export function multibuys(store: Store, item: Item): boolean {
  * SUnitNpc.cpp:1392-1430 as D2MOO decompiles it, with sub_6FC4B430, ItemMode.cpp:5661-5702): it
  * goes straight into the tome, at the scroll's price. `fill` (shift + right-click) buys as many as
  * the tome has room for and the gold pays for, each at that price, for a permanent scroll
- * (multibuys). Paid from the gold carried, as every purchase at the stall is. The scroll stays on
- * the shelf when it is a permanent one, as all of Akara's are. Null when there is no such tome: it
- * is bought the usual way; n 0 when the gold doesn't stretch to one
+ * (multibuys). Paid as every purchase at the stall is, the gold carried first, then the stash's
+ * (pay). The scroll stays on the shelf when it is a permanent one, as all of Akara's are. Null when
+ * there is no such tome: it is bought the usual way; n 0 when the gold doesn't stretch to one
  */
 export function buyIntoTome(store: Store, scroll: Item, bag: Grid, purse: Purse, ctx: TradeCtx = {}, fill = false): { tome: Item; n: number; spent: number } | null {
   if (!isBookScroll(scroll)) return null;
   const tome = fillableTome(bag, scroll);
   if (!tome) return null;
   const each = buyPrice(store, scroll, ctx);
-  const n = Math.min(fill && multibuys(store, scroll) ? Math.floor(purse.gold / each) : purse.gold >= each ? 1 : 0, tomeRoom(tome));
-  if (n <= 0 || !pay(purse, n * each, false)) return { tome, n: 0, spent: 0 };
+  const n = Math.min(fill && multibuys(store, scroll) ? Math.floor(purseGold(purse) / each) : purseGold(purse) >= each ? 1 : 0, tomeRoom(tome));
+  if (n <= 0 || !pay(purse, n * each)) return { tome, n: 0, spent: 0 };
   addCharges(tome, n);
   if (!store.perm.has(scroll)) store.remove(scroll);
   return { tome, n, spent: n * each };
@@ -333,18 +333,18 @@ export function buyIntoStack(store: Store, item: Item, worn: readonly Item[], ba
   const b = D2_BASES[item.baseId];
   if (!b?.stack || !ownType(b)?.stacks || !multibuys(store, item)) return null;
   const each = buyPrice(store, { ...item, qty: 1 }, ctx);
-  const afford = Math.floor(purse.gold / Math.max(each, 1));
+  const afford = Math.floor(purseGold(purse) / Math.max(each, 1));
   const kin = [...worn, ...bag.items.map((x) => x.item)].find((it) => sameStack(item, it) && (it.qty ?? 1) < maxStack(it));
   if (kin) {
     const n = Math.min(maxStack(kin) - (kin.qty ?? 1), afford);
-    if (n <= 0 || !pay(purse, n * each, false)) return { stack: kin, n: 0, spent: 0, added: false };
+    if (n <= 0 || !pay(purse, n * each)) return { stack: kin, n: 0, spent: 0, added: false };
     kin.qty = (kin.qty ?? 1) + n;
     return { stack: kin, n, spent: n * each, added: false };
   }
   const n = Math.min(maxStack(item), afford);
   const fresh = { ...takeFromStore(store, item), qty: n };
   if (n <= 0 || !bag.add(fresh)) return { stack: fresh, n: 0, spent: 0, added: false };
-  pay(purse, n * each, false);
+  pay(purse, n * each);
   return { stack: fresh, n, spent: n * each, added: true };
 }
 
@@ -405,15 +405,25 @@ export function repairAllList(equipment: Partial<Record<EquipSlot, Item>>, ctx: 
   return out;
 }
 
-/** a purse: the gold carried, then the stash's, which repairs may draw on (SUnitNpc.cpp:1832-1842) */
+/**
+ * A purse: the gold carried (STAT_GOLD), then the stash's (STAT_GOLDBANK), which purchases and
+ * repairs draw on alike (SUNITNPC_BuyItem, SUnitNpc.cpp:1350-1356 and 1376-1385 as D2MOO decompiles
+ * it; repairs 1831-1842). The hero's own page's gold only: a shared page's isn't the merchant's to
+ * see in D2R (its own gold, src/items/stash.ts; us.forums.blizzard.com/en/d2r/t/merchants-have-no-gold/6816)
+ */
 export interface Purse {
   gold: number;
   stashGold: number;
 }
 
-/** take `cost` from the purse, carried gold first; false (nothing taken) when it is short */
-export function pay(purse: Purse, cost: number, stash = true): boolean {
-  if (purse.gold + (stash ? purse.stashGold : 0) < cost) return false;
+/** all the purse can pay: the gold carried and the stash's */
+export function purseGold(purse: Purse): number {
+  return purse.gold + purse.stashGold;
+}
+
+/** take `cost` from the purse, carried gold first, the rest from the stash's; false (nothing taken) when it is short */
+export function pay(purse: Purse, cost: number): boolean {
+  if (purseGold(purse) < cost) return false;
   const fromBag = Math.min(purse.gold, cost);
   purse.gold -= fromBag;
   purse.stashGold -= cost - fromBag;

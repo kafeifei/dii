@@ -82,6 +82,10 @@ export default async (load) => {
     check(part?.n === 3 && short.qty === 3 && poor.gold === each - 1, `filled with gold for 3: ${part?.n}, tome ${short.qty}, gold left ${poor.gold}`);
     const none = V.buyIntoTome(store, shelf, b2, poor, {}, true);
     check(none?.n === 0 && short.qty === 3 && poor.gold === each - 1, `with gold for none: ${none?.n}, tome ${short.qty}`);
+    // the stash's gold pays what the gold carried can't, after it (SUnitNpc.cpp:1376-1385)
+    const banked = { gold: 10, stashGold: each * 2 };
+    const fromBank = V.buyIntoTome(store, shelf, b2, banked, {}, true);
+    check(fromBank?.n === 2 && short.qty === 5 && banked.gold === 0 && banked.stashGold === 10 && V.purseGold(banked) === 10, `filled with the stash's gold: ${fromBank?.n}, carried ${banked.gold}, stash ${banked.stashGold}`);
     // no tome with room: bought the usual way
     check(V.buyIntoTome(store, shelf, b, rich) === null && V.buyIntoTome(store, shelf, new Grid(10, 4), rich) === null, 'a scroll bought into a full tome, or with no tome');
     const id = store.all().find((it) => it.baseId === 'isc');
@@ -116,6 +120,9 @@ export default async (load) => {
     const poor = { gold: per * 3, stashGold: 0 };
     const few = V.buyIntoStack(store, key, [], new Grid(10, 4), poor);
     check(few?.added && few.n === 3 && poor.gold === 0, `a new stack with gold for 3: ${few?.n}`);
+    const banked = { gold: per, stashGold: per * 2 + 1 };
+    const fromBank = V.buyIntoStack(store, key, [], new Grid(10, 4), banked);
+    check(fromBank?.n === 3 && banked.gold === 0 && banked.stashGold === 1, `keys with the stash's gold: ${fromBank?.n}, carried ${banked.gold}, stash ${banked.stashGold}`);
     // a worn quiver is topped up before one in the bag (SUNITNPC_FindStackForStorePurchase)
     const worn = Object.assign(createItem('aqv'), { qty: 100 });
     const bagged = Object.assign(createItem('aqv'), { qty: 10 });

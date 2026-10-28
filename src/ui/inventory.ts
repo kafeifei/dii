@@ -6,7 +6,7 @@ import type { Grid } from '../items/grid';
 import { baseOf, displayName, isIdentified, isUnknown, socketId, type Item } from '../items/item';
 import { insertFiller } from '../items/make';
 import { isTownPortal, readable, readFrom, scrollIntoTome } from '../items/tomes';
-import { buyIntoStack, buyIntoTome, buyPrice, multibuys, repairCost, repairOne, sellPrice, shelveSold, takeFromStore } from '../items/vendor';
+import { buyIntoStack, buyIntoTome, buyPrice, multibuys, pay, purseGold, repairCost, repairOne, sellPrice, shelveSold, takeFromStore } from '../items/vendor';
 import type { HeroLine } from '../audio/sounds';
 import { h, type UIContext } from './common';
 import { CELL, itemIcon } from './icons';
@@ -408,7 +408,8 @@ function openCube(ui: UIContext) {
  * multibuy), as many as it takes and the gold pays for (vendor.ts buyIntoTome). `fill` on a key,
  * arrows or bolts tops up a stack (vendor.ts buyIntoStack); on a potion that went into the belt,
  * more of them while the belt has room for them and the gold lasts (SUNITNPC_BuyItem, SUnitNpc.cpp:1465-1535:
- * the first one may go into the bag, the rest only into the belt)
+ * the first one may go into the bag, the rest only into the belt). Paid with the gold carried, then
+ * the stash's (vendor.ts pay)
  */
 function buy(ui: UIContext, it: Item, fill = false) {
   const p = ui.game.player;
@@ -416,7 +417,7 @@ function buy(ui: UIContext, it: Item, fill = false) {
   const stack = fill ? buyIntoStack(store, it, Object.values(p.equipment).filter((x): x is Item => !!x), p.inventory, p, p.tradeCtx()) : null;
   if (stack) {
     if (!stack.n) {
-      if (p.gold < buyPrice(store, { ...it, qty: 1 }, p.tradeCtx())) {
+      if (purseGold(p) < buyPrice(store, { ...it, qty: 1 }, p.tradeCtx())) {
         ui.message('金币不足', '#ff6060');
         ui.sfx.play('ui.no_gold');
         ui.game.say('no_gold');
@@ -448,7 +449,7 @@ function buy(ui: UIContext, it: Item, fill = false) {
     return;
   }
   const price = buyPrice(store, it, p.tradeCtx());
-  if (p.gold < price) {
+  if (purseGold(p) < price) {
     ui.message('金币不足', '#ff6060');
     ui.sfx.play('ui.no_gold');
     ui.game.say('no_gold');
@@ -462,10 +463,10 @@ function buy(ui: UIContext, it: Item, fill = false) {
     ui.game.say('bag_full');
     return;
   }
-  p.gold -= price;
+  pay(p, price);
   if (!perm) takeFromStore(store, it);
   if (fill && belted && multibuys(store, it)) {
-    while (p.gold >= price && ui.game.beltInsert(takeFromStore(store, it))) p.gold -= price;
+    while (purseGold(p) >= price && ui.game.beltInsert(takeFromStore(store, it))) pay(p, price);
   }
   ui.sfx.play('ui.coins');
   ui.dirty = true;
