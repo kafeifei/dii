@@ -1,4 +1,8 @@
 {
+ "invaar": {
+  "run": 5,
+  "seed": 202
+ },
  "invbrs": {
   "run": 4,
   "seed": 101
@@ -6,6 +10,14 @@
  "invchn": {
   "run": 4,
   "seed": 202
+ },
+ "invfld": {
+  "run": 5,
+  "seed": 606
+ },
+ "invful": {
+  "run": 5,
+  "seed": 404
  },
  "invgth": {
   "run": 4,
@@ -43,6 +55,10 @@
   "run": 4,
   "seed": 101
  },
+ "invltp": {
+  "run": 5,
+  "seed": 303
+ },
  "invmbl": {
   "run": 4,
   "seed": 202
@@ -63,9 +79,17 @@
   "run": 4,
   "seed": 202
  },
+ "invrng": {
+  "run": 5,
+  "seed": 303
+ },
  "invscl": {
   "run": 4,
   "seed": 404
+ },
+ "invspl": {
+  "run": 5,
+  "seed": 202
  },
  "invstu": {
   "run": 4,
@@ -86,6 +110,10 @@
  "invvbl": {
   "run": 4,
   "seed": 404
+ },
+ "invvbt": {
+  "run": 5,
+  "seed": 202
  },
  "invvgl": {
   "run": 4,

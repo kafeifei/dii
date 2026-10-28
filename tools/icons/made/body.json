@@ -1,4 +1,33 @@
 {
+ "invaar": {
+  "run": 5,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 3,
+  "prompt": "An ancient ornate heavy armour from a forgotten age: a heavy cuirass of dark old blackened steel with articulated arm plates of overlapping lames down to the elbows, broad layered shoulder plates and a short skirt of overlapping lames split at the front, every plate richly decorated: each plate edge framed by a raised band of tarnished gilt bronze, a broad embossed sunburst of straight rays spreading across the chest, a row of small embossed rosettes along every lame, the gilding worn away on the high points. Laid flat, front view, empty, no person. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invaar.webp",
+    "sha1": "608e2bbd6279"
+   },
+   "1x": {
+    "file": "public/icons/items/invaar.1x.webp",
+    "sha1": "13970c5815fe"
+   }
+  }
+ },
  "invbrs": {
   "run": 4,
   "seed": 101,
@@ -54,6 +83,64 @@
    "1x": {
     "file": "public/icons/items/invchn.1x.webp",
     "sha1": "0652142a1629"
+   }
+  }
+ },
+ "invfld": {
+  "run": 5,
+  "seed": 606,
+  "kind": "base",
+  "w": 2,
+  "h": 3,
+  "prompt": "A heavy field plate harness for the body, plain and massive: a broad grey steel breastplate with a second plate overlapping its lower half and rising to a point at the middle, a high steel collar closing round the neck, big rounded shoulder plates that rise like domes above the shoulders, and two broad square grey steel thigh plates, each of three overlapping riveted steel lames, hanging from the steel waist plate on short straps with a gap between them; steel everywhere, the only leather a few small straps; no sleeves, no mail, no leather skirt. Laid flat, front view, empty, no person. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invfld.webp",
+    "sha1": "c7085446b3e2"
+   },
+   "1x": {
+    "file": "public/icons/items/invfld.1x.webp",
+    "sha1": "3c559a305992"
+   }
+  }
+ },
+ "invful": {
+  "run": 5,
+  "seed": 404,
+  "kind": "base",
+  "w": 2,
+  "h": 3,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A full plate armour for the body and arms, hollow and empty: a rounded grey steel breastplate, large overlapping shoulder plates, complete arm plates with round elbow cops hanging straight down beside the body and ending at the wrists in open round steel rims with nothing in them, a waist of several overlapping steel lames and two long jointed steel thigh plates that end at the knees in round knee cops; the armour stops at the knees: no lower legs, no feet, no hands, no gauntlets, no helmet, no leather skirt. Laid flat, front view, empty, no person. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "full-plate",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invful.webp",
+    "sha1": "c5a5e0408a45"
+   },
+   "1x": {
+    "file": "public/icons/items/invful.1x.webp",
+    "sha1": "f310939df45e"
    }
   }
  },
@@ -318,6 +405,35 @@
    }
   }
  },
+ "invltp": {
+  "run": 5,
+  "seed": 303,
+  "kind": "base",
+  "w": 2,
+  "h": 3,
+  "prompt": "A light plate armour: a slim grey steel breastplate with a short fauld of two steel lames and two small rounded steel tassets over the hips, small round steel discs at the shoulders, all thinner and plainer than a knight's plate, worn over a padded brown leather jack that shows only as short cap sleeves at the shoulders and a narrow hem just below the tassets; the plates held on by buckled leather straps at the sides; grey steel covering most of it, no long skirt. Laid flat, front view, empty, no person. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invltp.webp",
+    "sha1": "4364e67e97fd"
+   },
+   "1x": {
+    "file": "public/icons/items/invltp.1x.webp",
+    "sha1": "f1794f6b5d51"
+   }
+  }
+ },
  "invmbl": {
   "run": 4,
   "seed": 202,
@@ -463,6 +579,35 @@
    }
   }
  },
+ "invrng": {
+  "run": 5,
+  "seed": 303,
+  "kind": "base",
+  "w": 2,
+  "h": 3,
+  "prompt": "A ring mail shirt: a long-sleeved coat to the upper thighs covered completely in large flat iron rings, each as wide as a thumb, sewn on in close overlapping horizontal rows so that grey iron covers the whole coat and the dark leather backing only shows as a dot inside each ring, the rings much larger and coarser than fine chain mail so that every ring can be seen; the sleeves reach the wrists and end in a band of leather, the neck a low round opening bound in leather, the hem split at the front; iron grey dominating, no plates. Laid flat, front view, empty, no person. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrng.webp",
+    "sha1": "e8fa40fb3f5c"
+   },
+   "1x": {
+    "file": "public/icons/items/invrng.1x.webp",
+    "sha1": "583da8adb3f0"
+   }
+  }
+ },
  "invscl": {
   "run": 4,
   "seed": 404,
@@ -489,6 +634,35 @@
    "1x": {
     "file": "public/icons/items/invscl.1x.webp",
     "sha1": "99af3f4b2b22"
+   }
+  }
+ },
+ "invspl": {
+  "run": 5,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 3,
+  "prompt": "A splint armour cuirass, sleeveless, reaching only to the hips: fourteen or more narrow vertical iron splints set edge to edge across the chest and belly, so close that only thin dark lines of leather show between them, each splint held by a round rivet at its top and its bottom end, the splints at the waist a little shorter so that the hem steps; small shoulder guards of three short horizontal splints each, the neck and armholes bound in dark leather; grey iron covering almost all of it. Laid flat, front view, empty, no person. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invspl.webp",
+    "sha1": "0ee181b4d45c"
+   },
+   "1x": {
+    "file": "public/icons/items/invspl.1x.webp",
+    "sha1": "36e841035e1e"
    }
   }
  },
@@ -634,6 +808,35 @@
    "1x": {
     "file": "public/icons/items/invvbl.1x.webp",
     "sha1": "ab5f8419ba2c"
+   }
+  }
+ },
+ "invvbt": {
+  "run": 5,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A pair of heavy boots, short and massive: thick stiff dark brown leather reaching only to mid-calf, broader and bulkier than soft boots, a deep band of shaggy dark fur round the top of each boot, one wide leather strap with a square iron buckle across the instep, a broad rounded toe with an extra stitched leather cap; a thin flat leather sole with no tread, no lugs and no heel at all. Standing side by side, both toes pointing right. Side view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "heavy-boots",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invvbt.webp",
+    "sha1": "228e9481d9f3"
+   },
+   "1x": {
+    "file": "public/icons/items/invvbt.1x.webp",
+    "sha1": "c5c43413abcd"
    }
   }
  },
