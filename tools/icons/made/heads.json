@@ -1,4 +1,468 @@
 {
+ "invba1": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A barbarian's jawbone cap shown empty on its own, no head inside: a low rounded cap of thick dark leather stitched over a frame of iron strips, and strapped beneath its front edge the bleached lower jawbone of a huge beast, a broad U of bone hanging below the brim like a lower visor with a row of big jagged teeth pointing upward, leather thongs and iron rings holding it on, tufts of coarse fur at the back, no horns. Front three-quarter view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "jawbone-cap",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invba1.webp",
+    "sha1": "74e61adc786a"
+   },
+   "1x": {
+    "file": "public/icons/items/invba1.1x.webp",
+    "sha1": "3b639515c764"
+   }
+  }
+ },
+ "invba2": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A barbarian's fanged helm: a round iron skullcap with a broad riveted brow band, and from each cheek a long curved beast's tusk hanging down and curling forward past the chin like a boar's tusks, a row of shorter fangs set along the lower edge of the brow band, a leather neck flap at the back, no horns, shown empty, no head inside. Front three-quarter view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invba2.webp",
+    "sha1": "693e7e19e868"
+   },
+   "1x": {
+    "file": "public/icons/items/invba2.1x.webp",
+    "sha1": "4483a6d0c083"
+   }
+  }
+ },
+ "invba3": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A barbarian's horned helm: a rounded open-faced iron helm with short cheek guards and a straight nasal bar, and rising from its temples two long pale horns that sweep outward and then curve up to sharp points, together wider than the helm itself, their roots bound in iron collars, shown empty, no head inside. Front view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invba3.webp",
+    "sha1": "ddcf76aed321"
+   },
+   "1x": {
+    "file": "public/icons/items/invba3.1x.webp",
+    "sha1": "ff046d9c55a5"
+   }
+  }
+ },
+ "invba4": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A barbarian's assault helmet: a tall-crowned steel war helm with a pointed brow and an open face framed by long cheek plates, and along the top of the crown from front to back a tall crest of a dozen flat sharp iron blades standing upright side by side like a cockscomb, the blades longest in the middle, shown empty, no head inside. Front three-quarter view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invba4.webp",
+    "sha1": "a91ae1511a44"
+   },
+   "1x": {
+    "file": "public/icons/items/invba4.1x.webp",
+    "sha1": "80ffebf87bd1"
+   }
+  }
+ },
+ "invba5": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A barbarian's avenger guard: a rounded iron helm with a nasal bar and a short leather neck guard, and on each side, rising from the temples, a swept-back wing made of long flat iron blades fanned like the feathers of a bird's wing, the two wings spreading up and outward, shown empty, no head inside. Front view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invba5.webp",
+    "sha1": "ad4c2c7b1f2b"
+   },
+   "1x": {
+    "file": "public/icons/items/invba5.1x.webp",
+    "sha1": "caa6903f7fe5"
+   }
+  }
+ },
+ "invbsh": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 2,
+  "h": 3,
+  "prompt": "A bone shield: a tall oval shield built of bones, long leg bones and curved ribs lashed side by side with dark sinew and leather into a solid face, a rim of bound vertebrae all around, and in the middle a small cracked skull as the boss, bleached ivory-grey and stained. Front view, upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invbsh.webp",
+    "sha1": "f15d77186fc2"
+   },
+   "1x": {
+    "file": "public/icons/items/invbsh.1x.webp",
+    "sha1": "eb8069ed2af3"
+   }
+  }
+ },
+ "invbuc": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A small round buckler shield: dark iron with a raised central boss and a riveted rim, dented and scratched. Front view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invbuc.webp",
+    "sha1": "fe9c7482f495"
+   },
+   "1x": {
+    "file": "public/icons/items/invbuc.1x.webp",
+    "sha1": "e6df690292c4"
+   }
+  }
+ },
+ "invcap": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A soft padded arming cap shown empty on its own, no head inside: a close-fitting hood-like cap of quilted brown leather with vertical stitched quilting channels, soft and wrinkled like thick fabric, sagging a little, two long leather ties hanging down from the sides; not a helmet, no metal at all, no rivets, no rim, no button on top. Front three-quarter view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invcap.webp",
+    "sha1": "91e272b1a8b1"
+   },
+   "1x": {
+    "file": "public/icons/items/invcap.1x.webp",
+    "sha1": "da47b351ff30"
+   }
+  }
+ },
+ "invci0": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A circlet: a band of tarnished silver with engraved scrollwork, seen from the front and above so the band forms a fat open oval; the front of the band rises into a tall pointed crest holding a cabochon gem. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": true
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invci0.webp",
+    "sha1": "90b1462a7e49"
+   },
+   "1x": {
+    "file": "public/icons/items/invci0.1x.webp",
+    "sha1": "3426f33573c6"
+   }
+  }
+ },
+ "invci3": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A diadem: a broad heavy band of dark gold with raised borders, seen from the front and above so the band forms a fat open oval, the front widening into a tall shield-shaped plate holding one large faceted deep green gemstone in a raised setting, flanked by two smaller stones, fine engraved leaves along the band. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invci3.webp",
+    "sha1": "62947fd0a980"
+   },
+   "1x": {
+    "file": "public/icons/items/invci3.1x.webp",
+    "sha1": "cf6357bc4f00"
+   }
+  }
+ },
+ "invcrn": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A battle crown made as a helm, shown empty on its own: a low rounded cap of dark iron, and riveted around its brow a broad band of tarnished gold with five tall pointed leaf-shaped tines rising from its upper edge, small dull cabochon stones set in the band, a thin padded leather lining showing at the lower edge, no spike on top, no cheek plates. Front three-quarter view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invcrn.webp",
+    "sha1": "c7f739eaa679"
+   },
+   "1x": {
+    "file": "public/icons/items/invcrn.1x.webp",
+    "sha1": "6ce12756d853"
+   }
+  }
+ },
+ "invdr1": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A druid's wolf-head pelt worn as a helm, shown empty on its own: the tanned head and scruff of a grey-brown wolf made into a hood, the wolf's upper face with pricked ears, dark empty eyes and its upper jaw of fangs forming the brow, the loose fur hanging down behind, the inside lined with soft leather, a few braided leather thongs with small bone beads at the edges. Front three-quarter view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invdr1.webp",
+    "sha1": "45990cdcda98"
+   },
+   "1x": {
+    "file": "public/icons/items/invdr1.1x.webp",
+    "sha1": "a322466b58d6"
+   }
+  }
+ },
+ "invdr2": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A druid's hawk helm: a close cap of brown leather covered all over in real overlapping hawk feathers, barred brown and cream, shaped like a hawk's head with a curved hooked beak of dark horn jutting forward over the brow, round dark eyes, and a fan of long tail feathers falling down the back of the neck, shown empty, no head inside. Front three-quarter view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invdr2.webp",
+    "sha1": "e5378f73c8e7"
+   },
+   "1x": {
+    "file": "public/icons/items/invdr2.1x.webp",
+    "sha1": "3cedb738c07c"
+   }
+  }
+ },
+ "invdr3": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A druid's antlers pelt worn as a helm, shown empty on its own: the tanned head and scalp of a red stag made into a hood, the stag's brow and ears over the front, and rising from it a pair of large branching antlers, each with several tines, spreading wide and upward, together wider than the hood, their bases wrapped in leather cord with small bone beads, the shaggy hide hanging down behind. Front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invdr3.webp",
+    "sha1": "1c2870db289f"
+   },
+   "1x": {
+    "file": "public/icons/items/invdr3.1x.webp",
+    "sha1": "ea72b70a6be3"
+   }
+  }
+ },
+ "invdr4": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A druid's falcon mask: a carved half-face mask of pale weathered wood shaped as a falcon's face, a short sharp hooked beak over the nose, large round eye holes ringed with dark painted bands, small tufts of grey and white feathers fanning out from the temples and the brow, a leather strap at the back, no helmet behind it. Front three-quarter view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invdr4.webp",
+    "sha1": "16980375b1af"
+   },
+   "1x": {
+    "file": "public/icons/items/invdr4.1x.webp",
+    "sha1": "9418c8ffd9f3"
+   }
+  }
+ },
+ "invfhl": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A full helm enclosing the whole head: a rounded grey iron bowl with a low ridge over the crown that comes down over the cheeks and the back of the neck, the face closed by a hinged visor pivoting on a rivet at each side, one narrow horizontal eye slit across the visor and a few breathing holes below it, a flared neck rim. Front three-quarter view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invfhl.webp",
+    "sha1": "41029eec0fdc"
+   },
+   "1x": {
+    "file": "public/icons/items/invfhl.1x.webp",
+    "sha1": "1f84c6be0048"
+   }
+  }
+ },
  "invghm": {
   "run": 1,
   "seed": 202,
@@ -25,6 +489,470 @@
    "1x": {
     "file": "public/icons/items/invghm.1x.webp",
     "sha1": "bc0eaece8f1f"
+   }
+  }
+ },
+ "invgts": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A tall narrow gothic shield of darkened iron shaped like a long lancet window: a pointed arched top, straight parallel sides and a pointed bottom, its face fluted with five raised vertical ridges running from tip to tip, the narrow panels between them darker and pitted, a riveted iron rim, no paint and no emblem. Front view, upright. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "gothic-shield",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgts.webp",
+    "sha1": "1cc6a782727c"
+   },
+   "1x": {
+    "file": "public/icons/items/invgts.1x.webp",
+    "sha1": "aba7eea21013"
+   }
+  }
+ },
+ "invhlm": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A plain open-faced iron helm: a rounded, slightly conical bowl of grey iron with a raised rim, a straight nasal bar running down from the brow over the nose, short hinged cheek plates either side of an open face, a flared neck guard at the back, a row of rivets along the brow. Front three-quarter view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": true
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invhlm.webp",
+    "sha1": "a36fa6b4cdf8"
+   },
+   "1x": {
+    "file": "public/icons/items/invhlm.1x.webp",
+    "sha1": "8d5cf22972a4"
+   }
+  }
+ },
+ "invkit": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 2,
+  "h": 3,
+  "prompt": "A tall kite shield: wood faced with faded brick-red painted leather and an iron rim, its top edge a smooth rounded curve with nothing sticking out of it, no knob or finial on top, a pointed bottom. Front view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invkit.webp",
+    "sha1": "b26a72bd1459"
+   },
+   "1x": {
+    "file": "public/icons/items/invkit.1x.webp",
+    "sha1": "9cdafd6a8cb4"
+   }
+  }
+ },
+ "invlrg": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 2,
+  "h": 3,
+  "prompt": "A large oval shield, taller than it is wide: wooden boards covered in dark brown leather, an iron rim, a long iron strip running down the middle from top to bottom with a round domed iron boss at its centre, a few rows of iron studs, scuffed and battered. Front view, upright. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invlrg.webp",
+    "sha1": "1fa34d2036a6"
+   },
+   "1x": {
+    "file": "public/icons/items/invlrg.1x.webp",
+    "sha1": "d6252cd13ffc"
+   }
+  }
+ },
+ "invne1": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A necromancer's trophy, a preserved head: a small shrunken human head with long lank black hair, its eyes and lips sewn shut, floating in cloudy brownish brine inside a squat wide-mouthed glass jar, the jar's mouth sealed with a wax-dipped wooden plug tied down with cord, a rope carrying loop on top. Upright, front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invne1.webp",
+    "sha1": "4c296bccb8cd"
+   },
+   "1x": {
+    "file": "public/icons/items/invne1.1x.webp",
+    "sha1": "c42176f8a0f4"
+   }
+  }
+ },
+ "invne2": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A necromancer's trophy, a zombie head: a severed rotting human head with grey-green mottled skin, sunken milky eyes, torn lips drawn back from broken teeth, patches of lank hair, crude black stitches across the scalp, hanging from a short knotted rope loop tied through the top of the scalp. Front three-quarter view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invne2.webp",
+    "sha1": "e0b7c7f34c6a"
+   },
+   "1x": {
+    "file": "public/icons/items/invne2.1x.webp",
+    "sha1": "22bc165fe8cd"
+   }
+  }
+ },
+ "invne3": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A necromancer's trophy, an unraveller head: a desiccated mummified head, a brown leathery skull face half wrapped in loose strips of old yellowed linen bandage that trail off below it, dark empty eye sockets, a lipless grin of teeth, hanging from a small iron ring by a twisted leather cord. Front three-quarter view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invne3.webp",
+    "sha1": "0bba110322a9"
+   },
+   "1x": {
+    "file": "public/icons/items/invne3.1x.webp",
+    "sha1": "d1c40c982be8"
+   }
+  }
+ },
+ "invne4": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A necromancer's trophy, a gargoyle head: the severed head of a gargoyle, its hard grey stone-like hide cracked and pitted, a wide snarling mouth full of fangs, deep-set eyes under a heavy brow, two short curved horns and long pointed ears swept back, hanging from a short iron chain with a hook. Front three-quarter view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invne4.webp",
+    "sha1": "65d72b6e78bd"
+   },
+   "1x": {
+    "file": "public/icons/items/invne4.1x.webp",
+    "sha1": "2efda3c20063"
+   }
+  }
+ },
+ "invne5": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A necromancer's trophy, a demon head: the dried severed head of a demon with dark oxblood-red leathery skin, two short thick black horns curving back from the brow, a heavy ridged brow over glaring eyes, a jaw of long fangs, shrivelled pointed ears, hanging from a braided leather thong knotted through an iron ring in its scalp. Front three-quarter view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invne5.webp",
+    "sha1": "57d37e22a97b"
+   },
+   "1x": {
+    "file": "public/icons/items/invne5.1x.webp",
+    "sha1": "fb26f10b3b57"
+   }
+  }
+ },
+ "invpa1": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A paladin's targe: a small round convex shield of gilded bronze, its domed face embossed with a raised radiant sunburst of straight rays spreading from a small central boss, a narrow rim of dark steel set with rivets. Front three-quarter view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invpa1.webp",
+    "sha1": "1e981d451c0f"
+   },
+   "1x": {
+    "file": "public/icons/items/invpa1.1x.webp",
+    "sha1": "f823219ef125"
+   }
+  }
+ },
+ "invpa2": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A paladin's rondache: a flat round disc shield of dull silvery steel with a broad raised rim of gilded bronze, its face embossed with a plain equal-armed cross whose arms widen toward their ends, a small round boss where the arms meet. Front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invpa2.webp",
+    "sha1": "176d7bbf59c6"
+   },
+   "1x": {
+    "file": "public/icons/items/invpa2.1x.webp",
+    "sha1": "16834760ca78"
+   }
+  }
+ },
+ "invpa3": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "A tall narrow holy knight's shield: pointed bottom, steel rim with gilded trim, the face painted with a quartered heraldic field of deep blue and aged ivory white and a small golden sun emblem in the center. Front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invpa3.webp",
+    "sha1": "5faaa38c8300"
+   },
+   "1x": {
+    "file": "public/icons/items/invpa3.1x.webp",
+    "sha1": "a1657c7e51b3"
+   }
+  }
+ },
+ "invpa4": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "A paladin's tall narrow holy shield with a straight flat top edge and square upper corners, its sides tapering in a long curve to a point at the bottom, a steel rim with gilded trim, the face painted a deep oxblood red with a long gilded sword emblem down the middle, point down. Front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invpa4.webp",
+    "sha1": "b8d77c2860c2"
+   },
+   "1x": {
+    "file": "public/icons/items/invpa4.1x.webp",
+    "sha1": "0b24695c232f"
+   }
+  }
+ },
+ "invskp": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A simple skull cap: a plain round iron bowl helmet hammered from one piece, a hemisphere just big enough to cover the crown of the head, a thin riveted iron band around its lower edge, a leather lining edge and a short leather chin strap showing beneath, no brim, no nasal bar, no face guard. Front three-quarter view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invskp.webp",
+    "sha1": "15bbc17c0f6d"
+   },
+   "1x": {
+    "file": "public/icons/items/invskp.1x.webp",
+    "sha1": "ac5c3434f743"
+   }
+  }
+ },
+ "invsml": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "A small round wooden shield: thick planks joined edge to edge with visible grain and a few cracks, bound by a narrow hammered iron rim, a small conical iron boss in the centre, worn leather facing peeling at the edges. Front view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invsml.webp",
+    "sha1": "8738ba26246b"
+   },
+   "1x": {
+    "file": "public/icons/items/invsml.1x.webp",
+    "sha1": "7ef84dbc507b"
+   }
+  }
+ },
+ "invspk": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 2,
+  "h": 3,
+  "prompt": "A spiked shield: a round shield of iron-banded wooden planks, seen at a three-quarter angle from the side so it looks like an upright oval and its spikes show in profile: rows of short sharp conical iron spikes jutting forward from its face and one long spike from its central iron boss, no spikes around the rim. Front three-quarter view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invspk.webp",
+    "sha1": "d3c3bcbdd272"
+   },
+   "1x": {
+    "file": "public/icons/items/invspk.1x.webp",
+    "sha1": "6e2c625de886"
    }
   }
  }
