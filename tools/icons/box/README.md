@@ -55,8 +55,8 @@ entry; its `shape` (or note) holds the words the guide was drawn from. They are 
 of object, never traced or measured from a picture. The sample round's eight (halberd, crossbow, falcata,
 gladius, great-helm, spear, short-bow, soft-boots) come out pixel for pixel as approved, and so does every
 picked picture's guide: review round 1 (`tools/icons/rejects/history/review-1.json`) added 24 guides, corrected
-claws, heavy-boots and the flail, and dropped the four bow guides nothing uses any more. On another canvas a
-guide is scaled to fit and centred.
+claws, heavy-boots and the flail, and dropped the four bow guides nothing uses any more; review round 2
+(`review-2.json`) widened two-handed-sword's blade. On another canvas a guide is scaled to fit and centred.
 
 ### Painting (`gen.py`)
 
