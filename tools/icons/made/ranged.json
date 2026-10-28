@@ -28,6 +28,35 @@
    }
   }
  },
+ "invam2": {
+  "run": 5,
+  "seed": 606,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A huntress's tall recurve bow: from the grip each limb sweeps out in a deep curve and then, in its last fifth, bends back the other way, away from the string, so both ends recurve like the crest of a wave and the string lies along each recurved end before it reaches the tip; the limbs broad near the grip and slimming toward the ends, of amber-brown horn laminated over pale wood with a thin dark seam between them; small carved bone caps on the tips; a carved wooden grip wrapped in braided cord with a small leather arrow pad. A recurved outline whose ends flick outward, not a plain D. Shown upright, side view, the string on the left, the bow arching to the right. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "recurve-bow",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invam2.webp",
+    "sha1": "b79122995069"
+   },
+   "1x": {
+    "file": "public/icons/items/invam2.1x.webp",
+    "sha1": "64b6fcbd6ad1"
+   }
+  }
+ },
  "invcbw": {
   "run": 4,
   "seed": 101,
@@ -54,6 +83,35 @@
    "1x": {
     "file": "public/icons/items/invcbw.1x.webp",
     "sha1": "995582e19c5a"
+   }
+  }
+ },
+ "invcqv": {
+  "run": 5,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 3,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A bolt case for crossbow bolts: a straight-sided square box of dark stained oak boards, open at the top and as wide at the bottom as at the mouth, its four corners bound with riveted iron angle straps and a broad iron band round the mouth, a leather carrying strap hanging in a loop from two iron rings on one side; standing in it about a dozen short thick crossbow bolts point up, each with a heavy dark iron head shaped like a small four-sided pyramid with a flared collar at the shaft, the heads sharp-edged and clearly pointed, not rounded; no fur, no hair, no hide. Shown upright, front view, the open end at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "bolt-case",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invcqv.webp",
+    "sha1": "0ae0662a53e9"
+   },
+   "1x": {
+    "file": "public/icons/items/invcqv.1x.webp",
+    "sha1": "38c0630c6904"
    }
   }
  },
@@ -144,6 +202,35 @@
    }
   }
  },
+ "invhbw": {
+  "run": 5,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 3,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A hunter's bow made from a single crooked branch: the two limbs are not smooth arcs but wander in three or four gentle, irregular bends along their length like a knotty stick, the bark stripped to weathered grey-brown wood with dark knots and two or three short stubs of trimmed twigs, a grip of rawhide strips wound round the middle, both tips cut into simple notches and bound with dark sinew, a thin pale twine string running perfectly straight from tip to tip and nothing else crossing the bow. A D whose curved side wobbles like a crooked stick, not a smooth curve. Shown upright, side view, the string on the left, the bow arching to the right. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "crooked-bow",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invhbw.webp",
+    "sha1": "3193d5c9a336"
+   },
+   "1x": {
+    "file": "public/icons/items/invhbw.1x.webp",
+    "sha1": "4bfa837d6729"
+   }
+  }
+ },
  "invhxb": {
   "run": 4,
   "seed": 303,
@@ -170,6 +257,35 @@
    "1x": {
     "file": "public/icons/items/invhxb.1x.webp",
     "sha1": "d6535e711490"
+   }
+  }
+ },
+ "invlbb": {
+  "run": 5,
+  "seed": 707,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A tall long battle bow whose two long limbs are faced with broad flat plates of dark ox horn, blackish brown with streaks of translucent amber, each plate as wide as three fingers beside the grip and narrowing to a point two thirds of the way to the tip, fixed to the wooden core with small iron rivets; a long grip of dark leather bound with iron wire; long bare wooden tips bound with sinew, curving slightly forward away from the string; a straight pale string. A tall D with broad blade-like limbs, clearly wider than a plain stave. Shown upright, side view, the string on the left, the bow arching to the right. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "long-plated-bow",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invlbb.webp",
+    "sha1": "e7245f3570a6"
+   },
+   "1x": {
+    "file": "public/icons/items/invlbb.1x.webp",
+    "sha1": "4691518fe14c"
    }
   }
  },
@@ -289,6 +405,35 @@
    }
   }
  },
+ "invopl": {
+  "run": 5,
+  "seed": 808,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "A fire bottle for throwing: a small round-bellied flask of thick clear glass with a short neck, filled to the shoulder with pale golden lamp oil, light straw-yellow like clear cooking oil, never red or brown; a thick twist of oily grey rag stuffed into the neck as a wick, a tuft of it sticking up above the neck and a frayed tail hanging down one side of the flask, tied round the neck with twine. Shown upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": true
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invopl.webp",
+    "sha1": "191aa2ca7621"
+   },
+   "1x": {
+    "file": "public/icons/items/invopl.1x.webp",
+    "sha1": "70a187c57501"
+   }
+  }
+ },
  "invopm": {
   "run": 4,
   "seed": 303,
@@ -402,6 +547,35 @@
    "1x": {
     "file": "public/icons/items/invrxb.1x.webp",
     "sha1": "70a2229ee619"
+   }
+  }
+ },
+ "invsbb": {
+  "run": 5,
+  "seed": 505,
+  "kind": "base",
+  "w": 2,
+  "h": 3,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A short battle bow whose two limbs are faced with broad flat plates of dark ox horn, blackish brown with streaks of translucent amber, each plate as wide as three fingers beside the grip and narrowing to a point near the tip like a long leaf, fixed to the wooden core with two small iron rivets; a thick grip of dark leather bound with iron wire between the two plates; short bare wooden tips bound with sinew, curving slightly forward away from the string; a straight pale string. A D with broad blade-like limbs, clearly wider than a plain stave. Shown upright, side view, the string on the left, the bow arching to the right. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "plated-bow",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invsbb.webp",
+    "sha1": "69e8238002ba"
+   },
+   "1x": {
+    "file": "public/icons/items/invsbb.1x.webp",
+    "sha1": "850aaad38acc"
    }
   }
  },

@@ -4,10 +4,20 @@
   "seed": 202,
   "note": "s202: antler tines, spotted hide grip and feathers all there; the SH flag is grey wood, no residue on a bright backdrop (similarity 0.24)"
  },
+ "invam2": {
+  "run": 5,
+  "seed": 606,
+  "note": "review 2, s606: both ends flick outward so it no longer reads as the long bow; the dark seam, bone tip caps, braided grip and arrow pad as described (similarity 0.24)"
+ },
  "invcbw": {
   "run": 4,
   "seed": 101,
   "note": "s101: clean ears and grip, the string straight; s303 has a stray diagonal string, s202/s404 a loose thong at the grip (similarity 0.23)"
+ },
+ "invcqv": {
+  "run": 5,
+  "seed": 404,
+  "note": "review 2, s404: a straight oak case with iron bands and pyramid bolt heads, plainly apart from the fletched arrow quiver (invqvr) at 1x; s303/s505/s606 hang the strap across the front (similarity 0.35)"
  },
  "invgpl": {
   "run": 4,
@@ -24,10 +34,20 @@
   "seed": 101,
   "note": "s101: crossed straps, glowing swirl and ring cap; pairs with invops s101 (similarity 0.32)"
  },
+ "invhbw": {
+  "run": 5,
+  "seed": 101,
+  "note": "review 2, s101: the crooked branch's bends, trimmed twig stubs and rawhide grip read at 1x, the string straight; s606/s808 paint a stray diagonal string (similarity 0.26)"
+ },
  "invhxb": {
   "run": 4,
   "seed": 303,
   "note": "s303: rope-lashed prod, rack and an L crank; s202/s404 turned the crank into a coil spring (similarity 0.30)"
+ },
+ "invlbb": {
+  "run": 5,
+  "seed": 707,
+  "note": "review 2, s707: long broad horn-plated limbs and the ribbed grip read at 1x, clean string; s808 adds a serving on the string, s101 a beaded one (similarity 0.24)"
  },
  "invlbw": {
   "run": 4,
@@ -49,6 +69,11 @@
   "seed": 202,
   "note": "s202: iron and wooden tiller, the approved sample's words and seed (similarity 0.28)"
  },
+ "invopl": {
+  "run": 5,
+  "seed": 808,
+  "note": "review 2, s808: pale straw-yellow oil to the shoulder and a rag wick with a hanging tail, apart from the red healing and green gas flasks at 1x; the SH flag shows no residue on a bright backdrop (similarity 0.23)"
+ },
  "invopm": {
   "run": 4,
   "seed": 303,
@@ -68,6 +93,11 @@
   "run": 4,
   "seed": 202,
   "note": "s202: the box magazine shows its slot and iron straps, the lever beside the tiller; s303 has a stray hook on the box (similarity 0.23)"
+ },
+ "invsbb": {
+  "run": 5,
+  "seed": 505,
+  "note": "review 2, s505: broad dark horn plates with amber streaks and rivets, a wire-bound grip that shows at 1x; s404 has a stray diagonal string (similarity 0.25)"
  },
  "invsbw": {
   "run": 1,
