@@ -8,8 +8,8 @@
 // further on), across the last to a way on not open yet, and back, one sim step and one draw (with the
 // pixel read) a frame, for --frames frames after ten drawn standing still. It gives the median, p95
 // and p99 frame time (the sim's share as a mean: the page's clock ticks in 0.1 ms), the median and
-// p95 in each area it went through (frames counted where the hero was), and how the JS
-// heap and the renderer's geometries, textures and shader programs changed from the first frame to
+// p95 in each area it went through (frames counted where the hero was), the JS heap at the end and
+// how it and the renderer's geometries, textures and shader programs changed from the first frame to
 // the last. Monsters are held still throughout, so the route stays the same. With --tour the walk
 // goes round its route once and stops there (--frames still caps it), so runs compare like for like;
 // it then also says how many views of monsters and items the renderer still keeps (Renderer.counts).
@@ -242,6 +242,7 @@ await page.evaluate(async () => {
         return `${k} ${r(pct(l, 0.5))}/${r(pct(l, 0.95))} (${l.length})`;
       }),
       heap: (m1.heap - m0.heap) / 2 ** 20,
+      heapEnd: m1.heap / 2 ** 20,
       geometries: m1.geometries - m0.geometries,
       textures: m1.textures - m0.textures,
       programs: m1.programs - m0.programs,
@@ -275,7 +276,7 @@ for (const s of opt('scenes', 'camp,gate,wild,coldplains,denofevil,floor2,floor1
     console.log(
       `${s.padEnd(10)} median ${r.median}  p95 ${r.p95}  p99 ${r.p99}  max ${r.max} ms/frame (sim ${r.sim})  ${r.frames} frames, ${r.walked} m in ${r.legs} legs${r.stuck ? `, stuck ${r.stuck}×` : ''}, ${r.areas}` +
         `  median/p95 by area: ${r.byArea.join(', ')}` +
-        `  heap ${sign(+r.heap.toFixed(1), ' MB')}  geometries ${sign(r.geometries)}  textures ${sign(r.textures)}  programs ${sign(r.programs)}` +
+        `  heap ${r.heapEnd.toFixed(1)} MB (${sign(+r.heap.toFixed(1), ' MB')})  geometries ${sign(r.geometries)}  textures ${sign(r.textures)}  programs ${sign(r.programs)}` +
         (r.views ? `  kept: ${Object.entries(r.views).map(([k, v]) => `${v} ${k}`).join(', ')}` : ''),
     );
   }
