@@ -6,7 +6,7 @@ import type { Level } from '../game/level';
 import { THEMES, type Layout } from '../world/levelgen';
 import { CAMP_AREA, areaDef } from '../world/areas';
 import { areaShares, lookMix, type AreaShare } from '../world/seams';
-import type { Monster } from '../game/monster';
+import type { Monster, MonsterAct } from '../game/monster';
 import type { GroundItem, Hammer, Projectile, WorldObject } from '../game/objects';
 import type { Player } from '../game/player';
 import { itemColor } from '../items/item';
@@ -173,6 +173,8 @@ const PROP_TINT: Record<string, [string, number]> = {
   cave: ['#c8a088', 0.12],
 };
 
+/** an attack mode's clip in its look's attack list (AnimInput.clip): A1 the first, A2 the second, S1 the third */
+const MODE_CLIP: Partial<Record<MonsterAct['mode'], number>> = { a1: 0, a2: 1, s1: 2 };
 const IDLE_ANIM: AnimInput = { state: 'idle', stateTime: 0, stateDur: 0, speed: 0, dead: false, deathTime: 0, hitFlash: 0, chilled: false, poisoned: false, blood: 'red', killedBy: 'phys' };
 
 interface CharRig {
@@ -1572,7 +1574,10 @@ export class Renderer implements Picker {
       if (!m.dead) b.rig.root.rotation.y = smoothAngle(b.rig.root.rotation.y, m.facing, step * 12);
       const hover = g.hover.monster === m;
       // (a copy of the monster with the hover's flash was a big object a monster a frame)
-      b.rig.update(step, this.anim(m, m.speed * m.slowFactor(), m.def.blood, Math.max(m.hitFlash, hover ? 0.12 : 0)));
+      const an = this.anim(m, m.speed * m.slowFactor(), m.def.blood, Math.max(m.hitFlash, hover ? 0.12 : 0));
+      // the attack's clip is its mode's, A1's or A2's, as the AI chose it
+      if (m.act && (m.state === 'attack' || m.state === 'cast')) an.clip = MODE_CLIP[m.act.mode];
+      b.rig.update(step, an);
       // elemental enchant auras
       if (!m.dead && m.mods.length && Math.random() < dt * 10) {
         // fire, cold and lightning enchanted (MonUMod 9, 18, 17)

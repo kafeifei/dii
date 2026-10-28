@@ -56,6 +56,8 @@ export interface AnimInput {
   bow?: boolean;
   /** the state lasts D2's frames (the hero's): one-shot clips play over exactly stateDur, however short or long */
   exact?: boolean;
+  /** an attack's clip by the D2 mode it is in: its look's attack list at A1 0, A2 1, S1 2 (a monster's); a random one when unset */
+  clip?: number;
 }
 
 // ── shared geometry cache ──
@@ -633,7 +635,7 @@ export class Rig {
 
     const p = a.stateDur > 0 ? clamp01(a.stateTime / a.stateDur) : 0;
     const newAction = a.state !== this.lastState || a.stateTime < this.lastStateTime;
-    if (newAction && a.state === 'attack') this.variant = Math.random() < 0.5 ? 0 : 1;
+    if (newAction && a.state === 'attack') this.variant = a.clip !== undefined ? Math.min(1, a.clip) : Math.random() < 0.5 ? 0 : 1;
     this.lastState = a.state;
     this.lastStateTime = a.stateTime;
 

@@ -6,7 +6,7 @@
 // in normal, +3 levels and ×5 experience, a champion a level and 2/5 of it back, damage and to-hit
 // up by ChampionDmgBonus 90 %), the superuniques' own (Bishibosh's magic resistance and fire,
 // Corpsefire's spectral hit, its poison a rate in 256ths a frame), velocities at 75 % (Monster.cpp:214)
-// with the AI's chase on top, and D2's to-hit both ways.
+// with what an AI adds move by move on top, the shamans' chain missiles, and D2's to-hit both ways.
 import assert from 'node:assert/strict';
 
 export default async (load) => {
@@ -63,7 +63,17 @@ export default async (load) => {
   // fallenshaman1, level 2: 58/101 % → 5–9; AC 10; Exp 81 % → 32; A1 34/101/101 → 1–3, 12; 25 % fire
   // resistance; its fire (ShamanFire, level 1 + MonsterSkillBonus 0) is shafire1's 1–4
   check('fallenshaman1', mk('fallenshaman1', 2), { hp: [5, 9], def: 10, xp: 32, a1: [1, 3, 12], res: { fire: 25 } });
-  assert.deepEqual(S.monsterMissile(monsterDef('fallenshaman1').row, 0), { mode: 's1', missile: 'shafire1', level: 1 });
+  assert.deepEqual(S.monsterMissile(monsterDef('fallenshaman1').row, 0), { mode: 's1', missile: 'shafire1', level: 1, skill: 'ShamanFire' });
+  // a fallenshaman3's is shafire3, its place in the class on from shafire1 (SkillMonst.cpp:176-187)
+  assert.equal(S.monsterMissile(monsterDef('fallenshaman3').row, 0).missile, 'shafire3');
+  assert.equal(S.chainIndex(D2X.fallenshaman4), 3);
+  // spike1 (Vel 10, VelLev 8, MaxVel 10) flies at 10 + 1 × 8 / 8 = 11 velocity at level 1, 75 % of
+  // it, for 40 frames: MaxVel caps no missile's start (Missiles.cpp:120-125); 10 + 8 = 18 in hell (level 8)
+  const sf = S.missileFlight('spike1', 1);
+  assert.deepEqual([sf.speed, sf.life], [8.25 * MPS_PER_VELOCITY, 1.6]);
+  assert.equal(S.missileFlight('spike1', 8).speed, 13.5 * MPS_PER_VELOCITY);
+  // a fallenshaman4's shafire4: 16, no VelLev
+  assert.equal(S.missileFlight(S.monsterMissile(monsterDef('fallenshaman4').row, 0).missile, 1).speed, 12 * MPS_PER_VELOCITY);
   const fire = S.missileDamage('shafire1', 1);
   assert.deepEqual([fire.src, fire.elem.type, fire.elem.min, fire.elem.max], [0, 'fire', 1, 4], `shafire1: ${JSON.stringify(fire)}`);
   // in nightmare the skill is 1 + 3 levels up: 1 + 10 × 3 = 31 to 4 + 30 = 34
@@ -134,17 +144,15 @@ export default async (load) => {
   }
   assert.ok(Object.values(spectral).every((n) => n > 40), `Corpsefire's spectral elements over 400 blows: ${JSON.stringify(spectral)}`);
 
-  // ── speed: Velocity at 75 %, its AI's chase on top (AITACTICS_SetVelocity) ──
-  // a zombie1 (Velocity 1) runs at the hero at +100 (AiThink.cpp:351): 175 %
+  // ── speed: Velocity at 75 %, what its AI adds move by move on top (AITACTICS_SetVelocity) ──
+  // a zombie1 (Velocity 1) walks at 75 %, and runs at the hero at +100 (AiThink.cpp:351): 175 %
   const z = mk('zombie1', 1);
   assert.equal(z.walkSpeed, 0.75 * MPS_PER_VELOCITY);
-  assert.equal(z.speed, 1.75 * MPS_PER_VELOCITY);
-  // a corruptrogue1 (5) at its MonAI Run Velocity, 100 (894): 5 × 175 %; a fallen1 (5) walks: 5 × 75 %
-  assert.equal(mk('corruptrogue1', 2).speed, 5 * 1.75 * MPS_PER_VELOCITY);
-  assert.equal(mk('fallen1', 1).speed, 5 * 0.75 * MPS_PER_VELOCITY);
-  // an AI that runs by MonStats Run / Velocity less 100, at most 120 (AiThink.cpp:916-924): 1 and 4 → 300 → 120
-  assert.equal(S.chaseBonus({ ...D2X.zombie1, ai: 'Baboon', run: 4 }, 0), 120);
-  assert.equal(S.chaseBonus({ ...D2X.zombie1, ai: 'Baboon', run: 2 }, 0), 100);
+  assert.equal(z.speed, z.walkSpeed);
+  assert.equal(z.moveSpeed(100), 1.75 * MPS_PER_VELOCITY);
+  // a corruptrogue1 (5) at its MonAI Run Velocity, 100 (AiThink.cpp:894): 5 × 175 %; −50 % kept at 25 %
+  assert.equal(mk('corruptrogue1', 2).moveSpeed(100), 5 * 1.75 * MPS_PER_VELOCITY);
+  assert.equal(mk('fallen1', 1).moveSpeed(-60), 5 * 0.25 * MPS_PER_VELOCITY);
   // extra fast on a fallen (Velocity 5): + 2048 / 5 − 128 = 281, kept to 100 → 175 %
   assert.equal(mk('fallen1', 1, 'minion', [6]).walkSpeed, 5 * 1.75 * MPS_PER_VELOCITY);
   // regen: life × 256 × Regen 2 >> 12 a frame: 12 life → 1/256 a frame, 25/256 a second

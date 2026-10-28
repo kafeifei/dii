@@ -81,7 +81,8 @@ export default async (load) => {
     const out = { x: gate.tb.x - gate.ta.x, z: gate.tb.z - gate.ta.z };
     const past = (k) => ({ x: gate.tb.x + out.x * k, z: gate.tb.z + out.z * k });
     check(!level.inTown(gate.tb) && level.inTown(gate.ta), `${what}: the gate's sides are ${level.areaAt(gate.ta.x, gate.ta.z).key} and ${level.areaAt(gate.tb.x, gate.tb.z).key}`);
-    const m = level.monsters.find((x) => x.rank === 'normal' && x.def.ai === 'melee') ?? level.monsters[0];
+    // a Fallen: it walks at a hero within its aip2 (10 subtiles, AiThink.cpp:595), at its walk
+    const m = level.monsters.find((x) => x.rank === 'normal' && x.def.row.ai === 'Fallen') ?? level.monsters[0];
     const g = { level };
     const inTownAlong = (steps) => {
       let n = 0;
@@ -131,13 +132,15 @@ export default async (load) => {
     }
     const home = Math.hypot(m.pos.x - m.homePos.x, m.pos.z - m.homePos.z);
     check(!inTownAlong(trail) && home < 1.5 && !swung, `${what}: with the hero in the camp a monster at the gate ended ${home.toFixed(1)} from home, ${swung ? 'swinging at them' : m.state}, ${inTownAlong(trail)} step(s) in the camp`);
-    hero.pos = past(10);
+    hero.pos = past(6);
     m.pos = past(3);
     m.homePos = past(3);
     m.path = null;
+    m.move = null;
     m.setState('idle');
     const before = Math.hypot(hero.pos.x - m.pos.x, hero.pos.z - m.pos.z);
-    for (let k = 0; k < 1 / DT && m.state !== 'attack'; k++) updateMonster(game, m, DT);
+    // within 3 s: it may cry its party on first (S2) before it walks
+    for (let k = 0; k < 3 / DT && m.state !== 'attack'; k++) updateMonster(game, m, DT);
     const after = Math.hypot(hero.pos.x - m.pos.x, hero.pos.z - m.pos.z);
     check(after < before - 0.8, `${what}: with the hero out in Blood Moor the monster went from ${before.toFixed(1)} to ${after.toFixed(1)} of them`);
   }

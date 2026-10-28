@@ -42,6 +42,10 @@ export class Level {
   /** the seconds the hero has spent on this map (Game.update): what its far corpses age by, none while the hero is on another */
   time = 0;
   boss: Monster | null = null;
+  /** the last monsters to die on it, newest last: what the Fallen see die (D2's rooms keep their last four, D2Dungeon.cpp:1253-1260) */
+  deaths: Monster[] = [];
+  /** its aura-enchanted uniques (MonUMod 30), whose party auras the monsters round them fight with */
+  auras: Monster[] = [];
   /**
    * the dungeon floor this level is as hard as, for its monsters and loot: its own floor in the
    * dungeon, the first floor's in the wilderness, 0 in the camp
@@ -244,8 +248,13 @@ export class Level {
       m.poisonTime = 0;
       m.awake = false;
       m.path = null;
+      m.move = null;
+      m.act = null;
+      m.cmd = m.aiFlag = 0;
+      m.taunted = false;
       m.setState('idle');
     }
+    this.deaths.length = 0;
     // all of them home again: bucketed anew
     this.grid.sync(this.monsters, true);
   }

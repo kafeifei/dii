@@ -7,7 +7,8 @@ import { baseOf, displayName, type Item } from '../items/item';
 import { MATH_RAND } from '../items/make';
 import { emptyPacket, type Actor, type DamagePacket } from './actor';
 import { blockAnimGap, hitRecoveryOdds } from './d2/frames';
-import { absorb, attackRating, charStats, hitChance, mitigate, resistance } from './d2/stats';
+import { amplifyCurse } from './d2/monai';
+import { RES_FLOOR, absorb, attackRating, charStats, hitChance, mitigate, resistance } from './d2/stats';
 import type { Game } from './game';
 import { Monster } from './monster';
 import { Player } from './player';
@@ -95,7 +96,9 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
   const pl = isPlayer ? (target as Player) : null;
   // Diablo II's resistances (game/d2/stats.ts): the hero's already carry the difficulty's penalty
   // and caps (Player.recalc); a monster's lose the attacker's pierce, unless 100 or more
-  const resOf = (e: 'fire' | 'cold' | 'light' | 'poison') => (pl ? res[e] : resistance(e, res[e], { monster: true, pierce: (pk.pierceRes ?? 0) + (pk.pierce?.[e] ?? 0) }));
+  // a unique's Conviction round the hero takes its share off their resistances, at least −100 (RES_FLOOR)
+  const convict = pl && pl.convictTime > 0 ? pl.convictRes : 0;
+  const resOf = (e: 'fire' | 'cold' | 'light' | 'poison') => (pl ? Math.max(RES_FLOOR, res[e] - (e === 'poison' ? 0 : convict)) : resistance(e, res[e], { monster: true, pierce: (pk.pierceRes ?? 0) + (pk.pierce?.[e] ?? 0) }));
   const m0 = target instanceof Monster ? target : null;
   // +X% damage to undead / demons is part of the physical damage bonus
   const vs = m0 ? (m0.def.undead ? (pk.vsUndead ?? 0) : 0) + (m0.def.demon ? (pk.vsDemon ?? 0) : 0) : 0;
@@ -103,7 +106,9 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
   // the hero's flat reductions come off first, "damage reduced by X" physical and "magic damage
   // reduced by X" the elements and magic, then the % (SUnitDmg.cpp:764-772, 1016-1025)
   const mdr = b?.mdr ?? 0;
-  let phys = mitigate(pk.phys * (1 + vs / 100), pl ? pl.stats.dr : res.phys, b?.drFlat ?? 0);
+  // Amplify Damage on the hero: its −100 % damage resistance with theirs (STAT_DAMAGERESIST)
+  const dr = pl ? Math.max(RES_FLOOR, pl.stats.dr - (pl.ampTime > 0 ? pl.ampRes : 0)) : res.phys;
+  let phys = mitigate(pk.phys * (1 + vs / 100), dr, b?.drFlat ?? 0);
   let fire = mitigate(pk.fire, resOf('fire'), mdr);
   let cold = mitigate(pk.cold, resOf('cold'), mdr);
   let light = mitigate(pk.light, resOf('light'), mdr);
@@ -156,7 +161,8 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
 
   if (target instanceof Monster) {
     const m = target;
-    m.awake = true;
+    // struck before it noticed the hero, it notices them as seeing them would have it, its pack with it (ai.ts notice)
+    if (!m.awake && m.life > 0) g.wake(m);
     strikeEffects(m, pk, res.phys, resOf('cold'));
     if (pk.knockback && m.rank !== 'boss') {
       const kb = pk.knockback * (m.rank === 'unique' ? 0.5 : 1);
@@ -166,6 +172,14 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
     const heavy = pk.heavy || pk.crit || total > m.maxLife * 0.12;
     if (heavy && m.life > 0 && m.rank !== 'boss' && m.state !== 'dead') {
       m.setState('hit', m.rank === 'normal' || m.rank === 'minion' ? 0.28 : 0.15);
+      // its AI state is the get-hit's 3 now, even after a hit with none (MonsterMode.cpp:1796-1812)
+      m.hitHeld = false;
+    } else if (total > 0 && m.life > 0 && m.state !== 'dead') {
+      // a hit it takes with no get-hit, one it shrugs off or a soft one, is a hit to its AI all the
+      // same: D2 sets AI state 19 (SUnitDmg.cpp:2117, 2134, 2143), a get-hit's to its next thought
+      // and after its next mode (ai.ts think)
+      m.wasHit = true;
+      m.hitHeld = true;
     }
     // leech, as much of it as works on this monster (MonStats Drain), the hero's divided by the
     // difficulty's LifeStealDivisor and ManaStealDivisor in 64ths (SUnitDmg.cpp:1154-1228)
@@ -317,15 +331,17 @@ function itemBroke(g: Game, p: Player, it: Item) {
 /**
  * Monster melee/ranged attack on the player, with Diablo II's hit roll (SUNITDMG_IsHitSuccessful,
  * SUnitDmg.cpp:2446-2563: the attack mode's rating, pk.ar, against the hero's defense, with both
- * levels) and block; a landed melee blow wears the hero's armor
+ * levels; a unique's Conviction round them takes its share of that defense off) and block; a landed
+ * melee blow wears the hero's armor. Whether it landed.
  */
-export function monsterStrike(g: Game, m: Monster, p: Player, pk: DamagePacket, melee = false): void {
-  if (p.dead) return;
+export function monsterStrike(g: Game, m: Monster, p: Player, pk: DamagePacket, melee = false): boolean {
+  if (p.dead) return false;
   if (!pk.spell) {
     const d = p.stats;
+    const def = p.convictTime > 0 ? d.def - Math.trunc((d.def * p.convictDef) / 100) : d.def;
     // a running hero is hit by every melee blow, and blocks a third as often (SUnitDmg.cpp:2589-2595, 2719-2722)
     const running = p.runningNow();
-    if (!(melee && running) && !chance(hitOdds(pk.ar ?? m.ar, d.def, m.level, p.level))) return;
+    if (!(melee && running) && !chance(hitOdds(pk.ar ?? m.ar, def, m.level, p.level))) return false;
     const blk = running ? Math.trunc(d.block / 3) : d.block;
     if (blk > 0 && chance(blk / 100)) {
       // the blow is stopped; the block plays (cutting into an attack or cast) when the last one is
@@ -338,7 +354,7 @@ export function monsterStrike(g: Game, m: Monster, p: Player, pk: DamagePacket, 
       }
       g.fx.burst('block', p.pos, { dir: { x: m.pos.x - p.pos.x, z: m.pos.z - p.pos.z } });
       g.sfx.play('combat.block', { pos: p.pos });
-      return;
+      return false;
     }
   }
   applyDamage(g, p, pk, m.pos);
@@ -347,4 +363,24 @@ export function monsterStrike(g: Game, m: Monster, p: Player, pk: DamagePacket, 
     const hit = struckArmor(p.equipment, MATH_RAND);
     if (hit?.wear === 'broke') itemBroke(g, p, hit.item);
   }
+  if (m.hasOwn(7)) curse(g, m, p);
+  return true;
+}
+
+/**
+ * A cursed unique's (MonUMod 7) hit that lands casts Amplify Damage three times in four on the
+ * hero within its reach (MONSTERUNIQUE_CastAmplifyDamage, MonsterUnique.cpp:984-1050: the umod's
+ * successful-hit callback, run as a hit lands, SUnitDmg.cpp:1289): at mlvl / 5 + 1, the hero's damage resistance down by its
+ * par5 for its length
+ */
+function curse(g: Game, m: Monster, p: Player) {
+  if (randInt(0, 3) < 1) return;
+  const c = amplifyCurse(m.level);
+  if (Math.hypot(p.pos.x - m.pos.x, p.pos.z - m.pos.z) > c.radius + p.radius + m.radius) return;
+  if (p.ampTime <= 0) {
+    g.fx.text(p.pos, '伤害加深', '#c04040');
+    g.fx.burst('holyburst', p.pos, { color: '#a02030' });
+  }
+  p.ampTime = Math.max(p.ampTime, c.seconds);
+  p.ampRes = c.res;
 }

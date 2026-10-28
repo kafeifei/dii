@@ -108,8 +108,6 @@ const GROUPS = {
     die_large: { synth: 'die', vol: 0.9, max: 2, prio: 'high' },
     /** a boss notices the hero */
     boss_wake: { synth: 'boss', max: 1, prio: 'high' },
-    /** a boss rushes the hero */
-    charge: { synth: 'charge', max: 1, prio: 'high' },
     /** a shaman raises a corpse */
     resurrect: { synth: 'holy', vol: 0.5, max: 2 },
   },

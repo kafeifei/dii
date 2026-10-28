@@ -10,9 +10,6 @@ export type Blood = 'red' | 'bone' | 'green' | 'ghost' | 'black' | 'fire';
 export type Elem = 'phys' | 'fire' | 'cold' | 'light' | 'poison' | 'magic';
 export type ProjectileKind = 'arrow' | 'firebolt' | 'iceshard' | 'poisonspit' | 'lightning' | 'fireball';
 
-/** how the game's AI (src/game/ai.ts) fights a monster for now */
-export type MonsterAi = 'melee' | 'ranged' | 'shaman' | 'boss';
-
 /**
  * How one of Diablo II's monster classes looks, sounds and moves in this game: everything about a
  * monster that D2's tables (src/data/d2x/monsters.ts) don't give, since D2 draws sprites where this
@@ -34,7 +31,10 @@ export interface MonsterLook {
   missile?: ProjectileKind;
   /** its death cry: monster.die, die_bone, die_imp (src/audio/sounds.ts); a big one dies as die_large */
   voice: 'flesh' | 'bone' | 'imp';
-  /** how far its blow reaches, or the range it shoots from, m */
+  /**
+   * how far its blow reaches from its middle, m: its model's arm, which D2 doesn't give (its sprites
+   * have none); D2's MonStats2 MeleeRng adds to it (src/game/ai.ts meleeReach)
+   */
   range: number;
   /**
    * attacks a second: D2 times them by the frames in AnimData.d2, which d2data doesn't have, so these
@@ -61,45 +61,46 @@ export interface MonsterLook {
  */
 export const LOOKS: Record<string, MonsterLook> = {
   zombie: { key: 'zombie', model: 'zombie', scale: 1, radius: 0.42, blood: 'red', color: '#5d6b4a', color2: '#3a3326', voice: 'flesh', range: 1.1, attackSpeed: 0.8, attack: ['Attack'] },
-  fallen: { key: 'fallen', model: 'imp', scale: 0.72, radius: 0.33, blood: 'red', color: '#a83a24', color2: '#3a1a10', voice: 'imp', range: 1.0, attackSpeed: 1.0, attack: ['Attack', 'Attack2'] },
+  // its S2, the cry as it orders its pack on, on its stance: the imp has no cry of its own
+  fallen: { key: 'fallen', model: 'imp', scale: 0.72, radius: 0.33, blood: 'red', color: '#a83a24', color2: '#3a1a10', voice: 'imp', range: 1.0, attackSpeed: 1.0, attack: ['Attack', 'Attack2'], cast: ['Idle'] },
   fallenshaman: {
-    key: 'fallenshaman', model: 'shaman', scale: 0.8, radius: 0.34, blood: 'red', color: '#8a2a5a', color2: '#d8b040', missile: 'firebolt', voice: 'imp', range: 7,
+    key: 'fallenshaman', model: 'shaman', scale: 0.8, radius: 0.34, blood: 'red', color: '#8a2a5a', color2: '#d8b040', missile: 'firebolt', voice: 'imp', range: 1.0,
     attackSpeed: 0.6, attack: ['Attack'], cast: ['Cast'], shootIn: 'cast',
   },
   // its bite on 'attack', its quills on 'cast' (src/render/legs.ts QuadRig poses both over a still)
-  quillrat: { key: 'quillrat', model: 'quillrat', scale: 1, radius: 0.36, blood: 'red', color: '#5a4a3a', color2: '#2a2018', missile: 'arrow', voice: 'flesh', range: 6.5, attackSpeed: 0.8, attack: ['Idle'], cast: ['Idle'], shootIn: 'cast' },
+  quillrat: { key: 'quillrat', model: 'quillrat', scale: 1, radius: 0.36, blood: 'red', color: '#5a4a3a', color2: '#2a2018', missile: 'arrow', voice: 'flesh', range: 0.9, attackSpeed: 0.8, attack: ['Idle'], cast: ['Idle'], shootIn: 'cast' },
   brute: { key: 'brute', model: 'yeti', scale: 1.4, radius: 0.6, blood: 'red', color: '#c8d8e8', color2: '#4a7a9a', voice: 'flesh', range: 1.4, attackSpeed: 0.8, attack: ['Attack', 'Attack2'] },
   corruptrogue: { key: 'corruptrogue', model: 'corruptrogue', scale: 1, radius: 0.38, blood: 'red', color: '#a08a8a', color2: '#4a2a3a', voice: 'flesh', range: 1.15, attackSpeed: 1.0, attack: ['Attack'] },
-  // MonStats2 MeleeRng 2: the spear reaches a little farther
-  cr_lancer: { key: 'cr_lancer', model: 'cr_lancer', scale: 1, radius: 0.38, blood: 'red', color: '#a08a8a', color2: '#4a2a3a', voice: 'flesh', range: 1.6, attackSpeed: 0.9, attack: ['Thrust'] },
-  cr_archer: { key: 'cr_archer', model: 'cr_archer', scale: 1, radius: 0.38, blood: 'red', color: '#a08a8a', color2: '#4a2a3a', missile: 'arrow', voice: 'flesh', range: 8, attackSpeed: 0.75, attack: ['Shoot'] },
+  // the hunter's body; its spear's MonStats2 MeleeRng 2 reaches a subtile farther (meleeReach)
+  cr_lancer: { key: 'cr_lancer', model: 'cr_lancer', scale: 1, radius: 0.38, blood: 'red', color: '#a08a8a', color2: '#4a2a3a', voice: 'flesh', range: 1.15, attackSpeed: 0.9, attack: ['Thrust'] },
+  cr_archer: { key: 'cr_archer', model: 'cr_archer', scale: 1, radius: 0.38, blood: 'red', color: '#a08a8a', color2: '#4a2a3a', missile: 'arrow', voice: 'flesh', range: 1.15, attackSpeed: 0.75, attack: ['Shoot'] },
   skeleton: { key: 'skeleton', model: 'skeleton', scale: 1, radius: 0.38, blood: 'bone', color: '#d8d0bc', color2: '#6a5a40', voice: 'bone', range: 1.15, attackSpeed: 1.15, attack: ['Attack', 'Attack2'] },
-  sk_archer: { key: 'sk_archer', model: 'skelarcher', scale: 1, radius: 0.38, blood: 'bone', color: '#cfc6b0', color2: '#4a3a28', missile: 'arrow', voice: 'bone', range: 8, attackSpeed: 0.75, attack: ['Attack'] },
+  sk_archer: { key: 'sk_archer', model: 'skelarcher', scale: 1, radius: 0.38, blood: 'bone', color: '#cfc6b0', color2: '#4a3a28', missile: 'arrow', voice: 'bone', range: 1.15, attackSpeed: 0.75, attack: ['Attack'] },
   skmage_fire: {
-    key: 'skmage_fire', model: 'skelmage', scale: 1, radius: 0.36, blood: 'bone', color: '#c8c0b0', color2: '#6a3a2a', missile: 'firebolt', voice: 'bone', range: 7.5, attackSpeed: 0.6,
+    key: 'skmage_fire', model: 'skelmage', scale: 1, radius: 0.36, blood: 'bone', color: '#c8c0b0', color2: '#6a3a2a', missile: 'firebolt', voice: 'bone', range: 1.1, attackSpeed: 0.6,
     attack: ['Attack'], cast: ['Cast'],
   },
   skmage_ltng: {
-    key: 'skmage_ltng', model: 'skelmage', scale: 1, radius: 0.36, blood: 'bone', color: '#c8c0b0', color2: '#3a4a6a', missile: 'lightning', voice: 'bone', range: 7.5, attackSpeed: 0.6,
+    key: 'skmage_ltng', model: 'skelmage', scale: 1, radius: 0.36, blood: 'bone', color: '#c8c0b0', color2: '#3a4a6a', missile: 'lightning', voice: 'bone', range: 1.1, attackSpeed: 0.6,
     attack: ['Attack'], cast: ['Cast'],
   },
   skmage_pois: {
-    key: 'skmage_pois', model: 'skelmage', scale: 1, radius: 0.36, blood: 'bone', color: '#c8c0b0', color2: '#3a6a3a', missile: 'poisonspit', voice: 'bone', range: 7.5, attackSpeed: 0.6,
+    key: 'skmage_pois', model: 'skelmage', scale: 1, radius: 0.36, blood: 'bone', color: '#c8c0b0', color2: '#3a6a3a', missile: 'poisonspit', voice: 'bone', range: 1.1, attackSpeed: 0.6,
     attack: ['Attack'], cast: ['Cast'],
   },
   wraith: { key: 'wraith', model: 'wraith', scale: 1.05, radius: 0.4, blood: 'ghost', color: '#9ad0ff', color2: '#2a4060', voice: 'bone', range: 1.2, attackSpeed: 0.9, attack: ['Attack'] },
   arach: { key: 'arach', model: 'spider', scale: 1, radius: 0.5, blood: 'green', color: '#2a2a22', color2: '#8a1a1a', voice: 'flesh', range: 1.2, attackSpeed: 1.4, attack: ['Idle'] },
   goatman: { key: 'goatman', model: 'demon', scale: 1.2, radius: 0.5, blood: 'red', color: '#6a4a2a', color2: '#2a1a0a', voice: 'flesh', range: 1.3, attackSpeed: 1.0, attack: ['Attack', 'Attack2'], tint: '#8a6a40' },
-  bighead: { key: 'bighead', model: 'ghoul', scale: 1.1, radius: 0.45, blood: 'green', color: '#5a7a68', color2: '#2a3a30', missile: 'lightning', voice: 'flesh', range: 7, attackSpeed: 0.7, attack: ['Attack', 'Attack2'] },
+  bighead: { key: 'bighead', model: 'ghoul', scale: 1.1, radius: 0.45, blood: 'green', color: '#5a7a68', color2: '#2a3a30', missile: 'lightning', voice: 'flesh', range: 1.2, attackSpeed: 0.7, attack: ['Attack', 'Attack2'] },
   foulcrow: { key: 'foulcrow', model: 'bat', scale: 0.8, radius: 0.36, blood: 'red', color: '#3a3030', color2: '#6a1a1a', voice: 'flesh', range: 1.1, attackSpeed: 1.4, attack: [] },
   vampire: {
-    key: 'vampire', model: 'lich', scale: 1.1, radius: 0.45, blood: 'red', color: '#8a3a4a', color2: '#2a0a10', missile: 'fireball', voice: 'flesh', range: 8, attackSpeed: 0.6,
+    key: 'vampire', model: 'lich', scale: 1.1, radius: 0.45, blood: 'red', color: '#8a3a4a', color2: '#2a0a10', missile: 'fireball', voice: 'flesh', range: 1.2, attackSpeed: 0.6,
     attack: ['Attack'], cast: ['Cast'], tint: '#a03040',
   },
   fetish: { key: 'fetish', model: 'imp', scale: 0.6, radius: 0.3, blood: 'red', color: '#6a5a3a', color2: '#2a2010', voice: 'imp', range: 1.0, attackSpeed: 1.3, attack: ['Attack', 'Attack2'], tint: '#a08a50' },
   smith: { key: 'smith', model: 'butcher', scale: 1.6, radius: 0.75, blood: 'red', color: '#7a5a4a', color2: '#5a0a0a', voice: 'flesh', range: 1.7, attackSpeed: 1.0, attack: ['Attack', 'Attack2', 'Attack3'] },
   bloodraven: {
-    key: 'bloodraven', model: 'lich', scale: 1.4, radius: 0.6, blood: 'red', color: '#6a8aaa', color2: '#c0e8ff', missile: 'arrow', voice: 'flesh', range: 8, attackSpeed: 0.8,
+    key: 'bloodraven', model: 'lich', scale: 1.4, radius: 0.6, blood: 'red', color: '#6a8aaa', color2: '#c0e8ff', missile: 'arrow', voice: 'flesh', range: 1.2, attackSpeed: 0.8,
     attack: ['Attack'], cast: ['Cast'],
   },
   andariel: {
@@ -113,15 +114,6 @@ export function lookKey(row: D2xMonster): string {
   return (row.base ?? row.id).replace(/\d+$/, '');
 }
 
-/** how D2's AIs (MonStats AI) are fought for now; the AI of each comes later */
-const AI_OF: Record<string, MonsterAi> = {
-  Zombie: 'melee', Skeleton: 'melee', Fallen: 'melee', Brute: 'melee', CorruptRogue: 'melee', CorruptLancer: 'melee', Wraith: 'melee',
-  Goatman: 'melee', Arach: 'melee', BloodHawk: 'melee', Fetish: 'melee',
-  QuillRat: 'ranged', SkeletonBow: 'ranged', CorruptArcher: 'ranged', SkeletonMage: 'ranged', Bighead: 'ranged', Vampire: 'ranged',
-  FallenShaman: 'shaman',
-  Smith: 'boss', BloodRaven: 'boss', Andariel: 'boss', Griswold: 'boss',
-};
-
 /** a monster as the game fights it: its D2 row and its look */
 export interface MonsterDef extends MonsterLook {
   /** the D2X_MONSTERS id, 'zombie1' */
@@ -129,13 +121,10 @@ export interface MonsterDef extends MonsterLook {
   row: D2xMonster;
   /** its name (the rename table's, tools/d2-names/monsters.json) */
   name: string;
-  ai: MonsterAi;
   /** MonStats Undead, Demon (what "+X% damage to undead/demons" counts), the boss flag */
   undead: boolean;
   demon: boolean;
   boss: boolean;
-  /** the Fallen run when one of theirs dies (AiThink.cpp's Fallen AI) */
-  flee: boolean;
 }
 
 const DEFS = new Map<string, MonsterDef>();
@@ -157,11 +146,9 @@ export function monsterDef(id: string): MonsterDef | undefined {
     id,
     row,
     name: row.name,
-    ai: AI_OF[row.ai] ?? (look.missile ? 'ranged' : 'melee'),
     undead: !!row.undead,
     demon: !!row.demon,
     boss: !!row.boss,
-    flee: row.ai === 'Fallen',
   };
   DEFS.set(id, def);
   return def;

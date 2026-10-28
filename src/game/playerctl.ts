@@ -573,6 +573,8 @@ export function updatePlayer(g: Game, p: Player, dt: number) {
   }
   p.manaQueue = p.manaQueue.filter((q) => q.left > 0);
   if (p.chillTime > 0) p.chillTime -= dt;
+  if (p.ampTime > 0) p.ampTime -= dt;
+  if (p.convictTime > 0 && (p.convictTime -= dt) <= 0) p.convictRes = p.convictDef = 0;
   if (p.poisonTime > 0) {
     p.poisonTime -= dt;
     p.life -= p.poisonDps * dt;

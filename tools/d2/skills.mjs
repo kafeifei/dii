@@ -602,6 +602,19 @@ export async function buildSkills({ itemSkills, staffMods, hirelingSkills, monst
   // (javelins, knives, potions: missiletype is a Missiles.txt *ID), the states of the potions
   // (state, cures), and on through sub-missiles and the missiles' and states' own links
   for (const m of Object.values(monsters)) for (const x of Object.values(m.missiles ?? {})) missile(x, `monster ${m.id}`);
+  // Shaman Fire and Unholy Bolt (SrvDo085) fly their missile's *ID plus the caster's place in its
+  // class, BaseId → NextInClass (SkillMonst.cpp:176-187, MonsterTbls.cpp:434-456): fallenshaman2's is shafire2
+  for (const m of Object.values(monsters).filter((x) => !x.petOf)) {
+    for (const s of m.skills ?? []) {
+      const r = skillRow(s.skill, `monster ${m.id}`);
+      if (r.srvdofunc !== 85 || !r.srvmissilea) continue;
+      let chain = 0;
+      for (let id = MON.get(m.id)?.BaseId ?? m.id; id && id !== m.id; id = MON.get(id)?.NextInClass) chain++;
+      const x = MISS_ID.get(MISS.get(r.srvmissilea)['*ID'] + chain);
+      if (!x) throw new Error(`monster ${m.id}: no missile ${r.srvmissilea} + ${chain}`);
+      missile(x.Missile, `monster ${m.id} ${s.skill}`);
+    }
+  }
   for (const id of umodUses) for (const m of UMOD_USES[id].missiles ?? []) missile(m, `monster modifier ${UMOD_USES[id].key}`);
   for (const r of [...rows(weaponsJ), ...rows(armorJ), ...rows(miscJ)]) {
     if (!r.code || !bases.has(r.code)) continue;

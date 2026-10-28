@@ -15,7 +15,7 @@ import { killXp } from './d2/xp';
 import { containerLoot, monsterLoot, type Finder } from './loot';
 import { bodyItems, leaveBody, takeBody } from './corpse';
 import { emptyPacket } from './actor';
-import { blastDamage, updateMonster } from './ai';
+import { blastDamage, corpseGone, monsterDied, notice, updateMonster } from './ai';
 import { applyDamage, monsterStrike } from './combat';
 import { nullFx, type Fx } from './fx';
 import { GALLERY, Level } from './level';
@@ -56,6 +56,12 @@ export interface Picker {
 }
 
 const ACTIVE_RADIUS = 30;
+
+/**
+ * How fast a monster that isn't walking is pushed aside, m/s (Game.separate): a shuffle, as it has
+ * no walk to it. D2's units don't push one another at all; they go round, or stop at, what stands.
+ */
+const STILL_PUSH = 0.3;
 
 /** how the hero comes to where they arrive (Game.enterArea) */
 export type Arrival = 'start' | 'stairs' | 'waypoint' | 'portal' | 'respawn' | 'exit';
@@ -560,6 +566,9 @@ export class Game {
     p.stamina = p.stats.maxStamina;
     p.poisonTime = 0;
     p.chillTime = 0;
+    // the curses and auras' marks go with the death (STATES_UpdateStayDeathFlags, PlrModes.cpp:1379-1390: what doesn't stay through it)
+    p.ampTime = p.ampRes = 0;
+    p.convictTime = p.convictRes = p.convictDef = 0;
     p.healQueue = [];
     p.manaQueue = [];
     // in the camp again, as D2 brings a dead hero back in town
@@ -624,7 +633,7 @@ export class Game {
     p.hitFlash = Math.max(0, p.hitFlash - dt * 6);
     this.watchLife();
     this.updateAuras(dt);
-    this.separate();
+    this.separate(dt);
     // the ones that walked, were knocked back or pushed apart: into the cells they're in now
     L.monstersMoved(stepped);
     this.updateProjectiles(dt);
@@ -666,8 +675,11 @@ export class Game {
         this.aged.set(m, L.time);
       }
       const kept = L.monsters.filter((m) => !m.dead || m.deathTime < 40);
-      // a new list is bucketed anew (Level.monstersNear): only when one went
-      if (kept.length < L.monsters.length) L.monsters = kept;
+      // a new list is bucketed anew (Level.monstersNear): only when one went; the gone leave their packs' lists too
+      if (kept.length < L.monsters.length) {
+        for (const m of L.monsters) if (m.dead && m.deathTime >= 40) corpseGone(this, m);
+        L.monsters = kept;
+      }
     }
     this.saveTimer += dt;
     if (this.saveTimer > 8) {
@@ -1027,12 +1039,19 @@ export class Game {
     }
   }
 
-  private separate() {
+  /**
+   * Bodies that overlap pushed apart, by their weights; a monster that isn't walking no faster than
+   * STILL_PUSH, the rest of it on the hero or the monster walking into it, which so goes round it.
+   * The hero charging shoves what stands aside.
+   */
+  private separate(dt: number) {
     const p = this.player;
     const list = this.level.monstersNear(p.pos, ACTIVE_RADIUS).filter((m) => !m.dead && dist(m.pos, p.pos) < ACTIVE_RADIUS);
-    const actors: { pos: P2; radius: number; w: number }[] = [];
-    if (!p.dead) actors.push({ pos: p.pos, radius: p.radius, w: p.state === 'charge' ? 0.05 : 0.2 });
-    for (const m of list) actors.push({ pos: m.pos, radius: m.radius, w: m.rank === 'boss' ? 0.25 : 1 });
+    const actors: { pos: P2; radius: number; w: number; still: boolean }[] = [];
+    const charging = !p.dead && p.state === 'charge';
+    if (!p.dead) actors.push({ pos: p.pos, radius: p.radius, w: charging ? 0.05 : 0.2, still: false });
+    for (const m of list) actors.push({ pos: m.pos, radius: m.radius, w: m.rank === 'boss' ? 0.25 : 1, still: m.state !== 'move' && m.fleeTime <= 0 });
+    const cap = STILL_PUSH * dt;
     const n = actors.length;
     for (let i = 0; i < n; i++) {
       const a = actors[i];
@@ -1044,15 +1063,25 @@ export class Game {
         const d2 = dx * dx + dz * dz;
         if (d2 >= r * r) continue;
         const d = Math.sqrt(d2) || 0.001;
-        const push = (r - d) * 0.5;
+        const push = r - d;
         const nx = d2 > 1e-6 ? dx / d : Math.random() - 0.5;
         const nz = d2 > 1e-6 ? dz / d : Math.random() - 0.5;
-        const wa = a.w / (a.w + b.w);
-        const wb = b.w / (a.w + b.w);
-        a.pos.x -= nx * push * 2 * wa;
-        a.pos.z -= nz * push * 2 * wa;
-        b.pos.x += nx * push * 2 * wb;
-        b.pos.z += nz * push * 2 * wb;
+        let sa = (push * a.w) / (a.w + b.w);
+        let sb = push - sa;
+        if (!(charging && i === 0)) {
+          if (a.still && sa > cap) {
+            if (!b.still) sb += sa - cap;
+            sa = cap;
+          }
+          if (b.still && sb > cap) {
+            if (!a.still) sa += sb - cap;
+            sb = cap;
+          }
+        }
+        a.pos.x -= nx * sa;
+        a.pos.z -= nz * sa;
+        b.pos.x += nx * sb;
+        b.pos.z += nz * sb;
       }
     }
     if (!p.dead) p.pos = this.level.map.resolveCircle(p.pos, p.radius);
@@ -1155,6 +1184,11 @@ export class Game {
     this.sfx.play('skill.lightning_cast', { pos: m.pos, vol: 0.25 });
   }
 
+  /** a monster struck before it noticed the hero: it notices them, its pack with it, as seeing them has it (src/game/ai.ts notice) */
+  wake(m: Monster) {
+    notice(this, m);
+  }
+
   killMonster(m: Monster, elem: Elem) {
     if (m.dead) return;
     const p = this.player;
@@ -1164,11 +1198,17 @@ export class Game {
     m.killedBy = elem;
     m.setState('dead');
     m.path = null;
+    m.move = null;
+    m.act = null;
+    // a cold kill shatters it (the renderer draws it so): no shaman raises it (D2's freeze state, STATES_CheckStateMaskUdeadOnUnit)
+    m.corpseRaisable = elem !== 'cold';
     this.aged.set(m, this.level.time);
+    monsterDied(this, m);
     // Diablo II's experience for the kill (SUNITDMG_ComputeExperienceGain: game/d2/xp.ts killXp):
-    // the level gap's two tables, ExpRatio, then "+X% experience gained" and the shrine's on top
+    // the level gap's two tables, ExpRatio, then "+X% experience gained" and the shrine's on top;
+    // none for a raised or summoned one, nor a drop (UNITFLAG_NOXP | UNITFLAG_NOTC)
     const addPct = (p.shrine ? (SHRINE_BY_ID[p.shrine.id].xpPct ?? 0) : 0) + (p.stats.bag.xpPct ?? 0);
-    const gained = p.gainXp(Math.floor(killXp(m.xp, p.level, m.level, addPct) * debugOpts.xp));
+    const gained = m.noXp ? 0 : p.gainXp(Math.floor(killXp(m.xp, p.level, m.level, addPct) * debugOpts.xp));
     if (gained > 0) {
       this.onProc('procLevelUp', null);
       this.celebrateLevelUp();
@@ -1179,7 +1219,7 @@ export class Game {
     if (d.lifePerKill) p.life = Math.min(d.maxLife, p.life + d.lifePerKill);
     if (d.manaPerKill) p.mana = Math.min(d.maxMana, p.mana + d.manaPerKill);
     // loot
-    this.spawnDrops(m.pos, this.rollLoot((hero) => monsterLoot(m, hero)));
+    if (!m.noXp) this.spawnDrops(m.pos, this.rollLoot((hero) => monsterLoot(m, hero)));
     // fx
     this.fx.death(m, m.def.blood, elem);
     // its look's death cry (src/data/monsters.ts voice), a big one's or a boss's the large one
@@ -1189,7 +1229,7 @@ export class Game {
     // a fire-enchanted (MonUMod 9) leader bursts as it dies, a cold-enchanted (18) one freezes round it
     // (src/game/d2/monstats.ts): only a champion's or unique's mode change sets them off, not its minions'
     // (MonsterUnique.cpp:1052-1058, 2016-2020: bUnique is MONTYPEFLAG_UNIQUE, which a minion hasn't)
-    if (m.has(9) && (m.rank === 'champion' || m.rank === 'unique')) {
+    if (m.hasOwn(9)) {
       const b = fireEnchantBurst(m.def.row, m.difficulty, m.level, randInt);
       const pk = emptyPacket();
       pk.phys = b.phys;
@@ -1202,7 +1242,7 @@ export class Game {
         this.sfx.play('skill.fire_impact', { pos: m.pos, vol: 0.7 });
       }, 400);
     }
-    if (m.has(18) && (m.rank === 'champion' || m.rank === 'unique')) {
+    if (m.hasOwn(18)) {
       const b = coldEnchantBurst(m.level);
       const pk = emptyPacket();
       pk.cold = randInt(b.cold[0], b.cold[1]);
@@ -1212,10 +1252,6 @@ export class Game {
       this.level.blasts.push(new DelayedBlast(m.pos, b.radius, 0.1, pk, 'monster', 'frost', m));
       this.fx.burst('frostnova', m.pos, { radius: b.radius });
       this.sfx.play('skill.cold_impact', { pos: m.pos, vol: 0.7 });
-    }
-    // imps nearby panic
-    for (const o of this.level.monstersNear(m.pos, 6)) {
-      if (!o.dead && o.def.flee && o !== m && dist(o.pos, m.pos) < 6 && chance(0.6)) o.fleeTime = rand(1, 2);
     }
     if (m.rank === 'boss') {
       this.fx.shake(0.8);

@@ -285,12 +285,18 @@ function fill(s: Spawn, sus: readonly D2xSuperUnique[]) {
   }
 }
 
-/** one monster of row `id` at p, if it has a look */
-function put(s: Spawn, id: string, rank: MonsterRank, p: P2, mods: number[] = [], su?: string): Monster | null {
+/**
+ * One monster of row `id` at p, if it has a look, in `pack`: the monsters that spawned together,
+ * which notice the hero as one (src/game/ai.ts)
+ */
+function put(s: Spawn, id: string, rank: MonsterRank, p: P2, pack: Monster[], mods: number[] = [], su?: string): Monster | null {
   const def = monsterDef(id);
   if (!def) return null;
   const m = new Monster(def, s.lvl(id), rank, p, mods, { difficulty: s.difficulty, superUnique: su, roll: (lo, hi) => s.rng.int(lo, hi) });
+  m.pack = pack;
+  pack.push(m);
   s.level.monsters.push(m);
+  if (m.aura) s.level.auras.push(m);
   return m;
 }
 
@@ -302,13 +308,13 @@ function put(s: Spawn, id: string, rank: MonsterRank, p: P2, mods: number[] = []
  * minions (2548-2558; PromoteToChampion, 2981-3006): a shaman's fallen come with a minion's life,
  * levels and experience
  */
-function withParty(s: Spawn, id: string, rank: MonsterRank, p: P2, mods: number[] = []): Monster | null {
-  const m = put(s, id, rank, p, mods);
+function withParty(s: Spawn, id: string, rank: MonsterRank, p: P2, pack: Monster[], mods: number[] = []): Monster | null {
+  const m = put(s, id, rank, p, pack, mods);
   if (!m) return null;
   const leads = !!m.def.row.setBoss;
   for (const mid of P.party(m.def.row, s.rng)) {
-    const f = put(s, mid, leads && rank === 'champion' ? 'minion' : 'normal', s.at.near(p, 2.2));
-    if (f && leads) f.leader = m;
+    const f = put(s, mid, leads && rank === 'champion' ? 'minion' : 'normal', s.at.near(p, 2.2), pack);
+    if (f && leads) f.follow(m);
   }
   return m;
 }
@@ -316,7 +322,8 @@ function withParty(s: Spawn, id: string, rank: MonsterRank, p: P2, mods: number[
 /** a plain pack: MinGrp–MaxGrp of the kind, each with its party (MONSTERREGION_SpawnMonsterGroup, MonsterRegion.cpp:740-797) */
 function group(s: Spawn, id: string, c: P2) {
   const n = P.groupSize(D2X_MONSTERS[id], s.rng);
-  for (let i = 0; i < n; i++) withParty(s, id, 'normal', i ? s.at.near(c, 1.6) : c);
+  const pack: Monster[] = [];
+  for (let i = 0; i < n; i++) withParty(s, id, 'normal', i ? s.at.near(c, 1.6) : c, pack);
 }
 
 /**
@@ -329,29 +336,35 @@ function bossPack(s: Spawn, id: string, c: P2) {
   const { rng, difficulty: d } = s;
   const row = D2X_MONSTERS[id];
   if (!monsterDef(id)) return;
+  const pack: Monster[] = [];
   if (P.isChampion(rng)) {
-    if (!put(s, id, 'champion', c, [P.championType(row, d, rng)])) return;
+    if (!put(s, id, 'champion', c, pack, [P.championType(row, d, rng)])) return;
     s.count++;
     const mates = P.championMates(rng);
     for (let i = 0; i < mates; i++) {
-      if (withParty(s, id, 'champion', s.at.near(c, 1.8), [CHAMPMODS])) s.count++;
+      if (withParty(s, id, 'champion', s.at.near(c, 1.8), pack, [CHAMPMODS])) s.count++;
     }
     return;
   }
   const mods = P.uniqueMods(row, d, rng);
-  const boss = put(s, id, 'unique', c, mods);
+  const boss = put(s, id, 'unique', c, pack, mods);
   if (!boss) return;
   s.count++;
   boss.displayName = P.uniqueName(rng);
   minions(s, boss, P.uniqueMinions(row, rng), mods);
 }
 
-/** a unique's minions round it, led by it, with the modifiers it passes on */
+/**
+ * A unique's minions round it, led by it, with the modifiers it passes on, each kept near it
+ * (MONSTERUNIQUE_SpawnMinions, MonsterUnique.cpp:2475-2543: AIUTIL_SetOwnerGUIDAndType, the leash's owner)
+ */
 function minions(s: Spawn, boss: Monster, m: { id: string; n: number }, mods: number[]) {
   const pass = P.xferMods(mods);
   for (let i = 0; i < m.n; i++) {
-    const mm = put(s, m.id, 'minion', s.at.near(boss.pos, 2), pass);
-    if (mm) mm.leader = boss;
+    const mm = put(s, m.id, 'minion', s.at.near(boss.pos, 2), boss.pack ?? [], pass);
+    if (!mm) continue;
+    mm.follow(boss);
+    mm.leashTo = boss;
   }
 }
 
@@ -371,7 +384,7 @@ function superUnique(s: Spawn, su: D2xSuperUnique, p: P2, room: number) {
   const row = D2X_MONSTERS[su.mon];
   if (!row) return;
   const mods = P.superUniqueMods(su, row, s.difficulty, s.rng);
-  const boss = put(s, su.mon, 'unique', p, mods, su.key);
+  const boss = put(s, su.mon, 'unique', p, [], mods, su.key);
   if (!boss) return;
   s.count++;
   s.report.superUniques.push(su.key);
@@ -390,9 +403,9 @@ function floorBoss(s: Spawn, floor: number, c: P2) {
   let boss: Monster | null;
   if (id === 'smith') {
     const su = SUPERUNIQUES.get('The Smith')!;
-    boss = put(s, id, 'unique', s.at.near(c, 0.5), P.superUniqueMods(su, D2X_MONSTERS[id], s.difficulty, s.rng), su.key);
+    boss = put(s, id, 'unique', s.at.near(c, 0.5), [], P.superUniqueMods(su, D2X_MONSTERS[id], s.difficulty, s.rng), su.key);
     if (boss) boss.displayName = su.name;
-  } else boss = withParty(s, id, 'boss', s.at.near(c, 0.5));
+  } else boss = withParty(s, id, 'boss', s.at.near(c, 0.5), []);
   if (boss) s.level.boss = boss;
 }
 

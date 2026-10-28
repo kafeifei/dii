@@ -470,6 +470,12 @@ export class ModelRig {
     return random ? avail[Math.floor(Math.random() * avail.length)] : avail[0];
   }
 
+  /** the attack clip for the mode it is in (AnimInput.clip), the first there is if the look has none for it; a random one with no mode */
+  private attackClip(names: string[], i: number | undefined): THREE.AnimationClip | null {
+    if (i === undefined) return this.pick(names, true);
+    return this.clips.get(names[i]) ?? this.pick(names);
+  }
+
   private pickMove(speed: number, moves: MoveClip[]): { clip: THREE.AnimationClip; ts: number } | null {
     let best: { clip: THREE.AnimationClip; ts: number } | null = null;
     let bestD = Infinity;
@@ -573,7 +579,7 @@ export class ModelRig {
       case 'attack':
       case 'cast': {
         if (restarted) {
-          const clip = this.pick(a.state === 'cast' ? (c.cast ?? c.attack) : c.attack, true);
+          const clip = a.state === 'cast' && c.cast ? this.pick(c.cast, true) : this.attackClip(c.attack, a.clip);
           if (clip) this.play(clip, false, clip.duration / dur, 0.06);
         }
         break;

@@ -5,6 +5,7 @@
 import { D2X_DIFFICULTIES } from '../../data/d2x/difficulty';
 import { D2X_MISSILES } from '../../data/d2x/missiles';
 import { D2X_MONLVL } from '../../data/d2x/monlvl';
+import { D2X_MONSTERS } from '../../data/d2x/monsters';
 import { D2X_SKILLS } from '../../data/d2x/skills';
 import { D2X_MONUMOD_CONSTANTS, D2X_MONUMODS } from '../../data/d2x/superuniques';
 import type { D2xBands, D2xLenBands, D2xMonster } from '../../data/d2x/types';
@@ -193,23 +194,54 @@ export function missileDamage(id: string, level: number): MissileDamage | undefi
   return { src: m.srcNone ? 0 : (m.src ?? 0), phys, elem };
 }
 
+/** the row's place in its class, BaseId → NextInClass (DATATBLS_GetMonsterChainInfo, MonsterTbls.cpp:434-456) */
+export function chainIndex(row: D2xMonster): number {
+  let i = 0;
+  for (let id: string | undefined = row.base ?? row.id; id && i < 256; id = D2X_MONSTERS[id]?.next, i++) if (id === row.id) return i;
+  return 0;
+}
+
+/**
+ * A skill's server missile as a monster flies it: Shaman Fire and Unholy Bolt (SrvDo085) the
+ * missile *ID its place in its class further on, shafire2 for fallenshaman2 (SkillMonst.cpp:176-187)
+ */
+export function skillMissile(row: D2xMonster, skill: string): string | undefined {
+  const sk = D2X_SKILLS[skill];
+  const id = sk?.missiles?.srvA ?? sk?.missiles?.srv;
+  if (!id || !D2X_MISSILES[id]) return undefined;
+  if (sk?.funcs?.do !== 85) return id;
+  const want = D2X_MISSILES[id].id + chainIndex(row);
+  return Object.keys(D2X_MISSILES).find((k) => D2X_MISSILES[k].id === want) ?? id;
+}
+
 /**
  * The missile a monster shoots and the level it flies at: an attack mode's (MonStats2 missiles) at
  * the difficulty's MonsterSkillBonus + 1 (MonsterMode.cpp:1341-1350), else a skill's server missile
  * (the shaman's fire) at the skill's level, which the difficulty raises as much (Monster.cpp:247-262, 481)
  */
-export function monsterMissile(row: D2xMonster, difficulty: number): { mode: AttackMode; missile: string; level: number } | undefined {
+export function monsterMissile(row: D2xMonster, difficulty: number): { mode: AttackMode; missile: string; level: number; skill?: string } | undefined {
   const bonus = D2X_DIFFICULTIES[difficulty].monsterSkillBonus;
   for (const mode of ['a1', 'a2', 's1'] as const) {
     const id = row.missiles?.[mode];
     if (id && D2X_MISSILES[id]) return { mode, missile: id, level: bonus + 1 };
   }
   for (const s of row.skills ?? []) {
-    const sk = D2X_SKILLS[s.skill];
-    const id = sk?.missiles?.srvA ?? sk?.missiles?.srv;
-    if (id && D2X_MISSILES[id]) return { mode: 's1', missile: id, level: s.lvl + bonus };
+    const id = skillMissile(row, s.skill);
+    if (id) return { mode: 's1', missile: id, level: s.lvl + bonus, skill: s.skill };
   }
   return undefined;
+}
+
+/**
+ * A missile's flight at a level: its speed in m/s, Vel + lvl × VelLev / 8 (perLvl, the import's
+ * VelLev / 8), at 75 % (Missiles.cpp:120-147; MaxVel only caps one speeding up, not its start), and
+ * its life in seconds, Range + LevRange/lvl (205-208)
+ */
+export function missileFlight(id: string, level: number): { speed: number; life: number } {
+  const m = D2X_MISSILES[id];
+  if (!m) return { speed: 0, life: 0 };
+  const v = m.vel ? m.vel.base + Math.floor(Math.max(0, level) * m.vel.perLvl) : 0;
+  return { speed: ((v * 75) / 100) * MPS_PER_VELOCITY, life: (m.range[0] + m.range[1] * level) / 25 };
 }
 
 /** resistances in %, D2's six */
@@ -249,9 +281,13 @@ export interface MonStats {
   dmgPct: number;
   arPct: number;
   plus: MonPlus;
-  /** walk and run on MonStats Velocity's scale, after the velocity % (Units.cpp:1683-1702) */
+  /**
+   * its velocity %: 75 for every monster (Monster.cpp:214) and its modifiers'; an AI adds to it move
+   * by move (AITACTICS_SetVelocity, src/game/ai.ts), and the walk is MonStats Velocity × it, at
+   * least 25 % (Units.cpp:1683-1702)
+   */
+  velPct: number;
   walk: number;
-  run: number;
   /** % of the hero's leech that works on it (SUnitDmg.cpp:1154-1228) */
   drain: number;
   /** its speed while chilled, % change */
@@ -261,38 +297,6 @@ export interface MonStats {
 const cdb = (d: number) => D2X_DIFFICULTIES[d].championDamageBonus;
 const add = (a: [number, number] | undefined, b: [number, number]): [number, number] => (a ? [a[0] + b[0], a[1] + b[1]] : b);
 const fast = (velocity: number) => Math.min(100, Math.max(10, Math.trunc(2048 / velocity) - 128));
-
-/** Act 1's AIs that only walk at the hero: Skeleton (AiThink.cpp:322), Fallen (579), QuillRat, FallenShaman, Goatman, Wraith, Bighead, SkeletonBow, Andariel (3464) */
-const WALKERS = new Set(['Skeleton', 'Fallen', 'QuillRat', 'FallenShaman', 'Goatman', 'Wraith', 'Bighead', 'SkeletonBow', 'Andariel', 'Brute', 'Smith']);
-
-/**
- * What a monster's AI adds to its velocity % as it closes on the hero (AITACTICS_SetVelocity,
- * AiTactics.cpp:285, taken up by its next move, MonsterMode.cpp:1843-1854). D2 has no run speed of
- * its own: MonStats Run only gives the ratio a few later AIs run by. Act 1's: a zombie runs at +100
- * (AiThink.cpp:351), a lancer (3572), an archer from afar (3522) and Blood Raven between her spots
- * (10385) too; a corrupt rogue at its MonAI Run Velocity (894), a foul crow's charge at its Charge
- * Velocity (474), a skeleton mage steps in at +10 (5648); the rest walk, the Brute and the Smith at
- * full life (688, 8759: faster as they are hurt, which the next stage's AI takes up). Any other: the
- * Run to Velocity ratio less 100, 0–120 (Baboon, Vampire: AiThink.cpp:916-924, 2921).
- */
-export function chaseBonus(row: D2xMonster, difficulty: number): number {
-  const params = row.diff[difficulty].ai.params;
-  switch (row.ai) {
-    case 'Zombie':
-    case 'CorruptLancer':
-    case 'CorruptArcher':
-    case 'BloodRaven':
-      return 100;
-    case 'CorruptRogue':
-      return params[3] ?? 0;
-    case 'BloodHawk':
-      return params[4] ?? 0;
-    case 'SkeletonMage':
-      return 10;
-  }
-  if (WALKERS.has(row.ai) || row.velocity <= 0) return 0;
-  return Math.min(120, Math.max(0, Math.trunc((100 * row.run) / row.velocity) - 100));
-}
 
 /**
  * A monster's numbers (MONSTER_InitializeStatsAndSkills, Monster.cpp:196-228): life rolled between
@@ -467,7 +471,6 @@ export function monStats(row: D2xMonster, difficulty: number, baseLevel: number,
   }
 
   defense += percentOf(defense, armorPct, 100);
-  const runAdd = chaseBonus(row, d);
   return {
     baseLevel,
     level,
@@ -480,8 +483,8 @@ export function monStats(row: D2xMonster, difficulty: number, baseLevel: number,
     dmgPct,
     arPct,
     plus,
+    velPct,
     walk: (row.velocity * Math.max(25, velPct)) / 100,
-    run: (row.velocity * Math.max(25, velPct + runAdd)) / 100,
     drain: t.drain,
     coldEffect: t.coldEffect,
   };

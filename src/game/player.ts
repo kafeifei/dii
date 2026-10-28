@@ -168,6 +168,13 @@ export class Player extends Actor {
   holyShield = 0;
   /** seconds left on the sorceress's Frozen Armor */
   frozenArmor = 0;
+  /** a cursed unique's Amplify Damage on the hero: seconds left, and the damage resistance it takes off, % (MonsterUnique.cpp:984-1050) */
+  ampTime = 0;
+  ampRes = 0;
+  /** an aura-enchanted unique's Conviction round the hero: while it lasts (refreshed in it), resistances and defense off, % */
+  convictTime = 0;
+  convictRes = 0;
+  convictDef = 0;
   /** skills bound to slots: lmb, rmb, q, w, e, r */
   binds: (string | null)[] = ['attack', null, null, null, null, null];
   d!: Derived;
