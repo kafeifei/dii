@@ -1573,6 +1573,20 @@ export class Game {
     this.sfx.play(dropped, { pos: ok });
   }
 
+  /**
+   * An item ctrl+clicked in the bag with no stash, cube or merchant open: out of the bag onto the
+   * ground by the hero, as from the cursor (dropItem), in the camp too. D2R's: D2 1.x drops only what
+   * is on the cursor (Rcv0x17_DropItemOnGround, D2Game PlrMsg.cpp:1851-1877). Not by a dead hero
+   */
+  dropFromBag(item: Item): boolean {
+    const p = this.player;
+    if (p.dead || !this.level || !p.inventory.remove(item)) return false;
+    this.dropItem(item);
+    // a charm works from the bag only (Player.activeCharms)
+    p.markDirty();
+    return true;
+  }
+
   // ───────────────────────── items & interaction ─────────────────────────
 
   /** try to put a potion into the belt */

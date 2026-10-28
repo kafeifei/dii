@@ -6,6 +6,7 @@ import { baseOf } from '../items/item';
 import { townPortalsIn } from '../items/tomes';
 import { bindSkill, bindUsable, h, SLOT_KEYS, type UIContext } from './common';
 import { itemIcon, skillIcon } from './icons';
+import { readPress } from './quickmove';
 
 /**
  * The HUD: the bottom bar (belt, skill slots, the panel buttons, the xp bar) and the orbs, and what
@@ -109,7 +110,8 @@ export class Hud {
     const ui = this.ui;
     const p = ui.game.player;
     const stack = p.belt[col];
-    if (e.button === 2) {
+    // D2R's ctrl+click does nothing of its own on the belt: a Mac's is a left click still (quickmove.ts readPress)
+    if (readPress(e).button === 2) {
       ui.game.useBelt(col);
       return;
     }

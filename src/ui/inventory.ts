@@ -10,12 +10,11 @@ import { buyIntoTome, buyPrice, repairCost, repairOne, sellPrice, shelveSold, ta
 import type { HeroLine } from '../audio/sounds';
 import { h, type UIContext } from './common';
 import { CELL, itemIcon } from './icons';
+import { moveItem, quickMove, readPress, type GridKind } from './quickmove';
 
 // The bag panel (the paper doll over the bag) and the item grids every panel shares (the bag, the
 // stash's pages, the cube, the shop's stock): taking, dropping, socketing, equipping, buying,
 // selling and repairing.
-
-type GridKind = 'inv' | 'stash' | 'shop' | 'cube';
 
 /** what a socket filler that can't go in says (d2/sockets.ts); a full or socketless item just swaps places */
 const SOCKET_BLOCKED: Partial<Record<SocketBlock, string>> = {
@@ -166,6 +165,8 @@ function refusedHere(ui: UIContext, it: Item): boolean {
 function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: PointerEvent) {
   e.preventDefault();
   const p = ui.game.player;
+  // a Mac's ctrl+click is the left button with ctrl, whatever the browser says (quickmove.ts readPress)
+  const press = readPress(e);
   // the stash open: the shared pages as another tab may have left them first (Game.syncShared); a
   // shared page that changed under the pointer takes no click, as what was clicked may be gone
   if (ui.left === 'stash' && ui.game.syncShared() && ui.stashPage > 0) {
@@ -184,7 +185,7 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
   const cy = Math.floor(py / CELL);
   const under = grid.at(cx, cy);
 
-  if (e.button === 2) {
+  if (press.button === 2) {
     if (!under || ui.cursorItem) return;
     const it = under.item;
     // shift + right-click fills the bag's tome with the scroll bought (D2's multibuy); on a phone, the long press
@@ -213,7 +214,7 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
     ui.dirty = true;
     return;
   }
-  if (e.button !== 0) return;
+  if (press.button !== 0) return;
   if (identifier) {
     if (under && kind !== 'shop' && identifyWith(ui, under.item)) return;
     identifier = null;
@@ -279,25 +280,17 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
   if (!under) return;
   const it = under.item;
   if (kind === 'shop') return buy(ui, it);
-  if (e.ctrlKey || e.metaKey || e.shiftKey) {
-    if (ui.left === 'shop' && kind === 'inv') {
+  if (press.ctrl) return quickMoveFrom(ui, kind, grid, it);
+  // D2's shift+click: a potion from the bag into the belt, the bag's only (Rcv0x63_ShiftLeftClickItemToBelt,
+  // D2Game PlrMsg.cpp:4110-4197); anything else is taken as by a click
+  if (press.shift && kind === 'inv' && baseOf(it).type === 'potion') {
+    if (ui.game.beltInsert(it)) {
       grid.remove(it);
-      sell(ui, it);
-    } else if (ui.left === 'stash' || ui.left === 'cube') {
-      // D2R's ctrl+click (D2 1.x has none): between the bag and the stash's page shown, or the cube
-      const other = ui.left === 'stash' ? stashGrid(ui) : p.cube;
-      if (kind === 'inv' && baseOf(it).type === 'cube') return;
-      if (kind === 'inv' && ui.left === 'stash' && (lockedPage(ui) || refusedHere(ui, it))) return;
-      const dest = kind === 'inv' ? other : p.inventory;
-      if (dest.add(it)) grid.remove(it);
-      else {
-        ui.message(kind === 'inv' ? (ui.left === 'stash' ? '储物箱已满' : '魔盒已满') : '背包已满', '#ff6060');
-        if (kind !== 'inv') ui.game.say('bag_full');
-      }
-    } else if (baseOf(it).type === 'potion' && kind === 'inv') {
-      if (ui.game.beltInsert(it)) grid.remove(it);
+      ui.sfx.play('item.move');
+    } else {
+      ui.message('腰带放不下了', '#ff6060', 1.2);
+      ui.sfx.play('ui.denied');
     }
-    ui.sfx.play('item.move');
     ui.dirty = true;
     return;
   }
@@ -305,6 +298,43 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
   ui.cursorItem = it;
   ui.sfx.play('item.move');
   ui.dirty = true;
+}
+
+/**
+ * D2R's ctrl+click (D2 1.x has none; quickmove.ts): from the bag into the stash's page shown or
+ * the cube, sold with a merchant's open, else dropped at the hero's feet (Game.dropFromBag); from
+ * the stash or the cube into the bag. What has no room, or can't go there, says so and stays where it was
+ */
+function quickMoveFrom(ui: UIContext, kind: GridKind, grid: Grid, it: Item) {
+  const p = ui.game.player;
+  const to = quickMove(kind, ui.left);
+  if (!to) return;
+  ui.dirty = true;
+  if (to === 'sell') {
+    sell(ui, it, grid);
+    return;
+  }
+  if (to === 'ground') {
+    // its sound is its landing's (Game.dropItem)
+    if (!ui.game.dropFromBag(it)) ui.sfx.play('ui.denied');
+    return;
+  }
+  // the cube can't go into itself; a quest item or a locked page refuses it on a shared page
+  if (to === 'cube' && baseOf(it).type === 'cube') {
+    ui.sfx.play('ui.denied');
+    return;
+  }
+  if (to === 'stash' && (lockedPage(ui) || refusedHere(ui, it))) return;
+  const dest = to === 'stash' ? stashGrid(ui) : to === 'cube' ? p.cube : p.inventory;
+  if (moveItem(it, grid, dest)) {
+    ui.sfx.play('item.move');
+    // a charm works from the bag only (Player.activeCharms)
+    p.markDirty();
+    return;
+  }
+  ui.message(to === 'stash' ? '储物箱已满' : to === 'cube' ? '魔盒已满' : '背包已满', '#ff6060');
+  if (to === 'bag') ui.game.say('bag_full');
+  else ui.sfx.play('ui.denied');
 }
 
 /** the cube right-clicked: its panel, beside the bag */
@@ -358,14 +388,20 @@ function buy(ui: UIContext, it: Item, fill = false) {
   ui.dirty = true;
 }
 
-/** sell to the stall at D2's price; what it can sell again goes on its shelf (vendor.ts shelveSold). False: not taken, it goes back on the cursor */
-function sell(ui: UIContext, it: Item): boolean {
+/**
+ * Sell to the stall at D2's price, taken out of `from` (the bag, by ctrl+click) as it goes; what the
+ * stall can sell again goes on its shelf (vendor.ts shelveSold). False: not taken, it stays where it was
+ */
+function sell(ui: UIContext, it: Item, from?: Grid): boolean {
   const p = ui.game.player;
   if (baseOf(it).noSell || isUnknown(it)) {
     ui.message('商人不收这个', '#ff6060');
-    ui.cursorItem = it;
+    ui.sfx.play('ui.denied');
     return false;
   }
+  from?.remove(it);
+  // a charm works from the bag only (Player.activeCharms)
+  if (from) p.markDirty();
   const v = sellPrice(ui.game.shop, it, p.tradeCtx());
   p.gold += v;
   shelveSold(ui.game.shop, it);
@@ -444,7 +480,8 @@ function onEquipDown(ui: UIContext, slot: EquipSlot, e: PointerEvent) {
   e.preventDefault();
   const p = ui.game.player;
   const cur = p.equipment[slot];
-  if (e.button === 2) {
+  // D2R's ctrl+click does nothing of its own on what is worn: a Mac's is a left click still (quickmove.ts readPress)
+  if (readPress(e).button === 2) {
     if (cur && !ui.cursorItem && p.inventory.add(cur)) {
       delete p.equipment[slot];
       p.markDirty();
@@ -561,6 +598,8 @@ export function renderInventory(ui: UIContext, R: HTMLElement): void {
   }
   R.appendChild(doll);
   R.appendChild(renderGrid(ui, 'inv', p.inventory));
-  const gl = h('div', 'goldline', `<span>金币：${p.gold}</span><span style="color:#8a8278;font-size:12px">${ui.touch ? '点一下看说明，再点拿起 · 长按使用/装备' : '右键使用/装备 · Ctrl+点击快捷操作'}</span>`);
+  const gl = h('div', 'goldline', `<span>金币：${p.gold}</span><span style="color:#8a8278;font-size:12px">${ui.touch ? '点一下看说明，再点拿起 · 长按使用/装备' : '右键使用/装备 · Ctrl+点击转移'}</span>`);
+  // what ctrl+click does where (quickmove.ts), by the pointer
+  if (!ui.touch) (gl.lastElementChild as HTMLElement).dataset.tip = 'Ctrl+点击（Mac 上 ⌘ 也行）：开着储物箱或魔盒时放进去或取回背包，在商人处直接出售，都没开时丢在脚下；Shift+点击药水放进腰带';
   R.appendChild(gl);
 }
