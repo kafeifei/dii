@@ -101,12 +101,17 @@ const GROUPS = {
   monster: {
     /** a monster's melee swing */
     swing: { synth: 'swing', vol: 0.5, prio: 'low' },
-    die: { synth: 'die', vol: 0.8, max: 4 },
+    /**
+     * a flesh-and-blood one's death (a zombie's, a quill rat's), as loud as a hit on it: the fighting
+     * the music is held 6 dB under (tools/scenarios/sfx.mjs, music.mjs) ends on it, and at 0.8 it
+     * sat 1 dB under the hit and the music's 6 dB with nothing to spare
+     */
+    die: { synth: 'die', vol: 0.9, max: 4 },
     die_bone: { synth: 'diebone', vol: 0.8, max: 4 },
     /** imps and shamans */
     die_imp: { synth: 'impdie', vol: 0.8, max: 4 },
-    /** a big one (LARGE_MONSTER) or a boss */
-    die_large: { synth: 'die', vol: 0.9, max: 2, prio: 'high' },
+    /** a big one (LARGE_MONSTER) or a boss: a step over die */
+    die_large: { synth: 'die', vol: 1, max: 2, prio: 'high' },
     /** a boss notices the hero */
     boss_wake: { synth: 'boss', max: 1, prio: 'high' },
     /** a shaman raises a corpse */
