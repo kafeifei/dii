@@ -141,6 +141,11 @@ export default async (load) => {
     const belt = [[mk('mp1')], [mk('hp1')], [mk('tsc')], []];
     check(B.freeBeltColumn(belt, 2, mk('hp3')) === 1 && B.freeBeltColumn(belt, 2, mk('mp5')) === 0 && B.freeBeltColumn(belt, 2, mk('tsc')) === 2 && B.freeBeltColumn(belt, 2, mk('isc')) === -1 && B.freeBeltColumn(belt, 2, mk('rvl')) === 3, 'beside its own kind: any healing size, any mana size, the same scroll; a new kind of potion in the empty column');
     check(B.freeBeltColumn(belt, 1, mk('hp3')) === 3 && B.freeBeltColumn(belt, 1, mk('tsc')) === -1, 'columns full: a potion to the empty one, a scroll nowhere');
+    // by hand (placeInColumn): anything the belt holds onto the column clicked, whatever is in it, while it has room
+    const hand = [[mk('hp1')], [], [], []];
+    check(B.placeInColumn(hand, 2, 0, mk('tsc')) && hand[0].map((x) => x.baseId).join() === 'hp1,tsc', `a scroll by hand onto a column of potions: ${hand[0].map((x) => x.baseId).join()}`);
+    check(!B.placeInColumn(hand, 2, 0, mk('mp1')) && hand[0].length === 2, 'a potion by hand onto a full column');
+    check(!B.placeInColumn(hand, 2, 1, mk('cap')) && !hand[1].length && B.placeInColumn(hand, 2, 1, mk('vps')) && hand[1].length === 1, 'by hand: a cap went in, or a stamina potion started no column');
     // picked up or bought (ITEMS_CheckIfAutoBeltable): what D2 belts by itself, or a potion beside its kind; never a scroll
     const kin = [[mk('tsc')], [mk('vps')], [mk('isc')], []];
     check(B.autoBeltable(kin, mk('hp1')) && B.autoBeltable(kin, mk('rvl')) && B.autoBeltable(kin, mk('vps')) && !B.autoBeltable(empty, mk('vps')), 'picked up: a healing or rejuvenation potion by itself, a stamina potion beside its kind only');

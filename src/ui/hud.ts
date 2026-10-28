@@ -2,7 +2,7 @@ import { SKILLS, SKILL_BY_ID } from '../data/skills';
 import { UMOD_NAMES } from '../data/monsters';
 import { CHARGE_PREFIX, xpForLevel } from '../game/player';
 import { skillCost } from '../game/playerctl';
-import { beltable, beltKin } from '../items/belt';
+import { placeInColumn } from '../items/belt';
 import { townPortalsIn } from '../items/tomes';
 import { bindSkill, bindUsable, h, SLOT_KEYS, type UIContext } from './common';
 import { itemIcon, skillIcon } from './icons';
@@ -116,12 +116,8 @@ export class Hud {
       return;
     }
     if (ui.cursorItem) {
-      // what the belt holds, put on a column by hand: an empty one, or one of its own kind (items/belt.ts)
-      const c = ui.cursorItem;
-      if (!beltable(c)) return;
-      if (stack.length >= p.beltRows()) return;
-      if (stack.length && !beltKin(stack[0], c)) return;
-      stack.push(c);
+      // what the belt holds, put on the column clicked by hand whatever is in it, while it has room (items/belt.ts placeInColumn)
+      if (!placeInColumn(p.belt, p.beltRows(), col, ui.cursorItem)) return;
       ui.cursorItem = null;
       ui.sfx.play('item.move');
     } else if (stack.length) {

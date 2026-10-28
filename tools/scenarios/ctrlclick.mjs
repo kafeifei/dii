@@ -11,11 +11,11 @@
 // sold, the cube refused and left where it was. Shift+click: a potion into the belt, with the belt
 // full it stays and nothing is said; a scroll stays until one is put on the belt by hand, one picked
 // up then goes to the bag still, and the next shift+clicked joins it, and that column read in the
-// camp says so; the sword just taken. Nothing open: the sword dropped at the hero's feet with its
-// sound, in the camp, its label clicked and picked up again; the cube refused, by ctrl+click and
-// off the cursor (its contents are kept apart); with the character panel open, the scroll of
-// identify dropped too. Then at a phone's size with the touch controls the bag and stash
-// as they were. Page and console errors fail the run. Shots: the stash, the cube, the shop, the
+// camp says so; a scroll of identify put by hand onto a column of potions; the sword just taken.
+// Nothing open: the sword dropped at the hero's feet with its sound, in the camp, its label clicked
+// and picked up again; the cube refused, by ctrl+click and off the cursor (its contents are kept
+// apart); with the character panel open, the scroll of identify dropped too. Then at a phone's size
+// with the touch controls the bag and stash as they were. Page and console errors fail the run. Shots: the stash, the cube, the shop, the
 // ground, the hint's tooltip, the phone's stash. The last line is "CTRLCLICK OK …" or "CTRLCLICK FAIL …".
 
 export default async function (page, shot, log) {
@@ -318,6 +318,24 @@ export default async function (page, shot, log) {
       await page.locator('.belt .slot').nth(2).click({ button: 'right' });
       await frames(2);
       expect((await lastSaid()) === '你已经在营地里了' && (await at(tp[1])) === 'belt 2', `the belt's scroll used in the camp: said ${await lastSaid()}`);
+      // by hand, anything the belt holds goes in the column clicked, a scroll onto potions too (D2's Rcv0x23); taken off again
+      const id = await ev(() => window.__c.give('isc'));
+      await frames(2);
+      const under = await ev(() => game.player.belt[0].map((it) => it.baseId).join());
+      await cellOf(id, 'right').click();
+      await frames(2);
+      await page.locator('.belt .slot').nth(0).click();
+      await frames(2);
+      const mixed = await ev(() => game.player.belt[0].map((it) => it.baseId).join());
+      expect((await at(id)) === 'belt 0' && mixed === `${under},isc`, `a scroll of identify by hand onto a column of ${under}: ${await at(id)}, the column ${mixed}`);
+      await page.locator('.belt .slot').nth(0).click();
+      await frames(2);
+      expect((await at(id)) === 'cursor', `the scroll taken off the column again: ${await at(id)}`);
+      await ev(() => {
+        game.player.inventory.add(game.hooks.cursorItem);
+        game.hooks.setCursorItem(null);
+      });
+      await frames(2);
       // shift+click on what isn't a potion: taken, as by a click
       await modClick(ids.sword, 'right', 'Shift');
       expect((await at(ids.sword)) === 'cursor', `shift+click the sword: ${await at(ids.sword)}`);
@@ -326,7 +344,7 @@ export default async function (page, shot, log) {
         game.hooks.setCursorItem(null);
       });
       await frames(2);
-      facts.push('shift+click: a potion into the belt (full: stays, nothing said), a scroll beside its own kind only (one picked up: the bag), a sword just taken');
+      facts.push('shift+click: a potion into the belt (full: stays, nothing said), a scroll beside its own kind only (one picked up: the bag), by hand onto potions too, a sword just taken');
     },
 
     async ground() {

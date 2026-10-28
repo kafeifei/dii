@@ -2,8 +2,9 @@
 // d9d394f: ITEMS_CheckIfBeltable, Items.cpp:1600-1620; ITEMS_ComparePotionTypes, 1624-1734; INVENTORY_GetFreeBeltSlot,
 // D2Inventory.cpp:1739-1803). Shift+clicking from the bag and a corpse taken back put an item in by
 // it (Game.beltInsert); picking up and buying only what D2 belts by itself (autoBeltable,
-// Game.autoBeltInsert). The hero's belt is four columns, each a stack whose first item is the
-// bottom one, the next used (Player.belt).
+// Game.autoBeltInsert); by hand, anything it holds goes in the column clicked (placeInColumn). The
+// hero's belt is four columns, each a stack whose first item is the bottom one, the next used
+// (Player.belt).
 import type { D2xMisc } from '../data/d2x/types';
 import { D2_BASES, ownType } from './d2/bases';
 import type { Item } from './item';
@@ -64,4 +65,18 @@ export function freeBeltColumn(belt: readonly (readonly Item[])[], rows: number,
   const kin = belt.findIndex((c) => c.length > 0 && c.length < rows && beltKin(it, c[0]));
   if (kin >= 0 || !autoBelt(it)) return kin;
   return belt.findIndex((c) => c.length === 0);
+}
+
+/**
+ * `it` put on column `col` by hand, the column `rows` high (D2Game Rcv0x23_ItemToBelt, PlrMsg.cpp:
+ * 2397-2424, to sub_6FC48940, ItemMode.cpp:4138-4228, and INVENTORY_PlaceItemInBeltSlot, D2Common
+ * D2Inventory.cpp:1695-1711): any item the belt holds goes in the slot clicked, whatever kind the
+ * column holds already; here on top of the column. False, and nothing moved, when the belt doesn't
+ * hold it or the column is full
+ */
+export function placeInColumn(belt: Item[][], rows: number, col: number, it: Item): boolean {
+  const c = belt[col];
+  if (!c || !beltable(it) || c.length >= rows) return false;
+  c.push(it);
+  return true;
 }
