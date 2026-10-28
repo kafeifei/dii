@@ -414,7 +414,7 @@ export default async function (page, shot, log) {
     const identify = (it) => {
       const pl = p();
       const s = idFrom();
-      if (!s || !T.readFrom([pl.inventory, pl.stash, pl.cube], s)) return false;
+      if (!s || !T.readFrom(g.heldGrids(), s)) return false;
       it.identified = true;
       it.name = displayName(it);
       stats.identified++;

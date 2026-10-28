@@ -62,6 +62,9 @@ export class Tooltip {
       price = c ? `修理价格：${c} 金币` : item.eth ? '无形物品无法修理' : '不需要修理';
     } else if (ui.left === 'shop' && src === 'inv') {
       price = baseOf(item).noSell ? '商人不收这件物品' : `出售价格：${sellPrice(ui.game.shop, item, ctx)} 金币（${ui.touch ? '拿起后放进商店出售' : 'Ctrl+点击出售'}）`;
+    } else if (ui.left === 'stash' && src === 'inv' && ui.stashPage > 0 && !ui.game.shared.readOnly) {
+      // a quest item, beside a shared page (D2R's rule: src/items/stash.ts)
+      price = ui.game.stashBlock(ui.stashPage, item) ?? undefined;
     }
     const worn = Object.values(p.equipment).filter((x) => !!x);
     this.show(tooltip(item, { level: p.level, str: p.stats.str, dex: p.stats.dex, cls: p.cls, worn }, price), e.clientX, e.clientY);

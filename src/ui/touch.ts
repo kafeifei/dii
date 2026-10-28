@@ -265,7 +265,11 @@ export class TouchControls {
     // keys beside the tree (.panel.skillsp.wide): about 606 × 342
     const pzw = Math.min(1, (w - 8) / 730, (h - 8) / 316);
     const pzs = Math.min(1, (w - 8) / 606, (h - 8) / 342);
+    // the stash beside the bag, its tabs over its 10 × 10 page and its gold under it, all on screen
+    // (.panel.stashp): about 404 × 480
+    const pzt = Math.min(pz, (h - 8) / 480);
     document.documentElement.style.setProperty('--pz', pz.toFixed(3));
+    document.documentElement.style.setProperty('--pzt', pzt.toFixed(3));
     document.documentElement.style.setProperty('--pzw', pzw.toFixed(3));
     document.documentElement.style.setProperty('--pzs', pzs.toFixed(3));
     document.documentElement.style.setProperty('--hs', hs.toFixed(3));

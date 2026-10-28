@@ -128,6 +128,8 @@ export interface ItemBase {
   noDrop?: boolean;
   /** vendors won't buy it */
   noSell?: boolean;
+  /** the quest it belongs to (Misc/Weapons/Armor.txt quest): the Horadric Cube, Wirt's Leg… D2R keeps these out of the shared stash */
+  quest?: number;
 }
 
 export function categoryOf(type: ItemType): Category | null {
@@ -272,6 +274,7 @@ function common(b: D2xWeapon | D2xArmor | D2xMisc, type: ItemType): ItemBase {
     if (GAME_CLASS[cls]) out.cls = GAME_CLASS[cls];
   }
   if (t?.staffMods && GAME_CLASS[t.staffMods]) out.staffMods = GAME_CLASS[t.staffMods];
+  if (b.quest) out.quest = b.quest;
   if (!b.spawnable || b.quest) out.noDrop = true;
   return out;
 }

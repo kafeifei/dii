@@ -10,6 +10,7 @@ import { isUnknown, type Item } from '../items/item';
 import { townPortalFrom } from '../items/tomes';
 import { OLD_BASES, toD2Item } from '../items/legacy';
 import type { Grid, Placed } from '../items/grid';
+import { changed, layOut, mergeStash, SHARED_PAGES, SharedStash, sameState, stashEntry, stashState, type StashEntry, type StashState } from '../items/stash';
 import { Player, xpForLevel } from './player';
 import { bodyItems, type Corpse } from './corpse';
 import { loadQuestRecord, type QuestRecords } from './quests/record';
@@ -35,14 +36,15 @@ let slot = (() => {
 })();
 
 function keyFor(n: number): string {
-  if (dev) return 'dii-save-dev';
+  // ?dev's slots (?dev&slot=1, for two heroes in two tabs) have keys of their own; the first keeps the one it had
+  if (dev) return n === 0 ? 'dii-save-dev' : `dii-save-dev-${n}`;
   // slot 0 keeps the key from before there were slots, so an old save shows up as the first character
   return n === 0 ? BASE_KEY : `${BASE_KEY}-${n}`;
 }
 
 /** what the keys of slot n's backups start with */
 function backupPrefix(n: number): string {
-  return `${BASE_KEY}-backup-${dev ? 'dev' : n}-`;
+  return `${BASE_KEY}-backup-${dev ? `dev${n || ''}` : n}-`;
 }
 
 /** where a slot's save is copied before it is migrated from the version `tag` (versionTag) */
@@ -61,9 +63,10 @@ function backupsOf(n: number): string[] {
   return out;
 }
 
-/** ?dev runs (tests, bots) get their own slot so they never clobber the real saves */
-export function useDevSlot() {
+/** ?dev runs (tests, bots) get slots of their own so they never clobber the real saves: slot `n` of them (?dev&slot=n) */
+export function useDevSlot(n = 0) {
   dev = true;
+  slot = Number.isInteger(n) && n >= 0 && n < MAX_SLOTS ? n : 0;
 }
 
 export function setSlot(n: number) {
@@ -87,6 +90,76 @@ export function markInGame(on: boolean) {
 export function wasInGame(): boolean {
   try {
     return sessionStorage.getItem(SESSION_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+// ───────────────────────── one tab per hero ─────────────────────────
+// A hero is played in one tab at a time. Each tab writes its hero whole, so two tabs with one hero
+// would each write over what the other moved to or from the shared pages, and an item would end up
+// in neither. D2R's rule is the same: a character is in one game at a time, and logging in again
+// drops the session before. The tab that opens a hero last has it (claimHero, before it reads the
+// save); the tab that had it is told by a storage event, writes it once more if nothing has been
+// written over it since (mayWriteLast), and then never again (heroTaken).
+
+/** this page's own: made anew on each load, as a duplicated tab copies sessionStorage */
+const TAB = uid('tab');
+/** the save this tab has claimed, and its text as this tab last read or wrote it */
+let held: string | null = null;
+let lastText: string | null = null;
+
+/** where the claim on a hero's save is kept: which tab has it */
+function claimKey(key: string): string {
+  return `dii-tab:${key}`;
+}
+
+/** The current slot's hero is this tab's from now on: a tab that had it stops writing it */
+export function claimHero() {
+  held = keyFor(slot);
+  lastText = null;
+  try {
+    localStorage.setItem(claimKey(held), JSON.stringify({ tab: TAB, time: Date.now() }));
+  } catch {
+    /* storage unavailable: nothing is written either */
+  }
+}
+
+/** the key of the claim on the hero this tab plays, for its storage events; null before one is claimed */
+export function heroClaimKey(): string | null {
+  return held && claimKey(held);
+}
+
+/** whether another tab has claimed the hero this tab plays since this one did */
+export function claimedElsewhere(): boolean {
+  if (!held) return false;
+  try {
+    const c = JSON.parse(localStorage.getItem(claimKey(held)) ?? 'null');
+    return !!c && typeof c === 'object' && c.tab !== TAB;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Whether another tab has claimed hero `p` since this one did: then `p` is never written here again.
+ * The claim is read each time, so a tab that missed the storage event (frozen in the background) stops too
+ */
+export function heroTaken(p: Player): boolean {
+  if (!claimedElsewhere()) return false;
+  readOnly.add(p);
+  return true;
+}
+
+/**
+ * Whether this tab may write its hero once more after another claimed it: only while the save is
+ * still as this tab last read or wrote it, so nothing that tab wrote is written over (a reload
+ * claims the hero as the page starts and reads it once the models are in, after this last write)
+ */
+export function mayWriteLast(): boolean {
+  if (!held) return false;
+  try {
+    return localStorage.getItem(held) === lastText;
   } catch {
     return false;
   }
@@ -170,8 +243,15 @@ export interface SaveV4 {
   cubeFound: boolean;
   /** items that fit nowhere, and ones this build doesn't know, waiting by the camp stash */
   unplaced: Item[];
+  /**
+   * the uid of the item of `unplaced` that was on the cursor, back on it as the game starts (D2 saves
+   * the cursor's item so: PlrSave.cpp:100-110). Written among `unplaced`, so a build that doesn't know
+   * this field still has the item, by the camp stash; unset when there was none
+   */
+  cursor?: string;
   belt: Item[][];
   gold: number;
+  /** the personal page's gold (the shared pages' is theirs: SharedSave) */
   stashGold: number;
   binds: (string | null)[];
   activeAura: string | null;
@@ -307,9 +387,12 @@ interface OldSave {
 
 /** a save from a newer build: a version or a line's migration count this build doesn't have */
 function isNewer(d: { v?: number; mig?: Partial<MigrationCounts> }): boolean {
-  if ((d.v ?? 1) > SAVE_V) return true;
-  // a line this build doesn't have counts as newer once it has migrated anything
-  return Object.entries(d.mig ?? {}).some(([k, n]) => (n ?? 0) > (k in MIGRATIONS ? MIGRATIONS[k as keyof MigrationCounts].length : 0));
+  return (d.v ?? 1) > SAVE_V || migNewer(d.mig);
+}
+
+/** migration counts past this build's: a line this build doesn't have counts once it has migrated anything */
+function migNewer(mig: Partial<MigrationCounts> | undefined): boolean {
+  return Object.entries(mig ?? {}).some(([k, n]) => (n ?? 0) > (k in MIGRATIONS ? MIGRATIONS[k as keyof MigrationCounts].length : 0));
 }
 
 /** a save that loading will migrate: an older version, or a line's migrations not all run on it */
@@ -485,13 +568,23 @@ const loaded = new WeakMap<Player, SaveV4>();
 /** characters from a save this build must not write: a newer build's, or one it couldn't back up */
 const readOnly = new WeakSet<Player>();
 
+/** whether the character is never written this time (a newer build's save, or one that couldn't be backed up) */
+export function isReadOnly(p: Player): boolean {
+  return readOnly.has(p);
+}
+
 /**
  * Save the character, standing in the area `area` (one dead is saved in the camp, where it comes
- * back), in the game whose maps come from `worldSeed`
+ * back), in the game whose maps come from `worldSeed`, holding `cursor` on the cursor; `last`: this
+ * tab's last write of a hero another tab has claimed (mayWriteLast). False when it wasn't written: a
+ * character never written, one another tab has, or storage that refused it
  */
-export function writeSave(p: Player, area: number, worldSeed?: number) {
-  if (readOnly.has(p)) return;
+export function writeSave(p: Player, area: number, worldSeed?: number, cursor?: Item | null, last = false): boolean {
+  if (readOnly.has(p)) return false;
   const KEY = keyFor(slot);
+  // a hero no game here claimed (tests) is claimed now; one another tab has claimed since isn't written
+  if (held !== KEY) claimHero();
+  else if (!(last && mayWriteLast()) && heroTaken(p)) return false;
   // what this build doesn't play yet (the mercenary, the other difficulties' waypoints) is written
   // from the save loaded or last written: a line that moves one onto Player or Game must write it from there instead
   const prev = loaded.get(p);
@@ -520,7 +613,8 @@ export function writeSave(p: Player, area: number, worldSeed?: number) {
     stash: p.stash.items,
     cube: p.cube.items,
     cubeFound: p.cubeFound,
-    unplaced: p.unplaced,
+    unplaced: cursor ? [...p.unplaced, cursor] : p.unplaced,
+    cursor: cursor?.uid,
     belt: p.belt,
     gold: p.gold,
     stashGold: p.stashGold,
@@ -542,9 +636,13 @@ export function writeSave(p: Player, area: number, worldSeed?: number) {
   // a character never loaded keeps its other difficulties' progress from one write to the next
   loaded.set(p, data);
   try {
-    localStorage.setItem(KEY, JSON.stringify(data));
+    const text = JSON.stringify(data);
+    localStorage.setItem(KEY, text);
+    lastText = text;
+    return true;
   } catch {
-    /* storage unavailable */
+    // storage unavailable, or full
+    return false;
   }
 }
 
@@ -743,6 +841,8 @@ export interface Loaded {
   worldSeed?: number;
   /** why it is never written back, when it mustn't be (a newer build's save, or one that couldn't be backed up) */
   readOnly: string | null;
+  /** the item that was on the cursor, to go back on it */
+  cursor: Item | null;
 }
 
 /** The current slot's character, its save brought up to date */
@@ -752,6 +852,8 @@ export function loadSave(): Loaded | null {
   try {
     raw = localStorage.getItem(keyFor(slot));
     if (!raw) return null;
+    // as this tab read it: another tab claiming the hero later finds whether it was written over since (mayWriteLast)
+    if (held === keyFor(slot)) lastText = raw;
     o = JSON.parse(raw);
   } catch {
     return null;
@@ -804,6 +906,9 @@ export function loadSave(): Loaded | null {
     if (m) p.unplaced.push(m);
   }
   for (const it of overflow) if (!p.stash.add(it) && !p.inventory.add(it)) p.unplaced.push(it);
+  // the item that was on the cursor lies among those by the stash (writeSave): back on the cursor from there
+  const onCursor = typeof d.cursor === 'string' ? p.unplaced.findIndex((it) => it.uid === d.cursor && !isUnknown(it)) : -1;
+  const cursor = onCursor >= 0 ? p.unplaced.splice(onCursor, 1)[0] : null;
   p.cubeFound = d.cubeFound ?? false;
   p.belt = (d.belt ?? [[], [], [], []]).map((col) => col.map(keep).filter((it): it is Item => !!it));
   while (p.belt.length < 4) p.belt.push([]);
@@ -839,5 +944,325 @@ export function loadSave(): Loaded | null {
   p.stamina = p.d.maxStamina;
   loaded.set(p, d);
   if (why) readOnly.add(p);
-  return { player: p, area: !old && isBuilt(d.area) ? d.area : CAMP_AREA, worldSeed: typeof d.worldSeed === 'number' ? d.worldSeed : undefined, readOnly: why };
+  return { player: p, area: !old && isBuilt(d.area) ? d.area : CAMP_AREA, worldSeed: typeof d.worldSeed === 'number' ? d.worldSeed : undefined, readOnly: why, cursor };
+}
+
+// ───────────────────────── the shared stash ─────────────────────────
+// D2R's shared pages (src/items/stash.ts) are the player's, every hero's: a record of their own beside
+// the heroes' saves, versioned and migrated as a save is (its items by MIGRATIONS' steps), backed up
+// before it is, read as each game starts (loadShared) and written as it changes (syncShared). Two
+// tabs of the game may both have it open: each reads it again before writing, and when the other
+// wrote in between, puts its own changes on top of the other's (mergeStash) instead of over them.
+
+const SHARED_KEY = 'dii-shared';
+/** what syncShared stamps on the record: 2, each page's gold its own (1 had one pool for them all) */
+const SHARED_V = 2;
+
+/** the key the shared pages are kept under: ?dev runs keep their own, as they do a save */
+export function sharedKey(): string {
+  return dev ? 'dii-shared-dev' : SHARED_KEY;
+}
+
+/** what the keys of the record's backups start with; a migration's tag (its version and counts) follows */
+function sharedBackupPrefix(): string {
+  return `${SHARED_KEY}-backup-${dev ? 'dev-' : ''}`;
+}
+
+export interface SharedSave {
+  v: typeof SHARED_V;
+  mig: MigrationCounts;
+  /** each shared page's items, where they lie */
+  pages: Placed[][];
+  /** each shared page's gold, as D2R keeps it (version 1 had one pool for them all: read as 共享 1's) */
+  gold: number[];
+  /** new with each write: a tab that last read another one knows it changed since */
+  rev: string;
+  /**
+   * the rev of the record the writer had last read, its changes measured from: a tab whose own
+   * later write the writer hadn't seen yet (storage reaches other tabs a moment late) merges from there
+   */
+  base?: string;
+  time: number;
+}
+
+/** what this tab last read or wrote of the record: what its changes are measured from */
+interface SharedSeen {
+  /** the record's text as read or written (null: there was none) */
+  raw: string | null;
+  /** its rev */
+  rev: string | null;
+  state: StashState;
+  /** loading changed it (migrated it, moved items off it): written at the next sync though nothing else changes */
+  dirty: boolean;
+  /** the last few records this tab read or wrote, by rev: the base of another tab's write made on one of them */
+  known: Map<string, StashState>;
+}
+/** how many records a tab remembers */
+const SHARED_KNOWN = 8;
+
+/** the record `rev` as this tab read or wrote it, remembered */
+function remember(seen: SharedSeen, rev: string | null, state: StashState) {
+  if (!rev) return;
+  seen.known.delete(rev);
+  seen.known.set(rev, state);
+  for (const k of seen.known.keys()) if (seen.known.size > SHARED_KNOWN) seen.known.delete(k);
+}
+const sharedSeen = new WeakMap<SharedStash, SharedSeen>();
+
+/** the record as this build reads it */
+interface SharedRead {
+  /** each page's gold */
+  gold: number[];
+  rev: string | null;
+  /** the rev the writer had last read */
+  base: string | null;
+  /** its items as this build has them, where they lay */
+  entries: StashEntry[];
+  /** a newer build's: never written */
+  newer: boolean;
+  /** reading changed it: migrations ran, an item became unknown or came back */
+  changed: boolean;
+  /** it needed backing up first and couldn't be */
+  unbacked: boolean;
+}
+
+/**
+ * The record's text as this build has it; null when it can't be read. Its items go through what a
+ * save's do (knownItem, the migration steps) on a save holding them in its stash, in order: a step
+ * replaces an item where it is and leaves the rest alone
+ */
+function readShared(raw: string): SharedRead | null {
+  let o: Partial<SharedSave>;
+  try {
+    o = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+  const v = typeof o.v === 'number' ? o.v : 1;
+  const newer = v > SHARED_V || migNewer(o.mig);
+  const behind = !newer && (v < SHARED_V || LINES.some((k) => (o.mig?.[k] ?? 0) < MIGRATIONS[k].length));
+  const unbacked = behind && !backUpShared(raw, [v, ...LINES.map((k) => o.mig?.[k] ?? 0)].join('.'));
+  const where: { page: number; x: number; y: number }[] = [];
+  const stash: Placed[] = [];
+  (Array.isArray(o.pages) ? o.pages : []).forEach((pg, page) => {
+    for (const pl of Array.isArray(pg) ? pg : []) {
+      if (!pl || typeof pl !== 'object' || !pl.item || typeof pl.item !== 'object') continue;
+      stash.push({ item: pl.item, x: pl.x, y: pl.y });
+      where.push({ page, x: Number(pl.x), y: Number(pl.y) });
+    }
+  });
+  const d = { v: SAVE_V, mig: { ...counts(() => 0), ...o.mig }, equipment: {}, inventory: [], stash, cube: [], unplaced: [], belt: [], corpse: null, merc: null } as unknown as SaveV4;
+  const before = stash.map((pl) => pl.item);
+  const fresh = new Set<Item>();
+  mapItems(d, (it) => knownItem(it, d, !newer && !unbacked, fresh));
+  if (!newer && !unbacked) runMigrations(d);
+  // read from the save after the steps, in case one made the list anew (in order, as mapItems does)
+  const after = Array.isArray(d.stash) && d.stash.length === stash.length ? d.stash : stash;
+  // version 1's one pool is 共享 1's now: D2R keeps gold by page (the version is behind, so it was backed up above)
+  const g: unknown = o.gold;
+  const gold = Array.isArray(g) ? g : [g];
+  return {
+    gold: Array.from({ length: SHARED_PAGES }, (_, i) => Math.max(0, Math.floor(Number(gold[i])) || 0)),
+    rev: typeof o.rev === 'string' ? o.rev : null,
+    base: typeof o.base === 'string' ? o.base : null,
+    entries: after.map((pl, i) => stashEntry(pl.item, where[i].page, where[i].x, where[i].y)),
+    newer,
+    changed: behind || after.some((pl, i) => pl.item !== before[i]),
+    unbacked,
+  };
+}
+
+/**
+ * Copy the record aside before it is migrated from `tag`; false when storage won't take it. The
+ * first copy at a tag stays; of them all, the oldest and this one are kept
+ */
+function backUpShared(raw: string, tag: string): boolean {
+  try {
+    const pre = sharedBackupPrefix();
+    const k = pre + tag;
+    if (localStorage.getItem(k) === null) localStorage.setItem(k, raw);
+    const all: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const b = localStorage.key(i);
+      if (b?.startsWith(pre) && /^\d/.test(b.slice(pre.length))) all.push(b);
+    }
+    const age = (b: string) => b.slice(pre.length).split('.').reduce((a, n) => a + Number(n), 0);
+    const first = all.sort((a, b) => age(a) - age(b))[0];
+    for (const b of all) if (b !== first && b !== k) localStorage.removeItem(b);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** an unreadable record, kept aside as it is; false when storage won't take it */
+function keepUnreadable(raw: string): boolean {
+  try {
+    localStorage.setItem(`${sharedBackupPrefix()}unreadable-${Date.now()}`, raw);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The shared pages as a game starts, for any hero in any difficulty. `locked` says why this time they
+ * must not change (a hero who won't be saved). What fits on no page goes to `overflow`, for the hero
+ * to find by the camp stash; `note` is what the player should be told
+ */
+export function loadShared(locked: string | null = null): { stash: SharedStash; overflow: Item[]; note: string | null } {
+  const s = new SharedStash();
+  const seen: SharedSeen = { raw: null, rev: null, state: stashState(s), dirty: false, known: new Map() };
+  sharedSeen.set(s, seen);
+  s.readOnly = locked;
+  let raw: string | null;
+  try {
+    raw = localStorage.getItem(sharedKey());
+  } catch {
+    s.readOnly ??= '存储不可用：共享储物箱这次只能查看';
+    return { stash: s, overflow: [], note: s.readOnly };
+  }
+  if (raw === null) return { stash: s, overflow: [], note: null };
+  const r = readShared(raw);
+  seen.raw = raw;
+  if (!r) {
+    // kept aside as it was, it is written over by the pages as they start, empty; if it can't be, it isn't
+    if (keepUnreadable(raw)) {
+      seen.dirty = !s.readOnly;
+      return { stash: s, overflow: [], note: '共享储物箱的记录读不出来：已原样另存一份，这次从空的开始' };
+    }
+    s.readOnly ??= '共享储物箱的记录读不出来，也没能另存（存储空间满了？）：这次只能查看';
+    return { stash: s, overflow: [], note: s.readOnly };
+  }
+  seen.rev = r.rev;
+  if (r.newer) s.readOnly ??= '共享储物箱来自更新的版本：这次只能查看';
+  else if (r.unbacked) s.readOnly ??= '共享储物箱没能备份（存储空间满了？）：这次只能查看';
+  s.gold = r.gold;
+  const overflow = layOut(s, r.entries);
+  seen.state = stashState(s);
+  // read-only, what fits nowhere stays in the record unseen; else it goes to the hero, out of the record at the next write
+  if (s.readOnly) return { stash: s, overflow: [], note: s.readOnly === locked ? null : s.readOnly };
+  for (const it of overflow) seen.state.entries.set(it.uid, stashEntry(it, -1, 0, 0));
+  remember(seen, r.rev, seen.state);
+  seen.dirty = r.changed || overflow.length > 0;
+  return { stash: s, overflow, note: overflow.length ? `共享储物箱放不下的 ${overflow.length} 件物品放在了储物箱旁边` : null };
+}
+
+/** what syncShared did */
+export interface SharedSync {
+  /** another tab's changes came in: the pages hold something new */
+  adopted: boolean;
+  /** this tab's pages were written: the hero must be saved now too, or the write undone */
+  wrote: boolean;
+  /** items that fit on no page once both tabs' were laid out, for the hero */
+  overflow: Item[];
+  /** gold put in here that the pool had no room for once both tabs' was added, back to the hero */
+  refund: number;
+  /** this tab's changes couldn't be written (storage full): the hero mustn't be saved without them */
+  failed: boolean;
+  /** the record put back as it was before this write, for when the hero's save then fails */
+  undo(): void;
+}
+
+/**
+ * The shared pages in step with storage. The record is read again first: when another tab wrote it
+ * since this one last read it, that tab's changes come in under this one's (mergeStash). Then, if
+ * this tab's pages differ from the record, they are written.
+ */
+export function syncShared(s: SharedStash): SharedSync {
+  const out: SharedSync = { adopted: false, wrote: false, overflow: [], refund: 0, failed: false, undo() {} };
+  const seen = sharedSeen.get(s);
+  if (!seen || s.readOnly) return out;
+  const key = sharedKey();
+  let raw: string | null;
+  try {
+    raw = localStorage.getItem(key);
+  } catch {
+    out.failed = seen.dirty || !sameState(stashState(s), seen.state);
+    return out;
+  }
+  let base = seen.state;
+  if (raw !== seen.raw && raw !== null) {
+    const r = readShared(raw);
+    if (r?.newer || r?.unbacked) {
+      // a newer build wrote it: this tab leaves it alone from now on; what was put in here since it
+      // last wrote goes back to the hero, by the camp stash (what was taken out the record still has)
+      s.readOnly = r.newer ? '共享储物箱被更新的版本改过了：这次只能查看' : '共享储物箱没能备份（存储空间满了？）：这次只能查看';
+      const now = stashState(s);
+      out.overflow = putSince(seen.state, now);
+      out.refund = now.gold.reduce((n, g, i) => n + Math.max(0, g - (seen.state.gold[i] ?? 0)), 0);
+      s.gold = r.gold;
+      // what the record holds, to look at; what fits nowhere stays in it unseen
+      layOut(s, r.entries);
+      out.adopted = true;
+      return out;
+    }
+    if (!r && !keepUnreadable(raw)) {
+      out.failed = true;
+      return out;
+    }
+    if (r) {
+      const theirs: StashState = { entries: new Map(), gold: r.gold };
+      for (const e of r.entries) {
+        if (!e.item.uid || theirs.entries.has(e.item.uid)) e.item.uid = uid('i');
+        theirs.entries.set(e.item.uid, e);
+      }
+      // measured from what that tab had read: the last record this one saw, or, when that tab wrote
+      // before this one's last write reached it (storage gets to other tabs a moment late), the
+      // record it had read
+      const from = (r.base !== null && r.base !== seen.rev && seen.known.get(r.base)) || seen.state;
+      const m = mergeStash(from, stashState(s), theirs);
+      s.gold = m.gold;
+      out.overflow = layOut(s, m.keep, m.mine);
+      out.refund = m.refund;
+      out.adopted = true;
+      base = theirs;
+      Object.assign(seen, { raw, rev: r.rev, state: theirs });
+      remember(seen, r.rev, theirs);
+      seen.dirty ||= r.changed;
+    }
+  }
+  const now = stashState(s);
+  if (raw === seen.raw && !seen.dirty && sameState(now, seen.state)) return out;
+  const rec: SharedSave = { v: SHARED_V, mig: migrationCounts(), pages: s.pages.map((g) => g.items), gold: s.gold, rev: uid('s'), time: Date.now() };
+  if (seen.rev) rec.base = seen.rev;
+  const text = JSON.stringify(rec);
+  try {
+    localStorage.setItem(key, text);
+  } catch {
+    out.failed = true;
+    return out;
+  }
+  const was = seen.rev;
+  Object.assign(seen, { raw: text, rev: rec.rev, state: now, dirty: false });
+  remember(seen, rec.rev, now);
+  out.wrote = true;
+  out.undo = () => {
+    try {
+      if (raw === null) localStorage.removeItem(key);
+      else localStorage.setItem(key, raw);
+    } catch {
+      /* it stays as written: the hero's next save catches up */
+    }
+    // measured from what is there again, this tab's changes are written at the next sync
+    Object.assign(seen, { raw, rev: was, state: base, dirty: true });
+    seen.known.delete(rec.rev);
+  };
+  return out;
+}
+
+/**
+ * What this tab put in since `base`, and the items it changed since (a rune socketed…) as copies of
+ * their own: for the hero, when the record can't take them
+ */
+function putSince(base: StashState, now: StashState): Item[] {
+  const out: Item[] = [];
+  for (const e of now.entries.values()) {
+    const b = base.entries.get(e.item.uid);
+    if (!b) out.push(e.item);
+    // a mend alone isn't a change: the record has the item still
+    else if (changed(e, b)) out.push({ ...e.item, uid: uid('i') });
+  }
+  return out;
 }

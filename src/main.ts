@@ -2,14 +2,18 @@ import './data/legendary';
 import { Sfx } from './audio/sfx';
 import { Input } from './core/input';
 import { Game } from './game/game';
-import { useDevSlot, wasInGame } from './game/save';
+import { claimHero, useDevSlot, wasInGame } from './game/save';
 import { assets } from './render/assets';
 import { Renderer } from './render/renderer';
 import { loadSettings } from './ui/settings';
 import { UI } from './ui/ui';
 
 const DEV = location.search.includes('dev');
-if (DEV) useDevSlot();
+// ?dev&slot=1: a dev hero of its own, for two tabs with two heroes
+if (DEV) useDevSlot(Number(new URLSearchParams(location.search).get('slot')) || 0);
+// a reload, or a duplicated tab, goes back to the hero it had: claimed now, while the models load, so a
+// tab still playing it writes it a last time before it is read here (save.ts claimHero)
+else if (wasInGame()) claimHero();
 
 const canvas = document.getElementById('world') as HTMLCanvasElement;
 const sfx = new Sfx();

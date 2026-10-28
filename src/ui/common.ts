@@ -24,6 +24,8 @@ export interface UIContext {
   cursorItem: Item | null;
   left: LeftPanel;
   right: RightPanel;
+  /** the stash's page shown: 0 the hero's own, 1… the shared ones (src/items/stash.ts); kept while playing */
+  stashPage: number;
   /** the panels, the belt and the skill slots are drawn again on the next frame */
   dirty: boolean;
   /** a quest moved on since the quest log was last opened: its button says so */
