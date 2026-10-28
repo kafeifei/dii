@@ -1,7 +1,173 @@
 {
+ "invba1": {
+  "desc": "A barbarian's jawbone cap shown empty on its own, no head inside: a low rounded cap of thick dark leather stitched over a frame of iron strips, and strapped beneath its front edge the bleached lower jawbone of a huge beast, a broad U of bone hanging below the brim like a lower visor with a row of big jagged teeth pointing upward, leather thongs and iron rings holding it on, tufts of coarse fur at the back, no horns. Front three-quarter view.",
+  "guide": true,
+  "note": "guide: a low dome cap in the upper half; below its front edge a wide U-shaped jaw arc open at the top with a row of short upright teeth along it; line Jawbone Cap / Jawbone Visor / Carnage Helm; apart from the fanged helm by the beast's jaw slung under the brim"
+ },
+ "invba2": {
+  "desc": "A barbarian's fanged helm: a round iron skullcap with a broad riveted brow band, and from each cheek a long curved beast's tusk hanging down and curling forward past the chin like a boar's tusks, a row of shorter fangs set along the lower edge of the brow band, a leather neck flap at the back, no horns, shown empty, no head inside. Front three-quarter view.",
+  "note": "line Fanged Helm / Lion Helm / Fury Visor; apart from the jawbone cap by two great tusks at the cheeks and no jaw"
+ },
+ "invba3": {
+  "desc": "A barbarian's horned helm: a rounded open-faced iron helm with short cheek guards and a straight nasal bar, and rising from its temples two long pale horns that sweep outward and then curve up to sharp points, together wider than the helm itself, their roots bound in iron collars, shown empty, no head inside. Front view.",
+  "note": "line Horned Helm / Rage Mask / Destroyer Helm; the only one of the primal helms with horns"
+ },
+ "invba4": {
+  "desc": "A barbarian's assault helmet: a tall-crowned steel war helm with a pointed brow and an open face framed by long cheek plates, and along the top of the crown from front to back a tall crest of a dozen flat sharp iron blades standing upright side by side like a cockscomb, the blades longest in the middle, shown empty, no head inside. Front three-quarter view.",
+  "note": "line Assault Helmet / Savage Helmet / Conqueror Crown; a crest of blades along the top, where the avenger guard has two bladed wings"
+ },
+ "invba5": {
+  "desc": "A barbarian's avenger guard: a rounded iron helm with a nasal bar and a short leather neck guard, and on each side, rising from the temples, a swept-back wing made of long flat iron blades fanned like the feathers of a bird's wing, the two wings spreading up and outward, shown empty, no head inside. Front view.",
+  "note": "line Avenger Guard / Slayer Guard / Guardian Crown; two bladed wings, where the assault helmet has one crest"
+ },
+ "invbhm": {
+  "desc": "A bone helm shown empty on its own, no head inside: the bleached, cracked cranium of a huge humanlike skull hollowed out and worn as a helmet, its two dark eye sockets as eyeholes, its upper teeth forming the lower rim, cheek guards of curved rib bones bound on with dark leather thongs, a ridge of small vertebrae running over the crown, no horns. Front three-quarter view.",
+  "material": false,
+  "note": "line Bone Helm / Grim Helm / Bone Visage; bone, so no iron material line"
+ },
+ "invbsh": {
+  "desc": "A bone shield: a tall oval shield built of bones, long leg bones and curved ribs lashed side by side with dark sinew and leather into a solid face, a rim of bound vertebrae all around, and in the middle a small cracked skull as the boss, bleached ivory-grey and stained. Front view, upright.",
+  "material": false,
+  "note": "line Bone Shield / Grim Shield / Troll Nest; bone, so no iron material line"
+ },
+ "invbuc": {
+  "desc": "A small round buckler shield: dark iron with a raised central boss and a riveted rim, dented and scratched. Front view.",
+  "note": "the sample round's buc words (round 2, approved: its pick was s404)"
+ },
+ "invcap": {
+  "desc": "A soft padded arming cap shown empty on its own, no head inside: a close-fitting hood-like cap of quilted brown leather with vertical stitched quilting channels, soft and wrinkled like thick fabric, sagging a little, two long leather ties hanging down from the sides; not a helmet, no metal at all, no rivets, no rim, no button on top. Front three-quarter view.",
+  "fill": 0.8,
+  "material": false,
+  "note": "the sample round's cap words (round 2, approved: its pick was s404); the samples painted it without the material line, so material: false keeps the prompt theirs"
+ },
+ "invci0": {
+  "desc": "A circlet: a band of tarnished silver with engraved scrollwork, seen from the front and above so the band forms a fat open oval; the front of the band rises into a tall pointed crest holding a cabochon gem.",
+  "note": "the sample round's ci0 words (round 2, approved: its pick was s303)"
+ },
+ "invci1": {
+  "desc": "A coronet: a closed ring of darkened bronze with a beaded edge, seen from the front and above so the band forms a fat open oval, its upper edge rising all around into a row of small evenly spaced triangular points like a tiny crown, a small dull garnet at the foot of each point, no large central gem.",
+  "note": "points all round, where the circlet has one crest, the tiara a filigree arch and the diadem a gem plate"
+ },
+ "invci2": {
+  "desc": "A tiara: an open-backed half hoop of pale tarnished gold, seen from the front and above, its front rising in a wide arch of fine interlaced filigree wirework, highest in the middle and tapering to a thin band at the sides, set with a curved row of small pearls along the arch.",
+  "note": "an open half hoop with a filigree arch, apart from the other three closed bands"
+ },
+ "invci3": {
+  "desc": "A diadem: a broad heavy band of dark gold with raised borders, seen from the front and above so the band forms a fat open oval, the front widening into a tall shield-shaped plate holding one large faceted deep green gemstone in a raised setting, flanked by two smaller stones, fine engraved leaves along the band.",
+  "note": "the broadest and richest of the four, its front a plate with one large gem"
+ },
+ "invcrn": {
+  "desc": "A battle crown made as a helm, shown empty on its own: a low rounded cap of dark iron, and riveted around its brow a broad band of tarnished gold with five tall pointed leaf-shaped tines rising from its upper edge, small dull cabochon stones set in the band, a thin padded leather lining showing at the lower edge, no spike on top, no cheek plates. Front three-quarter view.",
+  "material": false,
+  "note": "line Crown / Grand Crown / Corona; gold on iron, so no plain-iron material line"
+ },
+ "invdr1": {
+  "desc": "A druid's wolf-head pelt worn as a helm, shown empty on its own: the tanned head and scruff of a grey-brown wolf made into a hood, the wolf's upper face with pricked ears, dark empty eyes and its upper jaw of fangs forming the brow, the loose fur hanging down behind, the inside lined with soft leather, a few braided leather thongs with small bone beads at the edges. Front three-quarter view.",
+  "note": "line Wolf Head / Alpha Helm / Blood Spirit; a whole wolf pelt, where the spirit mask is a carved mask in a fur ruff"
+ },
+ "invdr2": {
+  "desc": "A druid's hawk helm: a close cap of brown leather covered all over in real overlapping hawk feathers, barred brown and cream, shaped like a hawk's head with a curved hooked beak of dark horn jutting forward over the brow, round dark eyes, and a fan of long tail feathers falling down the back of the neck, shown empty, no head inside. Front three-quarter view.",
+  "note": "line Hawk Helm / Griffon Headdress / Sun Spirit; a whole feathered head, where the falcon mask covers only the face"
+ },
+ "invdr3": {
+  "desc": "A druid's antlers pelt worn as a helm, shown empty on its own: the tanned head and scalp of a red stag made into a hood, the stag's brow and ears over the front, and rising from it a pair of large branching antlers, each with several tines, spreading wide and upward, together wider than the hood, their bases wrapped in leather cord with small bone beads, the shaggy hide hanging down behind. Front view.",
+  "note": "line Antlers / Hunter's Guise / Earth Spirit; a stag's head pelt with branching antlers, the name's object, like the other pelts an animal's head"
+ },
+ "invdr4": {
+  "desc": "A druid's falcon mask: a carved half-face mask of pale weathered wood shaped as a falcon's face, a short sharp hooked beak over the nose, large round eye holes ringed with dark painted bands, small tufts of grey and white feathers fanning out from the temples and the brow, a leather strap at the back, no helmet behind it. Front three-quarter view.",
+  "fill": 0.9,
+  "note": "line Falcon Mask / Sacred Feathers / Sky Spirit; a carved face mask only, smaller than the hawk helm"
+ },
+ "invdr5": {
+  "desc": "A druid's spirit mask: a carved wooden mask of a bear spirit's face with a short broad snout, small round ears and a heavy brow, painted with faded white and ochre clay lines, framed by a thick ruff of dark shaggy fur, strings of small bones, beads and feathers hanging from its lower edge, shown empty, no head inside. Front view.",
+  "note": "line Spirit Mask / Totemic Mask / Dream Spirit; a bear-spirit mask, apart from the wolf pelt and the falcon mask"
+ },
+ "invfhl": {
+  "desc": "A full helm enclosing the whole head: a rounded grey iron bowl with a low ridge over the crown that comes down over the cheeks and the back of the neck, the face closed by a hinged visor pivoting on a rivet at each side, one narrow horizontal eye slit across the visor and a few breathing holes below it, a flared neck rim. Front three-quarter view.",
+  "note": "line Full Helm / Basinet / Giant Conch; a rounded bowl with a pivoting visor and one slit, where the great helm is flat-topped with two slits"
+ },
  "invghm": {
   "desc": "A knight's great helm of riveted grey iron plates covering the whole head, seen from the front: a low flattened dome on top, near-vertical sides, the lower edge dipping to a blunt point at the chin, a raised ridge down the middle of the face, two narrow eye slits either side of the ridge, small breathing holes on the right cheek only, no brim, no visor, no crest, dents and rust patches.",
   "guide": "great-helm",
   "note": "the sample round's ghm words (round 2, approved)"
+ },
+ "invgts": {
+  "desc": "A tall narrow gothic shield of darkened iron shaped like a long lancet window: a pointed arched top, straight parallel sides and a pointed bottom, its face fluted with five raised vertical ridges running from tip to tip, the narrow panels between them darker and pitted, a riveted iron rim, no paint and no emblem. Front view, upright.",
+  "guide": true,
+  "note": "guide: a tall narrow lancet: a pointed arch at the top, straight parallel sides, a pointed bottom, five thin vertical ridges; line Gothic Shield / Ancient Shield / Ward; the only shield pointed at both ends"
+ },
+ "invhlm": {
+  "desc": "A plain open-faced iron helm: a rounded, slightly conical bowl of grey iron with a raised rim, a straight nasal bar running down from the brow over the nose, short hinged cheek plates either side of an open face, a flared neck guard at the back, a row of rivets along the brow. Front three-quarter view.",
+  "note": "line Helm / Casque / Armet; an open face with a nasal bar and cheek plates, between the skull cap and the closed helms"
+ },
+ "invkit": {
+  "desc": "A tall kite shield: wood faced with faded brick-red painted leather and an iron rim, its top edge a smooth rounded curve with nothing sticking out of it, no knob or finial on top, a pointed bottom. Front view.",
+  "note": "the sample round's kit words (round 2, approved: its pick was s303)"
+ },
+ "invlrg": {
+  "desc": "A large oval shield, taller than it is wide: wooden boards covered in dark brown leather, an iron rim, a long iron strip running down the middle from top to bottom with a round domed iron boss at its centre, a few rows of iron studs, scuffed and battered. Front view, upright.",
+  "note": "line Large Shield / Scutum / Hyperion; a leather-faced oval with an iron spine"
+ },
+ "invmsk": {
+  "desc": "A war mask shown on its own, no head inside: a full face mask of beaten dark iron shaped as a snarling grotesque face, a heavy furrowed brow over deep hollow eye holes, a broad flattened nose, an open mouth baring a row of iron fangs, small pointed swept-back ears, leather straps at the sides, no horns, no helmet behind it. Front view.",
+  "fill": 0.9,
+  "note": "line Mask / Death Mask / Demonhead; a face mask of iron, not bone like the bone helm"
+ },
+ "invne1": {
+  "desc": "A necromancer's trophy, a preserved head: a small shrunken human head with long lank black hair, its eyes and lips sewn shut, floating in cloudy brownish brine inside a squat wide-mouthed glass jar, the jar's mouth sealed with a wax-dipped wooden plug tied down with cord, a rope carrying loop on top. Upright, front view.",
+  "note": "line Preserved Head / Mummified Trophy / Minion Skull; the one head kept in a jar"
+ },
+ "invne2": {
+  "desc": "A necromancer's trophy, a zombie head: a severed rotting human head with grey-green mottled skin, sunken milky eyes, torn lips drawn back from broken teeth, patches of lank hair, crude black stitches across the scalp, hanging from a short knotted rope loop tied through the top of the scalp. Front three-quarter view.",
+  "note": "line Zombie Head / Fetish Trophy / Hellspawn Skull; rotting flesh, apart from the bandaged, stone-hided and horned heads"
+ },
+ "invne3": {
+  "desc": "A necromancer's trophy, an unraveller head: a desiccated mummified head, a brown leathery skull face half wrapped in loose strips of old yellowed linen bandage that trail off below it, dark empty eye sockets, a lipless grin of teeth, hanging from a small iron ring by a twisted leather cord. Front three-quarter view.",
+  "note": "line Unraveller Head / Sexton Trophy / Overseer Skull; a mummy's head in linen strips"
+ },
+ "invne4": {
+  "desc": "A necromancer's trophy, a gargoyle head: the severed head of a gargoyle, its hard grey stone-like hide cracked and pitted, a wide snarling mouth full of fangs, deep-set eyes under a heavy brow, two short curved horns and long pointed ears swept back, hanging from a short iron chain with a hook. Front three-quarter view.",
+  "note": "line Gargoyle Head / Cantor Trophy / Succubus Skull; grey stone-like hide"
+ },
+ "invne5": {
+  "desc": "A necromancer's trophy, a demon head: the dried severed head of a demon with dark oxblood-red leathery skin, two short thick black horns curving back from the brow, a heavy ridged brow over glaring eyes, a jaw of long fangs, shrivelled pointed ears, hanging from a braided leather thong knotted through an iron ring in its scalp. Front three-quarter view.",
+  "note": "line Demon Head / Hierophant Trophy / Bloodlord Skull; red skin and black horns, apart from the grey gargoyle"
+ },
+ "invpa1": {
+  "desc": "A paladin's targe: a small round convex shield of gilded bronze, its domed face embossed with a raised radiant sunburst of straight rays spreading from a small central boss, a narrow rim of dark steel set with rivets. Front three-quarter view.",
+  "note": "line Targe / Akaran Targe / Sacred Targe; domed gilt with a sunburst, apart from the flat silver rondache and the crown shield"
+ },
+ "invpa2": {
+  "desc": "A paladin's rondache: a flat round disc shield of dull silvery steel with a broad raised rim of gilded bronze, its face embossed with a plain equal-armed cross whose arms widen toward their ends, a small round boss where the arms meet. Front view.",
+  "note": "line Rondache / Akaran Rondache / Sacred Rondache; silver with a cross"
+ },
+ "invpa3": {
+  "desc": "A tall narrow holy knight's shield: pointed bottom, steel rim with gilded trim, the face painted with a quartered heraldic field of deep blue and aged ivory white and a small golden sun emblem in the center. Front view.",
+  "note": "the sample round's pa3 words (round 2, approved: its pick was s101)"
+ },
+ "invpa4": {
+  "desc": "A paladin's tall narrow holy shield with a straight flat top edge and square upper corners, its sides tapering in a long curve to a point at the bottom, a steel rim with gilded trim, the face painted a deep oxblood red with a long gilded sword emblem down the middle, point down. Front view.",
+  "note": "line Aerin Shield / Gilded Shield / Zakarum Shield; flat-topped and red with a sword, where the heraldic shield is round-topped and quartered"
+ },
+ "invpa5": {
+  "desc": "A paladin's crown shield: a round shield of dark steel with a raised gilded rim notched into small scallops, a large embossed gilded crown emblem with three points filling its centre, small rivets set around the rim. Front view.",
+  "note": "line Crown Shield / Royal Shield / Vortex Shield; a crown emblem and a scalloped rim"
+ },
+ "invskp": {
+  "desc": "A simple skull cap: a plain round iron bowl helmet hammered from one piece, a hemisphere just big enough to cover the crown of the head, a thin riveted iron band around its lower edge, a leather lining edge and a short leather chin strap showing beneath, no brim, no nasal bar, no face guard. Front three-quarter view.",
+  "fill": 0.85,
+  "note": "line Skull Cap / Sallet / Hydraskull; the smallest helm, so it doesn't fill its cells"
+ },
+ "invsml": {
+  "desc": "A small round wooden shield: thick planks joined edge to edge with visible grain and a few cracks, bound by a narrow hammered iron rim, a small conical iron boss in the centre, worn leather facing peeling at the edges. Front view.",
+  "note": "line Small Shield / Round Shield / Luna; wooden planks, where the buckler is all iron"
+ },
+ "invspk": {
+  "desc": "A spiked shield: a round shield of iron-banded wooden planks, seen at a three-quarter angle from the side so it looks like an upright oval and its spikes show in profile: rows of short sharp conical iron spikes jutting forward from its face and one long spike from its central iron boss, no spikes around the rim. Front three-quarter view.",
+  "note": "line Spiked Shield / Barbed Shield / Blade Barrier; spikes on the face, seen side-on so they read"
+ },
+ "invtow": {
+  "desc": "A tower shield: a tall rectangular shield with a gently curved face and a straight top edge, made of heavy vertical oak planks bound by three horizontal iron straps and an iron rim, a raised wooden ridge running down its centre, scuffed and arrow-scarred. Front view, upright.",
+  "note": "line Tower Shield / Pavise / Aegis; the tall rectangle, plain oak and iron straps"
  }
 }
