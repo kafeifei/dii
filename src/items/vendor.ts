@@ -340,6 +340,12 @@ function sameStack(a: Item, b: Item): boolean {
   return a.baseId === b.baseId && qualityOf(a) === qualityOf(b) && plain(a) && plain(b) && !!a.eth === !!b.eth;
 }
 
+/** whether shift + right-click buys it as a stack (buyIntoStack): a permanent key, arrows or bolts (ItemTypes.txt AutoStack) */
+export function stacksOnBuy(store: Store, item: Item): boolean {
+  const b = D2_BASES[item.baseId];
+  return !!b?.stack && !!ownType(b)?.stacks && multibuys(store, item);
+}
+
 /**
  * A new stack of arrows or bolts bought goes to the quiver slot first (SUNITNPC_BuyItem, SUnitNpc.cpp:1537-1572
  * as D2MOO decompiles it, with sub_6FC4A9B0 and sub_6FC42F20, ItemMode.cpp:932-1010 and 5187-5235):
@@ -366,8 +372,7 @@ export function quiverInto(equipment: Partial<Record<EquipSlot, Item>>, it: Item
  * is bought the usual way); n 0 when the gold doesn't stretch to one, or the new stack has no room
  */
 export function buyIntoStack(store: Store, item: Item, worn: readonly Item[], bag: Grid, purse: Purse, ctx: TradeCtx = {}, equipment?: Partial<Record<EquipSlot, Item>>): { stack: Item; n: number; spent: number; added: boolean } | null {
-  const b = D2_BASES[item.baseId];
-  if (!b?.stack || !ownType(b)?.stacks || !multibuys(store, item)) return null;
+  if (!stacksOnBuy(store, item)) return null;
   const each = buyPrice(store, { ...item, qty: 1 }, ctx);
   const afford = Math.floor(purseGold(purse) / Math.max(each, 1));
   const kin = [...worn, ...bag.items.map((x) => x.item)].find((it) => sameStack(item, it) && (it.qty ?? 1) < maxStack(it));

@@ -309,7 +309,8 @@ export default async function (page, shot, log) {
       await cell(scroll).click();
       await frames(2);
       const tip = await tooltipText();
-      expect(tip.includes('长按补满') && tip.includes('长按购买'), `the phone's tooltip: ${tip.replace(/\n/g, ' / ')}`);
+      // each gesture said once, for what it does: a second tap has the merchant ask, a long press fills the tome
+      expect(tip.includes('长按直接补满') && tip.includes('再点一下：商人问价后购买') && !tip.includes('长按购买') && !tip.includes('右键') && tip.split('长按').length === 2, `the phone's tooltip: ${tip.replace(/\n/g, ' / ')}`);
       await shot('phone-shop-tooltip');
       // a long press: the tome filled
       const box = await cell(scroll).boundingBox();

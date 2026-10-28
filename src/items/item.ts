@@ -491,6 +491,8 @@ export interface TooltipLine {
 export interface ReqContext extends Wearer {
   /** what the hero wears: a set item's bonuses go by the pieces of its set among them */
   worn?: Item[];
+  /** on the merchant's shelf: no line on using it, a right click (a phone's long press) buys it there */
+  shelf?: boolean;
 }
 
 const PROC_TEXT: Partial<Record<StatKey, string>> = {
@@ -750,7 +752,7 @@ export function tooltip(item: Item, ctx?: ReqContext, priceLine?: string | strin
       if (b.manaHeal) lines.push({ text: `回复 ${Math.floor((b.manaHeal * (cs?.mpPotion ?? 100)) / 100)} 点法力（${sec(b.manaSec)} 秒内）` });
       if (b.rejuv) lines.push({ text: `立即回复 ${Math.round(b.rejuv * 100)}% 生命与法力` });
       if (!b.heal && !b.manaHeal && !b.rejuv) lines.push({ text: NOT_IN_GAME, color: INERT_COLOR });
-      lines.push({ text: '右键点击使用', small: true, color: '#999' });
+      if (!ctx?.shelf) lines.push({ text: '右键点击使用', small: true, color: '#999' });
       return price();
     }
     case 'unknown':
@@ -776,7 +778,7 @@ export function tooltip(item: Item, ctx?: ReqContext, priceLine?: string | strin
       if (b.stack) lines.push({ text: fmt(S.ItemStats1i, tomeCharges(item), b.stack[1]) });
       const row = bookOf(b.id);
       const use = row?.spell === IDENTIFY_SPELL ? '右键点击，再点一件未辨识的物品' : row?.spell === TOWN_PORTAL_SPELL ? '右键点击打开回城传送门' : null;
-      lines.push({ text: use ?? NOT_IN_GAME, small: true, color: use ? '#999' : INERT_COLOR });
+      if (!use || !ctx?.shelf) lines.push({ text: use ?? NOT_IN_GAME, small: true, color: use ? '#999' : INERT_COLOR });
       if (row && b.type === 'tome') lines.push({ text: `把${ITEM_BASES[row.scroll]?.name ?? '卷轴'}放到书上补充，买的、捡的会自动放进来`, small: true, color: '#999' });
       return price();
     }

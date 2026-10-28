@@ -105,7 +105,8 @@ export function renderShop(ui: UIContext, L: HTMLElement) {
   L.appendChild(tabs);
   L.appendChild(renderGrid(ui, 'shop', store.grid));
   const p = ui.game.player;
-  const hint = ui.touch ? '点两下购买 · 长按直接买 · 放进来出售' : '右键购买 · 左键先问价 · 放进来出售';
+  // a phone's taps (touch.ts): the first shows the tooltip, the second is the left click (the merchant asks), a long press the right click
+  const hint = ui.touch ? '点两下问价购买 · 长按直接买 · 放进来出售' : '右键购买 · 左键先问价 · 放进来出售';
   L.appendChild(h('div', 'goldline', `<span>你的金币：${p.gold}${p.stashGold ? `（储物箱 ${p.stashGold}）` : ''}</span><span style="color:#8a8278;font-size:12px">${hint}</span>`));
   // the merchant's yes / no over the shelf
   const asked = tradeAsked(ui);

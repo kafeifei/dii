@@ -3,7 +3,7 @@ import { CHARGE_PREFIX } from '../game/player';
 import { isSocketFiller } from '../items/d2/sockets';
 import { baseOf, canSocket, displayName, tooltip, type TooltipLine } from '../items/item';
 import { fillableTome, isBookScroll, tomeRoom } from '../items/tomes';
-import { buyPrice, repairCost, sellPrice } from '../items/vendor';
+import { buyPrice, multibuys, repairCost, sellPrice, stacksOnBuy } from '../items/vendor';
 import { escapeHtml, h, type UIContext } from './common';
 import { isRepairing } from './inventory';
 
@@ -50,13 +50,26 @@ export class Tooltip {
     const src = holder.dataset.src;
     let price: string | string[] | undefined;
     if (src === 'shop') {
-      const each = buyPrice(ui.game.shop, item, ctx);
+      const store = ui.game.shop;
+      const each = buyPrice(store, item, ctx);
       // a scroll for a tome in the bag with room goes into it; shift + right-click fills it (vendor.ts buyIntoTome).
-      // Last, D2R's own line on what it sells (InventoryItemTooltipAppenderBuy, 右键点击购买; a phone's long press)
+      // Last, D2R's own line on what it sells (InventoryItemTooltipAppenderBuy, 右键点击购买). On a phone what
+      // its two gestures do: a second tap is the left click (the merchant asks), a long press the
+      // right click with D2's multibuy (inventory.ts buy, `fill`)
       const tome = isBookScroll(item) ? fillableTome(p.inventory, item) : undefined;
-      price = tome
-        ? [`购买价格：${each} 金币（放进背包里的${displayName(tome)}）`, `${ui.touch ? '长按' : 'Shift+右键'}补满：${tomeRoom(tome)} 张，${tomeRoom(tome) * each} 金币`, '右键点击购买']
-        : [`购买价格：${each} 金币`, '右键点击购买'];
+      const cost = tome ? `购买价格：${each} 金币（放进背包里的${displayName(tome)}）` : `购买价格：${each} 金币`;
+      const fill = tome ? `补满：${tomeRoom(tome)} 张，${tomeRoom(tome) * each} 金币` : null;
+      if (!ui.touch) price = fill ? [cost, `Shift+右键${fill}`, '右键点击购买'] : [cost, '右键点击购买'];
+      else {
+        const long = fill
+          ? `长按直接${fill}`
+          : stacksOnBuy(store, item)
+            ? '长按直接买满一组'
+            : baseOf(item).type === 'potion' && multibuys(store, item)
+              ? '长按直接购买，腰带有空位就接着买'
+              : '长按直接购买';
+        price = [cost, '再点一下：商人问价后购买', long];
+      }
     } else if (ui.left === 'shop' && isRepairing() && (src === 'inv' || src === 'eq')) {
       const c = repairCost(item, ctx);
       price = c ? `修理价格：${c} 金币` : item.eth ? '无形物品无法修理' : '不需要修理';
@@ -67,7 +80,7 @@ export class Tooltip {
       price = ui.game.stashBlock(ui.stashPage, item) ?? undefined;
     }
     const worn = Object.values(p.equipment).filter((x) => !!x);
-    this.show(tooltip(item, { level: p.level, str: p.stats.str, dex: p.stats.dex, cls: p.cls, worn }, price), e.clientX, e.clientY);
+    this.show(tooltip(item, { level: p.level, str: p.stats.str, dex: p.stats.dex, cls: p.cls, worn, shelf: src === 'shop' }, price), e.clientX, e.clientY);
   }
 
   show(lines: TooltipLine[], x: number, y: number) {
