@@ -183,9 +183,13 @@ export default async function (page, shot, log) {
           const S = window.__mon;
           const L = game.level;
           const p = game.player;
-          const m = L.monsters.filter((x) => !x.dead && x.rank === 'normal' && x.def.id === k && L.areaAt(x.pos.x, x.pos.z).id === id).sort((a, b) => S.dist(a.pos, p.pos) - S.dist(b.pos, p.pos))[0];
-          // in its blow's reach (a quill rat's, a shaman's shots: a little off), so the slow ones strike too
-          if (!m || !S.beside(m, m.missile() ? 2.5 : 1.3, 3.4)) return { error: `no spot by a ${k}` };
+          const all = L.monsters.filter((x) => !x.dead && x.rank === 'normal' && x.def.id === k && L.areaAt(x.pos.x, x.pos.z).id === id).sort((a, b) => S.dist(a.pos, p.pos) - S.dist(b.pos, p.pos));
+          // in its blow's reach (a quill rat's, a shaman's shots: a little off), so the slow ones strike too.
+          // The nearest may stand where nothing round it is clear (a den wall, a tree): the next one
+          // then, each at its reach and a little nearer or further
+          const reach = (x) => (x.missile() ? [2.5, 2, 3] : [1.3, 1.1, 1.6]);
+          const m = all.find((x) => reach(x).some((r) => S.beside(x, r, 3.4)));
+          if (!m) return { error: `no spot by any of ${all.length} ${k}` };
           m.awake = true;
           // whatever it was about (a slow zombie's wander), it thinks again now
           m.move = null;

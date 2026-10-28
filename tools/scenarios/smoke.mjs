@@ -396,19 +396,39 @@ export default async function (page, shot, log) {
     },
 
     async kill() {
-      const r = await ev((n) => {
+      const r = await ev(async (n) => {
         const p = game.player;
         const L = game.level;
         const xp0 = p.xp;
         const ground0 = L.ground.length;
         const dist = window.__smoke.dist;
-        const victims = L.monsters.filter((m) => !m.dead).sort((a, b) => dist(a.pos, p.pos) - dist(b.pos, p.pos)).slice(0, n);
-        for (const m of victims) game.killMonster(m, 'phys');
-        return { killed: victims.filter((m) => m.dead).length, tried: victims.length, xp: p.xp - xp0, drops: L.ground.length - ground0 };
+        const { killXp } = await import('/src/game/d2/xp.ts');
+        const { debugOpts } = await import('/src/game/debug.ts');
+        const { SHRINE_BY_ID } = await import('/src/data/shrines.ts');
+        // what a kill is worth to the hero now, as Game.killMonster reckons it: D2's level gap leaves a
+        // level-1 den monster's next to nothing to a level-11 hero (game/d2/xp.ts levelGapXp)
+        const worth = (m) => {
+          const add = (p.shrine ? (SHRINE_BY_ID[p.shrine.id].xpPct ?? 0) : 0) + (p.stats.bag.xpPct ?? 0);
+          return m.noXp ? 0 : Math.floor(killXp(m.xp, p.level, m.level, add) * debugOpts.xp);
+        };
+        // the nearest that are worth something; short of them, ones made at the hero's level beside it
+        const victims = L.monsters.filter((m) => !m.dead && worth(m) > 0).sort((a, b) => dist(a.pos, p.pos) - dist(b.pos, p.pos)).slice(0, n);
+        const model = L.monsters.find((m) => !m.dead && m.rank === 'normal' && !m.noXp);
+        while (model && victims.length < n) {
+          const t = new model.constructor(model.def, p.level, 'normal', { ...model.pos });
+          L.monsters.push(t);
+          victims.push(t);
+        }
+        let want = 0;
+        for (const m of victims) {
+          want += worth(m);
+          game.killMonster(m, 'phys');
+        }
+        return { killed: victims.filter((m) => m.dead).length, tried: victims.length, xp: p.xp - xp0, want, drops: L.ground.length - ground0 };
       }, KILLS);
-      expect(r.tried > 0, 'no monsters to kill');
+      expect(r.tried === KILLS, `${r.tried} monsters to kill`);
       expect(r.killed === r.tried, `${r.killed}/${r.tried} died`);
-      expect(r.xp > 0, `killing ${r.killed} gave ${r.xp} xp`);
+      expect(r.xp > 0 && r.xp === r.want, `killing ${r.killed} gave ${r.xp} xp, ${r.want} reckoned`);
       expect(r.drops > 0, `killing ${r.killed} dropped nothing`);
       facts.push(`${r.killed} kills (+${r.xp} xp, ${r.drops} drops)`);
     },
