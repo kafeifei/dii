@@ -1,7 +1,150 @@
 {
+ "invbst": {
+  "desc": "A battle staff, a war mage's fighting quarterstaff: a long, straight, even pole of dark seasoned oak as thick as a wrist, both ends shod with heavy riveted iron caps a hand's length long, a narrow iron band a third of the way in from each end, the middle wrapped with a worn leather grip. Shown perfectly upright, one iron-capped end at the top.",
+  "note": "iron-shod both ends tells it from the long staff (pale, slim) and the short staff (1x3)"
+ },
+ "invcst": {
+  "desc": "A gnarled wizard's staff: a long twisted branch of weathered grey-brown oak, knotted and crooked, its head a knot of curled roots around a small dull stone. Shown perfectly upright, the gnarled head at the top.",
+  "note": "the sample round's cst words (round 2, approved)"
+ },
+ "invlst": {
+  "desc": "A long staff: a tall, slender, perfectly straight pole of pale ash wood, thinner than a fighting staff, its top bound with a tight coil of dark cord and finished with a small domed iron cap, a leather-wrapped hand grip a third of the way down, a short tapered iron ferrule at the foot. Shown perfectly upright, the domed cap at the top."
+ },
+ "invsst": {
+  "desc": "A short staff, a traveller's walking staff about chest high: a straight slim rod of dark brown wood tapering a little toward the foot, a rounded knob at the top worn smooth by the hand, a short leather wrap under the knob with a loop of thong hanging from it, a small pointed iron ferrule at the foot. Shown perfectly upright, the knob at the top."
+ },
+ "invwst": {
+  "desc": "A war staff: a long heavy staff of dark wood as thick as a wrist, topped by a forged iron head shaped like a crescent of two curved horns sweeping up and outward to sharp tips, a riveted iron boss in the middle of the crescent, the socket under it bound with iron rings; a leather-wrapped grip at the middle; a short iron spike at the foot. Shown perfectly upright, the horned head at the top.",
+  "note": "the horned crescent head is the line's defining part; nothing hangs from it"
+ },
+ "invhst": {
+  "desc": "The completed staff of an ancient order of mages: a long straight shaft of dark bronze wound from foot to top by a thin carved serpent, crowned with a head of tarnished bronze: two spread metal wings sweeping up and outward in a V around a round medallion set with a small milky white stone; a small pointed bronze foot. Shown perfectly upright, the winged head at the top.",
+  "note": "quest item: the shaft (invmsf) with its head on, so the two share the serpent-wound shaft"
+ },
+ "invmsf": {
+  "desc": "The headless shaft of an ancient order of mages' staff: a straight rod of dark bronze wound from foot to top by a thin carved serpent with fine scales, the serpent's head resting just under the top; the top end is an empty, open socket where a head-piece is missing; a small pointed bronze foot. Shown perfectly upright, the open socket at the top.",
+  "note": "quest item: the staff (invhst) without its head"
+ },
+ "invwnd": {
+  "desc": "A plain apprentice's wand: a straight slender rod of smooth dark hardwood, tapering a little, banded near its upper end by three thin rings of tarnished bronze, its tip capped in bronze holding a small dull amber stone, a short grip wrapped in dark cord at the lower end and a plain rounded butt. Shown upright, the stone tip at the top.",
+  "note": "round 2's wnd (a yew shaft with a bone knob) would clash with the yew and bone wands, now pictures of their own"
+ },
+ "invywn": {
+  "desc": "A yew wand: two thin peeled yew twigs twisted round each other like a rope from the grip to the top, where they part into a small open fork; bound at the grip and under the fork with wraps of brown twine; a small carved yew bead hanging from the upper binding on a thong. Shown upright, the fork at the top."
+ },
+ "invbwn": {
+  "desc": "A bone wand: one long animal leg bone used as a wand, yellowed and cracked, with a knobbly rounded joint at each end, the shaft between them wrapped tightly in dark leather strips, a few small finger-bone charms hanging on a sinew cord just under the upper joint. Shown upright, the larger joint at the top."
+ },
+ "invgwn": {
+  "desc": "A grim wand: a short crooked stick of dark root wood whose top is lashed with sinew into the base of a small cracked human skull sitting on it like a knob, the skull without its jaw, its dark empty eye sockets facing the viewer; the grip wrapped in strips of old grey cloth. Shown upright, the skull at the top."
+ },
+ "invscp": {
+  "desc": "A scepter, a priest-king's short rod of office: a straight shaft of tarnished bronze, its head an open crown of six short bronze points around a round smoky grey stone, a collar of small beads under the crown, a grip wrapped in dark leather in the lower half, a small ball pommel at the foot. Shown upright, the crowned head at the top.",
+  "note": "round 2's scp words (gilded, red stone) left: the line's own picture is gold and red"
+ },
+ "invgsc": {
+  "desc": "A grand scepter, a long ceremonial holy rod: a straight shaft of dark wood banded with iron rings at intervals; on top a large flat round iron disc standing upright and facing the viewer, ringed with short blunt rays like a sun emblem, a raised round boss at its centre; a collar of three iron rings under the disc; a small round iron knob at the foot. Shown upright, the sun disc at the top."
+ },
+ "invwsp": {
+  "desc": "A war scepter, a heavy holy mace of office: a long straight haft bound in iron; on top a tall iron head of six thick flat flanges set round a central core, each flange with a notch cut in its edge, a short iron spike finial on top; a collar of riveted iron rings under the head; a long grip wrapped in dark leather; a heavy round iron pommel at the foot. Shown upright, the flanged head at the top."
+ },
+ "invob1": {
+  "desc": "A sorcerer's orb for the off hand: a clouded crystal sphere with a faint cold blue glow inside, clutched by three bronze talons on top of a short carved grip. Shown upright, the sphere at the top.",
+  "note": "the sample round's ob1 words (round 2, approved)"
+ },
+ "invob2": {
+  "desc": "A sorcerer's orb for the off hand, a sacred globe: a pale milky opal sphere girdled round its middle by a band of tarnished gold and crossed over its top by a half band, a tiny cross-shaped finial on its crown, set in a small cup on top of a short turned bronze grip with ring mouldings. Shown upright, the globe at the top."
+ },
+ "invob3": {
+  "desc": "A sorcerer's orb for the off hand: a sphere of smoky dark grey glass with slow wisps of pale smoke trapped inside, set deep in a cup of soot-blackened iron like a candle holder whose rim is cut into small points, on a short iron-banded wooden grip. Shown upright, the sphere at the top."
+ },
+ "invob4": {
+  "desc": "A sorcerer's orb for the off hand: a polished deep oxblood-red stone sphere half enclosed by four long curved bronze leaves rising from below like the closed sepals of a flower bud, clasping it, on a short slim grip wrapped in dark leather with a small bronze end knob. Shown upright, the sphere at the top."
+ },
+ "invob5": {
+  "desc": "A sorcerer's great orb: a large heavy sphere of dark violet stone with a faint swirling light inside, cradled in the forked, twisted top of a long crooked handle of natural root wood whose roots curl up round the sphere; the handle bound with leather strips and copper wire, its foot capped with a small iron ferrule. Larger and longer than a common orb. Shown upright, the sphere at the top."
+ },
+ "invspr": {
+  "desc": "A long spear: a willow-leaf-shaped iron spearhead with smooth convex edges and a low mid ridge, widest a third of the way up, no barbs, no hooks, not an arrowhead, on a socket and a long straight ash-wood shaft with a leather grip wrap in the middle and an iron butt cap. Shown perfectly upright, spearhead at the top.",
+  "guide": "spear",
+  "note": "the sample round's spr words (round 2, approved)"
+ },
+ "invpik": {
+  "desc": "A pike, a very long infantry spear: an extremely long, thin, straight ash shaft and, at its top only, a small narrow leaf-shaped iron point hardly wider than the shaft, on long iron strips nailed down the shaft below it; a short leather grip a third of the way up from the foot and a small iron butt cap. Much longer and thinner than a common spear, the head tiny. Shown perfectly upright, point at the top."
+ },
+ "invbrn": {
+  "desc": "A brandistock, a three-bladed war fork: a long straight wooden shaft with an iron socket at the top; from the socket rises one long, narrow, straight central spike, and close beside its base two much shorter thin side spikes branch off at a slight outward angle, one on each side, like a narrow three-pronged fork with a dominant middle prong; no crossbar, no hooks; a leather grip wrap in the middle and an iron butt cap. Shown perfectly upright, the spikes at the top, side view.",
+  "guide": true,
+  "shape": "one long straight central spike with two short thin side spikes branching close to its base at a slight outward angle, no crossbar, on a long straight shaft"
+ },
+ "invspt": {
+  "desc": "A spetum, a winged war spear: a long straight wooden shaft; at the top a long narrow straight double-edged central blade, and at its base two short flat side blades angled up and outward like a pair of wings, one on each side, so the head is like an arrowhead with a very long tip; an iron socket with a ring below them; a leather grip wrap in the middle and an iron butt cap. Shown perfectly upright, the blades at the top, front view.",
+  "guide": true,
+  "shape": "a long narrow central blade with two short flat wing blades spreading up and outward from its base, on a long straight shaft"
+ },
+ "invtri": {
+  "desc": "A trident, a three-pronged war fork: a long straight wooden shaft with an iron socket; at the top a curved iron crossbar like a shallow U carrying three straight parallel iron prongs of equal thickness, the middle one a little longer, each ending in a small barbed point; a leather grip wrap in the middle and an iron butt cap. Shown perfectly upright, the prongs at the top, front view."
+ },
+ "invam3": {
+  "desc": "A slender war spear of an ancient warrior sisterhood, of the classical Greek kind: a long, light, straight shaft of pale ash; a long narrow leaf-shaped iron blade with a raised midrib, finer and longer than a common spear's; a band of braided leather and a ring of small iron beads at the socket; at the foot a long tapering four-sided iron butt spike as long as a hand. Elegant and light, made for thrusting and throwing. Shown perfectly upright, blade at the top.",
+  "note": "class item (the spear-and-javelin heroine's): the butt spike and the fine blade tell it from the common spear"
+ },
+ "invam4": {
+  "desc": "A long, slender war pike of an ancient warrior sisterhood: an extremely long, thin, straight shaft; at the top a long four-sided needle-like iron spike with a small round stop disc under it; the shaft just below the head wrapped in braided leather for a hand's length; a small iron butt cap. Light and very long, the head a narrow needle with no blade. Shown perfectly upright, point at the top.",
+  "note": "class item: the needle head tells it from the common pike's small leaf point"
+ },
  "invhal": {
   "desc": "A halberd on a long straight wooden shaft with iron langets: on top a long straight spear spike; below it, on the RIGHT side only, one broad axe blade with a straight vertical edge; on the LEFT side only, a short curved back-hook like a bird's beak; the head is lopsided, not a double axe. Shown perfectly upright, the head at the top.",
   "guide": "halberd",
   "note": "the sample round's hal words (round 2, approved)"
+ },
+ "invbar": {
+  "desc": "A bardiche, a long-shafted war cleaver: a long straight wooden shaft; on the LEFT side of its upper end only, one very long, narrow, crescent-shaped axe blade a quarter of the whole weapon's length, its curved cutting edge facing left, its upper end rising above the top of the shaft into a point, its back fastened to the shaft at two points, by an iron socket near the top and by its lower tail riveted further down; nothing on the right side; an iron butt cap. Shown perfectly upright, the blade at the top, side view.",
+  "guide": true,
+  "shape": "one long narrow crescent blade on the left of the upper shaft, fixed at a socket near the top and at its lower tail, its point rising above the shaft's end"
+ },
+ "invpax": {
+  "desc": "A poleaxe, a knight's long-shafted axe: a long straight wooden shaft with iron langets; at the top, on the LEFT side, one broad rounded crescent axe blade, tall and deep, its curved edge facing left; on the RIGHT side opposite it a small square hammer face with a toothed striking surface; above them a short square top spike; an iron butt spike at the foot. Shown perfectly upright, the head at the top, side view.",
+  "guide": true,
+  "shape": "a broad rounded crescent axe blade on the left, a small square hammer head on the right, a short spike on top, on a long straight shaft"
+ },
+ "invvou": {
+  "desc": "A voulge, a long-shafted cleaver: a long straight wooden shaft; at its top a tall, narrow, flat, single-edged cleaver blade fixed along the RIGHT side of the shaft's upper end by two iron rings, its straight cutting edge facing right, its top cut at a slant into a sharp point rising above the end of the shaft, a short square spur on its back at the lower end; no hook, no axe on the left; an iron butt cap. Shown perfectly upright, the blade at the top, side view.",
+  "guide": true,
+  "shape": "a tall narrow straight-edged cleaver blade flush along the right of the upper shaft, its slanted point above the shaft's end, a small spur at its lower back"
+ },
+ "invscy": {
+  "desc": "A farmer's scythe turned to war: a long wooden snath gently curved like a stretched S, one short wooden hand peg sticking out sideways halfway down; at its top end, fixed at a right angle by an iron ring, a long curved iron blade sweeping out sideways to the RIGHT and a little upward, tapering to a sharp point, its cutting edge on the inner lower curve. Shown upright, the snath vertical, the blade across the top."
+ },
+ "invwsc": {
+  "desc": "A war scythe: a long straight wooden shaft, and at its top a long, narrow, gently curved single-edged blade standing straight up in line with the shaft, like a scythe blade forged to point upward, its cutting edge on the inner concave side, its tip curving a little forward to a sharp point; the blade's tang set in an iron socket bound with two iron rings; a leather grip wrap in the middle and an iron butt cap. Shown perfectly upright, the blade at the top, side view.",
+  "guide": true,
+  "shape": "a long narrow gently curved blade standing straight up in line with a long straight shaft, its tip curving a little forward"
+ },
+ "invjav": {
+  "desc": "Three throwing javelins bound together into a bundle: three slim straight wooden shafts side by side, almost parallel, fanning apart a little toward the top, tied together round their middles with a wound leather thong; each ends at the top in a small narrow leaf-shaped iron head, the three heads at slightly different heights; plain shaft ends at the bottom. Shown upright, the points at the top.",
+  "guide": true,
+  "shape": "three slim near-parallel shafts in a narrow bundle fanning slightly toward the top, bound at the middle, three small leaf points at staggered heights",
+  "note": "the line's picture is a stack of javelins, not one: round 2's single javelin left"
+ },
+ "invam5": {
+  "desc": "Three light barbed throwing javelins of an ancient warrior sisterhood, bound together into a bundle: three slim straight shafts side by side, fanning apart a little toward the top, tied together round their middles with a braided leather cord; each tipped with a slender iron head with one sharp backward-curving barb on one side, the three heads at slightly different heights, a small ring of braided leather below each head. Shown upright, the points at the top.",
+  "guide": true,
+  "shape": "three slim near-parallel shafts in a narrow bundle fanning slightly toward the top, bound at the middle, three barbed points at staggered heights",
+  "note": "class item; a bundle like the javelin's, told apart by the barbed heads"
+ },
+ "invpil": {
+  "desc": "A pilum, a heavy legionary throwing spear: its upper half a long thin iron shank as thin as a finger, ending in a small four-sided pyramid point; its lower half a thicker straight wooden shaft; the two joined by a square iron collar block with rivets, a leather grip wrap just below the joint; a small iron butt at the foot. Shown perfectly upright, the point at the top.",
+  "guide": true,
+  "shape": "upper half a long thin iron rod ending in a tiny pyramid point, a square collar at the middle, lower half a thicker wooden shaft"
+ },
+ "invglv": {
+  "desc": "A throwing glaive: a short light throwing spear whose head is a long broad knife blade a third of the whole length, single-edged with a straight back and a gently convex cutting edge curving up to a sharp point, on a short iron socket with a collar ring; a slim straight wooden shaft with a short leather grip at its balance point and a small iron butt cap. Shown perfectly upright, the blade at the top, side view."
+ },
+ "invssp": {
+  "desc": "A short spear: a short, sturdy, straight wooden shaft topped by a broad flat triangular iron head as wide as three fingers, with straight edges and a sharp point, no barbs, on an iron socket bound with a ring; a leather grip wrap near the middle; a plain rounded butt. Shown perfectly upright, the point at the top."
+ },
+ "invtsp": {
+  "desc": "A long throwing spear like a hunter's harpoon: a long slim straight wooden shaft, at its top a long narrow iron point with a single sharp backward barb on one side only, on a long iron socket; two leather bindings spaced along the shaft and a small iron butt cap. Shown perfectly upright, the point at the top."
  }
 }
