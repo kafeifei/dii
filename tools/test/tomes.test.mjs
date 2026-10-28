@@ -132,6 +132,19 @@ export default async (load) => {
     const most = D2_BASES.aqv.stack[1];
     check(q?.stack === worn && worn.qty === most && bagged.qty === 10, `arrows: the worn quiver to ${worn.qty}, the bag's ${bagged.qty}`);
     check(V.buyIntoStack(store, store.all().find((it) => it.baseId === 'hp1'), [], b2, rich) === null && V.buyIntoStack(store, shelf, [], b2, rich) === null, 'a potion or a scroll stacked');
+    // a new stack of arrows or bolts: the quiver slot first, for the bow or crossbow worn (SUnitNpc.cpp:1537-1572)
+    const bolts = store.all().find((it) => it.baseId === 'cqv');
+    const bow = { weapon: createItem('sbw') };
+    const bowBag = new Grid(10, 4);
+    const toQuiver = V.buyIntoStack(store, arrows, [], bowBag, rich, {}, bow);
+    check(toQuiver?.added && bow.offhand === toQuiver.stack && toQuiver.stack.qty === most && !bowBag.items.length, `arrows with a bow worn: into the quiver slot ${bow.offhand?.baseId} (${bow.offhand?.qty})`);
+    const again = V.buyIntoStack(store, arrows, [], bowBag, rich, {}, bow);
+    check(again?.added && bowBag.contains(again.stack) && bow.offhand === toQuiver.stack, 'with the quiver slot taken: into the bag');
+    const xbow = { weapon: createItem('lxb') };
+    check(!V.quiverInto(xbow, createItem('aqv')) && V.quiverInto(xbow, createItem('cqv')) && xbow.offhand?.baseId === 'cqv', 'arrows not into a crossbow\'s quiver slot, bolts are');
+    check(!V.quiverInto({ weapon: createItem('ssd') }, createItem('aqv')) && !V.quiverInto({}, createItem('cqv')) && !V.quiverInto({ weapon: createItem('sbw') }, createItem('key')), 'no quiver slot for a sword, bare hands or a key');
+    const plain = V.buyIntoStack(store, bolts, [], new Grid(10, 4), rich);
+    check(plain?.added && plain.n === D2_BASES.cqv.stack[1], 'bolts with no equipment given: a stack into the bag');
     facts.push(`keys ${per} each, 7 to top up 5`);
   }
 

@@ -341,16 +341,31 @@ function sameStack(a: Item, b: Item): boolean {
 }
 
 /**
+ * A new stack of arrows or bolts bought goes to the quiver slot first (SUNITNPC_BuyItem, SUnitNpc.cpp:1537-1572
+ * as D2MOO decompiles it, with sub_6FC4A9B0 and sub_6FC42F20, ItemMode.cpp:932-1010 and 5187-5235):
+ * put in the off hand while it is empty and the weapon worn is the bow (arrows) or crossbow (bolts)
+ * that shoots them (UNITS_GetWeaponClass; ItemTypes.txt Shoots / Quiver). False: it goes into the
+ * bag as anything else does. This build has no shooting yet (data/items.ts NO_USE), so no bow is worn
+ */
+export function quiverInto(equipment: Partial<Record<EquipSlot, Item>>, it: Item): boolean {
+  const q = D2_BASES[it.baseId];
+  const w = equipment.weapon && D2_BASES[equipment.weapon.baseId];
+  if (!q || !ownType(q)?.quiver || !w || equipment.offhand || ownType(w)?.shoots !== q.type) return false;
+  equipment.offhand = it;
+  return true;
+}
+
+/**
  * Shift + right-click on a permanent stack of an AutoStack item type (ItemTypes.txt AutoStack:
  * keys, arrows, bolts; SUNITNPC_BuyItem's multibuy, SUnitNpc.cpp:1432-1464 and 1601-1650 as D2MOO
  * decompiles it): priced one at a time (the shelf stack's quantity set to 1), it tops up the first
  * stack of its kind with room, worn (a quiver) before one in the bag (SUNITNPC_FindStackForStorePurchase,
  * 1160-1213), with as many as it has room for and the gold pays for; with no such stack, a new one
- * of as many as a stack holds and the gold pays for goes into the bag. Null when it isn't such an
- * item (it is bought the usual way); n 0 when the gold doesn't stretch to one, or the new stack has
- * no room in the bag
+ * of as many as a stack holds and the gold pays for goes to the quiver slot when the weapon worn
+ * shoots it (quiverInto, given `equipment`), else into the bag. Null when it isn't such an item (it
+ * is bought the usual way); n 0 when the gold doesn't stretch to one, or the new stack has no room
  */
-export function buyIntoStack(store: Store, item: Item, worn: readonly Item[], bag: Grid, purse: Purse, ctx: TradeCtx = {}): { stack: Item; n: number; spent: number; added: boolean } | null {
+export function buyIntoStack(store: Store, item: Item, worn: readonly Item[], bag: Grid, purse: Purse, ctx: TradeCtx = {}, equipment?: Partial<Record<EquipSlot, Item>>): { stack: Item; n: number; spent: number; added: boolean } | null {
   const b = D2_BASES[item.baseId];
   if (!b?.stack || !ownType(b)?.stacks || !multibuys(store, item)) return null;
   const each = buyPrice(store, { ...item, qty: 1 }, ctx);
@@ -364,7 +379,7 @@ export function buyIntoStack(store: Store, item: Item, worn: readonly Item[], ba
   }
   const n = Math.min(maxStack(item), afford);
   const fresh = { ...takeFromStore(store, item), qty: n };
-  if (n <= 0 || !bag.add(fresh)) return { stack: fresh, n: 0, spent: 0, added: false };
+  if (n <= 0 || !((equipment && quiverInto(equipment, fresh)) || bag.add(fresh))) return { stack: fresh, n: 0, spent: 0, added: false };
   pay(purse, n * each);
   return { stack: fresh, n, spent: n * each, added: true };
 }

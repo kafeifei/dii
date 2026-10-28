@@ -6,7 +6,7 @@ import type { Grid } from '../items/grid';
 import { baseOf, displayName, isIdentified, isUnknown, socketId, type Item } from '../items/item';
 import { insertFiller } from '../items/make';
 import { isTownPortal, readable, readFrom, scrollIntoTome } from '../items/tomes';
-import { buyIntoStack, buyIntoTome, buyPrice, multibuys, pay, permanent, purseGold, repairCost, repairOne, sellPrice, shelveSold, takeFromStore } from '../items/vendor';
+import { buyIntoStack, buyIntoTome, buyPrice, multibuys, pay, permanent, purseGold, quiverInto, repairCost, repairOne, sellPrice, shelveSold, takeFromStore } from '../items/vendor';
 import type { HeroLine } from '../audio/sounds';
 import { h, type UIContext } from './common';
 import { CELL, itemIcon } from './icons';
@@ -406,7 +406,8 @@ function openCube(ui: UIContext) {
  * buy from the shelf at its NPC's price (vendor.ts): a permanent item's copy, anything else itself.
  * A scroll goes into the bag's tome of its kind while it has room; `fill` (shift + right-click, D2's
  * multibuy), as many as it takes and the gold pays for (vendor.ts buyIntoTome). `fill` on a key,
- * arrows or bolts tops up a stack (vendor.ts buyIntoStack); on a potion that went into the belt,
+ * arrows or bolts tops up a stack (vendor.ts buyIntoStack); new arrows or bolts go to the quiver
+ * slot first for the bow or crossbow worn (vendor.ts quiverInto); on a potion that went into the belt,
  * more of them while the belt has room for them and the gold lasts (SUNITNPC_BuyItem, SUnitNpc.cpp:1465-1535:
  * the first one may go into the bag, the rest only into the belt). Paid with the gold carried, then
  * the stash's (vendor.ts pay)
@@ -414,8 +415,10 @@ function openCube(ui: UIContext) {
 function buy(ui: UIContext, it: Item, fill = false) {
   const p = ui.game.player;
   const store = ui.game.shop;
-  const stack = fill ? buyIntoStack(store, it, Object.values(p.equipment).filter((x): x is Item => !!x), p.inventory, p, p.tradeCtx()) : null;
+  const stack = fill ? buyIntoStack(store, it, Object.values(p.equipment).filter((x): x is Item => !!x), p.inventory, p, p.tradeCtx(), p.equipment) : null;
   if (stack) {
+    // a new stack into the quiver slot: what is worn changed
+    if (stack.added && p.equipment.offhand === stack.stack) p.markDirty();
     if (!stack.n) {
       if (purseGold(p) < buyPrice(store, { ...it, qty: 1 }, p.tradeCtx())) {
         ui.message('金币不足', '#ff6060');
@@ -458,7 +461,10 @@ function buy(ui: UIContext, it: Item, fill = false) {
   const perm = permanent(store, it);
   const got = perm ? takeFromStore(store, it) : it;
   const belted = baseOf(got).type === 'potion' && ui.game.beltInsert(got);
-  if (!belted && !p.inventory.add(got)) {
+  // arrows or bolts for the bow or crossbow worn: into the empty quiver slot first (vendor.ts quiverInto)
+  const quivered = !belted && quiverInto(p.equipment, got);
+  if (quivered) p.markDirty();
+  if (!belted && !quivered && !p.inventory.add(got)) {
     ui.message('背包已满', '#ff6060');
     ui.game.say('bag_full');
     return;
