@@ -16,8 +16,9 @@
 //
 // Every step can be stopped and run again. A run is box:~/icons/full/run-NN (claimed with mkdir, so two
 // sessions never share one) holding jobs.json, the paintings (gen/), cut-outs (cut/), candidates
-// (cand/: <picture>_s<seed>.webp, .1x.webp, .json) and review sheets (sheets/<group>_NN.png); the
-// candidates and sheets come back into icons-src/run-NN/ (ICONS_SRC; not committed). Box skips what a
+// (cand/: <picture>_s<seed>.webp, .1x.webp, .json, and .4x.webp for the sheets only) and review sheets
+// (sheets/<group>_NN.png); the candidates, sheets and guides come back into icons-src/run-NN/
+// (ICONS_SRC; not committed). Box skips what a
 // run already made, and a job id is its picture and seed, so a description changed after a run
 // painted it needs a new run (it says so). The GPUs are box's business (run.py: free ones only, locked).
 //
@@ -179,6 +180,12 @@ if (SEL.only) for (const id of SEL.only) if (!byId.has(id)) fail(`--only ${id}: 
 /** a picture's line in the sheets and the log: its base's name, or the special items' (ours) */
 const labelOf = (p) => (p.kind === 'unique' || p.kind === 'set' ? [...p.uniques, ...p.sets].map((s) => s.nameEn).join(' / ') : p.codes.find((c) => c.code === p.lead).en);
 
+/** every name a picture's review row lists: its bases, normal tier first, or the special items' */
+const servesOf = (p) =>
+  p.kind === 'unique' || p.kind === 'set'
+    ? [...p.uniques, ...p.sets].map((s) => s.nameEn)
+    : [...p.codes].sort((a, b) => (a.tier ?? 9) - (b.tier ?? 9)).map((c) => c.en).filter((n, i, a) => a.indexOf(n) === i);
+
 /** the official names of the special items a picture shows: a prompt names ours, never theirs */
 const officialOf = (p) => [...p.uniques, ...p.sets].map((s) => s.key).filter((k, i, a) => k.length > 5 && a.indexOf(k) === i);
 
@@ -218,6 +225,7 @@ function jobsFor(n) {
         h: p.h,
         fill: d.fill ?? 1,
         label: labelOf(p),
+        serves: servesOf(p),
         prompt,
         negative: NEGATIVE,
         width,
@@ -248,10 +256,18 @@ async function claimRun() {
   }
 }
 
+/** whether run.py's pid lives on box: true, false, or null when ssh itself failed (exit 255: a
+ * dropped connection says nothing about the run) */
+function alive(pid) {
+  const r = ssh(`kill -0 ${pid} 2>/dev/null && echo alive || echo gone`, { ok: true });
+  return r.status === 0 ? r.stdout.trim() === 'alive' : null;
+}
+
 function runStatus(n) {
   const r = ssh(`cat ${BOX_ROOT}/${runName(n)}/status.json 2>/dev/null`, { ok: true });
   const st = r.status === 0 && r.stdout.trim() ? JSON.parse(r.stdout) : null;
-  if (st?.state === 'running') st.alive = ssh(`kill -0 ${st.pid} 2>/dev/null`, { ok: true }).status === 0;
+  // unknown counts as alive: a second run.py must never start on a run that is still going
+  if (st?.state === 'running') st.alive = alive(st.pid) !== false;
   return st;
 }
 
@@ -286,9 +302,18 @@ function mergeJobs(n, jobs) {
 async function follow(n, off = 0) {
   const dir = `${BOX_ROOT}/${runName(n)}`;
   let carry = '';
+  let misses = 0;
   const t0 = Date.now();
   for (;;) {
-    const out = ssh(`cat ${dir}/status.json 2>/dev/null; echo; echo @@LOG@@; tail -c +${off + 1} ${dir}/logs/run.log 2>/dev/null`, { ok: true }).stdout;
+    const r = ssh(`cat ${dir}/status.json 2>/dev/null; echo; echo @@LOG@@; tail -c +${off + 1} ${dir}/logs/run.log 2>/dev/null; true`, { ok: true });
+    // box out of reach for a moment (ssh's own exit 255): ask again rather than give the run up
+    if (r.status !== 0) {
+      if (++misses > 30) fail(`${runName(n)}: box unreachable for 5 min: ${r.stderr.trim()} (--gen --run ${n} follows it again)`);
+      await sleep(10000);
+      continue;
+    }
+    misses = 0;
+    const out = r.stdout;
     const at = out.indexOf('\n@@LOG@@\n');
     const st = out.slice(0, at).trim();
     const text = out.slice(at + 9);
@@ -300,7 +325,7 @@ async function follow(n, off = 0) {
     if (s?.state === 'done') return s;
     if (s?.state === 'failed') fail(`${runName(n)} failed: ${s.error} (box:~/${dir}/logs/)`);
     // gone while the status says running: it may have just finished, so the status is read once more
-    if (s?.state === 'running' && ssh(`kill -0 ${s.pid} 2>/dev/null`, { ok: true }).status !== 0) {
+    if (s?.state === 'running' && alive(s.pid) === false) {
       const again = runStatus(n);
       if (again?.state !== 'done' && again?.state !== 'failed') fail(`${runName(n)} stopped without a word: run it again (--gen --run ${n})`);
       continue;
@@ -314,7 +339,7 @@ async function follow(n, off = 0) {
 function pull(n) {
   const dst = path.join(SRC, runName(n));
   fs.mkdirSync(dst, { recursive: true });
-  for (const sub of ['cand', 'sheets', 'logs']) rsync(`${BOX}:${BOX_ROOT}/${runName(n)}/${sub}`, dst);
+  for (const sub of ['cand', 'sheets', 'logs', 'guides']) rsync(`${BOX}:${BOX_ROOT}/${runName(n)}/${sub}`, dst);
   for (const f of ['jobs.json', 'status.json']) rsync(`${BOX}:${BOX_ROOT}/${runName(n)}/${f}`, dst);
   const sheets = fs.readdirSync(path.join(dst, 'sheets')).length;
   console.log(`${runName(n)}: candidates and ${sheets} sheets in ${path.relative(ROOT, dst) || dst}/`);

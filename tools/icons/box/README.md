@@ -27,7 +27,7 @@ jobs that don't have its output yet, so it is started again the same way after a
 | shape guides | `guides.py` | a job's `guide` → `guides/<name>_<W>x<H>.png` (its `ref[0]`): drawn, no model |
 | painting | `gen.py` | `jobs.json` → `gen/<id>.png` + `.json` (prompt, seed, timing, VRAM) |
 | matting | `cut.py` | `gen/` → `cut/<id>.png` (RGBA, trimmed) + `.json` (flags) |
-| grade, export | `export.py` (with `grade.py`) | `cut/` → `cand/<id>.webp`, `<id>.1x.webp`, `<id>.json` |
+| grade, export | `export.py` (with `grade.py`) | `cut/` → `cand/<id>.webp`, `<id>.1x.webp`, `<id>.4x.webp` (review only), `<id>.json` |
 | review sheets | `review.py` | `cand/` → `sheets/<group>_NN.png` |
 
 `run.py` writes `status.json` (`running`, `done` or `failed`, the step, the counts) and logs to
@@ -82,12 +82,19 @@ One fixed grade for every picture, no model: a tone curve through the picture's 
 shadows. Then premultiplied Lanczos into the item's cells less a 2 CSS px margin (times the description's
 `fill`): `<id>.webp` exactly w×68 by h×68 px (2×, high-density screens) and `<id>.1x.webp` w×34 by h×34 px
 with an unsharp mask (0.6 px, 50 %) on premultiplied colour. WebP, colour at quality 92, alpha lossless.
+`<id>.4x.webp` (136 px a cell, unsharpened, from the same graded cut-out) is only the review sheets' large
+view: `apply` never copies it into the game.
 
 ### Review sheets (`review.py`)
 
-A row per picture (its reference image under its name), a column per seed: the raw painting, the 2× and
-1× files on the game's inventory grid (`src/style.css` `.grid`), the seed and the cut's flags (red: EDGE,
-P<n> pieces, SH<share>). `ai-icons.mjs` brings them back into `icons-src/run-NN/sheets/`.
+A group's pictures in the list's order (a family stays together), split evenly into sheets of at most
+20 (12–20 for every group of 12 or more but 21–23). A row per picture: its id, every base it serves
+(normal tier first; a job's `serves`), its cells and kind, its shape guide or base picture under them;
+then a column per seed: the seed and the cut's flags (red: EDGE, P<n> pieces, SH<share>) over the
+candidate at 4× (the preview), 2× and 1× (the game's files), each on the game's inventory grid
+(`src/style.css` `.grid`). `ai-icons.mjs` brings them back into `icons-src/run-NN/sheets/`, with the run's
+`guides/`. `build()` takes two hooks (a column beside the label, a line under each seed), so a sheet
+can be made elsewhere from the pulled files.
 
 ## By hand
 
