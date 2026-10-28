@@ -1,1 +1,24 @@
-{}
+{
+ "inv2hs": {
+  "run": 5,
+  "seeds": [
+   101,
+   202,
+   303,
+   404,
+   505,
+   606,
+   707,
+   808
+  ],
+  "similarity": "0.46-0.51",
+  "reason": "All eight seeds are over the line (0.459-0.510, outline F1 0.57-0.73): the guide took hold (an iron bar guard under a leather ricasso with lugs, a banded two-hand grip, a pear pommel, upright, where the original is a slim diagonal blade with a gilt curled guard), but a blade this slim has no inside to compare, so the score is the slim straight outline the two share. It is the class, not a copy: our picked invbsw and invlsd score 0.458 and 0.463 against this original, the invbsw original itself 0.509, and these seeds 0.47-0.49 against invclm's; the broad-bladed picks invgis and invbsd score 0.31. A local probe (numpy, no model) widening each seed's blade 1.8x about its axis brings all eight to 0.355-0.441; 1.3x or grey colours do not.",
+  "fix": {
+   "desc": "A two-handed sword, a great sword for both hands: a long broad straight double-edged blade, wide and heavy, nearly as wide as a hand from the guard to well past its middle, with a shallow fuller, tapering over its last third to a sharp point; the lowest part of the blade, just above the guard, is a short blunt ricasso a little narrower than the blade, wrapped in dark leather, and at the top of that wrapping a pair of pointed iron parrying lugs stick out to the sides beyond the blade's edges; a long straight cross-guard of square iron bar with slightly down-turned ends; a very long grip for two hands, a quarter of the whole length, bound in leather with two raised bands; a small pear-shaped iron pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+   "guide": "two-handed-sword",
+   "shape": "a long broad straight blade, at its base about a third of the guard's width, tapering over its last third to the point; above the guard a short parallel-sided ricasso a little narrower than the blade, with two pointed lugs jutting out past the blade's edges at its top; a long straight guard with down-turned ends; a grip a quarter of the whole length with two raised bands; a small pear pommel",
+   "note": "corrected guide (two-handed-sword in box/guides.py, used by no other picture): blade (36, 1040) to (64, 1040), point 110 to 190, ricasso half 26 to 46, lugs (86, 1056, 46) to (122, 1056, 52), guard half 165 to 180, grip half 22 to 25, pear half 30 to 34; the broad blade takes our outline off the original's slim one, and the ricasso, lugs and long banded grip keep it apart from invgis (crude thick iron, short grip, lumpy pommel) and invbsw (no ricasso, waisted grip); iron lugs and pommel, no brass",
+   "seeds": "a new run with 8 seeds (101-808) once the guide is changed: the changed words make new jobs"
+  }
+ }
+}

@@ -43,6 +43,18 @@
   "run": 4,
   "seed": 404
  },
+ "invclm": {
+  "run": 5,
+  "seed": 404
+ },
+ "invclw": {
+  "run": 5,
+  "seed": 606
+ },
+ "invcrs": {
+  "run": 5,
+  "seed": 404
+ },
  "invd33": {
   "run": 4,
   "seed": 101
@@ -123,6 +135,10 @@
   "run": 4,
   "seed": 404
  },
+ "invmac": {
+  "run": 5,
+  "seed": 404
+ },
  "invmau": {
   "run": 4,
   "seed": 303
@@ -135,17 +151,49 @@
   "run": 4,
   "seed": 101
  },
+ "invqf1": {
+  "run": 5,
+  "seed": 505
+ },
+ "invqf2": {
+  "run": 5,
+  "seed": 202
+ },
+ "invsbr": {
+  "run": 5,
+  "seed": 202
+ },
+ "invscm": {
+  "run": 5,
+  "seed": 101
+ },
  "invskr": {
   "run": 4,
   "seed": 202
+ },
+ "invspc": {
+  "run": 5,
+  "seed": 404
  },
  "invssd": {
   "run": 4,
   "seed": 303
  },
+ "invtax": {
+  "run": 5,
+  "seed": 505
+ },
+ "invtkn": {
+  "run": 5,
+  "seed": 505
+ },
  "invwax": {
   "run": 4,
   "seed": 404
+ },
+ "invwhm": {
+  "run": 5,
+  "seed": 202
  },
  "invwsd": {
   "run": 4,
