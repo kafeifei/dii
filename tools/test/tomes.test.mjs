@@ -150,7 +150,7 @@ export default async (load) => {
     facts.push(`keys ${per} each, 7 to top up 5`);
   }
 
-  // ── Nightmare and Hell: greater and super healing and mana potions never sell out (SUnitNpc.cpp:1352-1354, 903-908) ──
+  // ── Nightmare and Hell: greater and super healing and mana potions never sell out (SUnitNpc.cpp:1371, 908) ──
   {
     const nm = V.fillStore(V.CAMP_VENDORS, 40, 1);
     const upgraded = nm.all().filter((it) => /^(hp|mp)[45]$/.test(it.baseId));

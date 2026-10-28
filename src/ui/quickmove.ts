@@ -1,7 +1,8 @@
 // What a modified click on an item does, apart from the DOM (tools/test/ctrlclick.test.mjs): D2's
-// shift+click on a potion in the bag (into the belt) and Diablo II: Resurrected's ctrl+click, which
-// D2 1.x hasn't: from the bag into the stash's page shown or the cube, sold at a merchant, else
-// dropped at the hero's feet; from the stash or the cube back into the bag.
+// shift+click on a potion or a scroll in the bag (into the belt, items/belt.ts) and Diablo II:
+// Resurrected's ctrl+click, which D2 1.x hasn't: from the bag into the stash's page shown or the
+// cube, sold at a merchant, else dropped at the hero's feet; from the stash or the cube back into
+// the bag.
 import type { Grid } from '../items/grid';
 import type { Item } from '../items/item';
 import type { LeftPanel } from './common';

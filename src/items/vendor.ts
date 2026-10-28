@@ -281,8 +281,8 @@ export function sellPrice(store: Store | readonly D2xNpc[], item: Item, ctx: Tra
 /**
  * Whether the shelf keeps it however many are bought: the NPC's permanent stock, and in Nightmare
  * and Hell any greater or super healing or mana potion on it, even one sold to it (SUNITNPC_BuyItem,
- * SUnitNpc.cpp:1352-1354, and SUNITNPC_RemovePurchasedItemFromStore, 903-908, as D2MOO decompiles them:
- * hp4, hp5, mp4 and mp5 pass the NPC's permanent list there)
+ * SUnitNpc.cpp:1371, and SUNITNPC_RemovePurchasedItemFromStore, 908, as D2MOO decompiles them: hp4,
+ * hp5, mp4 and mp5 pass the NPC's permanent list there)
  */
 export function permanent(store: Store, item: Item): boolean {
   return store.perm.has(item) || (store.difficulty > 0 && GREATER_POTIONS.has(item.baseId));
@@ -290,7 +290,8 @@ export function permanent(store: Store, item: Item): boolean {
 
 /**
  * What the hero takes home: a permanent item's copy (a new uid), anything else itself, off the shelf
- * (SUNITNPC_RemovePurchasedItemFromStore, SUnitNpc.cpp:880-911, keeps the permanent ones)
+ * (SUNITNPC_RemovePurchasedItemFromStore, SUnitNpc.cpp:854-924, keeps the permanent ones: its check
+ * at 908-919)
  */
 export function takeFromStore(store: Store, item: Item): Item {
   if (permanent(store, item)) return { ...structuredClone(item), uid: uid('i') };
@@ -299,8 +300,8 @@ export function takeFromStore(store: Store, item: Item): Item {
 }
 
 /**
- * Whether shift + right-click buys more than one (SUNITNPC_BuyItem's multibuy, D2Game SUnitNpc.cpp:1352-1366
- * as D2MOO decompiles it): only of what the NPC keeps for good, its permanent items, and in
+ * Whether shift + right-click buys more than one (SUNITNPC_BuyItem's multibuy, D2Game SUnitNpc.cpp:
+ * 1366-1391 as D2MOO decompiles it): only of what the NPC keeps for good, its permanent items, and in
  * Nightmare and Hell its greater and super healing and mana potions without that check (permanent)
  */
 export function multibuys(store: Store, item: Item): boolean {
