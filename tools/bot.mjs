@@ -65,6 +65,7 @@ export default async function (page, shot, log) {
     const { baseOf, displayName, isIdentified, itemReqStats } = await import('/src/items/item.ts');
     const V = await import('/src/items/vendor.ts');
     const T = await import('/src/items/tomes.ts');
+    const B = await import('/src/items/belt.ts');
     const { repairItem, isBroken } = await import('/src/items/d2/durability.ts');
     const { slotsFor } = await import('/src/data/items.ts');
     const { SKILL_BY_ID, SKILLS } = await import('/src/data/skills.ts');
@@ -120,7 +121,7 @@ export default async function (page, shot, log) {
     const stats = {
       route: route.slice(0, endIdx + 1).map((a) => a.key),
       deaths: 0, levels: [], events: [], kills: 0, uniques: 0, sets: 0, rares: 0, magics: 0, runes: 0, potionsUsed: 0,
-      townTrips: 0, chickens: 0, portals: 0, waypointTrips: 0, jumps: 0, identified: 0, sold: 0, soldGold: 0, bought: {}, spent: {}, repairs: 0, equipped: [], timeline: [], deathList: [],
+      casts: 0, blindCasts: 0, townTrips: 0, chickens: 0, portals: 0, waypointTrips: 0, jumps: 0, identified: 0, sold: 0, soldGold: 0, bought: {}, spent: {}, repairs: 0, equipped: [], timeline: [], deathList: [],
     };
     window.__bot = stats;
     let simTime = 0;
@@ -267,9 +268,11 @@ export default async function (page, shot, log) {
       }
     };
     /**
-     * The slot `it` would do best in and what the hero's score would be there, against what it is now
-     * (null: not better by 2%), tried on and taken off again. A shield isn't tried beside a
-     * two-handed weapon; a two-handed weapon is tried with the shield off
+     * The slot `it` would do best in and what the hero's score would be there, against what it is now,
+     * tried on and taken off again: an empty slot takes anything the hero can use there that does it
+     * no harm, a worn piece is replaced only by one better by 2% (null: neither). A shield isn't
+     * tried beside a two-handed weapon; a two-handed weapon is tried with the shield off, which makes
+     * it a replacement
      */
     const trial = (it) => {
       const pl = p();
@@ -284,12 +287,16 @@ export default async function (page, shot, log) {
         pl.equipment[slot] = it;
         if (slot === 'weapon' && bb.twoHanded) delete pl.equipment.offhand;
         recalc();
-        const s = pl.unusable(it) ? 0 : score();
+        const usable = !pl.unusable(it);
+        const s = usable ? score() : 0;
         if (old) pl.equipment[slot] = old;
         else delete pl.equipment[slot];
         if (oldOff) pl.equipment.offhand = oldOff;
         recalc();
-        if (s > before * 1.02 && (!best || s > best.s)) best = { slot, s, gain: s / before };
+        const empty = !old && !(slot === 'weapon' && bb.twoHanded && oldOff);
+        const takes = empty ? usable && s >= before * 0.999 : s > before * 1.02;
+        // an empty slot ranks below any real gain elsewhere (two ring slots: the empty one when no better)
+        if (takes && (!best || s > best.s || (s === best.s && empty))) best = { slot, s, gain: s / before };
       }
       return best;
     };
@@ -432,6 +439,49 @@ export default async function (page, shot, log) {
     const judged = new WeakSet();
     let judgedAt = 0;
     const keep = new WeakSet();
+    /** the belt's columns by kind: its share of mana potions (manaShare), healing and rejuvenation in the rest */
+    const shareOf = (kind) => (kind === 'mp' ? Math.round(4 * build.manaShare) : 4 - Math.round(4 * build.manaShare));
+    const colKind = (c) => (!c.length ? null : c[0].baseId.startsWith('mp') ? 'mp' : /^(hp|rv)/.test(c[0].baseId) ? 'hp' : 'other');
+    const colsOf = (kind) => p().belt.filter((c) => colKind(c) === kind).length;
+    /** into the belt where D2 puts it (items/belt.ts), but not into an empty column past its kind's share: a player keeps that one for the other kind */
+    const beltKeep = (it) => {
+      const pl = p();
+      const col = B.freeBeltColumn(pl.belt, pl.beltRows(), it);
+      if (col < 0) return false;
+      const kind = kindOf(it) === 'mp' ? 'mp' : 'hp';
+      if (!pl.belt[col].length && colsOf(kind) >= shareOf(kind)) return false;
+      return g.beltInsert(it);
+    };
+    /**
+     * The belt kept to the build's share of mana columns: healing potions picked up take any empty
+     * column (D2 belts them by itself), a drunk-out mana one too. A healing column past its share goes
+     * into the bag, kept, when there are mana potions in the bag to take its place (or in town, where
+     * they are bought: fillBelt), and those go in, as a player drags them
+     */
+    const keepShare = (inTown = false) => {
+      const pl = p();
+      for (let guard = 0; guard < 4 && colsOf('mp') < shareOf('mp'); guard++) {
+        const spare = bag().filter((x) => kindOf(x) === 'mp' && beltPotion(x));
+        let empty = pl.belt.find((c) => !c.length);
+        if (!empty) {
+          const extra = pl.belt.filter((c) => colKind(c) === 'hp');
+          if (extra.length <= shareOf('hp') || (!spare.length && !inTown)) return;
+          const col = extra.sort((a, c) => a.length - c.length)[0];
+          if (freeCells() < col.length) return;
+          for (const it of col.splice(0)) {
+            pl.inventory.add(it);
+            keep.add(it);
+            judged.add(it);
+          }
+          empty = col;
+        }
+        if (!spare.length) return;
+        for (const it of spare.slice(0, pl.beltRows())) {
+          pl.inventory.remove(it);
+          empty.push(it);
+        }
+      }
+    };
     const sortBag = (sell = null) => {
       const pl = p();
       if (judgedAt !== pl.level) {
@@ -443,7 +493,7 @@ export default async function (page, shot, log) {
         if (judged.has(it)) continue;
         const bb = baseOf(it);
         if (bb.type === 'potion') {
-          if (beltPotion(it) && g.beltInsert(it)) {
+          if (beltPotion(it) && pl.inventory.contains(it) && beltKeep(it)) {
             pl.inventory.remove(it);
             continue;
           }
@@ -544,16 +594,16 @@ export default async function (page, shot, log) {
       const pl = p();
       const rows = pl.beltRows();
       const best = (kind) => [5, 4, 3, 2, 1].map((n) => onShelf(`${kind}${n}`)).find(Boolean);
-      const mpCols = Math.round(4 * build.manaShare);
-      const cols = (kind) => pl.belt.filter((c) => c.length && c[0].baseId.startsWith(kind)).length;
+      // a healing column that took a mana one's place goes back to the bag first
+      keepShare(true);
       for (const kind of ['hp', 'mp']) {
-        const want = kind === 'mp' ? mpCols : 4 - mpCols;
         const it = best(kind);
         if (!it) continue;
         for (let k = 0; k < 16; k++) {
-          const sameCol = pl.belt.find((c) => c.length && c.length < rows && c[0].baseId === it.baseId);
+          // a column of its kind with room (any size of healing or mana potion: belt.ts beltKin), or an empty one within its share
+          const sameCol = pl.belt.find((c) => c.length && c.length < rows && B.beltKin(c[0], it));
           const empty = pl.belt.find((c) => !c.length);
-          if (!sameCol && !(empty && cols(kind) < want)) break;
+          if (!sameCol && !(empty && colsOf(kind) < shareOf(kind))) break;
           if (pl.gold - V.buyPrice(g.shop, it, pl.tradeCtx()) < keepGold) break;
           const got = buy(it, kind);
           if (!got) break;
@@ -817,12 +867,18 @@ export default async function (page, shot, log) {
       pl.xp = xpForLevel(Math.min(99, o.level));
       pl.gainXp(0);
       pl.gold += pl.level * 300;
-      spend();
-      for (let i = 0; i < 60; i++) {
-        // identified, as gear found and worn on the way would be
-        const it = rollEquipment(pl.level, { quality: 2, identified: true });
-        if (pl.inventory.add(it) && !equip(it)) pl.inventory.remove(it);
+      // identified, as gear found and worn on the way would be
+      const pile = Array.from({ length: 60 }, () => rollEquipment(pl.level, { quality: 2, identified: true }));
+      // its points first into the strength and dexterity the pile's best pieces ask (wouldSuit), as far as
+      // the points go, as a player levelling with such gear spends them; the rest by spend()
+      const asked = () => Math.max(0, wish.str - pl.base.str) + Math.max(0, wish.dex - pl.base.dex);
+      const ranked = pile.map((it) => ({ it, gain: withReqs(it, () => trial(it))?.gain ?? 0 })).filter((x) => x.gain > 0).sort((a, c) => c.gain - a.gain);
+      for (const { it } of ranked) {
+        const was = { ...wish };
+        if (wouldSuit(it) && asked() > pl.statPoints) Object.assign(wish, was);
       }
+      spend();
+      for (const it of pile) if (pl.inventory.add(it) && !equip(it)) pl.inventory.remove(it);
       for (const it of bag()) if (wearable(it)) pl.inventory.remove(it);
       const tome = createItem('tbk');
       tome.qty = 10;
@@ -901,7 +957,7 @@ export default async function (page, shot, log) {
       if (!it || skipGround.has(gi)) return false;
       const pl = p();
       const bb = baseOf(it);
-      const belt = bb.type === 'potion' && pl.belt.some((c) => c.length < pl.beltRows() && (!c.length || c[0].baseId === it.baseId));
+      const belt = bb.type === 'potion' && B.freeBeltColumn(pl.belt, pl.beltRows(), it) >= 0;
       if (!belt && !pl.inventory.findSpace(it)) return false;
       if (bb.type === 'potion') return beltPotion(it) && (belt || potions(it.baseId.slice(0, 2)) < 4);
       if (isBook(it)) return true;
@@ -920,6 +976,7 @@ export default async function (page, shot, log) {
     const fieldStep = (pl, cur) => {
       const L = g.level;
       const ns = near();
+      keepShare();
       // nearly dead with nothing to drink: out by town portal, as a player would
       if (pl.life < pl.stats.maxLife * 0.25 && potions('hp') === 0 && (tpCharges() > 0 || g.portalLevel === L) && !chicken) {
         homebound = chicken = true;
@@ -958,6 +1015,10 @@ export default async function (page, shot, log) {
         if (pl.intent.skill !== 'attack' && pl.mana < mana(pl.intent.skill)) {
           pl.intent = engage(t, dt);
           lastPick = 'no mana:' + (pl.intent.skill ?? 'closing in');
+        } else if (SKILL_BY_ID[pl.intent.skill]?.kind === 'spell' && (dt > SPELL_RANGE || !g.level.map.los(pl.pos, t.pos))) {
+          // the game casts at any range and through walls: out of sight or reach, closer first (engage)
+          pl.intent = engage(t, dt);
+          lastPick = 'no line:' + (pl.intent.skill ?? 'closing in');
         } else if (ns.length && ns[0].m !== t && ns[0].d < 2.5 && dt > 3.5) {
           pl.intent = engage(ns[0].m, ns[0].d);
           lastPick = 'retarget:' + (pl.intent.skill ?? 'closing in');
@@ -1102,7 +1163,20 @@ export default async function (page, shot, log) {
           }
         }
         const hadWps = pl.waypoints.length;
+        // a held spell begins the step the hero is free: its target out of sight or reach by now, closer first (engage)
+        const held = pl.intent;
+        if ((pl.state === 'idle' || pl.state === 'move') && held?.kind === 'attack' && !held.target.dead && SKILL_BY_ID[held.skill]?.kind === 'spell') {
+          const dt = Math.hypot(held.target.pos.x - pl.pos.x, held.target.pos.z - pl.pos.z);
+          if (dt > SPELL_RANGE || !g.level.map.los(pl.pos, held.target.pos)) pl.intent = engage(held.target, dt);
+        }
+        const wasCasting = pl.state === 'cast';
         g.update(STEP);
+        // a spell begun at a monster: out of sight or reach of it, it is wasted (counted for the tables)
+        const it = pl.intent;
+        if (!wasCasting && pl.state === 'cast' && it?.kind === 'attack' && SKILL_BY_ID[it.skill]?.kind === 'spell') {
+          stats.casts++;
+          if (Math.hypot(it.target.pos.x - pl.pos.x, it.target.pos.z - pl.pos.z) > SPELL_RANGE || !g.level.map.los(pl.pos, it.target.pos)) stats.blindCasts++;
+        }
         if (pl.waypoints.length > hadWps) event(`waypoint ${g.area.key}`);
         if (g.area.id !== seenArea) {
           // a trip home, however it went (a death's isn't one)
@@ -1171,7 +1245,7 @@ export default async function (page, shot, log) {
     const pl = game.player;
     const eq = Object.fromEntries(Object.entries(pl.equipment).map(([k, v]) => [k, `${displayName(v)} [${v.rarity}]${v.maxDur ? ` ${v.dur}/${v.maxDur}` : ''}`]));
     const d = pl.stats;
-    return { ...window.__bot, final: { cls: pl.cls, lvl: pl.level, life: d.maxLife, def: d.def, dmg: [d.wMin, d.wMax, d.dmgPct], ar: d.ar, res: d.res, gold: pl.gold, eq, base: pl.base, skills: pl.skills, belt: pl.belt.map((c) => c.length), bag: pl.inventory.items.map((x) => displayName(x.item)) } };
+    return { ...window.__bot, final: { cls: pl.cls, lvl: pl.level, life: d.maxLife, def: d.def, dmg: [d.wMin, d.wMax, d.dmgPct], ar: d.ar, res: d.res, gold: pl.gold, eq, base: pl.base, skills: pl.skills, belt: pl.belt.map((c) => c.length), bag: pl.inventory.items.map((x) => displayName(x.item)), beltKinds: pl.belt.map((c) => c.map((x) => x.baseId).join(" ")) } };
   });
   // a look at the hero as the run left it: the scene drawn again where it stands, its bag and gear open beside it
   await page.evaluate(() => {
@@ -1185,7 +1259,7 @@ export default async function (page, shot, log) {
   const { timeline, deathList, equipped, ...rest } = result;
   log(JSON.stringify(rest));
   log('equipped:\n  ' + equipped.join('\n  '));
-  log('BOT_RESULT ' + JSON.stringify({ route: result.route, levels: result.levels, events: result.events, deathList, final: result.final, trips: { town: result.townTrips, portals: result.portals, waypoints: result.waypointTrips, jumps: result.jumps, identified: result.identified, sold: result.sold, soldGold: result.soldGold, repairs: result.repairs, bought: result.bought, spent: result.spent }, stalls: timeline.filter((t) => t.startsWith('STALL')).slice(0, 2), status: await page.evaluate(() => window.__botStatus()) }));
+  log('BOT_RESULT ' + JSON.stringify({ route: result.route, levels: result.levels, events: result.events, deathList, final: result.final, casts: { all: result.casts, blind: result.blindCasts }, trips: { town: result.townTrips, portals: result.portals, waypoints: result.waypointTrips, jumps: result.jumps, identified: result.identified, sold: result.sold, soldGold: result.soldGold, repairs: result.repairs, bought: result.bought, spent: result.spent }, stalls: timeline.filter((t) => t.startsWith('STALL')).slice(0, 2), status: await page.evaluate(() => window.__botStatus()) }));
   const byArea = {};
   for (const t of deathList) byArea[t.area] = (byArea[t.area] ?? 0) + 1;
   log('deaths by area', JSON.stringify(byArea));
