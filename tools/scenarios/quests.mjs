@@ -5,8 +5,9 @@
 // mark of quest news; spoken to, she gives the quest in a scrolling line (cut short with 跳过), then
 // her menu: 交谈 has her remind the hero (spoken to again mid-line, or Esc, cuts it short), 取消
 // leaves her and the log says to find the den. Out of the camp (the record's LEAVETOWN), into the
-// den (ENTERAREA, the log's "clear it"), its monsters killed through the game until five or fewer
-// are left (the log counts them; kills out on the moor say nothing of it), then all: the quest is done
+// den (ENTERAREA, the log's "clear it"), its D2 monsters (Corpsefire and his pack among them) killed
+// through the game until five or fewer are left (the log counts them; kills out on the moor say
+// nothing of it), Corpsefire last, holding it up alone, then him: the quest is done
 // (its message, the record's reward pending) and the den lights up. Back in the camp she is marked
 // again; spoken to, she hands over the reward (+1 skill point) once and never again. The quest log
 // shows it done; saved and played again it stays done, and nightmare's record is untouched. Page
@@ -216,17 +217,21 @@ export default async function (page, shot, log) {
         const ok = game.enterArea(id, 'stairs');
         const p = game.player;
         game.teleportWithin(game.level.map.nearestWalkable(p.pos.x + 3, p.pos.z + 3) ?? p.pos);
-        return { ok, area: game.area?.id, enter: S.has(S.F.ENTERAREA), last: S.den().last, alive: S.alive().length, hemi: window.renderer.hemi.intensity };
+        // Corpsefire (his SuperUniques.txt row) and his pack
+        const cf = S.alive().find((m) => m.superUnique === 'Corpsefire');
+        return { ok, area: game.area?.id, enter: S.has(S.F.ENTERAREA), last: S.den().last, alive: S.alive().length, hemi: window.renderer.hemi.intensity, corpsefire: !!cf, pack: cf ? cf.minions.filter((m) => !m.dead).length : 0 };
       }, DEN_OF_EVIL);
       expect(into.ok && into.area === DEN_OF_EVIL, `into the den: ${JSON.stringify(into)}`);
       expect(into.enter && into.last === 2, `in the den: ENTERAREA ${into.enter}, the log's status ${into.last}`);
       expect(into.alive > 6, `only ${into.alive} monsters in the den`);
+      expect(into.corpsefire && into.pack > 0, `Corpsefire in the den ${into.corpsefire}, his pack ${into.pack}`);
       await frames(20);
       await shot('den-dark');
-      // all but three, through the game (God mode keeps the hero up)
+      // all but three, through the game (God mode keeps the hero up); Corpsefire among the three
       const few = await ev(() => {
         const S = window.__q;
-        for (const m of S.alive().slice(3)) game.killMonster(m, 'phys');
+        const alive = S.alive().sort((a, b) => (b.superUnique === 'Corpsefire') - (a.superUnique === 'Corpsefire'));
+        for (const m of alive.slice(3)) game.killMonster(m, 'phys');
         return { left: S.alive().length, remaining: S.den().remaining, last: S.den().last, msgs: S.messages() };
       });
       expect(few.left === 3 && few.remaining === 3 && few.last === 4, `three left: ${JSON.stringify(few)}`);
@@ -248,7 +253,13 @@ export default async function (page, shot, log) {
         return out;
       });
       expect(moor.area === 2 && moor.killed === 4 && !moor.said.length && !moor.news && moor.last === 4 && moor.remaining === 3, `kills on the moor: ${JSON.stringify(moor)}`);
-      // the last three: done
+      // the last three: Corpsefire standing alone holds it up; with him dead, done
+      const last = await ev(() => {
+        const S = window.__q;
+        for (const m of S.alive()) if (m.superUnique !== 'Corpsefire') game.killMonster(m, 'phys');
+        return { alive: S.alive().map((m) => m.superUnique ?? m.def.row.id), remaining: S.den().remaining, pending: S.has(S.F.REWARDPENDING) };
+      });
+      expect(last.alive.join() === 'Corpsefire' && last.remaining === 1 && !last.pending, `Corpsefire alone: ${JSON.stringify(last)}`);
       const done = await ev(() => {
         const S = window.__q;
         for (const m of S.alive()) game.killMonster(m, 'phys');
@@ -264,7 +275,7 @@ export default async function (page, shot, log) {
       await shot('den-lit');
       // the log's status turns to "go back" a few quest ticks later (ACT1Q1_Timer_StatusCycler)
       await until(() => window.__q.den().last === 5, null, 'the log to say to go back', 12000);
-      facts.push(`den: ${into.alive} monsters, light ${into.hemi.toFixed(2)} → ${hemi.toFixed(2)}`);
+      facts.push(`den: ${into.alive} monsters (Corpsefire and ${into.pack} of his), done with him last, light ${into.hemi.toFixed(2)} → ${hemi.toFixed(2)}`);
     },
 
     async reward() {
