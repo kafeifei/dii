@@ -1,7 +1,623 @@
 {
+ "invrsc": {
+  "desc": "A rolled parchment scroll with a slightly torn edge, tied in the middle with an ochre-yellow cord and sealed with amber wax, lying diagonally.",
+  "fill": 0.9,
+  "note": "the town portal scroll's words with an ochre tie: identify and knowledge scrolls read apart from it"
+ },
+ "invamu1": {
+  "desc": "An amulet: a large teardrop-shaped bronze pendant set with a big blue stone, filling most of the frame, a short loop of fine chain at its top.",
+  "fill": 0.92,
+  "note": "round 2's amu words with a short chain: the long chain took half the cell"
+ },
+ "invamu2": {
+  "desc": "An amulet: a round medallion of tarnished silver with a raised rim of tiny beads and an amber cabochon in its centre, filling most of the frame, a small bail ring and a short loop of fine chain at its top.",
+  "fill": 0.92
+ },
+ "invamu3": {
+  "desc": "An amulet: a diamond-shaped plaque of dark bronze with an engraved border and a square-cut deep green stone in its centre, filling most of the frame, a small bail ring and a short loop of leather cord at its top.",
+  "fill": 0.92
+ },
+ "invsbk": {
+  "desc": "A book of skill: a thick squat book lying at a three-quarter view, bound in dark brown tooled leather over boards, heavy iron plates on its corners, two broad riveted iron bands across the cover, an iron hasp lock on the fore-edge, no lettering.",
+  "fill": 0.9
+ },
+ "invbbb": {
+  "desc": "An ancient tome: a huge heavy book lying at a three-quarter view, its thick ragged vellum pages yellowed with age, the cover of dark red-brown leather over boards, cracked and peeling at the corners, iron studs along the spine, two leather straps with tarnished silver buckles across the fore-edge, no lettering.",
+  "fill": 0.95
+ },
+ "invbet": {
+  "desc": "An essence: a small heap of fine smouldering ash-red dust, glowing ember-orange in its cracks, a thin wisp of smoke rising from its peak.",
+  "fill": 0.8
+ },
+ "inveye": {
+  "desc": "An eyeball: a whole wet glistening eyeball, a yellowed white with fine red veins, an amber-gold iris and a dark pupil, a short stringy optic nerve trailing from its back.",
+  "fill": 0.75,
+  "note": "the plain eye and the two quest eyes share it"
+ },
+ "invscb": {
+  "desc": "A loose sheet of old parchment, yellowed and stained, its edges ragged and torn, its top and bottom edges curling over, creased across the middle, marked with faint faded brown ink strokes and a small drawn ring of dots, nothing legible. Seen from the front.",
+  "fill": 0.9,
+  "note": "three quest parchments share it: the stone-circle key, the tree's scroll and the resistance scroll"
+ },
+ "invbox": {
+  "desc": "A puzzle box: a cube of dark wood framed in tarnished brass, each face divided into interlocking panels engraved with geometric patterns, seen at a three-quarter view from above.",
+  "note": "the sample round's box words (round 2, approved)"
+ },
+ "invbrnz": {
+  "desc": "A brain: a whole wrinkled brain, pinkish grey with darker folds, wet and glistening, seen from the side.",
+  "fill": 0.85,
+  "note": "the plain brain and the two quest brains share it"
+ },
+ "invceh": {
+  "desc": "An essence: a small heap of fine pale yellow crystalline dust, tiny crackling pale blue sparks leaping over its surface.",
+  "fill": 0.8
+ },
+ "invch1": {
+  "desc": "A small charm: a small round talisman disk carved from ivory-coloured bone with a hole near its edge, a simple notched pattern carved in its face, a short knotted cord through the hole.",
+  "fill": 0.9,
+  "note": "round 2's cm1 words, a notched pattern for the rune: no letters on objects"
+ },
+ "invch4": {
+  "desc": "A small charm: a sheep's knucklebone, yellowed and polished smooth by handling, bound around its middle with a few turns of dark blue-dyed thread ending in a little tassel.",
+  "fill": 0.85
+ },
+ "invch7": {
+  "desc": "A small charm: a tiny round-bellied leather pouch cinched shut at the top with a cord, a single carved bone bead threaded on the cord, worn dark with handling.",
+  "fill": 0.85
+ },
+ "invch2": {
+  "desc": "A larger charm: a flat carved stone idol tablet with grooved geometric markings, bound with a leather thong and a small feather. Shown upright.",
+  "note": "the sample round's cm2 words (round 2, approved)"
+ },
+ "invch5": {
+  "desc": "A larger charm: a bundle of small bird bones and one long dark crow feather lashed together at the top with red-dyed sinew and a few clay beads. Shown upright, the lashing at the top."
+ },
+ "invch8": {
+  "desc": "A larger charm: a narrow plaque of hammered copper gone green with verdigris, punched with rows of small dots, its rounded top pierced with a hole holding a leather loop. Shown upright."
+ },
+ "invch3": {
+  "desc": "A grand charm: a tall talisman carved from a weathered grey-white antler, cracked and soot-stained, carved with spiral grooves, bound with copper wire and a few beads, no face, ivory-grey, not yellow. Shown upright.",
+  "note": "the sample round's cm3 words (round 2, approved)"
+ },
+ "invch6": {
+  "desc": "A grand charm: a long straight totem stick of dark carved wood, notched along its length and wrapped in two places with strips of hide, a few bone beads and a small curved claw hanging from a thong at its top. Shown upright."
+ },
+ "invch9": {
+  "desc": "A grand charm: a tall narrow slab of dark grey slate with chipped edges, carved with deep spiral and zigzag grooves filled with faded red ochre, a hole at the top with a leather thong through it. Shown upright."
+ },
+ "invfang": {
+  "desc": "A fang: one long curved fang of yellowed ivory, smooth and sharp, its root end rough and darkened. Shown upright, the point at the top.",
+  "fill": 0.85,
+  "note": "the fang and the horned lord's horn share it"
+ },
+ "invear": {
+  "desc": "An ear: a single severed human ear seen from the side, pale greyish flesh, a ragged dark cut edge with dried blood.",
+  "fill": 0.72
+ },
+ "invpot": {
+  "desc": "An elixir: a small round flask with a tall narrow neck, held in a cage of tarnished brass filigree, a brass stopper, filled with shimmering silver-grey liquid like quicksilver.",
+  "fill": 0.82
+ },
+ "invfed": {
+  "desc": "An essence: a small heap of damp sickly green-black dust, oozing and bubbling, a faint green vapour hanging above it.",
+  "fill": 0.8
+ },
+ "invflag": {
+  "desc": "A small war standard: a short dark wooden pole with an iron spike on top and a crossbar from which hangs a tattered square banner of oxblood-red cloth with a fringed lower edge, no emblem. Shown upright.",
+  "fill": 0.9,
+  "note": "the flag and the heroes' standard share it"
+ },
+ "invgbi": {
+  "desc": "A golden bird: a small statuette of a long-tailed bird cast in tarnished gold, standing on a short round pedestal, its head raised with a small crest, wings folded close to its body, its long tail feathers sweeping down behind the pedestal, finely engraved feathers. Shown upright.",
+  "fill": 0.95
+ },
+ "invgsba": {
+  "desc": "A small chipped sapphire: a rough broken fragment of dull deep blue crystal with uneven edges and cloudy inclusions.",
+  "fill": 0.55
+ },
+ "invgsga": {
+  "desc": "A small chipped emerald: a rough broken fragment of dull deep green crystal with uneven edges and cloudy inclusions.",
+  "fill": 0.55
+ },
+ "invgsra": {
+  "desc": "A small chipped ruby: a rough broken fragment of dull deep red crystal with uneven edges and cloudy inclusions.",
+  "fill": 0.55
+ },
+ "invgsva": {
+  "desc": "A small chipped amethyst: a rough broken fragment of dull violet crystal with uneven edges and cloudy inclusions.",
+  "fill": 0.55,
+  "note": "the sample round's gcv words (round 2, approved)"
+ },
+ "invgswa": {
+  "desc": "A small chipped diamond: a rough broken fragment of dull greyish colourless crystal with uneven edges and cloudy inclusions.",
+  "fill": 0.55
+ },
+ "invgsya": {
+  "desc": "A small chipped topaz: a rough broken fragment of dull honey-yellow crystal with uneven edges and cloudy inclusions.",
+  "fill": 0.55
+ },
+ "invgsbb": {
+  "desc": "A flawed sapphire: a small lopsided deep blue stone crudely ground into a few uneven facets, cloudy in places, with a visible crack running across it.",
+  "fill": 0.66
+ },
+ "invgsgb": {
+  "desc": "A flawed emerald: a small lopsided deep green stone crudely ground into a few uneven facets, cloudy in places, with a visible crack running across it.",
+  "fill": 0.66
+ },
+ "invgsrb": {
+  "desc": "A flawed ruby: a small lopsided deep red stone crudely ground into a few uneven facets, cloudy in places, with a visible crack running across it.",
+  "fill": 0.66
+ },
+ "invgsvb": {
+  "desc": "A flawed amethyst: a small lopsided violet stone crudely ground into a few uneven facets, cloudy in places, with a visible crack running across it.",
+  "fill": 0.66
+ },
+ "invgswb": {
+  "desc": "A flawed diamond: a small lopsided clear colourless stone crudely ground into a few uneven facets, cloudy in places, with a visible crack running across it.",
+  "fill": 0.66
+ },
+ "invgsyb": {
+  "desc": "A flawed topaz: a small lopsided honey-yellow stone crudely ground into a few uneven facets, cloudy in places, with a visible crack running across it.",
+  "fill": 0.66
+ },
+ "invgsbd": {
+  "desc": "A flawless sapphire: a large cushion-cut deep blue gemstone, a rounded square with many clean bright facets, clear and unclouded.",
+  "fill": 0.85
+ },
+ "invgld": {
+  "desc": "A small pile of old worn bright gold coins with warm glints, stamped with crude faces.",
+  "fill": 0.95,
+  "note": "the sample round's gld words (round 2, approved)"
+ },
+ "invgsgd": {
+  "desc": "A flawless emerald: a large cushion-cut deep green gemstone, a rounded square with many clean bright facets, clear and unclouded.",
+  "fill": 0.85
+ },
+ "invgsrd": {
+  "desc": "A flawless ruby: a large cushion-cut deep red gemstone, a rounded square with many clean bright facets, clear and unclouded.",
+  "fill": 0.85
+ },
+ "invgswd": {
+  "desc": "A flawless diamond: a large cushion-cut clear colourless gemstone, a rounded square with many clean bright facets, clear and unclouded.",
+  "fill": 0.85
+ },
+ "invgsyd": {
+  "desc": "A flawless topaz: a large cushion-cut honey-yellow gemstone, a rounded square with many clean bright facets, clear and unclouded.",
+  "fill": 0.85
+ },
+ "invgsbe": {
+  "desc": "A perfect sapphire: a large flawless brilliant-cut deep blue gemstone with many sharp facets.",
+  "fill": 0.92
+ },
+ "invgsge": {
+  "desc": "A perfect emerald: a large flawless brilliant-cut deep green gemstone with many sharp facets.",
+  "fill": 0.92
+ },
+ "invgsre": {
+  "desc": "A perfect ruby: a large flawless brilliant-cut deep red gemstone with many sharp facets.",
+  "fill": 0.92
+ },
+ "invgsve": {
+  "desc": "A perfect amethyst: a large flawless brilliant-cut violet gemstone with many sharp facets.",
+  "fill": 0.92,
+  "note": "the sample round's gpv words (round 2, approved)"
+ },
+ "invgswe": {
+  "desc": "A perfect diamond: a large flawless brilliant-cut clear colourless gemstone with many sharp facets.",
+  "fill": 0.92
+ },
+ "invgsye": {
+  "desc": "A perfect topaz: a large flawless brilliant-cut honey-yellow gemstone with many sharp facets.",
+  "fill": 0.92
+ },
+ "invgsbc": {
+  "desc": "A sapphire: a medium oval deep blue gemstone with a flat table on top and neat rows of step-cut facets around it, fairly clear with a few faint inclusions.",
+  "fill": 0.76
+ },
+ "invgsgc": {
+  "desc": "An emerald: a medium oval deep green gemstone with a flat table on top and neat rows of step-cut facets around it, fairly clear with a few faint inclusions.",
+  "fill": 0.76
+ },
+ "invgsrc": {
+  "desc": "A ruby: a medium oval deep red gemstone with a flat table on top and neat rows of step-cut facets around it, fairly clear with a few faint inclusions.",
+  "fill": 0.76
+ },
+ "invgsvc": {
+  "desc": "An amethyst: a medium oval violet gemstone with a flat table on top and neat rows of step-cut facets around it, fairly clear with a few faint inclusions.",
+  "fill": 0.76
+ },
+ "invgswc": {
+  "desc": "A diamond: a medium oval clear colourless gemstone with a flat table on top and neat rows of step-cut facets around it, fairly clear with a few faint inclusions.",
+  "fill": 0.76
+ },
+ "invgsyc": {
+  "desc": "A topaz: a medium oval honey-yellow gemstone with a flat table on top and neat rows of step-cut facets around it, fairly clear with a few faint inclusions.",
+  "fill": 0.76
+ },
+ "invgsvd": {
+  "desc": "A flawless amethyst: a large cushion-cut violet gemstone, a rounded square with many clean bright facets, clear and unclouded.",
+  "fill": 0.85
+ },
+ "invhp1": {
+  "desc": "A minor healing potion: a small narrow vial of thin greenish hand-blown glass with a plain cork, filled with glowing scarlet liquid, cheap and plain.",
+  "fill": 0.62
+ },
+ "invhp2": {
+  "desc": "A light healing potion: a small flat-sided flask of hand-blown glass, rounded like a pebble, with a short neck and a plain cork tied with string, filled with glowing scarlet liquid.",
+  "fill": 0.72
+ },
+ "invhp3": {
+  "desc": "A healing potion: a round-bellied flask of thick hand-blown glass with small bubbles, slightly lopsided and grimy, a short neck and a wax-dipped cork, filled with bright glowing scarlet liquid lit from within.",
+  "fill": 0.85,
+  "note": "the sample round's hp3 words (round 2, approved)"
+ },
+ "invhp4": {
+  "desc": "A greater healing potion: a large pear-shaped flask of thick hand-blown glass with a long neck and a wax-dipped cork, a net of knotted brown cord around its belly, filled with bright glowing scarlet liquid lit from within.",
+  "fill": 0.9
+ },
+ "invhp5": {
+  "desc": "A super healing potion: a large heavy flask of thick glass cut into flat facets like a gemstone, a tarnished pewter collar and stopper, filled with intensely glowing deep scarlet liquid lit from within.",
+  "fill": 0.95
+ },
+ "invhrb": {
+  "desc": "A herb: a small bundle of dried herb sprigs with grey-green leaves and tiny pale seed heads, the stems tied together with twine. Shown upright, the leaves at the top.",
+  "fill": 0.85
+ },
+ "invhorn": {
+  "desc": "A horn: a single curved beast horn, thick at its base with deep ridged growth rings, tapering in a smooth curve to a sharp point, weathered grey-brown with a darker tip. Shown upright, the point at the top curving to the left.",
+  "fill": 0.9
+ },
+ "invhrt": {
+  "desc": "A heart: a whole human heart, dark red muscle streaked with paler fat, the cut stumps of thick vessels at its top, wet and glistening.",
+  "fill": 0.85,
+  "note": "the plain heart and the quest heart share it"
+ },
+ "invrbk": {
+  "desc": "A thick tome standing upright, front cover facing the viewer, bound in worn dark oxblood-red leather, iron corner guards and a strap clasp, no lettering, a faded ochre-yellow ribbon bookmark hanging from the bottom.",
+  "note": "the ochre of the identify scroll's tie"
+ },
+ "invxyz": {
+  "desc": "A potion of life: a gourd-shaped bottle of pale hand-blown glass, a small round bulb above a large round bulb, a carved wooden stopper, filled with softly glowing pale gold liquid like honey.",
+  "fill": 0.85,
+  "note": "the quest potions share it"
+ },
+ "invjbi": {
+  "desc": "A jade figurine: a small statuette carved from muted green jade, a standing robed figure with its hands hidden in its wide sleeves and a plain, simply carved face, on a small round plinth of the same jade. Shown upright.",
+  "fill": 0.95
+ },
+ "invjaw": {
+  "desc": "A jawbone: the lower jaw bone of a large beast on its own, no skull, yellowed and cracked bone, a row of uneven worn teeth with two long canines at the front, seen from the side.",
+  "fill": 0.85
+ },
+ "invjw1": {
+  "desc": "A jewel: a faceted teardrop gem of deep orange held in a small open setting of six tarnished brass claws, no loop, no chain, seen from the front.",
+  "fill": 0.8,
+  "note": "a gem in a setting, so it reads apart from the loose gems"
+ },
+ "invjw2": {
+  "desc": "A jewel: a round faceted gem of dark sea-blue in a plain bezel of dark silver ringed with tiny beads, no loop, no chain, seen from the front.",
+  "fill": 0.8
+ },
+ "invjw3": {
+  "desc": "A jewel: a square-cut gem of muted violet held at its four corners by bronze prongs shaped like small leaves, no loop, no chain, seen from the front.",
+  "fill": 0.8
+ },
+ "invjw4": {
+  "desc": "A jewel: an oval faceted gem of deep green in a setting of twisted gold wire, no loop, no chain, seen from the front.",
+  "fill": 0.8
+ },
+ "invjw5": {
+  "desc": "A jewel: a hexagonal faceted gem of deep blood red in a thick hexagonal bronze bezel with notched edges, no loop, no chain, seen from the front.",
+  "fill": 0.8
+ },
+ "invjw6": {
+  "desc": "A jewel: a pointed oval faceted gem of smoky grey quartz in a slim setting of blackened iron claws, no loop, no chain, seen from the front.",
+  "fill": 0.8
+ },
+ "invkey": {
+  "desc": "An old skeleton key of pale worn iron with bright edge highlights: a large round bow, a thick shaft and a simple bit, lying diagonally.",
+  "fill": 0.95,
+  "note": "the sample round's key words (round 2, approved)"
+ },
+ "invmph": {
+  "desc": "A long heavy key of blackened iron: at the top a large ring-shaped bow with three short thorns pointing inward from its rim, a long shaft with two raised collars, at the bottom a broad square bit cut with deep notches. Shown upright, the bow at the top.",
+  "note": "the tower key and the three keys of the terror, hate and destruction lines share it"
+ },
+ "invmp1": {
+  "desc": "A minor mana potion: a small narrow vial of thin greenish hand-blown glass with a plain cork, filled with glowing cobalt-blue liquid, cheap and plain.",
+  "fill": 0.62
+ },
+ "invmp2": {
+  "desc": "A light mana potion: a small flat-sided flask of hand-blown glass, rounded like a pebble, with a short neck and a plain cork tied with string, filled with glowing cobalt-blue liquid.",
+  "fill": 0.72
+ },
+ "invmp3": {
+  "desc": "A mana potion: a round-bellied flask of thick hand-blown glass with small bubbles, slightly lopsided and grimy, a short neck and a wax-dipped cork, filled with bright glowing cobalt-blue liquid lit from within.",
+  "fill": 0.85,
+  "note": "the sample round's mp3 words (round 2, approved)"
+ },
+ "invmp4": {
+  "desc": "A greater mana potion: a large pear-shaped flask of thick hand-blown glass with a long neck and a wax-dipped cork, a net of knotted brown cord around its belly, filled with bright glowing cobalt-blue liquid lit from within.",
+  "fill": 0.9
+ },
+ "invmp5": {
+  "desc": "A super mana potion: a large heavy flask of thick glass cut into flat facets like a gemstone, a tarnished pewter collar and stopper, filled with intensely glowing deep cobalt-blue liquid lit from within.",
+  "fill": 0.95
+ },
+ "invmss": {
+  "desc": "A soulstone: a long jagged crystal shard of dark smoky crimson, faceted and translucent, glowing faintly red from deep inside, its broad end bound with a few turns of blackened wire, lying diagonally.",
+  "fill": 0.85,
+  "note": "also the picture of a unique small charm"
+ },
+ "invquil": {
+  "desc": "A quill: one long stiff spine shed by a beast, needle-sharp, banded in dark brown and pale bone, thicker and rough at its root, lying diagonally.",
+  "fill": 0.9
+ },
+ "invrel": {
+  "desc": "A rune stone: a rounded irregular river pebble of warm brown-grey stone with a flat smooth blank face and a chipped rim, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "the sample round's r01 words (round 2, approved); rune 1, the game draws the rune's name on the blank face"
+ },
+ "invreld": {
+  "desc": "A rune stone: a rounded flat pebble of pale sandy-buff sandstone, gritty and worn soft at the edges, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 2: the game draws its name on the blank face"
+ },
+ "invrtir": {
+  "desc": "A rune stone: an oval pebble of speckled grey granite, rough at the rim, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 3: the game draws its name on the blank face"
+ },
+ "invrnef": {
+  "desc": "A rune stone: a squat rounded pebble of reddish-brown sandstone with faint paler bands, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 4: the game draws its name on the blank face"
+ },
+ "invreth": {
+  "desc": "A rune stone: an egg-shaped pebble of cool blue-grey limestone, pitted at the rim, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 5: the game draws its name on the blank face"
+ },
+ "invrith": {
+  "desc": "A rune stone: a rounded pebble of greenish-grey river stone with a thin pale quartz line around its edge, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 6: the game draws its name on the blank face"
+ },
+ "invrtal": {
+  "desc": "A rune stone: a broad rounded pebble of ochre-brown ironstone, rusty in its pits, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 7: the game draws its name on the blank face"
+ },
+ "invrral": {
+  "desc": "A rune stone: a rounded pebble of dull red-brown jasper, worn smooth, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 8: the game draws its name on the blank face"
+ },
+ "invrort": {
+  "desc": "A rune stone: a thick rounded pebble of dark grey flint with a pale chalky crust around its edge, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 9: the game draws its name on the blank face"
+ },
+ "invrthul": {
+  "desc": "A rune stone: a rounded pebble of dark grey slate, its edges layered and flaking, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 10: the game draws its name on the blank face"
+ },
+ "invramn": {
+  "desc": "A rune stone: a rounded pebble of mottled grey-green serpentine stone, smooth and waxy, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 11: the game draws its name on the blank face"
+ },
+ "invrsol": {
+  "desc": "A rune stone: a smooth rounded stone of dark grey basalt with a few pale speckles, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 12: the game draws its name on the blank face"
+ },
+ "invrshae": {
+  "desc": "A rune stone: a smooth oval stone of deep brown-black river stone ringed with a thin pale band, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 13: the game draws its name on the blank face"
+ },
+ "invrdol": {
+  "desc": "A rune stone: a smooth rounded stone of grey-violet porphyry with small pale crystal flecks, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 14: the game draws its name on the blank face"
+ },
+ "invrhel": {
+  "desc": "A rune stone: a smooth rounded stone of dark green-black stone threaded with thin pale veins near its rim, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 15: the game draws its name on the blank face"
+ },
+ "invrio": {
+  "desc": "A rune stone: a smooth rounded stone of dusky blue-grey stone with a soft satin sheen, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 16: the game draws its name on the blank face"
+ },
+ "invrlum": {
+  "desc": "A rune stone: a smooth rounded stone of dark olive stone with thin gold-brown veins near its rim, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 17: the game draws its name on the blank face"
+ },
+ "invrko": {
+  "desc": "A rune stone: a smooth rounded stone of dense dark brown stone banded like agate around its edge, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 18: the game draws its name on the blank face"
+ },
+ "invrfal": {
+  "desc": "A rune stone: a smooth rounded stone of charcoal grey stone flecked with tiny glints of mica, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 19: the game draws its name on the blank face"
+ },
+ "invrlem": {
+  "desc": "A rune stone: a smooth rounded stone of deep oxblood-brown stone, waxy and smooth, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 20: the game draws its name on the blank face"
+ },
+ "invrpul": {
+  "desc": "A rune stone: a smooth rounded stone of dark slate-blue stone with a faint frost of pale veins around its rim, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 21: the game draws its name on the blank face"
+ },
+ "invrum": {
+  "desc": "A rune stone: a smooth rounded stone of dark umber stone with a thin rim of rust-red veins, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 22: the game draws its name on the blank face"
+ },
+ "invrmal": {
+  "desc": "A rune stone: a polished rounded stone of black basalt with a soft sheen and faint silver veins near its rim, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 23: the game draws its name on the blank face"
+ },
+ "invrist": {
+  "desc": "A rune stone: a polished rounded stone of dark smoky quartz, translucent at its thin edges, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 24: the game draws its name on the blank face"
+ },
+ "invrgul": {
+  "desc": "A rune stone: a polished rounded stone of black bloodstone speckled with small dark red spots, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 25: the game draws its name on the blank face"
+ },
+ "invrvex": {
+  "desc": "A rune stone: a polished rounded stone of glassy black obsidian with a sharp shell-like chipped rim, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 26: the game draws its name on the blank face"
+ },
+ "invrohm": {
+  "desc": "A rune stone: a polished rounded stone of deep black-green jade with a faint glow at its edges, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 27: the game draws its name on the blank face"
+ },
+ "invrlo": {
+  "desc": "A rune stone: a polished rounded stone of black stone with fine veins of tarnished gold around its rim, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 28: the game draws its name on the blank face"
+ },
+ "invrsur": {
+  "desc": "A rune stone: a polished rounded stone of blue-black stone with a deep glint of tiny starry flecks, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 29: the game draws its name on the blank face"
+ },
+ "invrber": {
+  "desc": "A rune stone: a polished rounded stone of black stone with a dark crimson glow deep in the cracks of its rim, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 30: the game draws its name on the blank face"
+ },
+ "invrjo": {
+  "desc": "A rune stone: a polished rounded stone of dark stone with a faint pearly sheen and thin gold veins near its rim, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 31: the game draws its name on the blank face"
+ },
+ "invrcham": {
+  "desc": "A rune stone: a polished rounded stone of black onyx banded with thin grey lines around its edge, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 32: the game draws its name on the blank face"
+ },
+ "invrzod": {
+  "desc": "A rune stone: a polished rounded stone of black stone smooth as glass, a thin vein of tarnished gold running around its rim and a faint warm glow at its edges, its face flat, smooth and blank, no frame, no square border, not a tile.",
+  "fill": 0.85,
+  "note": "rune 33: the game draws its name on the blank face"
+ },
  "invrin1": {
   "desc": "A heavy gold signet ring with a small dark red stone, worn and scratched, seen at a three-quarter angle.",
   "fill": 0.78,
   "note": "the sample round's rin words (round 2, approved)"
+ },
+ "invrin2": {
+  "desc": "A ring: a thick band of dark pitted iron with a raised setting holding a round smooth green cabochon stone, seen at a three-quarter angle.",
+  "fill": 0.78
+ },
+ "invrin3": {
+  "desc": "A ring: a band carved from yellowed bone, notched all around its outside, set with a small polished black stone, seen at a three-quarter angle.",
+  "fill": 0.78
+ },
+ "invrin4": {
+  "desc": "A ring: a band of tarnished bronze shaped as a coiled serpent biting its own tail, two tiny dull red stones for eyes, seen at a three-quarter angle.",
+  "fill": 0.78
+ },
+ "invrin5": {
+  "desc": "A ring: a slim band of tarnished silver with a tall bezel holding a large oval milky blue-grey moonstone, seen at a three-quarter angle.",
+  "fill": 0.78
+ },
+ "invvpl": {
+  "desc": "A full rejuvenation potion: a large squat round flask of thick hand-blown glass, wider than it is tall, a short neck ringed with a tarnished pewter collar and a wax-dipped cork, filled to the brim with bright glowing magenta-violet liquid lit from within.",
+  "fill": 0.92
+ },
+ "invvps": {
+  "desc": "A rejuvenation potion: a small squat hand-blown glass vial, wider than it is tall, with a short neck and a wax-dipped cork, filled with glowing magenta-violet liquid lit from within.",
+  "fill": 0.8,
+  "note": "the sample round's rvs words (round 2, approved)"
+ },
+ "invskc": {
+  "desc": "A chipped skull gem: a small broken human skull of dull yellowed bone, the jaw missing and a jagged piece of the cranium broken away, cracked and stained.",
+  "fill": 0.6
+ },
+ "invskf": {
+  "desc": "A flawed skull gem: a small cracked human skull of weathered grey-white bone without its lower jaw, a few chips and hairline cracks.",
+  "fill": 0.7
+ },
+ "invskl": {
+  "desc": "A flawless skull gem: a whole human skull with its lower jaw, carved from flawless polished ivory-white stone, glossy like a gem, deep dark eye sockets, no cracks.",
+  "fill": 0.86
+ },
+ "invsku": {
+  "desc": "A skull gem: a small smooth polished human skull carved from milky bone-white stone, glossy like a gem, dark eye sockets.",
+  "fill": 0.8,
+  "note": "the sample round's sku words (round 2, approved)"
+ },
+ "invskz": {
+  "desc": "A perfect skull gem: a whole human skull with its lower jaw, carved from flawless milky translucent white stone that glows faintly from within, glossy like a gem, fine veins of gold traced through it.",
+  "fill": 0.92
+ },
+ "invsple": {
+  "desc": "A spleen: an elongated bean-shaped organ, dark purplish red, wet and glistening, a few pale veins across it.",
+  "fill": 0.8,
+  "note": "the spleen and the soul share it"
+ },
+ "invtail": {
+  "desc": "A tail: a long severed reptile tail on its own, no body, covered in small dark green-brown scales, curled in a loose S, tapering to a thin whip-like tip, a raw cut end.",
+  "fill": 0.9
+ },
+ "invbbk": {
+  "desc": "A thick tome bound in worn tan leather standing upright, front cover facing the viewer, brass corner guards and a clasp, a faded blue cloth bookmark.",
+  "note": "the sample round's tbk words (round 2, approved)"
+ },
+ "invtrch": {
+  "desc": "A torch: a rough wooden stick, its upper end wrapped in tarred cloth bound with a twisted iron band, burning with a small steady orange flame. Shown upright, the flame at the top.",
+  "note": "also the picture of a unique 1x2 charm"
+ },
+ "invtes": {
+  "desc": "An essence: a small heap of fine dark violet dust twisted into a tight spiral like a whirlpool, faint violet glints in its grooves.",
+  "fill": 0.8
+ },
+ "invtoa": {
+  "desc": "A token: a small heavy tau-cross token cast in dull silver-grey pewter, shaped like a capital letter T, its three arms of even thickness each ending in a small rounded knob, a little pale blue stone set where the arms meet, worn engraved lines along the arms, standing upright.",
+  "guide": true,
+  "shape": "a capital T standing upright: a horizontal bar across the top and a vertical stem of the same thickness down from its middle, about as tall as the bar is wide, each of the three ends a small round knob, a small round stone where bar and stem meet",
+  "fill": 0.85,
+  "note": "the T is what the token is; its ends, stone and engraving are ours"
+ },
+ "invhscr": {
+  "desc": "A scroll on two upright wooden rollers, opened sideways: the yellowed parchment wound onto a roller at the left and a roller at the right, spread between them as a wide stretch of blank stained parchment, each roller's ends capped with dark brass knobs, a red cord hanging loose from one roller.",
+  "guide": true,
+  "shape": "two upright rollers, one at the left and one at the right, each a thick cylinder of rolled parchment with a knob at both ends sticking out above and below it, joined by a flat rectangular sheet between them a little shorter than the rolls; the whole about half again as wide as it is tall",
+  "fill": 0.95
+ },
+ "invbsc": {
+  "desc": "A rolled parchment scroll with a slightly torn edge, tied in the middle with a blue cord and sealed with blue wax, lying diagonally.",
+  "fill": 0.9,
+  "note": "the sample round's tsc words (round 2, approved)"
+ },
+ "invwps": {
+  "desc": "A stamina potion: a slim tall bottle of clear hand-blown glass with sloping shoulders, a narrow neck and a cork tied with string, filled with cloudy pale cream-yellow liquid.",
+  "fill": 0.82
+ },
+ "invyps": {
+  "desc": "A thawing potion: a small flat round flask of thick glass, half wrapped in a strip of shaggy sheepskin tied with a leather cord, filled with warm glowing ember-orange liquid.",
+  "fill": 0.85
+ },
+ "invnps": {
+  "desc": "An antidote potion: a small square-shouldered bottle of thick dark green glass with a cork, a sprig of dried herb tied to its neck with twine, murky green liquid inside.",
+  "fill": 0.8
  }
 }
