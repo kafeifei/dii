@@ -15,8 +15,18 @@
 const SAVE_V = 4;
 /** the save slot ?dev plays in (src/game/save.ts), apart from the real characters */
 const DEV_SLOT = 'dii-save-dev';
-/** how many monsters to kill in the Den of Evil */
-const KILLS = 8;
+/**
+ * How many monsters to kill in the Den of Evil, each rolling its treasure class 5 times (the debug
+ * panel's loot ×5, Game.rollLoot): enough that their dropping nothing at all is out of the question.
+ * The den's zombies, brutes and fallen shamans (Levels.txt) roll Act 1 H2H or Cast, which leave
+ * nothing in 100 of 160 (the classes they name always drop): (100/160)^80 ≈ 5 in 10^17 for 16 of
+ * them, where 8 were 7 in 10^9; Act 1's least giving, the quill rats' Quill at 125 of 163, would
+ * still be 6 in 10^10. The run reckons it for the monsters it kills and holds it under
+ * NO_DROP_ODDS, so a change that made a dry run likely fails every time, not by chance
+ */
+const KILLS = 16;
+/** the most the chance of the kills dropping nothing at all may be */
+const NO_DROP_ODDS = 1e-9;
 /** the areas the run goes through (src/world/areas.ts CAMP_AREA, WILD_AREA, COLD_PLAINS, DEN_OF_EVIL) */
 const CAMP = 1;
 const MOOR = 2;
@@ -194,7 +204,7 @@ export default async function (page, shot, log) {
       const s3 = await state();
       expect(s3.ground === s2.ground + 1 && s3.uniques === s2.uniques + 1, `the unique button dropped ${s3.ground - s2.ground} item(s), ${s3.uniques - s2.uniques} unique`);
       await debugButton('经验', '×10').click();
-      // plenty of loot rolls, so a handful of kills is sure to drop something
+      // five loot rolls a kill, so the den's kills can't all come up empty (KILLS)
       await debugButton('掉落', '×5').click();
       const opts = await ev(() => {
         const on = (row) => [...document.querySelectorAll('.overlay.settings.open .setting')].find((r) => r.querySelector('.label > span')?.textContent === row)?.querySelector('button.on')?.textContent;
@@ -405,6 +415,19 @@ export default async function (page, shot, log) {
         const { killXp } = await import('/src/game/d2/xp.ts');
         const { debugOpts } = await import('/src/game/debug.ts');
         const { SHRINE_BY_ID } = await import('/src/data/shrines.ts');
+        const { monsterLootTc } = await import('/src/game/loot.ts');
+        const { D2X_TREASURE_CLASSES } = await import('/src/data/d2x/treasure.ts');
+        const { noDropFor, totalProb } = await import('/src/items/d2/treasure.ts');
+        // the chance a treasure class drops nothing (items/d2/treasure.ts evalTc): each pick its
+        // NoDrop share, or an entry naming a class that drops nothing in turn
+        const nothing = (name) => {
+          const tc = D2X_TREASURE_CLASSES[name];
+          if (!tc || !tc.items.length) return 1;
+          if (tc.picks < 0) return tc.items.reduce((q, e) => q * (e.tc ? nothing(e.tc) : 0), 1);
+          const nd = noDropFor(tc);
+          const q = (nd + tc.items.reduce((sum, e) => sum + (e.tc ? e.prob * nothing(e.tc) : 0), 0)) / (totalProb(tc) + nd);
+          return q ** Math.abs(tc.picks || 1);
+        };
         // what a kill is worth to the hero now, as Game.killMonster reckons it: D2's level gap leaves a
         // level-1 den monster's next to nothing to a level-11 hero (game/d2/xp.ts levelGapXp)
         const worth = (m) => {
@@ -419,18 +442,22 @@ export default async function (page, shot, log) {
           L.monsters.push(t);
           victims.push(t);
         }
+        // the chance that none of them drops a thing, reckoned before they die: each one's class, rolled once a loot pass
+        let dry = 1;
+        for (const m of victims) dry *= nothing(monsterLootTc(m, m.difficulty ?? p.difficulty, p.quests[p.difficulty])) ** debugOpts.loot;
         let want = 0;
         for (const m of victims) {
           want += worth(m);
           game.killMonster(m, 'phys');
         }
-        return { killed: victims.filter((m) => m.dead).length, tried: victims.length, xp: p.xp - xp0, want, drops: L.ground.length - ground0 };
+        return { killed: victims.filter((m) => m.dead).length, tried: victims.length, xp: p.xp - xp0, want, drops: L.ground.length - ground0, dry, loot: debugOpts.loot };
       }, KILLS);
       expect(r.tried === KILLS, `${r.tried} monsters to kill`);
       expect(r.killed === r.tried, `${r.killed}/${r.tried} died`);
       expect(r.xp > 0 && r.xp === r.want, `killing ${r.killed} gave ${r.xp} xp, ${r.want} reckoned`);
+      expect(r.dry < NO_DROP_ODDS, `the ${r.tried} kills, ${r.loot} loot pass(es) each, drop nothing at all with a chance of ${r.dry.toExponential(1)}, over ${NO_DROP_ODDS}`);
       expect(r.drops > 0, `killing ${r.killed} dropped nothing`);
-      facts.push(`${r.killed} kills (+${r.xp} xp, ${r.drops} drops)`);
+      facts.push(`${r.killed} kills (+${r.xp} xp, ${r.drops} drops; none at all ${r.dry ? r.dry.toExponential(0) : 'never'})`);
     },
 
     async xpRate() {
