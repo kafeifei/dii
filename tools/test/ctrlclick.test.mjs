@@ -1,6 +1,6 @@
-// What a modified click on an item does (src/ui/quickmove.ts, Game.dropFromBag): ctrl or cmd is
-// D2R's ctrl+click, a Mac's ctrl+click that a browser reports as the right button too, and shift
-// alone is D2's shift+click. Ctrl+click from the bag goes into the stash's page shown or the cube,
+// What a modified click on an item does (src/ui/quickmove.ts, Game.dropFromBag): ctrl or cmd with
+// the left button is D2R's ctrl+click, with the right button a right click still, and shift alone
+// is D2's shift+click. Ctrl+click from the bag goes into the stash's page shown or the cube,
 // is sold with a merchant's open, else is dropped; from the stash or the cube it comes back to the
 // bag; the shop's stock has none. A move that finds no room leaves the item where it was. A drop
 // puts it on the ground by the hero, in the camp too, where it is picked up again; a dead hero drops
@@ -18,23 +18,21 @@ export default async (load) => {
   const ev = (button, keys = '') => ({ button, ctrlKey: keys.includes('c'), metaKey: keys.includes('m'), shiftKey: keys.includes('s') });
   const show = (p) => `${p.button}${p.ctrl ? '+ctrl' : ''}${p.shift ? '+shift' : ''}`;
 
-  // ── the press: ctrl or cmd is ctrl+click; shift alone isn't; a Mac's ctrl with the right button is the left ──
-  for (const [e, mac, want] of [
-    [ev(0, 'c'), false, '0+ctrl'],
-    [ev(0, 'm'), false, '0+ctrl'],
-    [ev(0, 'c'), true, '0+ctrl'],
-    [ev(0, 'm'), true, '0+ctrl'],
-    [ev(2, 'c'), true, '0+ctrl'],
-    [ev(2, 'cs'), true, '0+ctrl+shift'],
-    [ev(2, 'c'), false, '2+ctrl'],
-    [ev(2, 'm'), true, '2+ctrl'],
-    [ev(2), true, '2'],
-    [ev(0, 's'), false, '0+shift'],
-    [ev(2, 's'), false, '2+shift'],
-    [ev(0), true, '0'],
+  // ── the press: ctrl or cmd is ctrl+click; shift alone isn't; the right button with ctrl stays the right ──
+  for (const [e, want] of [
+    [ev(0, 'c'), '0+ctrl'],
+    [ev(0, 'm'), '0+ctrl'],
+    [ev(0, 'cs'), '0+ctrl+shift'],
+    [ev(2, 'c'), '2+ctrl'],
+    [ev(2, 'cs'), '2+ctrl+shift'],
+    [ev(2, 'm'), '2+ctrl'],
+    [ev(2), '2'],
+    [ev(0, 's'), '0+shift'],
+    [ev(2, 's'), '2+shift'],
+    [ev(0), '0'],
   ]) {
-    const got = show(Q.readPress(e, mac));
-    check(got === want, `${JSON.stringify(e)} on ${mac ? 'a Mac' : 'another'}: ${got}, not ${want}`);
+    const got = show(Q.readPress(e));
+    check(got === want, `${JSON.stringify(e)}: ${got}, not ${want}`);
   }
 
   // ── where ctrl+click sends it ──

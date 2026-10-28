@@ -3,8 +3,8 @@
 //   node tools/play.mjs tools/scenarios/ctrlclick.mjs --url "http://localhost:5174/?dev&tod=0.5"
 // Reloads with empty storage. Real ctrl and cmd (Meta) clicks on the bag's and the panels' cells. At
 // the camp stash: a cap ctrl+clicked from the bag onto the personal page, a ring cmd+clicked onto
-// 共享 2 and ctrl+clicked back; on a Mac, a ctrl+click as Firefox reports it (the right button with
-// ctrl) moves the ring too, rather than equipping it, and its context menu stays off; the bag full,
+// 共享 2 and ctrl+clicked back; a right click with ctrl held (ctrl is the walk key too) is a right
+// click still: a potion in the bag is drunk, nothing moves, and the context menu stays off; the bag full,
 // the ring stays on its page and the hero is told; a page full, the long sword stays in the bag; the
 // Horadric Cube is refused on a shared page and goes onto the personal one and back. The cube
 // opened: the ring into it and back, the cube itself not into itself. At the merchant: the ring
@@ -139,7 +139,6 @@ export default async function (page, shot, log) {
   const steps = {
     async stash() {
       await load();
-      const mac = await ev(() => /Mac/.test(navigator.platform));
       ids.cap = await ev(() => window.__c.give('cap'));
       ids.ring = await ev(() => window.__c.give('rin', 'magic'));
       ids.sword = await ev(() => window.__c.give('lsd'));
@@ -157,23 +156,20 @@ export default async function (page, shot, log) {
       expect((await at(ids.ring)).startsWith('stash 2 '), `cmd+click the ring with 共享 2 shown: ${await at(ids.ring)}`);
       await modClick(ids.ring, 'left', 'Control');
       expect((await at(ids.ring)).startsWith('bag '), `ctrl+click the ring on 共享 2: ${await at(ids.ring)}`);
-      // a Mac's ctrl+click as Firefox reports it: the right button with ctrl; not the right click's equip
-      if (mac) {
-        const r = await ev((u) => {
-          const el = document.querySelector(`.panel.right.open .gitem[data-uid="${u}"]`);
-          const b = el.getBoundingClientRect();
-          const o = { bubbles: true, cancelable: true, button: 2, buttons: 2, ctrlKey: true, clientX: b.x + b.width / 2, clientY: b.y + b.height / 2 };
-          el.dispatchEvent(new PointerEvent('pointerdown', { ...o, pointerType: 'mouse', isPrimary: true }));
-          const menu = new MouseEvent('contextmenu', o);
-          el.dispatchEvent(menu);
-          return { menuOff: menu.defaultPrevented };
-        }, ids.ring);
-        await frames(2);
-        const where = await at(ids.ring);
-        expect(where.startsWith('stash 2 ') && r.menuOff, `a Mac's ctrl+click as the right button: the ring ${where}, the context menu kept off ${r.menuOff}`);
-        await modClick(ids.ring, 'left', 'Control');
-        facts.push('a Mac\'s ctrl+click as the right button moved, not equipped');
-      } else facts.push('not a Mac: its ctrl+click as the right button not tried');
+      // a right click with ctrl held stays the right click: a potion drunk, not moved; no context menu
+      const drink = await ev(() => window.__c.give('hp1'));
+      await frames(2);
+      const menus = await ev(() => {
+        window.__c.menus = [];
+        const f = (e) => window.__c.menus.push(e.defaultPrevented);
+        window.addEventListener('contextmenu', f, { capture: false });
+        return true;
+      });
+      await cellOf(drink, 'right').click({ button: 'right', modifiers: ['Control'] });
+      await frames(2);
+      const drunk = { at: await at(drink), menus: await ev(() => window.__c.menus) };
+      expect(menus && drunk.at === '' && drunk.menus.every(Boolean), `ctrl + right click on a potion: ${JSON.stringify(drunk)}`);
+      facts.push('ctrl + right click drank a potion, nothing moved');
       // the bag full: the ring stays on its page, the hero is told
       await modClick(ids.ring, 'right', 'Control');
       const ringAt = await at(ids.ring);

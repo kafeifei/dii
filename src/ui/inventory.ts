@@ -211,7 +211,7 @@ function refusedHere(ui: UIContext, it: Item): boolean {
 function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: PointerEvent) {
   e.preventDefault();
   const p = ui.game.player;
-  // a Mac's ctrl+click is the left button with ctrl, whatever the browser says (quickmove.ts readPress)
+  // ctrl or cmd with the left button is D2R's ctrl+click; with the right, a right click still (quickmove.ts readPress)
   const press = readPress(e);
   // the stash open: the shared pages as another tab may have left them first (Game.syncShared); a
   // shared page that changed under the pointer takes no click, as what was clicked may be gone
@@ -577,7 +577,7 @@ function onEquipDown(ui: UIContext, slot: EquipSlot, e: PointerEvent) {
   e.preventDefault();
   const p = ui.game.player;
   const cur = p.equipment[slot];
-  // D2R's ctrl+click does nothing of its own on what is worn: a Mac's is a left click still (quickmove.ts readPress)
+  // D2R's ctrl+click does nothing of its own on what is worn: a click with ctrl is the click (quickmove.ts readPress)
   if (readPress(e).button === 2) {
     if (cur && !ui.cursorItem && p.inventory.add(cur)) {
       delete p.equipment[slot];

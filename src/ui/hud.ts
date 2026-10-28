@@ -110,7 +110,7 @@ export class Hud {
     const ui = this.ui;
     const p = ui.game.player;
     const stack = p.belt[col];
-    // D2R's ctrl+click does nothing of its own on the belt: a Mac's is a left click still (quickmove.ts readPress)
+    // D2R's ctrl+click does nothing of its own on the belt: a click with ctrl is the click (quickmove.ts readPress)
     if (readPress(e).button === 2) {
       ui.game.useBelt(col);
       return;

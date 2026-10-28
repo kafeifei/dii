@@ -9,9 +9,6 @@ import type { LeftPanel } from './common';
 /** the item grids the panels show: the bag, the stash's page shown, the shop's stock, the cube */
 export type GridKind = 'inv' | 'stash' | 'shop' | 'cube';
 
-/** a Mac's browser: ctrl+click there is the system's right click, and cmd stands in for ctrl */
-export const MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform ?? '');
-
 /** a press on an item as the panels read it: its button, D2R's ctrl and D2's shift */
 export interface Press {
   button: number;
@@ -20,13 +17,13 @@ export interface Press {
 }
 
 /**
- * A pointer press as the panels read it. Ctrl, or cmd, is D2R's ctrl+click. On a Mac ctrl+click is
- * the system's right click, and a browser may say so (Firefox reports button 2): there it is still
- * the left button with ctrl, not the right click's use or equip (the context menu itself is kept
- * off, src/core/input.ts)
+ * A pointer press as the panels read it, by the button the browser reports. Ctrl, or cmd (a Mac's
+ * own), is D2R's ctrl+click. A Mac's ctrl + left click comes as the left button with ctrl in every
+ * browser now (Chrome, Safari, and Firefox since 80: Mozilla bug 1615732), its context menu kept off
+ * (src/core/input.ts). A right click with ctrl held stays a right click (drink, use, equip): ctrl is
+ * also held to walk or run (playerctl.ts), and a potion is drunk on the move
  */
-export function readPress(e: { button: number; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean }, mac = MAC): Press {
-  if (mac && e.ctrlKey && e.button === 2) return { button: 0, ctrl: true, shift: e.shiftKey };
+export function readPress(e: { button: number; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean }): Press {
   return { button: e.button, ctrl: e.ctrlKey || e.metaKey, shift: e.shiftKey };
 }
 
