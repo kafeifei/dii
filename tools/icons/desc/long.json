@@ -74,12 +74,12 @@
  },
  "invbrn": {
   "desc": "A brandistock, a three-bladed war fork: a long straight wooden shaft with an iron socket at the top; from the socket rises one long, narrow, straight central spike, and close beside its base two much shorter thin side spikes branch off at a slight outward angle, one on each side, like a narrow three-pronged fork with a dominant middle prong; no crossbar, no hooks; a leather grip wrap in the middle and an iron butt cap. Shown perfectly upright, the spikes at the top, side view.",
-  "guide": true,
+  "guide": "brandistock",
   "shape": "one long straight central spike with two short thin side spikes branching close to its base at a slight outward angle, no crossbar, on a long straight shaft"
  },
  "invspt": {
   "desc": "A spetum, a winged war spear: a long straight wooden shaft; at the top a long narrow straight double-edged central blade, and at its base two short flat side blades angled up and outward like a pair of wings, one on each side, so the head is like an arrowhead with a very long tip; an iron socket with a ring below them; a leather grip wrap in the middle and an iron butt cap. Shown perfectly upright, the blades at the top, front view.",
-  "guide": true,
+  "guide": "spetum",
   "shape": "a long narrow central blade with two short flat wing blades spreading up and outward from its base, on a long straight shaft"
  },
  "invtri": {
@@ -100,17 +100,17 @@
  },
  "invbar": {
   "desc": "A bardiche, a long-shafted war cleaver: a long straight wooden shaft; on the LEFT side of its upper end only, one very long, narrow, crescent-shaped axe blade a quarter of the whole weapon's length, its curved cutting edge facing left, its upper end rising above the top of the shaft into a point, its back fastened to the shaft at two points, by an iron socket near the top and by its lower tail riveted further down; nothing on the right side; an iron butt cap. Shown perfectly upright, the blade at the top, side view.",
-  "guide": true,
+  "guide": "bardiche",
   "shape": "one long narrow crescent blade on the left of the upper shaft, fixed at a socket near the top and at its lower tail, its point rising above the shaft's end"
  },
  "invpax": {
   "desc": "A poleaxe, a knight's long-shafted axe: a long straight wooden shaft with iron langets; at the top, on the LEFT side, one broad rounded crescent axe blade, tall and deep, its curved edge facing left; on the RIGHT side opposite it a small square hammer face with a toothed striking surface; above them a short square top spike; an iron butt spike at the foot. Shown perfectly upright, the head at the top, side view.",
-  "guide": true,
+  "guide": "poleaxe",
   "shape": "a broad rounded crescent axe blade on the left, a small square hammer head on the right, a short spike on top, on a long straight shaft"
  },
  "invvou": {
   "desc": "A voulge, a long-shafted cleaver: a long straight wooden shaft; at its top a tall, narrow, flat, single-edged cleaver blade fixed along the RIGHT side of the shaft's upper end by two iron rings, its straight cutting edge facing right, its top cut at a slant into a sharp point rising above the end of the shaft, a short square spur on its back at the lower end; no hook, no axe on the left; an iron butt cap. Shown perfectly upright, the blade at the top, side view.",
-  "guide": true,
+  "guide": "voulge",
   "shape": "a tall narrow straight-edged cleaver blade flush along the right of the upper shaft, its slanted point above the shaft's end, a small spur at its lower back"
  },
  "invscy": {
@@ -118,24 +118,24 @@
  },
  "invwsc": {
   "desc": "A war scythe: a long straight wooden shaft, and at its top a long, narrow, gently curved single-edged blade standing straight up in line with the shaft, like a scythe blade forged to point upward, its cutting edge on the inner concave side, its tip curving a little forward to a sharp point; the blade's tang set in an iron socket bound with two iron rings; a leather grip wrap in the middle and an iron butt cap. Shown perfectly upright, the blade at the top, side view.",
-  "guide": true,
+  "guide": "war-scythe",
   "shape": "a long narrow gently curved blade standing straight up in line with a long straight shaft, its tip curving a little forward"
  },
  "invjav": {
   "desc": "Three throwing javelins bound together into a bundle: three slim straight wooden shafts side by side, almost parallel, fanning apart a little toward the top, tied together round their middles with a wound leather thong; each ends at the top in a small narrow leaf-shaped iron head, the three heads at slightly different heights; plain shaft ends at the bottom. Shown upright, the points at the top.",
-  "guide": true,
+  "guide": "javelins",
   "shape": "three slim near-parallel shafts in a narrow bundle fanning slightly toward the top, bound at the middle, three small leaf points at staggered heights",
   "note": "the line's picture is a stack of javelins, not one: round 2's single javelin left"
  },
  "invam5": {
   "desc": "Three light barbed throwing javelins of an ancient warrior sisterhood, bound together into a bundle: three slim straight shafts side by side, fanning apart a little toward the top, tied together round their middles with a braided leather cord; each tipped with a slender iron head with one sharp backward-curving barb on one side, the three heads at slightly different heights, a small ring of braided leather below each head. Shown upright, the points at the top.",
-  "guide": true,
+  "guide": "maiden-javelins",
   "shape": "three slim near-parallel shafts in a narrow bundle fanning slightly toward the top, bound at the middle, three barbed points at staggered heights",
   "note": "class item; a bundle like the javelin's, told apart by the barbed heads"
  },
  "invpil": {
   "desc": "A pilum, a heavy legionary throwing spear: its upper half a long thin iron shank as thin as a finger, ending in a small four-sided pyramid point; its lower half a thicker straight wooden shaft; the two joined by a square iron collar block with rivets, a leather grip wrap just below the joint; a small iron butt at the foot. Shown perfectly upright, the point at the top.",
-  "guide": true,
+  "guide": "pilum",
   "shape": "upper half a long thin iron rod ending in a tiny pyramid point, a square collar at the middle, lower half a thicker wooden shaft"
  },
  "invglv": {

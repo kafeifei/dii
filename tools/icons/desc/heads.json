@@ -1,7 +1,7 @@
 {
  "invba1": {
   "desc": "A barbarian's jawbone cap shown empty on its own, no head inside: a low rounded cap of thick dark leather stitched over a frame of iron strips, and strapped beneath its front edge the bleached lower jawbone of a huge beast, a broad U of bone hanging below the brim like a lower visor with a row of big jagged teeth pointing upward, leather thongs and iron rings holding it on, tufts of coarse fur at the back, no horns. Front three-quarter view.",
-  "guide": true,
+  "guide": "jawbone-cap",
   "note": "guide: a low dome cap in the upper half; below its front edge a wide U-shaped jaw arc open at the top with a row of short upright teeth along it; line Jawbone Cap / Jawbone Visor / Carnage Helm; apart from the fanged helm by the beast's jaw slung under the brim"
  },
  "invba2": {
@@ -93,7 +93,7 @@
  },
  "invgts": {
   "desc": "A tall narrow gothic shield of darkened iron shaped like a long lancet window: a pointed arched top, straight parallel sides and a pointed bottom, its face fluted with five raised vertical ridges running from tip to tip, the narrow panels between them darker and pitted, a riveted iron rim, no paint and no emblem. Front view, upright.",
-  "guide": true,
+  "guide": "gothic-shield",
   "note": "guide: a tall narrow lancet: a pointed arch at the top, straight parallel sides, a pointed bottom, five thin vertical ridges; line Gothic Shield / Ancient Shield / Ward; the only shield pointed at both ends"
  },
  "invhlm": {

@@ -6,61 +6,61 @@
  },
  "invhbw": {
   "desc": "A hunter's flat bow cut from a single yew stave: wide flat limbs, broadest beside the grip and narrowing evenly to slim tips, pale cream sapwood along the back and darker brown heartwood on the belly so each limb shows two tones, a short grip bound in rawhide, a small tuft of grey fur tied below the upper tip, a thin pale twine string running straight from tip to tip; a deep D with broad limbs, not a thin round stave. Shown upright, side view, the string on the left, the bow arching to the right.",
-  "guide": true,
+  "guide": "flat-bow",
   "shape": "flat-bow: short-bow's D made deeper, each limb a wide flat band about twice short-bow's limb width beside a short grip, tapering to thin tips; the string a straight line on the left",
   "note": "our 猎弓 line (Hunter's / Razor / Blade Bow): own design, a two-tone yew flat bow, told from the short bow by its broad limbs"
  },
  "invcbw": {
   "desc": "A composite horse-archer's bow of horn, wood and sinew: short limbs covered in dark brown birch bark, a slim leather-wrapped grip at the middle, and at each end a stiff straight ear of pale horn that bends sharply forward, away from the string, with a small bone string bridge at the bend; the string runs straight between the two bridges and along the ears to their tips. A recurve with angled ears, not a plain D. Shown upright, side view, the string on the left.",
-  "guide": true,
+  "guide": "composite-bow",
   "shape": "static recurve: a short D from a middle grip on the right to two bridges on the string line, then at each end a stiff straight ear (a seventh of the height) angled back out to the right, away from the string; the string straight between the bridges and along the ears",
   "note": "our 复合弓 line (Composite / Double / Great Bow): own design, the eared steppe bow"
  },
  "invsbb": {
   "desc": "A short battle bow with a double-curved outline like a cupid's bow: the grip at the middle set back close to the string, each limb swelling forward away from the string in a rounded hump and then sweeping back toward it near the tip, so the bow is two humps like a capital letter B, not a single D; laminated from strips of brown wood and dark horn with thin joins visible along the limbs, a thick grip wrapped in dark leather, rawhide bindings at the base of each limb, horn nocks, a straight pale string. Shown upright, side view, the string on the left.",
-  "guide": true,
+  "guide": "battle-bow",
   "shape": "deflex-reflex B: the grip block a little right of the string line, each limb bowing out to the right in a rounded hump and coming back to the string at its tip; straight string on the left",
   "note": "our 短战弓 line (Short Battle / Short Siege / Diamond Bow): own design; the battle bows share this cupid's-bow outline (invlbb tall)"
  },
  "invswb": {
   "desc": "A heavy short war bow: a straight rigid middle section of thick dark oak, a third of its length, with a small arrow shelf carved into it and leather wrapped round the grip, and from each end of it a thinner limb of pale ash backed with dark sinew, bound with cord at the joint, curving back toward the string to horn nocks; a thick twisted string. Straight in the middle and curved only at the ends, unlike a plain D. Shown upright, side view, the string on the left.",
-  "guide": true,
+  "guide": "war-bow",
   "shape": "riser bow: a thick straight vertical riser on the right, a third of the height, with a small notch for the shelf; from its ends two curved limbs bending left to the string's ends; the string a straight line on the left",
   "note": "our 短战争弓 line (Short War / Rune / Ward Bow): own design; the war bows share the straight riser (invlwb tall)"
  },
  "invlbw": {
   "desc": "A tall longbow cut from a single stave of yew: a simple D of even curve, the limbs thick and rounded at the middle and tapering evenly to slim tips capped with small horn nocks, a narrow grip whipped with linen cord and no leather, knots and grain lines in the wood, a thin straight pale string from tip to tip. Shown upright, side view, the string on the left, the bow arching to the right.",
-  "guide": true,
+  "guide": "long-bow",
   "shape": "long-bow: short-bow's D on the 2x4 canvas, filling its height, a shallow arc (depth about a fifth of the height), thin limbs, small nocks, the string straight on the left",
   "note": "our 长弓 line (Long / Cedar / Shadow Bow): own design, the plain tall stave"
  },
  "invlbb": {
   "desc": "A tall long battle bow with a double-curved outline like a cupid's bow: the grip set back close to the string and each long limb bowing forward away from the string in a broad hump before sweeping back toward it near its tip, two humps like a capital letter B, not a single D; laminated strips of brown wood and dark horn, a long grip of dark leather, rawhide bindings at the base of each limb, horn nocks, a straight pale string. Shown upright, side view, the string on the left.",
-  "guide": true,
+  "guide": "long-battle-bow",
   "shape": "the short battle bow's deflex-reflex B on the 2x4 canvas: grip near the string, two long humps bowing right, the tips back on the string line",
   "note": "our 长战弓 line (Long Battle / Large Siege / Crusader Bow): own design, invsbb's outline made long"
  },
  "invlwb": {
   "desc": "A tall heavy long war bow: a straight rigid middle section of thick dark oak, a quarter of its length, with an arrow shelf carved into it and leather wrapped round the grip; from each end of it a long thinner limb of pale ash backed with dark sinew, bound with cord at the joint, curving back toward the string to horn nocks; a thick twisted string. Straight in the middle and curved only at the ends. Shown upright, side view, the string on the left.",
-  "guide": true,
+  "guide": "long-war-bow",
   "shape": "the short war bow's riser bow on the 2x4 canvas: a thick straight riser on the right a quarter of the height, long curved limbs to the string's ends, the string straight on the left",
   "note": "our 长战争弓 line (Long War / Gothic / Hydra Bow): own design, invswb's outline made long"
  },
  "invam1": {
   "desc": "A huntress's stag bow, tall and slender: a single stave of weathered grey-brown ash in a gentle curve, its tips turning slightly forward, each tip capped with a short forked tine of pale stag antler that holds the string, the grip wrapped in spotted deer hide with the hair still on, two small barred feathers hanging from a thong below the grip, a thin straight string. Shown upright, side view, the string on the left.",
-  "guide": true,
+  "guide": "stag-bow",
   "shape": "stag-bow: a tall slim D like the long bow whose tips turn slightly right and end in small two-pronged forks; a short thong with two feathers hanging below the grip",
   "note": "our 猎鹿弓 line (the huntress's Stag / Ashwood / Matriarchal Bow): own design, antler-tine tips and deer hide"
  },
  "invam2": {
   "desc": "A huntress's tall reflex bow: limbs of amber-brown horn laminated onto pale wood, each limb bending in a deep curve far out from the string and then curling forward at its tip into a small round hook like the end of a ram's horn, a carved wooden grip wrapped in braided cord with a small leather arrow pad, a straight pale string. A deeper, more curling outline than a plain longbow. Shown upright, side view, the string on the left.",
-  "guide": true,
+  "guide": "reflex-bow",
   "shape": "reflex-bow: a tall deep D (depth about a third of the height) whose two tips curl out to the right into small closed hooks; the string straight on the left",
   "note": "our 双曲弓 line (the huntress's Reflex / Ceremonial / Grand Matron Bow): own design, ram's-horn curled tips"
  },
  "invlxb": {
   "desc": "A light hunting crossbow seen from directly above, lying flat: a slim straight tiller of pale wood tapering toward a narrow butt, no shoulder stock and no pistol grip; across its front end a thin prod of horn and wood lashed to the tiller with cord, its two tips curving forward; no stirrup; the string drawn back to a small round nut a third of the way down the tiller, forming a V that points toward the butt; a short iron trigger lever under the rear half. The prod at the top, the butt at the bottom.",
-  "guide": true,
+  "guide": "light-crossbow",
   "shape": "light-crossbow: the crossbow guide with the tiller half as thick and tapering to the butt, a thinner, wider prod whose tips curl forward (up), no stirrup ring, the same V string to a nut, a short lever",
   "note": "our 轻弩 line (Light Crossbow / Arbalest / Pellet Bow): own design, slim with a lashed horn prod and no stirrup"
  },
@@ -71,13 +71,13 @@
  },
  "invhxb": {
   "desc": "A heavy siege crossbow seen from directly above, lying flat: a broad thick wooden tiller bound with iron bands, a plain square butt, no shoulder stock; across the front a short massive steel prod lashed to the tiller with thick cord bindings; a big iron stirrup at the very front tip; the thick string pulled back to a heavy nut, forming a V that points toward the butt; and at the butt a winding crank: a toothed iron rack running along the tiller to a small iron gear box with an L-shaped crank handle sticking out to one side. The prod at the top, the butt at the bottom.",
-  "guide": true,
+  "guide": "heavy-crossbow",
   "shape": "heavy-crossbow: the crossbow guide on the 2x4 canvas with the tiller twice as thick, a short thick prod, a large stirrup ring, the V string; a thin rack line down the tiller to a square gear box near the butt with an L handle sticking out right",
   "note": "our 重弩 line (Heavy Crossbow / Ballista / Colossus Crossbow): own design, told from the crossbow by its bulk and the rack-and-crank at the butt"
  },
  "invrxb": {
   "desc": "A repeating crossbow seen from above, tilted a little so the right side of its magazine shows: a straight wooden tiller with a plain square butt, a short prod of wood and horn across its front end, and riding on top of the tiller's front half a long narrow wooden box magazine bound with iron straps, the fletched ends of a few bolts showing in the slot along its top; the string runs back from the prod tips into a notch in the magazine; a long wooden lever joined by an iron pin to the magazine's rear runs back beside the tiller to a pivot near the butt. The prod at the top, the butt at the bottom.",
-  "guide": true,
+  "guide": "repeating-crossbow",
   "shape": "repeating-crossbow: the crossbow guide without the stirrup, a long rectangular box over the tiller's front half (its right side face a thin strip), a slot line along its top, the V string ending at the box's front, a long thin lever beside the tiller on the right from the box's rear to near the butt",
   "note": "our 连击弩 line (Repeating Crossbow / Chu-Ko-Nu / Demon Crossbow): own design; the box magazine and its lever make it"
  },

@@ -91,22 +91,22 @@
  },
  "invvbt": {
   "desc": "A pair of heavy calf-high boots of thick dark brown leather, stiff and straight-sided, with no cuff and no laces: a thick flat sole built of stacked leather layers with a ring of iron hobnails along its edge, no raised heel, a rounded toe reinforced with an extra stitched leather cap, each boot closed up its outer side by a row of small round horn toggles; no buckles. Standing side by side, both toes pointing right. Side view.",
-  "guide": true,
+  "guide": "heavy-boots",
   "note": "guide: a pair of tall boots standing side by side, toes right, straight shafts to below the knee, thin flat soles with no heel, no cuff and no thongs (soft-boots without its cuff and ties)"
  },
  "invmbt": {
   "desc": "A pair of chain boots: low brown leather shoes with a flat sole and a rounded toe, and above them leggings of fine interlinked iron mail rising to just below the knee, tied there with a leather garter and at the ankle with a thong, the mail hanging in soft folds. Standing side by side, both toes pointing right. Side view.",
-  "guide": true,
+  "guide": "chain-boots",
   "note": "guide: a pair of tall boots standing side by side, toes right, straight shafts to below the knee, thin flat soles with no heel, no cuff and no thongs (soft-boots without its cuff and ties)"
  },
  "invtbt": {
   "desc": "A pair of light plated boots: brown leather boots reaching just below the knee, with a flat sole and no heel, a single curved grey steel plate strapped down the front of each shin with two buckled straps, a small steel cap over the toes, the leather calf showing behind the plate. Standing side by side, both toes pointing right. Side view.",
-  "guide": true,
+  "guide": "plated-boots",
   "note": "guide: a pair of tall boots standing side by side, toes right, straight shafts to below the knee, thin flat soles with no heel, no cuff and no thongs (soft-boots without its cuff and ties)"
  },
  "invhbt": {
   "desc": "A pair of plate greaves, steel boots for a knight: each lower leg wholly enclosed in a smooth hinged grey steel shell from ankle to knee, a rounded steel cop over the knee, the foot covered by a steel shoe of overlapping articulated lames with a rounded toe, a flat sole and no heel. Standing side by side, both toes pointing right. Side view.",
-  "guide": true,
+  "guide": "greaves",
   "note": "guide: a pair of plate boots side by side, toes right, a straight shin tube from a flat heelless sole to a round knee cop, the foot as four stepped lames to a rounded toe"
  }
 }

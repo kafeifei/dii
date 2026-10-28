@@ -37,7 +37,7 @@
  },
  "invflb": {
   "desc": "A flamberge, a great two-handed sword with a flame-shaped blade: both edges of the long straight blade ripple in many small regular waves along its whole length, like a frozen flame of plain steel, no fire; a long straight cross-guard with plain rounded ends; a long two-hand grip bound in cord; a heavy pear-shaped pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
-  "guide": true,
+  "guide": "flamberge",
   "shape": "a long straight two-handed sword whose two edges undulate in about twelve small even waves from guard to point; a long straight cross-guard; a long grip; a pear pommel",
   "note": "the wavy edge is the defining part; klein may draw it straight or draw real flames"
  },
@@ -48,7 +48,7 @@
  },
  "invflc": {
   "desc": "A falchion, a heavy single-edged chopping sword: the back of the blade straight, the cutting edge swelling outward toward the end so the blade is widest near the tip, then sweeping up in a curve to meet the back at a sharp point, like a long cleaver; a short straight iron cross-guard, a plain grip bound in leather, a flat disc pommel. Shown upright, point at the top, the pommel at the bottom, side view.",
-  "guide": true,
+  "guide": "falchion",
   "shape": "a single-edged blade: straight back on the left, the right edge bulging out toward the top and curving up to a point at the back; a short straight guard, a short grip, a disc pommel",
   "note": "klein tends to draw any sword as a straight double-edged one"
  },
@@ -74,7 +74,7 @@
  },
  "invkrs": {
   "desc": "A kris dagger: a narrow double-edged blade with seven deep, regular waves along its whole length from base to point, widening at its base into a flared asymmetric guard-piece that juts out to one side; a carved wooden hilt bent forward at the top like a pistol grip, set in a small cup-shaped iron ferrule. Shown upright, point at the top, the hilt at the bottom, side view.",
-  "guide": true,
+  "guide": "kris",
   "shape": "a narrow dagger whose blade waves like a snake in seven even curves to the point; its base flared out to one side; a short hilt bent to one side at its end",
   "note": "the wavy blade is the defining part; klein may straighten it"
  },
@@ -124,7 +124,7 @@
  },
  "invmpi": {
   "desc": "A military pick, a war pick for piercing armour: a small iron head on top of a long straight haft, made of a long slender spike on the right that curves gently downward like a bird's beak and a short square hammer face on the left; iron langets riveted down from the head; a leather grip near the butt and a small iron butt cap. Shown upright, the head at the top, side view.",
-  "guide": true,
+  "guide": "military-pick",
   "shape": "a long straight haft topped by a lopsided T: a long thin beak curving down to the right, a short square stub to the left",
   "note": "klein is likely to draw a two-ended mining pick or a scythe"
  },
@@ -171,25 +171,25 @@
  },
  "invktr": {
   "desc": "A katar, a punch dagger held in the fist: a broad flat triangular double-edged blade with a thick central ridge, pointing straight up; its base is fixed onto an H-shaped iron hilt below it: two long parallel side bars running down from the ends of the blade's base, joined between them by two short crossbar grips wrapped in leather, a small riveted iron plate where the blade meets the frame. Shown upright, the point at the top, front view, empty, no hand.",
-  "guide": true,
+  "guide": "katar",
   "shape": "a tall triangle on top of a narrow H: two long parallel side bars hanging from the triangle's base, joined by two short crossbars",
   "note": "the H-frame grip is what makes it a katar and not a dagger"
  },
  "invskr": {
   "desc": "A scissors katar, a punch dagger with a split blade: two long narrow double-edged blades joined at their base by one large round pivot rivet and opened apart in a narrow V like open shears, set onto an H-shaped iron hilt below it: two long parallel side bars running down from the pivot, joined between them by two short leather-wrapped crossbar grips. Shown upright, the blade tips at the top, front view, empty, no hand.",
-  "guide": true,
+  "guide": "scissors-katar",
   "shape": "a narrow V of two long thin blades opening up from one round pivot, on top of the same narrow H frame as the katar's",
   "note": "vs katar: two thin blades opened in a V; vs claws: two, not three, from one pivot"
  },
  "invclw": {
   "desc": "Fighting claws worn on the fist: three long, slim, slightly curved steel blades like an animal's talons, side by side and spreading a little apart, rising from a crossbar on top of an H-shaped iron hilt below it: two long parallel side bars running down from the crossbar, joined between them by a leather-wrapped grip bar, with a leather wrist strap. Shown upright, the blade tips at the top, front view, empty, no hand.",
-  "guide": true,
+  "guide": "claws",
   "shape": "three long thin slightly curved prongs rising side by side from a short crossbar, over a narrow H frame of two side bars and one grip",
   "note": "three parallel talons over the H-frame"
  },
  "invaxf": {
   "desc": "A fist weapon worn over the hand: a curved iron knuckle plate on top carrying a broad crescent hatchet blade that arches over the knuckles, its sharp edge facing up and its two horns pointing down at the sides; below it a U-shaped iron frame running down along the forearm, with a leather-wrapped hand grip bar across it and two leather wrist straps with iron buckles. Shown upright, the blade at the top, front view, empty, no hand.",
-  "guide": true,
+  "guide": "hatchet-fist",
   "shape": "a wide crescent arching over the top, horns down, above a narrow U-shaped frame twice as tall with one crossbar and two straps",
   "note": "the line is the hatchet hands and the cestus: a blade arched over the knuckles on a fist frame"
  },
@@ -218,14 +218,14 @@
  },
  "invqf1": {
   "desc": "A priest's ceremonial flail: a straight haft of dark wood wrapped in strips of faded cloth, capped at the top with an iron finial shaped like a small onion dome and at the bottom with a plain iron pommel; from the top hang three short chains, each ending in a small round spiked iron ball, the three balls hanging at different heights beside the haft. Shown upright, the haft vertical, the chains and balls at the top.",
-  "guide": true,
+  "guide": "relic-flail",
   "shape": "a vertical haft; from its top three short chains to three small spiked balls hanging beside it at different heights",
   "note": "the quest flail, plain; three chains is more than klein keeps without a shape"
  },
  "invqf2": {
   "desc": "A priest's ceremonial flail made into a holy relic: a straight haft wound with strips of old oxblood cloth and tarnished gilt wire, a tarnished gold finial on top and a gold pommel; from the top hang three short chains, each ending in a spiked head of tarnished gold shaped like a small open filigree cage with a dark relic inside it glowing a faint warm red. Shown upright, the haft vertical, the chains and heads at the top.",
   "material": false,
-  "guide": true,
+  "guide": "relic-flail-gilt",
   "shape": "the same as invqf1's: a vertical haft, three short chains from its top to three small spiked heads at different heights",
   "note": "the same flail after the quest's relics are joined to it (invqf1 gilded); material off: gilded"
  }

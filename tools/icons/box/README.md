@@ -24,7 +24,7 @@ jobs that don't have its output yet, so it is started again the same way after a
 
 | Step | Script | In → out |
 |---|---|---|
-| shape guides | `guides.py` | a job's `guide` → `guides/<name>_<W>x<H>.png` (its `ref[0]`) |
+| shape guides | `guides.py` | a job's `guide` → `guides/<name>_<W>x<H>.png` (its `ref[0]`): drawn, no model |
 | painting | `gen.py` | `jobs.json` → `gen/<id>.png` + `.json` (prompt, seed, timing, VRAM) |
 | matting | `cut.py` | `gen/` → `cut/<id>.png` (RGBA, trimmed) + `.json` (flags) |
 | grade, export | `export.py` (with `grade.py`) | `cut/` → `cand/<id>.webp`, `<id>.1x.webp`, `<id>.json` |
@@ -42,6 +42,18 @@ A job id is `<picture>_s<seed>`: one picture (a D2 picture file, `tools/icons/pi
 loading a second 18.6 GB pipeline onto a card. The user's wordbook Ollama services are nominally on GPUs 0–2
 (they crash-loop and hold nothing); one that holds memory makes its card unusable here, and it is left alone.
 The painting jobs are split over the cards by expected time (a job with a reference image takes ~2.2× as long).
+
+### Shape guides (`guides.py`)
+
+Flat grey shapes we draw with PIL polygons, for the pictures whose shape words alone get wrong: a light
+grey ground, the object a flat dark grey shape, its key inner lines (a slit, a string, a ridge) lighter or
+darker. One function per shape family (`wavy_blade`, `fist`, `pole` with its heads, `bundle`, `flail`,
+`bow`, `crossbow`, `boots`, …), and in its `GUIDES` table one entry per guide: its family, the canvas it is
+designed on (its picture's, `style.mjs` `CANVAS`) and its parameters. A description's `guide` names an
+entry; its `shape` (or note) holds the words the guide was drawn from. They are generic shapes of a kind
+of object, never traced or measured from a picture. The sample round's eight (halberd, crossbow, falcata,
+gladius, great-helm, spear, short-bow, soft-boots) come out pixel for pixel as approved. On another canvas a
+guide is scaled to fit and centred.
 
 ### Painting (`gen.py`)
 
@@ -80,8 +92,10 @@ P<n> pieces, SH<share>). `ai-icons.mjs` brings them back into `icons-src/run-NN/
 ## By hand
 
 ```sh
-# a guide, to look at
+# a guide, to look at; every guide on its own canvas; a contact sheet of them (any Python with Pillow)
 ~/icons/env/.venv/bin/python -I ~/icons/full/bin/guides.py /tmp/halberd.png halberd 704 1408
+python3 tools/icons/box/guides.py --all /tmp/guides
+python3 tools/icons/box/guides.py --sheet /tmp/guides.png [name ...]
 # a run again, after a stop (ai-icons.mjs --gen --run NN does the same and follows it)
 ~/icons/env/.venv/bin/python -I ~/icons/full/bin/run.py ~/icons/full/run-NN
 ```

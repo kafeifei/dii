@@ -592,14 +592,14 @@
  },
  "invtoa": {
   "desc": "A token: a small heavy tau-cross token cast in dull silver-grey pewter, shaped like a capital letter T, its three arms of even thickness each ending in a small rounded knob, a little pale blue stone set where the arms meet, worn engraved lines along the arms, standing upright.",
-  "guide": true,
+  "guide": "tau-token",
   "shape": "a capital T standing upright: a horizontal bar across the top and a vertical stem of the same thickness down from its middle, about as tall as the bar is wide, each of the three ends a small round knob, a small round stone where bar and stem meet",
   "fill": 0.85,
   "note": "the T is what the token is; its ends, stone and engraving are ours"
  },
  "invhscr": {
   "desc": "A scroll on two upright wooden rollers, opened sideways: the yellowed parchment wound onto a roller at the left and a roller at the right, spread between them as a wide stretch of blank stained parchment, each roller's ends capped with dark brass knobs, a red cord hanging loose from one roller.",
-  "guide": true,
+  "guide": "scroll",
   "shape": "two upright rollers, one at the left and one at the right, each a thick cylinder of rolled parchment with a knob at both ends sticking out above and below it, joined by a flat rectangular sheet between them a little shorter than the rolls; the whole about half again as wide as it is tall",
   "fill": 0.95
  },
