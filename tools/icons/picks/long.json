@@ -24,6 +24,11 @@
   "seed": 101,
   "note": "s101: one long centre spike, two short thin side spikes at its base, grip and butt cap; s202 shadow-flagged (similarity 0.19)"
  },
+ "invbst": {
+  "run": 5,
+  "seed": 101,
+  "note": "s101 (review 2): the stout upright oak pole of the new battle-staff guide, riveted iron collars round a criss-crossed dark leather grip, plain blunt iron caps at both ends, no studs; a 14 px rod at 1x (the long, war and gnarled staffs are 3-5 px), stout by design so the thin-rod screen passes it, still a staff and not a club; the lowest of eight seeds (0.375-0.439), and it scores 0.418 against the short staff's original, above its own, so the rest is the class (similarity 0.375)"
+ },
  "invbwn": {
   "run": 4,
   "seed": 101,
@@ -53,6 +58,11 @@
   "run": 1,
   "seed": 101
  },
+ "invhst": {
+  "run": 5,
+  "seed": 606,
+  "note": "s606 (review 2): a round studded medallion with a milky stone on the socket, two fans of plain leaf-shaped bronze plates in a V, a brass serpent in tight open coils down the dark rod to a small point; no beast head (s404's medallion grew a horned face, s505 a crown, s707 a knob with eyes), s202/s808 over the line; it scores 0.481 and 0.459 against the long and battle staffs' originals, above its own, so the score is the class (similarity 0.414)"
+ },
  "invjav": {
   "run": 4,
   "seed": 404,
@@ -62,6 +72,11 @@
   "run": 4,
   "seed": 303,
   "note": "s303: pale ash pole, cord-bound top under a small domed cap, grip near the foot, iron ferrule, the lowest score; s101 is over the line (0.451), s202/s404 in the review band. The shaft is ivory, not white (1x p95 ~200, the grade's ceiling) (similarity 0.37)"
+ },
+ "invmsf": {
+  "run": 5,
+  "seed": 707,
+  "note": "s707 (review 2): a dark bronze rod, a thick brass serpent in open coils from foot to top, its head under the empty bronze socket, a collared pointed foot; at 1x the coils read as a bright twist on the dark rod (run-04's serpent was lost); picked with invhst s606 so the two shafts match, tight brass coils on a dark rod (similarity 0.245)"
  },
  "invob1": {
   "run": 4,
@@ -128,6 +143,16 @@
   "seed": 101,
   "note": "s101: broad flat triangular head on a short stout dark shaft. All four seeds sit in the review band, but it is the class: s101 scores higher against the pilum's and throwing spear's originals (0.49, 0.49) than its own; the side by side is a wide flat triangle on a plain socket against the original's narrow leaf on a long metal socket (similarity 0.42)"
  },
+ "invsst": {
+  "run": 5,
+  "seed": 707,
+  "note": "s707 (review 2): a stout knob-topped walking staff, three iron rings under the knob, a dark band a third down, a blunt iron ferrule; a 10 px rod at 1x, shorter and knobbed so it stays apart from the battle staff's capped ends; the lowest of eight (0.386-0.438), no flags; the other staves' originals score up to 0.363, the side by side clearly ours (an upright knobbed post against a slanted banded staff) (similarity 0.386)"
+ },
+ "invtri": {
+  "run": 5,
+  "seed": 101,
+  "note": "s101 (review 2): three thick square iron prongs on a straight crossbar, the middle one longer, each with an arrow-shaped barbed head, leather wraps under the socket and at the grip, an iron butt cap; a war trident at 1x, no longer a hay fork; its iron a shade darker than s505/s707's, nearer the muted palette (similarity 0.253)"
+ },
  "invtsp": {
   "run": 4,
   "seed": 303,
@@ -137,6 +162,11 @@
   "run": 4,
   "seed": 101,
   "note": "s101: a tall cleaver flush along the right of the shaft, slanted point above it, back spur, two rings, a bevelled edge; s202's top splits into a V (similarity 0.15)"
+ },
+ "invwnd": {
+  "run": 5,
+  "seed": 202,
+  "note": "s202 (review 2): a warm mid-brown rod, three bronze rings under a three-claw bronze cup holding a clear amber stone, a dark cord grip and a bronze butt knob; at 1x the head is 9 px with the stone showing (run-04's was a 2 px dot) and the rod lighter; the rod stayed 3 px, as thin as the picked yew wand's, not the ~7 px asked, but the cell reads as a wand; s101's cup grew side spikes (similarity 0.172)"
  },
  "invwsc": {
   "run": 4,

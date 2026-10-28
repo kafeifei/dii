@@ -144,6 +144,35 @@
    }
   }
  },
+ "invbst": {
+  "run": 5,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 4,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A battle staff, a war mage's heavy fighting staff: a long, straight, stout pole of mid-brown seasoned oak, thick and heavy, about a tenth as thick as it is long; its middle third wrapped in a broad hand grip of wound dark leather cord, a little wider than the pole, between two flared iron collars; each end shod with a short, plain, blunt iron cap a little wider than the pole, no studs and no spikes, no bands along the bare wood. A thick heavy staff, far stouter than a walking staff. Shown perfectly upright, one iron-capped end at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "battle-staff",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invbst.webp",
+    "sha1": "03a575bdecc0"
+   },
+   "1x": {
+    "file": "public/icons/items/invbst.1x.webp",
+    "sha1": "4c6d9788c6b0"
+   }
+  }
+ },
  "invbwn": {
   "run": 4,
   "seed": 101,
@@ -318,6 +347,35 @@
    }
   }
  },
+ "invhst": {
+  "run": 5,
+  "seed": 606,
+  "kind": "base",
+  "w": 1,
+  "h": 4,
+  "prompt": "The completed staff of an ancient order of mages: a straight rod of dark bronze with a thick carved serpent of worn brass coiling round it from foot to top in five open turns, the coils as thick as the rod and standing out from it with dark gaps between them, fine scales on the serpent, its head resting just under the top; crowned with a head of tarnished bronze: a round medallion set with a small milky white stone, sitting straight on the shaft's socket, and from either side of it a stylised wing of four long flat bronze feather-plates, each a plain leaf-shaped blade, fanned upward and outward in a narrow V, their tips no higher than a hand above the medallion; the wings are plain metal ornament joined only to the medallion, with nothing above or between them; a small pointed bronze foot. Shown perfectly upright, the winged head at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": true
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invhst.webp",
+    "sha1": "57ceb801b7d8"
+   },
+   "1x": {
+    "file": "public/icons/items/invhst.1x.webp",
+    "sha1": "57a821046477"
+   }
+  }
+ },
  "invjav": {
   "run": 4,
   "seed": 404,
@@ -373,6 +431,35 @@
    "1x": {
     "file": "public/icons/items/invlst.1x.webp",
     "sha1": "79493978926a"
+   }
+  }
+ },
+ "invmsf": {
+  "run": 5,
+  "seed": 707,
+  "kind": "base",
+  "w": 1,
+  "h": 3,
+  "prompt": "The headless shaft of an ancient order of mages' staff: a straight rod of dark bronze with a thick carved serpent of worn brass coiling round it from foot to top in five open turns, the coils as thick as the rod and standing out from it with dark gaps between them, fine scales on the serpent, its head resting just under the top; the top end an open bronze socket, a short collar with an empty hole where a head-piece is missing; a small pointed bronze foot. Shown perfectly upright, the open socket at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invmsf.webp",
+    "sha1": "6030c995edde"
+   },
+   "1x": {
+    "file": "public/icons/items/invmsf.1x.webp",
+    "sha1": "711ffd139929"
    }
   }
  },
@@ -753,6 +840,64 @@
    }
   }
  },
+ "invsst": {
+  "run": 5,
+  "seed": 707,
+  "kind": "base",
+  "w": 1,
+  "h": 3,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A short staff, a traveller's stout walking staff about chest high: a straight, thick rod of mid-brown wood, about a ninth as thick as it is long, much stouter than a wand or a long staff; its top a heavy rounded knob carved from the same wood, a band of three narrow iron rings just under the knob; a short wrap of dark leather a third of the way down; a short blunt iron ferrule at the foot. Shown perfectly upright, the knob at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "short-staff",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invsst.webp",
+    "sha1": "f62e4ffce281"
+   },
+   "1x": {
+    "file": "public/icons/items/invsst.1x.webp",
+    "sha1": "7f5f79983490"
+   }
+  }
+ },
+ "invtri": {
+  "run": 5,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A trident, a three-pronged war fork: a long straight wooden shaft with an iron socket; at the top a short, straight, heavy iron crossbar carrying three thick, straight, square-sectioned iron prongs, the middle one a little longer, each ending in a flat arrow-shaped barbed head clearly wider than its prong, its two barbs pointing back down; a leather grip wrap below the socket and an iron butt cap. Thick forged iron, not a farm fork's thin round tines. Shown perfectly upright, the prongs at the top, front view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "trident",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invtri.webp",
+    "sha1": "09acf184e402"
+   },
+   "1x": {
+    "file": "public/icons/items/invtri.1x.webp",
+    "sha1": "5220f8e7a46b"
+   }
+  }
+ },
  "invtsp": {
   "run": 4,
   "seed": 303,
@@ -808,6 +953,35 @@
    "1x": {
     "file": "public/icons/items/invvou.1x.webp",
     "sha1": "6df41198f1f2"
+   }
+  }
+ },
+ "invwnd": {
+  "run": 5,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 2,
+  "prompt": "A plain apprentice's wand: a straight rod of polished warm mid-brown hardwood as thick as a thumb, a little thicker toward the top, banded under its head by three broad rings of tarnished bronze; its head a bronze cup of three short claws holding a round dull amber stone about twice as wide as the rod; a grip wrapped in dark cord at the lower end and a small rounded bronze butt knob. A sturdy wand, lighter in tone than the yew and grim wands. Shown upright, the stone at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invwnd.webp",
+    "sha1": "6e482cc1b166"
+   },
+   "1x": {
+    "file": "public/icons/items/invwnd.1x.webp",
+    "sha1": "48d50d8870a1"
    }
   }
  },
