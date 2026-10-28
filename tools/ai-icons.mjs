@@ -3,7 +3,8 @@
 // picture file, not per base), each picture's words are tools/icons/desc/*.json, the style and
 // settings tools/icons/style.mjs; the box side is tools/icons/box/ (its README says what each step
 // does). Writes public/icons/items/<picture>.webp (2x: w×68 by h×68 px) and <picture>.1x.webp (1x,
-// sharpened), and records what made each in tools/icons/made/<list>.json (a group's, or uniques/sets).
+// sharpened), records what made each in tools/icons/made/<list>.json (a group's, or uniques/sets), and
+// writes public/icons/CREDITS.md from those records.
 //
 //   node tools/ai-icons.mjs --dry [sel] [--prompts]   the jobs a run would send, and the picks it would apply
 //   node tools/ai-icons.mjs --gen [sel]               paint the selection's candidates on box (a new run)
@@ -49,6 +50,7 @@ const PICKS = path.join(ICONS, 'picks');
 const MADE = path.join(ICONS, 'made');
 const BOX_SRC = path.join(ICONS, 'box');
 const OUT = path.join(ROOT, 'public/icons/items');
+const CREDITS = path.join(ROOT, 'public/icons/CREDITS.md');
 const SRC = path.resolve(process.env.ICONS_SRC ?? path.join(ROOT, 'icons-src'));
 const BOX = process.env.ICONS_BOX ?? 'box';
 /** on box, under its home: the scripts, the runs and the GPU locks; and the env (uv, Python 3.12) */
@@ -451,11 +453,57 @@ function apply() {
     const text = json(sorted);
     if (!fs.existsSync(file) || fs.readFileSync(file, 'utf8') !== text) writeAtomic(file, text);
   }
+  writeCredits(Object.assign({}, ...Object.values(made)));
   const picked = new Set(Object.keys(PICKED).flatMap((id) => [`${id}.webp`, `${id}.1x.webp`]));
   const extra = fs.existsSync(OUT) ? fs.readdirSync(OUT).filter((f) => f.endsWith('.webp') && !picked.has(f)) : [];
   console.log(`picks: ${Object.keys(PICKED).length} pictures of ${pictures.length}, ${wrote} files written, ${same} already so`);
   if (stale.length) console.log(`  painted from older words than desc/ has now (paint them again?): ${stale.join(' ')}`);
   if (extra.length) console.log(`  in public/icons/items/ with no pick (left there): ${extra.join(' ')}`);
+}
+
+/** public/icons/CREDITS.md from the records of what is picked: the models and licences they name, the counts */
+function writeCredits(made) {
+  const entries = Object.entries(made).filter(([id]) => PICKED[id]);
+  if (!entries.length) return;
+  const models = new Map();
+  const count = (step, repo, license) => {
+    const k = `${step}\t${repo}\t${license}`;
+    models.set(k, (models.get(k) ?? 0) + 1);
+  };
+  for (const [, m] of entries) {
+    count('作画', m.model, m.license);
+    count('抠图', m.matte, m.matteLicense);
+  }
+  const kinds = { base: '底材', variant: '外观变体（戒指、护符、珠宝、护身符）', unique: '暗金专属', set: '套装专属' };
+  const by = (k) => entries.filter(([, m]) => m.kind === k).length;
+  const rows = [...models].map(([k, n]) => {
+    const [step, repo, license] = k.split('\t');
+    return `| ${step} | [${repo}](https://huggingface.co/${repo}) | ${license} | ${n} |`;
+  });
+  const text = `# 物品图来源
+
+背包里的物品图（\`public/icons/items/\`）全部是为本游戏生成的：在我们自己的 GPU 机器上用开源模型按同一种风格（${STYLE.name}）画出来，不是任何游戏的美术资源。
+
+| 步骤 | 模型 | 许可 | 图数 |
+| --- | --- | --- | --- |
+${rows.join('\n')}
+
+两个模型都是开放许可，可以商用、修改。
+
+图怎么分照《暗黑破坏神 II》（D2R 2.7 的表，\`tools/icons/pictures.mjs\`）：一张图对应一个 invfile，同一条底材线的普通、扩展、精英三档共用一张；戒指、护符、珠宝、护身符各有几种外观，物品生成时定下一种；一部分暗金和套装物品有自己的图，其余显示底材的图。物品的颜色不画在图上：D2 给图调色，我们的近似见 \`tools/icons/colours.py\`。
+
+原版的图只用来认清每件物品是什么（种类、比例、标志性的部件），从不交给模型（不做图生图、不当参考图），也不描、不量。每张图的文字描述（\`tools/icons/desc/\`）和形状参考（\`tools/icons/box/guides.py\` 画的通用平面形状）都是我们自己写、自己画的；暗金和套装的图以我们自己的底材图为参考重新设计。每张图导出前都和对应的原版图比过相似度（\`tools/icons/similarity.py\`，只用 numpy 和 PIL），分数到界线的重画，接近界线的再并排对照看过。
+
+| 图 | 张数 |
+| --- | --- |
+${Object.entries(kinds).map(([k, zh]) => `| ${zh} | ${by(k)} |`).join('\n')}
+| 合计 | ${entries.length} |
+
+每张图两个文件：\`<图名>.webp\`（2×，一格 68 px，给高分屏）和 \`<图名>.1x.webp\`（1×，一格 34 px，略锐化）；图名是 D2 的 invfile 名，小写。每张图的提示词、种子、批次、形状参考和模型记在 \`tools/icons/made/<列表>.json\`。
+
+本文件由 \`tools/ai-icons.mjs\` 生成，不要手改。
+`;
+  if (!fs.existsSync(CREDITS) || fs.readFileSync(CREDITS, 'utf8') !== text) writeAtomic(CREDITS, text);
 }
 
 // ---- main

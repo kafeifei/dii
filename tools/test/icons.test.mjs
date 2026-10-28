@@ -2,8 +2,8 @@
 // line's tiers; variants for rings, amulets, jewels and charms; a unique's or set item's own file,
 // else its base's column, else its base's picture, a fixed file overriding the variant roll); the
 // prompt is the approved style's, built as the samples built it; the descriptions and picks name
-// pictures and guides that exist; and every file in public/icons/items/ is a pick's, recorded in
-// tools/icons/made/, at exactly w×68 by h×68 px (2x) or w×34 by h×34 (1x).
+// pictures and guides that exist; every file in public/icons/items/ is a pick's, recorded in
+// tools/icons/made/, at exactly w×68 by h×68 px (2x) or w×34 by h×34 (1x); and the credits name the models.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -98,6 +98,12 @@ export default async () => {
     check(size?.[0] === p.w * cell && size?.[1] === p.h * cell, `${f}: ${size} px, not ${p.w * cell}x${p.h * cell}`);
   }
   for (const id of Object.keys(picks)) for (const f of [`${id}.webp`, `${id}.1x.webp`]) check(files.includes(f), `${id} is picked but ${f} is missing: node tools/ai-icons.mjs`);
+  // the credits name every model and licence the records do (ai-icons.mjs writes them from the records)
+  const credits = path.join(root, 'public/icons/CREDITS.md');
+  if (files.length) {
+    const text = fs.existsSync(credits) ? fs.readFileSync(credits, 'utf8') : '';
+    for (const m of Object.values(made)) for (const n of [m.model, m.license, m.matte, m.matteLicense]) check(text.includes(n), `public/icons/CREDITS.md doesn't name ${n}: node tools/ai-icons.mjs`);
+  }
 
   if (problems.length) throw new Error(problems.join('\n'));
   console.log(`  ${pictures.length} pictures (${counts.pictures.base} base, ${counts.pictures.variant} variants, ${counts.pictures.unique} unique, ${counts.pictures.set} set); ${Object.keys(picks).length} picked, ${files.length} files`);

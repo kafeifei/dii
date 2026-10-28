@@ -23,7 +23,8 @@
 //   ITEMS_GetColor, 3693-3900: D2CMP_MixPalette(the base's InvTrans, a colour)), a magic or rare item
 //   by the transformcolor of its first suffix that has one, else of its first prefix; a unique or set
 //   item by its invtransform. The entries carry each base's InvTrans and each special item's
-//   invtransform for that remap; no quality colour is painted on.
+//   invtransform for that remap (ours, an approximation: tools/icons/colours.py); no quality colour
+//   is painted on.
 import { fileURLToPath } from 'node:url';
 import { REF27, importTs, load, rows } from '../d2/load.mjs';
 
