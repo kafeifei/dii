@@ -3856,6 +3856,35 @@
    }
   }
  },
+ "invtes": {
+  "run": 6,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 1,
+  "prompt": "An essence: a small low heap of fine dark violet dust, wider than it is tall, its loose grains slumping at the edges, the same kind of heap as the other essences, faint violet glints scattered over it, and rising from its peak a thin wisp of pale violet vapour twisted round itself into a tight corkscrew. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invtes.webp",
+    "sha1": "7e131507f19f"
+   },
+   "1x": {
+    "file": "public/icons/items/invtes.1x.webp",
+    "sha1": "0c95057c560d"
+   }
+  }
+ },
  "invtoa": {
   "run": 4,
   "seed": 404,
