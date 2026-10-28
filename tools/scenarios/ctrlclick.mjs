@@ -10,8 +10,9 @@
 // opened: the ring into it and back, the cube itself not into itself. At the merchant: the ring
 // sold, the cube refused and left where it was. Shift+click: a potion into the belt, with the belt
 // full it stays, and the sword just taken. Nothing open: the sword dropped at the hero's feet with
-// its sound, in the camp, its label clicked and picked up again; with the character panel open, the
-// scroll of identify dropped too. Then at a phone's size with the touch controls the bag and stash
+// its sound, in the camp, its label clicked and picked up again; the cube refused, by ctrl+click and
+// off the cursor (its contents are kept apart); with the character panel open, the scroll of
+// identify dropped too. Then at a phone's size with the touch controls the bag and stash
 // as they were. Page and console errors fail the run. Shots: the stash, the cube, the shop, the
 // ground, the hint's tooltip, the phone's stash. The last line is "CTRLCLICK OK …" or "CTRLCLICK FAIL …".
 
@@ -299,6 +300,28 @@ export default async function (page, shot, log) {
         return gi ? { d: Math.hypot(gi.pos.x - p.x, gi.pos.z - p.z), sound: window.__c.played.includes('item.drop_weapon') } : null;
       }, ids.sword);
       expect(town && g && g.d <= 1 && g.sound && (await at(ids.sword)) === 'ground', `ctrl+click the sword, nothing open: ${JSON.stringify(g)}, in the camp ${town}`);
+      // the cube is not thrown away: it stays in the bag, the hero told why
+      await modClick(ids.cube, 'right', 'Control');
+      expect((await at(ids.cube)).startsWith('bag ') && (await lastSaid())?.startsWith('魔盒不能丢在地上'), `ctrl+click the cube, nothing open: ${await at(ids.cube)}, said ${await lastSaid()}`);
+      // nor from the cursor: a click on the ground leaves it there
+      await ev((u) => {
+        const it = game.player.inventory.items.find((x) => x.item.uid === u).item;
+        game.player.inventory.remove(it);
+        game.hooks.setCursorItem(it);
+      }, ids.cube);
+      await page.keyboard.press('Escape');
+      await until(() => !game.hooks.left && !game.hooks.right, null, 'the panels to shut');
+      await page.mouse.click(640, 300);
+      await frames(4);
+      expect((await at(ids.cube)) === 'cursor' && (await lastSaid())?.startsWith('魔盒不能丢在地上'), `the cube clicked onto the ground: ${await at(ids.cube)}, said ${await lastSaid()}`);
+      await ev(() => {
+        game.player.inventory.add(game.hooks.cursorItem);
+        game.hooks.setCursorItem(null);
+      });
+      await page.keyboard.press('i');
+      await until(() => game.hooks.right === 'inv' && !game.hooks.left, null, 'the bag alone again');
+      await frames(2);
+      facts.push('the cube kept, by ctrl+click and off the cursor');
       // with the character panel open: dropped too
       await page.keyboard.press('c');
       await until(() => game.hooks.left === 'char', null, 'the character panel');

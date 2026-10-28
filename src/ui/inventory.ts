@@ -372,8 +372,8 @@ function quickMoveFrom(ui: UIContext, kind: GridKind, grid: Grid, it: Item) {
     return;
   }
   if (to === 'ground') {
-    // its sound is its landing's (Game.dropItem)
-    if (!ui.game.dropFromBag(it)) ui.sfx.play('ui.denied');
+    // the cube and an item this build can't read are refused, said why (Game.refuseDrop); a drop's sound is its landing's (Game.dropItem)
+    if (!ui.game.refuseDrop(it) && !ui.game.dropFromBag(it)) ui.sfx.play('ui.denied');
     return;
   }
   // the cube can't go into itself; a quest item or a locked page refuses it on a shared page

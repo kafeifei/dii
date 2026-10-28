@@ -118,6 +118,18 @@ export default async (load) => {
   // not in the bag: nothing dropped
   const stray = createItem('cap');
   check(!game.dropFromBag(stray) && !game.level.ground.some((g) => g.item === stray), 'an item not in the bag was dropped');
+  // the cube (its contents are kept apart) and an item this build can't read stay in the bag, the hero told why
+  const { UNKNOWN_BASE } = await load('/src/data/items.ts');
+  const cube = createItem('box');
+  const unknown = { ...createItem('cap'), baseId: UNKNOWN_BASE };
+  for (const [it, what] of [[cube, 'the cube'], [unknown, 'an unknown item']]) {
+    check(p.inventory.add(it), `no room in the bag for ${what}`);
+    said.length = 0;
+    const was = game.level.ground.length;
+    check(!game.dropFromBag(it) && p.inventory.contains(it) && game.level.ground.length === was && said.length === 1 && !!game.dropBlock(it), `${what} dropped: in the bag ${p.inventory.contains(it)}, said ${said.join()}`);
+    check(game.refuseDrop(it), `${what} off the cursor not refused`);
+  }
+  check(!game.dropBlock(ring) && !game.refuseDrop(ring), 'a ring refused');
   // a dead hero drops nothing
   p.dead = true;
   check(!game.dropFromBag(ring) && p.inventory.contains(ring), 'a dead hero dropped the ring');
@@ -125,5 +137,5 @@ export default async (load) => {
   localStorage.clear();
 
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
-  console.log('  ctrl or cmd (a Mac\'s ctrl as the right button too), shift apart; bag to stash, cube, sale or the ground, back to the bag; no room, no move; a drop by the hero in the camp, picked up again; none dead');
+  console.log('  ctrl or cmd with the left button, the right one a right click still, shift apart; bag to stash, cube, sale or the ground, back to the bag; no room, no move; a drop by the hero in the camp, picked up again; the cube and unknown items kept; none dead');
 };

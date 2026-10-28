@@ -921,8 +921,11 @@ export class Game {
     if (inp.lmbPressed) {
       const cursor = this.hooks.getCursorItem();
       if (cursor) {
-        this.dropItem(cursor);
-        this.hooks.setCursorItem(null);
+        // the cube and an item this build can't read stay on the cursor (dropBlock)
+        if (!this.refuseDrop(cursor)) {
+          this.dropItem(cursor);
+          this.hooks.setCursorItem(null);
+        }
         this.lmbMode = 'other';
       } else if (h.ground) {
         p.intent = { kind: 'pickup', ground: h.ground };
@@ -1625,13 +1628,35 @@ export class Game {
   }
 
   /**
+   * Why `item` can't be put on the ground, or null: the cube, whose contents are kept apart
+   * (Player.cube), and an item this build can't read (isUnknown), kept as it was for a build that
+   * can. Nothing the hero holds is thrown away by a click; ground items aren't kept in the save
+   */
+  dropBlock(item: Item): string | null {
+    if (baseOf(item).type === 'cube') return '魔盒不能丢在地上：里面的东西会跟着丢失';
+    if (isUnknown(item)) return '这个版本认不出这件物品，不能丢在地上';
+    return null;
+  }
+
+  /** `item` can't go on the ground (dropBlock): the hero is told, and true */
+  refuseDrop(item: Item): boolean {
+    const why = this.dropBlock(item);
+    if (!why) return false;
+    this.hooks.message(why, '#ff6060', 2);
+    this.sfx.play('ui.cant_use');
+    return true;
+  }
+
+  /**
    * An item ctrl+clicked in the bag with no stash, cube or merchant open: out of the bag onto the
    * ground by the hero, as from the cursor (dropItem), in the camp too. D2R's: D2 1.x drops only what
-   * is on the cursor (Rcv0x17_DropItemOnGround, D2Game PlrMsg.cpp:1851-1877). Not by a dead hero
+   * is on the cursor (Rcv0x17_DropItemOnGround, D2Game PlrMsg.cpp:1851-1877). Not by a dead hero,
+   * nor the cube or an item this build can't read (refuseDrop, which says why)
    */
   dropFromBag(item: Item): boolean {
     const p = this.player;
-    if (p.dead || !this.level || !p.inventory.remove(item)) return false;
+    if (p.dead || !this.level || !p.inventory.contains(item) || this.refuseDrop(item)) return false;
+    p.inventory.remove(item);
     this.dropItem(item);
     // a charm works from the bag only (Player.activeCharms)
     p.markDirty();
