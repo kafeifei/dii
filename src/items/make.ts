@@ -134,6 +134,10 @@ function itemOf(spec: MakeSpec, d: AffixDrop & ReturnType<typeof rollLegendary>,
   applyDurPct(item);
   rollDefense(item, rng);
   rollQuantity(item, rng);
+  // a ring's, amulet's, charm's or jewel's look, one of its type's pictures, the last roll of making it
+  // (D2Game Items.cpp:748-751 ITEMS_RollLimitedRandomNumber(seed, VarInvGfx), the type its first)
+  const looks = ownType(b).invGfx?.length;
+  if (looks) item.gfx = roll(rng, looks);
   // with its properties rolled: a skill-rand's skill asks its level too (d2/affixes.ts requiredLevel)
   item.reqLvl = requiredLevel({ ...item, quality: d.quality, socketed: [] });
   item.name = displayName({ ...item, identified: true });

@@ -556,22 +556,7 @@ body {
   height: 100%;
   pointer-events: none;
 }
-.gitem.magic {
-  background: rgba(40, 40, 140, 0.28);
-}
-.gitem.rare {
-  background: rgba(140, 140, 30, 0.22);
-}
-.gitem.unique,
-.gitem.runeword {
-  background: rgba(140, 100, 40, 0.3);
-}
-.gitem.set {
-  background: rgba(30, 130, 30, 0.28);
-}
-.gitem.crafted {
-  background: rgba(160, 90, 10, 0.28);
-}
+/* D2 colours no cell by its item's quality (the name's colour tells it): only red for what the hero can't use */
 .gitem.hl {
   outline: 1px solid #c8a86a;
   box-shadow: 0 0 8px rgba(200, 168, 106, 0.7);
@@ -637,30 +622,16 @@ body {
   pointer-events: none;
 }
 .eqslot img {
-  max-width: 92%;
-  max-height: 92%;
+  /* fitted the same whatever the file's own size (the drawn icon's, a painted 1x or 2x one) */
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
   pointer-events: none;
-}
-.eqslot.magic {
-  background: rgba(40, 40, 140, 0.25);
-}
-.eqslot.rare {
-  background: rgba(140, 140, 30, 0.2);
-}
-.eqslot.unique,
-.eqslot.runeword {
-  background: rgba(140, 100, 40, 0.28);
-}
-.eqslot.set {
-  background: rgba(30, 130, 30, 0.25);
-}
-.eqslot.crafted {
-  background: rgba(160, 90, 10, 0.25);
 }
 .eqslot.hl {
   outline: 1px solid #c8a86a;
 }
-/* worn but giving nothing: after the quality colours so it wins */
+/* worn but giving nothing (D2's unusable flag); no other colour by quality */
 .eqslot.unusable {
   background: rgba(160, 20, 20, 0.35);
 }

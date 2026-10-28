@@ -10,7 +10,8 @@ import { isTownPortal, readable, scrollIntoTome } from '../items/tomes';
 import { buyIntoStack, buyIntoTome, buyPrice, multibuys, pay, permanent, purseGold, quiverInto, repairCost, repairOne, sellPrice, shelveSold, takeFromStore } from '../items/vendor';
 import type { HeroLine } from '../audio/sounds';
 import { h, type UIContext } from './common';
-import { CELL, itemIcon } from './icons';
+import { CELL } from './icons';
+import { itemImg } from './itempics';
 import { moveItem, quickMove, readPress, type GridKind } from './quickmove';
 
 // The bag panel (the paper doll over the bag) and the item grids every panel shares (the bag, the
@@ -638,7 +639,7 @@ export function renderGrid(ui: UIContext, kind: GridKind, grid: Grid): HTMLEleme
     d.style.height = `${b.h * CELL}px`;
     d.dataset.uid = it.uid;
     d.dataset.src = kind;
-    d.innerHTML = `<img src="${itemIcon(it)}" />`;
+    d.innerHTML = itemImg(it);
     // carrying something: the cube lights up, it can go straight in
     if (ui.cursorItem && b.type === 'cube') d.classList.add('hl');
     if (it.sockets > 0) {
@@ -685,7 +686,7 @@ export function renderInventory(ui: UIContext, R: HTMLElement): void {
     s.style.width = `${w}px`;
     s.style.height = `${hh}px`;
     if (it) {
-      s.innerHTML = `<img src="${itemIcon(it)}" />`;
+      s.innerHTML = itemImg(it);
       s.dataset.uid = it.uid;
       s.dataset.src = 'eq';
       ui.itemByUid.set(it.uid, it);

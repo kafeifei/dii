@@ -556,10 +556,15 @@ function drawCube(ctx: CanvasRenderingContext2D, w: number, h: number) {
 const GEMS = ['#3080ff', '#ff3030', '#30d040', '#d040ff', '#ffd030', '#30e0e0'];
 const GEM_BY_ID = Object.fromEntries(GEM_DEFS.map((g) => [g.id, g]));
 
+/**
+ * The code-drawn icon of an item: what a cell shows while its painted picture loads, and for an item
+ * with none (src/ui/itempics.ts itemImg). Like D2's pictures it doesn't mark the quality: the name's
+ * colour does that
+ */
 export function itemIcon(item: Item): string {
   const b = ITEM_BASES[item.baseId];
   const gem = GEMS[(item.uid.charCodeAt(item.uid.length - 1) + item.uid.length) % GEMS.length];
-  const key = `${item.baseId}|${b.type === 'ring' || b.type === 'amulet' ? gem : ''}|${item.rarity}`;
+  const key = `${item.baseId}|${b.type === 'ring' || b.type === 'amulet' ? gem : ''}`;
   const hit = cache.get(key);
   if (hit) return hit;
   const scale = 2;
@@ -574,9 +579,8 @@ export function itemIcon(item: Item): string {
   const H = b.h * CELL;
   ctx.translate(W * 0.08, H * 0.06);
   ctx.scale(0.84, 0.88);
-  // exceptional bases are a darker steel, elite ones a blued steel (D2 draws them as new art)
-  const tierMetal = b.tier === 2 ? '#98a8c8' : b.tier === 1 ? '#a8a0a0' : '#c8c8d0';
-  const metal = item.rarity === 'unique' || item.rarity === 'runeword' ? '#d8c088' : item.rarity === 'set' ? '#a8d8a0' : tierMetal;
+  // exceptional bases a darker steel, elite ones a blued one (in D2 the three share one picture)
+  const metal = b.tier === 2 ? '#98a8c8' : b.tier === 1 ? '#a8a0a0' : '#c8c8d0';
   switch (b.type) {
     case 'sword':
     case 'dagger':
@@ -624,7 +628,7 @@ export function itemIcon(item: Item): string {
       drawStaff(ctx, W, H, b.id);
       break;
     case 'shield':
-      drawShield(ctx, W, H, lookOf(b.id), item.rarity === 'unique' ? '#7a5a20' : item.rarity === 'set' ? '#2a5a2a' : '#6a3a1e');
+      drawShield(ctx, W, H, lookOf(b.id), '#6a3a1e');
       break;
     case 'helm':
       drawHelm(ctx, W, H, lookOf(b.id));

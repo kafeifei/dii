@@ -5,7 +5,8 @@ import { skillCost } from '../game/playerctl';
 import { placeInColumn } from '../items/belt';
 import { townPortalsIn } from '../items/tomes';
 import { bindSkill, bindUsable, h, SLOT_KEYS, type UIContext } from './common';
-import { itemIcon, skillIcon } from './icons';
+import { skillIcon } from './icons';
+import { itemImg } from './itempics';
 import { readPress } from './quickmove';
 
 /**
@@ -138,7 +139,7 @@ export class Hud {
       const s = h('div', 'slot');
       if (stack.length) {
         const it = stack[0];
-        s.innerHTML = `<img src="${itemIcon(it)}" /><span class="count">${stack.length > 1 ? stack.length : ''}</span>`;
+        s.innerHTML = `${itemImg(it)}<span class="count">${stack.length > 1 ? stack.length : ''}</span>`;
         s.dataset.uid = it.uid;
         ui.itemByUid.set(it.uid, it);
       }

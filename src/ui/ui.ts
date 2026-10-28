@@ -15,7 +15,8 @@ import { h, type LeftPanel, type RightPanel, type UIContext } from './common';
 import { renderCube } from './cube';
 import { DebugPanel } from './debug';
 import { Hud, SkillPicker } from './hud';
-import { CELL, itemIcon } from './icons';
+import { CELL } from './icons';
+import { itemImg } from './itempics';
 import { dropTrade, renderInventory, startIdentify } from './inventory';
 import { onKey, pressButton } from './keys';
 import { GroundLabels } from './labels';
@@ -353,7 +354,7 @@ export class UI implements GameHooks, UIContext {
       this.cursorEl.style.display = 'block';
       this.cursorEl.style.width = `${b.w * CELL}px`;
       this.cursorEl.style.height = `${b.h * CELL}px`;
-      this.cursorEl.innerHTML = `<img src="${itemIcon(this.cursorItem)}" />`;
+      this.cursorEl.innerHTML = itemImg(this.cursorItem);
     } else this.cursorEl.style.display = 'none';
   }
 

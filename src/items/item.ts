@@ -94,6 +94,11 @@ export interface Item {
   /** charges left, by skill, for "level N skill (X/Y charges)" */
   charges?: Record<string, number>;
   /**
+   * Which of its type's pictures it shows (ItemTypes.txt InvGfx1..VarInvGfx: rings, amulets, charms,
+   * jewels), rolled when made and kept as D2 keeps it (src/items/picture.ts); unset on items from before
+   */
+  gfx?: number;
+  /**
    * An item from a save made before the Diablo II items, or before the D2 bases, keeps the
    * requirements it had: the level (runes don't raise it, only runes socketed since), and its old
    * base's strength / dexterity where the D2 base asks more
