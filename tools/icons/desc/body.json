@@ -1,6 +1,112 @@
 {
+ "invqlt": {
+  "desc": "A quilted gambeson, the plainest padded armour: a thick coat of undyed oatmeal-grey linen stuffed with wadding and stitched in close vertical quilting channels so that it looks puffy and soft, a high padded stand-up collar, short padded sleeves to the elbow, the hem reaching the thighs, closed down the front by a row of small cloth ties, frayed seams and old stains; cloth only, no metal plates and no leather panels. Laid flat, front view, empty, no person.",
+  "material": false,
+  "note": "cloth: the iron-leather-wood line would armour it"
+ },
+ "invlea": {
+  "desc": "A leather armor cuirass: sleeveless, made of overlapping horizontal bands of flat hardened brown leather riveted together, closed at the front with no opening, broad leather shoulder straps with small buckles, scuffed and worn, a plain flat chest. Laid flat, front view, empty, no person.",
+  "note": "the sample round's lea words (round 2)"
+ },
+ "invhla": {
+  "desc": "A hard leather cuirass of thick boiled leather, dark oxblood brown: the body moulded in one rigid smooth shell with a rounded chest and a narrower waist, its edges rolled and stitched, laced shut down each side with leather thongs; big shoulder guards each made of three stiff overlapping leather plates; a short skirt of square stiff leather tabs at the hips; only small iron buckles, no metal plates. Laid flat, front view, empty, no person."
+ },
+ "invstu": {
+  "desc": "A studded leather jerkin of dark brown leather with short cap sleeves and a low standing collar, its whole surface stitched in a diamond lattice of seams with a round domed iron stud riveted at every crossing, so that the studs stand in neat diagonal rows, closed down the front by three buckled straps, worn shiny at the edges. Laid flat, front view, empty, no person."
+ },
+ "invrng": {
+  "desc": "A ring mail coat: a sleeveless brown leather coat reaching the knees, its outside covered with large flat iron rings sewn on one by one in neat overlapping horizontal rows, each ring separate and not linked to the next, the leather showing through the middle of every ring, the neck and armholes bound in leather, the skirt split at the front for riding. Laid flat, front view, empty, no person."
+ },
+ "invchn": {
+  "desc": "A chain mail hauberk: a heavy shirt of small interlinked iron rings, a dense fine mesh that hangs and folds like thick cloth, wide sleeves to the elbow, the hem reaching the upper thighs, a plain leather-bound neckline, a few rusty patches; mail only, no plates and no leather panels. Laid flat, front view, empty, no person."
+ },
+ "invscl": {
+  "desc": "A scale mail shirt: hundreds of small iron scales with rounded lower edges, overlapping downward like the scales of a fish, laced in rows onto a leather backing; sleeveless, with short capes of the same scales over the shoulders, the neck and armholes bound in brown leather, the hem a straight row of scales at the hips. Laid flat, front view, empty, no person."
+ },
+ "invbrs": {
+  "desc": "A breastplate on its own: a single rounded plate of grey steel covering the chest and belly, curved like a barrel with a low ridge down the middle, the edges at the neck and the armholes rolled outward, one short flared plate at the waist, two leather shoulder straps and leather side straps with small iron buckles; no sleeves, no shoulder plates, no skirt, no mail. Laid flat, front view, empty, no person."
+ },
+ "invspl": {
+  "desc": "A splint armour coat: long narrow vertical strips of iron set side by side like the staves of a barrel, riveted onto a brown leather coat with rows of round rivet heads, running from the chest down a skirt that reaches the thighs, the leather showing between the strips and along the bound edges, small shoulder guards of shorter splints, sleeveless. Laid flat, front view, empty, no person."
+ },
  "invplt": {
   "desc": "A heavy plate mail cuirass of grey steel: a battered smooth one-piece grey steel breastplate with a single vertical central ridge and a plain flat chest, articulated grey steel shoulder plates and a skirt of overlapping grey steel lames, mail visible underneath, a few leather straps. Laid flat, front view, empty, no person.",
   "note": "the sample round's plt words (round 2, approved)"
+ },
+ "invfld": {
+  "desc": "A heavy field plate harness for the body, plain and massive: a broad grey steel breastplate with a second plate overlapping its lower half and rising to a point at the middle, a high steel collar closing round the neck, big rounded shoulder plates that rise like domes above the shoulders, and two broad square thigh plates hanging on straps from the waist with a gap between them; no sleeves, no mail. Laid flat, front view, empty, no person."
+ },
+ "invgth": {
+  "desc": "A gothic plate armour of grey steel, slender and spiky: a waisted breastplate covered in many fine parallel ridges fanning upward from the waist, a pointed lower plate rising to the middle of the chest, every plate edge cut into small scalloped cusps, ridged shoulder plates swept up into points, and a short skirt of narrow ridged lames ending in two pointed thigh plates. Laid flat, front view, empty, no person."
+ },
+ "invful": {
+  "desc": "A full suit of plate armour for the body and arms: a rounded grey steel breastplate, large overlapping shoulder plates, complete arm plates with round elbow cops lying straight down beside the body and ending at the wrists, a waist of several overlapping lames and long jointed thigh plates reaching the knees; no helmet and no gauntlets, heavy and complete, hollow. Laid flat, front view, empty, no person."
+ },
+ "invltp": {
+  "desc": "A light plate armour: a slim, thin grey steel breastplate and small round steel discs over the shoulders, worn over a padded brown leather jack whose short sleeves and long leather skirt show beneath the steel, the plate held on by buckled leather straps at the sides; lighter and plainer than a knight's plate. Laid flat, front view, empty, no person."
+ },
+ "invaar": {
+  "desc": "An ancient heavy armour from a forgotten age: a hollow cuirass of dark old bronze gone brown-black with age, moulded in the shape of a powerful muscled chest and belly and worn smooth on the high points, a flared collar, broad shoulder guards of overlapping bronze plates, and a long skirt of hanging leather strips, each faced with a small bronze plate, cracked and worn. Laid flat, front view, empty, no person.",
+  "material": false,
+  "note": "bronze: the no-gold iron line would fight it"
+ },
+ "invlbl": {
+  "desc": "A sash: a long band of soft faded oxblood wool cloth, wrapped into a flat horizontal band and tied in a loose knot near its right end, the two fringed tails of the cloth hanging down from the knot, creased and frayed; cloth only, no buckle and no metal. Front view.",
+  "material": false,
+  "note": "cloth, no buckle"
+ },
+ "invvbl": {
+  "desc": "A light belt: a narrow thin strap of plain brown leather laid out straight and horizontal, a small square iron buckle with the pointed tail end of the strap passing through it, a few punched holes, one small leather purse hanging from it on a thong. Front view."
+ },
+ "invmbl": {
+  "desc": "A broad leather belt with a heavy iron buckle and a few iron studs, laid out straight and horizontal, with three plump leather pouches hanging below the belt. Front view.",
+  "note": "the sample round's mbl words (round 2)"
+ },
+ "invtbl": {
+  "desc": "A heavy belt: a very broad, stiff girdle of thick layered leather as tall as a hand, edged along both sides with stitched iron strips, laid out straight and horizontal, closed by one big rectangular iron buckle with two tongues, two iron rings hanging from its lower edge for gear. Front view."
+ },
+ "invhbl": {
+  "desc": "A plated belt: a broad leather girdle faced along its whole length with a row of rectangular iron plates, each held by four rivets and slightly overlapping the next like the links of a segmented band, closed by a plain square iron buckle, laid out straight and horizontal. Front view."
+ },
+ "invlgl": {
+  "desc": "A pair of plain leather gloves of soft supple brown leather: five separate fingers wrinkled at the knuckles, stitched seams along the fingers, short wrist cuffs closed with a leather thong, darkened and worn at the fingertips. Fingers slightly curled, placed side by side, fingers up. Front view, empty."
+ },
+ "invvgl": {
+  "desc": "A pair of heavy gloves of thick stiff double-layered brown leather: padded stitched ridges over the backs of the fingers, a wide leather strap with an iron buckle across the back of each hand, long flared gauntlet cuffs reaching halfway up the forearm, scuffed and cracked. Fingers slightly curled, placed side by side, fingers up. Front view, empty."
+ },
+ "invmgl": {
+  "desc": "A pair of mail gloves: the backs of the hands and every finger covered in fine interlinked iron mail rings, leather palms, a long mail cuff reaching up the forearm, tied at the wrist with a leather thong, the mail hanging a little loose. Fingers slightly curled, placed side by side, fingers up. Front view, empty."
+ },
+ "invtgl": {
+  "desc": "A pair of light gauntlets: brown leather gloves armoured on the back only, one curved grey steel plate over the back of each hand and small rows of steel scales over the knuckles and the backs of the fingers, the leather fingers and palms showing, short leather cuffs with a buckle; lighter than full plate gauntlets. Fingers slightly curled, placed side by side, fingers up. Front view, empty."
+ },
+ "invhgl": {
+  "desc": "A pair of articulated grey steel plate gauntlets, fully armoured: every finger covered by small overlapping steel plates, steel knuckle plates, the back of the hand one curved steel plate, a flared riveted steel cuff, worn bare metal, no leather and no fabric visible anywhere, fingers slightly curled, placed side by side. Front view, empty.",
+  "note": "the sample round's hgl words (round 2)"
+ },
+ "invlbt": {
+  "desc": "A pair of medieval soft leather knee-high boots: wrinkled brown leather, thin flat stitched leather soles with no heel at all and no tread, turned-down cuffs at the top, wrapped and tied with leather thongs around the shins, no modern buckles, standing side by side. Side three-quarter view.",
+  "guide": "soft-boots",
+  "note": "the sample round's lbt words and guide (round 2)"
+ },
+ "invvbt": {
+  "desc": "A pair of heavy calf-high boots of thick dark brown leather, stiff and straight-sided, with no cuff and no laces: a thick flat sole built of stacked leather layers with a ring of iron hobnails along its edge, no raised heel, a rounded toe reinforced with an extra stitched leather cap, each boot closed up its outer side by a row of small round horn toggles; no buckles. Standing side by side, both toes pointing right. Side view.",
+  "guide": true,
+  "note": "guide: a pair of tall boots standing side by side, toes right, straight shafts to below the knee, thin flat soles with no heel, no cuff and no thongs (soft-boots without its cuff and ties)"
+ },
+ "invmbt": {
+  "desc": "A pair of chain boots: low brown leather shoes with a flat sole and a rounded toe, and above them leggings of fine interlinked iron mail rising to just below the knee, tied there with a leather garter and at the ankle with a thong, the mail hanging in soft folds. Standing side by side, both toes pointing right. Side view.",
+  "guide": true,
+  "note": "guide: a pair of tall boots standing side by side, toes right, straight shafts to below the knee, thin flat soles with no heel, no cuff and no thongs (soft-boots without its cuff and ties)"
+ },
+ "invtbt": {
+  "desc": "A pair of light plated boots: brown leather boots reaching just below the knee, with a flat sole and no heel, a single curved grey steel plate strapped down the front of each shin with two buckled straps, a small steel cap over the toes, the leather calf showing behind the plate. Standing side by side, both toes pointing right. Side view.",
+  "guide": true,
+  "note": "guide: a pair of tall boots standing side by side, toes right, straight shafts to below the knee, thin flat soles with no heel, no cuff and no thongs (soft-boots without its cuff and ties)"
+ },
+ "invhbt": {
+  "desc": "A pair of plate greaves, steel boots for a knight: each lower leg wholly enclosed in a smooth hinged grey steel shell from ankle to knee, a rounded steel cop over the knee, the foot covered by a steel shoe of overlapping articulated lames with a rounded toe, a flat sole and no heel. Standing side by side, both toes pointing right. Side view.",
+  "guide": true,
+  "note": "guide: a pair of plate boots side by side, toes right, a straight shin tube from a flat heelless sole to a round knee cop, the foot as four stepped lames to a rounded toe"
  }
 }
