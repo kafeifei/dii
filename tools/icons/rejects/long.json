@@ -1,0 +1,140 @@
+{
+ "invbst": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.64-0.67",
+  "scores": {
+   "s101": 0.6419,
+   "s202": 0.6709,
+   "s303": 0.6379,
+   "s404": 0.6481
+  },
+  "reason": "Too close by the screen: all four seeds 0.64-0.67 (the threshold is 0.45). The side by side is clearly ours (an upright dark oak pole with smooth riveted caps and a leather grip, against the original's slanted pale banded staff with studded ends), and the cross check says it is the shape class: this original scores 0.45 or more against 45 of 60 candidates of the other long pictures, the gnarled staff and the winged Horadric staff among them. The cause: a rod has no interior 2 px in, so similarity.py's edge_in falls back to the outline F1 and outline overlap carries 0.40 of the score, and two rods of the same width and length overlap. A probe (scratch: our s202 cut-out stretched sideways with PIL, not a picture) drops it with thickness: x1.0 0.67, x1.4 0.51, x1.8 0.49, x2.4 0.40.",
+  "fix": {
+   "desc": "A battle staff, a war mage's heavy fighting staff: a long, straight, stout pole of mid-brown seasoned oak, thick and heavy, about a tenth as thick as it is long; its middle third wrapped in a broad hand grip of wound dark leather cord, a little wider than the pole, between two flared iron collars; each end shod with a short, plain, blunt iron cap a little wider than the pole, no studs and no spikes, no bands along the bare wood. A thick heavy staff, far stouter than a walking staff. Shown perfectly upright, one iron-capped end at the top.",
+   "guide": "battle-staff",
+   "guide_new": "box/guides.py: a battle-staff entry, the pole family on 448x1792: shaft half width 80 from y 90 to 1700; a 'cap' head (new in HEADS: a rectangle of half width 96, rounded on top) from y 60 to 200; butt cap half width 96 from y 1590 to 1730; grip half width 92 from y 640 to 1150 (DARK), so the outline swells at the grip and the caps instead of running as one even rod",
+   "note": "the thickness is the fix: about twice run-04's, a 1x rod of ~13 px in the 34 px cell (run-04's are 6-8 px); keep it a staff, not a club (no swelling head). The iron-shod ends stay, they are the line's part; plain caps, not the original's studs",
+   "seeds": "8: style.mjs SEEDS and --round 1 (505-808); pick one under 0.45 that still reads as a staff. If none gets under while the side by side stays clearly ours, take the screen's thin-rod fallback to the user rather than fattening it into a club"
+  }
+ },
+ "invsst": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.58-0.65",
+  "scores": {
+   "s101": 0.6523,
+   "s202": 0.5802,
+   "s303": 0.5927,
+   "s404": 0.6268
+  },
+  "reason": "Too close by the screen: all four seeds 0.58-0.65 (the threshold is 0.45), the same thin-rod class effect as invbst (this original scores 0.45 or more against 30 of 60 candidates of the other long pictures, the gnarled staff and the scepters among them), though the side by side is clearly ours: a dark knob-topped walking stick with a hanging thong against the original's slanted pale staff with grey metal bands. A probe (scratch: our s101 cut-out stretched sideways with PIL, not a picture): x1.0 0.65, x1.4 0.57, x1.8 0.41, x2.4 0.36, so a stouter rod gets it under.",
+  "fix": {
+   "desc": "A short staff, a traveller's stout walking staff about chest high: a straight, thick rod of mid-brown wood, about a ninth as thick as it is long, much stouter than a wand or a long staff; its top a heavy rounded knob carved from the same wood, a band of three narrow iron rings just under the knob; a short wrap of dark leather a third of the way down; a short blunt iron ferrule at the foot. Shown perfectly upright, the knob at the top.",
+   "guide": "short-staff",
+   "guide_new": "box/guides.py: a short-staff entry, the pole family on 512x1536: shaft half width 76 from y 250 to 1440; a 'knob' head (new in HEADS: an ellipse 200 wide from y 50 to 270, the rings a DARK band half width 84 from y 270 to 320); butt cap half width 70 from y 1440 to 1500; grip half width 82 from y 600 to 760 (DARK)",
+   "note": "the thickness is the fix (a 1x rod of ~10 px, run-04's ~5 px); the knob stays our own design. Must stay apart from the battle staff at 34 px: shorter (1x3), a knob, no iron caps",
+   "seeds": "8: style.mjs SEEDS and --round 1 (505-808); pick one under 0.45. As invbst: if none gets under while clearly ours, take the screen question to the user"
+  }
+ },
+ "invhst": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.36-0.48",
+  "scores": {
+   "s101": 0.4074,
+   "s202": 0.3639,
+   "s303": 0.4027,
+   "s404": 0.4791
+  },
+  "reason": "The head came out a bat: all four seeds put a beast's head with ears and a snout on the medallion and spread membrane bat wings behind it, so the order's holy staff reads as a demon's at 34 px (the words asked for two metal wings round a medallion, nothing else); s404 is also over the line (0.479, its wings the widest).",
+  "fix": {
+   "desc": "The completed staff of an ancient order of mages: the same shaft as its headless shaft's words (invmsf): a straight rod of dark bronze with a thick carved serpent of worn brass coiling round it from foot to top in five open turns, its head resting just under the top; crowned with a head of tarnished bronze: a round medallion set with a small milky white stone, sitting straight on the shaft's socket, and from either side of it a stylised wing of four long flat bronze feather-plates, each a plain leaf-shaped blade, fanned upward and outward in a narrow V, their tips no higher than a hand above the medallion; the wings are plain metal ornament joined only to the medallion, with nothing above or between them; a small pointed bronze foot. Shown perfectly upright, the winged head at the top.",
+   "note": "keep the V of wings round a medallion, the line's defining part; ours is dark bronze, plain leaf-shaped plates and a milky stone, not the original's bright gilt feathered wings; the narrow V keeps the outline off s404's 0.479. Paint it with invmsf's new words in the same run and pick the two together so the shafts match",
+   "seeds": "4 (style.mjs SEEDS), a new run with the changed words"
+  }
+ },
+ "invmsf": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.23-0.38",
+  "scores": {
+   "s101": 0.3436,
+   "s202": 0.3158,
+   "s303": 0.3813,
+   "s404": 0.2345
+  },
+  "reason": "At 1x the serpent is lost: a thin dark bronze snake on a dark bronze rod (1x median luminance ~47 on the #070605 grid) reads as a plain dark stick with a point, nothing of the serpent-wound shaft the quest item is known by; and its pair invhst goes back, so the two shafts should be painted and picked together to match.",
+  "fix": {
+   "desc": "The headless shaft of an ancient order of mages' staff: a straight rod of dark bronze with a thick carved serpent of worn brass coiling round it from foot to top in five open turns, the coils as thick as the rod and standing out from it with dark gaps between them, fine scales on the serpent, its head resting just under the top; the top end an open bronze socket, a short collar with an empty hole where a head-piece is missing; a small pointed bronze foot. Shown perfectly upright, the open socket at the top.",
+   "note": "the same shaft words as invhst's; a separate bold brass serpent round a dark rod (ours), not the original's shaft that is itself a gilt twist; s404 (0.23) is the fallback if the new words go wrong",
+   "seeds": "4 (style.mjs SEEDS), in the same run as invhst"
+  }
+ },
+ "invwnd": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.21-0.22",
+  "scores": {
+   "s101": 0.2185,
+   "s202": 0.2244,
+   "s303": 0.2136,
+   "s404": 0.2128
+  },
+  "reason": "Unreadable at 34 px: the 'straight slender rod' came out a hairline, 4 px wide at 1x (the yew, bone and grim wands are 7-14 px) and dark (1x median luminance ~47) on the dark grid, its amber stone a 2 px dot; at 1x the cell looks empty. Round 2's approved wand was as thick as a thumb with a large head.",
+  "fix": {
+   "desc": "A plain apprentice's wand: a straight rod of polished warm mid-brown hardwood as thick as a thumb, a little thicker toward the top, banded under its head by three broad rings of tarnished bronze; its head a bronze cup of three short claws holding a round dull amber stone about twice as wide as the rod; a grip wrapped in dark cord at the lower end and a small rounded bronze butt knob. A sturdy wand, lighter in tone than the yew and grim wands. Shown upright, the stone at the top.",
+   "note": "keeps run-04's identity (bronze-banded hardwood with an amber stone, apart from the yew, bone and grim wands) but round 2's thickness: a 1x rod of ~7 px and a head of ~10 px",
+   "seeds": "4 (style.mjs SEEDS), a new run with the changed words"
+  }
+ },
+ "invtri": {
+  "run": 4,
+  "seeds": [
+   101,
+   202,
+   303,
+   404
+  ],
+  "similarity": "0.20-0.25",
+  "scores": {
+   "s101": 0.2236,
+   "s202": 0.2476,
+   "s303": 0.248,
+   "s404": 0.2032
+  },
+  "reason": "A hay fork, not a war trident: none of the four seeds has the barbed points the words ask for, and the three thin round tines on a bowed crossbar are a farm pitchfork's; at 1x the line's defining part (barbed prongs) is missing.",
+  "fix": {
+   "desc": "A trident, a three-pronged war fork: a long straight wooden shaft with an iron socket; at the top a short, straight, heavy iron crossbar carrying three thick, straight, square-sectioned iron prongs, the middle one a little longer, each ending in a flat arrow-shaped barbed head clearly wider than its prong, its two barbs pointing back down; a leather grip wrap below the socket and an iron butt cap. Thick forged iron, not a farm fork's thin round tines. Shown perfectly upright, the prongs at the top, front view.",
+   "guide": "trident",
+   "guide_new": "box/guides.py: a trident entry, the pole family on 704x1408 (spear's shaft, butt and grip): a 'trident' head (new in HEADS): a straight crossbar half width 120 from y 300 to 334; three prongs half width 11 at cx-110, cx and cx+110 from the crossbar up to y 120 (sides) and y 70 (middle); on each a barbed arrowhead half width 32, 70 tall, its barbs cut back 22 px",
+   "note": "barbed points are the generic trident's part; the prongs straight and square and the crossbar straight are ours (run-04 scored 0.20-0.25, so the barbs leave room)",
+   "seeds": "4 (style.mjs SEEDS), a new run with the guide"
+  }
+ }
+}

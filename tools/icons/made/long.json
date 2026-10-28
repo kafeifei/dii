@@ -1,4 +1,294 @@
 {
+ "invam3": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "A slender war spear of an ancient warrior sisterhood, of the classical Greek kind: a long, light, straight shaft of pale ash; a long narrow leaf-shaped iron blade with a raised midrib, finer and longer than a common spear's; a band of braided leather and a ring of small iron beads at the socket; at the foot a long tapering four-sided iron butt spike as long as a hand. Elegant and light, made for thrusting and throwing. Shown perfectly upright, blade at the top. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invam3.webp",
+    "sha1": "5814abd48c22"
+   },
+   "1x": {
+    "file": "public/icons/items/invam3.1x.webp",
+    "sha1": "9fac98b46849"
+   }
+  }
+ },
+ "invam4": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "A long, slender war pike of an ancient warrior sisterhood: an extremely long, thin, straight shaft; at the top a long four-sided needle-like iron spike with a small round stop disc under it; the shaft just below the head wrapped in braided leather for a hand's length; a small iron butt cap. Light and very long, the head a narrow needle with no blade. Shown perfectly upright, point at the top. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invam4.webp",
+    "sha1": "9e50525fdfb8"
+   },
+   "1x": {
+    "file": "public/icons/items/invam4.1x.webp",
+    "sha1": "b00894c0af5d"
+   }
+  }
+ },
+ "invam5": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 3,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. Three light barbed throwing javelins of an ancient warrior sisterhood, bound together into a bundle: three slim straight shafts side by side, fanning apart a little toward the top, tied together round their middles with a braided leather cord; each tipped with a slender iron head with one sharp backward-curving barb on one side, the three heads at slightly different heights, a small ring of braided leather below each head. Shown upright, the points at the top. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "maiden-javelins",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invam5.webp",
+    "sha1": "383c4eae6c4e"
+   },
+   "1x": {
+    "file": "public/icons/items/invam5.1x.webp",
+    "sha1": "f43bd918275c"
+   }
+  }
+ },
+ "invbar": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A bardiche, a long-shafted war cleaver: a long straight wooden shaft; on the LEFT side of its upper end only, one very long, narrow, crescent-shaped axe blade a quarter of the whole weapon's length, its curved cutting edge facing left, its upper end rising above the top of the shaft into a point, its back fastened to the shaft at two points, by an iron socket near the top and by its lower tail riveted further down; nothing on the right side; an iron butt cap. Shown perfectly upright, the blade at the top, side view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "bardiche",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invbar.webp",
+    "sha1": "bdffd2fa032c"
+   },
+   "1x": {
+    "file": "public/icons/items/invbar.1x.webp",
+    "sha1": "0f3d73c56ba6"
+   }
+  }
+ },
+ "invbrn": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A brandistock, a three-bladed war fork: a long straight wooden shaft with an iron socket at the top; from the socket rises one long, narrow, straight central spike, and close beside its base two much shorter thin side spikes branch off at a slight outward angle, one on each side, like a narrow three-pronged fork with a dominant middle prong; no crossbar, no hooks; a leather grip wrap in the middle and an iron butt cap. Shown perfectly upright, the spikes at the top, side view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "brandistock",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invbrn.webp",
+    "sha1": "ca8de72670fd"
+   },
+   "1x": {
+    "file": "public/icons/items/invbrn.1x.webp",
+    "sha1": "c4e954fa6417"
+   }
+  }
+ },
+ "invbwn": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 2,
+  "prompt": "A bone wand: one long animal leg bone used as a wand, yellowed and cracked, with a knobbly rounded joint at each end, the shaft between them wrapped tightly in dark leather strips, a few small finger-bone charms hanging on a sinew cord just under the upper joint. Shown upright, the larger joint at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invbwn.webp",
+    "sha1": "188110118d19"
+   },
+   "1x": {
+    "file": "public/icons/items/invbwn.1x.webp",
+    "sha1": "492fabfb3431"
+   }
+  }
+ },
+ "invcst": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 4,
+  "prompt": "A gnarled wizard's staff: a long twisted branch of weathered grey-brown oak, knotted and crooked, its head a knot of curled roots around a small dull stone. Shown perfectly upright, the gnarled head at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invcst.webp",
+    "sha1": "84571c1e98f6"
+   },
+   "1x": {
+    "file": "public/icons/items/invcst.1x.webp",
+    "sha1": "9b902de95066"
+   }
+  }
+ },
+ "invglv": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 4,
+  "prompt": "A throwing glaive: a short light throwing spear whose head is a long broad knife blade a third of the whole length, single-edged with a straight back and a gently convex cutting edge curving up to a sharp point, on a short iron socket with a collar ring; a slim straight wooden shaft with a short leather grip at its balance point and a small iron butt cap. Shown perfectly upright, the blade at the top, side view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": true
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invglv.webp",
+    "sha1": "a08011f2fb35"
+   },
+   "1x": {
+    "file": "public/icons/items/invglv.1x.webp",
+    "sha1": "822ec320e904"
+   }
+  }
+ },
+ "invgsc": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 3,
+  "prompt": "A grand scepter, a long ceremonial holy rod: a straight shaft of dark wood banded with iron rings at intervals; on top a large flat round iron disc standing upright and facing the viewer, ringed with short blunt rays like a sun emblem, a raised round boss at its centre; a collar of three iron rings under the disc; a small round iron knob at the foot. Shown upright, the sun disc at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsc.webp",
+    "sha1": "c9355d62b7f1"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsc.1x.webp",
+    "sha1": "2ed7f48c4960"
+   }
+  }
+ },
+ "invgwn": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 2,
+  "prompt": "A grim wand: a short crooked stick of dark root wood whose top is lashed with sinew into the base of a small cracked human skull sitting on it like a knob, the skull without its jaw, its dark empty eye sockets facing the viewer; the grip wrapped in strips of old grey cloth. Shown upright, the skull at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgwn.webp",
+    "sha1": "1fe363f57844"
+   },
+   "1x": {
+    "file": "public/icons/items/invgwn.1x.webp",
+    "sha1": "fa0e9c016322"
+   }
+  }
+ },
  "invhal": {
   "run": 1,
   "seed": 101,
@@ -25,6 +315,615 @@
    "1x": {
     "file": "public/icons/items/invhal.1x.webp",
     "sha1": "d114a64e8867"
+   }
+  }
+ },
+ "invjav": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 1,
+  "h": 3,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. Three throwing javelins bound together into a bundle: three slim straight wooden shafts side by side, almost parallel, fanning apart a little toward the top, tied together round their middles with a wound leather thong; each ends at the top in a small narrow leaf-shaped iron head, the three heads at slightly different heights; plain shaft ends at the bottom. Shown upright, the points at the top. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "javelins",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invjav.webp",
+    "sha1": "21135c3412a0"
+   },
+   "1x": {
+    "file": "public/icons/items/invjav.1x.webp",
+    "sha1": "93cb6e8f01a0"
+   }
+  }
+ },
+ "invlst": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 4,
+  "prompt": "A long staff: a tall, slender, perfectly straight pole of pale ash wood, thinner than a fighting staff, its top bound with a tight coil of dark cord and finished with a small domed iron cap, a leather-wrapped hand grip a third of the way down, a short tapered iron ferrule at the foot. Shown perfectly upright, the domed cap at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invlst.webp",
+    "sha1": "9717509e3002"
+   },
+   "1x": {
+    "file": "public/icons/items/invlst.1x.webp",
+    "sha1": "79493978926a"
+   }
+  }
+ },
+ "invob1": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 2,
+  "prompt": "A sorcerer's orb for the off hand: a clouded crystal sphere with a faint cold blue glow inside, clutched by three bronze talons on top of a short carved grip. Shown upright, the sphere at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invob1.webp",
+    "sha1": "64a86822441f"
+   },
+   "1x": {
+    "file": "public/icons/items/invob1.1x.webp",
+    "sha1": "178e89057e66"
+   }
+  }
+ },
+ "invob2": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 2,
+  "prompt": "A sorcerer's orb for the off hand, a sacred globe: a pale milky opal sphere girdled round its middle by a band of tarnished gold and crossed over its top by a half band, a tiny cross-shaped finial on its crown, set in a small cup on top of a short turned bronze grip with ring mouldings. Shown upright, the globe at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invob2.webp",
+    "sha1": "44d11625a990"
+   },
+   "1x": {
+    "file": "public/icons/items/invob2.1x.webp",
+    "sha1": "74cdf9cd252c"
+   }
+  }
+ },
+ "invob3": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 2,
+  "prompt": "A sorcerer's orb for the off hand: a sphere of smoky dark grey glass with slow wisps of pale smoke trapped inside, set deep in a cup of soot-blackened iron like a candle holder whose rim is cut into small points, on a short iron-banded wooden grip. Shown upright, the sphere at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invob3.webp",
+    "sha1": "d28ba5b46828"
+   },
+   "1x": {
+    "file": "public/icons/items/invob3.1x.webp",
+    "sha1": "1542615daa90"
+   }
+  }
+ },
+ "invob4": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 2,
+  "prompt": "A sorcerer's orb for the off hand: a polished deep oxblood-red stone sphere half enclosed by four long curved bronze leaves rising from below like the closed sepals of a flower bud, clasping it, on a short slim grip wrapped in dark leather with a small bronze end knob. Shown upright, the sphere at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invob4.webp",
+    "sha1": "b7d3e0c4710a"
+   },
+   "1x": {
+    "file": "public/icons/items/invob4.1x.webp",
+    "sha1": "0a71b0a7e27c"
+   }
+  }
+ },
+ "invob5": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 3,
+  "prompt": "A sorcerer's great orb: a large heavy sphere of dark violet stone with a faint swirling light inside, cradled in the forked, twisted top of a long crooked handle of natural root wood whose roots curl up round the sphere; the handle bound with leather strips and copper wire, its foot capped with a small iron ferrule. Larger and longer than a common orb. Shown upright, the sphere at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invob5.webp",
+    "sha1": "486ec1953d80"
+   },
+   "1x": {
+    "file": "public/icons/items/invob5.1x.webp",
+    "sha1": "19633d00f100"
+   }
+  }
+ },
+ "invpax": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A poleaxe, a knight's long-shafted axe: a long straight wooden shaft with iron langets; at the top, on the LEFT side, one broad rounded crescent axe blade, tall and deep, its curved edge facing left; on the RIGHT side opposite it a small square hammer face with a toothed striking surface; above them a short square top spike; an iron butt spike at the foot. Shown perfectly upright, the head at the top, side view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "poleaxe",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invpax.webp",
+    "sha1": "2a8fdd153d31"
+   },
+   "1x": {
+    "file": "public/icons/items/invpax.1x.webp",
+    "sha1": "a5ea5349ef57"
+   }
+  }
+ },
+ "invpik": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "A pike, a very long infantry spear: an extremely long, thin, straight ash shaft and, at its top only, a small narrow leaf-shaped iron point hardly wider than the shaft, on long iron strips nailed down the shaft below it; a short leather grip a third of the way up from the foot and a small iron butt cap. Much longer and thinner than a common spear, the head tiny. Shown perfectly upright, point at the top. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invpik.webp",
+    "sha1": "56399a672625"
+   },
+   "1x": {
+    "file": "public/icons/items/invpik.1x.webp",
+    "sha1": "0d65dcbadfe8"
+   }
+  }
+ },
+ "invpil": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 3,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A pilum, a heavy legionary throwing spear: its upper half a long thin iron shank as thin as a finger, ending in a small four-sided pyramid point; its lower half a thicker straight wooden shaft; the two joined by a square iron collar block with rivets, a leather grip wrap just below the joint; a small iron butt at the foot. Shown perfectly upright, the point at the top. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "pilum",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invpil.webp",
+    "sha1": "5ad4f43bda44"
+   },
+   "1x": {
+    "file": "public/icons/items/invpil.1x.webp",
+    "sha1": "d82724564a3c"
+   }
+  }
+ },
+ "invscp": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 1,
+  "h": 3,
+  "prompt": "A scepter, a priest-king's short rod of office: a straight shaft of tarnished bronze, its head an open crown of six short bronze points around a round smoky grey stone, a collar of small beads under the crown, a grip wrapped in dark leather in the lower half, a small ball pommel at the foot. Shown upright, the crowned head at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invscp.webp",
+    "sha1": "6aa18a6ba8f9"
+   },
+   "1x": {
+    "file": "public/icons/items/invscp.1x.webp",
+    "sha1": "4eb444ba8c14"
+   }
+  }
+ },
+ "invscy": {
+  "run": 4,
+  "seed": 404,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "A farmer's scythe turned to war: a long wooden snath gently curved like a stretched S, one short wooden hand peg sticking out sideways halfway down; at its top end, fixed at a right angle by an iron ring, a long curved iron blade sweeping out sideways to the RIGHT and a little upward, tapering to a sharp point, its cutting edge on the inner lower curve. Shown upright, the snath vertical, the blade across the top. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invscy.webp",
+    "sha1": "5913b3563d15"
+   },
+   "1x": {
+    "file": "public/icons/items/invscy.1x.webp",
+    "sha1": "5f0893945a87"
+   }
+  }
+ },
+ "invspr": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A long spear: a willow-leaf-shaped iron spearhead with smooth convex edges and a low mid ridge, widest a third of the way up, no barbs, no hooks, not an arrowhead, on a socket and a long straight ash-wood shaft with a leather grip wrap in the middle and an iron butt cap. Shown perfectly upright, spearhead at the top. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "spear",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invspr.webp",
+    "sha1": "14f078af6c1a"
+   },
+   "1x": {
+    "file": "public/icons/items/invspr.1x.webp",
+    "sha1": "ed0524900d0f"
+   }
+  }
+ },
+ "invspt": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A spetum, a winged war spear: a long straight wooden shaft; at the top a long narrow straight double-edged central blade, and at its base two short flat side blades angled up and outward like a pair of wings, one on each side, so the head is like an arrowhead with a very long tip; an iron socket with a ring below them; a leather grip wrap in the middle and an iron butt cap. Shown perfectly upright, the blades at the top, front view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "spetum",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invspt.webp",
+    "sha1": "c15f40fdc997"
+   },
+   "1x": {
+    "file": "public/icons/items/invspt.1x.webp",
+    "sha1": "971f6db34d13"
+   }
+  }
+ },
+ "invssp": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 3,
+  "prompt": "A short spear: a short, sturdy, straight wooden shaft topped by a broad flat triangular iron head as wide as three fingers, with straight edges and a sharp point, no barbs, on an iron socket bound with a ring; a leather grip wrap near the middle; a plain rounded butt. Shown perfectly upright, the point at the top. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invssp.webp",
+    "sha1": "169e7043c7a0"
+   },
+   "1x": {
+    "file": "public/icons/items/invssp.1x.webp",
+    "sha1": "a07e98b2def3"
+   }
+  }
+ },
+ "invtsp": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 4,
+  "prompt": "A long throwing spear like a hunter's harpoon: a long slim straight wooden shaft, at its top a long narrow iron point with a single sharp backward barb on one side only, on a long iron socket; two leather bindings spaced along the shaft and a small iron butt cap. Shown perfectly upright, the point at the top. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": true
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invtsp.webp",
+    "sha1": "8ff74d150d87"
+   },
+   "1x": {
+    "file": "public/icons/items/invtsp.1x.webp",
+    "sha1": "3e35fcd85326"
+   }
+  }
+ },
+ "invvou": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A voulge, a long-shafted cleaver: a long straight wooden shaft; at its top a tall, narrow, flat, single-edged cleaver blade fixed along the RIGHT side of the shaft's upper end by two iron rings, its straight cutting edge facing right, its top cut at a slant into a sharp point rising above the end of the shaft, a short square spur on its back at the lower end; no hook, no axe on the left; an iron butt cap. Shown perfectly upright, the blade at the top, side view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "voulge",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invvou.webp",
+    "sha1": "03be5d84b1ef"
+   },
+   "1x": {
+    "file": "public/icons/items/invvou.1x.webp",
+    "sha1": "6df41198f1f2"
+   }
+  }
+ },
+ "invwsc": {
+  "run": 4,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A war scythe: a long straight wooden shaft, and at its top a long, narrow, gently curved single-edged blade standing straight up in line with the shaft, like a scythe blade forged to point upward, its cutting edge on the inner concave side, its tip curving a little forward to a sharp point; the blade's tang set in an iron socket bound with two iron rings; a leather grip wrap in the middle and an iron butt cap. Shown perfectly upright, the blade at the top, side view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "war-scythe",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invwsc.webp",
+    "sha1": "79d6dae76c38"
+   },
+   "1x": {
+    "file": "public/icons/items/invwsc.1x.webp",
+    "sha1": "60f10bf08fcc"
+   }
+  }
+ },
+ "invwsp": {
+  "run": 4,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 3,
+  "prompt": "A war scepter, a heavy holy mace of office: a long straight haft bound in iron; on top a tall iron head of six thick flat flanges set round a central core, each flange with a notch cut in its edge, a short iron spike finial on top; a collar of riveted iron rings under the head; a long grip wrapped in dark leather; a heavy round iron pommel at the foot. Shown upright, the flanged head at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invwsp.webp",
+    "sha1": "e8a354710820"
+   },
+   "1x": {
+    "file": "public/icons/items/invwsp.1x.webp",
+    "sha1": "050b943c85dc"
+   }
+  }
+ },
+ "invwst": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "A war staff: a long heavy staff of dark wood as thick as a wrist, topped by a forged iron head shaped like a crescent of two curved horns sweeping up and outward to sharp tips, a riveted iron boss in the middle of the crescent, the socket under it bound with iron rings; a leather-wrapped grip at the middle; a short iron spike at the foot. Shown perfectly upright, the horned head at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invwst.webp",
+    "sha1": "5fe683a2ff19"
+   },
+   "1x": {
+    "file": "public/icons/items/invwst.1x.webp",
+    "sha1": "71dffa755726"
+   }
+  }
+ },
+ "invywn": {
+  "run": 4,
+  "seed": 303,
+  "kind": "base",
+  "w": 1,
+  "h": 2,
+  "prompt": "A yew wand: two thin peeled yew twigs twisted round each other like a rope from the grip to the top, where they part into a small open fork; bound at the grip and under the fork with wraps of brown twine; a small carved yew bead hanging from the upper binding on a thong. Shown upright, the fork at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invywn.webp",
+    "sha1": "319eda5ea6cd"
+   },
+   "1x": {
+    "file": "public/icons/items/invywn.1x.webp",
+    "sha1": "6c2de585f25c"
    }
   }
  }

@@ -1,6 +1,161 @@
 {
+ "invam3": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: long fine leaf blade, braided leather and beads at the socket, the long butt spike that tells it from the common spear (similarity 0.26)"
+ },
+ "invam4": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: needle head over a stop disc with the braided wrap just under it, as described; the grey shaft keeps it apart from the pike's pale wood (similarity 0.23)"
+ },
+ "invam5": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: three barbed heads at staggered heights over small leather rings, a rope binding apart from the javelins' leather wrap; no flags (similarity 0.29)"
+ },
+ "invbar": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: one crescent blade on the left, its point above the shaft, fixed at the socket and at its tail, a bevelled edge (similarity 0.26)"
+ },
+ "invbrn": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: one long centre spike, two short thin side spikes at its base, grip and butt cap; s202 shadow-flagged (similarity 0.19)"
+ },
+ "invbwn": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: one long leg bone, two dark leather wraps, finger-bone charms on a cord; reads as a bone wand at 1x (similarity 0.33)"
+ },
+ "invcst": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: the dull stone shows in its cage of curled roots at 1x; s303's head is a tangle with no stone, s404 grew antler-like prongs (0.41) (similarity 0.36)"
+ },
+ "invglv": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: a broad knife blade a third of the length on a light shaft, apart from the leaf spears at 34 px; SH0.02 is grey steel, no residue on a grey ground; s303/s404 are in the review band (similarity 0.28)"
+ },
+ "invgsc": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: the upright sun disc with short blunt rays round a boss, as described, iron-banded shaft, ball foot; s202-s404 grow spikes that read as a morning star at 1x (similarity 0.36)"
+ },
+ "invgwn": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: a jawless skull facing out, lashed on a crooked root stick with a grey cloth grip; no shadow flag (similarity 0.28)"
+ },
  "invhal": {
   "run": 1,
   "seed": 101
+ },
+ "invjav": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: three warm-wood javelins, leaf heads at staggered heights, one leather binding; s202's shafts go grey, s101/s303 shadow-flagged (similarity 0.34)"
+ },
+ "invlst": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: pale ash pole, cord-bound top under a small domed cap, grip near the foot, iron ferrule, the lowest score; s101 is over the line (0.451), s202/s404 in the review band. The shaft is ivory, not white (1x p95 ~200, the grade's ceiling) (similarity 0.37)"
+ },
+ "invob1": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: clouded crystal held by three bronze talons on a carved grip, as round 2's (similarity 0.21)"
+ },
+ "invob2": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: milky stone globe, a gilt girdle, a small cross finial, a turned grip; s404's crossing half band sits nearer the original's banded globe (similarity 0.28)"
+ },
+ "invob3": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: pale smoke wisps in grey glass, a pointed soot-black iron cup, wooden grip (similarity 0.22)"
+ },
+ "invob4": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: an oxblood sphere half closed in four bronze leaves like a bud, a slim leather grip (similarity 0.19)"
+ },
+ "invob5": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: violet sphere with a swirl, held by curling roots on a crooked root handle bound with copper wire, iron ferrule (similarity 0.20)"
+ },
+ "invpax": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: crescent axe left, toothed hammer right, top spike, butt spike, one shaft; s202 and s303 grew a second shaft (P2), s404 is in the review band (similarity 0.27)"
+ },
+ "invpik": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: a small leaf point that still reads at 1x on the long pale shaft; s101's needle head belongs to the maiden pike (similarity 0.19)"
+ },
+ "invpil": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: long thin iron shank, square riveted collar, wooden lower half, no flags; s202-s404 are in the review band (similarity 0.36)"
+ },
+ "invscp": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: an open crown of bronze points round the grey stone over a bead collar, as described; s303's points splay into a star (similarity 0.31)"
+ },
+ "invscy": {
+  "run": 4,
+  "seed": 404,
+  "note": "s404: the blade sweeps out to the right and down from the snath's top, hand peg and grip; s101 (heel block), s202 and s303 (blade both ways) read as pickaxes (similarity 0.23)"
+ },
+ "invspr": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: willow-leaf head, grip wrap, butt cap; the four seeds are near identical (similarity 0.21)"
+ },
+ "invspt": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: long centre blade with two flat wings at its base; s101 hangs a ring at the butt, s202 shadow-flagged (similarity 0.23)"
+ },
+ "invssp": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: broad flat triangular head on a short stout dark shaft. All four seeds sit in the review band, but it is the class: s101 scores higher against the pilum's and throwing spear's originals (0.49, 0.49) than its own; the side by side is a wide flat triangle on a plain socket against the original's narrow leaf on a long metal socket (similarity 0.42)"
+ },
+ "invtsp": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: the only seed with the harpoon's single backward barb; the others are plain spears (s101 over the line, 0.471). Its 0.42 is the class (0.43 against the short spear's original, 0.42 against the glaive's); dark shaft, leather bands and a narrow head are not the original's; SH0.04 is grey steel, no residue on a grey ground (similarity 0.42)"
+ },
+ "invvou": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: a tall cleaver flush along the right of the shaft, slanted point above it, back spur, two rings, a bevelled edge; s202's top splits into a V (similarity 0.15)"
+ },
+ "invwsc": {
+  "run": 4,
+  "seed": 101,
+  "note": "s101: a narrow curved blade standing up in line with the shaft, its tip curving forward, ringed socket, two grips (similarity 0.16)"
+ },
+ "invwsp": {
+  "run": 4,
+  "seed": 202,
+  "note": "s202: six notched flanges round the core with a spike finial read as a flanged head at 1x; s101/s303 came out cross-shaped, s404 a drum (similarity 0.16)"
+ },
+ "invwst": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: a clean crescent of two horns on a round boss over a ringed socket; s202's plate and s404's broad horns read as an axe (similarity 0.25)"
+ },
+ "invywn": {
+  "run": 4,
+  "seed": 303,
+  "note": "s303: a forked yew wand bound under the fork and at the grip, a carved bead on a thong (similarity 0.24)"
  }
 }
