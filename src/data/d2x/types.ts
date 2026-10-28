@@ -9,6 +9,15 @@ import type { D2Prop, GemKind } from '../d2/types';
 
 export type { D2Prop, GemKind };
 
+/**
+ * A colour D2 shifts an item's picture to (Colors.txt, in row order): magic affixes' transformcolor,
+ * uniques' and set items' invtransform, gems' transform. Light, dark and crystal ones, black, white
+ * and bright white.
+ */
+export type D2xColor =
+  | 'whit' | 'lgry' | 'dgry' | 'blac' | 'lblu' | 'dblu' | 'cblu' | 'lred' | 'dred' | 'cred' | 'lgrn'
+  | 'dgrn' | 'cgrn' | 'lyel' | 'dyel' | 'lgld' | 'dgld' | 'lpur' | 'dpur' | 'oran' | 'bwht';
+
 /** an item type (ItemTypes.txt) */
 export interface D2xItemType {
   /** the English type name, for reference */
@@ -43,6 +52,11 @@ export interface D2xItemType {
   quiver?: string;
   /** shop tab: weap, armo or misc */
   store?: string;
+  /**
+   * The pictures (ItemTypes.txt InvGfx1..VarInvGfx) an item of this type rolls one of when it is made
+   * and keeps (rings, amulets, charms, jewels): it never shows its base's own
+   */
+  invGfx?: string[];
 }
 
 export type D2xNpc =
@@ -71,6 +85,16 @@ interface D2xBase {
   type2?: string;
   w: number;
   h: number;
+  /**
+   * Its picture: Items.txt invfile in lower case, a file in public/icons/items. The normal,
+   * exceptional and elite bases of a line name the same one
+   */
+  inv: string;
+  /** the picture a unique or set item of it shows when the unique or set item names none */
+  invUnique?: string;
+  invSet?: string;
+  /** which of the picture's palette ranges a colour shifts (InvTrans: 2 grey, 5 and 8 grey and brown); unset none */
+  invTrans?: number;
   /** item level the base drops from; reqLvl is the level to use it */
   qlvl: number;
   reqLvl: number;
@@ -195,6 +219,8 @@ export interface D2xAffix {
   /** price: cost × priceMul / 1024 + priceAdd */
   priceMul?: number;
   priceAdd?: number;
+  /** the colour it shifts the item's picture to (transformcolor) */
+  color?: D2xColor;
 }
 
 /** one word of a rare item's name (prefix word + suffix word), for these item types */
@@ -242,6 +268,9 @@ export interface D2xUnique {
   carry1?: true;
   /** D2's drop condition expression, as written (e.g. "cond('Difficulty', hell)") */
   dropCond?: string;
+  /** its own picture (invfile, lower case), and the colour its picture is shifted to (invtransform) */
+  inv?: string;
+  invColor?: D2xColor;
   props: D2Prop[];
 }
 
@@ -260,6 +289,9 @@ export interface D2xSetItem {
   spawnable: boolean;
   costMult?: number;
   costAdd?: number;
+  /** its own picture (invfile: none in the scope's table), and the colour its picture is shifted to (invtransform) */
+  inv?: string;
+  invColor?: D2xColor;
   props: D2Prop[];
   /**
    * How the bonus slots turn on (D2MOO D2Common Items.cpp sub_6FDA4380):
@@ -324,6 +356,8 @@ export interface D2xGem extends D2xSocketable {
   /** 0 chipped, 1 flawed, 2 standard, 3 flawless, 4 perfect */
   grade: number;
   next?: string;
+  /** the colour it shifts a normal item's picture to from the item's first socket (Gems.txt transform) */
+  color?: D2xColor;
 }
 
 // ───────────────────────── characters, difficulty, economy ─────────────────────────

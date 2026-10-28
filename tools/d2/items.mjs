@@ -2,7 +2,7 @@
 // too: they drop, sell and take sockets even where the hero cannot use them), the item types, magic
 // and rare affixes for all item types, the quality tables, uniques, sets, runewords, runes and gems.
 // The game does not read these files yet; the item system (A2) moves onto them.
-import { list, numbered, record, rows, rows27, strings, tables, writeD2x } from './load.mjs';
+import { REF27, list, load, numbered, record, rows, rows27, strings, tables, writeD2x } from './load.mjs';
 import { exclude, glossaryOfficial, names } from './names.mjs';
 import { SKILL_PROPS, coverage, propReader } from './props.mjs';
 import { WARLOCK, WARLOCK_SETS, WARLOCK_TYPES, latestSeason, stillLadderOnly } from './scope.mjs';
@@ -24,6 +24,8 @@ export async function buildItems() {
     rows27('weapons', 'code'), rows27('armor', 'code'), rows27('misc', 'code'), rows27('uniqueitems', '*ID'), rows27('setitems', 'index'), rows27('sets', 'index'), rows27('runes', 'Name'),
   ]);
   const S = await strings('item-names', 'item-runes', 'item-nameaffixes');
+  // Colors.txt: the 21 colours a picture can be shifted to, by row (Gems.txt transform is a row number)
+  const COLORS = rows(await load(REF27, 'colors')).sort((a, b) => a.lineNumber - b.lineNumber).map((c) => c.Code);
   const { prop, isWarlock, unknownSkills, skillOf } = await propReader();
   const cover = coverage();
   const season = latestSeason(uniqueJ, setItemsJ, runesJ);
@@ -77,6 +79,8 @@ export async function buildItems() {
     if (t.Shoots) o.shoots = t.Shoots;
     if (t.Quiver) o.quiver = t.Quiver;
     if (t.StorePage) o.store = t.StorePage;
+    // the pictures an item of the type rolls one of when made (D2MOO D2Game Items.cpp:748-751)
+    if (t.VarInvGfx) o.invGfx = Array.from({ length: t.VarInvGfx }, (_, i) => t[`InvGfx${i + 1}`].toLowerCase());
     itemTypes[code] = o;
   }
 
@@ -125,6 +129,12 @@ export async function buildItems() {
     if (r.type2) o.type2 = r.type2;
     o.w = r.invwidth;
     o.h = r.invheight;
+    // its picture (public/icons/items, by file name in lower case), the one a unique or set item of
+    // it shows when it names none, and which palette ranges a colour shifts (0 none: left out)
+    o.inv = r.invfile.toLowerCase();
+    if (r.uniqueinvfile) o.invUnique = r.uniqueinvfile.toLowerCase();
+    if (r.setinvfile) o.invSet = r.setinvfile.toLowerCase();
+    if (r.InvTrans) o.invTrans = r.InvTrans;
     o.qlvl = r.level ?? 0;
     o.reqLvl = r.levelreq ?? 0;
     if (r.reqstr) o.reqStr = r.reqstr;
@@ -242,6 +252,7 @@ export async function buildItems() {
     a.props = ps;
     if (r.multiply) a.priceMul = r.multiply;
     if (r.add) a.priceAdd = r.add;
+    if (r.transformcolor) a.color = r.transformcolor;
     cover.add(where, ps);
     return a;
   }
@@ -321,6 +332,8 @@ export async function buildItems() {
     if (r['cost add']) u.costAdd = r['cost add'];
     if (r.carry1) u.carry1 = true;
     if (r.DropConditionCalc) u.dropCond = r.DropConditionCalc;
+    if (r.invfile) u.inv = r.invfile.toLowerCase();
+    if (r.invtransform) u.invColor = r.invtransform;
     u.props = ps;
     cover.add('uniqueitems', ps);
     uniques.push(u);
@@ -363,6 +376,8 @@ export async function buildItems() {
     const o = { id: r['*ID'], key: r.index, set: r.set, ...nm, en: S.en[r.index], code: r.item, lvl: r.lvl ?? 0, reqLvl: r['lvl req'] ?? 0, rarity: r.rarity ?? 0, spawnable: !!r.spawnable };
     if (r['cost mult']) o.costMult = r['cost mult'];
     if (r['cost add']) o.costAdd = r['cost add'];
+    if (r.invfile) o.inv = r.invfile.toLowerCase();
+    if (r.invtransform) o.invColor = r.invtransform;
     o.props = ps;
     o.addFunc = r['add func'] ?? 0;
     if (bonus.length) o.bonus = bonus;
@@ -409,7 +424,9 @@ export async function buildItems() {
       const num = runeNum(r.code);
       runes.push({ id: r.code, num, name: b.name, nameEn: b.nameEn, glyph: String(num), en: b.en, ...o });
     } else if (GEM_TYPES[m.type]) {
-      gems.push({ id: r.code, name: b.name, en: b.en, gem: GEM_TYPES[m.type], grade: +m.type2.slice(3), ...o, ...(b.next ? { next: b.next } : {}) });
+      // Gems.txt transform: the colour a gem in a normal item's first socket shifts its picture to
+      const color = r.transform !== undefined && r.transform < COLORS.length ? { color: COLORS[r.transform] } : {};
+      gems.push({ id: r.code, name: b.name, en: b.en, gem: GEM_TYPES[m.type], grade: +m.type2.slice(3), ...o, ...(b.next ? { next: b.next } : {}), ...color });
     }
   }
   runes.sort((a, b) => a.num - b.num);
