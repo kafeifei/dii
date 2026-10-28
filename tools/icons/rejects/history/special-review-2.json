@@ -1,0 +1,90 @@
+{
+ "uniques": {
+  "invxpku": {
+   "run": 8,
+   "seeds": [
+    707,
+    808,
+    909,
+    1010,
+    1111,
+    1212
+   ],
+   "similarity": "0.27-0.29",
+   "reason": "All six are still the plain spiked shield (0.72-0.95 like our base): neither the long spear blades nor the boar took.",
+   "fix": {
+    "desc": "A famed spiked shield, the plain spiked shield made into a rare piece: a round shield of iron-bound wood with six very long leaf-shaped spear blades standing out from its rim all around, each as long as half the shield is wide, and in the middle a large raised round iron plate bearing a boar's head with long tusks. Front view.",
+    "guide": "lance-shield",
+    "shape": "lance-shield: a round shield face on, six long leaf-shaped spear blades standing out from its rim, a raised round emblem in the middle"
+   }
+  },
+  "invfhlu": {
+   "run": 8,
+   "seeds": [
+    707,
+    808,
+    909,
+    1010,
+    1111,
+    1212
+   ],
+   "similarity": "0.27-0.31",
+   "reason": "The crest came out as a single tall spike on top (s707, s909), the T opening not at all.",
+   "fix": {
+    "desc": "A famed full helm, the plain full helm made into a rare piece, shown empty on its own: a tall brush crest of stiff dark horsehair standing up along the top of the helm from the brow to the nape like a mane, set in an iron ridge; the face opening shaped like a T, a narrow eye slit across and a slot down to the chin; a flared neck guard; no head inside. Front three-quarter view."
+   }
+  },
+  "invflcu": {
+   "run": 8,
+   "seeds": [
+    707,
+    808,
+    909,
+    1010,
+    1111,
+    1212
+   ],
+   "similarity": "0.21-0.30",
+   "reason": "The scythe hook did not take; a tassel at the pommel and, in s1212, a small spur near the tip, unreadable at 1x.",
+   "fix": {
+    "desc": "A famed falchion, the plain falchion made into a rare piece: a long curved hook like the blade of a sickle growing out of the back of the blade near its tip and sweeping up and forward, the broad blade's edge frosted with a pale cold bloom, the guard two downturned hooks, a ring pommel with a short leather tassel. Shown upright, point at the top, the pommel at the bottom, side view.",
+    "guide": "hooked-falchion",
+    "shape": "hooked-falchion: the falchion guide with a sickle-like hook curving out of the back near the tip, its point up and to the left"
+   }
+  },
+  "invxtuu": {
+   "run": 8,
+   "seeds": [
+    707,
+    808,
+    909,
+    1010,
+    1111,
+    1212
+   ],
+   "similarity": "0.30-0.31",
+   "reason": "Spikes only along the shoulders and the chains (s707 best); weak at 1x.",
+   "fix": {
+    "desc": "A famed studded armour, the plain studded leather made into a rare piece, hollow and empty: over its shoulders a mantle of a wild boar's hide with long bristling grey-black hair, the hide's edges hanging down over the chest and back, under it the studded leather jerkin with a broad iron collar plate and two heavy chains slung across the chest. Laid flat, front view, empty, no person."
+   }
+  }
+ },
+ "sets": {
+  "invxrss": {
+   "run": 8,
+   "seeds": [
+    707,
+    808,
+    909,
+    1010,
+    1111,
+    1212
+   ],
+   "similarity": "0.30-0.32",
+   "reason": "A row of small spirals and a boss across the chest, unreadable at 1x.",
+   "fix": {
+    "desc": "A famed breastplate, the plain breastplate made into a rare piece, hollow and empty: in the middle of the chest a large heart-shaped dark grey stone set in a raised iron spiral that coils out from it across the chest, the steel dark grey like granite, a high stiff collar, leather shoulder straps and riveted side straps, a short skirt of two lames. Laid flat, front view, empty, no person."
+   }
+  }
+ }
+}

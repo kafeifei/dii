@@ -1,0 +1,294 @@
+{
+ "invhaxu": {
+  "run": 7,
+  "seed": 505
+ },
+ "invaxeu": {
+  "run": 8,
+  "seed": 707
+ },
+ "invmpiu": {
+  "run": 8,
+  "seed": 1212
+ },
+ "invbtxu": {
+  "run": 8,
+  "seed": 909
+ },
+ "invgaxu": {
+  "run": 8,
+  "seed": 909
+ },
+ "invwndu": {
+  "run": 7,
+  "seed": 303
+ },
+ "invbwnu": {
+  "run": 7,
+  "seed": 101
+ },
+ "invclbu": {
+  "run": 7,
+  "seed": 303
+ },
+ "invspcu": {
+  "run": 10,
+  "seed": 2222
+ },
+ "invmstu": {
+  "run": 7,
+  "seed": 303
+ },
+ "invmauu": {
+  "run": 7,
+  "seed": 505
+ },
+ "invscmu": {
+  "run": 7,
+  "seed": 404
+ },
+ "inv9sbu": {
+  "run": 7,
+  "seed": 303
+ },
+ "invflcu": {
+  "run": 9,
+  "seed": 1717
+ },
+ "invcrsu": {
+  "run": 7,
+  "seed": 606
+ },
+ "invbsdu": {
+  "run": 10,
+  "seed": 1919
+ },
+ "invlsdu": {
+  "run": 7,
+  "seed": 606
+ },
+ "inv2hsu": {
+  "run": 8,
+  "seed": 1010
+ },
+ "invgisu": {
+  "run": 7,
+  "seed": 505
+ },
+ "invbswu": {
+  "run": 8,
+  "seed": 1010
+ },
+ "invgsdu": {
+  "run": 8,
+  "seed": 909
+ },
+ "invkrsu": {
+  "run": 7,
+  "seed": 404
+ },
+ "invtriu": {
+  "run": 7,
+  "seed": 404
+ },
+ "invscyu": {
+  "run": 7,
+  "seed": 303
+ },
+ "invcstu": {
+  "run": 8,
+  "seed": 808
+ },
+ "invcbwu": {
+  "run": 7,
+  "seed": 606
+ },
+ "invsbbu": {
+  "run": 8,
+  "seed": 707
+ },
+ "invswbu": {
+  "run": 7,
+  "seed": 202
+ },
+ "invlxbu": {
+  "run": 8,
+  "seed": 707
+ },
+ "invmxbu": {
+  "run": 8,
+  "seed": 1010
+ },
+ "invhxbu": {
+  "run": 7,
+  "seed": 404
+ },
+ "invrxbu": {
+  "run": 8,
+  "seed": 1111
+ },
+ "invcapu": {
+  "run": 8,
+  "seed": 909
+ },
+ "invhlmu": {
+  "run": 7,
+  "seed": 404
+ },
+ "invfhlu": {
+  "run": 9,
+  "seed": 1313
+ },
+ "invbhmu": {
+  "run": 7,
+  "seed": 303
+ },
+ "invfulu": {
+  "run": 7,
+  "seed": 202
+ },
+ "invaaru": {
+  "run": 8,
+  "seed": 1010
+ },
+ "invbucu": {
+  "run": 7,
+  "seed": 303
+ },
+ "invsmlu": {
+  "run": 7,
+  "seed": 202
+ },
+ "invlrgu": {
+  "run": 7,
+  "seed": 606
+ },
+ "invbshu": {
+  "run": 8,
+  "seed": 808
+ },
+ "invspku": {
+  "run": 7,
+  "seed": 404
+ },
+ "invkitu": {
+  "run": 7,
+  "seed": 505
+ },
+ "invtowu": {
+  "run": 7,
+  "seed": 303
+ },
+ "invgtsu": {
+  "run": 7,
+  "seed": 606
+ },
+ "invvip": {
+  "run": 7,
+  "seed": 303
+ },
+ "inv9btu": {
+  "run": 8,
+  "seed": 909
+ },
+ "inv9giu": {
+  "run": 8,
+  "seed": 707
+ },
+ "inv9gwu": {
+  "run": 7,
+  "seed": 606
+ },
+ "inv9gmu": {
+  "run": 7,
+  "seed": 101
+ },
+ "invsbru": {
+  "run": 8,
+  "seed": 1111
+ },
+ "inv9cru": {
+  "run": 7,
+  "seed": 202
+ },
+ "inv9lsu": {
+  "run": 10,
+  "seed": 1919
+ },
+ "inv9fbu": {
+  "run": 7,
+  "seed": 606
+ },
+ "inv9blu": {
+  "run": 8,
+  "seed": 707
+ },
+ "inv9bru": {
+  "run": 10,
+  "seed": 1919
+ },
+ "inv9s8u": {
+  "run": 7,
+  "seed": 404
+ },
+ "inv8wsu": {
+  "run": 7,
+  "seed": 202
+ },
+ "inv8lbu": {
+  "run": 7,
+  "seed": 404
+ },
+ "inv8s8u": {
+  "run": 10,
+  "seed": 1919
+ },
+ "inv8lxu": {
+  "run": 10,
+  "seed": 1919
+ },
+ "inv8mxu": {
+  "run": 7,
+  "seed": 404
+ },
+ "invxkpu": {
+  "run": 8,
+  "seed": 909
+ },
+ "invxrnu": {
+  "run": 8,
+  "seed": 1111
+ },
+ "invxtuu": {
+  "run": 9,
+  "seed": 1313
+ },
+ "invxaru": {
+  "run": 8,
+  "seed": 808
+ },
+ "invxmlu": {
+  "run": 7,
+  "seed": 505
+ },
+ "invxrgu": {
+  "run": 7,
+  "seed": 505
+ },
+ "invxshu": {
+  "run": 8,
+  "seed": 707
+ },
+ "invxpku": {
+  "run": 9,
+  "seed": 1616
+ },
+ "invtk3": {
+  "run": 8,
+  "seed": 1111
+ },
+ "invaxfu": {
+  "run": 7,
+  "seed": 404
+ }
+}

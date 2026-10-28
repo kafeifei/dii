@@ -1,0 +1,2411 @@
+{
+ "inv2hsu": {
+  "run": 8,
+  "seed": 1010,
+  "kind": "unique",
+  "w": 1,
+  "h": 4,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed two-handed sword, the plain two-handed sword made into a rare piece: a long strip of tattered black shroud cloth wound around the leather ricasso and the guard and hanging down past the pommel in ragged tails; the blade dark-stained with its edges ground bright, narrowing to a fang-like point; the guard's ends curling down. Shown upright, point at the top, the pommel at the bottom, straight front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "inv2hs",
+   "run": 6,
+   "seed": 101
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": true
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/inv2hsu.webp",
+    "sha1": "233fde7cb81c"
+   },
+   "1x": {
+    "file": "public/icons/items/inv2hsu.1x.webp",
+    "sha1": "44b6d5185e16"
+   }
+  }
+ },
+ "inv8lbu": {
+  "run": 7,
+  "seed": 404,
+  "kind": "unique",
+  "w": 2,
+  "h": 4,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed long bow, the plain long bow made into a rare piece: its limbs bound along their whole length with spiral strips of dark lacquered cord, the tips ending in carved finials shaped like tongues of flame, and a tassel of long feathers hanging from the grip, a thin pale string. Shown upright, side view, the string on the left, the bow arching to the right. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invlbw",
+   "run": 4,
+   "seed": 202
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": true
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/inv8lbu.webp",
+    "sha1": "25004440d425"
+   },
+   "1x": {
+    "file": "public/icons/items/inv8lbu.1x.webp",
+    "sha1": "c19d93780b79"
+   }
+  }
+ },
+ "inv8lxu": {
+  "run": 10,
+  "seed": 1919,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed arbalest seen from directly above, the plain light crossbow made into a rare piece: a big rough grey boulder held in an iron cage at the butt end like the head of a hammer, wider than the tiller, the thick bow blackened steel with rope wound round its ends, the tiller carved with rows of chevrons. The prod at the top, the butt at the bottom. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invlxb",
+   "run": 4,
+   "seed": 101
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/inv8lxu.webp",
+    "sha1": "1855198a29b1"
+   },
+   "1x": {
+    "file": "public/icons/items/inv8lxu.1x.webp",
+    "sha1": "44f14ec99531"
+   }
+  }
+ },
+ "inv8mxu": {
+  "run": 7,
+  "seed": 404,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed crossbow seen from directly above, the plain crossbow made into a rare piece: a bloated leather bladder lashed beneath the front of the tiller with a short brass nozzle pointing forward, the stock wrapped in stained rags and cord, the bow dark and corroded. The prod at the top, the butt at the bottom. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invmxb",
+   "run": 4,
+   "seed": 202
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/inv8mxu.webp",
+    "sha1": "3f49da07bfcb"
+   },
+   "1x": {
+    "file": "public/icons/items/inv8mxu.1x.webp",
+    "sha1": "b750812d664b"
+   }
+  }
+ },
+ "inv8s8u": {
+  "run": 10,
+  "seed": 1919,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed short bow, the plain short bow made into a rare piece, a witch's bow: hanging from the middle of the bow on long cords a big bundle of charms, a small animal skull, bone fetishes, beads and black feathers, its limbs painted with crooked dark bands, the string a twisted cord of several strands. Shown upright, side view, the string on the left, the bow arching to the right. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invsbb",
+   "run": 5,
+   "seed": 505
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/inv8s8u.webp",
+    "sha1": "2877b9171d9b"
+   },
+   "1x": {
+    "file": "public/icons/items/inv8s8u.1x.webp",
+    "sha1": "cf61f4b97fd0"
+   }
+  }
+ },
+ "inv8wsu": {
+  "run": 7,
+  "seed": 202,
+  "kind": "unique",
+  "w": 2,
+  "h": 4,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed war staff, the plain horned staff made into a rare piece: its top a whole skull held in a cage of curved iron bands that rise from the shaft, its eye sockets dark, and strung beneath it strings of small finger bones and dark beads hanging down the shaft; the shaft dark wood bound with iron rings and an iron butt spike. Shown perfectly upright, the skull at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invwst",
+   "run": 4,
+   "seed": 303
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/inv8wsu.webp",
+    "sha1": "d49e6abe034a"
+   },
+   "1x": {
+    "file": "public/icons/items/inv8wsu.1x.webp",
+    "sha1": "22a14b631483"
+   }
+  }
+ },
+ "inv9blu": {
+  "run": 8,
+  "seed": 707,
+  "kind": "unique",
+  "w": 1,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed long dagger, the plain blade made into a rare piece: copper wire wound in a spiral along the whole length of its blade, the edges notched into a zigzag like a bolt of lightning, the guard a forked bronze piece like a split lightning bolt, a grip wound with copper wire and a small spiked pommel. Shown upright, point at the top, the butt at the bottom, side view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invbld",
+   "run": 4,
+   "seed": 404
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/inv9blu.webp",
+    "sha1": "c9728eb60f04"
+   },
+   "1x": {
+    "file": "public/icons/items/inv9blu.1x.webp",
+    "sha1": "99632f25b981"
+   }
+  }
+ },
+ "inv9bru": {
+  "run": 10,
+  "seed": 1919,
+  "kind": "unique",
+  "w": 2,
+  "h": 4,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed brandistock, the plain brandistock made into a rare piece: below its head a pair of big curved meat hooks curving down and out from the socket on both sides, and above them five long thin barbed tines spreading from the socket like the fingers of a grasping hand; the long shaft dark wood bound with bronze rings. Shown perfectly upright, the tines at the top, side view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invbrn",
+   "run": 4,
+   "seed": 101
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/inv9bru.webp",
+    "sha1": "9081ba9377ad"
+   },
+   "1x": {
+    "file": "public/icons/items/inv9bru.1x.webp",
+    "sha1": "9597b9dd4879"
+   }
+  }
+ },
+ "inv9btu": {
+  "run": 8,
+  "seed": 909,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed double-bitted battle axe, the plain battle axe made into a rare piece: a long flowing horsetail of pale grey hair hanging from beneath its head down along the haft like a cavalry standard; both blades etched with zigzag lightning lines and curling up at their tips; a small round pale stone set at the top of the head; the haft bound with iron rings and wire. Shown upright, the head at the top, front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invbtx",
+   "run": 4,
+   "seed": 101
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": true
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/inv9btu.webp",
+    "sha1": "61b7ad3c25c9"
+   },
+   "1x": {
+    "file": "public/icons/items/inv9btu.1x.webp",
+    "sha1": "e998f9756775"
+   }
+  }
+ },
+ "inv9cru": {
+  "run": 7,
+  "seed": 202,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed crystal sword, the plain crystal sword made into a rare piece: its crystal blade split down its length by a dark jagged crack, the two halves slightly parted with a faint glow inside the rift, small shards breaking away from its edges; an iron guard with two hooked arms, a wire-bound grip and a round iron pommel. Shown upright, point at the top, the pommel at the bottom, straight front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invcrs",
+   "run": 5,
+   "seed": 404
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": true
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/inv9cru.webp",
+    "sha1": "b17f60cb58e5"
+   },
+   "1x": {
+    "file": "public/icons/items/inv9cru.1x.webp",
+    "sha1": "4a7b8cc753f5"
+   }
+  }
+ },
+ "inv9fbu": {
+  "run": 7,
+  "seed": 606,
+  "kind": "unique",
+  "w": 2,
+  "h": 4,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed flamberge, the plain flamberge made into a rare piece: its long wavy blade glowing a dull red-hot along its lower half and fading upward into dark steel, a guard of upswept flame-shaped tongues of bronze around a small ember stone, a long grip of dark leather and a flame-shaped pommel. Shown upright, point at the top, the pommel at the bottom, straight front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invflb",
+   "run": 4,
+   "seed": 303
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/inv9fbu.webp",
+    "sha1": "c4cb5130096d"
+   },
+   "1x": {
+    "file": "public/icons/items/inv9fbu.1x.webp",
+    "sha1": "6d603d6d4f24"
+   }
+  }
+ },
+ "inv9giu": {
+  "run": 8,
+  "seed": 707,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed great axe, the plain great axe made into a rare piece: a bull's skull with long curved horns fixed on the back of the head where the square poll was, the horns sweeping out and up; the single blade long and bearded, its lower point hooking down along the haft; a short spike on top; the haft bound with bronze rings. Shown upright, the head at the top, side view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invgix",
+   "run": 4,
+   "seed": 101
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/inv9giu.webp",
+    "sha1": "b70ed190af1d"
+   },
+   "1x": {
+    "file": "public/icons/items/inv9giu.1x.webp",
+    "sha1": "f51f19e1cd2e"
+   }
+  }
+ },
+ "inv9gmu": {
+  "run": 7,
+  "seed": 101,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed great maul, the plain maul made into a rare piece, a judge's gavel of war: its head a large round drum of dark hardwood like a gavel's, bound with two thick iron hoops, both striking faces studded with short pyramid spikes; a long iron-banded haft and a butt ringed with short iron spikes. Shown upright, the head at the top, side view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invgma",
+   "run": 4,
+   "seed": 404
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/inv9gmu.webp",
+    "sha1": "e521970b46cd"
+   },
+   "1x": {
+    "file": "public/icons/items/inv9gmu.1x.webp",
+    "sha1": "212330c77511"
+   }
+  }
+ },
+ "inv9gwu": {
+  "run": 7,
+  "seed": 606,
+  "kind": "unique",
+  "w": 1,
+  "h": 2,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed grim wand, the plain skull wand made into a rare piece, made like a great key: a small blackened skull as the key's bow at the top, a twisted shaft of dark bone below it, and at the lower end a broad flat key bit with square teeth sticking out to one side, a ring of iron at the neck under the skull. Shown upright, the skull at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invgwn",
+   "run": 4,
+   "seed": 202
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/inv9gwu.webp",
+    "sha1": "8e8073ad3f1b"
+   },
+   "1x": {
+    "file": "public/icons/items/inv9gwu.1x.webp",
+    "sha1": "f5422106f8a7"
+   }
+  }
+ },
+ "inv9lsu": {
+  "run": 10,
+  "seed": 1919,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed long sword, the plain long sword made into a rare piece: a small iron plague bell and a long strip of stained rag hanging from its guard on a cord, the blade streaked and blotched with green-grey corrosion, the guard of two drooping quillons each ending in a small round sickly green glass bead, a grip wrapped in stained rag. Shown upright, point at the top, the pommel at the bottom, straight front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invlsd",
+   "run": 4,
+   "seed": 404
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": true
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/inv9lsu.webp",
+    "sha1": "17070ad09708"
+   },
+   "1x": {
+    "file": "public/icons/items/inv9lsu.1x.webp",
+    "sha1": "ca380ac0e584"
+   }
+  }
+ },
+ "inv9s8u": {
+  "run": 7,
+  "seed": 404,
+  "kind": "unique",
+  "w": 2,
+  "h": 4,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed war scythe, the plain scythe made into a rare piece: its blade a long curved tusk of old yellowed ivory ground to a sharp inner edge, fixed to the top of the snath in a bronze socket bound with braided cord, the snath slender and gently curved like a drawn bow, a leather grip low down. Shown upright, the snath vertical, the blade across the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invscy",
+   "run": 4,
+   "seed": 404
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/inv9s8u.webp",
+    "sha1": "ef1413eedc9a"
+   },
+   "1x": {
+    "file": "public/icons/items/inv9s8u.1x.webp",
+    "sha1": "8dcb3f5361fa"
+   }
+  }
+ },
+ "inv9sbu": {
+  "run": 7,
+  "seed": 303,
+  "kind": "unique",
+  "w": 1,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed sabre, the plain sabre made into a rare piece: along the spine of its long curved blade a row of four small sharp barbs hooking back toward the hilt, the point turned slightly upward like a skewer's tip; a dark iron knuckle bow sweeping from the guard to the pommel, a ridged grip of dark leather. Shown upright, the hilt at the bottom, the blade curving gently to the right as it rises, side view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invsbr",
+   "run": 5,
+   "seed": 202
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/inv9sbu.webp",
+    "sha1": "7909219cc296"
+   },
+   "1x": {
+    "file": "public/icons/items/inv9sbu.1x.webp",
+    "sha1": "bf597e6dd967"
+   }
+  }
+ },
+ "invaaru": {
+  "run": 8,
+  "seed": 1010,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed ancient armour, the plain ancient armour made into a rare piece, hollow and empty: its arm plates replaced by long loose sleeves of heavy embroidered brocade cloth hanging from under the shoulder plates down past the hips, a cloth sash across the chest from one shoulder to the other hip, the sculpted cuirass and the skirt of hanging plates with tasselled ends kept. Laid flat, front view, empty, no person. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invaar",
+   "run": 5,
+   "seed": 202
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invaaru.webp",
+    "sha1": "07ad72fef1f7"
+   },
+   "1x": {
+    "file": "public/icons/items/invaaru.1x.webp",
+    "sha1": "28946e07b5ea"
+   }
+  }
+ },
+ "invaxeu": {
+  "run": 8,
+  "seed": 707,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed one-handed axe, the plain axe made into a rare piece: its blade made much longer, a long down-swept blade like a grave-digger's spade that hangs down along the haft to a hooked point a third of the way down, its edge honed bright, a row of three round holes pierced through the blade; behind the socket a long curved hook instead of the plain spike; a small iron skull riveted on the socket; dark iron, the haft bound with dark leather cords and iron rings. Shown upright, the axe head at the top, side view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invaxe",
+   "run": 4,
+   "seed": 101
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invaxeu.webp",
+    "sha1": "13104f5deb4a"
+   },
+   "1x": {
+    "file": "public/icons/items/invaxeu.1x.webp",
+    "sha1": "8ff118889839"
+   }
+  }
+ },
+ "invaxfu": {
+  "run": 7,
+  "seed": 404,
+  "kind": "unique",
+  "w": 1,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed hatchet-fist punch blade, the plain hatchet fist made into a rare piece: its head a dark curved blade shaped like a rising wisp of black flame, with a smaller hooked spur on each side, set on the H-shaped iron hilt with its leather-wrapped crossbar grip. Shown upright, the blade at the top, front view, empty, no hand. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invaxf",
+   "run": 4,
+   "seed": 202
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invaxfu.webp",
+    "sha1": "dede702beda2"
+   },
+   "1x": {
+    "file": "public/icons/items/invaxfu.1x.webp",
+    "sha1": "aafed46332b4"
+   }
+  }
+ },
+ "invbhmu": {
+  "run": 7,
+  "seed": 303,
+  "kind": "unique",
+  "w": 2,
+  "h": 2,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed bone helm, the plain bone helm made into a rare piece, shown empty on its own: a helm made from a whole huge skull of real bone, its cranium cracked and bored with small worm holes, deep empty eye sockets, the upper teeth along its lower front edge, a hood of dark leather behind it. Front three-quarter view from slightly below, so the open lined underside shows. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invbhm",
+   "run": 5,
+   "seed": 202
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invbhmu.webp",
+    "sha1": "43b91ccbb18b"
+   },
+   "1x": {
+    "file": "public/icons/items/invbhmu.1x.webp",
+    "sha1": "9dcc2c0327e9"
+   }
+  }
+ },
+ "invbsdu": {
+  "run": 10,
+  "seed": 1919,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed broad sword, the plain broad sword made into a rare piece, a master smith's own blade: the lower half of its broad blade glowing a dull forge orange as if just drawn from the fire, fading up into dark hammered steel, a row of saw teeth along one edge near the guard, a heavy guard shaped like a small anvil, a pommel like a hammer head. Shown upright, point at the top, the pommel at the bottom, straight front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invbsd",
+   "run": 4,
+   "seed": 303
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invbsdu.webp",
+    "sha1": "d54eeb261e6d"
+   },
+   "1x": {
+    "file": "public/icons/items/invbsdu.1x.webp",
+    "sha1": "832da38f9321"
+   }
+  }
+ },
+ "invbshu": {
+  "run": 8,
+  "seed": 808,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed bone shield, the plain bone shield made into a rare piece: its whole face covered with dozens of small skulls packed tightly in rows, skull beside skull, their empty gouged eye sockets staring out, so no long bones show on the face, only skulls, held in a rim of bound vertebrae. Front view, upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invbsh",
+   "run": 4,
+   "seed": 303
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invbshu.webp",
+    "sha1": "259913b6f241"
+   },
+   "1x": {
+    "file": "public/icons/items/invbshu.1x.webp",
+    "sha1": "fd45b26ad607"
+   }
+  }
+ },
+ "invbswu": {
+  "run": 8,
+  "seed": 1010,
+  "kind": "unique",
+  "w": 1,
+  "h": 4,
+  "prompt": "Use the first reference image only as a shape guide for the outline, proportions and orientation; the second shows the plain version of this item: paint a new, rarer version of it, fully painted with real materials, with its own shape details and ornament as described, not a copy of either. A famed bastard sword, the plain bastard sword made into a rare piece: a broad blackened blade, wider than the plain one, splitting at its point into two sharp prongs like a serpent's forked tongue, a thin fuller down its middle; a small serpent of dark bronze coiled around the guard and the top of the grip, its head on the guard; a guard with turned-down ends, a long grip bound with black cord and a pear-shaped pommel. Shown upright, point at the top, the pommel at the bottom, straight front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "forked-sword",
+  "baseRef": {
+   "picture": "invbsw",
+   "run": 4,
+   "seed": 303
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invbswu.webp",
+    "sha1": "03d781bb2549"
+   },
+   "1x": {
+    "file": "public/icons/items/invbswu.1x.webp",
+    "sha1": "cb82fdde941d"
+   }
+  }
+ },
+ "invbtxu": {
+  "run": 8,
+  "seed": 909,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed double-bitted battle axe, the plain battle axe made into a rare piece: hanging from beneath its head a long thick tassel of dark horsehair bound with a bronze ring, reaching halfway down the haft; both crescent blades etched with bands of interlaced knotwork, their upper horns curling inward; a tall square spike on top ending in a round knob; the haft bound with iron rings. Shown upright, the head at the top, front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invbtx",
+   "run": 4,
+   "seed": 101
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invbtxu.webp",
+    "sha1": "92a4f3ae6504"
+   },
+   "1x": {
+    "file": "public/icons/items/invbtxu.1x.webp",
+    "sha1": "6e903fd5fa2e"
+   }
+  }
+ },
+ "invbucu": {
+  "run": 7,
+  "seed": 303,
+  "kind": "unique",
+  "w": 2,
+  "h": 2,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed buckler, the plain buckler made into a rare piece: a small round shield of dark iron whose whole face bears a large raised crescent moon of tarnished bronze lying across it, its horns pointing up around the central boss, a ring of rivets around the rolled rim, dents and scratches. Front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invbuc",
+   "run": 4,
+   "seed": 404
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invbucu.webp",
+    "sha1": "369c03d53155"
+   },
+   "1x": {
+    "file": "public/icons/items/invbucu.1x.webp",
+    "sha1": "3c2d504a9105"
+   }
+  }
+ },
+ "invbwnu": {
+  "run": 7,
+  "seed": 101,
+  "kind": "unique",
+  "w": 1,
+  "h": 2,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed bone wand, the plain bone wand made into a rare piece: the shaft a short length of spine, a column of small yellowed vertebrae threaded tightly together, and at its top a pair of long curved fangs curling toward each other like pincers, bound on with sinew; thin carved rune marks on the bones, a grip of dark leather at the bottom. Shown upright, the fangs at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invbwn",
+   "run": 4,
+   "seed": 101
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invbwnu.webp",
+    "sha1": "4514e9c6692e"
+   },
+   "1x": {
+    "file": "public/icons/items/invbwnu.1x.webp",
+    "sha1": "00533145770b"
+   }
+  }
+ },
+ "invcapu": {
+  "run": 8,
+  "seed": 909,
+  "kind": "unique",
+  "w": 2,
+  "h": 2,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed leather cap, the plain cap made into a rare piece, shown empty on its own: a tall plume of long dark feathers standing up from one side of the crown, as tall as the cap itself, tied on with a band of beads; the crown patched with a faded cloth panel stitched in a cross; a leather cord at the chin. Front three-quarter view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invcap",
+   "run": 4,
+   "seed": 404
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invcapu.webp",
+    "sha1": "524aa56f11f5"
+   },
+   "1x": {
+    "file": "public/icons/items/invcapu.1x.webp",
+    "sha1": "36226f8ea676"
+   }
+  }
+ },
+ "invcbwu": {
+  "run": 7,
+  "seed": 606,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed composite bow, the plain composite bow made into a rare piece: along the back of both limbs a row of short curved thorns like a bramble stem, the limb tips ending in hooked thorn points, the grip wrapped in dark green-stained leather, a few dry leaves bound in at the grip, a thin pale string. Shown upright, side view, the string on the left. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invcbw",
+   "run": 4,
+   "seed": 101
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invcbwu.webp",
+    "sha1": "5d3bb7151451"
+   },
+   "1x": {
+    "file": "public/icons/items/invcbwu.1x.webp",
+    "sha1": "b2e22f10a4a8"
+   }
+  }
+ },
+ "invclbu": {
+  "run": 7,
+  "seed": 303,
+  "kind": "unique",
+  "w": 1,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed war club, the plain gnarled club made into a rare piece: the thick end of the dark oak club bound with three heavy iron hoops, each hoop studded with square rivet heads, a few long iron nails driven into the wood between them, the wood blackened and scorched near the head; a grip of leather thongs at the thin end. Shown upright, the thick end at the top, side view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invclb",
+   "run": 4,
+   "seed": 404
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invclbu.webp",
+    "sha1": "55e1f44ebd8b"
+   },
+   "1x": {
+    "file": "public/icons/items/invclbu.1x.webp",
+    "sha1": "8f7d5f21ad2a"
+   }
+  }
+ },
+ "invcrsu": {
+  "run": 7,
+  "seed": 606,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed crystal sword, the plain crystal sword made into a rare piece: its blade a single long clear crystal, gently curved and evenly tapering, clear as ice with a bright line of light running down its core, both edges serrated into rows of small sharp crystal teeth; set in an ornate pewter-grey guard with swept quillons curling toward the blade, a wire-bound grip and a faceted pommel stone. Shown upright, point at the top, the pommel at the bottom, straight front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invcrs",
+   "run": 5,
+   "seed": 404
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": true
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invcrsu.webp",
+    "sha1": "6b2b592bdef1"
+   },
+   "1x": {
+    "file": "public/icons/items/invcrsu.1x.webp",
+    "sha1": "1081c9731f9c"
+   }
+  }
+ },
+ "invcstu": {
+  "run": 8,
+  "seed": 808,
+  "kind": "unique",
+  "w": 1,
+  "h": 4,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed staff, the plain gnarled staff made into a rare piece: a second thinner branch winds around the whole staff in a tight spiral from the foot to the head like a twisting vine, and a third even thinner one spirals the other way, so the shaft looks twisted like a rope; at the top the branches open and curl round a small pale round stone, thin bronze bands at three joints. Shown perfectly upright, the head at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invcst",
+   "run": 4,
+   "seed": 202
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invcstu.webp",
+    "sha1": "033b5026820a"
+   },
+   "1x": {
+    "file": "public/icons/items/invcstu.1x.webp",
+    "sha1": "1946893619f5"
+   }
+  }
+ },
+ "invfhlu": {
+  "run": 9,
+  "seed": 1313,
+  "kind": "unique",
+  "w": 2,
+  "h": 2,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed full helm, the plain full helm made into a rare piece, shown empty on its own: a tall brush crest of stiff dark horsehair standing up along the top of the helm from the brow to the nape like a mane, set in an iron ridge; the face opening shaped like a T, a narrow eye slit across and a slot down to the chin; a flared neck guard; no head inside. Front three-quarter view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invfhl",
+   "run": 4,
+   "seed": 404
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invfhlu.webp",
+    "sha1": "8de6c66b4407"
+   },
+   "1x": {
+    "file": "public/icons/items/invfhlu.1x.webp",
+    "sha1": "9774534ab3c7"
+   }
+  }
+ },
+ "invflcu": {
+  "run": 9,
+  "seed": 1717,
+  "kind": "unique",
+  "w": 1,
+  "h": 3,
+  "prompt": "Use the first reference image only as a shape guide for the outline, proportions and orientation; the second shows the plain version of this item: paint a new, rarer version of it, fully painted with real materials, with its own shape details and ornament as described, not a copy of either. A famed falchion, the plain falchion made into a rare piece: a long curved hook like the blade of a sickle growing out of the back of the blade near its tip and sweeping up and forward, the broad blade's edge frosted with a pale cold bloom, the guard two downturned hooks, a ring pommel with a short leather tassel. Shown upright, point at the top, the pommel at the bottom, side view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "hooked-falchion",
+  "baseRef": {
+   "picture": "invflc",
+   "run": 4,
+   "seed": 101
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invflcu.webp",
+    "sha1": "9d11da7a0f22"
+   },
+   "1x": {
+    "file": "public/icons/items/invflcu.1x.webp",
+    "sha1": "2609a93d07c4"
+   }
+  }
+ },
+ "invfulu": {
+  "run": 7,
+  "seed": 202,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed full plate armour, the plain plate made into a rare piece, hollow and empty: every plate covered in gold leaf, worn through to brass and grey steel at the edges, the breastplate embossed with a raised central ridge and flowing scrolls, flared shoulder plates, the arm and thigh plates as the plain armour has. Laid flat, front view, empty, no person. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invful",
+   "run": 5,
+   "seed": 404
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invfulu.webp",
+    "sha1": "4f6c0b04875b"
+   },
+   "1x": {
+    "file": "public/icons/items/invfulu.1x.webp",
+    "sha1": "080e3337459b"
+   }
+  }
+ },
+ "invgaxu": {
+  "run": 8,
+  "seed": 909,
+  "kind": "unique",
+  "w": 2,
+  "h": 4,
+  "prompt": "Use the first reference image only as a shape guide for the outline, proportions and orientation; the second shows the plain version of this item: paint a new, rarer version of it, fully painted with real materials, with its own shape details and ornament as described, not a copy of either. A famed great axe, the plain great axe made into a rare piece: one colossal crescent-moon blade on the right side only, its two horns curling back toward the haft above and below the socket, its wide curved edge worn bright, a small hooked spur on the left instead of a second blade, a small sculpted bronze skull on the socket, a tall spike on top; the long haft bound with iron bands, a leather grip and an iron butt spike. Shown upright, the head at the top, front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "moon-axe",
+  "baseRef": {
+   "picture": "invgax",
+   "run": 4,
+   "seed": 303
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgaxu.webp",
+    "sha1": "e4d1cad5fa2f"
+   },
+   "1x": {
+    "file": "public/icons/items/invgaxu.1x.webp",
+    "sha1": "fdd6929ef9b7"
+   }
+  }
+ },
+ "invgisu": {
+  "run": 7,
+  "seed": 505,
+  "kind": "unique",
+  "w": 1,
+  "h": 4,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed giant sword, the plain giant sword made into a rare piece: its long narrow blade tapering to an awl-like point, and its guard two large upswept curling tongues of bronze rising beside the blade like flames, a round dark stone set at their centre, a long grip of dark leather and a flame-shaped pommel. Shown upright, point at the top, the pommel at the bottom, straight front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invgis",
+   "run": 4,
+   "seed": 303
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgisu.webp",
+    "sha1": "5b484280a068"
+   },
+   "1x": {
+    "file": "public/icons/items/invgisu.1x.webp",
+    "sha1": "7bafadf829ca"
+   }
+  }
+ },
+ "invgsdu": {
+  "run": 8,
+  "seed": 909,
+  "kind": "unique",
+  "w": 2,
+  "h": 4,
+  "prompt": "Use the first reference image only as a shape guide for the outline, proportions and orientation; the second shows the plain version of this item: paint a new, rarer version of it, fully painted with real materials, with its own shape details and ornament as described, not a copy of either. A famed great sword, the plain great sword made into a rare piece: three big hooked barbs standing out from the right edge of its broad blade in its middle third, each as long as the blade is wide and hooking back toward the hilt, a long fuller, a cross-guard whose two arms sweep up toward the blade in a wide V ending in small ring clusters, a long two-hand grip of dark leather and a disc pommel. Shown upright, point at the top, the pommel at the bottom, straight front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "barbed-great-sword",
+  "baseRef": {
+   "picture": "invgsd",
+   "run": 4,
+   "seed": 303
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgsdu.webp",
+    "sha1": "b9237a59a849"
+   },
+   "1x": {
+    "file": "public/icons/items/invgsdu.1x.webp",
+    "sha1": "6729a74ba3ab"
+   }
+  }
+ },
+ "invgtsu": {
+  "run": 7,
+  "seed": 606,
+  "kind": "unique",
+  "w": 2,
+  "h": 4,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed gothic shield, the plain gothic shield made into a rare piece: the tall narrow lancet shield of dark iron with two long curved horns rising from its pointed top and two short horn spikes jutting from its bottom point, a raised spine of bronze down the middle, and at its centre a small bronze ram's head with curled horns. Front view, upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invgts",
+   "run": 4,
+   "seed": 202
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invgtsu.webp",
+    "sha1": "ff7b1e59d537"
+   },
+   "1x": {
+    "file": "public/icons/items/invgtsu.1x.webp",
+    "sha1": "27be18567496"
+   }
+  }
+ },
+ "invhaxu": {
+  "run": 7,
+  "seed": 505,
+  "kind": "unique",
+  "w": 1,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed war hatchet, the plain hatchet made into a rare piece: its single blade flares into a broad fan, taller than the plain one, the cutting edge cut into a row of jagged triangular teeth like a gnashing jaw, a short curved spike rising from the top of the head and a square poll behind; the head dark pitted iron with a bronze collar where it grips the haft; a short straight haft bound in criss-crossed dark leather with bronze rings at both ends of the grip. Shown upright, axe head at the top, the blade to the right. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invhax",
+   "run": 4,
+   "seed": 101
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invhaxu.webp",
+    "sha1": "43c665487993"
+   },
+   "1x": {
+    "file": "public/icons/items/invhaxu.1x.webp",
+    "sha1": "bd7e287c58c2"
+   }
+  }
+ },
+ "invhlmu": {
+  "run": 7,
+  "seed": 404,
+  "kind": "unique",
+  "w": 2,
+  "h": 2,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed iron helm, the plain helm made into a rare piece, shown empty on its own: a rounded iron helm with a full face plate shaped like a stern grimacing face, hollow eye holes under heavy brows, a ridge of a nose, and a grille of short vertical bars for the mouth, riveted cheeks, no head inside. Front three-quarter view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invhlm",
+   "run": 4,
+   "seed": 202
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invhlmu.webp",
+    "sha1": "2ff111d31146"
+   },
+   "1x": {
+    "file": "public/icons/items/invhlmu.1x.webp",
+    "sha1": "c7472971fc48"
+   }
+  }
+ },
+ "invhxbu": {
+  "run": 7,
+  "seed": 404,
+  "kind": "unique",
+  "w": 2,
+  "h": 4,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed heavy crossbow seen from directly above, the plain heavy crossbow made into a rare piece: a long curved blade like a sword fixed beneath the butt end and sweeping back past it, two forked prongs at the front instead of the stirrup ring, the thick steel prod blackened, the tiller bound with iron bands and the winding crank at the butt. The prod at the top, the butt at the bottom. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invhxb",
+   "run": 4,
+   "seed": 303
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invhxbu.webp",
+    "sha1": "33ea39d82417"
+   },
+   "1x": {
+    "file": "public/icons/items/invhxbu.1x.webp",
+    "sha1": "bf1cad5e7e6f"
+   }
+  }
+ },
+ "invkitu": {
+  "run": 7,
+  "seed": 505,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed kite shield, the plain kite shield made into a rare piece: a tall kite shield with a rounded top and a long pointed bottom, its dark face bearing a large raised emblem of hammered iron, a winged serpent with outspread bat-like wings and a long coiled tail curling down toward the point, a rim of riveted steel. Front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invkit",
+   "run": 4,
+   "seed": 303
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invkitu.webp",
+    "sha1": "3da70e99fadb"
+   },
+   "1x": {
+    "file": "public/icons/items/invkitu.1x.webp",
+    "sha1": "b9ea42cb158f"
+   }
+  }
+ },
+ "invkrsu": {
+  "run": 7,
+  "seed": 404,
+  "kind": "unique",
+  "w": 1,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed kris dagger, the plain kris made into a rare piece: its wavy blade with more and tighter waves, and a knuckle guard of bronze shaped like a curved claw that wraps around the front of the grip, a round green stone set in the pommel, the grip of dark ridged horn. Shown upright, point at the top, the hilt at the bottom, side view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invkrs",
+   "run": 4,
+   "seed": 303
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invkrsu.webp",
+    "sha1": "31ac528b3c99"
+   },
+   "1x": {
+    "file": "public/icons/items/invkrsu.1x.webp",
+    "sha1": "9ebab7fc7788"
+   }
+  }
+ },
+ "invlrgu": {
+  "run": 7,
+  "seed": 606,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed large shield, the plain oval shield made into a rare piece: a tall oval shield of iron-bound planks whose face carries three concentric raised iron rings, and at its centre, in place of the plain boss, a round bronze boss cast as the face of a wind spirit with puffed cheeks and pursed lips, blowing, its hair streaming out into the rings. Front view, upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invlrg",
+   "run": 4,
+   "seed": 303
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invlrgu.webp",
+    "sha1": "a6f78d98fea2"
+   },
+   "1x": {
+    "file": "public/icons/items/invlrgu.1x.webp",
+    "sha1": "6b8249a52c1a"
+   }
+  }
+ },
+ "invlsdu": {
+  "run": 7,
+  "seed": 606,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed long sword, the plain long sword made into a rare piece: its narrow blade long and tapering to a fine point, its cross-guard sweeping into two long quillons that curl back toward the blade like ram's horns, a side ring below them, the grip bound with twisted wire, a faceted pear-shaped pommel. Shown upright, point at the top, the pommel at the bottom, straight front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invlsd",
+   "run": 4,
+   "seed": 404
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invlsdu.webp",
+    "sha1": "d39051246e41"
+   },
+   "1x": {
+    "file": "public/icons/items/invlsdu.1x.webp",
+    "sha1": "a3d69e500a9f"
+   }
+  }
+ },
+ "invlxbu": {
+  "run": 8,
+  "seed": 707,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed light crossbow seen from directly above, the plain light crossbow made into a rare piece: its front tip carved as a big crow's head with a long open beak, the bow's two ends each hung with a bunch of long black feathers, black feathers tied along the tiller too, the tiller dark wood inlaid with grey lead strips. The prod at the top, the butt at the bottom. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invlxb",
+   "run": 4,
+   "seed": 101
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invlxbu.webp",
+    "sha1": "5c824a07d606"
+   },
+   "1x": {
+    "file": "public/icons/items/invlxbu.1x.webp",
+    "sha1": "b17478727600"
+   }
+  }
+ },
+ "invmauu": {
+  "run": 7,
+  "seed": 505,
+  "kind": "unique",
+  "w": 2,
+  "h": 4,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed two-handed maul, the plain maul made into a rare piece: its iron block head replaced by the huge skull of a horned beast, bleached and cracked bone, set crosswise on top of the haft so its face looks out to one side, short curled horns, bound to the haft with heavy iron straps; three short iron spikes along the upper haft, a leather grip low down and an iron ring at the butt. Shown upright, the head at the top, side view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invmau",
+   "run": 4,
+   "seed": 303
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invmauu.webp",
+    "sha1": "ad494c153bb3"
+   },
+   "1x": {
+    "file": "public/icons/items/invmauu.1x.webp",
+    "sha1": "cc527956bfd4"
+   }
+  }
+ },
+ "invmpiu": {
+  "run": 8,
+  "seed": 1212,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed military pick, the plain pick made into a rare piece: behind its socket a tall fan of long pointed iron feathers spreading up and back like the crest of a crane, as tall as the head is long; its beak made very long and slender, curving gently down, fluted along its spine; a short square hammer face behind; the long haft wound with bronze wire in bands. Shown upright, the head at the top, side view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invmpi",
+   "run": 4,
+   "seed": 404
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invmpiu.webp",
+    "sha1": "dc3147609ab1"
+   },
+   "1x": {
+    "file": "public/icons/items/invmpiu.1x.webp",
+    "sha1": "961816668f08"
+   }
+  }
+ },
+ "invmstu": {
+  "run": 7,
+  "seed": 303,
+  "kind": "unique",
+  "w": 1,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed morning star, the plain morning star made into a rare piece: its head a small iron ball from which eight long straight spikes radiate evenly like the points of a star, the spikes much longer than the ball is wide, set on a tall bronze collar; the haft bound with alternating bands of dark leather and iron rings, an iron butt cap. Shown upright, the head at the top, side view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invmst",
+   "run": 4,
+   "seed": 101
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invmstu.webp",
+    "sha1": "f5580f9559f7"
+   },
+   "1x": {
+    "file": "public/icons/items/invmstu.1x.webp",
+    "sha1": "68bedce32e5c"
+   }
+  }
+ },
+ "invmxbu": {
+  "run": 8,
+  "seed": 1010,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed crossbow seen from directly above, the plain crossbow made into a rare piece: a scorpion's segmented tail of dark plates arching over the whole tiller from the butt to the front, ending in a big hooked stinger poised above the bow; the bow's arms also ending in small hooked barbs; a small glass vial of dark fluid on the tiller. The prod at the top, the butt at the bottom. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invmxb",
+   "run": 4,
+   "seed": 202
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invmxbu.webp",
+    "sha1": "5edc2e30e403"
+   },
+   "1x": {
+    "file": "public/icons/items/invmxbu.1x.webp",
+    "sha1": "ed36abffdcd2"
+   }
+  }
+ },
+ "invrxbu": {
+  "run": 8,
+  "seed": 1111,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed repeating crossbow seen from directly above, the plain repeating crossbow made into a rare piece: a tall wooden magazine box on top of the tiller packed with a fan of bolts whose heads stick up out of it, a long curved lever arm along its side, small bone teeth set in rows along the stock, the bow's ends curling back into scrolls. The prod at the top, the butt at the bottom. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invrxb",
+   "run": 4,
+   "seed": 202
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrxbu.webp",
+    "sha1": "458bfe7e39d2"
+   },
+   "1x": {
+    "file": "public/icons/items/invrxbu.1x.webp",
+    "sha1": "fe178f6477dc"
+   }
+  }
+ },
+ "invsbbu": {
+  "run": 8,
+  "seed": 707,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed short battle bow, the plain battle bow made into a rare piece: its limbs sprouting like a living branch, many small leafy twigs growing out all along both limbs and bound on with cord, a large tuft of leaves at each tip and a ring of leaves round the grip, the leaves dull olive and brown, a thin pale string. Shown upright, side view, the string on the left, the bow arching to the right. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invsbb",
+   "run": 5,
+   "seed": 505
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invsbbu.webp",
+    "sha1": "7c750b8614d7"
+   },
+   "1x": {
+    "file": "public/icons/items/invsbbu.1x.webp",
+    "sha1": "0fca947613ce"
+   }
+  }
+ },
+ "invsbru": {
+  "run": 8,
+  "seed": 1111,
+  "kind": "unique",
+  "w": 1,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed sabre, the plain sabre made into a rare piece: flame-shaped tongues of dark bronze licking up from the guard along the base of the blade, the curved blade etched along its length with a wavy flame line and blackened near the hilt, widening a little near the point, the knuckle bow wrapped in red-brown cord, a round dark red stone in the pommel. Shown upright, the hilt at the bottom, the blade curving gently to the right as it rises, side view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invsbr",
+   "run": 5,
+   "seed": 202
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invsbru.webp",
+    "sha1": "be38c0fb388e"
+   },
+   "1x": {
+    "file": "public/icons/items/invsbru.1x.webp",
+    "sha1": "fbd8ab7a5fae"
+   }
+  }
+ },
+ "invscmu": {
+  "run": 7,
+  "seed": 404,
+  "kind": "unique",
+  "w": 1,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed scimitar, the plain scimitar made into a rare piece: its curved blade widening toward the tip into a broad crescent, the back edge near the tip cut into three sharp hooked notches, a thin blood groove along the blade; a crescent-shaped guard whose two horns point up toward the blade, a grip of dark cord and a small domed pommel. Shown upright, the hilt at the bottom, the blade curving away to the right as it rises, side view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invscm",
+   "run": 5,
+   "seed": 101
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invscmu.webp",
+    "sha1": "ace0a2f2912e"
+   },
+   "1x": {
+    "file": "public/icons/items/invscmu.1x.webp",
+    "sha1": "90171f207d98"
+   }
+  }
+ },
+ "invscyu": {
+  "run": 7,
+  "seed": 303,
+  "kind": "unique",
+  "w": 2,
+  "h": 4,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed war scythe, the plain scythe made into a rare piece: its long curved blade serrated along the inner edge with small hooked teeth, and its snath wrapped from top to bottom in a spiral of small vertebrae and curved ribs bound with sinew like a spine winding round it, a bone knob at the top joint, a leather grip low on the shaft. Shown upright, the snath vertical, the blade across the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invscy",
+   "run": 4,
+   "seed": 404
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invscyu.webp",
+    "sha1": "ee07666bdc0f"
+   },
+   "1x": {
+    "file": "public/icons/items/invscyu.1x.webp",
+    "sha1": "a8d940578155"
+   }
+  }
+ },
+ "invsmlu": {
+  "run": 7,
+  "seed": 202,
+  "kind": "unique",
+  "w": 2,
+  "h": 2,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed small shield, the plain round shield made into a rare piece: a round shield of dark oak planks with an iron rim, and in its centre a black iron disc ringed by a thin bright ring of brass like an eclipse of the sun, short straight rays incised outward from the ring across the planks to the rim. Front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invsml",
+   "run": 4,
+   "seed": 404
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invsmlu.webp",
+    "sha1": "4b7c561f59ee"
+   },
+   "1x": {
+    "file": "public/icons/items/invsmlu.1x.webp",
+    "sha1": "8162cc1de95c"
+   }
+  }
+ },
+ "invspcu": {
+  "run": 10,
+  "seed": 2222,
+  "kind": "unique",
+  "w": 1,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed spiked club, the plain spiked club made into a rare piece: one huge square iron nail, three times as long as the club is wide, driven sideways right through its head so it sticks far out on both sides, the head bound with two iron bands and bristling with shorter curved iron spikes; the shaft dark wood with a leather-wrapped grip. Shown upright, the spiked end at the top, side view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invspc",
+   "run": 5,
+   "seed": 404
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invspcu.webp",
+    "sha1": "f8a50620e997"
+   },
+   "1x": {
+    "file": "public/icons/items/invspcu.1x.webp",
+    "sha1": "bc62bbb56767"
+   }
+  }
+ },
+ "invspku": {
+  "run": 7,
+  "seed": 404,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed spiked shield, the plain spiked shield made into a rare piece: a round shield of dark iron-bound wood whose rim bristles with long thin blades like sword blades fanning out all around it, much longer than the plain spikes, the face crossed by two bands of thorny iron and a long central spike. Front three-quarter view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invspk",
+   "run": 4,
+   "seed": 303
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invspku.webp",
+    "sha1": "3f73fb0a690c"
+   },
+   "1x": {
+    "file": "public/icons/items/invspku.1x.webp",
+    "sha1": "6db3c86cce1d"
+   }
+  }
+ },
+ "invswbu": {
+  "run": 7,
+  "seed": 202,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed war bow, the plain war bow made into a rare piece: along the back of each limb three backward-swept horn spurs like antler tines, curved and pointed, the limb tips carved into hooks, the grip bound in dark leather with bronze rings, a thin pale string. Shown upright, side view, the string on the left. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invswb",
+   "run": 4,
+   "seed": 101
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invswbu.webp",
+    "sha1": "4caec055749b"
+   },
+   "1x": {
+    "file": "public/icons/items/invswbu.1x.webp",
+    "sha1": "22c8d97a08dd"
+   }
+  }
+ },
+ "invtk3": {
+  "run": 8,
+  "seed": 1111,
+  "kind": "unique",
+  "w": 1,
+  "h": 2,
+  "prompt": "Use the first reference image only as a shape guide for the outline, proportions and orientation; the second shows the plain version of this item: paint a new, rarer version of it, fully painted with real materials, with its own shape details and ornament as described, not a copy of either. A famed set of throwing knives, the plain throwing knife made into a rare piece: three narrow leaf-shaped steel blades fanned a little apart, each with a pair of small swept fins like a bird's wing feathers near its base, on slim handles bound together with white cord, a ring at each butt. Shown upright, the blade tips at the top, front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "throwing-knives",
+  "baseRef": {
+   "picture": "invbkf",
+   "run": 4,
+   "seed": 101
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invtk3.webp",
+    "sha1": "d9a69800a835"
+   },
+   "1x": {
+    "file": "public/icons/items/invtk3.1x.webp",
+    "sha1": "c7c300893630"
+   }
+  }
+ },
+ "invtowu": {
+  "run": 7,
+  "seed": 303,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed tower shield, the plain tower shield made into a rare piece: a tall curved rectangular shield whose top edge is cut into square battlements like the top of a castle wall, its face carved in relief with courses of grey stone blocks, two narrow arrow slits and a small arched gate with an iron portcullis near the bottom, an iron rim. Upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invtow",
+   "run": 5,
+   "seed": 202
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invtowu.webp",
+    "sha1": "f954bcfa8028"
+   },
+   "1x": {
+    "file": "public/icons/items/invtowu.1x.webp",
+    "sha1": "839b5cd8575f"
+   }
+  }
+ },
+ "invtriu": {
+  "run": 7,
+  "seed": 404,
+  "kind": "unique",
+  "w": 2,
+  "h": 4,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed trident, the plain trident made into a rare piece: its three tines long and barbed, each with two backward hooks along its length, the middle tine the longest; below the head a length of knotted fishing net and rope wound about the shaft and hanging down in loose loops, small lead weights on its corners; the long shaft dark wood with bronze rings. Shown perfectly upright, the prongs at the top, front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invtri",
+   "run": 5,
+   "seed": 101
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invtriu.webp",
+    "sha1": "e612877e603e"
+   },
+   "1x": {
+    "file": "public/icons/items/invtriu.1x.webp",
+    "sha1": "a93df5c8ffab"
+   }
+  }
+ },
+ "invvip": {
+  "run": 7,
+  "seed": 303,
+  "kind": "unique",
+  "w": 1,
+  "h": 1,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. An amulet: a pendant made as a bronze serpent coiled in a tight flat spiral, scales engraved along its body, its head raised at the top holding a small amber stone in its open jaws, filling most of the frame, a short loop of fine chain at its top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invamu1",
+   "run": 4,
+   "seed": 202
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invvip.webp",
+    "sha1": "a6e7591ab0fd"
+   },
+   "1x": {
+    "file": "public/icons/items/invvip.1x.webp",
+    "sha1": "d2a2f912b7eb"
+   }
+  }
+ },
+ "invwndu": {
+  "run": 7,
+  "seed": 303,
+  "kind": "unique",
+  "w": 1,
+  "h": 2,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed wand, the plain wand made into a rare piece, a wand like a small torch: a short shaft of blackened wood, and at its top an iron cage of four curved prongs holding a rough crystal shaped like a tongue of flame, glowing a dim ember orange from within, soot darkening the prongs; the lower shaft bound with iron rings. Shown upright, the crystal at the top. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invwnd",
+   "run": 5,
+   "seed": 202
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invwndu.webp",
+    "sha1": "0b0881c03799"
+   },
+   "1x": {
+    "file": "public/icons/items/invwndu.1x.webp",
+    "sha1": "1cfe3c54d008"
+   }
+  }
+ },
+ "invxaru": {
+  "run": 8,
+  "seed": 808,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed dark armour, the plain ancient armour made into a rare piece, hollow and empty: a mourning armour of black steel with a long six-sided breastplate shaped like a coffin's lid, a raised cross of iron on it, and black mourning cloth draped over both shoulders hanging down in long tatters beside the arms; a long skirt of hanging black plates. Laid flat, front view, empty, no person. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invaar",
+   "run": 5,
+   "seed": 202
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invxaru.webp",
+    "sha1": "6a030fbf9e03"
+   },
+   "1x": {
+    "file": "public/icons/items/invxaru.1x.webp",
+    "sha1": "268cffb986c7"
+   }
+  }
+ },
+ "invxkpu": {
+  "run": 8,
+  "seed": 909,
+  "kind": "unique",
+  "w": 2,
+  "h": 2,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed skull cap, the plain skull cap made into a rare piece, shown empty on its own: its dome hewn from rough grey stone, chipped and cracked like a boulder, bound with two crossed bands of bronze riveted at the crown, a curtain of mail hanging from its rim at the back and sides. Front three-quarter view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invskp",
+   "run": 4,
+   "seed": 202
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invxkpu.webp",
+    "sha1": "e5c612398a5d"
+   },
+   "1x": {
+    "file": "public/icons/items/invxkpu.1x.webp",
+    "sha1": "fbe797515668"
+   }
+  }
+ },
+ "invxmlu": {
+  "run": 7,
+  "seed": 505,
+  "kind": "unique",
+  "w": 2,
+  "h": 2,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed round shield, the plain round shield made into a rare piece: a round shield of dark wood with an iron rim, at its centre a raised bronze open hand, palm forward and fingers together, ringed by a halo of short straight rays and an outer circle of rivets. Front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invsml",
+   "run": 4,
+   "seed": 404
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invxmlu.webp",
+    "sha1": "008f28241163"
+   },
+   "1x": {
+    "file": "public/icons/items/invxmlu.1x.webp",
+    "sha1": "12b7b08252fb"
+   }
+  }
+ },
+ "invxpku": {
+  "run": 9,
+  "seed": 1616,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "Use the first reference image only as a shape guide for the outline, proportions and orientation; the second shows the plain version of this item: paint a new, rarer version of it, fully painted with real materials, with its own shape details and ornament as described, not a copy of either. A famed spiked shield, the plain spiked shield made into a rare piece: a round shield of iron-bound wood with six very long leaf-shaped spear blades standing out from its rim all around, each as long as half the shield is wide, and in the middle a large raised round iron plate bearing a boar's head with long tusks. Front view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "lance-shield",
+  "baseRef": {
+   "picture": "invspk",
+   "run": 4,
+   "seed": 303
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invxpku.webp",
+    "sha1": "0e4b53c8d8b0"
+   },
+   "1x": {
+    "file": "public/icons/items/invxpku.1x.webp",
+    "sha1": "eaf5b8b27f8f"
+   }
+  }
+ },
+ "invxrgu": {
+  "run": 7,
+  "seed": 505,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed large shield, the plain oval shield made into a rare piece: a tall oval shield of dark iron whose face bears six jagged lightning bolts of raised polished iron radiating from a central domed boss out to the rim, the metal between them scorched. Front view, upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invlrg",
+   "run": 4,
+   "seed": 303
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invxrgu.webp",
+    "sha1": "72444a63922b"
+   },
+   "1x": {
+    "file": "public/icons/items/invxrgu.1x.webp",
+    "sha1": "810dc4463402"
+   }
+  }
+ },
+ "invxrnu": {
+  "run": 8,
+  "seed": 1111,
+  "kind": "unique",
+  "w": 2,
+  "h": 2,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed battle crown, the plain crown made into a rare piece, shown empty on its own: a crown cobbled together from many mismatched stolen pieces, bands of gold and silver of different widths riveted on top of one another around a dark iron cap, crammed with gems of every size and colour, rings and coins hung from it, tines of uneven heights along its rim, a curtain of mail at the back. Front three-quarter view. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invcrn",
+   "run": 4,
+   "seed": 101
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invxrnu.webp",
+    "sha1": "192eb3f4f44f"
+   },
+   "1x": {
+    "file": "public/icons/items/invxrnu.1x.webp",
+    "sha1": "c6ebce78e1b9"
+   }
+  }
+ },
+ "invxshu": {
+  "run": 8,
+  "seed": 707,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed bone shield, the plain bone shield made into a rare piece: three large skulls fixed across its face in a row from top to bottom, each skull as wide as half the shield and covering the bones behind it, each with staring round eyes of dull glass set in its sockets, bound on with rope. Front view, upright. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invbsh",
+   "run": 4,
+   "seed": 303
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invxshu.webp",
+    "sha1": "7918cb0fd779"
+   },
+   "1x": {
+    "file": "public/icons/items/invxshu.1x.webp",
+    "sha1": "1340384fe36b"
+   }
+  }
+ },
+ "invxtuu": {
+  "run": 9,
+  "seed": 1313,
+  "kind": "unique",
+  "w": 2,
+  "h": 3,
+  "prompt": "The reference image shows the plain version of this item: paint a new, rarer version of the same kind of object, keeping its type, orientation and rough proportions, with its own shape details, materials and ornament as described, not a copy of the reference. A famed studded armour, the plain studded leather made into a rare piece, hollow and empty: over its shoulders a mantle of a wild boar's hide with long bristling grey-black hair, the hide's edges hanging down over the chest and back, under it the studded leather jerkin with a broad iron collar plate and two heavy chains slung across the chest. Laid flat, front view, empty, no person. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": {
+   "picture": "invstu",
+   "run": 4,
+   "seed": 202
+  },
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invxtuu.webp",
+    "sha1": "765ba8f338b2"
+   },
+   "1x": {
+    "file": "public/icons/items/invxtuu.1x.webp",
+    "sha1": "8a220118c1b6"
+   }
+  }
+ }
+}

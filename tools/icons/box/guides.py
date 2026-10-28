@@ -166,9 +166,11 @@ def wavy_blade(d, W, H, cx, tip, base, half, bends, amp, taper=0.3, point=0.07,
     line(d, mid[int(n * 0.02):int(n * 0.93)], 5, LIGHT)                      # the ridge follows the waves
 
 
-def falchion(d, W, H, bx=203, base=1040, tip=70, root=78, belly=150, belly_y=330):
+def falchion(d, W, H, bx=203, base=1040, tip=70, root=78, belly=150, belly_y=330, hook=None):
     """A single-edged chopping blade: the back straight up the left, the edge swelling out to the right
-    toward the end and sweeping up to meet the back at the point; a short guard, a bound grip, a disc pommel."""
+    toward the end and sweeping up to meet the back at the point; a short guard, a bound grip, a disc pommel.
+    hook (reach, y0, y1): a scythe-like spike curving out of the back between y0 and y1, its point reach px to
+    the left and up near the tip."""
     edge = bez((bx + root, base), (bx + root + 8, belly_y + 320), (bx + belly, belly_y)) + \
         bez((bx + belly, belly_y), (bx + belly + 10, tip + 90), (bx, tip))
     d.polygon(P([(bx, base)] + edge), fill=OBJ)
@@ -178,20 +180,38 @@ def falchion(d, W, H, bx=203, base=1040, tip=70, root=78, belly=150, belly_y=330
     bound_grip(d, gx, base + 32, base + 320, 24)
     d.ellipse(P([(gx - 36, base + 332), (gx + 36, base + 404)]), outline=LIGHT, width=5 * SS)
     line(d, [(bx + 14, base - 10), (bx + 14, tip + 70)], 4, LIGHT)            # the thick back
+    if hook:
+        reach, y0, y1 = hook
+        d.polygon(P([(bx + 6, y1)] + bez((bx + 6, y1), (bx - reach * 0.55, y1 - 20), (bx - reach, y0 - 60)) +
+                    bez((bx - reach, y0 - 60), (bx - reach * 0.4, y0 + 10), (bx + 6, y0))), fill=OBJ)
 
 
 def great_sword(d, W, H, cx=224, tip=50, blade=(36, 1040), point=110, ricasso=None, lugs=None, guard=None, quillons=None,
-                langets=None, grip=(22, 1232, 1650), raised=(), pear=None, wheel=None):
+                langets=None, grip=(22, 1232, 1650), raised=(), pear=None, wheel=None, fork=None, barbs=None):
     """A long straight double-edged blade from its point (tip) down to y blade[1], blade[0] its half width, a fuller down
     its middle. ricasso (half, y0, y1): a narrower leather-wrapped stretch of blade above the guard, and lugs (reach, y,
     height): two small pointed lugs out to the sides at its top. guard (half, y0, y1, drop): a straight bar whose ends
     turn down; or quillons (length, degrees, ring): two straight arms rising from the hilt toward the point in a wide V,
     a cluster of four rings at each end; langets (half, y0): straps over the blade's base, a little wider than it. A
     bound grip (half, y0, y1) with raised bands across it at the ys in raised; a pear pommel (half, y0, y1), or a wheel
-    (r, cy) face on."""
+    (r, cy) face on. fork (depth, spread): the point split into two prongs, a V notch depth deep between them, their tips
+    spread past the blade's edges; barbs (n, y0, y1, reach): n hooked barbs along the right edge between y0 and y1, each
+    reaching out and hooking back toward the hilt."""
     hw, by = blade
-    d.polygon(P([(cx, tip), (cx + hw, tip + point), (cx + hw, by), (cx - hw, by), (cx - hw, tip + point)]), fill=OBJ)
-    line(d, [(cx, tip + 70), (cx, by - 40)], 6, LIGHT)                       # the fuller
+    if fork:
+        depth, spread = fork
+        d.polygon(P([(cx - hw, tip + point), (cx - hw * 0.5 - spread, tip), (cx, tip + depth), (cx + hw * 0.5 + spread, tip),
+                     (cx + hw, tip + point), (cx + hw, by), (cx - hw, by)]), fill=OBJ)
+        line(d, [(cx, tip + depth + 60), (cx, by - 40)], 6, LIGHT)
+    else:
+        d.polygon(P([(cx, tip), (cx + hw, tip + point), (cx + hw, by), (cx - hw, by), (cx - hw, tip + point)]), fill=OBJ)
+        line(d, [(cx, tip + 70), (cx, by - 40)], 6, LIGHT)                   # the fuller
+    if barbs:
+        n, y0, y1, reach = barbs
+        for k in range(n):
+            y = y0 + k * (y1 - y0) / max(1, n - 1)
+            d.polygon(P([(cx + hw - 4, y - 40), (cx + hw + reach * 0.7, y - 10), (cx + hw + reach, y + 60),
+                         (cx + hw + reach * 0.45, y + 18), (cx + hw - 4, y + 30)]), fill=OBJ)
     if ricasso:
         h, y0, y1 = ricasso
         d.rectangle(P([(cx - h, y0), (cx + h, y1)]), fill=DARK)              # leather-wrapped, narrower than the blade
@@ -305,7 +325,7 @@ def crystal_sword(d, W, H, cx=416, tip=60, base=860, half=84, guard=(150, 44), g
 
 def fist(d, W, H, head, cx=256, top=780, bottom=1470, bars=91, bar=14, grips=(1080, 1180), straps=(), frame="H"):
     """A fist weapon seen from the front. head: 'katar' (a tall triangle), 'scissors' (two thin blades
-    opened in a V from one pivot), 'claws' (three slim prongs), 'crescent' (a broad crescent arching
+    opened in a V from one pivot), 'fan' (three such blades fanned from one pivot), 'claws' (three slim prongs), 'crescent' (a broad crescent arching
     over the knuckles, horns down). frame 'H': two side bars from top to bottom joined by the grips;
     'U': the bars joined round the bottom. straps: leather bands wider than the frame. The claws' talons rise straight
     from the crossbar and hook to the right through their upper half, the tips ~70 px off their roots' lines."""
@@ -337,6 +357,13 @@ def fist(d, W, H, head, cx=256, top=780, bottom=1470, bars=91, bar=14, grips=(10
             line(d, [(cx + s * 6, top - 50), (cx + s * 88, 110)], 4, LIGHT)
         dot(d, cx, top, 46, OBJ)
         dot(d, cx, top, 16, DARK)
+    elif head == "fan":
+        d.rectangle(P([(cx - bars - bar, top), (cx + bars + bar, top + 36)]), fill=OBJ)
+        for s, (tx, ty) in ((-1, (-124, 96)), (0, (0, 46)), (1, (124, 96))):
+            band(d, [(cx, top), (cx + tx, ty)], (44, 0))
+            line(d, [(cx + s * 4, top - 50), (cx + tx * 0.9, ty + 50)], 4, LIGHT)
+        dot(d, cx, top, 46, OBJ)
+        dot(d, cx, top, 16, DARK)
     elif head == "claws":
         d.rectangle(P([(cx - bars - bar, top - 24), (cx + bars + bar, top + 20)]), fill=OBJ)
         for s, ty in ((-1, 170), (0, 100), (1, 170)):                         # straight, then hooking right in the upper half
@@ -349,6 +376,48 @@ def fist(d, W, H, head, cx=256, top=780, bottom=1470, bars=91, bar=14, grips=(10
         d.rectangle(P([(cx - 36, 280), (cx + 36, top)]), fill=OBJ)            # the neck onto the knuckle plate
         band(d, bez((cx - bars - bar, top + 20), (cx, top - 60), (cx + bars + bar, top + 20)), 52)
         line(d, arc(cx, 470, 186, 380, 196, 344), 5, LIGHT)                  # the bevel along the edge
+
+
+def moon_axe(d, W, H, cx=300, haft=(20, 130, 1330), butt=1395, socket=(36, 250, 520), spike=70, blade=((30, 390), (340, 360), 78),
+             back=((-20, 390), (250, 290), 64), neck=(232, 300, 480), spur=(150, 260, 330), grip=(1050, 1250)):
+    """A great axe with a single colossal crescent blade on the right of the socket, upright: the edge an arc
+    (centre offset, radii, half its sweep in degrees) whose horns reach up and down past the socket, its back a
+    smaller arc, joined to the socket by a short neck; a small hooked spur on the left, a spike on top, a long haft
+    with a dark grip and a butt spike."""
+    hh, h0, h1 = haft
+    d.rectangle(P([(cx - hh, h0), (cx + hh, h1)]), fill=OBJ)
+    d.polygon(P([(cx - hh, h1), (cx + hh, h1), (cx, butt)]), fill=OBJ)
+    d.rectangle(P([(cx - hh - 2, grip[0]), (cx + hh + 2, grip[1])]), fill=DARK)
+    sh, s0, s1 = socket
+    d.rectangle(P([(cx - sh, s0), (cx + sh, s1)]), fill=OBJ)
+    d.polygon(P([(cx - 24, s0 + 4), (cx + 24, s0 + 4), (cx, spike)]), fill=OBJ)
+    (ox, oy), (rx, ry), a = blade
+    (bx, by), (brx, bry), b = back
+    outer = [(cx + ox + rx * math.cos(math.radians(t)), oy + ry * math.sin(math.radians(t))) for t in range(-a, a + 1, 4)]
+    inner = [(cx + bx + brx * math.cos(math.radians(t)), by + bry * math.sin(math.radians(t))) for t in range(b, -b - 1, -4)]
+    d.polygon(P(outer + inner), fill=OBJ)
+    line(d, [(cx + ox + (rx - 22) * math.cos(math.radians(t)), oy + (ry - 22) * math.sin(math.radians(t))) for t in range(-a + 6, a - 5, 4)], 5, LIGHT)
+    nx, n0, n1 = neck
+    d.polygon(P([(cx + sh - 4, n0 + 30), (cx + nx, n0), (cx + nx, n1), (cx + sh - 4, n1 - 30)]), fill=OBJ)
+    reach, u0, u1 = spur
+    d.polygon(P([(cx - sh + 4, u0 + 40), (cx - reach, u0), (cx - reach + 40, u1), (cx - sh + 4, u1 + 40)]), fill=OBJ)
+
+
+def lance_shield(d, W, H, cx=416, cy=640, r=210, n=6, length=200, half=26, start=-90, boss=92):
+    """A round shield face on, n long leaf-shaped spear blades standing out from its rim all round (the first
+    at angle start), each length past the rim; a raised round emblem in the middle (boss its radius)."""
+    for k in range(n):
+        a = math.radians(start + 360 * k / n)
+        ux, uy = math.cos(a), math.sin(a)
+        px, py = -uy, ux
+        r0, r1 = r - 30, r + length
+        mid = r0 + (r1 - r0) * 0.35
+        d.polygon(P([(cx + ux * r0 + px * half * 0.6, cy + uy * r0 + py * half * 0.6), (cx + ux * mid + px * half, cy + uy * mid + py * half),
+                     (cx + ux * r1, cy + uy * r1), (cx + ux * mid - px * half, cy + uy * mid - py * half),
+                     (cx + ux * r0 - px * half * 0.6, cy + uy * r0 - py * half * 0.6)]), fill=OBJ)
+    dot(d, cx, cy, r, OBJ)
+    d.ellipse(P([(cx - r + 16, cy - r + 16), (cx + r - 16, cy + r - 16)]), outline=LIGHT, width=6 * SS)  # the rim
+    d.ellipse(P([(cx - boss, cy - boss), (cx + boss, cy + boss)]), outline=LIGHT, width=8 * SS)        # the emblem
 
 
 # ---- hafted weapons: a shaft, a head on top, a grip and a butt
@@ -1221,11 +1290,16 @@ GUIDES = {
     "kris": (wavy_blade, (512, 1536), dict(cx=236, tip=56, base=1110, half=42, bends=7, amp=26, taper=0.45, point=0.09,
                                              ganja=(118, 34), hilt=([(236, 1168), (240, 1270), (262, 1370), (312, 1440)], (52, 62)))),
     "falchion": (falchion, (512, 1536)),
+    "hooked-falchion": (falchion, (512, 1536), dict(hook=(150, 150, 330))),
     "two-handed-sword": (great_sword, (448, 1792), dict(blade=(64, 1040), point=190, ricasso=(46, 1040, 1196), lugs=(122, 1056, 52),
                                                         guard=(180, 1196, 1232, 30), grip=(25, 1232, 1650), raised=(1370, 1520),
                                                         pear=(34, 1646, 1748))),
     "claymore": (great_sword, (448, 1792), dict(blade=(34, 1200), langets=(44, 1120), quillons=(205, 40, 15), grip=(22, 1214, 1620),
                                                 wheel=(48, 1664))),
+    "forked-sword": (great_sword, (448, 1792), dict(blade=(62, 1180), point=230, fork=(230, 30), guard=(150, 1180, 1216, 26),
+                                                    grip=(24, 1216, 1610), raised=(1330, 1480), pear=(34, 1606, 1716))),
+    "barbed-great-sword": (great_sword, (704, 1408), dict(cx=330, tip=40, blade=(62, 960), point=170, barbs=(3, 330, 690, 70),
+                                                          quillons=(190, 28, 12), grip=(26, 974, 1250), wheel=(52, 1300))),
     "sabre": (curved_sword, (512, 1536), dict(cx=236, back=22, edge=22, bow=(96, 16))),
     "scimitar": (curved_sword, (512, 1536), dict(cx=176, base=1200, tip=(170, 66), ctrl=(176, 600), back=20, edge=24,
                                                  belly=64, point=0.2, guard=(80, 28), balls=17, grip=(22, 1228, 1436), pommel=(30, 1430, 1482))),
@@ -1234,8 +1308,10 @@ GUIDES = {
     "katar": (fist, (512, 1536), dict(head="katar")),
     "scissors-katar": (fist, (512, 1536), dict(head="scissors")),
     "claws": (fist, (512, 1536), dict(head="claws", top=900, bottom=1380, grips=(1120,), straps=(1300,))),
+    "fan-katar": (fist, (512, 1536), dict(head="fan")),
     "hatchet-fist": (fist, (512, 1536), dict(head="crescent", frame="U", top=430, bottom=1460, bars=80, grips=(650,), straps=(1010, 1220))),
     # hafted
+    "moon-axe": (moon_axe, (704, 1408)),
     "spear": (pole, (704, 1408), dict(head="leaf", cx=352, shaft=(11, 470, 1380), butt=(14, 1340, 1390), grip=(14, 840, 960))),
     "halberd": (pole, (704, 1408), dict(head="halberd", cx=340, shaft=(13, 300, 1385), butt=(16, 1330, 1390))),
     "brandistock": (pole, (704, 1408), dict(head="fork", cx=352, shaft=(12, 540, 1385), butt=(15, 1338, 1392), grip=(15, 860, 980))),
@@ -1295,6 +1371,7 @@ GUIDES = {
     "tiara": (tiara, (1024, 1024)),
     "gothic-shield": (lancet_shield, (704, 1408)),
     "crown-shield": (crown_shield, (1024, 1024)),
+    "lance-shield": (lance_shield, (832, 1248)),
     "full-plate": (plate_suit, (832, 1248)),
     "soft-boots": (boots, (1024, 1024)),
     "heavy-boots": (boots, (1024, 1024), dict(top=300, cuff=False, thongs=0, toe_cap=True, fur=90, strap=True)),

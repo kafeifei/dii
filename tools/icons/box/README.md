@@ -56,7 +56,10 @@ of object, never traced or measured from a picture. The sample round's eight (ha
 gladius, great-helm, spear, short-bow, soft-boots) come out pixel for pixel as approved, and so does every
 picked picture's guide: review round 1 (`tools/icons/rejects/history/review-1.json`) added 24 guides, corrected
 claws, heavy-boots and the flail, and dropped the four bow guides nothing uses any more; review round 2
-(`review-2.json`) widened two-handed-sword's blade. On another canvas a guide is scaled to fit and centred.
+(`review-2.json`) widened two-handed-sword's blade. The unique and set pictures' review added six, each a new
+shape for a special version where the base reference alone kept the base's (`special-review-*.json`):
+moon-axe, forked-sword, barbed-great-sword, fan-katar, hooked-falchion, lance-shield; every earlier guide still
+draws pixel for pixel as before. On another canvas a guide is scaled to fit and centred.
 
 ### Painting (`gen.py`)
 
@@ -65,7 +68,10 @@ words are only recorded). A job's `ref` are klein's reference images: a shape gu
 we draw, `guides.py`), and for a unique or set picture the raw painting of its base's chosen picture.
 The prompt is built in `tools/icons/style.mjs`. With a base picture as the reference, klein tends to
 paint the base again (once in two seeds on the first trial): the review sheet shows the reference under
-the picture's name, to compare.
+the picture's name, to compare. Over the 78 special pictures (runs 07-10, six seeds each) it kept the
+base's outline in most seeds and painted what the words add onto it (a tassel, a net, a plume, a skull,
+an emblem, a glow) far more reliably than a reshaped blade or head; so a special picture's words say its
+added part first, and a new shape gets a guide as the first reference (style.mjs GUIDE_AND_BASE_PREFIX).
 
 On one 3090 with the model loaded: 1.7 s (768², 1×1 cells) to 2.8 s (1024², 2×2) a picture, ~5.1 s with a
 reference image; a model load ~6 s.

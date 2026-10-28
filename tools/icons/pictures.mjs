@@ -40,6 +40,10 @@ export const GROUPS = {
 };
 const GROUP_OF = new Map(Object.entries(GROUPS).flatMap(([g, types]) => types.map((t) => [t, g])));
 export const KINDS = ['base', 'variant', 'unique', 'set'];
+/** the picks and made file a picture is recorded in: a unique's or set item's own picture in
+ * uniques/sets (they are painted and reviewed as a stage of their own), every other in its group's */
+export const listOf = (p) => (p.kind === 'unique' ? 'uniques' : p.kind === 'set' ? 'sets' : p.group);
+export const LISTS = [...Object.keys(GROUPS), 'uniques', 'sets'];
 const TABLES = ['weapons', 'armor', 'misc'];
 
 /** file names as ids, in lower case (the rune files are spelt invrEl, invrTir…) */

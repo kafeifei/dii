@@ -3,7 +3,7 @@
 // picture file, not per base), each picture's words are tools/icons/desc/*.json, the style and
 // settings tools/icons/style.mjs; the box side is tools/icons/box/ (its README says what each step
 // does). Writes public/icons/items/<picture>.webp (2x: w×68 by h×68 px) and <picture>.1x.webp (1x,
-// sharpened), and records what made each in tools/icons/made/<group>.json.
+// sharpened), and records what made each in tools/icons/made/<list>.json (a group's, or uniques/sets).
 //
 //   node tools/ai-icons.mjs --dry [sel] [--prompts]   the jobs a run would send, and the picks it would apply
 //   node tools/ai-icons.mjs --gen [sel]               paint the selection's candidates on box (a new run)
@@ -29,7 +29,8 @@
 // box/guides.py; fill shrinks the object in its cells; material says whether the normal-tier
 // material line goes in (style.mjs takesMaterial); ref, for a unique or set picture, is the picture
 // whose pick is its reference image (default its base's: that base must be picked first).
-// Picks, tools/icons/picks/<group>.json: { "<picture>": { "run": 3, "seed": 202 } }. Rejects,
+// Picks, tools/icons/picks/<list>.json: { "<picture>": { "run": 3, "seed": 202 } }, a list being a base
+// or variant picture's group, or uniques / sets for a unique's or set item's own picture. Rejects,
 // tools/icons/rejects/<group>.json: a review's pictures sent back, each with the reason and its fix (new words,
 // a guide, a fill); once applied and painted again they move to rejects/history/review-<n>.json.
 // npm test -- icons checks the list's rules, the descriptions, the picks and public/icons/items/.
@@ -38,7 +39,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { GROUPS, KINDS, buildPictures } from './icons/pictures.mjs';
+import { GROUPS, KINDS, LISTS, buildPictures, listOf } from './icons/pictures.mjs';
 import { EXPORT, GRADE, MATTE, MODEL, NEGATIVE, SEEDS, STYLE, canvasFor, promptFor, seedsFor } from './icons/style.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -168,7 +169,7 @@ function loadPicks() {
   for (const [id, p] of Object.entries(picks)) {
     if (!byId.has(id)) problems.push(`picks/${from[id]} ${id}: no such picture`);
     if (!Number.isInteger(p.run) || !Number.isInteger(p.seed)) problems.push(`picks/${from[id]} ${id}: needs { run, seed }`);
-    else if (byId.has(id) && byId.get(id).group !== from[id].replace(/\.json$/, '')) problems.push(`picks/${from[id]} ${id}: a ${byId.get(id).group} picture`);
+    else if (byId.has(id) && listOf(byId.get(id)) !== from[id].replace(/\.json$/, '')) problems.push(`picks/${from[id]} ${id}: belongs in picks/${listOf(byId.get(id))}.json`);
   }
   if (problems.length) fail(problems.join('\n'));
   return picks;
@@ -387,7 +388,7 @@ async function gen() {
 
 function apply() {
   const made = {};
-  for (const g of Object.keys(GROUPS)) made[g] = readJson(path.join(MADE, `${g}.json`), {});
+  for (const g of LISTS) made[g] = readJson(path.join(MADE, `${g}.json`), {});
   const want = (id) => {
     const p = PICKED[id];
     const base = path.join(SRC, runName(p.run), 'cand', `${id}_s${p.seed}`);
@@ -441,7 +442,7 @@ function apply() {
       }
       entry.files[scale] = { file: `public/icons/items/${name}`, sha1: h };
     }
-    made[pic.group][id] = entry;
+    made[listOf(pic)][id] = entry;
   }
   for (const [g, m] of Object.entries(made)) {
     const file = path.join(MADE, `${g}.json`);

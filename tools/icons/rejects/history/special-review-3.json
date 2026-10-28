@@ -1,0 +1,100 @@
+{
+ "uniques": {
+  "invspcu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.29-0.37",
+   "reason": "The final 1x check: round 1's s606 (curved spikes) reads as the base's nailed club at 1x.",
+   "fix": {
+    "desc": "A famed spiked club, the plain spiked club made into a rare piece: one huge square iron nail, three times as long as the club is wide, driven sideways right through its head so it sticks far out on both sides, the head bound with two iron bands and bristling with shorter curved iron spikes; the shaft dark wood with a leather-wrapped grip. Shown upright, the spiked end at the top, side view."
+   }
+  },
+  "invbsdu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.12-0.14",
+   "reason": "The final 1x check: round 1's s101 saw teeth are faint at 1x; the plain broad sword.",
+   "fix": {
+    "desc": "A famed broad sword, the plain broad sword made into a rare piece, a master smith's own blade: the lower half of its broad blade glowing a dull forge orange as if just drawn from the fire, fading up into dark hammered steel, a row of saw teeth along one edge near the guard, a heavy guard shaped like a small anvil, a pommel like a hammer head. Shown upright, point at the top, the pommel at the bottom, straight front view."
+   }
+  },
+  "inv9lsu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.14-0.30",
+   "reason": "The final 1x check: round 1's s303 green beads are too small to read at 1x.",
+   "fix": {
+    "desc": "A famed long sword, the plain long sword made into a rare piece: a small iron plague bell and a long strip of stained rag hanging from its guard on a cord, the blade streaked and blotched with green-grey corrosion, the guard of two drooping quillons each ending in a small round sickly green glass bead, a grip wrapped in stained rag. Shown upright, point at the top, the pommel at the bottom, straight front view."
+   }
+  },
+  "inv9bru": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.16-0.22",
+   "reason": "The final 1x check: round 1's s404 five tines read as the base's head at 1x.",
+   "fix": {
+    "desc": "A famed brandistock, the plain brandistock made into a rare piece: below its head a pair of big curved meat hooks curving down and out from the socket on both sides, and above them five long thin barbed tines spreading from the socket like the fingers of a grasping hand; the long shaft dark wood bound with bronze rings. Shown perfectly upright, the tines at the top, side view."
+   }
+  },
+  "inv8s8u": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.13-0.33",
+   "reason": "The final 1x check: round 1's s404 charms are tiny at 1x.",
+   "fix": {
+    "desc": "A famed short bow, the plain short bow made into a rare piece, a witch's bow: hanging from the middle of the bow on long cords a big bundle of charms, a small animal skull, bone fetishes, beads and black feathers, its limbs painted with crooked dark bands, the string a twisted cord of several strands. Shown upright, side view, the string on the left, the bow arching to the right."
+   }
+  },
+  "inv8lxu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.16-0.29",
+   "reason": "The final 1x check: round 1's s202 hammer butt reads as the base at 1x.",
+   "fix": {
+    "desc": "A famed arbalest seen from directly above, the plain light crossbow made into a rare piece: a big rough grey boulder held in an iron cage at the butt end like the head of a hammer, wider than the tiller, the thick bow blackened steel with rope wound round its ends, the tiller carved with rows of chevrons. The prod at the top, the butt at the bottom."
+   }
+  }
+ }
+}

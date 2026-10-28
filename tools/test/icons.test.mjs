@@ -7,7 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildPictures, pictureOf } from '../icons/pictures.mjs';
+import { buildPictures, listOf, pictureOf } from '../icons/pictures.mjs';
 import { FRAME, GUIDE_PREFIX, MATERIAL, STYLE, canvasFor, promptFor } from '../icons/style.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -78,7 +78,7 @@ export default async () => {
   for (const [f, d] of readDir('picks')) {
     for (const [id, p] of Object.entries(d)) {
       picks[id] = p;
-      check(byId.get(id)?.group === f.replace(/\.json$/, ''), `picks/${f}: ${id} is not a ${f.replace(/\.json$/, '')} picture`);
+      check(byId.has(id) && listOf(byId.get(id)) === f.replace(/\.json$/, ''), `picks/${f}: ${id} belongs in picks/${byId.has(id) ? listOf(byId.get(id)) : '?'}.json`);
     }
   }
 

@@ -1,0 +1,498 @@
+{
+ "uniques": {
+  "invaxeu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.15-0.18",
+   "reason": "All six came back as the plain axe (0.77-0.88 like our base): the spade-shaped blade did not take.",
+   "fix": {
+    "desc": "A famed one-handed axe, the plain axe made into a rare piece: its blade made much longer, a long down-swept blade like a grave-digger's spade that hangs down along the haft to a hooked point a third of the way down, its edge honed bright, a row of three round holes pierced through the blade; behind the socket a long curved hook instead of the plain spike; a small iron skull riveted on the socket; dark iron, the haft bound with dark leather cords and iron rings. Shown upright, the axe head at the top, side view."
+   }
+  },
+  "invmpiu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.27-0.36",
+   "reason": "The beak is a little longer and a feathered collar shows at 4x, but at 1x every seed reads as the plain pick.",
+   "fix": {
+    "desc": "A famed military pick, the plain pick made into a rare piece: behind its socket a tall fan of long pointed iron feathers spreading up and back like the crest of a crane, as tall as the head is long; its beak made very long and slender, curving gently down, fluted along its spine; a short square hammer face behind; the long haft wound with bronze wire in bands. Shown upright, the head at the top, side view."
+   }
+  },
+  "invbtxu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.15-0.21",
+   "reason": "Knotwork etching and a knobbed spike (s303 best) show at 4x only; at 1x it is the plain battle axe. Tried again with something added; s303 kept as the fallback.",
+   "fix": {
+    "desc": "A famed double-bitted battle axe, the plain battle axe made into a rare piece: hanging from beneath its head a long thick tassel of dark horsehair bound with a bronze ring, reaching halfway down the haft; both crescent blades etched with bands of interlaced knotwork, their upper horns curling inward; a tall square spike on top ending in a round knob; the haft bound with iron rings. Shown upright, the head at the top, front view."
+   }
+  },
+  "invgaxu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.19-0.24",
+   "reason": "All six kept the double moon head (0.70-0.91 like our base); the bronze skull at the socket is lost at 1x.",
+   "fix": {
+    "desc": "A famed great axe, the plain great axe made into a rare piece: one colossal crescent-moon blade on the right side only, its two horns curling back toward the haft above and below the socket, its wide curved edge worn bright, a small hooked spur on the left instead of a second blade, a small sculpted bronze skull on the socket, a tall spike on top; the long haft bound with iron bands, a leather grip and an iron butt spike. Shown upright, the head at the top, front view.",
+    "guide": "moon-axe",
+    "shape": "moon-axe: one huge crescent blade to the right of the socket, horns curling back toward the haft above and below it, joined by a short neck; a small hooked spur on the left; a spike on top; a long haft, a dark grip low down, a butt spike"
+   }
+  },
+  "invflcu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.24-0.27",
+   "reason": "All six are the plain falchion (0.76-0.97 like our base): the scythe-like tip did not take.",
+   "fix": {
+    "desc": "A famed falchion, the plain falchion made into a rare piece: a long hooked spike curving forward from the back of the blade near its tip like the point of a scythe, the broad blade's edge frosted with a pale cold bloom, the guard two downturned hooks, a ring pommel with a short leather tassel. Shown upright, point at the top, the pommel at the bottom, side view."
+   }
+  },
+  "inv2hsu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.38-0.40",
+   "reason": "All six are the plain two-handed sword (0.82-0.99 like our base), so nothing reads as special.",
+   "fix": {
+    "desc": "A famed two-handed sword, the plain two-handed sword made into a rare piece: a long strip of tattered black shroud cloth wound around the leather ricasso and the guard and hanging down past the pommel in ragged tails; the blade dark-stained with its edges ground bright, narrowing to a fang-like point; the guard's ends curling down. Shown upright, point at the top, the pommel at the bottom, straight front view."
+   }
+  },
+  "invbswu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.46-0.51",
+   "reason": "All six over the line (0.462-0.506): a slim straight blade like the original's (the outline class, as in base review round 2's inv2hs), and the fork at the point is tiny.",
+   "fix": {
+    "desc": "A famed bastard sword, the plain bastard sword made into a rare piece: a broad blackened blade, wider than the plain one, splitting at its point into two sharp prongs like a serpent's forked tongue, a thin fuller down its middle; a small serpent of dark bronze coiled around the guard and the top of the grip, its head on the guard; a guard with turned-down ends, a long grip bound with black cord and a pear-shaped pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+    "guide": "forked-sword",
+    "shape": "forked-sword: a broad straight blade whose point splits into two prongs with a deep V between them, a guard with turned-down ends, a long bound grip with two raised bands, a pear pommel"
+   }
+  },
+  "invgsdu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.14-0.23",
+   "reason": "The barbs came out as small notches or grooves on the blade (s101 best), unreadable at 1x.",
+   "fix": {
+    "desc": "A famed great sword, the plain great sword made into a rare piece: three big hooked barbs standing out from the right edge of its broad blade in its middle third, each as long as the blade is wide and hooking back toward the hilt, a long fuller, a cross-guard whose two arms sweep up toward the blade in a wide V ending in small ring clusters, a long two-hand grip of dark leather and a disc pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+    "guide": "barbed-great-sword",
+    "shape": "barbed-great-sword: a broad straight blade with three big hooked barbs out from its right edge, hooking back toward the hilt; upswept quillons in a wide V; a long grip; a wheel pommel"
+   }
+  },
+  "invcstu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.28-0.42",
+   "reason": "All six are the plain gnarled staff (0.64-0.93 like our base): no twist.",
+   "fix": {
+    "desc": "A famed staff, the plain gnarled staff made into a rare piece: a second thinner branch winds around the whole staff in a tight spiral from the foot to the head like a twisting vine, and a third even thinner one spirals the other way, so the shaft looks twisted like a rope; at the top the branches open and curl round a small pale round stone, thin bronze bands at three joints. Shown perfectly upright, the head at the top."
+   }
+  },
+  "invsbbu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.16-0.31",
+   "reason": "Only a few faint leaves (s404); at 1x the plain battle bow.",
+   "fix": {
+    "desc": "A famed short battle bow, the plain battle bow made into a rare piece: its limbs sprouting like a living branch, many small leafy twigs growing out all along both limbs and bound on with cord, a large tuft of leaves at each tip and a ring of leaves round the grip, the leaves dull olive and brown, a thin pale string. Shown upright, side view, the string on the left, the bow arching to the right."
+   }
+  },
+  "invmxbu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.31-0.36",
+   "reason": "Five seeds are the plain crossbow; s202 hung two stinger arms under the bow, readable but odd. Tried again; s202 kept as the fallback.",
+   "fix": {
+    "desc": "A famed crossbow seen from directly above, the plain crossbow made into a rare piece: a scorpion's segmented tail of dark plates arching over the whole tiller from the butt to the front, ending in a big hooked stinger poised above the bow; the bow's arms also ending in small hooked barbs; a small glass vial of dark fluid on the tiller. The prod at the top, the butt at the bottom."
+   }
+  },
+  "invcapu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.20-0.31",
+   "reason": "The feathers hang small at the side and the cloth patch is faint; weak at 1x. Tried again; s505 kept as the fallback.",
+   "fix": {
+    "desc": "A famed leather cap, the plain cap made into a rare piece, shown empty on its own: a tall plume of long dark feathers standing up from one side of the crown, as tall as the cap itself, tied on with a band of beads; the crown patched with a faded cloth panel stitched in a cross; a leather cord at the chin. Front three-quarter view.",
+    "fill": 0.8
+   }
+  },
+  "invfhlu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.31-0.35",
+   "reason": "All six are the plain full helm (0.78-0.97 like our base): no T opening, no crest.",
+   "fix": {
+    "desc": "A famed full helm, the plain full helm made into a rare piece, shown empty on its own: a tall raised crest, a thin fin of iron as high as a hand, running over the top of the helm from the brow to the nape; the face opening shaped like a T, a narrow slit for the eyes across and a long slot down to the chin between long cheek plates; a flared neck guard; no head inside. Front three-quarter view."
+   }
+  },
+  "invaaru": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.28-0.33",
+   "reason": "The cloth sleeves did not take; only a fringe on the skirt (s303, s606).",
+   "fix": {
+    "desc": "A famed ancient armour, the plain ancient armour made into a rare piece, hollow and empty: its arm plates replaced by long loose sleeves of heavy embroidered brocade cloth hanging from under the shoulder plates down past the hips, a cloth sash across the chest from one shoulder to the other hip, the sculpted cuirass and the skirt of hanging plates with tasselled ends kept. Laid flat, front view, empty, no person."
+   }
+  },
+  "invbshu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.33-0.35",
+   "reason": "All six are the plain bone shield with a few small skulls tucked between the bones; not a wall of skulls.",
+   "fix": {
+    "desc": "A famed bone shield, the plain bone shield made into a rare piece: its whole face covered with dozens of small skulls packed tightly in rows, skull beside skull, their empty gouged eye sockets staring out, so no long bones show on the face, only skulls, held in a rim of bound vertebrae. Front view, upright."
+   }
+  },
+  "inv9btu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.20-0.35",
+   "reason": "Notched blades and a small stone on top; the wave-curled blades did not take, at 1x the plain battle axe.",
+   "fix": {
+    "desc": "A famed double-bitted battle axe, the plain battle axe made into a rare piece: a long flowing horsetail of pale grey hair hanging from beneath its head down along the haft like a cavalry standard; both blades etched with zigzag lightning lines and curling up at their tips; a small round pale stone set at the top of the head; the haft bound with iron rings and wire. Shown upright, the head at the top, front view."
+   }
+  },
+  "inv9giu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.20-0.27",
+   "reason": "All six are the plain great axe (s606 hooks its beard a little); no horns.",
+   "fix": {
+    "desc": "A famed great axe, the plain great axe made into a rare piece: a bull's skull with long curved horns fixed on the back of the head where the square poll was, the horns sweeping out and up; the single blade long and bearded, its lower point hooking down along the haft; a short spike on top; the haft bound with bronze rings. Shown upright, the head at the top, side view."
+   }
+  },
+  "invsbru": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.24-0.35",
+   "reason": "A faint row of saw teeth along the spine (s101, s303); no crescent tip, at 1x the plain sabre.",
+   "fix": {
+    "desc": "A famed sabre, the plain sabre made into a rare piece: flame-shaped tongues of dark bronze licking up from the guard along the base of the blade, the curved blade etched along its length with a wavy flame line and blackened near the hilt, widening a little near the point, the knuckle bow wrapped in red-brown cord, a round dark red stone in the pommel. Shown upright, the hilt at the bottom, the blade curving gently to the right as it rises, side view."
+   }
+  },
+  "inv9blu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.13-0.22",
+   "reason": "The zigzag edges are shallow notches, the forked guard small (s606); weak at 1x.",
+   "fix": {
+    "desc": "A famed long dagger, the plain blade made into a rare piece: copper wire wound in a spiral along the whole length of its blade, the edges notched into a zigzag like a bolt of lightning, the guard a forked bronze piece like a split lightning bolt, a grip wound with copper wire and a small spiked pommel. Shown upright, point at the top, the butt at the bottom, side view."
+   }
+  },
+  "invxaru": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.27-0.29",
+   "reason": "All six are the plain ancient armour (0.54-0.98 like our base).",
+   "fix": {
+    "desc": "A famed dark armour, the plain ancient armour made into a rare piece, hollow and empty: a mourning armour of black steel with a long six-sided breastplate shaped like a coffin's lid, a raised cross of iron on it, and black mourning cloth draped over both shoulders hanging down in long tatters beside the arms; a long skirt of hanging black plates. Laid flat, front view, empty, no person."
+   }
+  },
+  "invxshu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.31-0.32",
+   "reason": "All six are the plain bone shield (0.82-0.92 like our base): no skulls added.",
+   "fix": {
+    "desc": "A famed bone shield, the plain bone shield made into a rare piece: three large skulls fixed across its face in a row from top to bottom, each skull as wide as half the shield and covering the bones behind it, each with staring round eyes of dull glass set in its sockets, bound on with rope. Front view, upright."
+   }
+  },
+  "invxpku": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.26-0.28",
+   "reason": "All six are the plain spiked shield (0.86-0.95 like our base): no lance points, no boar.",
+   "fix": {
+    "desc": "A famed spiked shield, the plain spiked shield made into a rare piece: in its middle a large raised iron boar's head with long tusks covering the centre, and six very long spear blades sticking far out from its rim all around, each as long as the shield is wide. Front three-quarter view."
+   }
+  },
+  "invtk3": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.25-0.34",
+   "reason": "A single double-ended knife with a fan of fins on its upper blade; not the fan of three knives described.",
+   "fix": {
+    "desc": "A famed set of throwing knives, the plain throwing knife made into a rare piece: three narrow leaf-shaped steel blades fanned a little apart, each with a pair of small swept fins like a bird's wing feathers near its base, on slim handles bound together with white cord, a ring at each butt. Shown upright, the blade tips at the top, front view.",
+    "guide": "throwing-knives",
+    "shape": "throwing-knives: three knives side by side fanning a little toward the top, a binding round the handles, a ring at each butt"
+   }
+  },
+  "invlxbu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.20-0.24",
+   "reason": "The crow's head (s404, s606) is a small knob at 1x. Tried again; s606 kept as the fallback.",
+   "fix": {
+    "desc": "A famed light crossbow seen from directly above, the plain light crossbow made into a rare piece: its front tip carved as a big crow's head with a long open beak, the bow's two ends each hung with a bunch of long black feathers, black feathers tied along the tiller too, the tiller dark wood inlaid with grey lead strips. The prod at the top, the butt at the bottom."
+   }
+  },
+  "invrxbu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.15-0.20",
+   "reason": "The magazine is there (s404) but small at 1x. Tried again; s404 kept as the fallback.",
+   "fix": {
+    "desc": "A famed repeating crossbow seen from directly above, the plain repeating crossbow made into a rare piece: a tall wooden magazine box on top of the tiller packed with a fan of bolts whose heads stick up out of it, a long curved lever arm along its side, small bone teeth set in rows along the stock, the bow's ends curling back into scrolls. The prod at the top, the butt at the bottom."
+   }
+  },
+  "invxkpu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.26-0.30",
+   "reason": "Crossed bands and a mail curtain (s606) but the dome reads as plain iron. Tried again; s606 kept as the fallback.",
+   "fix": {
+    "desc": "A famed skull cap, the plain skull cap made into a rare piece, shown empty on its own: its dome hewn from rough grey stone, chipped and cracked like a boulder, bound with two crossed bands of bronze riveted at the crown, a curtain of mail hanging from its rim at the back and sides. Front three-quarter view.",
+    "fill": 0.85
+   }
+  },
+  "invxrnu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.29-0.33",
+   "reason": "Gems and a mail curtain (s202) but no cobbled bands; weak at 1x. Tried again; s202 kept as the fallback.",
+   "fix": {
+    "desc": "A famed battle crown, the plain crown made into a rare piece, shown empty on its own: a crown cobbled together from many mismatched stolen pieces, bands of gold and silver of different widths riveted on top of one another around a dark iron cap, crammed with gems of every size and colour, rings and coins hung from it, tines of uneven heights along its rim, a curtain of mail at the back. Front three-quarter view."
+   }
+  },
+  "invxtuu": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.27-0.31",
+   "reason": "Chains and a few shoulder spikes (s505); weak at 1x. Tried again; s505 kept as the fallback.",
+   "fix": {
+    "desc": "A famed studded armour, the plain studded leather made into a rare piece, hollow and empty: its whole surface bristling with short iron spikes set close together like the bristles of a boar, a broad iron collar plate across the shoulders, two heavy chains slung across the chest. Laid flat, front view, empty, no person."
+   }
+  }
+ },
+ "sets": {
+  "invskru": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.28-0.34",
+   "reason": "All six kept the two blades (0.57-0.74 like our base): no third blade.",
+   "fix": {
+    "desc": "A famed claw, the plain scissors katar made into a rare piece: three long slender blades fanned out from one round pivot rivet like the claws of a beast, the middle one the longest, each blade with a small crescent mark etched near its base, set on the H-shaped iron hilt whose two crossbar grips are bound with dark cord. Shown upright, the blade tips at the top, front view, empty, no hand.",
+    "guide": "fan-katar",
+    "shape": "fan-katar: three long thin blades fanned up from one round pivot, the middle one tallest, on the scissors katar's narrow H frame"
+   }
+  },
+  "invxrss": {
+   "run": 7,
+   "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "similarity": "0.30-0.33",
+   "reason": "Two big concentric spirals on the chest read oddly, and the bronze did not take. Tried again with another arrangement.",
+   "fix": {
+    "desc": "A famed breastplate, the plain breastplate made into a rare piece, hollow and empty: across its upper chest a raised band of five small running spirals linked in a row, a large round boss in the middle of the chest, the steel dark grey like granite, a high stiff collar, leather shoulder straps and riveted side straps, a short skirt of two lames. Laid flat, front view, empty, no person."
+   }
+  }
+ }
+}

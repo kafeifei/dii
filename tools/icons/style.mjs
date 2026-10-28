@@ -67,7 +67,9 @@ export const GUIDE_PREFIX =
  * special version keeps what the item is and how it lies, and is painted anew. Not in the samples;
  * tried once with the pipeline (a set helm on the great helm, two seeds): one seed painted the new
  * version described, the other came back nearly the base itself, so such seeds are to be rejected
- * in review, and a special picture may want more than four.
+ * in review, and a special picture may want more than four. The special stage painted six each and
+ * found the same: an added part (a tassel, a skull, an emblem) takes, a reshaped blade mostly doesn't
+ * without a guide (tools/icons/box/README.md).
  */
 export const BASE_PREFIX =
   'The reference image shows the plain version of this item: paint a new, rarer version of the same kind ' +
