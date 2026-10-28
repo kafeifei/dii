@@ -1,4 +1,5 @@
 import { bindName, SLOT_KEYS } from './common';
+import { answerTrade, tradeAsked } from './inventory';
 import { openQuestLog } from './questlog';
 import { saveSettings } from './settings';
 import type { UI } from './ui';
@@ -65,6 +66,12 @@ export function onKey(ui: UI, e: KeyboardEvent) {
     e.preventDefault();
     if (ui.npc.talking) ui.npc.skip();
     else ui.npc.close();
+    return;
+  }
+  // the merchant's question: Enter says yes, Esc no (D2R's purchase box takes Enter)
+  if ((k === 'Escape' || k === 'Enter') && tradeAsked(ui)) {
+    e.preventDefault();
+    answerTrade(ui, k === 'Enter');
     return;
   }
   if (k === 'Escape') {

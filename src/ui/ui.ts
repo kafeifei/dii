@@ -15,7 +15,7 @@ import { renderCube } from './cube';
 import { DebugPanel } from './debug';
 import { Hud, SkillPicker } from './hud';
 import { CELL, itemIcon } from './icons';
-import { renderInventory } from './inventory';
+import { dropTrade, renderInventory } from './inventory';
 import { onKey, pressButton } from './keys';
 import { GroundLabels } from './labels';
 import { NpcMarks, NpcPanel } from './npc';
@@ -290,6 +290,8 @@ export class UI implements GameHooks, UIContext {
   // ─────────────────────────── rendering ───────────────────────────
   private renderPanels() {
     this.itemByUid.clear();
+    // the merchant's question goes with the shop
+    if (this.left !== 'shop') dropTrade();
     this.leftEl.classList.toggle('open', !!this.left);
     this.rightEl.classList.toggle('open', !!this.right);
     // phones: the bag or the skills on their own spread out to one screen (equipment beside the bag,

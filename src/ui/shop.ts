@@ -1,8 +1,9 @@
+import { displayName } from '../items/item';
 import { repairAllList, pay } from '../items/vendor';
 import { repairItem } from '../items/d2/durability';
 import { areaDef } from '../world/areas';
 import { addClose, h, type UIContext } from './common';
-import { isRepairing, renderGrid, toggleRepair } from './inventory';
+import { answerTrade, isRepairing, renderGrid, toggleRepair, tradeAsked } from './inventory';
 
 // The camp's services, on the left with the bag beside them: the stash, the merchant, the waypoint.
 
@@ -38,7 +39,9 @@ export function renderStash(ui: UIContext, L: HTMLElement) {
 
 /**
  * The merchant: Diablo II's camp shelves by page (src/items/vendor.ts), buying and selling at D2's
- * prices, and repairs (one item with the repair cursor, or everything worn)
+ * prices, and repairs (one item with the repair cursor, or everything worn). A left click on the
+ * shelf, or an item dropped on it, has the merchant ask first (inventory.ts tradeAsked); a right
+ * click buys at once, shift + right-click as many as D2's multibuy takes, ctrl + click sells at once
  */
 export function renderShop(ui: UIContext, L: HTMLElement) {
   L.innerHTML = '';
@@ -61,7 +64,24 @@ export function renderShop(ui: UIContext, L: HTMLElement) {
   L.appendChild(tabs);
   L.appendChild(renderGrid(ui, 'shop', store.grid));
   const p = ui.game.player;
-  L.appendChild(h('div', 'goldline', `<span>你的金币：${p.gold}${p.stashGold ? `（储物箱 ${p.stashGold}）` : ''}</span><span style="color:#8a8278;font-size:12px">点击购买 · 把物品放进来出售</span>`));
+  const hint = ui.touch ? '点两下购买 · 长按直接买 · 放进来出售' : '右键购买 · 左键先问价 · 放进来出售';
+  L.appendChild(h('div', 'goldline', `<span>你的金币：${p.gold}${p.stashGold ? `（储物箱 ${p.stashGold}）` : ''}</span><span style="color:#8a8278;font-size:12px">${hint}</span>`));
+  // the merchant's yes / no over the shelf
+  const asked = tradeAsked(ui);
+  if (asked) {
+    const box = h('div', 'trade-ask ui-block');
+    const q = h('div', 'q');
+    q.textContent = `${asked.kind === 'buy' ? '购买' : '出售'}${displayName(asked.item)}？`;
+    const price = h('div', 'price', `${asked.price} 金币`);
+    const row = h('div', 'row');
+    const yes = h('button', 'btn yes', '✓ 确定');
+    yes.onclick = () => answerTrade(ui, true);
+    const no = h('button', 'btn no', '✕ 取消');
+    no.onclick = () => answerTrade(ui, false);
+    row.append(yes, no);
+    box.append(q, price, row);
+    L.appendChild(box);
+  }
   // repairs, D2's (Charsi's in Act 1): the repair cursor for one item, or everything worn; the stash's gold pays too
   const ctx = p.tradeCtx();
   const all = repairAllList(p.equipment, ctx);

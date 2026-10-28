@@ -3,15 +3,19 @@
 //   node tools/play.mjs tools/scenarios/tomes.mjs --url "http://localhost:5174/?dev&tod=0.5"
 // Reloads with empty storage. A new hero carries CharStats.txt's kit: a scroll of town portal and
 // one of identify in the bag, four minor healing potions in the belt. At the merchant (the 杂货
-// page) a tome of town portal is bought with the charges its shelf copy has; the bag's scroll is
-// dropped on it (one more charge); a scroll bought goes straight into it at the scroll's price, its
-// tooltip saying so, and shift + right-click fills it to 20, paying for each. The tome's tooltip
-// shows its charges and the hints. Out on Blood Moor a right-click on it in the bag casts a town
-// portal, using a charge as the portal opens; P reads it too; the HUD's portal button counts what
-// is left. Then at a phone's size with the touch controls: the shop's tooltip, and a long press on
-// a scroll filling the tome. Page and console errors fail the run. Shots: the kit, the shop's
-// tooltip, the tome filled, the tome's tooltip, the portal from the tome, the phone's HUD, shop and
-// tome. The last line is "TOMES OK …" or "TOMES FAIL …".
+// page), as Diablo II's shop goes: a left click asks first (the merchant's yes / no), so a tome of
+// town portal is bought that way with the charges its shelf copy has; the bag's scroll is dropped
+// on it (one more charge); a scroll right-clicked goes straight into it at the scroll's price, its
+// tooltip saying so, and shift + right-click fills it to 20, paying for each. Shift + right-click on
+// a potion fills an empty belt. The bag's scroll of identify dropped on the shelf asks before it is
+// sold (no keeps it on the cursor, Enter sells it); ctrl + click sells a potion at once. The tome's
+// tooltip shows its charges and the hints. Out on Blood Moor a right-click on it in the bag casts a
+// town portal, using a charge as the portal opens; P reads it too; the HUD's portal button counts
+// what is left. Then at a phone's size with the touch controls: two taps and the merchant's yes, the
+// shop's tooltip, and a long press on a scroll filling the tome. Page and console errors fail the
+// run. Shots: the kit, the merchant asking, the shop's tooltip, the tome filled, the sale asked, the
+// tome's tooltip, the portal from the tome, the phone's HUD, shop and tome. The last line is
+// "TOMES OK …" or "TOMES FAIL …".
 
 const CAMP_AREA = 1;
 const WILD_AREA = 2;
@@ -52,6 +56,8 @@ export default async function (page, shot, log) {
   /** the item element of `uid` in a grid of the open panels */
   const cell = (uid) => page.locator(`.panel.open .gitem[data-uid="${uid}"]`);
   const tooltipText = () => ev(() => (document.getElementById('tooltip')?.style.display === 'block' ? document.getElementById('tooltip').innerText : ''));
+  /** the merchant's question, if one is up */
+  const askText = () => ev(() => document.querySelector('.panel.open .trade-ask')?.innerText ?? '');
 
   /** the page's helpers (after a load) */
   const helpers = () =>
@@ -134,7 +140,16 @@ export default async function (page, shot, log) {
       const shelfTome = await ev(() => ({ uid: window.__t.shelf('tbk').uid, qty: window.__t.shelf('tbk').qty, price: Number(0) }));
       await cell(shelfTome.uid).hover();
       const tomePrice = await tooltipText();
+      // a left click: the merchant asks first, nothing bought yet
       await cell(shelfTome.uid).click();
+      await until(() => !!document.querySelector('.panel.open .trade-ask'), null, 'the merchant to ask');
+      const asked = await askText();
+      const before = await ev(() => ({ tome: !!window.__t.tome(), gold: game.player.gold }));
+      expect(asked.includes('购买') && asked.includes('城镇传送之书') && asked.includes('金币') && !before.tome && before.gold === 5000, `the merchant asks: ${asked.replace(/\n/g, ' / ')}, bought already ${before.tome}`);
+      await frames();
+      await shot('shop-buy-ask');
+      await page.locator('.panel.open .trade-ask .yes').click();
+      await until(() => !document.querySelector('.panel.open .trade-ask'), null, 'the question to go');
       const bought = await ev(() => ({ qty: window.__t.tome()?.qty, gold: game.player.gold }));
       expect(bought.qty === shelfTome.qty && bought.qty >= 1 && bought.qty <= 4, `the tome bought holds ${bought.qty}, the shelf's ${shelfTome.qty}`);
       facts.push(`a tome of ${bought.qty} for ${5000 - bought.gold} (${tomePrice.split('\n').find((l) => l.startsWith('购买价格'))})`);
@@ -150,10 +165,11 @@ export default async function (page, shot, log) {
       await cell(scroll).hover();
       await frames(2);
       const tip = await tooltipText();
-      expect(tip.includes('放进背包里的城镇传送之书') && tip.includes(`Shift+右键补满：${20 - dropped.qty} 张`), `the shop's tooltip: ${tip.replace(/\n/g, ' / ')}`);
+      expect(tip.includes('放进背包里的城镇传送之书') && tip.includes(`Shift+右键补满：${20 - dropped.qty} 张`) && tip.includes('右键点击购买'), `the shop's tooltip: ${tip.replace(/\n/g, ' / ')}`);
       await shot('shop-scroll-tooltip');
       const g0 = await ev(() => game.player.gold);
-      await cell(scroll).click();
+      // a right click buys at once
+      await cell(scroll).click({ button: 'right' });
       const one = await ev(() => ({ qty: window.__t.tome().qty, gold: game.player.gold, bag: window.__t.bag().length, shelf: !!window.__t.shelf('tsc') }));
       const each = g0 - one.gold;
       expect(one.qty === dropped.qty + 1 && one.bag === 2 && one.shelf && each > 0, `one bought: ${JSON.stringify(one)}, ${each} gold`);
@@ -165,10 +181,59 @@ export default async function (page, shot, log) {
       await frames();
       await shot('tome-filled');
       // full now: a scroll bought goes into the bag
-      await cell(scroll).click();
+      await cell(scroll).click({ button: 'right' });
       const after = await ev(() => window.__t.bag().filter((it) => it.baseId === 'tsc').length);
       expect(after === 1, `a scroll bought beside the full tome: ${after} in the bag`);
       facts.push(`a scroll ${each}, ${n} more to fill it ${n * each}`);
+      // shift + right-click on a potion: the empty belt filled, each paid for (SUnitNpc.cpp:1465-1535)
+      const hp = await ev(() => {
+        game.player.belt = [[], [], [], []];
+        game.hooks.dirty = true;
+        return { uid: window.__t.shelf('hp1').uid, gold: game.player.gold, rows: game.player.beltRows() };
+      });
+      await frames();
+      await cell(hp.uid).click({ button: 'right', modifiers: ['Shift'] });
+      const belt = await ev(() => ({ n: game.player.belt.flat().filter((it) => it.baseId === 'hp1').length, gold: game.player.gold, bag: window.__t.bag().filter((it) => it.baseId === 'hp1').length }));
+      const slots = 4 * hp.rows;
+      expect(belt.n === slots && belt.bag === 0 && (hp.gold - belt.gold) % slots === 0 && hp.gold > belt.gold, `a potion shift-bought: ${belt.n} of ${slots} in the belt, ${belt.bag} in the bag, ${hp.gold - belt.gold} gold`);
+      // the belt full, one more goes into the bag; ctrl + click sells it there and then
+      await cell(hp.uid).click({ button: 'right' });
+      const extra = await ev(() => window.__t.bag().find((it) => it.baseId === 'hp1')?.uid);
+      expect(!!extra, 'a potion right-clicked with the belt full is not in the bag');
+      if (extra) {
+        const g1 = await ev(() => game.player.gold);
+        await cell(extra).click({ modifiers: ['Control'] });
+        await frames(2);
+        const sold = await ev(() => ({ gone: !window.__t.bag().some((it) => it.baseId === 'hp1'), gold: game.player.gold, ask: !!document.querySelector('.panel.open .trade-ask') }));
+        expect(sold.gone && sold.gold > g1 && !sold.ask, `ctrl + click sold the potion at once: ${JSON.stringify(sold)}`);
+      }
+      // the bag's scroll of identify dropped on the shelf: the merchant asks; no keeps it on the cursor, Enter sells it
+      const isc = await ev(() => window.__t.bag().find((it) => it.baseId === 'isc').uid);
+      await cell(isc).click();
+      await until(() => !!game.hooks.cursorItem, null, 'the scroll of identify on the cursor');
+      // (the panel is drawn anew as it changes: its grid's place read in the page)
+      const shelfBox = await ev(() => {
+        const r = document.querySelector('.panel.left.open .grid').getBoundingClientRect();
+        return { x: r.x, y: r.y, width: r.width, height: r.height };
+      });
+      await page.mouse.click(shelfBox.x + shelfBox.width - 20, shelfBox.y + shelfBox.height - 20);
+      await until(() => !!document.querySelector('.panel.open .trade-ask'), null, 'the merchant to ask about the sale');
+      const sellAsk = await askText();
+      expect(sellAsk.includes('出售') && sellAsk.includes('鉴定'), `the sale asked: ${sellAsk.replace(/\n/g, ' / ')}`);
+      await frames();
+      await shot('shop-sell-ask');
+      await page.locator('.panel.open .trade-ask .no').click();
+      await frames(2);
+      const kept = await ev(() => ({ cursor: game.hooks.cursorItem?.baseId, ask: !!document.querySelector('.panel.open .trade-ask') }));
+      expect(kept.cursor === 'isc' && !kept.ask, `said no: ${JSON.stringify(kept)}`);
+      const g2 = await ev(() => game.player.gold);
+      await page.mouse.click(shelfBox.x + shelfBox.width - 20, shelfBox.y + shelfBox.height - 20);
+      await until(() => !!document.querySelector('.panel.open .trade-ask'), null, 'the merchant to ask again');
+      await page.keyboard.press('Enter');
+      await frames(2);
+      const gone = await ev(() => ({ cursor: !!game.hooks.cursorItem, gold: game.player.gold, bag: window.__t.bag().some((it) => it.baseId === 'isc'), ask: !!document.querySelector('.panel.open .trade-ask') }));
+      expect(!gone.cursor && !gone.bag && gone.gold > g2 && !gone.ask, `Enter sold it: ${JSON.stringify(gone)}`);
+      facts.push(`left click asks, right click buys, shift fills tome and belt (${belt.n} potions), drop asks, ctrl sells`);
       // the tome's tooltip
       await cell(ids.tome).hover();
       await frames(2);
@@ -232,17 +297,19 @@ export default async function (page, shot, log) {
       await frames();
       const touch = await ev(() => document.body.classList.contains('touch'));
       expect(touch, 'not in the touch layout');
-      // a tap shows the tome's tooltip, a second buys it
+      // a tap shows the tome's tooltip, a second is the left click: the merchant asks, and yes buys it
       const tomeUid = await ev(() => window.__t.shelf('tbk').uid);
       await cell(tomeUid).click();
       await cell(tomeUid).click();
+      await until(() => !!document.querySelector('.panel.open .trade-ask'), null, 'the merchant to ask on the phone');
+      await page.locator('.panel.open .trade-ask .yes').click();
       const t = await ev(() => window.__t.tome()?.qty);
       expect(t >= 1 && t <= 4, `tapped twice, a tome of ${t}`);
       const scroll = await ev(() => window.__t.shelf('tsc').uid);
       await cell(scroll).click();
       await frames(2);
       const tip = await tooltipText();
-      expect(tip.includes('长按补满'), `the phone's tooltip: ${tip.replace(/\n/g, ' / ')}`);
+      expect(tip.includes('长按补满') && tip.includes('长按购买'), `the phone's tooltip: ${tip.replace(/\n/g, ' / ')}`);
       await shot('phone-shop-tooltip');
       // a long press: the tome filled
       const box = await cell(scroll).boundingBox();

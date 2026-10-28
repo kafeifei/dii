@@ -1329,6 +1329,36 @@ body {
   gap: 6px;
   margin-top: 8px;
 }
+/* the merchant's yes / no, over the shelf (inventory.ts tradeAsked) */
+.trade-ask {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  min-width: 220px;
+  max-width: 90%;
+  padding: 12px 14px;
+  background: linear-gradient(180deg, rgba(36, 28, 20, 0.98), rgba(16, 12, 9, 0.98));
+  border: 1px solid #8a7450;
+  box-shadow: 0 0 0 1px #000, 0 8px 30px rgba(0, 0, 0, 0.9);
+  text-align: center;
+}
+.trade-ask .q {
+  color: #e8e0d0;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.trade-ask .price {
+  color: #e8d890;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+.trade-ask .row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
 .btn.on {
   background: linear-gradient(180deg, #6a5030, #2a2016);
   border-color: #c8a86a;

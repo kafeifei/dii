@@ -90,6 +90,42 @@ export default async (load) => {
     const bought = V.takeFromStore(store, shelfTome);
     check(bought.qty === shelfTome.qty && bought.uid !== shelfTome.uid && V.buyPrice(store, shelfTome) === V.priceAt({ ...shelfTome }, 'buy', 'akara'), `a tome bought holds ${bought.qty}, the shelf's ${shelfTome.qty}`);
     facts.push(`scroll ${each}, 16 into a tome ${16 * each}, a tome of ${shelfTome.qty} ${V.buyPrice(store, shelfTome)}`);
+    // a scroll the stall doesn't keep for good: no multibuy (SUnitNpc.cpp:1366-1391), one at a time
+    const sold = Object.assign(createItem('tsc'), {});
+    store.place(sold, 'akara');
+    const t3 = tome('tbk', 3);
+    const b3 = new Grid(10, 4);
+    b3.add(t3);
+    check(!V.multibuys(store, sold) && V.buyIntoTome(store, sold, b3, { gold: 100000, stashGold: 0 }, {}, true)?.n === 1 && t3.qty === 4, `shift-bought a scroll sold to the stall: tome ${t3.qty}`);
+  }
+
+  // ── shift + right-click on keys, arrows or bolts (ItemTypes.txt AutoStack): a stack topped up, or a new one ──
+  {
+    const key = store.all().find((it) => it.baseId === 'key');
+    const arrows = store.all().find((it) => it.baseId === 'aqv');
+    check(key && store.perm.has(key) && arrows && store.perm.has(arrows), `the shelves' keys ${!!key} and arrows ${!!arrows}, kept for good`);
+    const per = V.buyPrice(store, { ...key, qty: 1 });
+    const b = new Grid(10, 4);
+    const mine = Object.assign(createItem('key'), { qty: 5 });
+    b.add(mine);
+    const rich = { gold: 100000, stashGold: 0 };
+    const top = V.buyIntoStack(store, key, [], b, rich);
+    check(top?.stack === mine && top.n === 7 && mine.qty === 12 && top.spent === 7 * per && rich.gold === 100000 - 7 * per && b.items.length === 1, `keys topped up from 5: ${top?.n} for ${top?.spent} (7 × ${per}), stack ${mine.qty}`);
+    const fresh = V.buyIntoStack(store, key, [], b, rich);
+    check(fresh?.added && fresh.n === 12 && fresh.stack.qty === 12 && b.items.length === 2 && fresh.stack.uid !== key.uid && store.contains(key), `with the stack full, a new one: ${fresh?.n}, ${b.items.length} in the bag`);
+    const poor = { gold: per * 3, stashGold: 0 };
+    const few = V.buyIntoStack(store, key, [], new Grid(10, 4), poor);
+    check(few?.added && few.n === 3 && poor.gold === 0, `a new stack with gold for 3: ${few?.n}`);
+    // a worn quiver is topped up before one in the bag (SUNITNPC_FindStackForStorePurchase)
+    const worn = Object.assign(createItem('aqv'), { qty: 100 });
+    const bagged = Object.assign(createItem('aqv'), { qty: 10 });
+    const b2 = new Grid(10, 4);
+    b2.add(bagged);
+    const q = V.buyIntoStack(store, arrows, [worn], b2, rich);
+    const most = D2_BASES.aqv.stack[1];
+    check(q?.stack === worn && worn.qty === most && bagged.qty === 10, `arrows: the worn quiver to ${worn.qty}, the bag's ${bagged.qty}`);
+    check(V.buyIntoStack(store, store.all().find((it) => it.baseId === 'hp1'), [], b2, rich) === null && V.buyIntoStack(store, shelf, [], b2, rich) === null, 'a potion or a scroll stacked');
+    facts.push(`keys ${per} each, 7 to top up 5`);
   }
 
   // ── the game: a new hero's kit, picking up, reading a town portal ──

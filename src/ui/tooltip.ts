@@ -51,11 +51,12 @@ export class Tooltip {
     let price: string | string[] | undefined;
     if (src === 'shop') {
       const each = buyPrice(ui.game.shop, item, ctx);
-      // a scroll for a tome in the bag with room goes into it; shift + right-click fills it (vendor.ts buyIntoTome)
+      // a scroll for a tome in the bag with room goes into it; shift + right-click fills it (vendor.ts buyIntoTome).
+      // Last, D2R's own line on what it sells (InventoryItemTooltipAppenderBuy, 右键点击购买; a phone's long press)
       const tome = isBookScroll(item) ? fillableTome(p.inventory, item) : undefined;
       price = tome
-        ? [`购买价格：${each} 金币（放进背包里的${displayName(tome)}）`, `${ui.touch ? '长按' : 'Shift+右键'}补满：${tomeRoom(tome)} 张，${tomeRoom(tome) * each} 金币`]
-        : `购买价格：${each} 金币`;
+        ? [`购买价格：${each} 金币（放进背包里的${displayName(tome)}）`, `${ui.touch ? '长按' : 'Shift+右键'}补满：${tomeRoom(tome)} 张，${tomeRoom(tome) * each} 金币`, '右键点击购买']
+        : [`购买价格：${each} 金币`, '右键点击购买'];
     } else if (ui.left === 'shop' && isRepairing() && (src === 'inv' || src === 'eq')) {
       const c = repairCost(item, ctx);
       price = c ? `修理价格：${c} 金币` : item.eth ? '无形物品无法修理' : '不需要修理';

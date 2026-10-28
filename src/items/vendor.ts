@@ -15,7 +15,7 @@ import { UNIQUE_BY_ID } from './d2/legendary';
 import { roll } from './d2/rand';
 import type { D2Base, D2Quality, Difficulty, Rand } from './d2/types';
 import { Grid } from './grid';
-import type { Item } from './item';
+import { qualityOf, type Item } from './item';
 import { makeItem, MATH_RAND } from './make';
 import { addCharges, fillableTome, isBookScroll, tomeRoom } from './tomes';
 
@@ -279,24 +279,73 @@ export function takeFromStore(store: Store, item: Item): Item {
 }
 
 /**
+ * Whether shift + right-click buys more than one (SUNITNPC_BuyItem's multibuy, D2Game SUnitNpc.cpp:1366-1391
+ * as D2MOO decompiles it): only of what the NPC keeps for good, its permanent items
+ */
+export function multibuys(store: Store, item: Item): boolean {
+  return store.perm.has(item);
+}
+
+/**
  * Buying a scroll while the bag holds a tome of its kind with room (SUNITNPC_BuyItem, D2Game
  * SUnitNpc.cpp:1392-1430 as D2MOO decompiles it, with sub_6FC4B430, ItemMode.cpp:5661-5702): it
  * goes straight into the tome, at the scroll's price. `fill` (shift + right-click) buys as many as
- * the tome has room for and the gold pays for, each at that price. Paid from the gold carried, as
- * every purchase at the stall is. The scroll stays on the shelf when it is a permanent one, as all
- * of Akara's are. Null when there is no such tome: it is bought the usual way; n 0 when the gold
- * doesn't stretch to one
+ * the tome has room for and the gold pays for, each at that price, for a permanent scroll
+ * (multibuys). Paid from the gold carried, as every purchase at the stall is. The scroll stays on
+ * the shelf when it is a permanent one, as all of Akara's are. Null when there is no such tome: it
+ * is bought the usual way; n 0 when the gold doesn't stretch to one
  */
 export function buyIntoTome(store: Store, scroll: Item, bag: Grid, purse: Purse, ctx: TradeCtx = {}, fill = false): { tome: Item; n: number; spent: number } | null {
   if (!isBookScroll(scroll)) return null;
   const tome = fillableTome(bag, scroll);
   if (!tome) return null;
   const each = buyPrice(store, scroll, ctx);
-  const n = Math.min(fill ? Math.floor(purse.gold / each) : purse.gold >= each ? 1 : 0, tomeRoom(tome));
+  const n = Math.min(fill && multibuys(store, scroll) ? Math.floor(purse.gold / each) : purse.gold >= each ? 1 : 0, tomeRoom(tome));
   if (n <= 0 || !pay(purse, n * each, false)) return { tome, n: 0, spent: 0 };
   addCharges(tome, n);
   if (!store.perm.has(scroll)) store.remove(scroll);
   return { tome, n, spent: n * each };
+}
+
+/** a stack's most (ITEMS_GetTotalMaxStack: Misc.txt / Weapons.txt maxstack) */
+const maxStack = (it: Item) => D2_BASES[it.baseId]?.stack?.[1] ?? 1;
+
+/**
+ * Two stacks that are one kind (ITEMS_AreStackablesEqual, D2Common Items.cpp:4350-4385): the same
+ * base and quality, a plain one (low, normal or superior), both ethereal or neither
+ */
+function sameStack(a: Item, b: Item): boolean {
+  const plain = (it: Item) => ['low', 'normal', 'superior'].includes(qualityOf(it));
+  return a.baseId === b.baseId && qualityOf(a) === qualityOf(b) && plain(a) && plain(b) && !!a.eth === !!b.eth;
+}
+
+/**
+ * Shift + right-click on a permanent stack of an AutoStack item type (ItemTypes.txt AutoStack:
+ * keys, arrows, bolts; SUNITNPC_BuyItem's multibuy, SUnitNpc.cpp:1432-1464 and 1601-1650 as D2MOO
+ * decompiles it): priced one at a time (the shelf stack's quantity set to 1), it tops up the first
+ * stack of its kind with room, worn (a quiver) before one in the bag (SUNITNPC_FindStackForStorePurchase,
+ * 1160-1213), with as many as it has room for and the gold pays for; with no such stack, a new one
+ * of as many as a stack holds and the gold pays for goes into the bag. Null when it isn't such an
+ * item (it is bought the usual way); n 0 when the gold doesn't stretch to one, or the new stack has
+ * no room in the bag
+ */
+export function buyIntoStack(store: Store, item: Item, worn: readonly Item[], bag: Grid, purse: Purse, ctx: TradeCtx = {}): { stack: Item; n: number; spent: number; added: boolean } | null {
+  const b = D2_BASES[item.baseId];
+  if (!b?.stack || !ownType(b)?.stacks || !multibuys(store, item)) return null;
+  const each = buyPrice(store, { ...item, qty: 1 }, ctx);
+  const afford = Math.floor(purse.gold / Math.max(each, 1));
+  const kin = [...worn, ...bag.items.map((x) => x.item)].find((it) => sameStack(item, it) && (it.qty ?? 1) < maxStack(it));
+  if (kin) {
+    const n = Math.min(maxStack(kin) - (kin.qty ?? 1), afford);
+    if (n <= 0 || !pay(purse, n * each, false)) return { stack: kin, n: 0, spent: 0, added: false };
+    kin.qty = (kin.qty ?? 1) + n;
+    return { stack: kin, n, spent: n * each, added: false };
+  }
+  const n = Math.min(maxStack(item), afford);
+  const fresh = { ...takeFromStore(store, item), qty: n };
+  if (n <= 0 || !bag.add(fresh)) return { stack: fresh, n: 0, spent: 0, added: false };
+  pay(purse, n * each, false);
+  return { stack: fresh, n, spent: n * each, added: true };
 }
 
 /**

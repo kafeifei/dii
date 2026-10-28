@@ -6,7 +6,7 @@ import type { Grid } from '../items/grid';
 import { baseOf, displayName, isIdentified, isUnknown, socketId, type Item } from '../items/item';
 import { insertFiller } from '../items/make';
 import { isTownPortal, readable, readFrom, scrollIntoTome } from '../items/tomes';
-import { buyIntoTome, buyPrice, repairCost, repairOne, sellPrice, shelveSold, takeFromStore } from '../items/vendor';
+import { buyIntoStack, buyIntoTome, buyPrice, multibuys, repairCost, repairOne, sellPrice, shelveSold, takeFromStore } from '../items/vendor';
 import type { HeroLine } from '../audio/sounds';
 import { h, type UIContext } from './common';
 import { CELL, itemIcon } from './icons';
@@ -100,6 +100,52 @@ function repairWith(ui: UIContext, it: Item): boolean {
   return true;
 }
 
+/**
+ * The merchant's yes / no, as Diablo II asks it: a left click on an item on the shelf asks before
+ * buying it, an item dropped on the shelf asks before selling it; a right click buys at once
+ * (shift + right-click as many as D2's multibuy takes: buy), a ctrl + left click on an item in the
+ * bag sells at once. Sources: D2R's own tooltip lines (InventoryItemTooltipAppenderBuy "Right Click
+ * to Buy", …Sell "Ctrl + Left Click to Sell"), classic.battle.net's Arreat Summit (Basics: Vendors,
+ * "control-left-clicking … without the confirmation"; Basics: Controls, shift + right-click on a
+ * scroll fills the tome, on a key the key stack), the Diablo Wiki's Item page (a left click gets a
+ * yes / no box, a right click buys at once). What it is about stays where it is meanwhile: a sale's
+ * item on the cursor, a purchase's on the shelf
+ */
+let trade: { kind: 'buy' | 'sell'; item: Item } | null = null;
+
+/** the merchant's question up, if it still stands: the shop open, the item still on the shelf or the cursor */
+export function tradeAsked(ui: UIContext): { kind: 'buy' | 'sell'; item: Item; price: number } | null {
+  const t = trade;
+  if (!t || ui.left !== 'shop') return null;
+  const shop = ui.game.shop;
+  const ctx = ui.game.player.tradeCtx();
+  if (t.kind === 'buy' && shop.all().includes(t.item)) return { ...t, price: buyPrice(shop, t.item, ctx) };
+  if (t.kind === 'sell' && ui.cursorItem === t.item) return { ...t, price: sellPrice(shop, t.item, ctx) };
+  return null;
+}
+
+/** the question answered (or let go: no, Esc, the shop shut) */
+export function answerTrade(ui: UIContext, yes: boolean) {
+  const t = tradeAsked(ui);
+  trade = null;
+  ui.dirty = true;
+  if (!t || !yes) return;
+  if (t.kind === 'buy') buy(ui, t.item);
+  else if (sell(ui, t.item)) ui.cursorItem = null;
+}
+
+/** forget the question (the shop shut) */
+export function dropTrade() {
+  trade = null;
+}
+
+function ask(ui: UIContext, kind: 'buy' | 'sell', item: Item) {
+  trade = { kind, item };
+  ui.tooltip.hide();
+  ui.sfx.play('ui.click');
+  ui.dirty = true;
+}
+
 /** the scroll or tome a right-click picked to identify with: the next item clicked */
 let identifier: Item | null = null;
 
@@ -154,8 +200,11 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
   if (e.button === 2) {
     if (!under || ui.cursorItem) return;
     const it = under.item;
-    // shift + right-click fills the bag's tome with the scroll bought (D2's multibuy); on a phone, the long press
-    if (kind === 'shop') return buy(ui, it, e.shiftKey || e.pointerType === 'touch');
+    // a right click buys it there and then; shift + right-click as many as D2's multibuy takes; on a phone, the long press
+    if (kind === 'shop') {
+      trade = null;
+      return buy(ui, it, e.shiftKey || e.pointerType === 'touch');
+    }
     const b = baseOf(it);
     if (b.type === 'cube') {
       openCube(ui);
@@ -201,8 +250,8 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
       return;
     }
     if (kind === 'shop') {
-      // what the merchant won't take stays on the cursor
-      if (sell(ui, c)) ui.cursorItem = null;
+      // dropped on the shelf: the merchant asks first; what they won't take stays on the cursor
+      if (sellable(ui, c)) ask(ui, 'sell', c);
       ui.dirty = true;
       return;
     }
@@ -242,13 +291,24 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
     ui.dirty = true;
     return;
   }
+  if (kind === 'shop') {
+    // a left click on the shelf: the merchant asks first; on an empty spot the question is let go
+    if (under) ask(ui, 'buy', under.item);
+    else if (trade) {
+      trade = null;
+      ui.dirty = true;
+    }
+    return;
+  }
   if (!under) return;
   const it = under.item;
-  if (kind === 'shop') return buy(ui, it);
   if (e.ctrlKey || e.metaKey || e.shiftKey) {
-    if (ui.left === 'shop' && kind === 'inv') {
-      grid.remove(it);
-      sell(ui, it);
+    // ctrl + left click sells at once, without the merchant's question (shift + click is the belt's)
+    if (ui.left === 'shop' && kind === 'inv' && !e.shiftKey) {
+      if (sellable(ui, it)) {
+        grid.remove(it);
+        sell(ui, it);
+      }
     } else if (ui.left === 'stash' || ui.left === 'cube') {
       const other = ui.left === 'stash' ? p.stash : p.cube;
       if (kind === 'inv' && baseOf(it).type === 'cube') return;
@@ -281,12 +341,34 @@ function openCube(ui: UIContext) {
 
 /**
  * buy from the shelf at its NPC's price (vendor.ts): a permanent item's copy, anything else itself.
- * A scroll goes into the bag's tome of its kind while it has room; `fill`, as many as it takes and
- * the gold pays for (vendor.ts buyIntoTome)
+ * A scroll goes into the bag's tome of its kind while it has room; `fill` (shift + right-click, D2's
+ * multibuy), as many as it takes and the gold pays for (vendor.ts buyIntoTome). `fill` on a key,
+ * arrows or bolts tops up a stack (vendor.ts buyIntoStack); on a potion that went into the belt,
+ * more of them while the belt has room for them and the gold lasts (SUNITNPC_BuyItem, SUnitNpc.cpp:1465-1535:
+ * the first one may go into the bag, the rest only into the belt)
  */
 function buy(ui: UIContext, it: Item, fill = false) {
   const p = ui.game.player;
   const store = ui.game.shop;
+  const stack = fill ? buyIntoStack(store, it, Object.values(p.equipment).filter((x): x is Item => !!x), p.inventory, p, p.tradeCtx()) : null;
+  if (stack) {
+    if (!stack.n) {
+      if (p.gold < buyPrice(store, { ...it, qty: 1 }, p.tradeCtx())) {
+        ui.message('金币不足', '#ff6060');
+        ui.sfx.play('ui.no_gold');
+        ui.game.say('no_gold');
+      } else {
+        ui.message('背包已满', '#ff6060');
+        ui.game.say('bag_full');
+      }
+      return;
+    }
+    ui.message(`${displayName(stack.stack)}：+${stack.n}（${stack.stack.qty}/${baseOf(stack.stack).stack?.[1]}）：−${stack.spent} 金币`, '#e8d890', 1.5);
+    ui.sfx.play('ui.coins');
+    ui.tooltip.hide();
+    ui.dirty = true;
+    return;
+  }
   const into = buyIntoTome(store, it, p.inventory, p, p.tradeCtx(), fill);
   if (into) {
     if (!into.n) {
@@ -311,22 +393,32 @@ function buy(ui: UIContext, it: Item, fill = false) {
   }
   const perm = store.perm.has(it);
   const got = perm ? takeFromStore(store, it) : it;
-  if (!(baseOf(got).type === 'potion' && ui.game.beltInsert(got)) && !p.inventory.add(got)) {
+  const belted = baseOf(got).type === 'potion' && ui.game.beltInsert(got);
+  if (!belted && !p.inventory.add(got)) {
     ui.message('背包已满', '#ff6060');
     ui.game.say('bag_full');
     return;
   }
   p.gold -= price;
   if (!perm) takeFromStore(store, it);
+  if (fill && belted && multibuys(store, it)) {
+    while (p.gold >= price && ui.game.beltInsert(takeFromStore(store, it))) p.gold -= price;
+  }
   ui.sfx.play('ui.coins');
   ui.dirty = true;
+}
+
+/** whether the merchant takes it; said when not */
+function sellable(ui: UIContext, it: Item): boolean {
+  if (!baseOf(it).noSell && !isUnknown(it)) return true;
+  ui.message('商人不收这个', '#ff6060');
+  return false;
 }
 
 /** sell to the stall at D2's price; what it can sell again goes on its shelf (vendor.ts shelveSold). False: not taken, it goes back on the cursor */
 function sell(ui: UIContext, it: Item): boolean {
   const p = ui.game.player;
-  if (baseOf(it).noSell || isUnknown(it)) {
-    ui.message('商人不收这个', '#ff6060');
+  if (!sellable(ui, it)) {
     ui.cursorItem = it;
     return false;
   }
