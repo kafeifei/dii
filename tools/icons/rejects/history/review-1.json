@@ -1,0 +1,2399 @@
+{
+ "blades": {
+  "inv2hs": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.44-0.46",
+   "reason": "Three seeds are over the line (s101 0.456, s202 0.459, s404 0.453) and s303 is 0.441, each above its best score against the other straight swords' originals; none drew the leather-wrapped ricasso with its lugs or the quarter-length grip the words rely on, every seed has the same plain bar guard and an oversized ball pommel, so at 1x it is the bastard sword (invbsw) again.",
+   "fix": {
+    "desc": "A two-handed sword: a long straight double-edged blade with a shallow fuller; the lowest part of the blade, just above the guard, is a short blunt ricasso wrapped in dark leather, and at the top of that wrapping a pair of small pointed parrying lugs stick straight out to the sides; a long straight cross-guard of square iron bar with slightly down-turned ends; a very long grip for two hands, a quarter of the whole length, bound in leather with two raised bands; a small pear-shaped iron pommel, hardly wider than the grip. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+    "guide": "two-handed-sword",
+    "shape": "a long straight blade; above the guard a short parallel-sided ricasso a little narrower than the blade, with two small pointed lugs jutting out sideways at its top; a long straight guard; a grip a quarter of the whole length with two raised bands; a small pear pommel",
+    "note": "new guide (a blade family entry in box/guides.py): the lugs and the long grip set it apart from invbsw and break the plain straight-sword outline that scores high against every long sword's original; no ball pommel",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "two-handed-sword"
+   }
+  },
+  "invclm": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.34-0.43",
+   "reason": "No seed has the claymore's defining part, the quillons sloping up toward the blade (the original's and our words'): s202 and s404 have straight guards with ring ends, s101 and s303 came out upside down (s303 with two guards); s404 is also 0.430 here and 0.461 against the two-handed sword's original, so as drawn it is a generic long sword.",
+   "fix": {
+    "desc": "A claymore, a great two-handed sword of the highlands: a long straight double-edged blade; short iron langets over the blade's base; a cross-guard whose two straight arms angle steeply up toward the point, together forming a wide open V above the grip, each arm ending in a small cluster of four iron rings; a long two-hand grip bound in dark leather; a round flattened wheel pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+    "guide": "claymore",
+    "shape": "a long straight blade; a guard of two straight arms rising from the hilt toward the point at about 40 degrees, a wide V, each ending in a small cluster of four rings; short langets; a long grip; a flattened round pommel",
+    "note": "new guide: klein draws every cross-guard straight without one",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "claymore"
+   }
+  },
+  "invclw": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.26-0.32",
+   "reason": "The three prongs are straight and parallel (the claws guide barely bends them) over a tall ladder frame: at 1x it reads as a pitchfork or a rake; the claws' defining part is three curved talons.",
+   "fix": {
+    "desc": "Fighting claws worn on the fist: three long slim steel blades shaped like an animal's talons, each bending forward in a smooth hook through its upper half, all curving the same way, side by side and spreading a little apart, rising from a crossbar on top of a short H-shaped iron hilt below it: two short parallel side bars running down from the crossbar, joined between them by a leather-wrapped grip bar, with a leather wrist strap. Shown upright, the blade tips at the top, front view, empty, no hand.",
+    "guide": "claws",
+    "shape": "three long talons rising side by side from a short crossbar, each hooking to the same side in its upper half, over a short H frame of two side bars and one grip",
+    "note": "corrected guide: in fist(head='claws') bend each prong so its tip is ~70 px off its root's line, all one way, and shorten the frame (top ~900, bottom ~1380, grip ~1120, strap ~1300)",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "claws"
+   }
+  },
+  "invcrs": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.13-0.23",
+   "reason": "All four seeds are a smooth hexagonal prism of grey steel or stone on an iron hilt: at 1x and 2x it is a plain short broad sword, nothing says crystal, which is the item's defining part.",
+   "fix": {
+    "desc": "A crystal sword: the blade a single long natural crystal grown straight out of the hilt, milky white quartz clouded with smoky grey, translucent so a faint pale light shows through its thinner edges, with cracks and cloudy veins inside; its outline irregular and faceted, the edges stepping in and out where the facets meet, two or three small crystal points growing from its sides near the base, ending in a sharp faceted point; set into a plain dark iron cross-guard with short square arms, a grip wrapped in dark leather and a small iron pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
+    "guide": "crystal-sword",
+    "shape": "a long blade with an irregular faceted outline, its edges stepping in and out, a few small side points near its base, a faceted point; a short straight guard; a grip; a small pommel",
+    "material": false,
+    "note": "the colour stays our own milky smoky quartz; the uneven outline and the side points are what must read at 1x",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "material",
+     "note"
+    ],
+    "guide": "crystal-sword"
+   }
+  },
+  "invmac": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.30-0.42",
+   "reason": "All four seeds (s101 is the style round's sample) give a squat square or tiered block for a head: at 1x and 2x it is a hammer, next to invmau, invgma and invhfh; the flanges, the mace's defining part, run crosswise in tiers or are missing, where a flanged mace's run lengthwise.",
+   "fix": {
+    "desc": "A one-handed flanged war mace: a slender wooden haft bound with iron bands; at its top a big heavy iron head, a fifth of the whole length and taller than it is wide, made of seven thick flat iron flanges that run lengthwise from the top of the head to its base and stand out all round like the vanes of a fletching, each flange's outer edge cut into two squared steps; a small round knob on top and an iron collar below the head. Shown upright, head at the top, side view.",
+    "guide": "flanged-mace",
+    "shape": "a slim haft; a head a fifth of the length, a tall pointed oval in outline made of flanges seen side-on: one sticking out to each side and one facing, their outer edges stepped, dark gaps between them; a small knob on top; a collar below",
+    "note": "new guide (a pole head): the sample round's lozenge guide read as a spear point, so the stepped edges and the dark gaps between flanges are what matter",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "flanged-mace"
+   }
+  },
+  "invqf1": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.33-0.36",
+   "reason": "The three spiked balls are small (the guide's r 50 on 832 px) and splay out on stiff chains like a mobile, beside a haft the whole height of the cell: at 1x a thin stick with three dots in a mostly empty 2x3; the heads, which make the flail, should dominate.",
+   "fix": {
+    "desc": "A priest's ceremonial flail: a straight haft of dark wood wrapped in strips of faded cloth, capped at the top with an iron finial shaped like a small onion dome and at the bottom with a plain iron pommel; from the top hang three short slack chains, each ending in a large round spiked iron ball almost as wide as a fist, the three balls hanging close beside the upper half of the haft at different heights. Shown upright, the haft vertical, the chains and balls at the top.",
+    "guide": "relic-flail",
+    "shape": "a vertical haft; from its top three short slack chains to three large spiked balls hanging close beside its upper half at different heights",
+    "note": "corrected guide: in flail() r 50 to ~85, balls at about (-150, 560), (150, 640), (-110, 820), the chains hanging down, the haft half-width 20 to 28 and its bottom 1120 to ~1060; it changes relic-flail-gilt (invqf2) too",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "relic-flail",
+    "note": "guide: flail() heads r 80 at (-160, 470), (160, 600), (-160, 760), so the lowest no longer overlaps the haft; haft half width 28, bottom 1060"
+   }
+  },
+  "invqf2": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.18-0.28",
+   "reason": "The same composition as invqf1 (the guide's): three small gilt cages splayed on stiff chains, at 1x a stick with three dots and a faint red glow in a mostly empty 2x3.",
+   "fix": {
+    "desc": "A priest's ceremonial flail made into a holy relic: a straight haft wound with strips of old oxblood cloth and tarnished gilt wire, a tarnished gold finial on top and a gold pommel; from the top hang three short slack chains, each ending in a large spiked head of tarnished gold, almost as wide as a fist, shaped like a small open filigree cage with a dark relic inside it glowing a faint warm red, the three heads hanging close beside the upper half of the haft at different heights. Shown upright, the haft vertical, the chains and heads at the top.",
+    "guide": "relic-flail-gilt",
+    "shape": "the same as invqf1's: a vertical haft, three short slack chains from its top to three large spiked cage heads hanging close beside its upper half",
+    "material": false,
+    "note": "the guide change is invqf1's (one flail() function); paint it after invqf1 is picked",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "material",
+     "note"
+    ],
+    "guide": "relic-flail-gilt",
+    "note": "painted in the same run as invqf1: its job takes no reference image from invqf1's pick, only the shared flail() guide"
+   }
+  },
+  "invsbr": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.26-0.29",
+   "reason": "All four seeds are straight blades (s404 upside down) and the knuckle bow is a loose hook or missing; a sabre is a curved blade, and the curve is what sets it apart from our long swords.",
+   "fix": {
+    "desc": "A cavalry sabre: a long slender single-edged blade of even width with a gentle, even curve along its whole length and a narrow fuller along the back; a closed knuckle bow, a curved iron bar that springs from the end of the cross-guard and runs down round the front of the grip into the pommel in one D-shaped loop; a ridged leather grip; a small cap pommel. Shown upright, the hilt at the bottom, the blade curving gently to the right as it rises, side view.",
+    "guide": "sabre",
+    "shape": "a long slender blade of even width curving gently to the right along its whole length, its tip about a sixth of the canvas width off the hilt's line; a short guard; a D-shaped knuckle bow from the guard round one side of the grip to the pommel",
+    "note": "new guide; gentler and slimmer than the scimitar's, the D-guard is ours",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "sabre"
+   }
+  },
+  "invscm": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.16-0.22",
+   "reason": "All four seeds are straight, like a bowie knife or a dagger; the scimitar's defining part, the strong curve widening to the tip, is missing (klein straightened the falchion too until it had a guide).",
+   "fix": {
+    "desc": "A scimitar: a broad single-edged blade bent in a strong curve away to one side, narrow at the hilt and widening steadily toward its far end, then sweeping up into a sharp point; its back one smooth unbroken curve, its edge a deeper curve; a short straight cross-guard with small ball ends and no knuckle guard; a plain straight grip wrapped in leather; a round cap pommel. Shown upright, the hilt at the bottom, the blade curving away to the right as it rises, side view.",
+    "guide": "scimitar",
+    "shape": "a short straight hilt at the bottom; from it a single-edged blade curving strongly to the right as it rises, its tip about a third of the canvas width off the hilt's line, widening toward the end and sweeping up to a point; a short straight guard with ball ends; a cap pommel",
+    "note": "new guide, like falchion's",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "scimitar"
+   }
+  },
+  "invspc": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.38-0.43",
+   "reason": "Every seed sheathes the club's head in riveted iron plates: it reads as an iron spiked mace beside the morning star (invmst), not a wooden club with nails; s101-s303 are 0.39-0.43 (review band), from the club-with-spikes outline.",
+   "fix": {
+    "desc": "A spiked club: a thick crooked cudgel of dark weathered oak, its swollen top end bare wood with knots and cracks, driven through with a dozen crooked square iron nails of uneven length sticking out at odd angles, one thin iron band nailed round its top; no iron plate over the wood; the lower end a narrow handle wrapped in rawhide. Shown upright, the spiked end at the top, side view.",
+    "note": "the wood must show between the nails; crooked and uneven so the outline is not a smooth spiked baton",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "note"
+    ]
+   }
+  },
+  "invtax": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.18-0.26",
+   "reason": "One small hatchet: at 1x it is the hand axe (invhax) a cell shorter, while the original shows the throwing axes as a set, as the throwing knives and our javelin bundle (invjav).",
+   "fix": {
+    "desc": "A set of three small identical throwing axes held together: each a short slim wooden haft with a compact iron head, a single blade on the right flaring into a curved edge and a short round poll on the left; the three hafts side by side, fanning a little apart toward the top so the heads sit one above another at staggered heights, tied together near their ends with a leather thong. Shown upright, the axe heads at the top, side view.",
+    "guide": "throwing-axes",
+    "shape": "three short hafts side by side fanning toward the top, each topped by a small axe head (blade to the right, round poll to the left) at staggered heights, a binding low on the hafts",
+    "note": "new guide: bundle() with an 'axe' head on 704x1408; if three heads crowd the 1x, two",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "throwing-axes"
+   }
+  },
+  "invtkn": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.27-0.31",
+   "reason": "One ring-ended knife (the round-2 sample's words): at 1x it is a dagger in the same 1x2 cell as invdgr and invdir, while the original shows the throwing knives as a set, the way our javelins (invjav) are a bundle of three.",
+   "fix": {
+    "desc": "A set of three identical small throwing knives held together: each forged from a single piece of steel, a narrow double-edged blade, a slim handle wrapped in cord and a ring at the end; the three side by side, fanning a little apart toward the points, tied together round their handles by a leather thong, the points at slightly different heights. Shown upright, the points at the top, front view.",
+    "guide": "throwing-knives",
+    "shape": "three short knives side by side fanning a little toward the top, the blades half their length, a ring at each butt, a binding round the handles",
+    "note": "new guide: box/guides.py bundle() with a 'knife' head on the 1x2 canvas (704x1408); our arrangement is the javelins' (upright, tied), not the original's spray",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "throwing-knives"
+   }
+  },
+  "invwhm": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.16-0.23",
+   "reason": "Every seed drew a symmetric mallet with a spear point and no back spike, small on a long thin haft: at 1x a stick with a dot, and the war hammer's lopsided head (a hammer face one side, a spike the other) is missing.",
+   "fix": {
+    "desc": "A war hammer on a long slim haft: a heavy iron head as wide as the whole item, made of a square striking block with a cross-cut face on the left, a long tapering spike on the right that curves slightly down, and a short spear point straight up on top; long iron langets riveted down the haft below the head; a leather grip near the butt. Shown upright, the head at the top, side view.",
+    "guide": "war-hammer",
+    "shape": "a long straight haft; on top a lopsided head: a square block to the left, a long spike tapering to the right and bending slightly down, a short point straight up; langets down from the head",
+    "note": "new guide: pole() with a 'hammer' head, like military-pick's",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "war-hammer"
+   }
+  }
+ },
+ "body": {
+  "invaar": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.22-0.27",
+   "reason": "Well painted, but every seed is a sleeveless bronze muscle cuirass with a skirt of leather strips: at 1x it reads as dark leather, next to invhla, and a player who knows the original (a heavily decorated plate armour with articulated arms) will not see Ancient Armor / Ornate Plate / Sacred Armor in it.",
+   "fix": {
+    "desc": "An ancient ornate heavy armour from a forgotten age: a heavy cuirass of dark old blackened steel with articulated arm plates of overlapping lames down to the elbows, broad layered shoulder plates and a short skirt of overlapping lames split at the front, every plate richly decorated: each plate edge framed by a raised band of tarnished gilt bronze, a broad embossed sunburst of straight rays spreading across the chest, a row of small embossed rosettes along every lame, the gilding worn away on the high points. Laid flat, front view, empty, no person.",
+    "material": false,
+    "note": "the object is the ornate heavy plate with arms; the ornament (gilt edge bands, sunburst, rosettes) is ours, not the original's scrollwork; gilt, so no material line",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "material",
+     "note"
+    ]
+   }
+  },
+  "invfld": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.23-0.26",
+   "reason": "The words gave the thigh plates no material, and the material line's \"brown leather\" made all four seeds hang two brown leather flaps from the waist: at 1x and 2x the steel top over brown flaps reads as a cuirass with trousers, not a heavy field plate harness, and it is the hardest of the steel cuirasses (invbrs, invplt, invgth) to tell apart.",
+   "fix": {
+    "desc": "A heavy field plate harness for the body, plain and massive: a broad grey steel breastplate with a second plate overlapping its lower half and rising to a point at the middle, a high steel collar closing round the neck, big rounded shoulder plates that rise like domes above the shoulders, and two broad square grey steel thigh plates, each of three overlapping riveted steel lames, hanging from the steel waist plate on short straps with a gap between them; steel everywhere, the only leather a few small straps; no sleeves, no mail, no leather skirt. Laid flat, front view, empty, no person.",
+    "material": false,
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "material"
+    ]
+   }
+  },
+  "invful": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.28-0.29",
+   "reason": "All four seeds paint a whole headless man of armour: legs down to sabatons or boots and dark hands at the wrists, standing like a figure. That breaks the no-hands rule, reads as a person at 1x, and is not the object of the original, a cuirass with arms and thigh plates that stops at the knees; nothing in the prompt holds the knee line, and the material line adds a brown leather skirt.",
+   "fix": {
+    "desc": "A full plate armour for the body and arms, hollow and empty: a rounded grey steel breastplate, large overlapping shoulder plates, complete arm plates with round elbow cops hanging straight down beside the body and ending at the wrists in open round steel rims with nothing in them, a waist of several overlapping steel lames and two long jointed steel thigh plates that end at the knees in round knee cops; the armour stops at the knees: no lower legs, no feet, no hands, no gauntlets, no helmet, no leather skirt. Laid flat, front view, empty, no person.",
+    "material": false,
+    "guide": "full-plate",
+    "guideSpec": "new: a suit family in box/guides.py, on the 832x1248 canvas, a generic shape of our own: a cuirass from a neck opening at y~90 to the waist at y~650 with two rounded shoulder caps; each arm a tube hanging straight down beside the body from its cap to an open wrist rim at y~820, a round elbow cop at y~480; three waist lames; two thigh tubes with a gap between them ending in round knee cops at y~1170; nothing below the knee cops and the wrist rims empty (lighter grey inside)",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "material"
+    ],
+    "guide": "full-plate",
+    "note": "shape: written as generic words from the guideSpec"
+   }
+  },
+  "invltp": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.26-0.27",
+   "reason": "All four seeds make a brown leather dress, short leather sleeves and a knee-length leather skirt, with a small steel breastplate on it: at 1x brown leather dominates and it reads as a tunic or robe, not a light plate armour (the original's object is a light steel cuirass with shoulder and hip plates); s101 and s404 also split the breastplate hard into a lit and a black half.",
+   "fix": {
+    "desc": "A light plate armour: a slim grey steel breastplate with a short fauld of two steel lames and two small rounded steel tassets over the hips, small round steel discs at the shoulders, all thinner and plainer than a knight's plate, worn over a padded brown leather jack that shows only as short cap sleeves at the shoulders and a narrow hem just below the tassets; the plates held on by buckled leather straps at the sides; grey steel covering most of it, no long skirt. Laid flat, front view, empty, no person.",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc"
+    ]
+   }
+  },
+  "invrng": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.21-0.27",
+   "reason": "All four seeds paint what the words asked, a sleeveless knee-length brown leather coat with iron rings sewn on (s101's rings came out as domed studs), and it reads as a studded brown leather coat: a player who knows the original (a grey long-sleeved ring shirt) will not recognise ring mail, and at 34 px it is confused with invstu and invlea.",
+   "fix": {
+    "desc": "A ring mail shirt: a long-sleeved coat to the upper thighs covered completely in large flat iron rings, each as wide as a thumb, sewn on in close overlapping horizontal rows so that grey iron covers the whole coat and the dark leather backing only shows as a dot inside each ring, the rings much larger and coarser than fine chain mail so that every ring can be seen; the sleeves reach the wrists and end in a band of leather, the neck a low round opening bound in leather, the hem split at the front; iron grey dominating, no plates. Laid flat, front view, empty, no person.",
+    "note": "told apart from invchn (fine mesh, elbow sleeves, hip length) by its big visible rings, long sleeves and longer split hem",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "note"
+    ]
+   }
+  },
+  "invspl": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.30-0.32",
+   "reason": "The model set four to six wide iron strips far apart on a knee-length brown leather coat, so leather dominates and at 1x it reads as a striped sleeveless leather dress, not a splinted iron armour (the original's object is a sleeveless grey vest of iron splints); the material line's \"brown leather\" pushes it further.",
+   "fix": {
+    "desc": "A splint armour cuirass, sleeveless, reaching only to the hips: fourteen or more narrow vertical iron splints set edge to edge across the chest and belly, so close that only thin dark lines of leather show between them, each splint held by a round rivet at its top and its bottom end, the splints at the waist a little shorter so that the hem steps; small shoulder guards of three short horizontal splints each, the neck and armholes bound in dark leather; grey iron covering almost all of it. Laid flat, front view, empty, no person.",
+    "material": false,
+    "note": "our splints stand vertical and edge to edge; the original's rows of small horizontal splints are not ours",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "material",
+     "note"
+    ]
+   }
+  },
+  "invvbt": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.26-0.29",
+   "reason": "The heavy-boots guide's thick stacked sole with hobnails came out on all four seeds as a deep treaded lug sole with a raised heel: modern work or biker boots that break the period look at 2x; and the tall straight shaft gives almost the same silhouette as invlbt at 1x (the horn toggles do not read at 34 px).",
+   "fix": {
+    "desc": "A pair of heavy boots, short and massive: thick stiff dark brown leather reaching only to mid-calf, broader and bulkier than soft boots, a deep band of shaggy dark fur round the top of each boot, one wide leather strap with a square iron buckle across the instep, a broad rounded toe with an extra stitched leather cap; a thin flat leather sole with no tread, no lugs and no heel at all. Standing side by side, both toes pointing right. Side view.",
+    "guide": "heavy-boots",
+    "guideSpec": "corrected: top ~300 instead of 40 (mid-calf), sole 8 (thin and flat: drop the stacked hobnail sole), toggles off, toe_cap on, and two new boots() options: fur (a ragged-edged band ~90 px tall over the top of the shaft) and strap (one buckled band across the instep)",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape"
+    ],
+    "guide": "heavy-boots",
+    "note": "shape and note: written from the guideSpec (the old note described the guide it replaces)"
+   }
+  }
+ },
+ "heads": {
+  "invbhm": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.29-0.35",
+   "reason": "All four seeds paint a whole bare human skull with its lower jaw and teeth: no helmet at all (no rim, no lining, no rib cheek guards, only a thin strap), so at 1x it reads as a skull trophy, the same kind of thing as the necromancer heads invne1-invne5 beside it, and not as a helm.",
+   "fix": {
+    "desc": "A bone helm shown empty on its own, no head inside: the top half of a huge humanlike skull sawn off level just below the cheekbones and worn as a helmet, no lower jaw and no teeth, its two dark eye sockets as eyeholes over the brow, the hollow underside open and lined with dark stitched leather that shows along the cut edge, a riveted iron band around that cut edge, and hanging from the band at each side a long cheek guard of curved rib bones bound with dark leather thongs, a ridge of small vertebrae running back over the crown, no horns. Front three-quarter view from slightly below, so the open lined underside shows.",
+    "guide": "bone-helm",
+    "guideSpec": "new: a generic shape of our own in box/guides.py, on the 1024x1024 canvas: a skull-cap dome over the upper two thirds, two dark eye-socket holes low on its front, a level cut edge under them, and from that edge two long narrow curved cheek strips hanging down at the sides with empty space between them",
+    "material": false,
+    "note": "keep the skull, it is what makes a bone helm: the fix is the jaw gone and the helmet parts added; bone, so no material line",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "material",
+     "note"
+    ],
+    "guide": "bone-helm"
+   }
+  },
+  "invci1": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.18-0.29",
+   "reason": "All four seeds look nearly straight down into a thick tube-like ring with its points radiating outward round the upper half, so at 1x it is a spiked ring or a cog, not head jewellery; a player won't take it for a circlet-family band.",
+   "fix": {
+    "desc": "A coronet: a thin flat band of darkened bronze with a beaded edge, closed into a ring and seen from the front, just above eye level, so it forms a wide shallow ellipse about three times wider than it is tall, the front of the band facing the viewer and the back of the band visible through the opening; along its upper edge a row of small evenly spaced triangular points standing straight up like a tiny crown, a small dull garnet at the foot of each point, no large central gem.",
+    "guide": "coronet",
+    "guideSpec": "new: a generic shape of our own in box/guides.py, on the 1024x1024 canvas: a wide flat elliptical band (about 3:1, the band about a tenth of the ellipse's height), a row of small upright triangles along the top edge of its front half, the opening a lighter grey",
+    "note": "points all round still sets it apart from the circlet's single crest (invci0 s303), the tiara's arch and the diadem's gem plate.",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "coronet"
+   }
+  },
+  "invci2": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.28-0.35",
+   "reason": "s101 and s202 lay the open half hoop flat with its ends up, so at 1x it reads as a necklace or torc (the amulets look like that); s303 and s404 break it into two separate crescents (cut flag P2). The filigree arch the description asks for never rises.",
+   "fix": {
+    "desc": "A tiara standing upright as if worn, seen from the front at eye level: a thin open-backed band of pale tarnished gold whose two ends curve back and away out of sight, and rising from its front a tall arch of fine interlaced filigree wirework, highest in the middle where it comes to a rounded point and tapering down into the thin band at the sides, a curved row of small pearls along the arch's edge and one small teardrop pearl at its peak. The arch is the tallest and widest part.",
+    "guide": "tiara",
+    "guideSpec": "new: a generic shape of our own in box/guides.py, on the 1024x1024 canvas: front view, a low wide arc for the band across the lower third, and above its middle a tall pointed-arch plate as wide as two thirds of the band, pierced with small lighter holes for the filigree",
+    "note": "one piece: if a seed still splits it (P2), take another seed rather than accept it",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "tiara"
+   }
+  },
+  "invdr5": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.25-0.28",
+   "reason": "The description asked for a bear spirit and all four seeds painted a round-eared bear (s101/s303 read as a lion or a teddy at 1x), but the item's name is 狼灵面具, a wolf-spirit mask (src/data/d2x/armor.ts dr5), and the original is a wolf: the picture contradicts our own name and a player won't recognise the item.",
+   "fix": {
+    "desc": "A druid's spirit mask: a carved wooden mask of a wolf spirit's face with a long narrow muzzle, a black-painted nose, tall pointed ears carved as part of the mask and slanted eye holes, the whole face painted with bold white and ochre clay bands, framed by a thick ruff of dark shaggy fur, strings of small bones, beads and feathers hanging from its lower edge, shown empty, no head inside. Front view.",
+    "note": "a carved, painted wooden mask in a fur ruff, apart from the real wolf pelt of invdr1 (s101); no blue paint, no red eyes, no ear ring.",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "note"
+    ]
+   }
+  },
+  "invmsk": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.27-0.32",
+   "reason": "All four seeds paint a whole bald goblin head (full cranium and ears, no edge, no straps), so it reads as a severed head, not a mask, and at 1x it sits too close to the gargoyle and demon trophy heads (invne4 s202, invne5 s404); s303 also has glowing green eyes, out of the palette.",
+   "fix": {
+    "desc": "A war mask shown on its own, no head inside: a full face mask of beaten dark iron covering only the face from the brow to the chin, nothing behind it, its thin rolled edge showing all round and the hollow inside visible past its side, shaped as a snarling grotesque face with a heavy furrowed brow over hollow eye holes, a broad flattened nose and an open mouth baring a row of iron fangs, riveted leather straps with small buckles trailing from both sides; no scalp, no ears, no horns, no helmet. Front three-quarter view.",
+    "fill": 0.85,
+    "note": "the edge, the hollow and the straps are what make it a mask; at 0.85 fill the straps fit in the cells.",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "fill",
+     "note"
+    ]
+   }
+  },
+  "invpa5": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.29-0.31",
+   "reason": "The crown emblem came out as a six- or eight-pointed star in all four seeds and the scalloped rim never appeared; at 1x a round dark shield with a gilt radiating emblem is nearly the targe beside it (invpa1 s101, a gilt sunburst on a round shield), and nothing says crown.",
+   "fix": {
+    "desc": "A paladin's crown shield: a round shield of dark steel whose gilded rim rises along its top into five tall crown points, each tipped with a small ball, like a crown set on the shield, the rest of the rim a plain gilded band with rivets; its face plain dark steel with a small round gilded boss in the middle, no star, no rays and no other emblem. Front view.",
+    "guide": "crown-shield",
+    "guideSpec": "new: a generic shape of our own in box/guides.py, on the 1024x1024 canvas: a disc, and along the top third of its edge five upright tapering points (the middle one tallest) each with a small round knob, all part of one shape",
+    "note": "the crown in the silhouette reads at 34 px and is unlike every other round shield (invbuc, invsml, invpa1, invpa2).",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "crown-shield"
+   }
+  },
+  "invtow": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.28-0.32",
+   "reason": "Plain vertical planks and iron straps with no boss and no visible curve: at 1x all four seeds read as a wooden door, a cupboard or a crate (s404 a barrel); nothing marks it as a shield.",
+   "fix": {
+    "desc": "A tower shield: a tall rectangular shield with slightly rounded top corners, its face curved like a section of a large barrel so its left and right edges sweep back, seen a little from the left so the curve and the shield's thickness show; heavy vertical oak planks bound by an iron rim and two horizontal iron straps, and in the centre a large domed iron boss on a round riveted iron plate, scuffed and arrow-scarred, no painted emblem. Upright.",
+    "note": "the boss and the curved face are the shield cues; keep it plain oak and iron (no diamond plate, no emblem). If a seed still looks like a door, a 'tower' guide (a tall rounded-corner rectangle with a disc in the middle) would pin the boss.",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "note"
+    ]
+   }
+  }
+ },
+ "long": {
+  "invbst": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.64-0.67",
+   "scores": {
+    "s101": 0.6419,
+    "s202": 0.6709,
+    "s303": 0.6379,
+    "s404": 0.6481
+   },
+   "reason": "Too close by the screen: all four seeds 0.64-0.67 (the threshold is 0.45). The side by side is clearly ours (an upright dark oak pole with smooth riveted caps and a leather grip, against the original's slanted pale banded staff with studded ends), and the cross check says it is the shape class: this original scores 0.45 or more against 45 of 60 candidates of the other long pictures, the gnarled staff and the winged Horadric staff among them. The cause: a rod has no interior 2 px in, so similarity.py's edge_in falls back to the outline F1 and outline overlap carries 0.40 of the score, and two rods of the same width and length overlap. A probe (scratch: our s202 cut-out stretched sideways with PIL, not a picture) drops it with thickness: x1.0 0.67, x1.4 0.51, x1.8 0.49, x2.4 0.40.",
+   "fix": {
+    "desc": "A battle staff, a war mage's heavy fighting staff: a long, straight, stout pole of mid-brown seasoned oak, thick and heavy, about a tenth as thick as it is long; its middle third wrapped in a broad hand grip of wound dark leather cord, a little wider than the pole, between two flared iron collars; each end shod with a short, plain, blunt iron cap a little wider than the pole, no studs and no spikes, no bands along the bare wood. A thick heavy staff, far stouter than a walking staff. Shown perfectly upright, one iron-capped end at the top.",
+    "guide": "battle-staff",
+    "guide_new": "box/guides.py: a battle-staff entry, the pole family on 448x1792: shaft half width 80 from y 90 to 1700; a 'cap' head (new in HEADS: a rectangle of half width 96, rounded on top) from y 60 to 200; butt cap half width 96 from y 1590 to 1730; grip half width 92 from y 640 to 1150 (DARK), so the outline swells at the grip and the caps instead of running as one even rod",
+    "note": "the thickness is the fix: about twice run-04's, a 1x rod of ~13 px in the 34 px cell (run-04's are 6-8 px); keep it a staff, not a club (no swelling head). The iron-shod ends stay, they are the line's part; plain caps, not the original's studs",
+    "seeds": "8: style.mjs SEEDS and --round 1 (505-808); pick one under 0.45 that still reads as a staff. If none gets under while the side by side stays clearly ours, take the screen's thin-rod fallback to the user rather than fattening it into a club"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "battle-staff",
+    "note": "shape: written as generic words from guide_new; guide: the grip's two flared collars (the desc's) drawn as pole() bands"
+   }
+  },
+  "invsst": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.58-0.65",
+   "scores": {
+    "s101": 0.6523,
+    "s202": 0.5802,
+    "s303": 0.5927,
+    "s404": 0.6268
+   },
+   "reason": "Too close by the screen: all four seeds 0.58-0.65 (the threshold is 0.45), the same thin-rod class effect as invbst (this original scores 0.45 or more against 30 of 60 candidates of the other long pictures, the gnarled staff and the scepters among them), though the side by side is clearly ours: a dark knob-topped walking stick with a hanging thong against the original's slanted pale staff with grey metal bands. A probe (scratch: our s101 cut-out stretched sideways with PIL, not a picture): x1.0 0.65, x1.4 0.57, x1.8 0.41, x2.4 0.36, so a stouter rod gets it under.",
+   "fix": {
+    "desc": "A short staff, a traveller's stout walking staff about chest high: a straight, thick rod of mid-brown wood, about a ninth as thick as it is long, much stouter than a wand or a long staff; its top a heavy rounded knob carved from the same wood, a band of three narrow iron rings just under the knob; a short wrap of dark leather a third of the way down; a short blunt iron ferrule at the foot. Shown perfectly upright, the knob at the top.",
+    "guide": "short-staff",
+    "guide_new": "box/guides.py: a short-staff entry, the pole family on 512x1536: shaft half width 76 from y 250 to 1440; a 'knob' head (new in HEADS: an ellipse 200 wide from y 50 to 270, the rings a DARK band half width 84 from y 270 to 320); butt cap half width 70 from y 1440 to 1500; grip half width 82 from y 600 to 760 (DARK)",
+    "note": "the thickness is the fix (a 1x rod of ~10 px, run-04's ~5 px); the knob stays our own design. Must stay apart from the battle staff at 34 px: shorter (1x3), a knob, no iron caps",
+    "seeds": "8: style.mjs SEEDS and --round 1 (505-808); pick one under 0.45. As invbst: if none gets under while clearly ours, take the screen question to the user"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "short-staff",
+    "note": "shape: written as generic words from guide_new"
+   }
+  },
+  "invhst": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.36-0.48",
+   "scores": {
+    "s101": 0.4074,
+    "s202": 0.3639,
+    "s303": 0.4027,
+    "s404": 0.4791
+   },
+   "reason": "The head came out a bat: all four seeds put a beast's head with ears and a snout on the medallion and spread membrane bat wings behind it, so the order's holy staff reads as a demon's at 34 px (the words asked for two metal wings round a medallion, nothing else); s404 is also over the line (0.479, its wings the widest).",
+   "fix": {
+    "desc": "The completed staff of an ancient order of mages: the same shaft as its headless shaft's words (invmsf): a straight rod of dark bronze with a thick carved serpent of worn brass coiling round it from foot to top in five open turns, its head resting just under the top; crowned with a head of tarnished bronze: a round medallion set with a small milky white stone, sitting straight on the shaft's socket, and from either side of it a stylised wing of four long flat bronze feather-plates, each a plain leaf-shaped blade, fanned upward and outward in a narrow V, their tips no higher than a hand above the medallion; the wings are plain metal ornament joined only to the medallion, with nothing above or between them; a small pointed bronze foot. Shown perfectly upright, the winged head at the top.",
+    "note": "keep the V of wings round a medallion, the line's defining part; ours is dark bronze, plain leaf-shaped plates and a milky stone, not the original's bright gilt feathered wings; the narrow V keeps the outline off s404's 0.479. Paint it with invmsf's new words in the same run and pick the two together so the shafts match",
+    "seeds": "4 (style.mjs SEEDS), a new run with the changed words"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "note"
+    ],
+    "note": "desc: the pointer to invmsf's words replaced by invmsf's shaft words themselves, so the two shafts match"
+   }
+  },
+  "invmsf": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.23-0.38",
+   "scores": {
+    "s101": 0.3436,
+    "s202": 0.3158,
+    "s303": 0.3813,
+    "s404": 0.2345
+   },
+   "reason": "At 1x the serpent is lost: a thin dark bronze snake on a dark bronze rod (1x median luminance ~47 on the #070605 grid) reads as a plain dark stick with a point, nothing of the serpent-wound shaft the quest item is known by; and its pair invhst goes back, so the two shafts should be painted and picked together to match.",
+   "fix": {
+    "desc": "The headless shaft of an ancient order of mages' staff: a straight rod of dark bronze with a thick carved serpent of worn brass coiling round it from foot to top in five open turns, the coils as thick as the rod and standing out from it with dark gaps between them, fine scales on the serpent, its head resting just under the top; the top end an open bronze socket, a short collar with an empty hole where a head-piece is missing; a small pointed bronze foot. Shown perfectly upright, the open socket at the top.",
+    "note": "the same shaft words as invhst's; a separate bold brass serpent round a dark rod (ours), not the original's shaft that is itself a gilt twist; s404 (0.23) is the fallback if the new words go wrong",
+    "seeds": "4 (style.mjs SEEDS), in the same run as invhst"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "note"
+    ]
+   }
+  },
+  "invwnd": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.21-0.22",
+   "scores": {
+    "s101": 0.2185,
+    "s202": 0.2244,
+    "s303": 0.2136,
+    "s404": 0.2128
+   },
+   "reason": "Unreadable at 34 px: the 'straight slender rod' came out a hairline, 4 px wide at 1x (the yew, bone and grim wands are 7-14 px) and dark (1x median luminance ~47) on the dark grid, its amber stone a 2 px dot; at 1x the cell looks empty. Round 2's approved wand was as thick as a thumb with a large head.",
+   "fix": {
+    "desc": "A plain apprentice's wand: a straight rod of polished warm mid-brown hardwood as thick as a thumb, a little thicker toward the top, banded under its head by three broad rings of tarnished bronze; its head a bronze cup of three short claws holding a round dull amber stone about twice as wide as the rod; a grip wrapped in dark cord at the lower end and a small rounded bronze butt knob. A sturdy wand, lighter in tone than the yew and grim wands. Shown upright, the stone at the top.",
+    "note": "keeps run-04's identity (bronze-banded hardwood with an amber stone, apart from the yew, bone and grim wands) but round 2's thickness: a 1x rod of ~7 px and a head of ~10 px",
+    "seeds": "4 (style.mjs SEEDS), a new run with the changed words"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "note"
+    ]
+   }
+  },
+  "invtri": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.20-0.25",
+   "scores": {
+    "s101": 0.2236,
+    "s202": 0.2476,
+    "s303": 0.248,
+    "s404": 0.2032
+   },
+   "reason": "A hay fork, not a war trident: none of the four seeds has the barbed points the words ask for, and the three thin round tines on a bowed crossbar are a farm pitchfork's; at 1x the line's defining part (barbed prongs) is missing.",
+   "fix": {
+    "desc": "A trident, a three-pronged war fork: a long straight wooden shaft with an iron socket; at the top a short, straight, heavy iron crossbar carrying three thick, straight, square-sectioned iron prongs, the middle one a little longer, each ending in a flat arrow-shaped barbed head clearly wider than its prong, its two barbs pointing back down; a leather grip wrap below the socket and an iron butt cap. Thick forged iron, not a farm fork's thin round tines. Shown perfectly upright, the prongs at the top, front view.",
+    "guide": "trident",
+    "guide_new": "box/guides.py: a trident entry, the pole family on 704x1408 (spear's shaft, butt and grip): a 'trident' head (new in HEADS): a straight crossbar half width 120 from y 300 to 334; three prongs half width 11 at cx-110, cx and cx+110 from the crossbar up to y 120 (sides) and y 70 (middle); on each a barbed arrowhead half width 32, 70 tall, its barbs cut back 22 px",
+    "note": "barbed points are the generic trident's part; the prongs straight and square and the crossbar straight are ours (run-04 scored 0.20-0.25, so the barbs leave room)",
+    "seeds": "4 (style.mjs SEEDS), a new run with the guide"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "trident",
+    "note": "shape: written as generic words from guide_new; guide: prongs half width 13, not 11, so they read as thick forged iron"
+   }
+  }
+ },
+ "misc": {
+  "invch4": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.26-0.29",
+   "scores": {
+    "s101": 0.2812,
+    "s202": 0.255,
+    "s303": 0.286,
+    "s404": 0.2896
+   },
+   "reason": "Every seed paints a cartoon dog-treat bone (a shaft with two knobs at each end): comic beside the other charms, and not the knucklebone the words asked for, a shape the model doesn't know.",
+   "fix": {
+    "desc": "A small charm: a little triangular arrowhead of knapped black flint, its flaked faces catching the light, its base bound with a few tight turns of dark blue-dyed thread that end in a short loop and a little tassel, point down.",
+    "fill": 0.85,
+    "note": "a new object for the third small charm: a flint point reads at 34 px and is unlike the bone disc (invch1) and the pouch (invch7)",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "fill",
+     "note"
+    ]
+   }
+  },
+  "invch6": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.18-0.25",
+   "scores": {
+    "s101": 0.2271,
+    "s202": 0.2176,
+    "s303": 0.2488,
+    "s404": 0.1767
+   },
+   "reason": "Every seed is a bare dark stick, 3-4 px wide at 1x and nearly lost on the dark grid: it reads as a wand or a staff, not a talisman. The grand charm line is a broad flat talisman that fills its 1x3 cell.",
+   "fix": {
+    "desc": "A grand charm: a tall narrow talisman of smoke-darkened tan hide stretched and laced with thongs onto a frame of two straight twigs, filling most of the frame's width, painted down its middle with a column of faded ochre dots and short bars, three small bone beads and a little curved claw hanging on thongs from its bottom edge. Shown upright, flat, front view.",
+    "fill": 1,
+    "note": "broad and flat as the line is, but our own object: hide on a twig frame, apart from the antler (invch3) and the slate (invch9)",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "fill",
+     "note"
+    ]
+   }
+  },
+  "invhp1": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.21-0.31",
+   "scores": {
+    "s101": 0.2608,
+    "s202": 0.214,
+    "s303": 0.3142,
+    "s404": 0.2779
+   },
+   "reason": "The narrow vial at fill 0.62 is 4-5 px wide at 1x, a sliver on the grid, for the most common potion of all.",
+   "fix": {
+    "desc": "A minor healing potion: a small stubby vial of thin clear hand-blown glass, about half as wide as it is tall, with a rounded bottom, a short neck and a plain cork, filled with glowing scarlet liquid, cheap and plain.",
+    "fill": 0.72,
+    "note": "stubby and larger (fill 0.72, the tiers rising to 0.95) so it reads at 34 px; clear glass (greenish glass turned the mana vial teal); the same words as invmp1 but the colour",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "fill",
+     "note"
+    ]
+   }
+  },
+  "invhp2": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.27-0.32",
+   "scores": {
+    "s101": 0.3134,
+    "s202": 0.2902,
+    "s303": 0.3225,
+    "s404": 0.2748
+   },
+   "reason": "The pebble flask came out as the healing potion's round-bellied flask with a short neck (invhp3, the sample round's words), only smaller: at 1x the light and the plain potion can't be told apart.",
+   "fix": {
+    "desc": "A light healing potion: a small flask of hand-blown glass shaped like a low cone, a broad flat bottom and straight sides sloping in to a short narrow neck, a plain cork tied with string, filled with glowing scarlet liquid.",
+    "fill": 0.78,
+    "note": "each tier its own outline: vial, cone, round, pear, faceted; the same words as invmp2 but the colour",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "fill",
+     "note"
+    ]
+   }
+  },
+  "invjaw": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.20-0.24",
+   "scores": {
+    "s101": 0.1966,
+    "s202": 0.2012,
+    "s303": 0.2357,
+    "s404": 0.2224
+   },
+   "reason": "Every seed paints a whole beast skull with both jaws (s303 a jaw under a horn), never the lone lower jaw the item is: the words' 'no skull' doesn't hold without a shape.",
+   "fix": {
+    "desc": "A jawbone: the lower jaw bone of a large beast on its own, seen from the side: a long low bar of yellowed cracked bone with a row of uneven worn teeth along its top edge, two long curved canines at its front end, and at its back end the bone rising into a tall flat hinge plate with a rounded knob on top; no upper jaw, no skull, no eye sockets.",
+    "guide": "jawbone",
+    "fill": 0.85,
+    "guideSpec": "new: a generic shape of our own in box/guides.py on the 768x768 canvas (not jawbone-cap, the helm's): a long low horizontal bar across the lower middle, about 0.7 of the width and 0.12 of the height, a row of small bumps along its top with two taller hooked bumps at its left end, and at its right end a plate rising to about 0.6 of the height, leaning back a little, a round knob at its top",
+    "shape": "jawbone: a long low bar with a row of tooth bumps on top, two tall hooked ones at the left end, a tall hinge plate rising at the right end",
+    "note": "side view, level: the bone's own anatomy, not the original's diagonal pose",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "fill",
+     "note"
+    ],
+    "guide": "jawbone"
+   }
+  },
+  "invjw3": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.25-0.25",
+   "scores": {
+    "s101": 0.2539,
+    "s202": 0.2526,
+    "s303": 0.2495,
+    "s404": 0.2518
+   },
+   "reason": "A square violet gem in four small prongs: at 1x the same violet square as the flawless amethyst (invgsvd s101), the prongs only ticks at the corners; a jewel has to read as a set gem, not a loose one.",
+   "fix": {
+    "desc": "A jewel: a small square-cut gem of muted violet in the middle of a broad bronze mount shaped like a four-petalled flower, each petal wider than the gem and curling up over its edge, the mount clearly larger than the gem, no loop, no chain, seen from the front.",
+    "fill": 0.8,
+    "note": "the mount is the jewel's part, so it is the bigger shape",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "fill",
+     "note"
+    ]
+   }
+  },
+  "invjw4": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.27-0.29",
+   "scores": {
+    "s101": 0.29,
+    "s202": 0.2931,
+    "s303": 0.2909,
+    "s404": 0.267
+   },
+   "reason": "An oval green gem in a thin gold wire: at 1x the same green oval as the emerald (invgsgc s101), the wire invisible.",
+   "fix": {
+    "desc": "A jewel: a small oval faceted gem of deep green in the middle of a wide setting of twisted gold wire coiled into a ring of small loops around it like a little wreath, the wire setting about twice the gem's width, no loop, no chain, seen from the front.",
+    "fill": 0.8,
+    "note": "the setting twice the gem's width so it reads at 34 px",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "fill",
+     "note"
+    ]
+   }
+  },
+  "invjw6": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.20-0.25",
+   "scores": {
+    "s101": 0.2037,
+    "s202": 0.2546,
+    "s303": 0.235,
+    "s404": 0.2485
+   },
+   "reason": "A slim grey marquise in hair-thin iron claws: at 1x a faint grey sliver, the claws lost, nothing that says it is set.",
+   "fix": {
+    "desc": "A jewel: a broad pointed-oval faceted gem of pale smoky grey quartz held in a heavy frame of blackened iron running round its whole edge, four thick iron claws gripping it at its ends and sides, the frame clearly visible, no loop, no chain, seen from the front.",
+    "fill": 0.85,
+    "note": "a broader gem, a heavy frame",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "fill",
+     "note"
+    ]
+   }
+  },
+  "invmp1": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.26-0.29",
+   "scores": {
+    "s101": 0.2617,
+    "s202": 0.2636,
+    "s303": 0.2891,
+    "s404": 0.2594
+   },
+   "reason": "The same sliver as the healing vial, and through the greenish glass the liquid comes out dull teal: at 1x s404 nearly disappears.",
+   "fix": {
+    "desc": "A minor mana potion: a small stubby vial of thin clear hand-blown glass, about half as wide as it is tall, with a rounded bottom, a short neck and a plain cork, filled with glowing cobalt-blue liquid, cheap and plain.",
+    "fill": 0.72,
+    "note": "as invhp1",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "fill",
+     "note"
+    ]
+   }
+  },
+  "invmp2": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.25-0.28",
+   "scores": {
+    "s101": 0.2464,
+    "s202": 0.2838,
+    "s303": 0.2764,
+    "s404": 0.2802
+   },
+   "reason": "As invhp2: the same round flask as the mana potion (invmp3), only smaller.",
+   "fix": {
+    "desc": "A light mana potion: a small flask of hand-blown glass shaped like a low cone, a broad flat bottom and straight sides sloping in to a short narrow neck, a plain cork tied with string, filled with glowing cobalt-blue liquid.",
+    "fill": 0.78,
+    "note": "as invhp2",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "fill",
+     "note"
+    ]
+   }
+  },
+  "invquil": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.18-0.25",
+   "scores": {
+    "s101": 0.1793,
+    "s202": 0.2137,
+    "s303": 0.2542,
+    "s404": 0.2249
+   },
+   "reason": "The word quill made every seed a writing feather with vanes; the item is a beast's spine, a bare needle-like spike.",
+   "fix": {
+    "desc": "A long needle-like spine shed by a beast: a smooth straight round spike, thickest a little behind its middle, tapering to a needle point at one end and to a rough broken root at the other, banded along its length in alternating dark brown and pale cream rings, no feather, no vanes, no barbs, lying diagonally.",
+    "fill": 0.9,
+    "note": "the word quill is left out: it paints a feather",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "fill",
+     "note"
+    ]
+   }
+  },
+  "invsbk": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.28-0.34",
+   "scores": {
+    "s101": 0.3249,
+    "s202": 0.3049,
+    "s303": 0.2849,
+    "s404": 0.3431
+   },
+   "reason": "s202, s303 and s404 paint an iron-banded wooden chest with a hasp lock (the words' riveted bands and hasp made a strongbox); s101 is a squat cube whose pages are a thin strip, so at 1x and 2x it is a box too. All four are the same oxblood leather as Lam Esen's tome (invbbb s404), the other 2x2 book.",
+   "fix": {
+    "desc": "A book of skill: a thick heavy book lying flat at a three-quarter view from above, clearly a book, much wider and longer than it is thick: its thick cream page block showing along the front and the right side, a rounded spine at the left, bound in worn dark slate-blue leather over boards, small iron caps on its corners, a tooled double border around the cover, one narrow iron clasp across the fore-edge, no lettering.",
+    "fill": 0.9,
+    "note": "no bands or hasp (they made a chest); slate blue keeps it apart from Lam Esen's red-brown tome",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "fill",
+     "note"
+    ]
+   }
+  },
+  "invskc": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.26-0.32",
+   "scores": {
+    "s101": 0.3018,
+    "s202": 0.2802,
+    "s303": 0.2613,
+    "s404": 0.319
+   },
+   "reason": "The words asked for a broken skull with no jaw and a piece of the cranium gone; every seed paints a whole yellowed skull with its jaw, so the chipped grade is only a smaller copy of the skull (invsku) and the grade doesn't read.",
+   "fix": {
+    "desc": "A chipped skull gem: a small broken human skull of dull yellowed bone in a three-quarter view, a jagged piece broken out of the left side of its cranium leaving a dark hole, deep cracks spreading from the hole, no lower jaw, its upper teeth chipped.",
+    "guide": "chipped-skull",
+    "fill": 0.6,
+    "guideSpec": "new: a generic shape of our own in box/guides.py on the 768x768 canvas: a skull in three-quarter view, a rounded cranium with a jagged notch bitten out of its upper left, two dark eye holes and a nose hole, a short upper jaw ending in a straight row of teeth, nothing below it",
+    "shape": "chipped-skull: a three-quarter skull with a jagged notch out of its upper left, no lower jaw",
+    "note": "the break is a hole on one side, not the whole top gone",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "fill",
+     "note"
+    ],
+    "guide": "chipped-skull"
+   }
+  },
+  "invskz": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.31-0.32",
+   "scores": {
+    "s101": 0.3064,
+    "s202": 0.3246,
+    "s303": 0.3239,
+    "s404": 0.3151
+   },
+   "reason": "The gold veins are a faint stain at 4x and gone at 2x and 1x: the perfect skull reads the same as the flawless skull (invskl s202) and the skull (invsku s101), so the top grade has no cue.",
+   "fix": {
+    "desc": "A perfect skull gem: a whole human skull with its lower jaw, carved from flawless milky white stone, glossy like a gem, its cranium crossed by bold branching veins of bright tarnished gold like mended cracks, the eye sockets lit by a faint warm golden glow from within, no gem set in it.",
+    "fill": 0.92,
+    "note": "bold gold veins and lit sockets are the grade's cue",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "fill",
+     "note"
+    ]
+   }
+  },
+  "invsple": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.18-0.24",
+   "scores": {
+    "s101": 0.2437,
+    "s202": 0.179,
+    "s303": 0.2077,
+    "s404": 0.2233
+   },
+   "reason": "A glossy dark red almond with no organ detail: at 1x and 2x it reads as a bean or a seed (s202's seam like a coffee bean), not as an organ beside the heart and the brain.",
+   "fix": {
+    "desc": "A spleen: a soft organ shaped like a thick flattened crescent, its outer edge smoothly curved and its inner edge notched, dark purplish red with a pale bluish sheen of membrane, the cut stumps of three thick pale blood vessels sticking out of the notch, wet and glistening, a few thin pale veins across it.",
+    "fill": 0.8,
+    "note": "the cut vessels, as on the heart, make it an organ",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "fill",
+     "note"
+    ]
+   }
+  },
+  "invtail": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.18-0.23",
+   "scores": {
+    "s101": 0.176,
+    "s202": 0.1936,
+    "s303": 0.2292,
+    "s404": 0.189
+   },
+   "reason": "All four seeds coil the tail into a neat S: at 1x it reads as the letter S or a worm, and with no cut end showing it is a whole snake, not a severed tail.",
+   "fix": {
+    "desc": "A severed tail: a thick scaly reptile tail on its own, its broad raw cut end at the upper right showing dark red flesh around a pale bone, sweeping down in one loose curve like a hook and tapering to a thin whip-like tip at the lower left, small dark green-brown scales with paler ridged scales along its underside, no head, not coiled.",
+    "fill": 0.9,
+    "note": "one hook, not an S, and the cut end in view",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "fill",
+     "note"
+    ]
+   }
+  },
+  "invtes": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.17-0.23",
+   "scores": {
+    "s101": 0.1657,
+    "s202": 0.21,
+    "s303": 0.2179,
+    "s404": 0.2275
+   },
+   "reason": "'Twisted into a tight spiral' made a flat round coil: all four seeds read as a cinnamon roll or a rose, not as a heap of dust like the other three essences (invbet, invceh, invfed).",
+   "fix": {
+    "desc": "An essence: a small cone-shaped heap of fine dark violet dust, the same kind of heap as the other essences, one shallow groove winding up around it from its base to its peak like a screw thread, faint violet glints in the groove, a thin twisting wisp of pale violet vapour rising from its peak.",
+    "fill": 0.8,
+    "note": "the twist is a groove and a wisp, so the outline stays a heap",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "fill",
+     "note"
+    ]
+   }
+  },
+  "invtrch": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.16-0.18",
+   "scores": {
+    "s101": 0.1647,
+    "s202": 0.1798,
+    "s303": 0.1648,
+    "s404": 0.1619
+   },
+   "reason": "Every seed is a thin stick with a candle-sized flame: at 1x a dark line with an orange dot that reads as a candle or a stick, not a torch. The 1x2 unique charm shows this picture too, so the flame is the part that has to read.",
+   "fix": {
+    "desc": "A burning torch: a stout rough wooden club, thicker toward its head, its head a thick bundle of tarred rags bound with a twisted iron band, burning with a big roaring orange flame as tall as a third of the whole torch, licking up from the head, a few sparks. Shown upright, the flame at the top.",
+    "fill": 1,
+    "note": "a stout club and a big flame, so it reads at 34 px",
+    "seeds": "a new run with style.mjs SEEDS (101-404): the changed words make new jobs"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "fill",
+     "note"
+    ]
+   }
+  }
+ },
+ "ranged": {
+  "invam2": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.21-0.28",
+   "scores": {
+    "s101": 0.2264,
+    "s202": 0.2561,
+    "s303": 0.207,
+    "s404": 0.2789
+   },
+   "reason": "Not a reflex bow: the line is defined by broad limbs whose ends recurve away from the string; the guide curls the tips back toward the string into small rings, the model followed it, and all four seeds are a plain deep D that reads like the long bow at 34 px, the rings lost at 1x.",
+   "fix": {
+    "desc": "A huntress's tall recurve bow: from the grip each limb sweeps out in a deep curve and then, in its last fifth, bends back the other way, away from the string, so both ends recurve like the crest of a wave and the string lies along each recurved end before it reaches the tip; the limbs broad near the grip and slimming toward the ends, of amber-brown horn laminated over pale wood with a thin dark seam between them; small carved bone caps on the tips; a carved wooden grip wrapped in braided cord with a small leather arrow pad. A recurved outline whose ends flick outward, not a plain D. Shown upright, side view, the string on the left, the bow arching to the right.",
+    "guide": "recurve-bow",
+    "guide_new": "box/guides.py: a recurve-bow entry on 704x1408 in place of reflex-bow (whose tips curl the wrong way): a tall deep D (depth about a third of the height), the limbs about twice long-bow's width beside the grip and slimming outward; in each limb's last fifth the curve reverses so the tip points out to the right, away from the string; the string straight on the left between the two points where the curves reverse, then lying along each recurved end to its tip.",
+    "shape": "recurve-bow: a tall deep D with broad limbs whose last fifth reverses so each tip points out to the right; the string straight between the reversal points, then along the recurved ends",
+    "note": "our 双曲弓 line (the huntress's Reflex / Ceremonial / Grand Matron Bow): the line's defining part is recurved ends on broad limbs; own design: amber horn on pale wood, bone tip caps, a braided grip (review round 1: reflex-bow's tips curled toward the string into rings and the bow read as a plain D)",
+    "seeds": "4 (style.mjs SEEDS)"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "recurve-bow",
+    "note": "guide: recurve-bow replaces reflex-bow, now removed with bow()'s curled-hook tips"
+   }
+  },
+  "invcqv": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.34-0.42",
+   "scores": {
+    "s101": 0.3428,
+    "s202": 0.4025,
+    "s303": 0.4231,
+    "s404": 0.3646
+   },
+   "reason": "Too near the original's own design and weak as bolts: a tapered box quiver of hairy brown hide is the original's particular choice (outline and material; 0.40 and 0.42 on s202/s303, the group's highest, edges lined up along the whole box), and the rounded heads read as a cup of pencils at 1x.",
+   "fix": {
+    "desc": "A bolt case for crossbow bolts: a straight-sided square box of dark stained oak boards, open at the top and as wide at the bottom as at the mouth, its four corners bound with riveted iron angle straps and a broad iron band round the mouth, a leather carrying strap hanging in a loop from two iron rings on one side; standing in it about a dozen short thick crossbow bolts point up, each with a heavy dark iron head shaped like a small four-sided pyramid with a flared collar at the shaft, the heads sharp-edged and clearly pointed, not rounded; no fur, no hair, no hide. Shown upright, front view, the open end at the top.",
+    "guide": "bolt-case",
+    "guide_new": "box/guides.py: a bolt-case entry on 512x1536: a straight-sided upright rectangle (about 0.6 of the width, the lower two thirds of the height) with a darker band at its mouth and thin corner straps, and above it a row of about eight short shafts ending in small pointed pyramid heads, staggered in height; our own generic shape.",
+    "shape": "bolt-case: a straight-sided box, not tapered, banded at the mouth, a staggered row of short pointed bolt heads above it",
+    "note": "our 弩矢 (Bolts): own design, an iron-bound oak case with the heads up, told from the round leather arrow quiver (review round 1: the tapered hairy-hide quiver was too near the original's design and its heads read as pencils)",
+    "seeds": "4 (style.mjs SEEDS)"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "bolt-case",
+    "note": "guide: the case and the bolts only, no carrying strap (the desc names it)"
+   }
+  },
+  "invhbw": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.25-0.26",
+   "scores": {
+    "s101": 0.2629,
+    "s202": 0.257,
+    "s303": 0.2512,
+    "s404": 0.2554
+   },
+   "reason": "Not this line: the hunter's bow is defined by a stave cut from a crooked, wavy branch; ours came out a smooth two-tone D whose limbs are hardly broader than the short bow's, so the 猎弓 line looks like a pale short bow at 34 px. s303 and s404 also paint a stray diagonal string across the bow.",
+   "fix": {
+    "desc": "A hunter's bow made from a single crooked branch: the two limbs are not smooth arcs but wander in three or four gentle, irregular bends along their length like a knotty stick, the bark stripped to weathered grey-brown wood with dark knots and two or three short stubs of trimmed twigs, a grip of rawhide strips wound round the middle, both tips cut into simple notches and bound with dark sinew, a thin pale twine string running perfectly straight from tip to tip and nothing else crossing the bow. A D whose curved side wobbles like a crooked stick, not a smooth curve. Shown upright, side view, the string on the left, the bow arching to the right.",
+    "guide": "crooked-bow",
+    "guide_new": "box/guides.py: a crooked-bow entry on 832x1248 (the short-bow family with a wobble): short-bow's D, its limb band about 1.3 times short-bow's width, displaced along the arc's normal by three gentle waves a limb (amplitude about one limb width, the two limbs out of phase so it never mirrors), a short grip block at the middle, small notched tips, the string straight on the left. Our own parametric shape, not traced.",
+    "shape": "crooked-bow: short-bow's D whose limbs wobble in three irregular waves each, the two limbs out of phase; a short grip block at the middle; the string straight on the left",
+    "note": "our 猎弓 line (Hunter's / Razor / Blade Bow): the line's defining part is a stave cut from a crooked branch; own design: grey-brown stripped wood, twig stubs, rawhide grip (review round 1: the two-tone flat bow did not read as this line)",
+    "seeds": "4 (style.mjs SEEDS)"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "crooked-bow",
+    "note": "guide: crooked-bow (bow() form 'crooked') replaces flat-bow, now removed; bow()'s deflex-reflex 'b' form went with battle-bow"
+   }
+  },
+  "invlbb": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.17-0.25",
+   "scores": {
+    "s101": 0.2162,
+    "s202": 0.2393,
+    "s303": 0.1739,
+    "s404": 0.2453
+   },
+   "reason": "As invsbb, made long: the B outline carries none of the battle bows' broad horn-faced limbs, and the two humps read as a letter B at 2x4.",
+   "fix": {
+    "desc": "A tall long battle bow whose two long limbs are faced with broad flat plates of dark ox horn, blackish brown with streaks of translucent amber, each plate as wide as three fingers beside the grip and narrowing to a point two thirds of the way to the tip, fixed to the wooden core with small iron rivets; a long grip of dark leather bound with iron wire; long bare wooden tips bound with sinew, curving slightly forward away from the string; a straight pale string. A tall D with broad blade-like limbs, clearly wider than a plain stave. Shown upright, side view, the string on the left, the bow arching to the right.",
+    "guide": "long-plated-bow",
+    "guide_new": "box/guides.py: a long-plated-bow entry on 704x1408: the plated bow as a tall shallow D (depth about a fifth of the height), each limb a broad plate tapering to a point two thirds of the way out, then a long thin bare tip turning a little right; the string straight on the left.",
+    "shape": "the plated bow on the 2x4 canvas: a tall shallow D, broad plates tapering two thirds of the way out, long thin tips turning a little right; the string straight on the left",
+    "note": "our 长战弓 line (Long Battle / Large Siege / Crusader Bow): invsbb's horn-plated limbs made long (review round 1: the B outline went with invsbb's)",
+    "seeds": "4 (style.mjs SEEDS)"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "long-plated-bow",
+    "note": "guide: long-plated-bow replaces long-battle-bow, now removed"
+   }
+  },
+  "invopl": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.22-0.28",
+   "scores": {
+    "s101": 0.2187,
+    "s202": 0.2771,
+    "s303": 0.2595,
+    "s404": 0.2828
+   },
+   "reason": "Reads as a healing potion: the dark amber oil came out red-brown, and a round flask of red liquid at 34 px is the light/plain healing flask (invhp2, invhp3); the rag wick is too small to tell it apart at 1x.",
+   "fix": {
+    "desc": "A fire bottle for throwing: a small round-bellied flask of thick clear glass with a short neck, filled to the shoulder with pale golden lamp oil, light straw-yellow like clear cooking oil, never red or brown; a thick twist of oily grey rag stuffed into the neck as a wick, a tuft of it sticking up above the neck and a frayed tail hanging down one side of the flask, tied round the neck with twine. Shown upright.",
+    "fill": 0.8,
+    "note": "Oil Potion (ops, our 火油药水): the fire line's smallest, the same round flask as invgpl's pick with a rag wick; the oil must read yellow, apart from the scarlet healing flasks (review round 1: dark amber came out red-brown and read as a healing potion at 34 px)",
+    "seeds": "4 (style.mjs SEEDS)"
+   },
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "fill",
+     "note"
+    ]
+   }
+  },
+  "invsbb": {
+   "run": 4,
+   "seeds": [
+    101,
+    202,
+    303,
+    404
+   ],
+   "similarity": "0.20-0.24",
+   "scores": {
+    "s101": 0.1996,
+    "s202": 0.2412,
+    "s303": 0.2279,
+    "s404": 0.2218
+   },
+   "reason": "Not this line: the battle bows are defined by broad, flat horn-faced limbs; our double-curved B is an invented outline with thin round limbs, so nothing of the line's defining part shows, and the B reads oddly as a letter at 2x3.",
+   "fix": {
+    "desc": "A short battle bow whose two limbs are faced with broad flat plates of dark ox horn, blackish brown with streaks of translucent amber, each plate as wide as three fingers beside the grip and narrowing to a point near the tip like a long leaf, fixed to the wooden core with two small iron rivets; a thick grip of dark leather bound with iron wire between the two plates; short bare wooden tips bound with sinew, curving slightly forward away from the string; a straight pale string. A D with broad blade-like limbs, clearly wider than a plain stave. Shown upright, side view, the string on the left, the bow arching to the right.",
+    "guide": "plated-bow",
+    "guide_new": "box/guides.py: a plated-bow entry on 832x1248 replacing battle-bow for this picture: short-bow's D; from the grip block each limb a broad flat plate about three times short-bow's limb width, tapering to a point three quarters of the way to the tip, then a thin bare tip turning a little to the right (away from the string); the string straight on the left.",
+    "shape": "plated-bow: short-bow's D with each limb a broad flat plate tapering to a point three quarters of the way out, then a thin bare tip turning a little right; the string straight on the left",
+    "note": "our 短战弓 line (Short Battle / Short Siege / Diamond Bow): the line's defining part is broad horn-faced limbs; own design: dark ox horn with amber streaks, riveted, an iron-wire grip (review round 1: the double-curved B outline was not this line's)",
+    "seeds": "4 (style.mjs SEEDS)"
+   },
+   "blocks": [
+    "invsbbu",
+    "inv8s8u"
+   ],
+   "handled": {
+    "review": 2,
+    "run": 5,
+    "seeds": [
+     101,
+     202,
+     303,
+     404,
+     505,
+     606,
+     707,
+     808
+    ],
+    "date": "2026-10-28",
+    "applied": [
+     "desc",
+     "guide",
+     "shape",
+     "note"
+    ],
+    "guide": "plated-bow",
+    "note": "guide: plated-bow replaces battle-bow, now removed (no description uses it)"
+   }
+  }
+ }
+}

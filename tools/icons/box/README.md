@@ -47,12 +47,15 @@ The painting jobs are split over the cards by expected time (a job with a refere
 
 Flat grey shapes we draw with PIL polygons, for the pictures whose shape words alone get wrong: a light
 grey ground, the object a flat dark grey shape, its key inner lines (a slit, a string, a ridge) lighter or
-darker. One function per shape family (`wavy_blade`, `fist`, `pole` with its heads, `bundle`, `flail`,
-`bow`, `crossbow`, `boots`, …), and in its `GUIDES` table one entry per guide: its family, the canvas it is
+darker. One function per shape family (`wavy_blade`, `great_sword`, `curved_sword`, `fist`, `pole` with its
+heads, `bundle`, `flail`, `bow`, `recurve_bow`, `plated_bow`, `crossbow`, `plate_suit`, `boots`, `crown_shield`,
+…), and in its `GUIDES` table one entry per guide: its family, the canvas it is
 designed on (its picture's, `style.mjs` `CANVAS`) and its parameters. A description's `guide` names an
 entry; its `shape` (or note) holds the words the guide was drawn from. They are generic shapes of a kind
 of object, never traced or measured from a picture. The sample round's eight (halberd, crossbow, falcata,
-gladius, great-helm, spear, short-bow, soft-boots) come out pixel for pixel as approved. On another canvas a
+gladius, great-helm, spear, short-bow, soft-boots) come out pixel for pixel as approved, and so does every
+picked picture's guide: review round 1 (`tools/icons/rejects/history/review-1.json`) added 24 guides, corrected
+claws, heavy-boots and the flail, and dropped the four bow guides nothing uses any more. On another canvas a
 guide is scaled to fit and centred.
 
 ### Painting (`gen.py`)
@@ -92,7 +95,9 @@ A group's pictures in the list's order (a family stays together), split evenly i
 (normal tier first; a job's `serves`), its cells and kind, its shape guide or base picture under them;
 then a column per seed: the seed and the cut's flags (red: EDGE, P<n> pieces, SH<share>) over the
 candidate at 4× (the preview), 2× and 1× (the game's files), each on the game's inventory grid
-(`src/style.css` `.grid`). `ai-icons.mjs` brings them back into `icons-src/run-NN/sheets/`, with the run's
+(`src/style.css` `.grid`). A run painted for a review round (`ai-icons.mjs --review n`, `review` in its
+`jobs.json`) heads each sheet with the round and names it `<group>_r<n>_NN.png`. `ai-icons.mjs` brings them
+back into `icons-src/run-NN/sheets/`, with the run's
 `guides/`. `build()` takes two hooks (a column beside the label, a line under each seed), so a sheet
 can be made elsewhere from the pulled files.
 

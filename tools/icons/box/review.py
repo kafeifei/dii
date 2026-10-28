@@ -2,7 +2,8 @@
 
 usage: python -I review.py RUN_DIR [--per 20] [--out DIR]
 
-Writes RUN_DIR/sheets/<group>_NN.png: a group's pictures in the order jobs.json lists them (the
+Writes RUN_DIR/sheets/<group>_NN.png (<group>_r<n>_NN.png, headed with the round, when jobs.json says the run is
+for review round n: ai-icons.mjs --review): a group's pictures in the order jobs.json lists them (the
 pictures list's: a family stays together), split evenly into sheets of at most --per (20 gives 12-20
 a sheet for every group of 12 or more, but 21-23). A row is one picture: its id, the bases it serves,
 its cells and kind, and its reference image under them (the shape guide, or a unique's base picture);
@@ -28,6 +29,7 @@ CELL = 34       # src/ui/icons.ts CELL: an inventory cell in CSS px
 SCALES = (4, 2, 1)
 LABEL_W = 230
 GAP, COL_GAP, HEAD = 8, 22, 20
+TITLE = 34      # the band over a sheet that names its run and review round
 
 
 def font(px):
@@ -123,6 +125,7 @@ def candidate(run, j):
 
 def build(run, out_dir, per=20, beside=None, note=None, beside_title="", prefix=""):
     spec = json.load(open(os.path.join(run, "jobs.json")))
+    rnd = spec.get("review")
     os.makedirs(out_dir, exist_ok=True)
     pics = OrderedDict()
     for j in spec["jobs"]:
@@ -130,7 +133,7 @@ def build(run, out_dir, per=20, beside=None, note=None, beside_title="", prefix=
     by_group = OrderedDict((g, []) for g in GROUPS)
     for pid, js in pics.items():
         by_group.setdefault(js[0]["group"], []).append((pid, sorted(js, key=lambda j: j["seed"])))
-    f15, f12 = font(15), font(12)
+    f18, f15, f12 = font(18), font(15), font(12)
     measure = ImageDraw.Draw(Image.new("RGB", (1, 1)))
     made = []
     for g, rows in by_group.items():
@@ -148,9 +151,13 @@ def build(run, out_dir, per=20, beside=None, note=None, beside_title="", prefix=
                 lab_h = 24 + 16 * len(serves) + 16 + (16 if j0.get("guide") else 0) + (80 if ref_image(run, j0) else 0)
                 sh = side_imgs[pid].height + HEAD if side_imgs.get(pid) is not None else 0
                 heights.append((serves, max(lab_h, head + j0["h"] * CELL * SCALES[0] + 2, sh) + 18))
-            sheet = Image.new("RGB", (LABEL_W + side_w + ncol * col, sum(h for _, h in heights) + 10), PANEL)
+            top = TITLE if rnd else 0
+            sheet = Image.new("RGB", (LABEL_W + side_w + ncol * col, top + sum(h for _, h in heights) + 10), PANEL)
             d = ImageDraw.Draw(sheet)
-            y = 10
+            if rnd:
+                d.text((8, 8), f"REVIEW ROUND {rnd}   {os.path.basename(os.path.abspath(run))}   {g} {k + 1}", fill=INK, font=f18)
+                d.line([(0, TITLE - 4), (sheet.width, TITLE - 4)], fill=EDGE, width=2)
+            y = top + 10
             for (pid, js), (serves, rh) in zip(chunk, heights):
                 j0 = js[0]
                 d.text((8, y + 2), pid, fill=INK, font=f15)
@@ -195,7 +202,7 @@ def build(run, out_dir, per=20, beside=None, note=None, beside_title="", prefix=
                         ox += gimg.width + GAP
                     x += col
                 y += rh
-            p = os.path.join(out_dir, f"{prefix}{g}_{k + 1:02d}.png")
+            p = os.path.join(out_dir, f"{prefix}{g}{f'_r{rnd}' if rnd else ''}_{k + 1:02d}.png")
             sheet.save(p, optimize=True)
             made.append((p, len(chunk)))
     return made

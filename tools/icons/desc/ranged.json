@@ -5,10 +5,10 @@
   "note": "the sample round's sbw words (round 2, approved)"
  },
  "invhbw": {
-  "desc": "A hunter's flat bow cut from a single yew stave: wide flat limbs, broadest beside the grip and narrowing evenly to slim tips, pale cream sapwood along the back and darker brown heartwood on the belly so each limb shows two tones, a short grip bound in rawhide, a small tuft of grey fur tied below the upper tip, a thin pale twine string running straight from tip to tip; a deep D with broad limbs, not a thin round stave. Shown upright, side view, the string on the left, the bow arching to the right.",
-  "guide": "flat-bow",
-  "shape": "flat-bow: short-bow's D made deeper, each limb a wide flat band about twice short-bow's limb width beside a short grip, tapering to thin tips; the string a straight line on the left",
-  "note": "our 猎弓 line (Hunter's / Razor / Blade Bow): own design, a two-tone yew flat bow, told from the short bow by its broad limbs"
+  "desc": "A hunter's bow made from a single crooked branch: the two limbs are not smooth arcs but wander in three or four gentle, irregular bends along their length like a knotty stick, the bark stripped to weathered grey-brown wood with dark knots and two or three short stubs of trimmed twigs, a grip of rawhide strips wound round the middle, both tips cut into simple notches and bound with dark sinew, a thin pale twine string running perfectly straight from tip to tip and nothing else crossing the bow. A D whose curved side wobbles like a crooked stick, not a smooth curve. Shown upright, side view, the string on the left, the bow arching to the right.",
+  "guide": "crooked-bow",
+  "shape": "crooked-bow: short-bow's D whose limbs wobble in three irregular waves each, the two limbs out of phase; a short grip block at the middle; the string straight on the left",
+  "note": "our 猎弓 line (Hunter's / Razor / Blade Bow): the line's defining part is a stave cut from a crooked branch; own design: grey-brown stripped wood, twig stubs, rawhide grip (review round 1: the two-tone flat bow did not read as this line)"
  },
  "invcbw": {
   "desc": "A composite horse-archer's bow of horn, wood and sinew: short limbs covered in dark brown birch bark, a slim leather-wrapped grip at the middle, and at each end a stiff straight ear of pale horn that bends sharply forward, away from the string, with a small bone string bridge at the bend; the string runs straight between the two bridges and along the ears to their tips. A recurve with angled ears, not a plain D. Shown upright, side view, the string on the left.",
@@ -17,10 +17,10 @@
   "note": "our 复合弓 line (Composite / Double / Great Bow): own design, the eared steppe bow"
  },
  "invsbb": {
-  "desc": "A short battle bow with a double-curved outline like a cupid's bow: the grip at the middle set back close to the string, each limb swelling forward away from the string in a rounded hump and then sweeping back toward it near the tip, so the bow is two humps like a capital letter B, not a single D; laminated from strips of brown wood and dark horn with thin joins visible along the limbs, a thick grip wrapped in dark leather, rawhide bindings at the base of each limb, horn nocks, a straight pale string. Shown upright, side view, the string on the left.",
-  "guide": "battle-bow",
-  "shape": "deflex-reflex B: the grip block a little right of the string line, each limb bowing out to the right in a rounded hump and coming back to the string at its tip; straight string on the left",
-  "note": "our 短战弓 line (Short Battle / Short Siege / Diamond Bow): own design; the battle bows share this cupid's-bow outline (invlbb tall)"
+  "desc": "A short battle bow whose two limbs are faced with broad flat plates of dark ox horn, blackish brown with streaks of translucent amber, each plate as wide as three fingers beside the grip and narrowing to a point near the tip like a long leaf, fixed to the wooden core with two small iron rivets; a thick grip of dark leather bound with iron wire between the two plates; short bare wooden tips bound with sinew, curving slightly forward away from the string; a straight pale string. A D with broad blade-like limbs, clearly wider than a plain stave. Shown upright, side view, the string on the left, the bow arching to the right.",
+  "guide": "plated-bow",
+  "shape": "plated-bow: short-bow's D with each limb a broad flat plate tapering to a point three quarters of the way out, then a thin bare tip turning a little right; the string straight on the left",
+  "note": "our 短战弓 line (Short Battle / Short Siege / Diamond Bow): the line's defining part is broad horn-faced limbs; own design: dark ox horn with amber streaks, riveted, an iron-wire grip (review round 1: the double-curved B outline was not this line's)"
  },
  "invswb": {
   "desc": "A heavy short war bow: a straight rigid middle section of thick dark oak, a third of its length, with a small arrow shelf carved into it and leather wrapped round the grip, and from each end of it a thinner limb of pale ash backed with dark sinew, bound with cord at the joint, curving back toward the string to horn nocks; a thick twisted string. Straight in the middle and curved only at the ends, unlike a plain D. Shown upright, side view, the string on the left.",
@@ -35,10 +35,10 @@
   "note": "our 长弓 line (Long / Cedar / Shadow Bow): own design, the plain tall stave"
  },
  "invlbb": {
-  "desc": "A tall long battle bow with a double-curved outline like a cupid's bow: the grip set back close to the string and each long limb bowing forward away from the string in a broad hump before sweeping back toward it near its tip, two humps like a capital letter B, not a single D; laminated strips of brown wood and dark horn, a long grip of dark leather, rawhide bindings at the base of each limb, horn nocks, a straight pale string. Shown upright, side view, the string on the left.",
-  "guide": "long-battle-bow",
-  "shape": "the short battle bow's deflex-reflex B on the 2x4 canvas: grip near the string, two long humps bowing right, the tips back on the string line",
-  "note": "our 长战弓 line (Long Battle / Large Siege / Crusader Bow): own design, invsbb's outline made long"
+  "desc": "A tall long battle bow whose two long limbs are faced with broad flat plates of dark ox horn, blackish brown with streaks of translucent amber, each plate as wide as three fingers beside the grip and narrowing to a point two thirds of the way to the tip, fixed to the wooden core with small iron rivets; a long grip of dark leather bound with iron wire; long bare wooden tips bound with sinew, curving slightly forward away from the string; a straight pale string. A tall D with broad blade-like limbs, clearly wider than a plain stave. Shown upright, side view, the string on the left, the bow arching to the right.",
+  "guide": "long-plated-bow",
+  "shape": "the plated bow on the 2x4 canvas: a tall shallow D, broad plates tapering two thirds of the way out, long thin tips turning a little right; the string straight on the left",
+  "note": "our 长战弓 line (Long Battle / Large Siege / Crusader Bow): invsbb's horn-plated limbs made long (review round 1: the B outline went with invsbb's)"
  },
  "invlwb": {
   "desc": "A tall heavy long war bow: a straight rigid middle section of thick dark oak, a quarter of its length, with an arrow shelf carved into it and leather wrapped round the grip; from each end of it a long thinner limb of pale ash backed with dark sinew, bound with cord at the joint, curving back toward the string to horn nocks; a thick twisted string. Straight in the middle and curved only at the ends. Shown upright, side view, the string on the left.",
@@ -53,10 +53,10 @@
   "note": "our 猎鹿弓 line (the huntress's Stag / Ashwood / Matriarchal Bow): own design, antler-tine tips and deer hide"
  },
  "invam2": {
-  "desc": "A huntress's tall reflex bow: limbs of amber-brown horn laminated onto pale wood, each limb bending in a deep curve far out from the string and then curling forward at its tip into a small round hook like the end of a ram's horn, a carved wooden grip wrapped in braided cord with a small leather arrow pad, a straight pale string. A deeper, more curling outline than a plain longbow. Shown upright, side view, the string on the left.",
-  "guide": "reflex-bow",
-  "shape": "reflex-bow: a tall deep D (depth about a third of the height) whose two tips curl out to the right into small closed hooks; the string straight on the left",
-  "note": "our 双曲弓 line (the huntress's Reflex / Ceremonial / Grand Matron Bow): own design, ram's-horn curled tips"
+  "desc": "A huntress's tall recurve bow: from the grip each limb sweeps out in a deep curve and then, in its last fifth, bends back the other way, away from the string, so both ends recurve like the crest of a wave and the string lies along each recurved end before it reaches the tip; the limbs broad near the grip and slimming toward the ends, of amber-brown horn laminated over pale wood with a thin dark seam between them; small carved bone caps on the tips; a carved wooden grip wrapped in braided cord with a small leather arrow pad. A recurved outline whose ends flick outward, not a plain D. Shown upright, side view, the string on the left, the bow arching to the right.",
+  "guide": "recurve-bow",
+  "shape": "recurve-bow: a tall deep D with broad limbs whose last fifth reverses so each tip points out to the right; the string straight between the reversal points, then along the recurved ends",
+  "note": "our 双曲弓 line (the huntress's Reflex / Ceremonial / Grand Matron Bow): the line's defining part is recurved ends on broad limbs; own design: amber horn on pale wood, bone tip caps, a braided grip (review round 1: reflex-bow's tips curled toward the string into rings and the bow read as a plain D)"
  },
  "invlxb": {
   "desc": "A light hunting crossbow seen from directly above, lying flat: a slim straight tiller of pale wood tapering toward a narrow butt, no shoulder stock and no pistol grip; across its front end a thin prod of horn and wood lashed to the tiller with cord, its two tips curving forward; no stirrup; the string drawn back to a small round nut a third of the way down the tiller, forming a V that points toward the butt; a short iron trigger lever under the rear half. The prod at the top, the butt at the bottom.",
@@ -97,9 +97,9 @@
   "note": "Strangling Gas Potion (gpl, our 呛息毒气药水): the gas line's largest, an iron-caged globe, shared in shape with the fulminating potion"
  },
  "invopl": {
-  "desc": "A fire bottle for throwing: a small gourd-shaped bottle of thick clear glass, two round bulbs with the lower one larger, half full of dark amber lamp oil, an oily rag stuffed into the neck as a wick and tied with twine, its frayed end hanging down the side. Shown upright.",
-  "fill": 0.75,
-  "note": "Oil Potion (ops, our 火油药水): the fire line's smallest, told from the gas flask by its rag wick and amber oil"
+  "desc": "A fire bottle for throwing: a small round-bellied flask of thick clear glass with a short neck, filled to the shoulder with pale golden lamp oil, light straw-yellow like clear cooking oil, never red or brown; a thick twist of oily grey rag stuffed into the neck as a wick, a tuft of it sticking up above the neck and a frayed tail hanging down one side of the flask, tied round the neck with twine. Shown upright.",
+  "fill": 0.8,
+  "note": "Oil Potion (ops, our 火油药水): the fire line's smallest, the same round flask as invgpl's pick with a rag wick; the oil must read yellow, apart from the scarlet healing flasks (review round 1: dark amber came out red-brown and read as a healing potion at 34 px)"
  },
  "invopm": {
   "desc": "A fire bomb: a pear-shaped glass bottle with a long narrow neck, wrapped in a net of knotted brown cord, filled with glowing orange liquid like molten embers, a short twisted fuse cord sticking up out of a wax plug in the neck. Shown upright.",
@@ -116,7 +116,9 @@
   "note": "our 箭矢 (Arrows): own design, feathers up, told from the bolts by the round tube"
  },
  "invcqv": {
-  "desc": "A box quiver of crossbow bolts: a tapered box quiver, wider at the mouth than at the bottom, of wood covered in brown cowhide with the hair still on, an iron-bound mouth and an iron belt hook on one side, holding about a dozen short thick bolts standing point up so their square iron pyramid heads stick out of the top in a row, unlike an arrow quiver. Shown upright, the open end at the top.",
-  "note": "our 弩矢 (Bolts): own design, heads up in a hairy hide box"
+  "desc": "A bolt case for crossbow bolts: a straight-sided square box of dark stained oak boards, open at the top and as wide at the bottom as at the mouth, its four corners bound with riveted iron angle straps and a broad iron band round the mouth, a leather carrying strap hanging in a loop from two iron rings on one side; standing in it about a dozen short thick crossbow bolts point up, each with a heavy dark iron head shaped like a small four-sided pyramid with a flared collar at the shaft, the heads sharp-edged and clearly pointed, not rounded; no fur, no hair, no hide. Shown upright, front view, the open end at the top.",
+  "guide": "bolt-case",
+  "shape": "bolt-case: a straight-sided box, not tapered, banded at the mouth, a staggered row of short pointed bolt heads above it",
+  "note": "our 弩矢 (Bolts): own design, an iron-bound oak case with the heads up, told from the round leather arrow quiver (review round 1: the tapered hairy-hide quiver was too near the original's design and its heads read as pencils)"
  }
 }

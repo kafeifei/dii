@@ -13,6 +13,7 @@
 //     sel       --group blades,long  --kind base,variant,unique,set  --only invssd,invcap
 //     --seeds   101,202 (default style.mjs SEEDS); --round n takes the n-th next four (seedsFor)
 //     --desc f  descriptions from another file too (a trial: they override desc/*.json)
+//     --review n  the review round the run's candidates are for: its sheets say so (<group>_r<n>_NN.png)
 //
 // Every step can be stopped and run again. A run is box:~/icons/full/run-NN (claimed with mkdir, so two
 // sessions never share one) holding jobs.json, the paintings (gen/), cut-outs (cut/), candidates
@@ -28,7 +29,9 @@
 // box/guides.py; fill shrinks the object in its cells; material says whether the normal-tier
 // material line goes in (style.mjs takesMaterial); ref, for a unique or set picture, is the picture
 // whose pick is its reference image (default its base's: that base must be picked first).
-// Picks, tools/icons/picks/<group>.json: { "<picture>": { "run": 3, "seed": 202 } }.
+// Picks, tools/icons/picks/<group>.json: { "<picture>": { "run": 3, "seed": 202 } }. Rejects,
+// tools/icons/rejects/<group>.json: a review's pictures sent back, each with the reason and its fix (new words,
+// a guide, a fill); once applied and painted again they move to rejects/history/review-<n>.json.
 // npm test -- icons checks the list's rules, the descriptions, the picks and public/icons/items/.
 import { spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
@@ -54,8 +57,8 @@ const BOX_PY = 'icons/env/.venv/bin/python';
 const SECS = { plain: 2.28, ref: 5.08, load: 12 };
 
 const args = process.argv.slice(2);
-const FLAGS = ['dry', 'gen', 'pull', 'prompts', 'run', 'group', 'kind', 'only', 'seeds', 'round', 'desc'];
-const VALUED = ['run', 'group', 'kind', 'only', 'seeds', 'round', 'desc'];
+const FLAGS = ['dry', 'gen', 'pull', 'prompts', 'run', 'group', 'kind', 'only', 'seeds', 'round', 'desc', 'review'];
+const VALUED = ['run', 'group', 'kind', 'only', 'seeds', 'round', 'desc', 'review'];
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (!a.startsWith('--') || !FLAGS.includes(a.slice(2))) fail(`${a}? The flags are ${FLAGS.map((f) => `--${f}`).join(' ')}`);
@@ -80,6 +83,8 @@ for (const k of SEL.kind ?? []) if (!KINDS.includes(k)) fail(`--kind ${k}: the k
 const ROUND = opt('round') === undefined ? 0 : Number(opt('round'));
 const SEED_LIST = opt('seeds') ? opt('seeds').split(',').map(Number) : ROUND ? seedsFor(ROUND) : SEEDS;
 if (!SEED_LIST.every((s) => Number.isInteger(s) && s >= 0)) fail(`--seeds ${opt('seeds')}: whole numbers`);
+const REVIEW = opt('review') === undefined ? undefined : Number(opt('review'));
+if (REVIEW !== undefined && !(Number.isInteger(REVIEW) && REVIEW > 0)) fail(`--review ${opt('review')}: a review round, 1 or more`);
 
 function fail(msg) {
   console.error(msg);
@@ -275,7 +280,10 @@ function runStatus(n) {
 function mergeJobs(n, jobs) {
   const local = path.join(SRC, runName(n), 'jobs.json');
   const r = ssh(`cat ${BOX_ROOT}/${runName(n)}/jobs.json 2>/dev/null`, { ok: true });
-  const old = r.status === 0 && r.stdout.trim() ? JSON.parse(r.stdout).jobs : [];
+  const was = r.status === 0 && r.stdout.trim() ? JSON.parse(r.stdout) : {};
+  const old = was.jobs ?? [];
+  const review = REVIEW ?? was.review;
+  if (REVIEW && was.review && REVIEW !== was.review) fail(`${runName(n)} is review round ${was.review}'s: paint round ${REVIEW}'s in a new run`);
   const have = new Map(old.map((j) => [j.id, j]));
   const changed = [];
   const added = [];
@@ -292,6 +300,7 @@ function mergeJobs(n, jobs) {
     matte: MATTE,
     grade: GRADE,
     export: EXPORT,
+    ...(review ? { review } : {}),
     jobs: [...old, ...added],
   };
   writeAtomic(local, json(spec));

@@ -10,7 +10,7 @@ A guide is a light grey ground with the object as a flat dark grey shape and its
 (slits, a string, a ridge) lighter or darker. A shape family is one function; a guide is one set of its
 parameters, designed on its picture's canvas (style.mjs CANVAS); on another canvas it is scaled to fit and
 centred on the same ground. These are generic parametric shapes of a kind of object (a halberd's lopsided
-head, a bow's D), drawn from the description's words (its "shape", else its note), never measured from any
+head, a bow's D, a crown's points), drawn from the description's words (its "shape", else its note), never measured from any
 picture. The sample round's eight (halberd, crossbow, falcata, gladius, great-helm, spear, short-bow,
 soft-boots) are kept pixel for pixel as approved: the first two and the last three as their families' defaults.
 In the samples the mace's guide drew a spear point for a head and wasn't used: it is not kept.
@@ -180,13 +180,135 @@ def falchion(d, W, H, bx=203, base=1040, tip=70, root=78, belly=150, belly_y=330
     line(d, [(bx + 14, base - 10), (bx + 14, tip + 70)], 4, LIGHT)            # the thick back
 
 
+def great_sword(d, W, H, cx=224, tip=50, blade=(36, 1040), point=110, ricasso=None, lugs=None, guard=None, quillons=None,
+                langets=None, grip=(22, 1232, 1650), raised=(), pear=None, wheel=None):
+    """A long straight double-edged blade from its point (tip) down to y blade[1], blade[0] its half width, a fuller down
+    its middle. ricasso (half, y0, y1): a narrower leather-wrapped stretch of blade above the guard, and lugs (reach, y,
+    height): two small pointed lugs out to the sides at its top. guard (half, y0, y1, drop): a straight bar whose ends
+    turn down; or quillons (length, degrees, ring): two straight arms rising from the hilt toward the point in a wide V,
+    a cluster of four rings at each end; langets (half, y0): straps over the blade's base, a little wider than it. A
+    bound grip (half, y0, y1) with raised bands across it at the ys in raised; a pear pommel (half, y0, y1), or a wheel
+    (r, cy) face on."""
+    hw, by = blade
+    d.polygon(P([(cx, tip), (cx + hw, tip + point), (cx + hw, by), (cx - hw, by), (cx - hw, tip + point)]), fill=OBJ)
+    line(d, [(cx, tip + 70), (cx, by - 40)], 6, LIGHT)                       # the fuller
+    if ricasso:
+        h, y0, y1 = ricasso
+        d.rectangle(P([(cx - h, y0), (cx + h, y1)]), fill=DARK)              # leather-wrapped, narrower than the blade
+        for y in range(round(y0) + 24, round(y1) - 8, 30):
+            line(d, [(cx - h, y), (cx + h, y + 10)], 3, LIGHT)
+    if lugs:
+        reach, y, lh = lugs
+        for s in (-1, 1):
+            d.polygon(P([(cx + s * (hw - 8), y - lh / 2), (cx + s * reach, y - lh * 0.1), (cx + s * (hw - 8), y + lh / 2)]), fill=OBJ)
+    if langets:
+        h, y0 = langets
+        d.rectangle(P([(cx - h, y0), (cx + h, grip[1])]), fill=OBJ)
+        line(d, [(cx, y0 + 12), (cx, grip[1] - 6)], 4, DARK)
+    if guard:
+        h, y0, y1, drop = guard
+        d.rectangle(P([(cx - h, y0), (cx + h, y1)]), fill=OBJ)
+        for s in (-1, 1):                                                   # the ends turned down
+            d.polygon(P([(cx + s * (h - 30), y0), (cx + s * h, y0), (cx + s * (h + 4), y1 + drop), (cx + s * (h - 24), y1 + drop - 6)]), fill=OBJ)
+    if quillons:
+        length, deg, ring = quillons
+        gy = grip[1] - 14
+        d.rectangle(P([(cx - 34, gy - 26), (cx + 34, gy + 14)]), fill=OBJ)  # the block the arms rise from
+        for s in (-1, 1):
+            end = (cx + s * length * math.cos(math.radians(deg)), gy - length * math.sin(math.radians(deg)))
+            band(d, [(cx + s * 16, gy - 4), end], (30, 22))
+            for k in range(4):                                              # a cluster of four rings
+                a = math.radians(45 + 90 * k)
+                x, y = end[0] + ring * 1.05 * math.cos(a), end[1] + ring * 1.05 * math.sin(a)
+                d.ellipse(P([(x - ring, y - ring), (x + ring, y + ring)]), outline=OBJ, width=9 * SS)
+    gh, g0, g1 = grip
+    bound_grip(d, cx, g0, g1, gh)
+    for y in raised:                                                        # raised bands round the grip
+        d.rectangle(P([(cx - gh - 7, y - 13), (cx + gh + 7, y + 13)]), fill=OBJ)
+        line(d, [(cx - gh - 7, y), (cx + gh + 7, y)], 4, DARK)
+    if pear:                                                                # a neck swelling to a round end
+        h, y0, y1 = pear
+        d.polygon(P([(cx - h * 0.6, y0), (cx + h * 0.6, y0), (cx + h, y0 + (y1 - y0) * 0.6), (cx - h, y0 + (y1 - y0) * 0.6)]), fill=OBJ)
+        d.ellipse(P([(cx - h, y0 + (y1 - y0) * 0.3), (cx + h, y1)]), fill=OBJ)
+    if wheel:                                                               # a flattened wheel, face on
+        r, cy = wheel
+        dot(d, cx, cy, r, OBJ)
+        d.ellipse(P([(cx - r * 0.62, cy - r * 0.62), (cx + r * 0.62, cy + r * 0.62)]), outline=LIGHT, width=5 * SS)
+
+
+def curved_sword(d, W, H, cx=256, base=1190, tip=(85, 60), ctrl=None, back=24, edge=24, belly=0, point=0.12,
+                 guard=(60, 26), balls=0, grip=(22, 1216, 1440), pommel=(28, 1434, 1484), bow=None):
+    """A single-edged blade rising from a straight hilt and curving to the right: its centre line leaves the hilt at
+    (cx, base) straight up and bends to the tip (dx off the hilt's line, y), through ctrl (default an even, circle-like
+    bend). The back (the right, concave side) runs back px off the centre line, one smooth curve to the point; the
+    edge (the left, convex side) edge px off it, swelling by belly toward four fifths of the way up, then sweeping up
+    over the last point of the length to meet the back at the point. guard (half, height) a short straight bar, balls its end knobs' radius; a bound grip
+    (half, y0, y1), a cap pommel (half, y0, y1); bow (reach, width) a D-shaped knuckle bow from the guard's left end
+    round the grip into the pommel."""
+    t = (cx + tip[0], tip[1])
+    c = bez((cx, base), ctrl or (cx, (base + t[1]) / 2 + 12), t, 120)
+    bk, ed = [], []
+    for i, p in enumerate(c):
+        s = i / (len(c) - 1)
+        a, b = c[max(i - 1, 0)], c[min(i + 1, len(c) - 1)]
+        m = math.dist(a, b) or 1
+        nx, ny = -(b[1] - a[1]) / m, (b[0] - a[0]) / m                       # to the right of the way up
+        k = min(1, s / (1 - point))
+        w = (back + edge + belly * k ** 1.6) * (1 - max(0, (s - (1 - point)) / point) ** 1.4)  # the edge's distance from the back
+        bk.append((p[0] + nx * back, p[1] + ny * back))
+        ed.append((p[0] + nx * (back - w), p[1] + ny * (back - w)))
+    d.polygon(P(bk + ed[::-1]), fill=OBJ)
+    line(d, [(x - 0.45 * (x - ex), y - 0.45 * (y - ey)) for (x, y), (ex, ey) in list(zip(bk, ed))[8:-16]], 4, LIGHT)  # fuller by the back
+    gh, gt = guard
+    d.rectangle(P([(cx - gh, base), (cx + gh, base + gt)]), fill=OBJ)
+    if balls:
+        for s in (-1, 1):
+            dot(d, cx + s * gh, base + gt / 2, balls, OBJ)
+    bound_grip(d, cx, grip[1], grip[2], grip[0])
+    h, y0, y1 = pommel
+    d.ellipse(P([(cx - h, y0), (cx + h, y1)]), fill=OBJ)
+    if bow:
+        reach, bw = bow
+        mid = (grip[1] + grip[2]) / 2
+        band(d, spline([(cx - gh + 6, base + gt / 2), (cx - reach * 0.8, base + 70), (cx - reach, mid),
+                        (cx - reach * 0.8, y0 - 40), (cx - h + 4, (y0 + y1) / 2)]), bw)
+
+
+def crystal_sword(d, W, H, cx=416, tip=60, base=860, half=84, guard=(150, 44), grip=(28, 1110), pommel=40):
+    """A blade grown as one long crystal: an irregular outline whose edges step in and out where facets meet, small
+    crystal points growing from its sides near the base, a faceted point; facet lines down it; a short square guard,
+    a bound grip and a small round pommel."""
+    left = [(base, 0.80), (base - 70, 0.94), (base - 120, 0.78), (base - 200, 0.88), (base - 300, 0.70), (base - 390, 0.84),
+            (base - 480, 0.64), (base - 570, 0.74), (base - 650, 0.54), (base - 720, 0.40), (tip + 60, 0.22)]
+    right = [(base, 0.82), (base - 80, 0.72), (base - 140, 0.90), (base - 240, 0.78), (base - 330, 0.92), (base - 430, 0.70),
+             (base - 520, 0.80), (base - 610, 0.58), (base - 690, 0.50), (base - 750, 0.30)]
+    L = [(cx - f * half, y) for y, f in left]
+    R = [(cx + f * half, y) for y, f in right]
+    d.polygon(P(R + [(cx + 10, tip)] + L[::-1]), fill=OBJ)
+    for (y, f), (dx, dy, s) in zip(((base - 60, 0.92), (base - 150, 0.80), (base - 110, 0.86)), ((-1.75, -120, -1), (1.7, -110, 1), (-1.35, -60, -1))):
+        r = (cx + s * f * half, y)                                          # small side crystals near the base
+        d.polygon(P([(r[0], r[1] + 26), (cx + dx * half, y + dy), (r[0], r[1] - 34)]), fill=OBJ)
+    spine = [(cx + (8 if k % 2 else -6), y) for k, (y, _) in enumerate(left)]
+    for (x, y), (sx, sy) in zip(L[1:-1], spine[1:-1]):                       # facet lines to a wandering spine
+        line(d, [(x + 6, y), (sx, sy - 30)], 4, LIGHT)
+    for (x, y), k in zip(R[1:-1], range(1, len(R) - 1)):
+        sx, sy = spine[min(k, len(spine) - 1)]
+        line(d, [(x - 6, y), (sx, sy + 20)], 3, DARK)
+    line(d, spine + [(cx + 10, tip + 20)], 4, LIGHT)
+    gh, gt = guard
+    d.rectangle(P([(cx - gh, base), (cx + gh, base + gt)]), fill=OBJ)
+    bound_grip(d, cx, base + gt, grip[1], grip[0])
+    dot(d, cx, grip[1] + pommel - 6, pommel, OBJ)
+
+
 # ---- fist weapons: a head over a frame held across the knuckles
 
 def fist(d, W, H, head, cx=256, top=780, bottom=1470, bars=91, bar=14, grips=(1080, 1180), straps=(), frame="H"):
     """A fist weapon seen from the front. head: 'katar' (a tall triangle), 'scissors' (two thin blades
     opened in a V from one pivot), 'claws' (three slim prongs), 'crescent' (a broad crescent arching
     over the knuckles, horns down). frame 'H': two side bars from top to bottom joined by the grips;
-    'U': the bars joined round the bottom. straps: leather bands wider than the frame."""
+    'U': the bars joined round the bottom. straps: leather bands wider than the frame. The claws' talons rise straight
+    from the crossbar and hook to the right through their upper half, the tips ~70 px off their roots' lines."""
     if frame == "H":
         for s in (-1, 1):
             d.rectangle(P([(cx + s * bars - bar, top), (cx + s * bars + bar, bottom)]), fill=OBJ)
@@ -217,9 +339,9 @@ def fist(d, W, H, head, cx=256, top=780, bottom=1470, bars=91, bar=14, grips=(10
         dot(d, cx, top, 16, DARK)
     elif head == "claws":
         d.rectangle(P([(cx - bars - bar, top - 24), (cx + bars + bar, top + 20)]), fill=OBJ)
-        for s, tip in ((-1, (cx - 100, 120)), (0, (cx, 60)), (1, (cx + 100, 120))):
-            b = (cx + s * 64, top - 20)
-            band(d, bez(b, (b[0] + s * 4, (b[1] + tip[1]) / 2), tip), (32, 0))
+        for s, ty in ((-1, 170), (0, 100), (1, 170)):                         # straight, then hooking right in the upper half
+            bx, by = cx + s * 64, top - 20
+            band(d, spline([(bx, by), (bx + s * 10, (by + ty) / 2 + 60), (bx + s * 18 + 26, ty + 130), (bx + s * 24 + 70, ty)]), (36, 4))
     elif head == "crescent":
         outer = arc(cx, 470, 205, 400, 180, 360)                             # the edge up, the horns at the sides
         inner = arc(cx, 500, 138, 210, 360, 180)
@@ -355,13 +477,80 @@ def pick_head(d, cx, top=110, beak=(340, 236), stub=130):
     line(d, bez((cx + 30, top + 40), (cx + 200, top + 28), (cx + beak[0] - 16, beak[1] - 14)), 4, LIGHT)
 
 
+def flange_head(d, cx, top=70, bottom=380, half=100, steps=(22, 22), knob=22, collar=(30, 30)):
+    """a flanged mace's head: a tall pointed oval of flanges seen side-on, one out to each side and one facing, their
+    outer edges cut into squared steps, dark gaps between them; a knob on top, a collar below"""
+    h = bottom - top
+    right = [(cx + 18, top), (cx + half * 0.62, top + h * 0.16), (cx + half, top + h * 0.40), (cx + half, top + h * 0.56),
+             (cx + half - steps[0], top + h * 0.56), (cx + half - steps[0], top + h * 0.72),
+             (cx + half - steps[0] - steps[1], top + h * 0.72), (cx + half - steps[0] - steps[1], top + h * 0.84), (cx + 26, bottom)]
+    d.polygon(P(right + flip(right, cx)), fill=OBJ)
+    for s in (-1, 1):                                                       # the gaps either side of the facing flange
+        band(d, [(cx + s * 34, top + h * 0.12), (cx + s * 40, top + h * 0.5), (cx + s * 30, bottom - h * 0.08)], (8, 16), fill=DARK)
+    line(d, [(cx, top + h * 0.1), (cx, bottom - h * 0.1)], 5, LIGHT)        # the facing flange's edge
+    for s in (-1, 1):
+        line(d, [(cx + s * (half - 14), top + h * 0.42), (cx + s * (half - 14), top + h * 0.54)], 4, LIGHT)
+    dot(d, cx, top - knob * 0.5, knob, OBJ)
+    d.rectangle(P([(cx - collar[0], bottom - 4), (cx + collar[0], bottom + collar[1])]), fill=OBJ)
+    line(d, [(cx - collar[0], bottom + collar[1] / 2), (cx + collar[0], bottom + collar[1] / 2)], 4, DARK)
+
+
+def hammer_head(d, cx, top=100, block=150, spike=(380, 74), point=64, langets=470):
+    """a war hammer's lopsided head: a square block to the left with a toothed face, a long spike tapering to the right
+    and bending a little down, a short point straight up; langets riveted down the haft"""
+    d.rectangle(P([(cx - 30, top), (cx + 30, top + 124)]), fill=OBJ)       # the eye
+    face = [(cx - 28, top + 12), (cx - block, top + 12)]
+    for i, y in enumerate(range(top + 22, top + 108, 14)):                 # the cross-cut striking face
+        face.append((cx - block - (10 if i % 2 else 0), y))
+    d.polygon(P(face + [(cx - block, top + 112), (cx - 28, top + 112)]), fill=OBJ)
+    line(d, [(cx - block + 26, top + 14), (cx - block + 26, top + 110)], 4, LIGHT)
+    reach, dy = spike
+    band(d, bez((cx + 26, top + 62), (cx + reach * 0.55, top + 52), (cx + reach, top + dy + 62)), (92, 8))
+    line(d, bez((cx + 34, top + 50), (cx + reach * 0.55, top + 40), (cx + reach - 20, top + dy + 50)), 4, LIGHT)
+    d.polygon(P([(cx - 24, top + 4), (cx, top - point), (cx + 24, top + 4)]), fill=OBJ)
+    d.rectangle(P([(cx - 22, top + 120), (cx + 22, langets)]), fill=OBJ)
+    for y in (top + 200, langets - 40):
+        dot(d, cx, y, 6, DARK)
+
+
+def cap_head(d, cx, top=60, bottom=200, half=96):
+    """a plain blunt iron cap over a staff's end, rounded on top"""
+    d.rounded_rectangle(P([(cx - half, top), (cx + half, bottom)]), radius=46 * SS, corners=(True, True, False, False), fill=OBJ)
+    line(d, [(cx - half, bottom - 22), (cx + half, bottom - 22)], 5, DARK)
+
+
+def knob_head(d, cx, top=50, bottom=270, rx=100, rings=(84, 270, 320)):
+    """a staff's rounded wooden knob, three narrow iron rings under it"""
+    d.ellipse(P([(cx - rx, top), (cx + rx, bottom + 12)]), fill=OBJ)
+    h, y0, y1 = rings
+    d.rectangle(P([(cx - h, y0), (cx + h, y1)]), fill=DARK)
+    for k in (1, 2):
+        line(d, [(cx - h, y0 + (y1 - y0) * k / 3), (cx + h, y0 + (y1 - y0) * k / 3)], 4, LIGHT)
+
+
+def trident_head(d, cx, bar=(120, 300, 334), prongs=((-110, 120), (0, 70), (110, 120)), prong=13, barb=(32, 70, 22), socket=(18, 480)):
+    """three straight square prongs on a straight crossbar, each ending in a barbed arrow-shaped head, and the socket"""
+    h, y0, y1 = bar
+    d.rectangle(P([(cx - h, y0), (cx + h, y1)]), fill=OBJ)
+    bw, bh, cut = barb
+    for dx, yt in prongs:
+        x = cx + dx
+        d.rectangle(P([(x - prong, yt + bh - cut), (x + prong, y0 + 2)]), fill=OBJ)
+        d.polygon(P([(x, yt), (x + bw, yt + bh), (x + prong - 2, yt + bh - cut), (x - prong + 2, yt + bh - cut), (x - bw, yt + bh)]), fill=OBJ)
+        line(d, [(x, yt + 14), (x, y0 - 6)], 3, LIGHT)
+    d.rectangle(P([(cx - socket[0], y1), (cx + socket[0], socket[1])]), fill=OBJ)
+    line(d, [(cx - socket[0], socket[1] - 24), (cx + socket[0], socket[1] - 24)], 5, DARK)
+
+
 HEADS = {"leaf": leaf_head, "halberd": halberd_head, "fork": fork_head, "winged": winged_head, "bardiche": bardiche_head,
-         "poleaxe": poleaxe_head, "voulge": voulge_head, "scythe": scythe_head, "pilum": pilum_head, "pick": pick_head}
+         "poleaxe": poleaxe_head, "voulge": voulge_head, "scythe": scythe_head, "pilum": pilum_head, "pick": pick_head,
+         "flange": flange_head, "hammer": hammer_head, "cap": cap_head, "knob": knob_head, "trident": trident_head}
 
 
-def pole(d, W, H, head, cx, shaft, butt=None, spike=None, grip=None, **kw):
+def pole(d, W, H, head, cx, shaft, butt=None, spike=None, grip=None, bands=(), **kw):
     """A long straight shaft (half width, top, bottom) with a head on top (HEADS, its own parameters), an
-    iron butt cap (half width, top, bottom) or a butt spike (its point's y), a dark grip wrap (half width, y0, y1)."""
+    iron butt cap (half width, top, bottom) or a butt spike (its point's y), a dark grip wrap (half width, y0, y1),
+    iron bands or collars round the shaft (each half width, y0, y1)."""
     hw, y0, y1 = shaft
     d.rectangle(P([(cx - hw, y0), (cx + hw, y1)]), fill=OBJ)
     if butt:
@@ -371,19 +560,44 @@ def pole(d, W, H, head, cx, shaft, butt=None, spike=None, grip=None, **kw):
     HEADS[head](d, cx, **kw)
     if grip:
         d.rectangle(P([(cx - grip[0], grip[1]), (cx + grip[0], grip[2])]), fill=DARK)
+    for h, y0, y1 in bands:
+        d.rectangle(P([(cx - h, y0), (cx + h, y1)]), fill=OBJ)
+        line(d, [(cx - h, (y0 + y1) / 2), (cx + h, (y0 + y1) / 2)], 4, LIGHT)
 
 
-def bundle(d, W, H, head="leaf", cx=256, bottom=1470, spread=(24, 64), tips=(130, 50, 95), length=150, tie=(780, 870), shaft=9):
-    """Three slim straight javelins in a bundle, near parallel, fanning a little toward the top, tied at the
-    middle; their heads at staggered heights: 'leaf' points, or 'barb' (a slender point with one barb
-    curving back on the outer side, a small leather ring below it)."""
+def bundle(d, W, H, head="leaf", cx=256, bottom=1470, spread=(24, 64), tips=(130, 50, 95), length=150, tie=(780, 870), shaft=9,
+           blade=30, ring=34, axe=(125, 52), stagger=None):
+    """Three slim weapons in a bundle, near parallel, fanning a little toward the top, tied together; their heads
+    at staggered heights. Javelins: 'leaf' points, or 'barb' (a slender point with one barb curving back on the outer
+    side, a small leather ring below it). 'knife': a throwing knife, a double-edged blade length long (blade its half
+    width) on a slim handle with a ring (radius ring) at its butt. 'axe': a throwing axe, a small head on top of a
+    short haft (axe: the blade's reach to the right, the round poll's to the left). stagger: identical ones of that
+    length shifted along their length, each from its tip down, instead of all ending at bottom."""
     lines = []
     for i, tip in zip((-1, 0, 1), tips):
-        b, t = (cx + i * spread[0], bottom), (cx + i * spread[1], tip + length)
+        b, t = (cx + i * spread[0], tip + stagger if stagger else bottom), (cx + i * spread[1], tip + length)
         band(d, [b, t], shaft * 2)
         lines.append((b, t))
+        if head == "axe":
+            L = math.dist(b, t)
+            fr = along(b, t)
+            at = lambda dy, v: fr(1 - dy / L, v)                            # dy px down from the haft's top, v to the right
+            reach, poll = axe
+            d.polygon(P([at(-6, -shaft - 6), at(-6, shaft + 6), at(80, shaft + 6), at(80, -shaft - 6)]), fill=OBJ)  # the eye
+            edge = [at(-24 + 152 * k / 12, reach + 18 * math.sin(math.pi * k / 12)) for k in range(13)]
+            d.polygon(P([at(12, shaft), at(-10, reach * 0.55), at(-24, reach)] + edge + [at(100, reach * 0.6), at(66, shaft)]), fill=OBJ)
+            line(d, [at(-12, reach - 12), at(118, reach - 10)], 4, LIGHT)
+            d.polygon(P([at(16, -shaft), at(16, -poll), at(58, -poll), at(58, -shaft)]), fill=OBJ)  # the poll, round-ended
+            dot(d, *at(37, -poll), 24, OBJ)
+            continue
         at = along(t, (cx + i * spread[1] * 1.04, tip))
-        if head == "leaf":
+        if head == "knife":
+            hb = lambda u: blade * (0.75 + 0.25 * math.sin(math.pi * min(u / 0.55, 1))) * (1 - u) ** 0.6
+            us = [k / 40 for k in range(41)]
+            d.polygon(P([at(u, hb(u)) for u in us] + [at(u, -hb(u)) for u in reversed(us)]), fill=OBJ)
+            line(d, [at(0.03, 0), at(0.88, 0)], 4, LIGHT)
+            d.ellipse(P([(b[0] - ring, b[1] - 8), (b[0] + ring, b[1] + 2 * ring - 8)]), outline=OBJ, width=12 * SS)  # the ring
+        elif head == "leaf":
             leaf = lambda u: 22 * math.sin(math.pi * min(1, u / 0.85) ** 0.7) * (1 - u) ** 0.35
             us = [k / 30 for k in range(31)]
             d.polygon(P([at(u, leaf(u)) for u in us] + [at(u, -leaf(u)) for u in reversed(us)]), fill=OBJ)
@@ -402,19 +616,20 @@ def bundle(d, W, H, head="leaf", cx=256, bottom=1470, spread=(24, 64), tips=(130
         line(d, [(min(xs) - shaft - 6, y), (max(xs) + shaft + 6, y + 12)], 3, LIGHT)
 
 
-def flail(d, W, H, head="ball", cx=416, top=170, bottom=1120, balls=((-235, 360), (235, 470), (-150, 650)), r=50):
-    """A straight haft with an onion finial and a round pommel; from its top three short chains to three
-    small spiked heads hanging beside it at different heights: 'ball' (solid) or 'cage' (open, a dark core)."""
-    d.rectangle(P([(cx - 20, top), (cx + 20, bottom)]), fill=OBJ)
-    d.ellipse(P([(cx - 36, bottom - 20), (cx + 36, bottom + 64)]), fill=OBJ)  # pommel
-    onion = spline([(cx, top - 110), (cx + 14, top - 76), (cx + 40, top - 40), (cx + 30, top - 8), (cx + 24, top + 6)])
+def flail(d, W, H, head="ball", cx=416, top=170, bottom=1060, hw=28, balls=((-160, 470), (160, 600), (-160, 760)), r=80, spike=40):
+    """A straight haft (half width hw) with an onion finial and a round pommel; from its top three short chains to
+    three large spiked heads hanging close beside its upper half at different heights: 'ball' (solid) or 'cage'
+    (open, a dark core)."""
+    d.rectangle(P([(cx - hw, top), (cx + hw, bottom)]), fill=OBJ)
+    d.ellipse(P([(cx - hw - 16, bottom - 20), (cx + hw + 16, bottom + 64)]), fill=OBJ)  # pommel
+    onion = spline([(cx, top - 110), (cx + 16, top - 76), (cx + 46, top - 40), (cx + 36, top - 8), (cx + 30, top + 6)])
     d.polygon(P(onion + flip(onion, cx)), fill=OBJ)                           # the onion-dome finial
-    d.rectangle(P([(cx - 28, top + 4), (cx + 28, top + 30)]), fill=OBJ)      # the collar the chains hang from
+    d.rectangle(P([(cx - hw - 8, top + 4), (cx + hw + 8, top + 30)]), fill=OBJ)  # the collar the chains hang from
     for y in range(top + 80, bottom - 40, 54):                              # cloth wound round the haft
-        line(d, [(cx - 20, y + 20), (cx + 20, y)], 4, LIGHT)
+        line(d, [(cx - hw, y + 20), (cx + hw, y)], 4, LIGHT)
     for dx, y in balls:
         x = cx + dx
-        a = (cx + (14 if dx > 0 else -14), top + 26)
+        a = (cx + (hw if dx > 0 else -hw), top + 26)
         n = int(math.dist(a, (x, y)) / 26)
         ang = math.atan2(y - a[1], x - a[0])
         for k in range(1, n):                                               # the chain, link by link
@@ -425,26 +640,27 @@ def flail(d, W, H, head="ball", cx=416, top=170, bottom=1120, balls=((-235, 360)
             line(d, pts, 5, OBJ)
         for k in range(10):                                                 # spikes
             t = 2 * math.pi * k / 10 + 0.3
-            band(d, [(x + math.cos(t) * (r - 6), y + math.sin(t) * (r - 6)), (x + math.cos(t) * (r + 30), y + math.sin(t) * (r + 30))], (22, 0))
+            band(d, [(x + math.cos(t) * (r - 6), y + math.sin(t) * (r - 6)), (x + math.cos(t) * (r + spike), y + math.sin(t) * (r + spike))], (30, 0))
         if head == "ball":
             dot(d, x, y, r, OBJ)
         else:                                                               # an open spiked cage round a relic
-            d.ellipse(P([(x - r, y - r), (x + r, y + r)]), outline=OBJ, width=12 * SS)
+            d.ellipse(P([(x - r, y - r), (x + r, y + r)]), outline=OBJ, width=16 * SS)
             for t in (0, 60, 120):
                 c, s = math.cos(math.radians(t)), math.sin(math.radians(t))
-                line(d, [(x - c * r, y - s * r), (x + c * r, y + s * r)], 7, OBJ)
-            dot(d, x, y, 20, DARK)
+                line(d, [(x - c * r, y - s * r), (x + c * r, y + s * r)], 10, OBJ)
+            dot(d, x, y, r * 0.38, DARK)
 
 
 # ---- bows: the string straight on the left, the bow to the right
 
 def bow(d, W, H, form="d", sx=300, y0=70, y1=1178, gx=600, ctrl=(640, 260), limb=34, taper=None,
-        grip=(575, 560, 640, 690), nocks=16, ears=None, humps=None, riser=None, tips=None, feathers=False):
+        grip=(575, 560, 640, 690), nocks=16, ears=None, wobble=None, riser=None, tips=None, feathers=False):
     """A strung bow, side view. form 'd' (one curve from the tip through ctrl to the grip, mirrored), 'ears'
     (a static recurve: the D to two string bridges, then straight ears (height, reach) angled out to the
-    right), 'b' (deflex-reflex: a spline from the tip through humps to the grip, mirrored), 'riser' (a
+    right), 'crooked' (the D cut from a crooked branch: each limb pushed off its curve by wobble (amplitude,
+    (upper bends, lower bends), (upper phase, lower phase)), nothing at the grip and the tips), 'riser' (a
     straight rigid riser (x0, x1, height, notch) with curved limbs). limb the width, or taper (grip, tips);
-    tips 'fork' (antler tines) or 'hook' (curled closed hooks); feathers on a thong below the grip."""
+    tips 'fork' (antler tines); feathers on a thong below the grip."""
     ym = (y0 + y1) / 2
     width = (lambda s: taper[1] + (taper[0] - taper[1]) * (1 - abs(2 * s - 1))) if taper else limb
     string = [(sx, y0), (sx, y1)]
@@ -464,9 +680,21 @@ def bow(d, W, H, form="d", sx=300, y0=70, y1=1178, gx=600, ctrl=(640, 260), limb
             band(d, [(sx + 6, b + 10 * s), (sx + reach, t)], (30, 20))
             d.rectangle(P([(sx - 10, b - 12), (sx + 14, b + 12)]), fill=DARK)   # the string bridge
         string = [(sx + reach, y0), (sx, b0), (sx, b1), (sx + reach, y1)]
-    elif form == "b":
-        top = spline([(sx + 4, y0)] + [(sx + x, y) for x, y in humps] + [(gx, ym)])
-        band(d, top + vflip(top, ym), width)
+    elif form == "crooked":
+        amp, bends, phase = wobble
+
+        def wander(pts, n, ph):
+            out = []
+            for i, p in enumerate(pts):
+                s = i / (len(pts) - 1)
+                a, b = pts[max(i - 1, 0)], pts[min(i + 1, len(pts) - 1)]
+                m = math.dist(a, b) or 1
+                k = amp * math.sin(math.pi * n * s + ph) * math.sin(math.pi * s)
+                out.append((p[0] - (b[1] - a[1]) / m * k, p[1] + (b[0] - a[0]) / m * k))
+            return out
+        top = wander(bez((sx, y0), ctrl, (gx, ym), 90), bends[0], phase[0])
+        bot = wander(bez((gx, ym), (ctrl[0], 2 * ym - ctrl[1]), (sx, y1), 90), bends[1], phase[1])
+        band(d, top + bot[1:], width)
     elif form == "riser":
         x0, x1, rh, notch = riser
         r0, r1 = ym - rh / 2, ym + rh / 2
@@ -483,11 +711,6 @@ def bow(d, W, H, form="d", sx=300, y0=70, y1=1178, gx=600, ctrl=(640, 260), limb
             band(d, bez((sx, y + s * -6), (sx + 2, y + s * 30), (sx + 22, y + s * 52)), (16, 12))
             band(d, [(sx + 20, y + s * 48), (sx + 30, y + s * 86)], (14, 4))
             band(d, [(sx + 20, y + s * 48), (sx + 64, y + s * 70)], (14, 4))
-    if tips == "hook":                                                      # tips curled out into closed hooks
-        for y, s in ((y0, 1), (y1, -1)):
-            pts = [(sx + 34 + (34 - 10 * k / 30) * math.cos(math.radians(180 + 290 * k / 30)),
-                    y + s * (34 - 10 * k / 30) * math.sin(math.radians(180 + 290 * k / 30))) for k in range(31)]
-            band(d, pts, (18, 12))
     if feathers:                                                            # a thong with two feathers
         g = (grip[0] + 2, grip[3] + 2)
         e = (g[0] - 70, g[1] + 110)
@@ -498,6 +721,80 @@ def bow(d, W, H, form="d", sx=300, y0=70, y1=1178, gx=600, ctrl=(640, 260), limb
     if nocks:
         for x, y in (string[0], string[-1]):
             d.ellipse(P([(x - 14, y - nocks), (x + 16, y + nocks)]), fill=HORN)   # nocks
+
+
+def recurve_bow(d, W, H, sx=150, y0=96, y1=1312, gx=560, taper=(60, 20), grip=(36, 74)):
+    """A tall recurve bow, side view, the string on the left: from the grip each limb sweeps up and out in a deep D
+    toward the string line, touches it where its curve reverses (the limb's last fifth), and its end flicks out to the
+    right, away from the string; the string straight between the two reversal points and lying along each recurved
+    end to its tip."""
+    ym = (y0 + y1) / 2
+    top = spline([(sx + 100, y0), (sx + 40, y0 + 50), (sx + 4, y0 + 130), (sx + 40, y0 + 200), (sx + 170, y0 + 262),
+                  (sx + 300, y0 + 342), (gx - 24, ym - 200), (gx, ym)], 24)
+    w0, w1 = taper
+    band(d, top + vflip(top, ym)[1:], lambda s: w1 + (w0 - w1) * (1 - abs(2 * s - 1)))
+    d.rounded_rectangle(P([(gx - grip[0], ym - grip[1]), (gx + grip[0], ym + grip[1])]), radius=12 * SS, fill=DARK)
+    k = min(range(len(top)), key=lambda i: top[i][0])                       # the reversal point, on the string line
+    lie = [(x - 0.32 * w1, y) for x, y in top[:k + 1]]                      # the string along the recurved end
+    string = lie + vflip(lie, ym)
+    d.line(P(string), fill=LIGHT, width=8 * SS, joint="curve")
+    for x, y in (top[0], vflip(top, ym)[-1]):                               # the tips' caps
+        d.ellipse(P([(x - 16, y - 16), (x + 16, y + 16)]), fill=HORN)
+
+
+def plated_bow(d, W, H, sx=300, y0=70, y1=1178, gx=600, ctrl=(640, 260), limb=22, plate=100, reach=0.75, tip=(110, 40),
+               grip=(34, 68), rivets=(0.3, 0.62)):
+    """A strung bow, side view, the string on the left: short-bow's D whose limbs are faced from the grip outward with
+    a broad flat plate (its width beside the grip) tapering to a point reach of the way to the tip; beyond it the thin
+    bare limb, whose last tip[0] px turns tip[1] px to the right, away from the string; the string straight between
+    the tips."""
+    ym = (y0 + y1) / 2
+    tl, turn = tip
+    a = (sx, y0 + tl)                                                       # where the bare tip begins
+    main = bez(a, ctrl, (gx, ym), 80)
+    out = (a[0] + (a[0] - ctrl[0]) * 0.12, a[1] + (a[1] - ctrl[1]) * 0.12)  # the tip leaves the D's line, then turns
+    top = bez((sx + turn, y0), out, a, 16)[:-1] + main
+    band(d, top + vflip(top, ym)[1:], limb)
+    n = len(main)
+    face = main[round(n * (1 - reach)):]
+    for pts in (face, vflip(face, ym)[::-1]):                               # the plates, broad at the grip
+        band(d, pts, lambda s: limb + (plate - limb) * s ** 0.9)
+        for f in rivets:
+            x, y = pts[round((len(pts) - 1) * f)]
+            dot(d, x, y, 8, DARK)
+    d.rounded_rectangle(P([(gx - grip[0], ym - grip[1]), (gx + grip[0], ym + grip[1])]), radius=10 * SS, fill=DARK)
+    for y in range(round(ym - grip[1]) + 16, round(ym + grip[1]), 20):     # iron wire round the grip
+        line(d, [(gx - grip[0], y), (gx + grip[0], y + 6)], 3, LIGHT)
+    string = [(sx + turn, y0), (sx + turn, y1)]
+    d.line(P(string), fill=LIGHT, width=8 * SS)
+    for x, y in string:
+        d.ellipse(P([(x - 14, y - 16), (x + 16, y + 16)]), fill=HORN)
+
+
+# ---- quivers
+
+def bolt_case(d, W, H, cx=256, box=(154, 520, 1480), mouth=60, tops=(300, 230, 330, 180, 280, 210, 320, 250), head=(17, 52), shaft=8):
+    """A straight-sided upright case (half width, top, bottom), as wide at the bottom as at the mouth, a dark band
+    round its mouth and iron straps down its corners; a staggered row of short bolts standing in it, each ending in a
+    small pointed pyramid head with a collar."""
+    h, y0, y1 = box
+    n = len(tops)
+    xs = [cx - h + 36 + (2 * h - 72) * k / (n - 1) for k in range(n)]
+    hw, hh = head
+    for x, t in zip(xs, tops):
+        d.rectangle(P([(x - shaft, t + hh), (x + shaft, y0 + 10)]), fill=OBJ)
+        d.polygon(P([(x, t), (x + hw, t + hh), (x - hw, t + hh)]), fill=OBJ)  # a four-sided point, seen side on
+        line(d, [(x, t + 10), (x, t + hh - 4)], 3, LIGHT)
+        d.rectangle(P([(x - hw + 4, t + hh), (x + hw - 4, t + hh + 12)]), fill=DARK)  # the collar
+    d.rectangle(P([(cx - h, y0), (cx + h, y1)]), fill=OBJ)
+    d.rectangle(P([(cx - h - 6, y0), (cx + h + 6, y0 + mouth)]), fill=DARK)  # the band round the mouth
+    for s in (-1, 1):                                                       # angle straps down the corners
+        line(d, [(cx + s * (h - 16), y0 + mouth), (cx + s * (h - 16), y1 - 6)], 6, LIGHT)
+        for y in range(y0 + mouth + 60, y1 - 20, 150):
+            dot(d, cx + s * (h - 16), y, 7, DARK)
+    line(d, [(cx - h, y1 - 30), (cx + h, y1 - 30)], 6, LIGHT)
+    for x in range(round(cx - h + 60), round(cx + h - 40), 62):              # the boards
+        line(d, [(x, y0 + mouth + 10), (x, y1 - 40)], 3, DARK)
 
 
 # ---- crossbows, from above: the prod at the top, the butt at the bottom
@@ -613,6 +910,134 @@ def jaw_cap(d, W, H, cx=512, brim=500, rx=290, ry=280, jaw=(212, 250, 58), teeth
         line(d, bez((cx + x * rx, brim + 10), (cx + x * rx * 1.15, brim - ry * 0.75), (cx + x * 30, brim - ry + 6)), 6, LIGHT)
 
 
+def plate_suit(d, W, H, cx=416, neck=(90, 72), chest=(172, 150, 560), lames=(3, 30), caps=(206, 190, 96, 84),
+               arm=(258, 52, 230, 820), elbow=(480, 60), thigh=(82, 64, 1110), knee=72):
+    """A suit of plate for the body and arms, front view, hollow and empty: a cuirass from a scooped neck opening
+    (y, half width) down to the waist, its sides (chest half width, waist half width, waist y); lames (count, height)
+    round the waist; rounded shoulder caps (dx, y, rx, ry); each arm a tube (dx, half width, top, wrist y) hanging
+    straight down beside the body with a round elbow cop (y, r) and an open wrist rim, light inside; two thigh tubes
+    (dx, half width, bottom) with a gap between them, ending in round knee cops; nothing below the knees."""
+    ny, nh = neck
+    ch, wh, wy = chest
+    d.polygon(P([(cx - nh, ny), (cx - ch, ny + 50), (cx - ch - 4, ny + 210), (cx - wh, wy), (cx + wh, wy),
+                 (cx + ch + 4, ny + 210), (cx + ch, ny + 50), (cx + nh, ny)]), fill=OBJ)
+    d.ellipse(P([(cx - nh, ny - 46), (cx + nh, ny + 46)]), fill=BG)         # the neck opening
+    line(d, arc(cx, ny, nh + 10, 56, 10, 170), 6, LIGHT)
+    line(d, [(cx, ny + 64), (cx, wy - 30)], 6, LIGHT)                       # the breastplate's ridge
+    line(d, bez((cx - wh + 4, wy - 90), (cx, wy - 40), (cx + wh - 4, wy - 90)), 5, DARK)
+    k, lh = lames
+    for i in range(k):                                                      # the waist lames, each a little wider
+        y = wy + i * lh
+        d.rectangle(P([(cx - wh - 4 - 3 * i, y), (cx + wh + 4 + 3 * i, y + lh)]), fill=OBJ)
+        line(d, [(cx - wh - 4 - 3 * i, y + lh), (cx + wh + 4 + 3 * i, y + lh)], 5, DARK)
+    ax, ah, a0, a1 = arm
+    tx, th, t1 = thigh
+    t0 = wy + k * lh - 6
+    for s in (-1, 1):
+        x = cx + s * ax
+        d.rectangle(P([(x - ah, a0), (x + ah, a1)]), fill=OBJ)              # the arm, hanging straight down
+        for y in (a0 + 110, a1 - 120, a1 - 60):
+            line(d, [(x - ah, y), (x + ah, y)], 4, DARK)
+        ey, er = elbow
+        dot(d, x, ey, er, OBJ)                                              # the elbow cop
+        d.ellipse(P([(x - er + 16, ey - er + 16), (x + er - 16, ey + er - 16)]), outline=LIGHT, width=5 * SS)
+        d.ellipse(P([(x - ah - 4, a1 - 22), (x + ah + 4, a1 + 22)]), fill=OBJ)  # the open wrist rim, empty
+        d.ellipse(P([(x - ah + 10, a1 - 12), (x + ah - 10, a1 + 12)]), fill=LIGHT)
+        dx, dy, rx, ry = caps
+        d.ellipse(P([(cx + s * dx - rx, dy - ry), (cx + s * dx + rx, dy + ry)]), fill=OBJ)  # the shoulder cap
+        line(d, arc(cx + s * dx, dy + 10, rx - 14, ry - 22, 200 if s < 0 else -20, 340 if s < 0 else 160), 5, LIGHT)
+        x = cx + s * tx
+        d.rectangle(P([(x - th, t0), (x + th, t1)]), fill=OBJ)              # the thigh tube
+        for y in (t0 + 150, t0 + 300):
+            line(d, [(x - th, y), (x + th, y)], 4, DARK)
+        dot(d, x, t1 + 30, knee, OBJ)                                       # the knee cop, and nothing below
+        d.ellipse(P([(x - knee + 18, t1 + 48 - knee), (x + knee - 18, t1 + 12 + knee)]), outline=LIGHT, width=5 * SS)
+        dot(d, x, t1 + 30, 9, DARK)
+
+
+def bone_helm(d, W, H, cx=512, cut=640, rx=330, crown=120, eyes=(130, 545, 92, 66), strips=(300, 950, 84, 50)):
+    """A helm made of the top of a huge skull, front view: a dome from its crown down to a level cut edge (y) with a
+    riveted band along it and the dark lined hollow just under it, two eye sockets low on its front, a ridge of small
+    vertebrae over the crown; from the edge at the sides two long narrow curved cheek strips of rib bones hang down,
+    empty space between them."""
+    d.polygon(P(arc(cx, cut, rx, cut - crown, 180, 360)), fill=OBJ)
+    d.polygon(P(arc(cx, cut, rx - 50, 54, 0, 180)), fill=DARK)               # the lined hollow, seen from below
+    ex, ey, erx, ery = eyes
+    for s in (-1, 1):
+        d.ellipse(P([(cx + s * ex - erx, ey - ery), (cx + s * ex + erx, ey + ery)]), fill=DARK)
+    d.polygon(P([(cx - 26, cut - 6), (cx, cut - 76), (cx + 26, cut - 6)]), fill=DARK)  # the nose's root, cut through
+    line(d, [(cx - rx + 4, cut - 14), (cx + rx - 4, cut - 14)], 14, LIGHT)  # the iron band round the cut edge
+    for x in range(round(cx - rx + 40), round(cx + rx - 20), 70):
+        dot(d, x, cut - 14, 6, DARK)
+    for k, y in enumerate(range(crown + 40, crown + 300, 52)):              # the vertebrae over the crown
+        dot(d, cx, y, 20 - 2 * k, LIGHT)
+    sx, sy, w0, w1 = strips
+    for s in (-1, 1):
+        pts = bez((cx + s * sx, cut - 20), (cx + s * (sx + 30), (cut + sy) / 2), (cx + s * (sx - 50), sy))
+        band(d, pts, (w0, w1))
+        for f in (0.2, 0.4, 0.6, 0.8):                                      # rib bones and their thongs
+            x, y = pts[round(f * (len(pts) - 1))]
+            line(d, [(x - w0 / 2, y), (x + w0 / 2, y + 8)], 5, DARK)
+
+
+def coronet(d, W, H, cx=512, cy=560, rx=420, ry=140, front=42, back=18, points=9, ph=64, pw=22):
+    """A thin round band seen from the front just above eye level: a wide flat ellipse (rx, ry), the band deeper at
+    the front (front px) than across the back (back px), the opening lighter; a row of small upright triangular points
+    along the top edge of its front half, a small dark stone at the foot of each."""
+    d.ellipse(P([(cx - rx, cy - ry), (cx + rx, cy + ry)]), fill=OBJ)
+    irx, top, bot = rx - 24, cy - ry + back, cy + ry - front
+    icy, iry = (top + bot) / 2, (bot - top) / 2
+    d.ellipse(P([(cx - irx, top), (cx + irx, bot)]), fill=LIGHT)
+    for k in range(points):                                                 # along the front half's top edge
+        a = math.radians(24 + 132 * k / (points - 1))
+        x, y = cx + irx * math.cos(a), icy + iry * math.sin(a)
+        d.polygon(P([(x - pw, y + 6), (x, y - ph), (x + pw, y + 6)]), fill=OBJ)
+        dot(d, x, y + front * 0.45, 9, DARK)
+    line(d, arc(cx, cy, rx - 8, ry - 8, 10, 170), 4, LIGHT)                 # the beaded lower edge
+
+
+def tiara(d, W, H, cx=512, band_pts=((110, 690), (512, 820), (914, 690)), width=(22, 42), half=268, base=772, apex=250,
+          hole=13, pearl=22):
+    """A tiara standing as worn, front view: a low wide arc for the band, its ends thinning where they curve back,
+    and rising from its middle a tall arch plate (half width, base y, apex y) highest in the middle at a rounded
+    point, its sides sloping down into the band, pierced with small holes for the filigree, small beads along its
+    edge and a pearl at its peak."""
+    hw = lambda y: half * (1 - (1 - min(1.0, max(0.0, (y - apex) / (base - apex)))) ** 1.7)  # convex sides from a rounded peak
+    ys = [apex + (base - apex) * i / 200 for i in range(201)]
+    d.polygon(P([(cx + hw(y), y) for y in ys] + [(cx - hw(y), y) for y in reversed(ys)]), fill=OBJ)
+    w0, w1 = width
+    band(d, bez(*band_pts, 48), lambda s: w0 + (w1 - w0) * (1 - abs(2 * s - 1)))
+    for i, y in enumerate(range(apex + 70, base - 30, 58)):                 # the filigree's holes, staggered rows
+        off = 0 if i % 2 else 29
+        x = off
+        while x < hw(y) - 34:
+            for s in ((1, -1) if x else (1,)):
+                dot(d, cx + s * x, y, hole, LIGHT)
+            x += 58
+    for y in ys[6:-4:12]:                                                   # beads along the arch
+        for s in (-1, 1):
+            dot(d, cx + s * hw(y), y, 11, OBJ)
+    dot(d, cx, apex - pearl + 4, pearl, OBJ)
+
+
+def crown_shield(d, W, H, cx=512, cy=600, r=370, points=((-58, 104), (-29, 132), (0, 160), (29, 132), (58, 104)), base=36,
+                 knob=22, rim=28):
+    """A round shield, front view, whose rim rises along the top third of its edge into upright crown points (degrees
+    off the top, height), each tapering to a small round knob, all one shape with the disc; a rim line with rivets,
+    a small round boss in the middle."""
+    dot(d, cx, cy, r, OBJ)
+    for deg, h in points:
+        x, y = cx + r * math.sin(math.radians(deg)), cy - r * math.cos(math.radians(deg))
+        d.polygon(P([(x - base, y + 40), (x - 7, y - h), (x + 7, y - h), (x + base, y + 40)]), fill=OBJ)
+        dot(d, x, y - h - knob + 6, knob, OBJ)
+    d.ellipse(P([(cx - r + rim, cy - r + rim), (cx + r - rim, cy + r - rim)]), outline=LIGHT, width=6 * SS)
+    for k in range(24):
+        a = 2 * math.pi * k / 24
+        dot(d, cx + (r - rim / 2) * math.cos(a), cy + (r - rim / 2) * math.sin(a), 6, DARK)
+    dot(d, cx, cy, 58, OBJ)
+    d.ellipse(P([(cx - 58, cy - 58), (cx + 58, cy + 58)]), outline=LIGHT, width=6 * SS)
+
+
 def lancet_shield(d, W, H, cx=352, half=232, top=40, arch=470, foot=950, bottom=1370, ridges=5, rim=24):
     """A tall narrow shield pointed at both ends: a lancet arch on top, straight parallel sides, a pointed
     foot; raised ridges running from tip to tip, a riveted rim."""
@@ -640,12 +1065,13 @@ def lancet_shield(d, W, H, cx=352, half=232, top=40, arch=470, foot=950, bottom=
 
 
 def boots(d, W, H, at=((150, 120), (545, 150)), top=90, cuff=True, thongs=4, sole=8, toe_cap=False, toggles=False,
-          mail=False, plate=False, greave=False):
+          mail=False, plate=False, greave=False, fur=0, strap=False):
     """A pair of boots side by side, toes to the right. The soft boot: a turned-down cuff, thongs round the
     shin, a thin flat sole, no heel. Without the cuff a straight shaft from top; sole over 8 a thick stacked
     sole with hobnails; toe_cap; toggles, a row of horn toggles up the outer side; mail, a low shoe under a
     mail legging with garter and ankle thong; plate, a shin plate on two straps; greave, a plate shin tube,
-    a round knee cop and the foot as four stepped lames."""
+    a round knee cop and the foot as four stepped lames; fur, a ragged band that tall over the shaft's top;
+    strap, one buckled band across the instep."""
     for ox, oy in at:
         if greave:
             foot = [(ox + 158, oy + 575), (ox + 196, oy + 580), (ox + 196, oy + 614), (ox + 234, oy + 619), (ox + 234, oy + 653),
@@ -697,6 +1123,17 @@ def boots(d, W, H, at=((150, 120), (545, 150)), top=90, cuff=True, thongs=4, sol
             for y in (oy + 220, oy + 450):
                 d.rectangle(P([(ox + 4, y - 12), (ox + 104, y + 12)]), fill=DARK)
                 d.rectangle(P([(ox + 84, y - 16), (ox + 108, y + 16)]), outline=LIGHT, width=4 * SS)
+        if strap:                                                           # one buckled strap over the instep
+            band(d, [(ox + 150, oy + 618), (ox + 206, oy + 738)], 34, DARK)
+            d.rectangle(P([(ox + 164, oy + 664), (ox + 192, oy + 692)]), outline=LIGHT, width=5 * SS)
+        if fur:                                                             # a ragged band of fur round the top
+            n = 11
+            xs = [ox - 18 + (200 / n) * k for k in range(n + 1)]
+            up = [(x, oy + top - 22 - (16 if k % 2 else 0) - (8 if k % 3 == 1 else 0)) for k, x in enumerate(xs)]
+            down = [(x, oy + top + fur - 18 + (24 if k % 2 else 0) + (10 if k % 3 == 2 else 0)) for k, x in enumerate(xs)]
+            d.polygon(P(up + down[::-1]), fill=OBJ)
+            for k, x in enumerate(xs[1:-1:2]):
+                line(d, [(x, oy + top + 4), (x + 8, oy + top + fur - 26)], 4, LIGHT)
 
 
 # ---- small things
@@ -730,6 +1167,50 @@ def scroll(d, W, H, x=(90, 934), roll=120, y=(292, 732), sheet=30, knob=(26, 34)
         line(d, [(a, y0 + sheet), (a, y1 - sheet)], 6, DARK)
 
 
+def jawbone(d, W, H, bar=(104, 470, 600), teeth=(200, 540, 9), fangs=(124, 168), plate=(570, 690, 190), knob=46):
+    """A beast's lower jaw on its own, side view, level: a long low bar (front x, top y, bottom y at its deepest) with
+    a row of tooth bumps along its top and two tall hooked fangs at its front (left) end; at its back end the bone
+    rises into a tall hinge plate (its left and right x at the bar, its top y), leaning back, a round knob on top."""
+    x0, y0, yb = bar
+    pl, pr, pt = plate
+    outline = [(x0, y0 + 18), (pl, y0), (pl + 40, pt), (pr - 6, pt + 6), (pr, y0 + 100)] + \
+        bez((pr, y0 + 100), (pr - 40, yb + 30), ((x0 + pr) / 2, yb)) + bez(((x0 + pr) / 2, yb), (x0 + 30, yb - 10), (x0 - 6, y0 + 70))
+    d.polygon(P(outline), fill=OBJ)
+    dot(d, pr - 30, pt - 4, knob, OBJ)                                      # the hinge's knob
+    line(d, [(pl + 30, y0 + 40), (pl + 66, pt + 60)], 5, LIGHT)            # the plate's ridge
+    a, b, n = teeth
+    step = (b - a) / n
+    for k in range(n):                                                      # the cheek teeth, worn bumps
+        x = a + k * step
+        d.rounded_rectangle(P([(x + 4, y0 - 30 - (k % 3) * 4), (x + step - 4, y0 + 8)]), radius=10 * SS, fill=OBJ)
+    for x in fangs:                                                         # two tall fangs hooking back
+        band(d, bez((x, y0 + 10), (x - 8, y0 - 60), (x + 26, y0 - 104)), (38, 6))
+    line(d, bez((x0 + 20, yb - 40), ((x0 + pr) / 2, yb - 30), (pr - 30, y0 + 90)), 4, LIGHT)
+
+
+def chipped_skull(d, W, H, cx=390, cy=330, rx=235, ry=225):
+    """A broken skull in three-quarter view: a rounded cranium (centre, radii) with a jagged notch bitten out of its
+    upper left and the dark hole behind it, cracks from the hole; two dark eye holes (the far one narrower) and a nose
+    hole; a short upper jaw ending in a straight row of teeth, nothing below it."""
+    d.ellipse(P([(cx - rx, cy - ry), (cx + rx, cy + ry)]), fill=OBJ)
+    d.polygon(P([(cx - 150, cy + 120), (cx + 190, cy + 110), (cx + 170, cy + 260), (cx - 100, cy + 265)]), fill=OBJ)  # the face
+    d.polygon(P([(cx - 92, cy + 180), (cx + 168, cy + 172), (cx + 156, cy + 296), (cx - 82, cy + 300)]), fill=OBJ)  # the upper jaw
+    for x in range(round(cx - 70), round(cx + 150), 30):                    # the teeth, a straight row
+        line(d, [(x, cy + 258), (x, cy + 298)], 4, DARK)
+    line(d, [(cx - 84, cy + 256), (cx + 158, cy + 252)], 4, DARK)
+    d.ellipse(P([(cx - 150, cy + 10), (cx - 26, cy + 116)]), fill=DARK)    # the near eye
+    d.ellipse(P([(cx + 50, cy + 14), (cx + 150, cy + 110)]), fill=DARK)    # the far eye, narrower
+    d.polygon(P([(cx + 18, cy + 128), (cx - 8, cy + 196), (cx + 46, cy + 196)]), fill=DARK)  # the nose hole
+    notch = [(cx - rx - 20, cy - 40), (cx - 180, cy - 58), (cx - 196, cy - 104), (cx - 140, cy - 128), (cx - 156, cy - 170),
+             (cx - 96, cy - 186), (cx - 92, cy - ry - 20), (cx - rx - 20, cy - ry - 20)]
+    d.polygon(P(notch), fill=BG)                                            # the piece broken out
+    d.polygon(P([(cx - 184, cy - 52), (cx - 160, cy - 64), (cx - 176, cy - 104), (cx - 124, cy - 124), (cx - 138, cy - 166),
+                 (cx - 84, cy - 180), (cx - 68, cy - 140), (cx - 96, cy - 92), (cx - 132, cy - 40)]), fill=DARK)  # the hole behind it
+    for pts in (((cx - 74, cy - 136), (cx - 20, cy - 116), (cx + 40, cy - 130)), ((cx - 100, cy - 70), (cx - 60, cy - 30), (cx - 70, cy + 10)),
+                ((cx - 70, cy - 178), (cx - 30, cy - 196), (cx + 10, cy - 214))):
+        line(d, list(pts), 4, DARK)                                         # cracks from the hole
+
+
 # name: (family, its design canvas[, the guide's parameters])
 GUIDES = {
     # swords and daggers
@@ -740,10 +1221,18 @@ GUIDES = {
     "kris": (wavy_blade, (512, 1536), dict(cx=236, tip=56, base=1110, half=42, bends=7, amp=26, taper=0.45, point=0.09,
                                              ganja=(118, 34), hilt=([(236, 1168), (240, 1270), (262, 1370), (312, 1440)], (52, 62)))),
     "falchion": (falchion, (512, 1536)),
+    "two-handed-sword": (great_sword, (448, 1792), dict(ricasso=(26, 1040, 1196), lugs=(86, 1056, 46), guard=(165, 1196, 1232, 30),
+                                                        raised=(1370, 1520), pear=(30, 1646, 1748))),
+    "claymore": (great_sword, (448, 1792), dict(blade=(34, 1200), langets=(44, 1120), quillons=(205, 40, 15), grip=(22, 1214, 1620),
+                                                wheel=(48, 1664))),
+    "sabre": (curved_sword, (512, 1536), dict(cx=236, back=22, edge=22, bow=(96, 16))),
+    "scimitar": (curved_sword, (512, 1536), dict(cx=176, base=1200, tip=(170, 66), ctrl=(176, 600), back=20, edge=24,
+                                                 belly=64, point=0.2, guard=(80, 28), balls=17, grip=(22, 1228, 1436), pommel=(30, 1430, 1482))),
+    "crystal-sword": (crystal_sword, (832, 1248)),
     # fist weapons
     "katar": (fist, (512, 1536), dict(head="katar")),
     "scissors-katar": (fist, (512, 1536), dict(head="scissors")),
-    "claws": (fist, (512, 1536), dict(head="claws", grips=(1060,), straps=(1330,))),
+    "claws": (fist, (512, 1536), dict(head="claws", top=900, bottom=1380, grips=(1120,), straps=(1300,))),
     "hatchet-fist": (fist, (512, 1536), dict(head="crescent", frame="U", top=430, bottom=1460, bars=80, grips=(650,), straps=(1010, 1220))),
     # hafted
     "spear": (pole, (704, 1408), dict(head="leaf", cx=352, shaft=(11, 470, 1380), butt=(14, 1340, 1390), grip=(14, 840, 960))),
@@ -756,27 +1245,38 @@ GUIDES = {
     "war-scythe": (pole, (704, 1408), dict(head="scythe", cx=340, shaft=(13, 640, 1385), butt=(16, 1336, 1392), grip=(16, 900, 1020))),
     "pilum": (pole, (512, 1536), dict(head="pilum", cx=256, shaft=(17, 830, 1450), butt=(21, 1420, 1476), grip=(20, 850, 980))),
     "military-pick": (pole, (832, 1248), dict(head="pick", cx=310, shaft=(17, 110, 1185), butt=(21, 1150, 1204), grip=(20, 930, 1120))),
+    "war-hammer": (pole, (832, 1248), dict(head="hammer", cx=320, shaft=(18, 120, 1185), butt=(22, 1150, 1204), grip=(21, 930, 1120))),
+    "flanged-mace": (pole, (512, 1536), dict(head="flange", cx=256, shaft=(16, 400, 1450), butt=(20, 1430, 1478),
+                                             bands=((22, 560, 584), (22, 1000, 1024)))),
+    "battle-staff": (pole, (448, 1792), dict(head="cap", cx=224, shaft=(80, 90, 1700), butt=(96, 1590, 1730), grip=(92, 640, 1150),
+                                             bands=((100, 616, 646), (100, 1144, 1174)))),
+    "short-staff": (pole, (512, 1536), dict(head="knob", cx=256, shaft=(76, 250, 1440), butt=(70, 1440, 1500), grip=(82, 600, 760))),
+    "trident": (pole, (704, 1408), dict(head="trident", cx=352, shaft=(11, 470, 1380), butt=(14, 1340, 1390), grip=(14, 840, 960))),
     "javelins": (bundle, (512, 1536), dict(head="leaf")),
     "maiden-javelins": (bundle, (512, 1536), dict(head="barb", tips=(120, 50, 90), length=160)),
+    "throwing-knives": (bundle, (704, 1408), dict(head="knife", cx=352, bottom=1270, spread=(30, 92), tips=(130, 60, 100), length=560,
+                                                  tie=(1030, 1110), shaft=14)),
+    "throwing-axes": (bundle, (704, 1408), dict(head="axe", cx=352, spread=(60, 165), tips=(300, 70, 520), length=0, stagger=840,
+                                                tie=(820, 890), shaft=16)),
     "relic-flail": (flail, (832, 1248), dict(head="ball")),
     "relic-flail-gilt": (flail, (832, 1248), dict(head="cage")),
     # bows
     "short-bow": (bow, (832, 1248)),
-    "flat-bow": (bow, (832, 1248), dict(sx=210, gx=612, ctrl=(664, 260), taper=(66, 16), grip=(582, 588, 642, 660))),
+    "crooked-bow": (bow, (832, 1248), dict(form="crooked", limb=44, wobble=(40, (3, 3), (0.0, 1.9)))),
+    "plated-bow": (plated_bow, (832, 1248)),
     "composite-bow": (bow, (832, 1248), dict(form="ears", sx=250, y0=60, y1=1188, gx=560, ctrl=(600, 360), taper=(38, 26),
                                              ears=(160, 118), grip=(532, 568, 590, 680))),
-    "battle-bow": (bow, (832, 1248), dict(form="b", sx=256, gx=346, taper=(42, 18), grip=(316, 566, 378, 682),
-                                          humps=[(170, 130), (292, 300), (250, 470), (120, 570)])),
     "war-bow": (bow, (832, 1248), dict(form="riser", sx=270, gx=536, taper=(36, 16), riser=(506, 566, 369, 16), grip=(508, 630, 564, 714))),
     "long-bow": (bow, (704, 1408), dict(sx=215, y0=50, y1=1358, gx=477, ctrl=(512, 274), taper=(30, 12), grip=(459, 650, 495, 758), nocks=12)),
-    "long-battle-bow": (bow, (704, 1408), dict(form="b", sx=200, y0=50, y1=1358, gx=285, taper=(40, 16), grip=(256, 640, 316, 768),
-                                               humps=[(160, 140), (282, 360), (246, 560), (120, 660)])),
+    "long-plated-bow": (plated_bow, (704, 1408), dict(sx=215, y0=50, y1=1358, gx=477, ctrl=(512, 274), limb=18, plate=84, reach=0.67,
+                                                     tip=(150, 34), grip=(28, 64))),
     "long-war-bow": (bow, (704, 1408), dict(form="riser", sx=215, y0=50, y1=1358, gx=455, taper=(34, 14), riser=(425, 485, 327, 16),
                                             grip=(427, 712, 483, 790))),
     "stag-bow": (bow, (704, 1408), dict(sx=225, y0=130, y1=1278, gx=473, ctrl=(505, 300), taper=(28, 12), grip=(455, 650, 491, 758),
                                         nocks=0, tips="fork", feathers=True)),
-    "reflex-bow": (bow, (704, 1408), dict(sx=140, y0=96, y1=1312, gx=550, ctrl=(605, 304), taper=(34, 18), grip=(532, 650, 570, 758),
-                                          nocks=0, tips="hook")),
+    "recurve-bow": (recurve_bow, (704, 1408)),
+    # quivers
+    "bolt-case": (bolt_case, (512, 1536)),
     # crossbows
     "crossbow": (crossbow, (832, 1248)),
     "light-crossbow": (crossbow, (832, 1248), dict(tiller=(18, 11, 110, 1196), prod=(40, 180, 0, 220, 0), curl=True, stirrup=None,
@@ -789,15 +1289,22 @@ GUIDES = {
     # armour
     "great-helm": (great_helm, (1024, 1024)),
     "jawbone-cap": (jaw_cap, (1024, 1024)),
+    "bone-helm": (bone_helm, (1024, 1024)),
+    "coronet": (coronet, (1024, 1024)),
+    "tiara": (tiara, (1024, 1024)),
     "gothic-shield": (lancet_shield, (704, 1408)),
+    "crown-shield": (crown_shield, (1024, 1024)),
+    "full-plate": (plate_suit, (832, 1248)),
     "soft-boots": (boots, (1024, 1024)),
-    "heavy-boots": (boots, (1024, 1024), dict(top=40, cuff=False, thongs=0, sole=34, toe_cap=True, toggles=True)),
+    "heavy-boots": (boots, (1024, 1024), dict(top=300, cuff=False, thongs=0, toe_cap=True, fur=90, strap=True)),
     "chain-boots": (boots, (1024, 1024), dict(top=40, cuff=False, thongs=0, mail=True)),
     "plated-boots": (boots, (1024, 1024), dict(top=40, cuff=False, thongs=0, toe_cap=True, plate=True)),
     "greaves": (boots, (1024, 1024), dict(greave=True)),
     # small things
     "tau-token": (tau, (768, 768)),
     "scroll": (scroll, (1024, 1024)),
+    "jawbone": (jawbone, (768, 768)),
+    "chipped-skull": (chipped_skull, (768, 768)),
 }
 
 

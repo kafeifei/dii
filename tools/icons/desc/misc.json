@@ -18,8 +18,9 @@
   "fill": 0.92
  },
  "invsbk": {
-  "desc": "A book of skill: a thick squat book lying at a three-quarter view, bound in dark brown tooled leather over boards, heavy iron plates on its corners, two broad riveted iron bands across the cover, an iron hasp lock on the fore-edge, no lettering.",
-  "fill": 0.9
+  "desc": "A book of skill: a thick heavy book lying flat at a three-quarter view from above, clearly a book, much wider and longer than it is thick: its thick cream page block showing along the front and the right side, a rounded spine at the left, bound in worn dark slate-blue leather over boards, small iron caps on its corners, a tooled double border around the cover, one narrow iron clasp across the fore-edge, no lettering.",
+  "fill": 0.9,
+  "note": "no bands or hasp (they made a chest); slate blue keeps it apart from Lam Esen's red-brown tome"
  },
  "invbbb": {
   "desc": "An ancient tome: a huge heavy book lying at a three-quarter view, its thick ragged vellum pages yellowed with age, the cover of dark red-brown leather over boards, cracked and peeling at the corners, iron studs along the spine, two leather straps with tarnished silver buckles across the fore-edge, no lettering.",
@@ -58,8 +59,9 @@
   "note": "round 2's cm1 words, a notched pattern for the rune: no letters on objects"
  },
  "invch4": {
-  "desc": "A small charm: a sheep's knucklebone, yellowed and polished smooth by handling, bound around its middle with a few turns of dark blue-dyed thread ending in a little tassel.",
-  "fill": 0.85
+  "desc": "A small charm: a little triangular arrowhead of knapped black flint, its flaked faces catching the light, its base bound with a few tight turns of dark blue-dyed thread that end in a short loop and a little tassel, point down.",
+  "fill": 0.85,
+  "note": "a new object for the third small charm: a flint point reads at 34 px and is unlike the bone disc (invch1) and the pouch (invch7)"
  },
  "invch7": {
   "desc": "A small charm: a tiny round-bellied leather pouch cinched shut at the top with a cord, a single carved bone bead threaded on the cord, worn dark with handling.",
@@ -80,7 +82,9 @@
   "note": "the sample round's cm3 words (round 2, approved)"
  },
  "invch6": {
-  "desc": "A grand charm: a long straight totem stick of dark carved wood, notched along its length and wrapped in two places with strips of hide, a few bone beads and a small curved claw hanging from a thong at its top. Shown upright."
+  "desc": "A grand charm: a tall narrow talisman of smoke-darkened tan hide stretched and laced with thongs onto a frame of two straight twigs, filling most of the frame's width, painted down its middle with a column of faded ochre dots and short bars, three small bone beads and a little curved claw hanging on thongs from its bottom edge. Shown upright, flat, front view.",
+  "fill": 1,
+  "note": "broad and flat as the line is, but our own object: hide on a twig frame, apart from the antler (invch3) and the slate (invch9)"
  },
  "invch9": {
   "desc": "A grand charm: a tall narrow slab of dark grey slate with chipped edges, carved with deep spiral and zigzag grooves filled with faded red ochre, a hole at the top with a leather thong through it. Shown upright."
@@ -239,12 +243,14 @@
   "fill": 0.85
  },
  "invhp1": {
-  "desc": "A minor healing potion: a small narrow vial of thin greenish hand-blown glass with a plain cork, filled with glowing scarlet liquid, cheap and plain.",
-  "fill": 0.62
+  "desc": "A minor healing potion: a small stubby vial of thin clear hand-blown glass, about half as wide as it is tall, with a rounded bottom, a short neck and a plain cork, filled with glowing scarlet liquid, cheap and plain.",
+  "fill": 0.72,
+  "note": "stubby and larger (fill 0.72, the tiers rising to 0.95) so it reads at 34 px; clear glass (greenish glass turned the mana vial teal); the same words as invmp1 but the colour"
  },
  "invhp2": {
-  "desc": "A light healing potion: a small flat-sided flask of hand-blown glass, rounded like a pebble, with a short neck and a plain cork tied with string, filled with glowing scarlet liquid.",
-  "fill": 0.72
+  "desc": "A light healing potion: a small flask of hand-blown glass shaped like a low cone, a broad flat bottom and straight sides sloping in to a short narrow neck, a plain cork tied with string, filled with glowing scarlet liquid.",
+  "fill": 0.78,
+  "note": "each tier its own outline: vial, cone, round, pear, faceted; the same words as invmp2 but the colour"
  },
  "invhp3": {
   "desc": "A healing potion: a round-bellied flask of thick hand-blown glass with small bubbles, slightly lopsided and grimy, a short neck and a wax-dipped cork, filled with bright glowing scarlet liquid lit from within.",
@@ -286,8 +292,11 @@
   "fill": 0.95
  },
  "invjaw": {
-  "desc": "A jawbone: the lower jaw bone of a large beast on its own, no skull, yellowed and cracked bone, a row of uneven worn teeth with two long canines at the front, seen from the side.",
-  "fill": 0.85
+  "desc": "A jawbone: the lower jaw bone of a large beast on its own, seen from the side: a long low bar of yellowed cracked bone with a row of uneven worn teeth along its top edge, two long curved canines at its front end, and at its back end the bone rising into a tall flat hinge plate with a rounded knob on top; no upper jaw, no skull, no eye sockets.",
+  "guide": "jawbone",
+  "shape": "jawbone: a long low bar with a row of tooth bumps on top, two tall hooked ones at the left end, a tall hinge plate rising at the right end",
+  "fill": 0.85,
+  "note": "side view, level: the bone's own anatomy, not the original's diagonal pose"
  },
  "invjw1": {
   "desc": "A jewel: a faceted teardrop gem of deep orange held in a small open setting of six tarnished brass claws, no loop, no chain, seen from the front.",
@@ -299,20 +308,23 @@
   "fill": 0.8
  },
  "invjw3": {
-  "desc": "A jewel: a square-cut gem of muted violet held at its four corners by bronze prongs shaped like small leaves, no loop, no chain, seen from the front.",
-  "fill": 0.8
+  "desc": "A jewel: a small square-cut gem of muted violet in the middle of a broad bronze mount shaped like a four-petalled flower, each petal wider than the gem and curling up over its edge, the mount clearly larger than the gem, no loop, no chain, seen from the front.",
+  "fill": 0.8,
+  "note": "the mount is the jewel's part, so it is the bigger shape"
  },
  "invjw4": {
-  "desc": "A jewel: an oval faceted gem of deep green in a setting of twisted gold wire, no loop, no chain, seen from the front.",
-  "fill": 0.8
+  "desc": "A jewel: a small oval faceted gem of deep green in the middle of a wide setting of twisted gold wire coiled into a ring of small loops around it like a little wreath, the wire setting about twice the gem's width, no loop, no chain, seen from the front.",
+  "fill": 0.8,
+  "note": "the setting twice the gem's width so it reads at 34 px"
  },
  "invjw5": {
   "desc": "A jewel: a hexagonal faceted gem of deep blood red in a thick hexagonal bronze bezel with notched edges, no loop, no chain, seen from the front.",
   "fill": 0.8
  },
  "invjw6": {
-  "desc": "A jewel: a pointed oval faceted gem of smoky grey quartz in a slim setting of blackened iron claws, no loop, no chain, seen from the front.",
-  "fill": 0.8
+  "desc": "A jewel: a broad pointed-oval faceted gem of pale smoky grey quartz held in a heavy frame of blackened iron running round its whole edge, four thick iron claws gripping it at its ends and sides, the frame clearly visible, no loop, no chain, seen from the front.",
+  "fill": 0.85,
+  "note": "a broader gem, a heavy frame"
  },
  "invkey": {
   "desc": "An old skeleton key of pale worn iron with bright edge highlights: a large round bow, a thick shaft and a simple bit, lying diagonally.",
@@ -324,12 +336,14 @@
   "note": "the tower key and the three keys of the terror, hate and destruction lines share it"
  },
  "invmp1": {
-  "desc": "A minor mana potion: a small narrow vial of thin greenish hand-blown glass with a plain cork, filled with glowing cobalt-blue liquid, cheap and plain.",
-  "fill": 0.62
+  "desc": "A minor mana potion: a small stubby vial of thin clear hand-blown glass, about half as wide as it is tall, with a rounded bottom, a short neck and a plain cork, filled with glowing cobalt-blue liquid, cheap and plain.",
+  "fill": 0.72,
+  "note": "as invhp1"
  },
  "invmp2": {
-  "desc": "A light mana potion: a small flat-sided flask of hand-blown glass, rounded like a pebble, with a short neck and a plain cork tied with string, filled with glowing cobalt-blue liquid.",
-  "fill": 0.72
+  "desc": "A light mana potion: a small flask of hand-blown glass shaped like a low cone, a broad flat bottom and straight sides sloping in to a short narrow neck, a plain cork tied with string, filled with glowing cobalt-blue liquid.",
+  "fill": 0.78,
+  "note": "as invhp2"
  },
  "invmp3": {
   "desc": "A mana potion: a round-bellied flask of thick hand-blown glass with small bubbles, slightly lopsided and grimy, a short neck and a wax-dipped cork, filled with bright glowing cobalt-blue liquid lit from within.",
@@ -350,8 +364,9 @@
   "note": "also the picture of a unique small charm"
  },
  "invquil": {
-  "desc": "A quill: one long stiff spine shed by a beast, needle-sharp, banded in dark brown and pale bone, thicker and rough at its root, lying diagonally.",
-  "fill": 0.9
+  "desc": "A long needle-like spine shed by a beast: a smooth straight round spike, thickest a little behind its middle, tapering to a needle point at one end and to a rough broken root at the other, banded along its length in alternating dark brown and pale cream rings, no feather, no vanes, no barbs, lying diagonally.",
+  "fill": 0.9,
+  "note": "the word quill is left out: it paints a feather"
  },
  "invrel": {
   "desc": "A rune stone: a rounded irregular river pebble of warm brown-grey stone with a flat smooth blank face and a chipped rim, no frame, no square border, not a tile.",
@@ -549,8 +564,11 @@
   "note": "the sample round's rvs words (round 2, approved)"
  },
  "invskc": {
-  "desc": "A chipped skull gem: a small broken human skull of dull yellowed bone, the jaw missing and a jagged piece of the cranium broken away, cracked and stained.",
-  "fill": 0.6
+  "desc": "A chipped skull gem: a small broken human skull of dull yellowed bone in a three-quarter view, a jagged piece broken out of the left side of its cranium leaving a dark hole, deep cracks spreading from the hole, no lower jaw, its upper teeth chipped.",
+  "guide": "chipped-skull",
+  "shape": "chipped-skull: a three-quarter skull with a jagged notch out of its upper left, no lower jaw",
+  "fill": 0.6,
+  "note": "the break is a hole on one side, not the whole top gone"
  },
  "invskf": {
   "desc": "A flawed skull gem: a small cracked human skull of weathered grey-white bone without its lower jaw, a few chips and hairline cracks.",
@@ -566,29 +584,33 @@
   "note": "the sample round's sku words (round 2, approved)"
  },
  "invskz": {
-  "desc": "A perfect skull gem: a whole human skull with its lower jaw, carved from flawless milky translucent white stone that glows faintly from within, glossy like a gem, fine veins of gold traced through it.",
-  "fill": 0.92
+  "desc": "A perfect skull gem: a whole human skull with its lower jaw, carved from flawless milky white stone, glossy like a gem, its cranium crossed by bold branching veins of bright tarnished gold like mended cracks, the eye sockets lit by a faint warm golden glow from within, no gem set in it.",
+  "fill": 0.92,
+  "note": "bold gold veins and lit sockets are the grade's cue"
  },
  "invsple": {
-  "desc": "A spleen: an elongated bean-shaped organ, dark purplish red, wet and glistening, a few pale veins across it.",
+  "desc": "A spleen: a soft organ shaped like a thick flattened crescent, its outer edge smoothly curved and its inner edge notched, dark purplish red with a pale bluish sheen of membrane, the cut stumps of three thick pale blood vessels sticking out of the notch, wet and glistening, a few thin pale veins across it.",
   "fill": 0.8,
-  "note": "the spleen and the soul share it"
+  "note": "the cut vessels, as on the heart, make it an organ"
  },
  "invtail": {
-  "desc": "A tail: a long severed reptile tail on its own, no body, covered in small dark green-brown scales, curled in a loose S, tapering to a thin whip-like tip, a raw cut end.",
-  "fill": 0.9
+  "desc": "A severed tail: a thick scaly reptile tail on its own, its broad raw cut end at the upper right showing dark red flesh around a pale bone, sweeping down in one loose curve like a hook and tapering to a thin whip-like tip at the lower left, small dark green-brown scales with paler ridged scales along its underside, no head, not coiled.",
+  "fill": 0.9,
+  "note": "one hook, not an S, and the cut end in view"
  },
  "invbbk": {
   "desc": "A thick tome bound in worn tan leather standing upright, front cover facing the viewer, brass corner guards and a clasp, a faded blue cloth bookmark.",
   "note": "the sample round's tbk words (round 2, approved)"
  },
  "invtrch": {
-  "desc": "A torch: a rough wooden stick, its upper end wrapped in tarred cloth bound with a twisted iron band, burning with a small steady orange flame. Shown upright, the flame at the top.",
-  "note": "also the picture of a unique 1x2 charm"
+  "desc": "A burning torch: a stout rough wooden club, thicker toward its head, its head a thick bundle of tarred rags bound with a twisted iron band, burning with a big roaring orange flame as tall as a third of the whole torch, licking up from the head, a few sparks. Shown upright, the flame at the top.",
+  "fill": 1,
+  "note": "a stout club and a big flame, so it reads at 34 px"
  },
  "invtes": {
-  "desc": "An essence: a small heap of fine dark violet dust twisted into a tight spiral like a whirlpool, faint violet glints in its grooves.",
-  "fill": 0.8
+  "desc": "An essence: a small cone-shaped heap of fine dark violet dust, the same kind of heap as the other essences, one shallow groove winding up around it from its base to its peak like a screw thread, faint violet glints in the groove, a thin twisting wisp of pale violet vapour rising from its peak.",
+  "fill": 0.8,
+  "note": "the twist is a groove and a wisp, so the outline stays a heap"
  },
  "invtoa": {
   "desc": "A token: a small heavy tau-cross token cast in dull silver-grey pewter, shaped like a capital letter T, its three arms of even thickness each ending in a small rounded knob, a little pale blue stone set where the arms meet, worn engraved lines along the arms, standing upright.",

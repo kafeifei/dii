@@ -21,9 +21,11 @@
   "note": "line Avenger Guard / Slayer Guard / Guardian Crown; two bladed wings, where the assault helmet has one crest"
  },
  "invbhm": {
-  "desc": "A bone helm shown empty on its own, no head inside: the bleached, cracked cranium of a huge humanlike skull hollowed out and worn as a helmet, its two dark eye sockets as eyeholes, its upper teeth forming the lower rim, cheek guards of curved rib bones bound on with dark leather thongs, a ridge of small vertebrae running over the crown, no horns. Front three-quarter view.",
+  "desc": "A bone helm shown empty on its own, no head inside: the top half of a huge humanlike skull sawn off level just below the cheekbones and worn as a helmet, no lower jaw and no teeth, its two dark eye sockets as eyeholes over the brow, the hollow underside open and lined with dark stitched leather that shows along the cut edge, a riveted iron band around that cut edge, and hanging from the band at each side a long cheek guard of curved rib bones bound with dark leather thongs, a ridge of small vertebrae running back over the crown, no horns. Front three-quarter view from slightly below, so the open lined underside shows.",
+  "guide": "bone-helm",
+  "shape": "a skull-cap dome over the upper two thirds, two dark eye-socket holes low on its front, a level cut edge under them, and from that edge two long narrow curved cheek strips hanging down at the sides with empty space between them",
   "material": false,
-  "note": "line Bone Helm / Grim Helm / Bone Visage; bone, so no iron material line"
+  "note": "keep the skull, it is what makes a bone helm: the fix is the jaw gone and the helmet parts added; bone, so no material line"
  },
  "invbsh": {
   "desc": "A bone shield: a tall oval shield built of bones, long leg bones and curved ribs lashed side by side with dark sinew and leather into a solid face, a rim of bound vertebrae all around, and in the middle a small cracked skull as the boss, bleached ivory-grey and stained. Front view, upright.",
@@ -45,12 +47,16 @@
   "note": "the sample round's ci0 words (round 2, approved: its pick was s303)"
  },
  "invci1": {
-  "desc": "A coronet: a closed ring of darkened bronze with a beaded edge, seen from the front and above so the band forms a fat open oval, its upper edge rising all around into a row of small evenly spaced triangular points like a tiny crown, a small dull garnet at the foot of each point, no large central gem.",
-  "note": "points all round, where the circlet has one crest, the tiara a filigree arch and the diadem a gem plate"
+  "desc": "A coronet: a thin flat band of darkened bronze with a beaded edge, closed into a ring and seen from the front, just above eye level, so it forms a wide shallow ellipse about three times wider than it is tall, the front of the band facing the viewer and the back of the band visible through the opening; along its upper edge a row of small evenly spaced triangular points standing straight up like a tiny crown, a small dull garnet at the foot of each point, no large central gem.",
+  "guide": "coronet",
+  "shape": "a wide flat elliptical band (about 3:1, the band about a tenth of the ellipse's height), a row of small upright triangles along the top edge of its front half, the opening a lighter grey",
+  "note": "points all round still sets it apart from the circlet's single crest (invci0 s303), the tiara's arch and the diadem's gem plate."
  },
  "invci2": {
-  "desc": "A tiara: an open-backed half hoop of pale tarnished gold, seen from the front and above, its front rising in a wide arch of fine interlaced filigree wirework, highest in the middle and tapering to a thin band at the sides, set with a curved row of small pearls along the arch.",
-  "note": "an open half hoop with a filigree arch, apart from the other three closed bands"
+  "desc": "A tiara standing upright as if worn, seen from the front at eye level: a thin open-backed band of pale tarnished gold whose two ends curve back and away out of sight, and rising from its front a tall arch of fine interlaced filigree wirework, highest in the middle where it comes to a rounded point and tapering down into the thin band at the sides, a curved row of small pearls along the arch's edge and one small teardrop pearl at its peak. The arch is the tallest and widest part.",
+  "guide": "tiara",
+  "shape": "front view, a low wide arc for the band across the lower third, and above its middle a tall pointed-arch plate as wide as two thirds of the band, pierced with small lighter holes for the filigree",
+  "note": "one piece: if a seed still splits it (P2), take another seed rather than accept it"
  },
  "invci3": {
   "desc": "A diadem: a broad heavy band of dark gold with raised borders, seen from the front and above so the band forms a fat open oval, the front widening into a tall shield-shaped plate holding one large faceted deep green gemstone in a raised setting, flanked by two smaller stones, fine engraved leaves along the band.",
@@ -79,8 +85,8 @@
   "note": "line Falcon Mask / Sacred Feathers / Sky Spirit; a carved face mask only, smaller than the hawk helm"
  },
  "invdr5": {
-  "desc": "A druid's spirit mask: a carved wooden mask of a bear spirit's face with a short broad snout, small round ears and a heavy brow, painted with faded white and ochre clay lines, framed by a thick ruff of dark shaggy fur, strings of small bones, beads and feathers hanging from its lower edge, shown empty, no head inside. Front view.",
-  "note": "line Spirit Mask / Totemic Mask / Dream Spirit; a bear-spirit mask, apart from the wolf pelt and the falcon mask"
+  "desc": "A druid's spirit mask: a carved wooden mask of a wolf spirit's face with a long narrow muzzle, a black-painted nose, tall pointed ears carved as part of the mask and slanted eye holes, the whole face painted with bold white and ochre clay bands, framed by a thick ruff of dark shaggy fur, strings of small bones, beads and feathers hanging from its lower edge, shown empty, no head inside. Front view.",
+  "note": "a carved, painted wooden mask in a fur ruff, apart from the real wolf pelt of invdr1 (s101); no blue paint, no red eyes, no ear ring."
  },
  "invfhl": {
   "desc": "A full helm enclosing the whole head: a rounded grey iron bowl with a low ridge over the crown that comes down over the cheeks and the back of the neck, the face closed by a hinged visor pivoting on a rivet at each side, one narrow horizontal eye slit across the visor and a few breathing holes below it, a flared neck rim. Front three-quarter view.",
@@ -109,9 +115,9 @@
   "note": "line Large Shield / Scutum / Hyperion; a leather-faced oval with an iron spine"
  },
  "invmsk": {
-  "desc": "A war mask shown on its own, no head inside: a full face mask of beaten dark iron shaped as a snarling grotesque face, a heavy furrowed brow over deep hollow eye holes, a broad flattened nose, an open mouth baring a row of iron fangs, small pointed swept-back ears, leather straps at the sides, no horns, no helmet behind it. Front view.",
-  "fill": 0.9,
-  "note": "line Mask / Death Mask / Demonhead; a face mask of iron, not bone like the bone helm"
+  "desc": "A war mask shown on its own, no head inside: a full face mask of beaten dark iron covering only the face from the brow to the chin, nothing behind it, its thin rolled edge showing all round and the hollow inside visible past its side, shaped as a snarling grotesque face with a heavy furrowed brow over hollow eye holes, a broad flattened nose and an open mouth baring a row of iron fangs, riveted leather straps with small buckles trailing from both sides; no scalp, no ears, no horns, no helmet. Front three-quarter view.",
+  "fill": 0.85,
+  "note": "the edge, the hollow and the straps are what make it a mask; at 0.85 fill the straps fit in the cells."
  },
  "invne1": {
   "desc": "A necromancer's trophy, a preserved head: a small shrunken human head with long lank black hair, its eyes and lips sewn shut, floating in cloudy brownish brine inside a squat wide-mouthed glass jar, the jar's mouth sealed with a wax-dipped wooden plug tied down with cord, a rope carrying loop on top. Upright, front view.",
@@ -150,8 +156,10 @@
   "note": "line Aerin Shield / Gilded Shield / Zakarum Shield; flat-topped and red with a sword, where the heraldic shield is round-topped and quartered"
  },
  "invpa5": {
-  "desc": "A paladin's crown shield: a round shield of dark steel with a raised gilded rim notched into small scallops, a large embossed gilded crown emblem with three points filling its centre, small rivets set around the rim. Front view.",
-  "note": "line Crown Shield / Royal Shield / Vortex Shield; a crown emblem and a scalloped rim"
+  "desc": "A paladin's crown shield: a round shield of dark steel whose gilded rim rises along its top into five tall crown points, each tipped with a small ball, like a crown set on the shield, the rest of the rim a plain gilded band with rivets; its face plain dark steel with a small round gilded boss in the middle, no star, no rays and no other emblem. Front view.",
+  "guide": "crown-shield",
+  "shape": "a disc, and along the top third of its edge five upright tapering points (the middle one tallest) each with a small round knob, all part of one shape",
+  "note": "the crown in the silhouette reads at 34 px and is unlike every other round shield (invbuc, invsml, invpa1, invpa2)."
  },
  "invskp": {
   "desc": "A simple skull cap: a plain round iron bowl helmet hammered from one piece, a hemisphere just big enough to cover the crown of the head, a thin riveted iron band around its lower edge, a leather lining edge and a short leather chin strap showing beneath, no brim, no nasal bar, no face guard. Front three-quarter view.",
@@ -167,7 +175,7 @@
   "note": "line Spiked Shield / Barbed Shield / Blade Barrier; spikes on the face, seen side-on so they read"
  },
  "invtow": {
-  "desc": "A tower shield: a tall rectangular shield with a gently curved face and a straight top edge, made of heavy vertical oak planks bound by three horizontal iron straps and an iron rim, a raised wooden ridge running down its centre, scuffed and arrow-scarred. Front view, upright.",
-  "note": "line Tower Shield / Pavise / Aegis; the tall rectangle, plain oak and iron straps"
+  "desc": "A tower shield: a tall rectangular shield with slightly rounded top corners, its face curved like a section of a large barrel so its left and right edges sweep back, seen a little from the left so the curve and the shield's thickness show; heavy vertical oak planks bound by an iron rim and two horizontal iron straps, and in the centre a large domed iron boss on a round riveted iron plate, scuffed and arrow-scarred, no painted emblem. Upright.",
+  "note": "the boss and the curved face are the shield cues; keep it plain oak and iron (no diamond plate, no emblem). If a seed still looks like a door, a 'tower' guide (a tall rounded-corner rectangle with a disc in the middle) would pin the boss."
  }
 }

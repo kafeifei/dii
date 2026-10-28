@@ -1,7 +1,9 @@
 {
  "invbst": {
-  "desc": "A battle staff, a war mage's fighting quarterstaff: a long, straight, even pole of dark seasoned oak as thick as a wrist, both ends shod with heavy riveted iron caps a hand's length long, a narrow iron band a third of the way in from each end, the middle wrapped with a worn leather grip. Shown perfectly upright, one iron-capped end at the top.",
-  "note": "iron-shod both ends tells it from the long staff (pale, slim) and the short staff (1x3)"
+  "desc": "A battle staff, a war mage's heavy fighting staff: a long, straight, stout pole of mid-brown seasoned oak, thick and heavy, about a tenth as thick as it is long; its middle third wrapped in a broad hand grip of wound dark leather cord, a little wider than the pole, between two flared iron collars; each end shod with a short, plain, blunt iron cap a little wider than the pole, no studs and no spikes, no bands along the bare wood. A thick heavy staff, far stouter than a walking staff. Shown perfectly upright, one iron-capped end at the top.",
+  "guide": "battle-staff",
+  "shape": "a long straight stout pole about a tenth as thick as it is long, a plain blunt cap a little wider than the pole at each end, rounded on top, and a broad dark grip wrap a little wider than the pole round its middle third between two flared collars, so the outline swells at the grip and the caps",
+  "note": "the thickness is the fix: about twice run-04's, a 1x rod of ~13 px in the 34 px cell (run-04's are 6-8 px); keep it a staff, not a club (no swelling head). The iron-shod ends stay, they are the line's part; plain caps, not the original's studs"
  },
  "invcst": {
   "desc": "A gnarled wizard's staff: a long twisted branch of weathered grey-brown oak, knotted and crooked, its head a knot of curled roots around a small dull stone. Shown perfectly upright, the gnarled head at the top.",
@@ -11,23 +13,26 @@
   "desc": "A long staff: a tall, slender, perfectly straight pole of pale ash wood, thinner than a fighting staff, its top bound with a tight coil of dark cord and finished with a small domed iron cap, a leather-wrapped hand grip a third of the way down, a short tapered iron ferrule at the foot. Shown perfectly upright, the domed cap at the top."
  },
  "invsst": {
-  "desc": "A short staff, a traveller's walking staff about chest high: a straight slim rod of dark brown wood tapering a little toward the foot, a rounded knob at the top worn smooth by the hand, a short leather wrap under the knob with a loop of thong hanging from it, a small pointed iron ferrule at the foot. Shown perfectly upright, the knob at the top."
+  "desc": "A short staff, a traveller's stout walking staff about chest high: a straight, thick rod of mid-brown wood, about a ninth as thick as it is long, much stouter than a wand or a long staff; its top a heavy rounded knob carved from the same wood, a band of three narrow iron rings just under the knob; a short wrap of dark leather a third of the way down; a short blunt iron ferrule at the foot. Shown perfectly upright, the knob at the top.",
+  "guide": "short-staff",
+  "shape": "a straight thick rod about a ninth as thick as it is long, a rounded knob on top with a band of three narrow rings under it, a short dark grip wrap a third of the way down, a short blunt ferrule at the foot",
+  "note": "the thickness is the fix (a 1x rod of ~10 px, run-04's ~5 px); the knob stays our own design. Must stay apart from the battle staff at 34 px: shorter (1x3), a knob, no iron caps"
  },
  "invwst": {
   "desc": "A war staff: a long heavy staff of dark wood as thick as a wrist, topped by a forged iron head shaped like a crescent of two curved horns sweeping up and outward to sharp tips, a riveted iron boss in the middle of the crescent, the socket under it bound with iron rings; a leather-wrapped grip at the middle; a short iron spike at the foot. Shown perfectly upright, the horned head at the top.",
   "note": "the horned crescent head is the line's defining part; nothing hangs from it"
  },
  "invhst": {
-  "desc": "The completed staff of an ancient order of mages: a long straight shaft of dark bronze wound from foot to top by a thin carved serpent, crowned with a head of tarnished bronze: two spread metal wings sweeping up and outward in a V around a round medallion set with a small milky white stone; a small pointed bronze foot. Shown perfectly upright, the winged head at the top.",
-  "note": "quest item: the shaft (invmsf) with its head on, so the two share the serpent-wound shaft"
+  "desc": "The completed staff of an ancient order of mages: a straight rod of dark bronze with a thick carved serpent of worn brass coiling round it from foot to top in five open turns, the coils as thick as the rod and standing out from it with dark gaps between them, fine scales on the serpent, its head resting just under the top; crowned with a head of tarnished bronze: a round medallion set with a small milky white stone, sitting straight on the shaft's socket, and from either side of it a stylised wing of four long flat bronze feather-plates, each a plain leaf-shaped blade, fanned upward and outward in a narrow V, their tips no higher than a hand above the medallion; the wings are plain metal ornament joined only to the medallion, with nothing above or between them; a small pointed bronze foot. Shown perfectly upright, the winged head at the top.",
+  "note": "keep the V of wings round a medallion, the line's defining part; ours is dark bronze, plain leaf-shaped plates and a milky stone, not the original's bright gilt feathered wings; the narrow V keeps the outline off s404's 0.479. Paint it with invmsf's new words in the same run and pick the two together so the shafts match"
  },
  "invmsf": {
-  "desc": "The headless shaft of an ancient order of mages' staff: a straight rod of dark bronze wound from foot to top by a thin carved serpent with fine scales, the serpent's head resting just under the top; the top end is an empty, open socket where a head-piece is missing; a small pointed bronze foot. Shown perfectly upright, the open socket at the top.",
-  "note": "quest item: the staff (invhst) without its head"
+  "desc": "The headless shaft of an ancient order of mages' staff: a straight rod of dark bronze with a thick carved serpent of worn brass coiling round it from foot to top in five open turns, the coils as thick as the rod and standing out from it with dark gaps between them, fine scales on the serpent, its head resting just under the top; the top end an open bronze socket, a short collar with an empty hole where a head-piece is missing; a small pointed bronze foot. Shown perfectly upright, the open socket at the top.",
+  "note": "the same shaft words as invhst's; a separate bold brass serpent round a dark rod (ours), not the original's shaft that is itself a gilt twist; s404 (0.23) is the fallback if the new words go wrong"
  },
  "invwnd": {
-  "desc": "A plain apprentice's wand: a straight slender rod of smooth dark hardwood, tapering a little, banded near its upper end by three thin rings of tarnished bronze, its tip capped in bronze holding a small dull amber stone, a short grip wrapped in dark cord at the lower end and a plain rounded butt. Shown upright, the stone tip at the top.",
-  "note": "round 2's wnd (a yew shaft with a bone knob) would clash with the yew and bone wands, now pictures of their own"
+  "desc": "A plain apprentice's wand: a straight rod of polished warm mid-brown hardwood as thick as a thumb, a little thicker toward the top, banded under its head by three broad rings of tarnished bronze; its head a bronze cup of three short claws holding a round dull amber stone about twice as wide as the rod; a grip wrapped in dark cord at the lower end and a small rounded bronze butt knob. A sturdy wand, lighter in tone than the yew and grim wands. Shown upright, the stone at the top.",
+  "note": "keeps run-04's identity (bronze-banded hardwood with an amber stone, apart from the yew, bone and grim wands) but round 2's thickness: a 1x rod of ~7 px and a head of ~10 px"
  },
  "invywn": {
   "desc": "A yew wand: two thin peeled yew twigs twisted round each other like a rope from the grip to the top, where they part into a small open fork; bound at the grip and under the fork with wraps of brown twine; a small carved yew bead hanging from the upper binding on a thong. Shown upright, the fork at the top."
@@ -83,7 +88,10 @@
   "shape": "a long narrow central blade with two short flat wing blades spreading up and outward from its base, on a long straight shaft"
  },
  "invtri": {
-  "desc": "A trident, a three-pronged war fork: a long straight wooden shaft with an iron socket; at the top a curved iron crossbar like a shallow U carrying three straight parallel iron prongs of equal thickness, the middle one a little longer, each ending in a small barbed point; a leather grip wrap in the middle and an iron butt cap. Shown perfectly upright, the prongs at the top, front view."
+  "desc": "A trident, a three-pronged war fork: a long straight wooden shaft with an iron socket; at the top a short, straight, heavy iron crossbar carrying three thick, straight, square-sectioned iron prongs, the middle one a little longer, each ending in a flat arrow-shaped barbed head clearly wider than its prong, its two barbs pointing back down; a leather grip wrap below the socket and an iron butt cap. Thick forged iron, not a farm fork's thin round tines. Shown perfectly upright, the prongs at the top, front view.",
+  "guide": "trident",
+  "shape": "a spear's long thin shaft, its grip and butt cap; on top a short straight crossbar carrying three straight square prongs, the middle one a little longer, each ending in a barbed arrowhead whose barbs point back down; a socket under the crossbar",
+  "note": "barbed points are the generic trident's part; the prongs straight and square and the crossbar straight are ours (run-04 scored 0.20-0.25, so the barbs leave room)"
  },
  "invam3": {
   "desc": "A slender war spear of an ancient warrior sisterhood, of the classical Greek kind: a long, light, straight shaft of pale ash; a long narrow leaf-shaped iron blade with a raised midrib, finer and longer than a common spear's; a band of braided leather and a ring of small iron beads at the socket; at the foot a long tapering four-sided iron butt spike as long as a hand. Elegant and light, made for thrusting and throwing. Shown perfectly upright, blade at the top.",

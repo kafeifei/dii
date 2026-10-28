@@ -15,7 +15,8 @@
   "desc": "A studded leather jerkin of dark brown leather with short cap sleeves and a low standing collar, its whole surface stitched in a diamond lattice of seams with a round domed iron stud riveted at every crossing, so that the studs stand in neat diagonal rows, closed down the front by three buckled straps, worn shiny at the edges. Laid flat, front view, empty, no person."
  },
  "invrng": {
-  "desc": "A ring mail coat: a sleeveless brown leather coat reaching the knees, its outside covered with large flat iron rings sewn on one by one in neat overlapping horizontal rows, each ring separate and not linked to the next, the leather showing through the middle of every ring, the neck and armholes bound in leather, the skirt split at the front for riding. Laid flat, front view, empty, no person."
+  "desc": "A ring mail shirt: a long-sleeved coat to the upper thighs covered completely in large flat iron rings, each as wide as a thumb, sewn on in close overlapping horizontal rows so that grey iron covers the whole coat and the dark leather backing only shows as a dot inside each ring, the rings much larger and coarser than fine chain mail so that every ring can be seen; the sleeves reach the wrists and end in a band of leather, the neck a low round opening bound in leather, the hem split at the front; iron grey dominating, no plates. Laid flat, front view, empty, no person.",
+  "note": "told apart from invchn (fine mesh, elbow sleeves, hip length) by its big visible rings, long sleeves and longer split hem"
  },
  "invchn": {
   "desc": "A chain mail hauberk: a heavy shirt of small interlinked iron rings, a dense fine mesh that hangs and folds like thick cloth, wide sleeves to the elbow, the hem reaching the upper thighs, a plain leather-bound neckline, a few rusty patches; mail only, no plates and no leather panels. Laid flat, front view, empty, no person."
@@ -27,28 +28,34 @@
   "desc": "A breastplate on its own: a single rounded plate of grey steel covering the chest and belly, curved like a barrel with a low ridge down the middle, the edges at the neck and the armholes rolled outward, one short flared plate at the waist, two leather shoulder straps and leather side straps with small iron buckles; no sleeves, no shoulder plates, no skirt, no mail. Laid flat, front view, empty, no person."
  },
  "invspl": {
-  "desc": "A splint armour coat: long narrow vertical strips of iron set side by side like the staves of a barrel, riveted onto a brown leather coat with rows of round rivet heads, running from the chest down a skirt that reaches the thighs, the leather showing between the strips and along the bound edges, small shoulder guards of shorter splints, sleeveless. Laid flat, front view, empty, no person."
+  "desc": "A splint armour cuirass, sleeveless, reaching only to the hips: fourteen or more narrow vertical iron splints set edge to edge across the chest and belly, so close that only thin dark lines of leather show between them, each splint held by a round rivet at its top and its bottom end, the splints at the waist a little shorter so that the hem steps; small shoulder guards of three short horizontal splints each, the neck and armholes bound in dark leather; grey iron covering almost all of it. Laid flat, front view, empty, no person.",
+  "material": false,
+  "note": "our splints stand vertical and edge to edge; the original's rows of small horizontal splints are not ours"
  },
  "invplt": {
   "desc": "A heavy plate mail cuirass of grey steel: a battered smooth one-piece grey steel breastplate with a single vertical central ridge and a plain flat chest, articulated grey steel shoulder plates and a skirt of overlapping grey steel lames, mail visible underneath, a few leather straps. Laid flat, front view, empty, no person.",
   "note": "the sample round's plt words (round 2, approved)"
  },
  "invfld": {
-  "desc": "A heavy field plate harness for the body, plain and massive: a broad grey steel breastplate with a second plate overlapping its lower half and rising to a point at the middle, a high steel collar closing round the neck, big rounded shoulder plates that rise like domes above the shoulders, and two broad square thigh plates hanging on straps from the waist with a gap between them; no sleeves, no mail. Laid flat, front view, empty, no person."
+  "desc": "A heavy field plate harness for the body, plain and massive: a broad grey steel breastplate with a second plate overlapping its lower half and rising to a point at the middle, a high steel collar closing round the neck, big rounded shoulder plates that rise like domes above the shoulders, and two broad square grey steel thigh plates, each of three overlapping riveted steel lames, hanging from the steel waist plate on short straps with a gap between them; steel everywhere, the only leather a few small straps; no sleeves, no mail, no leather skirt. Laid flat, front view, empty, no person.",
+  "material": false
  },
  "invgth": {
   "desc": "A gothic plate armour of grey steel, slender and spiky: a waisted breastplate covered in many fine parallel ridges fanning upward from the waist, a pointed lower plate rising to the middle of the chest, every plate edge cut into small scalloped cusps, ridged shoulder plates swept up into points, and a short skirt of narrow ridged lames ending in two pointed thigh plates. Laid flat, front view, empty, no person."
  },
  "invful": {
-  "desc": "A full suit of plate armour for the body and arms: a rounded grey steel breastplate, large overlapping shoulder plates, complete arm plates with round elbow cops lying straight down beside the body and ending at the wrists, a waist of several overlapping lames and long jointed thigh plates reaching the knees; no helmet and no gauntlets, heavy and complete, hollow. Laid flat, front view, empty, no person."
+  "desc": "A full plate armour for the body and arms, hollow and empty: a rounded grey steel breastplate, large overlapping shoulder plates, complete arm plates with round elbow cops hanging straight down beside the body and ending at the wrists in open round steel rims with nothing in them, a waist of several overlapping steel lames and two long jointed steel thigh plates that end at the knees in round knee cops; the armour stops at the knees: no lower legs, no feet, no hands, no gauntlets, no helmet, no leather skirt. Laid flat, front view, empty, no person.",
+  "guide": "full-plate",
+  "shape": "a cuirass from a scooped neck opening down to the waist with two rounded shoulder caps; each arm a tube hanging straight down beside the body from its cap to an open wrist rim, a round elbow cop halfway; three waist lames; two thigh tubes with a gap between them ending in round knee cops; nothing below the knee cops, the wrist rims empty",
+  "material": false
  },
  "invltp": {
-  "desc": "A light plate armour: a slim, thin grey steel breastplate and small round steel discs over the shoulders, worn over a padded brown leather jack whose short sleeves and long leather skirt show beneath the steel, the plate held on by buckled leather straps at the sides; lighter and plainer than a knight's plate. Laid flat, front view, empty, no person."
+  "desc": "A light plate armour: a slim grey steel breastplate with a short fauld of two steel lames and two small rounded steel tassets over the hips, small round steel discs at the shoulders, all thinner and plainer than a knight's plate, worn over a padded brown leather jack that shows only as short cap sleeves at the shoulders and a narrow hem just below the tassets; the plates held on by buckled leather straps at the sides; grey steel covering most of it, no long skirt. Laid flat, front view, empty, no person."
  },
  "invaar": {
-  "desc": "An ancient heavy armour from a forgotten age: a hollow cuirass of dark old bronze gone brown-black with age, moulded in the shape of a powerful muscled chest and belly and worn smooth on the high points, a flared collar, broad shoulder guards of overlapping bronze plates, and a long skirt of hanging leather strips, each faced with a small bronze plate, cracked and worn. Laid flat, front view, empty, no person.",
+  "desc": "An ancient ornate heavy armour from a forgotten age: a heavy cuirass of dark old blackened steel with articulated arm plates of overlapping lames down to the elbows, broad layered shoulder plates and a short skirt of overlapping lames split at the front, every plate richly decorated: each plate edge framed by a raised band of tarnished gilt bronze, a broad embossed sunburst of straight rays spreading across the chest, a row of small embossed rosettes along every lame, the gilding worn away on the high points. Laid flat, front view, empty, no person.",
   "material": false,
-  "note": "bronze: the no-gold iron line would fight it"
+  "note": "the object is the ornate heavy plate with arms; the ornament (gilt edge bands, sunburst, rosettes) is ours, not the original's scrollwork; gilt, so no material line"
  },
  "invlbl": {
   "desc": "A sash: a long band of soft faded oxblood wool cloth, wrapped into a flat horizontal band and tied in a loose knot near its right end, the two fringed tails of the cloth hanging down from the knot, creased and frayed; cloth only, no buckle and no metal. Front view.",
@@ -90,9 +97,10 @@
   "note": "the sample round's lbt words and guide (round 2)"
  },
  "invvbt": {
-  "desc": "A pair of heavy calf-high boots of thick dark brown leather, stiff and straight-sided, with no cuff and no laces: a thick flat sole built of stacked leather layers with a ring of iron hobnails along its edge, no raised heel, a rounded toe reinforced with an extra stitched leather cap, each boot closed up its outer side by a row of small round horn toggles; no buckles. Standing side by side, both toes pointing right. Side view.",
+  "desc": "A pair of heavy boots, short and massive: thick stiff dark brown leather reaching only to mid-calf, broader and bulkier than soft boots, a deep band of shaggy dark fur round the top of each boot, one wide leather strap with a square iron buckle across the instep, a broad rounded toe with an extra stitched leather cap; a thin flat leather sole with no tread, no lugs and no heel at all. Standing side by side, both toes pointing right. Side view.",
   "guide": "heavy-boots",
-  "note": "guide: a pair of tall boots standing side by side, toes right, straight shafts to below the knee, thin flat soles with no heel, no cuff and no thongs (soft-boots without its cuff and ties)"
+  "shape": "a pair of mid-calf boots side by side, toes to the right: a straight shaft from a third of the way down to a thin flat sole with no heel, a ragged band of fur round each top, one buckled strap across the instep, a stitched toe cap",
+  "note": "review round 1: mid-calf, a fur top and an instep strap, a thin flat sole; the stacked hobnail sole made lugged work boots"
  },
  "invmbt": {
   "desc": "A pair of chain boots: low brown leather shoes with a flat sole and a rounded toe, and above them leggings of fine interlinked iron mail rising to just below the knee, tied there with a leather garter and at the ankle with a thong, the mail hanging in soft folds. Standing side by side, both toes pointing right. Side view.",
