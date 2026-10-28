@@ -3,6 +3,7 @@ import { debugEnabled } from '../game/debug';
 import type { Game, GameHooks } from '../game/game';
 import type { Level } from '../game/level';
 import type { ObjKind, WorldObject } from '../game/objects';
+import { heroClaimKey, sharedKey } from '../game/save';
 import type { Topic } from '../game/quests/quest';
 import { baseOf, displayName, itemColor, type Item } from '../items/item';
 import type { Renderer } from '../render/renderer';
@@ -39,6 +40,9 @@ export class UI implements GameHooks, UIContext {
   cursorItem: Item | null = null;
   left: LeftPanel = null;
   right: RightPanel = null;
+  stashPage = 0;
+  /** the stash was open when the panels were last drawn: its last change is written as it shuts */
+  private stashShown = false;
   dirty = true;
   questNews = false;
   readonly itemByUid = new Map<string, Item>();
@@ -103,6 +107,13 @@ export class UI implements GameHooks, UIContext {
     this.applySettings();
     window.addEventListener('keydown', (e) => onKey(this, e));
     window.addEventListener('pointermove', (e) => this.onPointerMove(e));
+    window.addEventListener('storage', (e) => {
+      if (!this.game.started) return;
+      // another tab opened this hero: it is that tab's from now on (Game.heroClaimed)
+      if (e.key !== null && e.key === heroClaimKey()) this.game.heroClaimed();
+      // another tab of the game wrote the shared stash: taken in now (Game.syncShared), so an open stash shows what is there
+      if (e.key === null || e.key === sharedKey()) this.game.syncShared();
+    });
   }
 
   // ─────────────────────────── GameHooks ───────────────────────────
@@ -298,11 +309,17 @@ export class UI implements GameHooks, UIContext {
     this.rightEl.classList.toggle('inv', this.right === 'inv');
     this.rightEl.classList.toggle('skillsp', this.right === 'skills');
     this.rightEl.classList.toggle('wide', !!this.touch && (this.right === 'inv' || this.right === 'skills') && !this.left);
+    this.leftEl.classList.toggle('stashp', this.left === 'stash');
+    // shut since the last drawing: what was done in it last is written now (Game.syncShared)
+    if (this.stashShown && this.left !== 'stash' && this.game.started) this.game.syncShared();
+    this.stashShown = this.left === 'stash';
     switch (this.left) {
       case 'char':
         renderChar(this, this.leftEl);
         break;
       case 'stash':
+        // in step with the other tabs before it is drawn, this tab's last change written (Game.syncShared)
+        this.game.syncShared();
         renderStash(this, this.leftEl);
         break;
       case 'shop':

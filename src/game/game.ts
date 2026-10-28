@@ -9,6 +9,8 @@ import { createItem, isGold, newGameDrops, starterKit, type Drop } from '../item
 import { CAMP_VENDORS, fillStore, Store } from '../items/vendor';
 import { baseOf, displayName, isUnknown, type Item } from '../items/item';
 import { fillableTome, isBookScroll, isTome, isTownPortal, mergeTome, readable, readFrom, scrollIntoTome, tomeCharges, tomeMax, townPortalFrom } from '../items/tomes';
+import { depositable, SharedStash, sharedBlock, withdrawable } from '../items/stash';
+import type { Grid } from '../items/grid';
 import { charStats, potionHeal } from './d2/stats';
 import { deathPenalty, type DeathPenalty } from './d2/death';
 import { killXp } from './d2/xp';
@@ -25,7 +27,7 @@ import { CHARGE_PREFIX, Player } from './player';
 import { castItemSkill, startCast, toggleAura, updatePlayer, type PlayerAction } from './playerctl';
 import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
-import { loadSave, markInGame, savedWaypoints, setSlot, writeSave, type Difficulty } from './save';
+import { claimedElsewhere, claimHero, heroTaken, isReadOnly, loadSave, loadShared, markInGame, mayWriteLast, savedWaypoints, setSlot, syncShared, writeSave, type Difficulty } from './save';
 import { debugOpts } from './debug';
 import { WILD_MAPS } from '../world/levelgen';
 import { CAMP_AREA, DEN_OF_EVIL, areaDef, areaForDepth, areaLevel, builtWaypoints, depthForArea, dungeonArea, isBuilt, trialFloor, type AreaDef, type AreaKind } from '../world/areas';
@@ -167,6 +169,17 @@ export class Game {
   lastDeath: DeathPenalty | null = null;
   /** the camp merchant's shelves (src/items/vendor.ts), stocked anew on each way into the camp */
   shop = new Store(CAMP_VENDORS);
+  /**
+   * D2R's shared stash pages, the player's rather than the hero's (src/items/stash.ts): read as each
+   * game starts, kept in step with storage and other tabs by syncShared
+   */
+  shared = new SharedStash();
+  /** what to tell the player about the shared pages as the game starts (save.ts loadShared) */
+  private sharedNote: string | null = null;
+  /** storage refused a save this game: said once */
+  private toldUnsaved = false;
+  /** when the player was last told another tab has this hero (save.ts claimHero), by Date.now() */
+  private toldTaken = -Infinity;
   /** the time of day under the sky, 0 → 1 from midnight (src/render/sky.ts); it starts in the morning */
   clock = 0.3;
   /** how fast the day goes by (0 holds it, for screenshots: ?tod=) */
@@ -198,6 +211,8 @@ export class Game {
   // ───────────────────────── lifecycle ─────────────────────────
 
   newGame(name: string, cls: PlayerClass = 'paladin') {
+    // the slot's hero is this tab's: one another tab had there is no longer written by it
+    claimHero();
     const cd = CLASSES[cls];
     const p = new Player({ x: 0, z: 0 });
     p.name = name || cd.defaultName;
@@ -224,10 +239,14 @@ export class Game {
     p.mana = p.d.maxMana;
     p.stamina = p.d.maxStamina;
     this.player = p;
+    // a last game's item on the cursor stays with the hero it was saved with
+    this.hooks.setCursorItem(null);
+    this.openShared();
     this.started = true;
     this.newWorld(newSeed());
     markInGame(true);
     this.enterArea(CAMP_AREA, 'start');
+    this.tellShared();
   }
 
   /**
@@ -237,9 +256,14 @@ export class Game {
    */
   continueGame(slot?: number, reload = false): boolean {
     if (slot !== undefined) setSlot(slot);
+    // claimed before it is read: a tab playing it writes it a last time, then no more (save.ts claimHero)
+    claimHero();
     const s = loadSave();
     if (!s) return false;
     this.player = s.player;
+    // the item that was on the cursor goes back on it (D2: PlrSave.cpp:100-110)
+    this.hooks.setCursorItem(s.cursor);
+    this.openShared();
     this.started = true;
     this.newWorld(reload && s.worldSeed !== undefined ? s.worldSeed : newSeed());
     this.toldUnknown = false;
@@ -247,7 +271,27 @@ export class Game {
     this.enterArea(reload ? s.area : CAMP_AREA, 'start');
     // said once: the save won't be written this time
     if (s.readOnly) this.hooks.message(s.readOnly, '#ff8060', 10);
+    this.tellShared();
     return true;
+  }
+
+  /**
+   * The shared pages as a game starts, whoever the hero (save.ts loadShared): those of a hero who won't
+   * be saved this time can be looked at only, as what moved between them would be lost. What fits on
+   * none of them waits by the camp stash with the hero's own
+   */
+  private openShared() {
+    const r = loadShared(isReadOnly(this.player) ? '这个角色这次不会保存：共享储物箱只能查看' : null);
+    this.shared = r.stash;
+    this.player.unplaced.push(...r.overflow);
+    this.sharedNote = r.note;
+    this.toldUnsaved = false;
+    this.toldTaken = -Infinity;
+  }
+
+  private tellShared() {
+    if (this.sharedNote) this.hooks.message(this.sharedNote, '#ff8060', 8);
+    this.sharedNote = null;
   }
 
   /**
@@ -285,8 +329,107 @@ export class Game {
   }
 
   save() {
-    // the area the hero stands in, not the map's: one map may hold several
-    if (this.started && this.level) writeSave(this.player, this.level.areaAt(this.player.pos.x, this.player.pos.z).id, this.worldSeed);
+    this.persist(true);
+  }
+
+  /**
+   * The shared pages in step with storage and the other tabs (save.ts syncShared), the hero saved
+   * straight after whenever they were written, so an item that went between the two is never in
+   * neither. True when another tab's changes came in: what shows them is drawn again
+   */
+  syncShared(): boolean {
+    return this.persist(false);
+  }
+
+  /**
+   * The shared pages synced, then the hero saved: `always`, or because the pages were written. Not
+   * once another tab has the hero (save.ts heroTaken), but for this tab's `last` write of it
+   */
+  private persist(always: boolean, last = false): boolean {
+    if (!this.started || !this.level) return false;
+    const p = this.player;
+    if (!last && heroTaken(p)) {
+      this.heroElsewhere();
+      return false;
+    }
+    const r = syncShared(this.shared);
+    if (r.refund) p.gold += r.refund;
+    if (r.overflow.length) {
+      p.unplaced.push(...r.overflow);
+      this.hooks.message(`共享储物箱放不下的 ${r.overflow.length} 件物品放在了营地的储物箱旁边`, '#c8a86a', 5);
+      if (this.level.inTown(p.pos)) this.layOutUnplaced(this.level);
+    }
+    if (r.failed) {
+      // the hero without the pages could lose what went from one to the other: neither, this time
+      this.tellUnsaved();
+    } else if (always || r.wrote || r.refund || r.overflow.length) {
+      // the area the hero stands in, not the map's: one map may hold several
+      const ok = writeSave(p, this.level.areaAt(p.pos.x, p.pos.z).id, this.worldSeed, this.hooks.getCursorItem(), last);
+      if (!ok && r.wrote) r.undo();
+      if (!ok && !isReadOnly(p)) this.tellUnsaved();
+    }
+    if (r.adopted) this.hooks.inventoryChanged();
+    return r.adopted;
+  }
+
+  private tellUnsaved() {
+    if (this.toldUnsaved) return;
+    this.toldUnsaved = true;
+    this.hooks.message('存储空间不够，这次没能保存', '#ff6060', 6);
+  }
+
+  /**
+   * Another tab claimed this hero (its storage event: save.ts claimHero). Written here a last time
+   * if nothing has been written over it since, so that tab, reading it after, has what was done
+   * here; then only played here, never written, the shared pages only looked at (D2R: a character
+   * is in one game at a time)
+   */
+  heroClaimed() {
+    if (!this.started || isReadOnly(this.player) || !claimedElsewhere()) return;
+    if (mayWriteLast()) this.persist(true, true);
+    heroTaken(this.player);
+    this.heroElsewhere();
+  }
+
+  /**
+   * This hero is another tab's now: the shared pages only looked at from here on, and the player
+   * told, again as the game would save (the autosave), since nothing here is kept any more
+   */
+  private heroElsewhere() {
+    if (!this.shared.readOnly) {
+      this.shared.readOnly = '这个角色已在另一个窗口打开：这里只能查看';
+      this.hooks.inventoryChanged();
+    }
+    if (Date.now() - this.toldTaken < 10000) return;
+    this.toldTaken = Date.now();
+    this.hooks.message('这个角色已在另一个窗口打开：这里不再保存，刷新可接着玩', '#ff8060', 10);
+  }
+
+  /** the grids the hero's items lie in, the shared pages too while they can change, for reading a scroll or tome from */
+  heldGrids(): Grid[] {
+    const p = this.player;
+    return [p.inventory, p.stash, ...(this.shared.readOnly ? [] : this.shared.pages), p.cube];
+  }
+
+  /** why `it` can't go on page `page` of the stash (0 the hero's own, 1… the shared ones), or null */
+  stashBlock(page: number, it: Item): string | null {
+    return page > 0 ? (this.shared.readOnly ?? sharedBlock(it)) : null;
+  }
+
+  /**
+   * Gold into or out of the page of the stash shown (0 the hero's own, Player.stashGold; 1… a shared
+   * one's own, as D2R keeps it). As much as fits, D2's way (src/items/stash.ts); how much moved
+   */
+  moveStashGold(page: number, op: 'deposit' | 'withdraw'): number {
+    const p = this.player;
+    const sh = this.shared;
+    if (page > 0 && (sh.readOnly || page > sh.gold.length)) return 0;
+    const banked = page > 0 ? sh.gold[page - 1] : p.stashGold;
+    const n = op === 'deposit' ? depositable(p.gold, banked) : -withdrawable(banked, p.gold, p.level);
+    p.gold -= n;
+    if (page > 0) sh.gold[page - 1] += n;
+    else p.stashGold += n;
+    return Math.abs(n);
   }
 
   /** whether this build has a map of area `id`: the areas of normal play (isBuilt) and the trial ground's floors */
@@ -637,8 +780,8 @@ export class Game {
       this.hooks.message('神殿的祝福消失了', '#9a9080', 2);
     }
     updatePlayer(this, p, dt);
-    // self-repairing items mend a point now and then
-    p.mendItems(dt);
+    // self-repairing items mend a point now and then, on the shared pages too while they can change
+    p.mendItems(dt, this.shared.readOnly ? [] : this.shared.pages);
     this.quests.update(dt);
     // only the monsters near the hero act; the rest are out of play until the hero comes back
     // (MonsterGrid), and so cost nothing. They go in the grid's order, cell by cell, not the list's:
@@ -1292,7 +1435,8 @@ export class Game {
     p.intent = null;
     // Diablo II's death penalty as the death starts (PLAYER_ApplyDeathPenalty: game/d2/death.ts):
     // min(level, 20) % of all the gold, the inventory's first, and in nightmare and hell some of
-    // the level's experience; the gold left in the inventory drops by the body (leaveCorpse)
+    // the level's experience; the gold left in the inventory drops by the body (leaveCorpse). The
+    // shared pages' gold is out of reach of it, as in D2R
     const pen = deathPenalty({ level: p.level, xp: p.xp, gold: p.gold, stashGold: p.stashGold, diff: p.difficulty });
     p.gold = pen.goldDropped;
     p.stashGold = pen.stashGold;
@@ -1732,7 +1876,7 @@ export class Game {
   readTownPortal(from?: Item) {
     const p = this.player;
     if (this.level.inTown(p.pos)) return;
-    const grids = [p.inventory, p.stash, p.cube];
+    const grids = this.heldGrids();
     const held = from && grids.some((g) => g.contains(from)) && readable(from) ? from : townPortalFrom(p.inventory);
     if (!held || !readFrom(grids, held)) return this.noTownPortal(from);
     this.openTownPortal();

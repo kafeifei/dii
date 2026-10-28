@@ -1317,6 +1317,20 @@ body {
   min-width: 140px;
   letter-spacing: 0.3em;
 }
+/* the stash: the hero's own page and the shared ones, a tab each */
+.stash-tabs {
+  margin-bottom: 6px;
+  gap: 3px;
+}
+.stash-tabs .tab {
+  padding: 4px 0;
+  white-space: nowrap;
+}
+.stash-note {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #ff9060;
+}
 /* the merchant: its shelves' pages, and the repair buttons (the cursor's lit while it repairs) */
 .shop-tabs {
   margin-bottom: 6px;
@@ -1671,6 +1685,12 @@ html {
 .touch .panel.right {
   right: calc(4px + var(--sar));
   transform-origin: top right;
+}
+/* the stash: shrunk further to show its tabs, page and gold without scrolling (--pzt) */
+.touch .panel.stashp {
+  height: auto;
+  max-height: calc((100dvh - 8px - var(--sat) - var(--sab)) / var(--pzt, 1));
+  transform: scale(var(--pzt, 1));
 }
 /* the bag or the skills on their own spread out, all on one screen (scaled by --pzw / --pzs) */
 .touch .panel.wide.open {

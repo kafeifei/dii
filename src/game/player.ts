@@ -307,15 +307,16 @@ export class Player extends Actor {
   }
 
   /**
-   * Self-repairing items mend (d2/durability.ts replenish), wherever the hero keeps them: D2 runs
-   * an item's own event wherever it is (ItemMode.cpp:4975-5030). Frames carried over are kept per item
+   * Self-repairing items mend (d2/durability.ts replenish), wherever the hero keeps them, and on the
+   * grids `also` (the shared stash pages, D2R's: in the game with the hero, src/items/stash.ts): D2
+   * runs an item's own event wherever it is (ItemMode.cpp:4975-5030). Frames carried over are kept per item
    */
-  mendItems(dt: number) {
+  mendItems(dt: number, also: Grid[] = []) {
     this.mendClock += dt;
     if (this.mendClock < 0.5) return;
     const frames = this.mendClock * 25;
     this.mendClock = 0;
-    const all = [...Object.values(this.equipment), ...[this.inventory, this.stash, this.cube].flatMap((g) => g.items.map((x) => x.item))];
+    const all = [...Object.values(this.equipment), ...[this.inventory, this.stash, this.cube, ...also].flatMap((g) => g.items.map((x) => x.item))];
     for (const it of all) {
       if (!it || !replenishFrames(it)) continue;
       const before = it.dur;

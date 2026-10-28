@@ -12,8 +12,8 @@ import { h, type UIContext } from './common';
 import { CELL, itemIcon } from './icons';
 
 // The bag panel (the paper doll over the bag) and the item grids every panel shares (the bag, the
-// stash, the cube, the shop's stock): taking, dropping, socketing, equipping, buying, selling and
-// repairing.
+// stash's pages, the cube, the shop's stock): taking, dropping, socketing, equipping, buying,
+// selling and repairing.
 
 type GridKind = 'inv' | 'stash' | 'shop' | 'cube';
 
@@ -123,7 +123,7 @@ function identifyWith(ui: UIContext, target: Item): boolean {
     return true;
   }
   const p = ui.game.player;
-  if (!readFrom([p.inventory, p.stash, p.cube], s)) return false;
+  if (!readFrom(ui.game.heldGrids(), s)) return false;
   target.identified = true;
   target.name = displayName(target);
   p.markDirty();
@@ -133,14 +133,47 @@ function identifyWith(ui: UIContext, target: Item): boolean {
   return true;
 }
 
+/** the stash's page shown: the hero's own (Player.stash), or a shared one (Game.shared) */
+export function stashGrid(ui: UIContext): Grid {
+  return ui.stashPage > 0 ? ui.game.shared.pages[ui.stashPage - 1] : ui.game.player.stash;
+}
+
 function gridOf(ui: UIContext, kind: GridKind): Grid {
   const p = ui.game.player;
-  return kind === 'inv' ? p.inventory : kind === 'stash' ? p.stash : kind === 'cube' ? p.cube : ui.game.shop.grid;
+  return kind === 'inv' ? p.inventory : kind === 'stash' ? stashGrid(ui) : kind === 'cube' ? p.cube : ui.game.shop.grid;
+}
+
+/** a shared page that can't change this time (save.ts loadShared), clicked: it says why */
+function lockedPage(ui: UIContext): boolean {
+  const why = ui.stashPage > 0 ? ui.game.shared.readOnly : null;
+  if (why) {
+    ui.message(why, '#ff8060', 2);
+    ui.sfx.play('ui.denied');
+  }
+  return !!why;
+}
+
+/** what can't go on the stash's page shown (a quest item on a shared one, D2R's rule) says so */
+function refusedHere(ui: UIContext, it: Item): boolean {
+  const why = ui.game.stashBlock(ui.stashPage, it);
+  if (why) {
+    ui.message(why, '#ff6060', 1.5);
+    ui.sfx.play('ui.cant_use');
+  }
+  return !!why;
 }
 
 function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: PointerEvent) {
   e.preventDefault();
   const p = ui.game.player;
+  // the stash open: the shared pages as another tab may have left them first (Game.syncShared); a
+  // shared page that changed under the pointer takes no click, as what was clicked may be gone
+  if (ui.left === 'stash' && ui.game.syncShared() && ui.stashPage > 0) {
+    ui.message('共享储物箱在另一个窗口里变动过', '#c8a86a', 1.5);
+    ui.dirty = true;
+    return;
+  }
+  if (kind === 'stash' && lockedPage(ui)) return;
   const grid = gridOf(ui, kind);
   const rect = gridEl.getBoundingClientRect();
   // the panel may be drawn scaled (phones): measure in the grid's own pixels
@@ -207,6 +240,7 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
       return;
     }
     if (kind === 'cube' && baseOf(c).type === 'cube') return;
+    if (kind === 'stash' && refusedHere(ui, c)) return;
     // dropped on the cube (in the bag or the stash): straight in, wherever it fits
     if (under && baseOf(under.item).type === 'cube') {
       if (p.cube.add(c)) {
@@ -250,8 +284,10 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
       grid.remove(it);
       sell(ui, it);
     } else if (ui.left === 'stash' || ui.left === 'cube') {
-      const other = ui.left === 'stash' ? p.stash : p.cube;
+      // D2R's ctrl+click (D2 1.x has none): between the bag and the stash's page shown, or the cube
+      const other = ui.left === 'stash' ? stashGrid(ui) : p.cube;
       if (kind === 'inv' && baseOf(it).type === 'cube') return;
+      if (kind === 'inv' && ui.left === 'stash' && (lockedPage(ui) || refusedHere(ui, it))) return;
       const dest = kind === 'inv' ? other : p.inventory;
       if (dest.add(it)) grid.remove(it);
       else {

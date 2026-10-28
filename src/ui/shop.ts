@@ -1,39 +1,80 @@
 import { repairAllList, pay } from '../items/vendor';
 import { repairItem } from '../items/d2/durability';
+import { STASH_GOLD_MAX, STASH_TABS } from '../items/stash';
 import { areaDef } from '../world/areas';
 import { addClose, h, type UIContext } from './common';
-import { isRepairing, renderGrid, toggleRepair } from './inventory';
+import { isRepairing, renderGrid, stashGrid, toggleRepair } from './inventory';
 
 // The camp's services, on the left with the bag beside them: the stash, the merchant, the waypoint.
 
+/**
+ * The stash, D2R's: a tab for the hero's own page and one for each shared page (src/items/stash.ts),
+ * the page shown kept while playing (UIContext.stashPage), and the gold of the page shown, each
+ * page's its own as in D2R
+ */
 export function renderStash(ui: UIContext, L: HTMLElement) {
-  const p = ui.game.player;
+  const g = ui.game;
+  const p = g.player;
   L.innerHTML = '';
   L.appendChild(h('h2', '', '储 物 箱'));
   addClose(ui, L, 'left');
-  L.appendChild(renderGrid(ui, 'stash', p.stash));
+  const tabs = h('div', 'tabs stash-tabs');
+  STASH_TABS.forEach((label, i) => {
+    const t = h('div', `tab${i === ui.stashPage ? ' on' : ''}`, label);
+    // what each page is, by the pointer (a phone's tap only switches)
+    if (!ui.touch) t.dataset.tip = i ? '所有角色共用：任务物品放不进去' : '只属于这个角色';
+    t.onclick = () => {
+      if (ui.stashPage === i) return;
+      ui.stashPage = i;
+      ui.sfx.play('ui.click');
+      ui.dirty = true;
+    };
+    tabs.appendChild(t);
+  });
+  L.appendChild(tabs);
+  L.appendChild(renderGrid(ui, 'stash', stashGrid(ui)));
+  const page = ui.stashPage;
+  const shared = page > 0;
+  const locked = shared ? g.shared.readOnly : null;
+  const banked = shared ? (g.shared.gold[page - 1] ?? 0) : p.stashGold;
   const gl = h('div', 'goldline');
-  gl.innerHTML = `<span>储存金币：${p.stashGold}</span>`;
+  const sum = h('span', '', `${shared ? '共享金币' : '储存金币'}：${banked}`);
+  // the personal page's gold is lost in part on dying, as D2's is (game/d2/death.ts); a shared page's isn't
+  sum.dataset.tip = shared ? `这一页的金币，所有角色共用；每页最多 ${STASH_GOLD_MAX}，死亡时不会损失` : `最多 ${STASH_GOLD_MAX}`;
+  gl.appendChild(sum);
+  const move = (op: 'deposit' | 'withdraw') => {
+    // the page's gold as another tab may have left it, then this one's change written (Game.syncShared)
+    if (shared) g.syncShared();
+    const had = shared ? (g.shared.gold[page - 1] ?? 0) : p.stashGold;
+    const n = g.moveStashGold(page, op);
+    if (n) {
+      ui.sfx.play('ui.coins');
+      if (shared) g.syncShared();
+    } else if (locked) {
+      ui.message(locked, '#ff8060', 2);
+      ui.sfx.play('ui.denied');
+    } else if (op === 'withdraw' && had > 0) {
+      // more than the hero can carry: 10,000 a level (src/items/stash.ts withdrawable)
+      ui.message('身上带不下更多金币了', '#ff6060', 1.5);
+      g.say('cant_carry');
+    } else if (op === 'deposit' && p.gold > 0) {
+      ui.message('储物箱放不下更多金币了', '#ff6060', 1.5);
+      ui.sfx.play('ui.denied');
+    }
+    ui.dirty = true;
+  };
   const dep = h('button', 'btn', '存入全部');
-  dep.onclick = () => {
-    p.stashGold += p.gold;
-    p.gold = 0;
-    ui.sfx.play('ui.coins');
-    ui.dirty = true;
-  };
+  dep.onclick = () => move('deposit');
   const wd = h('button', 'btn', '取出全部');
-  wd.onclick = () => {
-    p.gold += p.stashGold;
-    p.stashGold = 0;
-    ui.sfx.play('ui.coins');
-    ui.dirty = true;
-  };
+  wd.onclick = () => move('withdraw');
+  dep.disabled = wd.disabled = !!locked;
   const box = h('div');
   box.style.display = 'flex';
   box.style.gap = '6px';
   box.append(dep, wd);
   gl.appendChild(box);
   L.appendChild(gl);
+  if (locked) L.appendChild(h('div', 'stash-note', locked));
 }
 
 /**
