@@ -419,13 +419,23 @@ export default async function (page, shot, log) {
         const { D2X_TREASURE_CLASSES } = await import('/src/data/d2x/treasure.ts');
         const { noDropFor, totalProb } = await import('/src/items/d2/treasure.ts');
         // the chance a treasure class drops nothing (items/d2/treasure.ts evalTc): each pick its
-        // NoDrop share, or an entry naming a class that drops nothing in turn
+        // NoDrop share, or an entry naming a class that drops nothing in turn; with picks < 0 the
+        // k-th pick is the entry whose range holds k, no roll (a champion's, a unique's)
         const nothing = (name) => {
           const tc = D2X_TREASURE_CLASSES[name];
           if (!tc || !tc.items.length) return 1;
-          if (tc.picks < 0) return tc.items.reduce((q, e) => q * (e.tc ? nothing(e.tc) : 0), 1);
+          const total = totalProb(tc);
+          if (tc.picks < 0) {
+            let q = 1;
+            for (let k = 0; k < -tc.picks && k < total; k++) {
+              let acc = 0;
+              const e = tc.items.find((x) => k < (acc += x.prob));
+              q *= e.tc ? nothing(e.tc) : 0;
+            }
+            return q;
+          }
           const nd = noDropFor(tc);
-          const q = (nd + tc.items.reduce((sum, e) => sum + (e.tc ? e.prob * nothing(e.tc) : 0), 0)) / (totalProb(tc) + nd);
+          const q = (nd + tc.items.reduce((sum, e) => sum + (e.tc ? e.prob * nothing(e.tc) : 0), 0)) / (total + nd);
           return q ** Math.abs(tc.picks || 1);
         };
         // what a kill is worth to the hero now, as Game.killMonster reckons it: D2's level gap leaves a
