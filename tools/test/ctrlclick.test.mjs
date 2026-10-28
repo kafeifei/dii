@@ -130,6 +130,31 @@ export default async (load) => {
     check(game.refuseDrop(it), `${what} off the cursor not refused`);
   }
   check(!game.dropBlock(ring) && !game.refuseDrop(ring), 'a ring refused');
+  // ── the belt, D2's (src/items/belt.ts): potions start a column, scrolls only join their own kind ──
+  {
+    const B = await load('/src/items/belt.ts');
+    const mk = (c) => createItem(c);
+    const empty = [[], [], [], []];
+    check(B.beltable(mk('tsc')) && B.beltable(mk('hp1')) && B.beltable(mk('vps')) && !B.beltable(mk('cap')) && !B.beltable(mk('key')) && !B.beltable(mk('tbk')), 'what the belt holds: potions and scrolls');
+    check(B.freeBeltColumn(empty, 2, mk('hp1')) === 0 && B.freeBeltColumn(empty, 2, mk('tsc')) === -1 && B.freeBeltColumn(empty, 2, mk('vps')) === -1 && B.freeBeltColumn(empty, 2, mk('cap')) === -1, 'an empty belt: a healing potion takes a column, a scroll or a stamina potion none');
+    const belt = [[mk('mp1')], [mk('hp1')], [mk('tsc')], []];
+    check(B.freeBeltColumn(belt, 2, mk('hp3')) === 1 && B.freeBeltColumn(belt, 2, mk('mp5')) === 0 && B.freeBeltColumn(belt, 2, mk('tsc')) === 2 && B.freeBeltColumn(belt, 2, mk('isc')) === -1 && B.freeBeltColumn(belt, 2, mk('rvl')) === 3, 'beside its own kind: any healing size, any mana size, the same scroll; a new kind of potion in the empty column');
+    check(B.freeBeltColumn(belt, 1, mk('hp3')) === 3 && B.freeBeltColumn(belt, 1, mk('tsc')) === -1, 'columns full: a potion to the empty one, a scroll nowhere');
+    // the game's: beltInsert by it, a scroll read from the belt (town portal, identify)
+    p.belt = [[mk('hp1')], [], [], []];
+    const scroll = mk('tsc');
+    check(!game.beltInsert(scroll) && game.beltInsert(mk('hp2')) && p.belt[0].length === 1 && p.belt[1].length === 1, `beltless (one row): a scroll in ${JSON.stringify(p.belt.map((c) => c.map((x) => x.baseId)))}`);
+    p.belt[2].push(scroll);
+    check(game.readHeld(scroll) && !p.belt[2].length && !game.readHeld(scroll), 'a town portal scroll read from the belt, once');
+    const id = mk('isc');
+    p.belt[3].push(id);
+    let picked = null;
+    game.hooks.identifyWith = (s) => (picked = s);
+    game.useBelt(3);
+    check(picked === id && p.belt[3].includes(id), 'the belt\'s scroll of identify used: the identify cursor with it, still held');
+    p.belt = [[], [], [], []];
+  }
+
   // a dead hero drops nothing
   p.dead = true;
   check(!game.dropFromBag(ring) && p.inventory.contains(ring), 'a dead hero dropped the ring');
@@ -137,5 +162,5 @@ export default async (load) => {
   localStorage.clear();
 
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
-  console.log('  ctrl or cmd with the left button, the right one a right click still, shift apart; bag to stash, cube, sale or the ground, back to the bag; no room, no move; a drop by the hero in the camp, picked up again; the cube and unknown items kept; none dead');
+  console.log('  ctrl or cmd with the left button, the right one a right click still, shift apart; bag to stash, cube, sale or the ground, back to the bag; no room, no move; a drop by the hero in the camp, picked up again; the cube and unknown items kept; D2\'s belt columns, scrolls read from it; none dead');
 };

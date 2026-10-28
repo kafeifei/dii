@@ -4,8 +4,9 @@ import { isBroken } from '../items/d2/durability';
 import { isSocketFiller, socketBlock, type SocketBlock } from '../items/d2/sockets';
 import type { Grid } from '../items/grid';
 import { baseOf, displayName, isIdentified, isUnknown, socketId, type Item } from '../items/item';
+import { beltable } from '../items/belt';
 import { insertFiller } from '../items/make';
-import { isTownPortal, readable, readFrom, scrollIntoTome } from '../items/tomes';
+import { isTownPortal, readable, scrollIntoTome } from '../items/tomes';
 import { buyIntoStack, buyIntoTome, buyPrice, multibuys, pay, permanent, purseGold, quiverInto, repairCost, repairOne, sellPrice, shelveSold, takeFromStore } from '../items/vendor';
 import type { HeroLine } from '../audio/sounds';
 import { h, type UIContext } from './common';
@@ -145,10 +146,11 @@ function ask(ui: UIContext, kind: 'buy' | 'sell', item: Item) {
   ui.dirty = true;
 }
 
-/** the scroll or tome a right-click picked to identify with: the next item clicked */
+/** the scroll or tome a right-click (or the belt) picked to identify with: the next item clicked */
 let identifier: Item | null = null;
 
-function startIdentify(ui: UIContext, scroll: Item) {
+/** the identify cursor taken up with `scroll`: a right-click on it in the bag, or its belt column used (Game.useBelt) */
+export function startIdentify(ui: UIContext, scroll: Item) {
   if (!readable(scroll)) {
     ui.message('鉴定之书里没有卷轴了', '#ff6060', 1.5);
     return;
@@ -168,7 +170,7 @@ function identifyWith(ui: UIContext, target: Item): boolean {
     return true;
   }
   const p = ui.game.player;
-  if (!readFrom(ui.game.heldGrids(), s)) return false;
+  if (!ui.game.readHeld(s)) return false;
   target.identified = true;
   target.name = displayName(target);
   p.markDirty();
@@ -338,17 +340,15 @@ function onGridDown(ui: UIContext, kind: GridKind, gridEl: HTMLElement, e: Point
   if (!under) return;
   const it = under.item;
   if (press.ctrl) return quickMoveFrom(ui, kind, grid, it);
-  // D2's shift+click: a potion from the bag into the belt, the bag's only (Rcv0x63_ShiftLeftClickItemToBelt,
-  // D2Game PlrMsg.cpp:4110-4197); anything else is taken as by a click
-  if (press.shift && kind === 'inv' && baseOf(it).type === 'potion') {
+  // D2's shift+click: what the belt holds, from the bag into it where D2 puts it (Rcv0x63_ShiftLeftClickItemToBelt,
+  // D2Game PlrMsg.cpp:4110-4197; items/belt.ts): a potion, or a scroll beside its own kind. With no
+  // room for it nothing happens, and nothing is said; anything else is taken as by a click
+  if (press.shift && kind === 'inv' && beltable(it)) {
     if (ui.game.beltInsert(it)) {
       grid.remove(it);
       ui.sfx.play('item.move');
-    } else {
-      ui.message('腰带放不下了', '#ff6060', 1.2);
-      ui.sfx.play('ui.denied');
+      ui.dirty = true;
     }
-    ui.dirty = true;
     return;
   }
   grid.remove(it);
@@ -460,7 +460,8 @@ function buy(ui: UIContext, it: Item, fill = false) {
   }
   const perm = permanent(store, it);
   const got = perm ? takeFromStore(store, it) : it;
-  const belted = baseOf(got).type === 'potion' && ui.game.beltInsert(got);
+  // into the belt where D2 belts it by itself (items/belt.ts: a potion, a scroll beside its own kind)
+  const belted = ui.game.beltInsert(got);
   // arrows or bolts for the bow or crossbow worn: into the empty quiver slot first (vendor.ts quiverInto)
   const quivered = !belted && quiverInto(p.equipment, got);
   if (quivered) p.markDirty();
@@ -697,6 +698,6 @@ export function renderInventory(ui: UIContext, R: HTMLElement): void {
   R.appendChild(renderGrid(ui, 'inv', p.inventory));
   const gl = h('div', 'goldline', `<span>金币：${p.gold}</span><span style="color:#8a8278;font-size:12px">${ui.touch ? '点一下看说明，再点拿起 · 长按使用/装备' : '右键使用/装备 · Ctrl+点击 存取/出售/丢下'}</span>`);
   // what ctrl+click does where (quickmove.ts), by the pointer
-  if (!ui.touch) (gl.lastElementChild as HTMLElement).dataset.tip = 'Ctrl+点击（Mac 上 ⌘ 也行）：开着储物箱或魔盒时放进去或取回背包，在商人处直接出售，都没开时丢在脚下；Shift+点击药水放进腰带';
+  if (!ui.touch) (gl.lastElementChild as HTMLElement).dataset.tip = 'Ctrl+点击（Mac 上 ⌘ 也行）：开着储物箱或魔盒时放进去或取回背包，在商人处直接出售，都没开时丢在脚下；Shift+点击药水放进腰带，卷轴放到腰带里同类卷轴上';
   R.appendChild(gl);
 }

@@ -10,6 +10,7 @@ import { CAMP_VENDORS, fillStore, Store } from '../items/vendor';
 import { baseOf, displayName, isUnknown, type Item } from '../items/item';
 import { fillableTome, isBookScroll, isTome, isTownPortal, mergeTome, readable, readFrom, scrollIntoTome, tomeCharges, tomeMax, townPortalFrom } from '../items/tomes';
 import { coldEnchantBurst, fireEnchantBurst, lightEnchantBolts } from './d2/monstats';
+import { freeBeltColumn } from '../items/belt';
 import { depositable, SharedStash, sharedBlock, withdrawable } from '../items/stash';
 import type { Grid } from '../items/grid';
 import { charStats, potionHeal } from './d2/stats';
@@ -59,6 +60,8 @@ export interface GameHooks {
   npcMenu?(obj: WorldObject, opening: Topic | null): void;
   /** a quest moved on: the quest log has news */
   questsChanged?(): void;
+  /** a scroll of identify read from the belt: the next item clicked is identified with it (the bag's identify cursor) */
+  identifyWith?(scroll: Item): void;
 }
 
 export interface Picker {
@@ -1665,20 +1668,34 @@ export class Game {
 
   // ───────────────────────── items & interaction ─────────────────────────
 
-  /** try to put a potion into the belt */
+  /**
+   * Put `item` in the belt where Diablo II would (items/belt.ts freeBeltColumn): beside its own
+   * kind, else a potion D2 belts by itself into an empty column. False, and nothing moved, when there
+   * is no such place
+   */
   beltInsert(item: Item): boolean {
     const p = this.player;
-    if (baseOf(item).type !== 'potion') return false;
-    const rows = p.beltRows();
-    for (const col of p.belt) if (col.length > 0 && col.length < rows && col[0].baseId === item.baseId) {
-      col.push(item);
-      return true;
-    }
-    for (const col of p.belt) if (col.length === 0) {
-      col.push(item);
-      return true;
-    }
-    return false;
+    const col = freeBeltColumn(p.belt, p.beltRows(), item);
+    if (col < 0) return false;
+    p.belt[col].push(item);
+    return true;
+  }
+
+  /** whether the hero holds `it` where it can be read from: a grid (heldGrids) or the belt */
+  private holds(it: Item): boolean {
+    return this.heldGrids().some((g) => g.contains(it)) || this.player.belt.some((c) => c.includes(it));
+  }
+
+  /**
+   * Read a scroll or tome the hero holds (tomes.ts readFrom): a tome loses a charge, a scroll is used
+   * up, one in the belt too. False when it isn't held or there is nothing left to read
+   */
+  readHeld(it: Item): boolean {
+    if (readFrom(this.heldGrids(), it)) return true;
+    const col = this.player.belt.find((c) => c.includes(it));
+    if (!col || !readable(it)) return false;
+    col.splice(col.indexOf(it), 1);
+    return true;
   }
 
   pickupGround(gi: GroundItem) {
@@ -1765,12 +1782,18 @@ export class Game {
     this.sfx.play('item.drink', { pos: p.pos });
   }
 
+  /**
+   * The belt's column `col` used (its key, or a right click on it): its bottom item drunk, or a
+   * scroll read as from the bag, town portal cast, identify's cursor taken up
+   */
   useBelt(col: number) {
     const p = this.player;
     if (p.dead) return;
     const stack = p.belt[col];
     if (!stack) return;
     if (!stack.length) return this.say('no_potion');
+    if (isTownPortal(stack[0])) return this.castTownPortal(stack[0]);
+    if (stack[0].baseId === 'isc') return this.hooks.identifyWith?.(stack[0]);
     if (!this.drinkable(stack[0])) return;
     const item = stack.shift()!;
     this.drink(item);
@@ -1966,9 +1989,8 @@ export class Game {
   readTownPortal(from?: Item) {
     const p = this.player;
     if (this.level.inTown(p.pos)) return;
-    const grids = this.heldGrids();
-    const held = from && grids.some((g) => g.contains(from)) && readable(from) ? from : townPortalFrom(p.inventory);
-    if (!held || !readFrom(grids, held)) return this.noTownPortal(from);
+    const held = from && this.holds(from) && readable(from) ? from : townPortalFrom(p.inventory);
+    if (!held || !this.readHeld(held)) return this.noTownPortal(from);
     this.openTownPortal();
     this.hooks.inventoryChanged();
   }

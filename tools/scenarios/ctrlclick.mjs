@@ -9,7 +9,8 @@
 // Horadric Cube is refused on a shared page and goes onto the personal one and back. The cube
 // opened: the ring into it and back, the cube itself not into itself. At the merchant: the ring
 // sold, the cube refused and left where it was. Shift+click: a potion into the belt, with the belt
-// full it stays, and the sword just taken. Nothing open: the sword dropped at the hero's feet with
+// full it stays and nothing is said; a scroll stays until one is put on the belt by hand, then the
+// next joins it, and that column read in the camp says so; the sword just taken. Nothing open: the sword dropped at the hero's feet with
 // its sound, in the camp, its label clicked and picked up again; the cube refused, by ctrl+click and
 // off the cursor (its contents are kept apart); with the character panel open, the scroll of
 // identify dropped too. Then at a phone's size with the touch controls the bag and stash
@@ -268,12 +269,40 @@ export default async function (page, shot, log) {
       await frames(2);
       await modClick(pot, 'right', 'Shift');
       expect((await at(pot)).startsWith('belt '), `shift+click the potion: ${await at(pot)}`);
-      // the belt full: it stays in the bag
+      // the belt full: it stays in the bag, and nothing is said (D2: PlrMsg.cpp Rcv0x63)
       const pot2 = await ev(() => window.__c.give('hp1'));
       await frames(2);
       const potAt = await at(pot2);
+      const saidBefore = await ev(() => window.__c.said.length);
+      await ev(() => (window.__c.played.length = 0));
       await modClick(pot2, 'right', 'Shift');
-      expect((await at(pot2)) === potAt && (await lastSaid()) === '腰带放不下了', `the belt full: the potion ${await at(pot2)}, said ${await lastSaid()}`);
+      const quiet = await ev((n) => ({ said: window.__c.said.slice(n), played: window.__c.played }), saidBefore);
+      expect((await at(pot2)) === potAt && !quiet.said.length && !quiet.played.length, `the belt full: the potion ${await at(pot2)}, said ${JSON.stringify(quiet)}`);
+      // a scroll starts no column of its own: it stays; put on an emptied column by hand, the next joins it
+      const tp = await ev(() => [window.__c.give('tsc'), window.__c.give('tsc')]);
+      await ev(() => {
+        const p = game.player;
+        // a sash: two rows, room for a second scroll above the first
+        p.equipment.waist = window.__c.make('lbl');
+        p.markDirty();
+        for (const it of p.belt[2].splice(0)) p.inventory.add(it);
+        game.hooks.dirty = true;
+      });
+      await frames(2);
+      const tpAt = await at(tp[0]);
+      await modClick(tp[0], 'right', 'Shift');
+      expect((await at(tp[0])) === tpAt, `shift+click a scroll with no column of scrolls: ${await at(tp[0])}`);
+      await cellOf(tp[0], 'right').click();
+      await frames(2);
+      await page.locator('.belt .slot').nth(2).click();
+      await frames(2);
+      expect((await at(tp[0])) === 'belt 2', `the scroll put on the belt by hand: ${await at(tp[0])}`);
+      await modClick(tp[1], 'right', 'Shift');
+      expect((await at(tp[1])) === 'belt 2', `shift+click the second scroll: ${await at(tp[1])}`);
+      // its column used: town portal read from the belt (in the camp, the hero says no)
+      await page.locator('.belt .slot').nth(2).click({ button: 'right' });
+      await frames(2);
+      expect((await lastSaid()) === '你已经在营地里了' && (await at(tp[1])) === 'belt 2', `the belt's scroll used in the camp: said ${await lastSaid()}`);
       // shift+click on what isn't a potion: taken, as by a click
       await modClick(ids.sword, 'right', 'Shift');
       expect((await at(ids.sword)) === 'cursor', `shift+click the sword: ${await at(ids.sword)}`);
@@ -282,7 +311,7 @@ export default async function (page, shot, log) {
         game.hooks.setCursorItem(null);
       });
       await frames(2);
-      facts.push('shift+click: a potion into the belt (full: stays), a sword just taken');
+      facts.push('shift+click: a potion into the belt (full: stays, nothing said), a scroll beside its own kind only, a sword just taken');
     },
 
     async ground() {

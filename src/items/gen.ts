@@ -201,8 +201,7 @@ export function applyRuneword(item: Item, runeIlvl = item.ilvl): boolean {
  * Player.cpp:167-266): normal, identified, never ethereal, no sockets, at full durability, what D2
  * wears in the right and left hands worn. A beltable item goes in the belt where it fits, the rest
  * in the bag: the four minor healing potions in the belt; the scrolls of town portal and identify
- * are beltable too, but D2's beltless belt is full by then and they go in the bag, as here, whose
- * belt takes potions only
+ * are beltable too, but start no column of their own (items/belt.ts freeBeltColumn) and go in the bag
  */
 export function starterKit(cls: PlayerClass): { weapon?: Item; offhand?: Item; belt: Item[]; bag: Item[] } {
   const kit: { weapon?: Item; offhand?: Item; belt: Item[]; bag: Item[] } = { belt: [], bag: [] };

@@ -16,7 +16,7 @@ import { renderCube } from './cube';
 import { DebugPanel } from './debug';
 import { Hud, SkillPicker } from './hud';
 import { CELL, itemIcon } from './icons';
-import { dropTrade, renderInventory } from './inventory';
+import { dropTrade, renderInventory, startIdentify } from './inventory';
 import { onKey, pressButton } from './keys';
 import { GroundLabels } from './labels';
 import { NpcMarks, NpcPanel } from './npc';
@@ -131,6 +131,13 @@ export class UI implements GameHooks, UIContext {
   /** a townsperson spoken to (Game.talkTo): what a quest has them say at once, then their menu */
   npcMenu(obj: WorldObject, opening: Topic | null) {
     this.npc.open(obj, opening);
+  }
+
+  /** a scroll of identify read from the belt (Game.useBelt): the identify cursor, the bag open to click in */
+  identifyWith(scroll: Item) {
+    this.right = 'inv';
+    this.dirty = true;
+    startIdentify(this, scroll);
   }
 
   /** a quest moved on: its news waits on the log's button, unless the log is open to show it */
