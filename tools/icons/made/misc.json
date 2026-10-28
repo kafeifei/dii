@@ -1,0 +1,31 @@
+{
+ "invrin1": {
+  "run": 1,
+  "seed": 101,
+  "kind": "variant",
+  "w": 1,
+  "h": 1,
+  "prompt": "A heavy gold signet ring with a small dark red stone, worn and scratched, seen at a three-quarter angle. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invrin1.webp",
+    "sha1": "618470e27224"
+   },
+   "1x": {
+    "file": "public/icons/items/invrin1.1x.webp",
+    "sha1": "a524a63489d8"
+   }
+  }
+ }
+}

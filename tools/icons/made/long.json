@@ -1,0 +1,31 @@
+{
+ "invhal": {
+  "run": 1,
+  "seed": 101,
+  "kind": "base",
+  "w": 2,
+  "h": 4,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A halberd on a long straight wooden shaft with iron langets: on top a long straight spear spike; below it, on the RIGHT side only, one broad axe blade with a straight vertical edge; on the LEFT side only, a short curved back-hook like a bird's beak; the head is lopsided, not a double axe. Shown perfectly upright, the head at the top. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "halberd",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invhal.webp",
+    "sha1": "b60e77d9bfaa"
+   },
+   "1x": {
+    "file": "public/icons/items/invhal.1x.webp",
+    "sha1": "d114a64e8867"
+   }
+  }
+ }
+}

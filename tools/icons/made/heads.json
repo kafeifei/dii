@@ -1,0 +1,31 @@
+{
+ "invghm": {
+  "run": 1,
+  "seed": 202,
+  "kind": "base",
+  "w": 2,
+  "h": 2,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A knight's great helm of riveted grey iron plates covering the whole head, seen from the front: a low flattened dome on top, near-vertical sides, the lower edge dipping to a blunt point at the chin, a raised ridge down the middle of the face, two narrow eye slits either side of the ridge, small breathing holes on the right cheek only, no brim, no visor, no crest, dents and rust patches. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "great-helm",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invghm.webp",
+    "sha1": "2d10e36f7387"
+   },
+   "1x": {
+    "file": "public/icons/items/invghm.1x.webp",
+    "sha1": "bc0eaece8f1f"
+   }
+  }
+ }
+}

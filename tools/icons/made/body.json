@@ -1,0 +1,31 @@
+{
+ "invplt": {
+  "run": 1,
+  "seed": 303,
+  "kind": "base",
+  "w": 2,
+  "h": 3,
+  "prompt": "A heavy plate mail cuirass of grey steel: a battered smooth one-piece grey steel breastplate with a single vertical central ridge and a plain flat chest, articulated grey steel shoulder plates and a skirt of overlapping grey steel lames, mail visible underneath, a few leather straps. Laid flat, front view, empty, no person. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": null,
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": false
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/invplt.webp",
+    "sha1": "f82d187bb151"
+   },
+   "1x": {
+    "file": "public/icons/items/invplt.1x.webp",
+    "sha1": "87d6e82d2a96"
+   }
+  }
+ }
+}

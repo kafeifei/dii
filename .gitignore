@@ -8,3 +8,4 @@ tools/.d2cache
 audio-src
 .vercel
 .env*.local
+icons-src
