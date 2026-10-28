@@ -28,6 +28,35 @@
    }
   }
  },
+ "inv2hs": {
+  "run": 6,
+  "seed": 101,
+  "kind": "base",
+  "w": 1,
+  "h": 4,
+  "prompt": "Use the reference image only as a shape guide: paint a brand-new object whose outline, proportions and orientation follow the flat grey shape in the reference exactly, but fully painted with real materials. A two-handed sword, a great sword for both hands: a long broad straight double-edged blade, wide and heavy, nearly as wide as a hand from the guard to well past its middle, with a shallow fuller, tapering over its last third to a sharp point; the lowest part of the blade, just above the guard, is a short blunt ricasso a little narrower than the blade, wrapped in dark leather, and at the top of that wrapping a pair of pointed iron parrying lugs stick out to the sides beyond the blade's edges; a long straight cross-guard of square iron bar with slightly down-turned ends; a very long grip for two hands, a quarter of the whole length, bound in leather with two raised bands; a small pear-shaped iron pommel. Shown upright, point at the top, the pommel at the bottom, straight front view. Common make: plain grey iron, brown leather and wood, no gold. Inventory icon for a dark fantasy role-playing game, painted in oil: dull matte surfaces with low specular, a heavily muted earthy palette of umber, iron grey, oxblood and tarnished brass, no pure white and no saturated colour, worn and weathered materials with scratches, soot and grime in the crevices, rough visible brushwork, a dim warm key light from the upper left, shadow side to the lower right, a thin bright rim of light along the outer edges of the silhouette. The object alone, centered, filling the frame with a small even margin, the whole object visible, floating in empty space in front of a plain flat mid-grey backdrop, nothing beneath it, no ground, no surface, no text, no border.",
+  "guide": "two-handed-sword",
+  "baseRef": null,
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "license": "Apache-2.0",
+  "matte": "ZhengPeng7/BiRefNet",
+  "matteLicense": "MIT",
+  "flags": {
+   "touchesEdge": false,
+   "parts": 1,
+   "shadow": true
+  },
+  "files": {
+   "2x": {
+    "file": "public/icons/items/inv2hs.webp",
+    "sha1": "28d37f70e0bb"
+   },
+   "1x": {
+    "file": "public/icons/items/inv2hs.1x.webp",
+    "sha1": "96dcad074910"
+   }
+  }
+ },
  "invaxe": {
   "run": 4,
   "seed": 101,

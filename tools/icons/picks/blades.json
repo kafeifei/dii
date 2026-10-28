@@ -3,6 +3,11 @@
   "run": 1,
   "seed": 303
  },
+ "inv2hs": {
+  "run": 6,
+  "seed": 101,
+  "note": "s101 (review 3): the broad straight blade of the corrected two-handed-sword guide, a dark-leather ricasso with pointed iron lugs past the edges, a square iron bar guard with down-turned ends, a long two-hand grip with raised bands, a small tarnished pear pommel; clean on sand and black, reads at 1x. The lowest of the seven seeds under the line (0.361-0.446; s404 0.485, s808's guard rides up over a bare tang), and it scores 0.407 against the claymore's original, above its own, so what is left is the class (similarity 0.361)"
+ },
  "invaxe": {
   "run": 4,
   "seed": 101
