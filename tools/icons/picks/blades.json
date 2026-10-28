@@ -2,5 +2,153 @@
  "inv2ax": {
   "run": 1,
   "seed": 303
+ },
+ "invaxe": {
+  "run": 4,
+  "seed": 101
+ },
+ "invaxf": {
+  "run": 4,
+  "seed": 202
+ },
+ "invbal": {
+  "run": 4,
+  "seed": 101
+ },
+ "invbkf": {
+  "run": 4,
+  "seed": 101
+ },
+ "invbld": {
+  "run": 4,
+  "seed": 404
+ },
+ "invbrx": {
+  "run": 4,
+  "seed": 101
+ },
+ "invbsd": {
+  "run": 4,
+  "seed": 303
+ },
+ "invbsw": {
+  "run": 4,
+  "seed": 303
+ },
+ "invbtx": {
+  "run": 4,
+  "seed": 101
+ },
+ "invclb": {
+  "run": 4,
+  "seed": 404
+ },
+ "invd33": {
+  "run": 4,
+  "seed": 101
+ },
+ "invdgr": {
+  "run": 4,
+  "seed": 202
+ },
+ "invdir": {
+  "run": 4,
+  "seed": 404
+ },
+ "invfla": {
+  "run": 4,
+  "seed": 101
+ },
+ "invflb": {
+  "run": 4,
+  "seed": 303
+ },
+ "invflc": {
+  "run": 4,
+  "seed": 101
+ },
+ "invg33": {
+  "run": 4,
+  "seed": 303
+ },
+ "invgax": {
+  "run": 4,
+  "seed": 303
+ },
+ "invgis": {
+  "run": 4,
+  "seed": 303
+ },
+ "invgix": {
+  "run": 4,
+  "seed": 101
+ },
+ "invgma": {
+  "run": 4,
+  "seed": 404
+ },
+ "invgsd": {
+  "run": 4,
+  "seed": 303
+ },
+ "invhax": {
+  "run": 4,
+  "seed": 101
+ },
+ "invhfh": {
+  "run": 4,
+  "seed": 202
+ },
+ "invhmr": {
+  "run": 4,
+  "seed": 101
+ },
+ "invkrs": {
+  "run": 4,
+  "seed": 303
+ },
+ "invktr": {
+  "run": 4,
+  "seed": 202
+ },
+ "invlax": {
+  "run": 4,
+  "seed": 202
+ },
+ "invleg": {
+  "run": 4,
+  "seed": 303
+ },
+ "invlsd": {
+  "run": 4,
+  "seed": 404
+ },
+ "invmau": {
+  "run": 4,
+  "seed": 303
+ },
+ "invmpi": {
+  "run": 4,
+  "seed": 404
+ },
+ "invmst": {
+  "run": 4,
+  "seed": 101
+ },
+ "invskr": {
+  "run": 4,
+  "seed": 202
+ },
+ "invssd": {
+  "run": 4,
+  "seed": 303
+ },
+ "invwax": {
+  "run": 4,
+  "seed": 404
+ },
+ "invwsd": {
+  "run": 4,
+  "seed": 202
  }
 }
