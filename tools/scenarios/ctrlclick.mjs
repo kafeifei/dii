@@ -350,6 +350,9 @@ export default async function (page, shot, log) {
       await frames(2);
       const tip = await ev(() => (document.getElementById('tooltip')?.style.display === 'block' ? document.getElementById('tooltip').innerText : ''));
       expect(tip.includes('Ctrl+点击') && tip.includes('丢在脚下') && tip.includes('Shift+点击药水'), `the hint's tooltip: ${tip}`);
+      // the hint itself says what ctrl+click does
+      const hint = await ev(() => document.querySelector('.panel.right.open .goldline span:last-child').textContent);
+      expect(hint.includes('Ctrl+点击 存取/出售/丢下'), `the bag's hint: ${hint}`);
       await shot('hint');
       await page.mouse.move(5, 5);
     },

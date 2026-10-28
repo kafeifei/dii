@@ -695,7 +695,7 @@ export function renderInventory(ui: UIContext, R: HTMLElement): void {
   }
   R.appendChild(doll);
   R.appendChild(renderGrid(ui, 'inv', p.inventory));
-  const gl = h('div', 'goldline', `<span>金币：${p.gold}</span><span style="color:#8a8278;font-size:12px">${ui.touch ? '点一下看说明，再点拿起 · 长按使用/装备' : '右键使用/装备 · Ctrl+点击转移'}</span>`);
+  const gl = h('div', 'goldline', `<span>金币：${p.gold}</span><span style="color:#8a8278;font-size:12px">${ui.touch ? '点一下看说明，再点拿起 · 长按使用/装备' : '右键使用/装备 · Ctrl+点击 存取/出售/丢下'}</span>`);
   // what ctrl+click does where (quickmove.ts), by the pointer
   if (!ui.touch) (gl.lastElementChild as HTMLElement).dataset.tip = 'Ctrl+点击（Mac 上 ⌘ 也行）：开着储物箱或魔盒时放进去或取回背包，在商人处直接出售，都没开时丢在脚下；Shift+点击药水放进腰带';
   R.appendChild(gl);
