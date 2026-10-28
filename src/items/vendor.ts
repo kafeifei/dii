@@ -51,6 +51,9 @@ export interface TradeCtx {
   quests?: ReadonlySet<string>;
 }
 
+/** the greater and super healing and mana potions, which Nightmare's and Hell's merchants never run out of */
+const GREATER_POTIONS = new Set(['hp4', 'hp5', 'mp4', 'mp5']);
+
 /** the stall's stock, by tab */
 export class Store {
   tabs: StoreTab[] = [];
@@ -60,6 +63,8 @@ export class Store {
   readonly npcOf = new Map<Item, D2xNpc>();
   /** the items that never sell out (Items.txt PermStoreItem): buying one takes a copy */
   readonly perm = new Set<Item>();
+  /** the difficulty its game is played in (fillStore): Nightmare's and Hell's greater potions never sell out (permanent) */
+  difficulty: Difficulty = 0;
 
   constructor(readonly npcs: readonly D2xNpc[]) {}
 
@@ -137,8 +142,12 @@ export class Store {
     return this.npcs.find((n) => b?.shop?.[n]) ?? this.npcs.find((n) => stocksPage(n, page)) ?? this.npcs[0];
   }
 
-  /** the NPC keeps this base for good, so one sold back isn't shelved (SUnitNpc.cpp:667-684) */
+  /**
+   * The NPC keeps this base for good, so one sold back isn't shelved (SUnitNpc.cpp:664-684): its
+   * permanent stock, and in Nightmare and Hell the greater and super healing and mana potions
+   */
   keepsForGood(npc: D2xNpc, code: string): boolean {
+    if (this.difficulty > 0 && GREATER_POTIONS.has(code)) return true;
     const b = D2_BASES[code];
     return !!(b?.perm && b.spawnable && (b.shop?.[npc]?.max || b.shop?.[npc]?.magicMax));
   }
@@ -211,6 +220,7 @@ function storeItem(code: string, quality: D2Quality, ilvl: number, rng: Rand): I
  */
 export function fillStore(npcs: readonly D2xNpc[], clvl: number, difficulty: Difficulty = 0, rng: Rand = MATH_RAND, act = 0): Store {
   const store = new Store(npcs);
+  store.difficulty = difficulty;
   const ilvl = storeLevel(clvl, difficulty, act);
   const bases = Object.values(D2_BASES);
   for (const npc of npcs) {
@@ -269,21 +279,32 @@ export function sellPrice(store: Store | readonly D2xNpc[], item: Item, ctx: Tra
 }
 
 /**
+ * Whether the shelf keeps it however many are bought: the NPC's permanent stock, and in Nightmare
+ * and Hell any greater or super healing or mana potion on it, even one sold to it (SUNITNPC_BuyItem,
+ * SUnitNpc.cpp:1352-1354, and SUNITNPC_RemovePurchasedItemFromStore, 903-908, as D2MOO decompiles them:
+ * hp4, hp5, mp4 and mp5 pass the NPC's permanent list there)
+ */
+export function permanent(store: Store, item: Item): boolean {
+  return store.perm.has(item) || (store.difficulty > 0 && GREATER_POTIONS.has(item.baseId));
+}
+
+/**
  * What the hero takes home: a permanent item's copy (a new uid), anything else itself, off the shelf
- * (SUNITNPC_RemovePurchasedItemFromStore, SUnitNpc.cpp:898-930, keeps the permanent ones)
+ * (SUNITNPC_RemovePurchasedItemFromStore, SUnitNpc.cpp:880-911, keeps the permanent ones)
  */
 export function takeFromStore(store: Store, item: Item): Item {
-  if (store.perm.has(item)) return { ...structuredClone(item), uid: uid('i') };
+  if (permanent(store, item)) return { ...structuredClone(item), uid: uid('i') };
   store.remove(item);
   return item;
 }
 
 /**
- * Whether shift + right-click buys more than one (SUNITNPC_BuyItem's multibuy, D2Game SUnitNpc.cpp:1366-1391
- * as D2MOO decompiles it): only of what the NPC keeps for good, its permanent items
+ * Whether shift + right-click buys more than one (SUNITNPC_BuyItem's multibuy, D2Game SUnitNpc.cpp:1352-1366
+ * as D2MOO decompiles it): only of what the NPC keeps for good, its permanent items, and in
+ * Nightmare and Hell its greater and super healing and mana potions without that check (permanent)
  */
 export function multibuys(store: Store, item: Item): boolean {
-  return store.perm.has(item);
+  return permanent(store, item);
 }
 
 /**
@@ -303,7 +324,7 @@ export function buyIntoTome(store: Store, scroll: Item, bag: Grid, purse: Purse,
   const n = Math.min(fill && multibuys(store, scroll) ? Math.floor(purseGold(purse) / each) : purseGold(purse) >= each ? 1 : 0, tomeRoom(tome));
   if (n <= 0 || !pay(purse, n * each)) return { tome, n: 0, spent: 0 };
   addCharges(tome, n);
-  if (!store.perm.has(scroll)) store.remove(scroll);
+  if (!permanent(store, scroll)) store.remove(scroll);
   return { tome, n, spent: n * each };
 }
 

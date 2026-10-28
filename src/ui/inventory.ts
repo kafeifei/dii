@@ -6,7 +6,7 @@ import type { Grid } from '../items/grid';
 import { baseOf, displayName, isIdentified, isUnknown, socketId, type Item } from '../items/item';
 import { insertFiller } from '../items/make';
 import { isTownPortal, readable, readFrom, scrollIntoTome } from '../items/tomes';
-import { buyIntoStack, buyIntoTome, buyPrice, multibuys, pay, purseGold, repairCost, repairOne, sellPrice, shelveSold, takeFromStore } from '../items/vendor';
+import { buyIntoStack, buyIntoTome, buyPrice, multibuys, pay, permanent, purseGold, repairCost, repairOne, sellPrice, shelveSold, takeFromStore } from '../items/vendor';
 import type { HeroLine } from '../audio/sounds';
 import { h, type UIContext } from './common';
 import { CELL, itemIcon } from './icons';
@@ -455,7 +455,7 @@ function buy(ui: UIContext, it: Item, fill = false) {
     ui.game.say('no_gold');
     return;
   }
-  const perm = store.perm.has(it);
+  const perm = permanent(store, it);
   const got = perm ? takeFromStore(store, it) : it;
   const belted = baseOf(got).type === 'potion' && ui.game.beltInsert(got);
   if (!belted && !p.inventory.add(got)) {

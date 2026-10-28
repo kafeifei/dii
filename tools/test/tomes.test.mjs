@@ -135,6 +135,21 @@ export default async (load) => {
     facts.push(`keys ${per} each, 7 to top up 5`);
   }
 
+  // ── Nightmare and Hell: greater and super healing and mana potions never sell out (SUnitNpc.cpp:1352-1354, 903-908) ──
+  {
+    const nm = V.fillStore(V.CAMP_VENDORS, 40, 1);
+    const upgraded = nm.all().filter((it) => /^(hp|mp)[45]$/.test(it.baseId));
+    check(upgraded.length > 0 && upgraded.every((it) => V.multibuys(nm, it)), `Nightmare's shelf: ${upgraded.map((it) => it.baseId).join(', ')} multibought`);
+    const sold = createItem('hp4');
+    nm.place(sold, 'akara');
+    const copy = V.takeFromStore(nm, sold);
+    check(V.multibuys(nm, sold) && copy !== sold && copy.uid !== sold.uid && nm.contains(sold) && nm.keepsForGood('akara', 'hp4') && nm.keepsForGood('akara', 'mp5'), 'a greater healing potion on the shelf in Nightmare: multibought, a copy taken, never shelved when sold');
+    const normal = V.fillStore(V.CAMP_VENDORS, 40, 0);
+    const own = createItem('hp4');
+    normal.place(own, 'akara');
+    check(!V.multibuys(normal, own) && V.takeFromStore(normal, own) === own && !normal.contains(own) && !normal.keepsForGood('akara', 'hp4'), 'one in Normal: bought once, off the shelf');
+  }
+
   // ── the game: a new hero's kit, picking up, reading a town portal ──
   localStorage.clear();
   save.setSlot(0);

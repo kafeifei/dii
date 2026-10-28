@@ -502,12 +502,12 @@ export default async function (page, shot, log) {
       const pl = p();
       const store = g.shop;
       const price = V.buyPrice(store, it, pl.tradeCtx());
-      if (pl.gold < price) return null;
-      const perm = store.perm.has(it);
+      if (V.purseGold(pl) < price) return null;
+      const perm = V.permanent(store, it);
       const got = perm ? V.takeFromStore(store, it) : it;
       const belted = baseOf(got).type === 'potion' && g.beltInsert(got);
       if (!belted && !pl.inventory.add(got)) return null;
-      pl.gold -= price;
+      V.pay(pl, price);
       if (!perm) V.takeFromStore(store, it);
       tally(kind, 1, price);
       return got;
