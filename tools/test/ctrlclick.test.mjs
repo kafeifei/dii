@@ -11,6 +11,7 @@ export default async (load) => {
   const { Grid } = await load('/src/items/grid.ts');
   const { createItem } = await load('/src/items/gen.ts');
   const { Game } = await load('/src/game/game.ts');
+  const { GroundItem } = await load('/src/game/objects.ts');
   const { Sfx } = await load('/src/audio/sfx.ts');
   const save = await load('/src/game/save.ts');
   const problems = [];
@@ -140,6 +141,10 @@ export default async (load) => {
     const belt = [[mk('mp1')], [mk('hp1')], [mk('tsc')], []];
     check(B.freeBeltColumn(belt, 2, mk('hp3')) === 1 && B.freeBeltColumn(belt, 2, mk('mp5')) === 0 && B.freeBeltColumn(belt, 2, mk('tsc')) === 2 && B.freeBeltColumn(belt, 2, mk('isc')) === -1 && B.freeBeltColumn(belt, 2, mk('rvl')) === 3, 'beside its own kind: any healing size, any mana size, the same scroll; a new kind of potion in the empty column');
     check(B.freeBeltColumn(belt, 1, mk('hp3')) === 3 && B.freeBeltColumn(belt, 1, mk('tsc')) === -1, 'columns full: a potion to the empty one, a scroll nowhere');
+    // picked up or bought (ITEMS_CheckIfAutoBeltable): what D2 belts by itself, or a potion beside its kind; never a scroll
+    const kin = [[mk('tsc')], [mk('vps')], [mk('isc')], []];
+    check(B.autoBeltable(kin, mk('hp1')) && B.autoBeltable(kin, mk('rvl')) && B.autoBeltable(kin, mk('vps')) && !B.autoBeltable(empty, mk('vps')), 'picked up: a healing or rejuvenation potion by itself, a stamina potion beside its kind only');
+    check(!B.autoBeltable(kin, mk('tsc')) && !B.autoBeltable(kin, mk('isc')) && !B.autoBeltable(kin, mk('cap')), 'picked up: a scroll beside its kind, or a cap, went to the belt');
     // the game's: beltInsert by it, a scroll read from the belt (town portal, identify)
     p.belt = [[mk('hp1')], [], [], []];
     const scroll = mk('tsc');
@@ -152,6 +157,25 @@ export default async (load) => {
     game.hooks.identifyWith = (s) => (picked = s);
     game.useBelt(3);
     check(picked === id && p.belt[3].includes(id), 'the belt\'s scroll of identify used: the identify cursor with it, still held');
+    // a sash's two rows: a scroll picked up or bought stays out of the belt, beside its own kind too;
+    // shift+click (beltInsert) still puts it there
+    const waist = p.equipment.waist;
+    p.equipment.waist = mk('lbl');
+    p.markDirty();
+    p.belt = [[mk('tsc')], [mk('hp1')], [], []];
+    const tp2 = mk('tsc');
+    const hp = mk('hp2');
+    check(p.beltRows() === 2 && !game.autoBeltInsert(tp2) && p.belt[0].length === 1 && game.autoBeltInsert(hp) && p.belt[1].includes(hp), `bought: a scroll belted ${p.belt[0].length - 1}, a potion beside its kind ${p.belt[1].includes(hp)}`);
+    check(game.beltInsert(tp2) && p.belt[0].includes(tp2), 'shift+click: the scroll not beside its own kind');
+    p.belt[0].pop();
+    const lying = new GroundItem({ ...p.pos }, tp2, 0, p.pos);
+    game.level.ground.push(lying);
+    game.pickupGround(lying);
+    check(p.inventory.contains(tp2) && p.belt[0].length === 1 && !game.level.ground.includes(lying), `a scroll picked up: in the bag ${p.inventory.contains(tp2)}, the belt's column ${p.belt[0].length}`);
+    p.inventory.remove(tp2);
+    if (waist) p.equipment.waist = waist;
+    else delete p.equipment.waist;
+    p.markDirty();
     p.belt = [[], [], [], []];
   }
 
@@ -162,5 +186,5 @@ export default async (load) => {
   localStorage.clear();
 
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
-  console.log('  ctrl or cmd with the left button, the right one a right click still, shift apart; bag to stash, cube, sale or the ground, back to the bag; no room, no move; a drop by the hero in the camp, picked up again; the cube and unknown items kept; D2\'s belt columns, scrolls read from it; none dead');
+  console.log('  ctrl or cmd with the left button, the right one a right click still, shift apart; bag to stash, cube, sale or the ground, back to the bag; no room, no move; a drop by the hero in the camp, picked up again; the cube and unknown items kept; D2\'s belt columns, scrolls read from it but never belted by a pickup or purchase; none dead');
 };

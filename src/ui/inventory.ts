@@ -460,8 +460,8 @@ function buy(ui: UIContext, it: Item, fill = false) {
   }
   const perm = permanent(store, it);
   const got = perm ? takeFromStore(store, it) : it;
-  // into the belt where D2 belts it by itself (items/belt.ts: a potion, a scroll beside its own kind)
-  const belted = ui.game.beltInsert(got);
+  // into the belt where D2 belts it by itself (items/belt.ts autoBeltable: a potion, never a scroll)
+  const belted = ui.game.autoBeltInsert(got);
   // arrows or bolts for the bow or crossbow worn: into the empty quiver slot first (vendor.ts quiverInto)
   const quivered = !belted && quiverInto(p.equipment, got);
   if (quivered) p.markDirty();
@@ -473,7 +473,7 @@ function buy(ui: UIContext, it: Item, fill = false) {
   pay(p, price);
   if (!perm) takeFromStore(store, it);
   if (fill && belted && multibuys(store, it)) {
-    while (purseGold(p) >= price && ui.game.beltInsert(takeFromStore(store, it))) pay(p, price);
+    while (purseGold(p) >= price && ui.game.autoBeltInsert(takeFromStore(store, it))) pay(p, price);
   }
   ui.sfx.play('ui.coins');
   ui.dirty = true;

@@ -9,9 +9,10 @@
 // Horadric Cube is refused on a shared page and goes onto the personal one and back. The cube
 // opened: the ring into it and back, the cube itself not into itself. At the merchant: the ring
 // sold, the cube refused and left where it was. Shift+click: a potion into the belt, with the belt
-// full it stays and nothing is said; a scroll stays until one is put on the belt by hand, then the
-// next joins it, and that column read in the camp says so; the sword just taken. Nothing open: the sword dropped at the hero's feet with
-// its sound, in the camp, its label clicked and picked up again; the cube refused, by ctrl+click and
+// full it stays and nothing is said; a scroll stays until one is put on the belt by hand, one picked
+// up then goes to the bag still, and the next shift+clicked joins it, and that column read in the
+// camp says so; the sword just taken. Nothing open: the sword dropped at the hero's feet with its
+// sound, in the camp, its label clicked and picked up again; the cube refused, by ctrl+click and
 // off the cursor (its contents are kept apart); with the character panel open, the scroll of
 // identify dropped too. Then at a phone's size with the touch controls the bag and stash
 // as they were. Page and console errors fail the run. Shots: the stash, the cube, the shop, the
@@ -297,6 +298,20 @@ export default async function (page, shot, log) {
       await page.locator('.belt .slot').nth(2).click();
       await frames(2);
       expect((await at(tp[0])) === 'belt 2', `the scroll put on the belt by hand: ${await at(tp[0])}`);
+      // one picked up stays out of the belt, its column's room and kind notwithstanding (items/belt.ts autoBeltable)
+      const picked = await ev(async () => {
+        const { GroundItem } = await import('/src/game/objects.ts');
+        const p = game.player;
+        const it = window.__c.make('tsc');
+        const gi = new GroundItem({ ...p.pos }, it, 0, p.pos);
+        game.level.ground.push(gi);
+        game.pickupGround(gi);
+        const out = { bag: p.inventory.contains(it), column: p.belt[2].length, rows: p.beltRows() };
+        p.inventory.remove(it);
+        game.hooks.dirty = true;
+        return out;
+      });
+      expect(picked.bag && picked.column === 1 && picked.rows === 2, `a scroll picked up beside its column: ${JSON.stringify(picked)}`);
       await modClick(tp[1], 'right', 'Shift');
       expect((await at(tp[1])) === 'belt 2', `shift+click the second scroll: ${await at(tp[1])}`);
       // its column used: town portal read from the belt (in the camp, the hero says no)
@@ -311,7 +326,7 @@ export default async function (page, shot, log) {
         game.hooks.setCursorItem(null);
       });
       await frames(2);
-      facts.push('shift+click: a potion into the belt (full: stays, nothing said), a scroll beside its own kind only, a sword just taken');
+      facts.push('shift+click: a potion into the belt (full: stays, nothing said), a scroll beside its own kind only (one picked up: the bag), a sword just taken');
     },
 
     async ground() {

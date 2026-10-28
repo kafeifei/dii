@@ -1,8 +1,9 @@
 // Diablo II's belt: what it holds and which column a new one goes in, as D2Common has it (D2MOO at
 // d9d394f: ITEMS_CheckIfBeltable, Items.cpp:1600-1620; ITEMS_ComparePotionTypes, 1624-1734; INVENTORY_GetFreeBeltSlot,
-// D2Inventory.cpp:1739-1803). Picking up, buying, shift+clicking from the bag and a corpse taken back
-// all put an item in by it (Game.beltInsert). The hero's belt is four columns, each a stack whose
-// first item is the bottom one, the next used (Player.belt).
+// D2Inventory.cpp:1739-1803). Shift+clicking from the bag and a corpse taken back put an item in by
+// it (Game.beltInsert); picking up and buying only what D2 belts by itself (autoBeltable,
+// Game.autoBeltInsert). The hero's belt is four columns, each a stack whose first item is the
+// bottom one, the next used (Player.belt).
 import type { D2xMisc } from '../data/d2x/types';
 import { D2_BASES, ownType } from './d2/bases';
 import type { Item } from './item';
@@ -31,6 +32,25 @@ function autoBelt(it: Item): boolean {
 /** two items one column takes together (ITEMS_ComparePotionTypes): the same base, or of one kind (KINDS) */
 export function beltKin(a: Item, b: Item): boolean {
   return a.baseId === b.baseId || KINDS.some((k) => k.includes(a.baseId) && k.includes(b.baseId));
+}
+
+/** the scrolls INVENTORY_HasSimilarPotionInBelt leaves out by their codes (D2Inventory.cpp:1719): identify's and town portal's */
+const NOT_SIMILAR: ReadonlySet<string> = new Set(['isc', 'tsc']);
+
+/**
+ * Whether a pickup or a purchase puts it in the belt by itself (ITEMS_CheckIfAutoBeltable, D2Common
+ * Items.cpp:1737-1745, asked before INVENTORY_PlaceItemInFreeBeltSlot by a pickup, D2Game
+ * ItemMode.cpp:1226, and a purchase, SUnitNpc.cpp:1511): belt-able, and either an item D2 belts by
+ * itself (Misc.txt autobelt) or one whose kind is at the bottom of a column already
+ * (INVENTORY_HasSimilarPotionInBelt, D2Inventory.cpp:1714-1736), which leaves the scrolls of
+ * identify and town portal out by name (1719). As D2MOO decompiles it, ITEMS_CheckIfAutoBeltable
+ * compares that function's TRUE or FALSE with -1 (Items.cpp:1744), which is always true: every
+ * belt-able item, a scroll too, would go in beside its kind. The scrolls left out by name say what
+ * was meant, and that is followed here: a scroll goes in the belt only by shift+click or by hand
+ */
+export function autoBeltable(belt: readonly (readonly Item[])[], it: Item): boolean {
+  if (!beltable(it)) return false;
+  return autoBelt(it) || (!NOT_SIMILAR.has(it.baseId) && belt.some((c) => c.length > 0 && beltKin(it, c[0])));
 }
 
 /**

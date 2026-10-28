@@ -10,7 +10,7 @@ import { CAMP_VENDORS, fillStore, Store } from '../items/vendor';
 import { baseOf, displayName, isUnknown, type Item } from '../items/item';
 import { fillableTome, isBookScroll, isTome, isTownPortal, mergeTome, readable, readFrom, scrollIntoTome, tomeCharges, tomeMax, townPortalFrom } from '../items/tomes';
 import { coldEnchantBurst, fireEnchantBurst, lightEnchantBolts } from './d2/monstats';
-import { freeBeltColumn } from '../items/belt';
+import { autoBeltable, freeBeltColumn } from '../items/belt';
 import { depositable, SharedStash, sharedBlock, withdrawable } from '../items/stash';
 import type { Grid } from '../items/grid';
 import { charStats, potionHeal } from './d2/stats';
@@ -1681,6 +1681,14 @@ export class Game {
     return true;
   }
 
+  /**
+   * An item picked up or bought into the belt, where D2 puts one by itself (items/belt.ts
+   * autoBeltable: a potion, never a scroll): false, and nothing moved, when it doesn't go there
+   */
+  autoBeltInsert(item: Item): boolean {
+    return autoBeltable(this.player.belt, item) && this.beltInsert(item);
+  }
+
   /** whether the hero holds `it` where it can be read from: a grid (heldGrids) or the belt */
   private holds(it: Item): boolean {
     return this.heldGrids().some((g) => g.contains(it)) || this.player.belt.some((c) => c.includes(it));
@@ -1735,7 +1743,7 @@ export class Game {
       this.hooks.inventoryChanged();
       return;
     }
-    if (this.beltInsert(item) || p.inventory.add(item)) {
+    if (this.autoBeltInsert(item) || p.inventory.add(item)) {
       taken();
       // a find worth a word, the first time it's picked up
       const find: HeroLine | null = item.rarity === 'unique' ? 'unique' : item.rarity === 'set' ? 'set_item' : baseOf(item).type === 'rune' ? 'rune' : null;
