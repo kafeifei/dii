@@ -158,7 +158,7 @@ tools/
   audio/acestep.py  在 GPU 机器上用 ACE-Step 1.5 生成音乐（不在本机跑）
   d2-import.mjs     从 D2R 数据表生成 src/data/d2/
   preview.html      模型预览网格（?m=knight,q_orc&clip=Idle）
-  play.mjs  无头 Chromium 剧本运行器（截图、读取游戏状态）
+  play.mjs  无头 Chromium 剧本运行器（截图、读取游戏状态；剧本出错或结果行是 FAIL 时退出码为 1）
   bot.mjs   数值平衡机器人：按区域一路打下去，统计每个区域的耗时、等级和死因
   balance.mjs  并行跑多个机器人并按区域汇总
   sheet.mjs    怪物模型对照图（各状态截图拼成一张）
