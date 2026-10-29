@@ -1,12 +1,13 @@
 // Balance bot scenario for tools/play.mjs: fast-forwards the sim with an automated player.
 // node tools/play.mjs tools/bot.mjs --url "http://localhost:PORT/?dev" [--class sorceress] [--start-area camp] [--to coldplains] [--level 1] [--minutes 40]
-// The hero plays Act 1's opening as a player does (src/world/areas.ts, the areas in the order a hero
-// comes to them): in the camp it speaks to the merchant (亚喀蕾, Akara's counterpart) first, so the
-// Den of Evil is given (src/game/quests), out over Blood Moor into the Den, every monster there killed
-// so the quest is done, back to her for the reward (a skill point, spent by its build), then on to
-// Cold Plains, its waypoint touched and Bishibosh killed, and on until past --to. It fights what is
-// near on the way; the last area there is, with none after it, is fought until nothing in it is left
-// alive. The trial ground's floors (--start-area floor3 --to floor7) follow one another by their stairs.
+// The hero plays Act 1's opening as a player does (ITINERARY, its stations; between two the way the
+// connection graph has, src/world/areas.ts routeTo): in the camp it speaks to the merchant (亚喀蕾,
+// Akara's counterpart) first, so the Den of Evil is given (src/game/quests), out over Blood Moor into
+// the Den, every monster there killed so the quest is done, back to her for the reward (a skill
+// point, spent by its build), back up into Blood Moor and on to Cold Plains, its waypoint touched and
+// Bishibosh killed, and on until past --to. It fights what is near on the way; the last area there
+// is, with none after it, is fought until nothing in it is left alive. The trial ground's floors
+// (--start-area floor3 --to floor7) follow one another by their stairs.
 // Like a player it picks up what is worth having, reads scrolls or a tome of identify, wears what
 // Diablo II's numbers (the game's own: Player.stats, d2/stats.ts hitChance) say is better for its
 // build, keeps the rest to sell, and goes to town by town portal (a scroll or a tome's charge; walking
@@ -20,6 +21,14 @@ const opt = (k, d) => {
   const i = args.indexOf(`--${k}`);
   return i >= 0 ? args[i + 1] : (process.env[k.toUpperCase().replace(/-/g, '_')] ?? d);
 };
+
+/**
+ * The run's stations, Act 1's opening as a player plays it (area keys, src/world/areas.ts): the camp,
+ * where the merchant gives the Den of Evil; the Den; Cold Plains, its waypoint and Bishibosh. Between
+ * two the hero goes the connection graph's way (routeTo), through Blood Moor both times. The areas M2a
+ * builds join it as they come (tools/bench.mjs walks the same)
+ */
+const ITINERARY = ['camp', 'denofevil', 'coldplains'];
 
 /**
  * What each class does, by skill id (src/data/skills.ts, the trees this game has). `points`: where its
@@ -60,6 +69,7 @@ export default async function (page, shot, log) {
     level: +opt('level', 1),
     maxMinutes: +opt('minutes', 40),
     builds: BUILDS,
+    itinerary: ITINERARY,
   };
   const setup = await page.evaluate(async (o) => {
     const { baseOf, displayName, isIdentified, itemReqStats } = await import('/src/items/item.ts');
@@ -73,7 +83,7 @@ export default async function (page, shot, log) {
     const { rollEquipment, createItem } = await import('/src/items/gen.ts');
     const { xpForLevel } = await import('/src/game/player.ts');
     const { bodyItems, takeBody } = await import('/src/game/corpse.ts');
-    const { areaByKey, areaDef, nextArea, CAMP_AREA, DEN_OF_EVIL, COLD_PLAINS } = await import('/src/world/areas.ts');
+    const { areaByKey, areaDef, dungeonArea, routeTo, trialFloor, CAMP_AREA, DEN_OF_EVIL, COLD_PLAINS } = await import('/src/world/areas.ts');
     const { hitChance } = await import('/src/game/d2/stats.ts');
     const { QFLAG, questState } = await import('/src/game/quests/record.ts');
     const g = game;
@@ -85,16 +95,32 @@ export default async function (page, shot, log) {
     const start = areaByKey(o.startArea);
     const end = areaByKey(o.to);
     if (!start || !end) return { error: `no area ${start ? o.to : o.startArea}` };
-    const route = [start];
-    while (route.length < 500 && route[route.length - 1].id !== end.id) {
-      const n = nextArea(route[route.length - 1]);
-      if (!n) break;
-      route.push(n);
-    }
-    if (route[route.length - 1].id !== end.id) return { error: `${o.to} doesn't come after ${o.startArea}` };
-    const endIdx = route.length - 1;
+    let route;
     // getting into the area after the last one ends the run
-    const finish = nextArea(end);
+    let finish;
+    const f0 = trialFloor(start.id);
+    const f1 = trialFloor(end.id);
+    if (f0 !== undefined || f1 !== undefined) {
+      // the trial ground's floors, one after another by their stairs
+      if (f0 === undefined || f1 === undefined || f1 < f0) return { error: `${o.to} doesn't come after ${o.startArea}` };
+      route = Array.from({ length: f1 - f0 + 1 }, (_, i) => areaDef(dungeonArea(f0 + i)));
+      finish = areaDef(dungeonArea(f1 + 1));
+    } else {
+      // the itinerary's way, leg by leg, from the start's first time on it to --to's first after that
+      const stations = o.itinerary.map((k) => areaByKey(k)?.id).filter((id) => id !== undefined);
+      const way = [stations[0]];
+      for (let i = 1; i < stations.length; i++) {
+        const leg = routeTo(stations[i - 1], stations[i]);
+        if (!leg) return { error: `no way from ${o.itinerary[i - 1]} to ${o.itinerary[i]} over the areas built` };
+        way.push(...leg.slice(1));
+      }
+      const from = way.indexOf(start.id);
+      const to = from < 0 ? -1 : way.indexOf(end.id, from);
+      if (from < 0 || to < 0) return { error: `${o.to} doesn't come after ${o.startArea} on the way ${way.join(' → ')}` };
+      route = way.slice(from, to + 1).map((id) => areaDef(id));
+      finish = to + 1 < way.length ? areaDef(way[to + 1]) : undefined;
+    }
+    const endIdx = route.length - 1;
     if (finish) route.push(finish);
     const routeIdx = (id) => route.findIndex((a) => a.id === id);
     const denOnRoute = routeIdx(DEN_OF_EVIL) >= 0 && routeIdx(DEN_OF_EVIL) <= endIdx;

@@ -4,8 +4,9 @@
 // stands in the camp by its way out. Each is drawn 40 times with a pixel read after every draw, so the
 // time is what the GPU really takes per frame (rAF would hide it behind vsync).
 // 'walk:<area>' (or 'walk', where the last scene left off) plays instead: the hero walks a route, from
-// where they stand into each next area on this map (past a way off it, the Den's mouth, to one
-// further on), across the last to a way on not open yet, and back, one sim step and one draw (with the
+// where they stand into each next area on this map along the itinerary (ITINERARY, its legs the
+// connection graph's: src/world/areas.ts routeTo), past a way off it (the Den's mouth) to one
+// further on, across the last to a way on not open yet, and back, one sim step and one draw (with the
 // pixel read) a frame, for --frames frames after ten drawn standing still. It gives the median, p95
 // and p99 frame time (the sim's share as a mean: the page's clock ticks in 0.1 ms), the median and
 // p95 in each area it went through (frames counted where the hero was), the JS heap at the end and
@@ -55,14 +56,29 @@ const gpu = await page.evaluate(() => {
 });
 console.log(`${gpu.name}, device pixel ratio ${dpr}, drawn at ${gpu.ratio}`);
 
+/**
+ * The walk's stations, as the balance bot's (tools/bot.mjs ITINERARY): the camp, the Den of Evil, Cold
+ * Plains; between two the walk goes the connection graph's way (areas.ts routeTo), by Blood Moor
+ */
+const ITINERARY = ['camp', 'denofevil', 'coldplains'];
+
 // helpers kept on the page
-await page.evaluate(async () => {
-  const { areaByKey, areaDef, nextArea } = await import('/src/world/areas.ts');
+await page.evaluate(async (itinerary) => {
+  const { areaByKey, routeTo } = await import('/src/world/areas.ts');
   const { findPath } = await import('/src/world/pathfinding.ts');
   const B = (window.__bench = {});
   const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
-  /** the next area's id from the one the hero is in (compared by id: the page's modules may be other copies) */
-  const nextId = () => nextArea(areaByKey(game.area.key))?.id;
+  /** the itinerary's way, area by area, by id (the page's modules may be other copies of the game's) */
+  const stations = itinerary.map((k) => areaByKey(k)?.id).filter((id) => id !== undefined);
+  const way = [stations[0]];
+  for (let i = 1; i < stations.length; i++) way.push(...(routeTo(stations[i - 1], stations[i]) ?? [stations[i - 1], stations[i]]).slice(1));
+  /** the areas after `id` on the way, from its first time on it */
+  const after = (id) => {
+    const i = way.indexOf(id);
+    return i < 0 ? [] : way.slice(i + 1);
+  };
+  /** the next area's id from the one the hero is in */
+  const nextId = () => after(game.area.id)[0];
   /** go to an area by key, unless the hero is there already; false when there's no such area here */
   B.goTo = (key, fresh) => {
     const a = areaByKey(key);
@@ -124,20 +140,19 @@ await page.evaluate(async () => {
     const p = game.player;
     const out = [];
     let from = { ...p.pos };
-    let next = nextId();
     let off = null;
-    for (let i = 0; i < 12 && next !== undefined; i++) {
+    for (const next of after(game.area.id).slice(0, 12)) {
+      // back into the one the walk is in (Blood Moor after the Den): nothing to walk
+      if (L.areaAt(from.x, from.z).id === next) continue;
       const way = L.wayTo(next, from);
       if (!way) break;
       if (way.obj) {
         off ??= { pos: way.pos, short: way.obj.radius + 2 };
-        next = nextArea(areaDef(next))?.id;
         continue;
       }
       out.push({ pos: way.pos, short: 0 });
       off = null;
       from = way.pos;
-      next = nextArea(areaByKey(L.areaAt(from.x, from.z).key))?.id;
     }
     if (off) out.push(off);
     else if (out.length) {
@@ -254,7 +269,7 @@ await page.evaluate(async () => {
       views: renderer.counts?.() ?? null,
     };
   };
-});
+}, ITINERARY);
 
 const sign = (n, unit = '') => `${n >= 0 ? '+' : ''}${n}${unit}`;
 for (const s of opt('scenes', 'camp,gate,wild,coldplains,denofevil,floor2,floor10,walk:camp,walk:wild').split(',')) {

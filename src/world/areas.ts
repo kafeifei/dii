@@ -1,5 +1,7 @@
 import { D2X_AREAS } from '../data/d2x/areas';
 import type { Difficulty } from '../items/d2/types';
+import { BUILT_DUNGEONS } from './built-dungeons';
+import { BUILT_WEST } from './built-west';
 import { THEMES, WILD_MAPS, dungeonFloor, isWild, themeForFloor } from './levelgen';
 
 /**
@@ -50,7 +52,12 @@ export const WILD_AREA = 2;
 export const COLD_PLAINS = 3;
 export const STONY_FIELD = 4;
 export const DEN_OF_EVIL = 8;
+/** Cold Plains' Cave, its two levels; the Burial Grounds' Crypt and Mausoleum (M2a's dungeons, src/world/dungeons.ts) */
+export const CAVE_1 = 9;
+export const CAVE_2 = 13;
 export const BURIAL_GROUNDS = 17;
+export const CRYPT = 18;
+export const MAUSOLEUM = 19;
 /** dungeon floor f is area DUNGEON_AREAS + f */
 const DUNGEON_AREAS = 1000;
 
@@ -67,9 +74,23 @@ function alvl(floor: number): [number, number, number] {
 
 /** an Act 1 area's level in normal, nightmare and hell: levels.json MonLvlEx, MonLvlEx(N), MonLvlEx(H) (D2xArea.lvl) */
 function d2Alvl(id: number): [number, number, number] {
+  return [...d2Row(id).lvl];
+}
+
+/** an Act 1 area's levels.json row */
+function d2Row(id: number) {
   const row = D2X_AREAS.find((a) => a.id === id);
   if (!row) throw new Error(`no Act 1 area ${id}`);
-  return [...row.lvl];
+  return row;
+}
+
+/**
+ * An Act 1 dungeon as its levels.json row has it: its names from the rename table (tools/d2-names/
+ * areas.json, D2X_AREAS name and nameEn), its levels, a waypoint where its Waypoint isn't 255
+ */
+function d2Dungeon(id: number, key: string): AreaDef {
+  const row = d2Row(id);
+  return { id, key, name: row.name, en: row.nameEn, alvl: [...row.lvl], kind: 'dungeon', waypoint: row.waypoint !== undefined };
 }
 
 const AREAS = new Map<number, AreaDef>();
@@ -89,12 +110,20 @@ define({ id: COLD_PLAINS, key: 'coldplains', name: '凛寒原野', en: 'Bitterfr
 define({ id: STONY_FIELD, key: 'stonyfield', name: '列石荒野', en: 'Stony Wastes', alvl: d2Alvl(STONY_FIELD), kind: 'outdoor', waypoint: true });
 define({ id: DEN_OF_EVIL, key: 'denofevil', name: '邪秽巢穴', en: 'Den of Iniquity', alvl: d2Alvl(DEN_OF_EVIL), kind: 'dungeon', waypoint: false });
 define({ id: BURIAL_GROUNDS, key: 'burialgrounds', name: '葬骨荒冢', en: 'Burial Barrows', alvl: d2Alvl(BURIAL_GROUNDS), kind: 'outdoor', waypoint: false });
+// M2a's dungeons (docs/M2A-STEP0.md 2.9): their keys go into saves and the sound tables, and so never change
+define(d2Dungeon(CAVE_1, 'cave1'));
+define(d2Dungeon(CAVE_2, 'cave2'));
+define(d2Dungeon(CRYPT, 'crypt'));
+define(d2Dungeon(MAUSOLEUM, 'mausoleum'));
 
 /**
- * The areas of normal play this build has a map of, in the order a hero comes to them: the camp,
- * Blood Moor, its Den of Evil, Cold Plains. Stony Field and the Burial Grounds join as they are built.
+ * The areas of normal play this build has a map of, by levels.txt Id: the West overworld's
+ * (built-west.ts, the W line's) and the dungeons' (built-dungeons.ts, the D line's) together, the
+ * camp, Blood Moor, Cold Plains and the Den of Evil so far. Read afresh each time, the two lists being theirs
  */
-const BUILT = [CAMP_AREA, WILD_AREA, DEN_OF_EVIL, COLD_PLAINS];
+function built(): number[] {
+  return [...BUILT_WEST, ...BUILT_DUNGEONS].sort((a, b) => a - b);
+}
 
 /** the area of dungeon floor `floor` (dungeonFloor) */
 export function dungeonArea(floor: number): number {
@@ -141,31 +170,83 @@ export function areaByKey(key: string): AreaDef | undefined {
  * may show. Worked out as a save loads (plan B 区域结构), so a save needs no migration as areas come.
  */
 export function isBuilt(id: number): boolean {
-  return BUILT.includes(id);
+  return built().includes(id);
 }
 
-/** the areas of normal play, in the order a hero comes to them (the trial ground's floors aren't) */
+/** the areas of normal play, by levels.txt Id (the trial ground's floors aren't) */
 export function areaList(): AreaDef[] {
-  return BUILT.map((id) => areaDef(id)!);
+  return built().map((id) => areaDef(id)!);
 }
 
 /**
- * The waypoints a hero can use of the areas `touched`: the ones this build has (isBuilt), in the
- * order a hero comes to them, the camp's always. What else was touched stays in the save
+ * The waypoints a hero can use of the areas `touched`: the ones this build has (isBuilt), by levels.txt
+ * Id as D2's waypoint list has them, the camp's always. What else was touched stays in the save
  */
 export function builtWaypoints(touched: readonly number[]): number[] {
-  return BUILT.filter((id) => areaDef(id)!.waypoint && (id === CAMP_AREA || touched.includes(id)));
+  return built().filter((id) => areaDef(id)!.waypoint && (id === CAMP_AREA || touched.includes(id)));
 }
 
 /**
- * The area after `a` in the order a hero comes to them, or the trial ground's next floor (it has no
- * bottom); undefined after the last area there is, or for one this build lacks
+ * The area after `a` by levels.txt Id among those this build has, or the trial ground's next floor
+ * (it has no bottom); undefined after the last area there is, or for one this build lacks. The debug
+ * panel's 下一个: the tools go by the connection graph (routeTo)
  */
 export function nextArea(a: AreaDef): AreaDef | undefined {
-  const i = BUILT.indexOf(a.id);
-  if (i >= 0) return i + 1 < BUILT.length ? areaDef(BUILT[i + 1]) : undefined;
+  const list = built();
+  const i = list.indexOf(a.id);
+  if (i >= 0) return i + 1 < list.length ? areaDef(list[i + 1]) : undefined;
   const f = trialFloor(a.id);
   return f === undefined ? undefined : areaDef(dungeonArea(f + 1));
+}
+
+/**
+ * Act 1's connection graph (docs/M2A-STEP0.md 2.9): an area to every one it borders (levels.json
+ * WalkableN, walked across) and every one a warp of its leads into (Vis0–7, a cave mouth, a stair),
+ * both ways, as either leads to the other
+ */
+const LINKS = (() => {
+  const out = new Map<number, Set<number>>();
+  const link = (a: number, b: number) => {
+    if (a === b) return;
+    if (!out.has(a)) out.set(a, new Set());
+    if (!out.has(b)) out.set(b, new Set());
+    out.get(a)!.add(b);
+    out.get(b)!.add(a);
+  };
+  for (const r of D2X_AREAS) for (const to of [...(r.walk ?? []), ...(r.warps ?? []).map((w) => w.to)]) link(r.id, to);
+  return out;
+})();
+
+/** the areas `id` leads to, walked across or through a warp, by Id (LINKS); none for an area off the graph (a trial floor) */
+export function areaLinks(id: number): number[] {
+  return [...(LINKS.get(id) ?? [])].sort((a, b) => a - b);
+}
+
+/**
+ * The way from area `from` to area `to` over the areas this build has (isBuilt), each step one area to
+ * the next it leads to (areaLinks), the fewest steps, the lower Id first where they tie: [from, …, to];
+ * null when there is none that goes only through built areas. From an area to itself, itself
+ */
+export function routeTo(from: number, to: number): number[] | null {
+  if (from === to) return [from];
+  const list = built();
+  if (!list.includes(from) || !list.includes(to)) return null;
+  const back = new Map<number, number>([[from, from]]);
+  const queue = [from];
+  for (let head = 0; head < queue.length; head++) {
+    const at = queue[head];
+    for (const n of areaLinks(at)) {
+      if (back.has(n) || !list.includes(n)) continue;
+      back.set(n, at);
+      if (n === to) {
+        const way = [to];
+        while (way[0] !== from) way.unshift(back.get(way[0])!);
+        return way;
+      }
+      queue.push(n);
+    }
+  }
+  return null;
 }
 
 /**

@@ -1,5 +1,6 @@
 import { RNG, type P2 } from '../core/math';
 import { BURIAL_GROUNDS, CAMP_AREA, COLD_PLAINS, DEN_OF_EVIL, STONY_FIELD, WILD_AREA } from './areas';
+import { BUILT_WEST } from './built-west';
 import type { Prop } from './furnish';
 import { THEMES, type Decor, type House, type Layout, type Npc, type Room, type Service, type Waypoint } from './levelgen';
 import { growWoods } from './outdoors';
@@ -58,8 +59,8 @@ const WEST: Link[] = [
   { area: BURIAL_GROUNDS, size: [40, 48], parent: COLD_PLAINS, linker: 'side' },
 ];
 
-/** the areas made so far; the rest of WEST is laid out but left for later */
-export const BUILT = [CAMP_AREA, WILD_AREA, COLD_PLAINS];
+/** the areas made so far (built-west.ts, by levels.txt Id); the rest of WEST is laid out but left for later */
+export const BUILT = BUILT_WEST;
 
 interface Dressing {
   /** the area whose port the waypoint stands inside */

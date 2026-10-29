@@ -7,7 +7,7 @@ import type { Level } from '../game/level';
 import type { Monster } from '../game/monster';
 import type { WorldObject } from '../game/objects';
 import type { Player } from '../game/player';
-import { areaDef, areaList, trialFloor } from '../world/areas';
+import { CAMP_AREA, areaDef, areaList, routeTo, trialFloor } from '../world/areas';
 import type { ModelKey } from './assets';
 import { DEV_MODELS } from './dev-models';
 import { MODEL_PACKS } from './model-list';
@@ -147,9 +147,13 @@ export function areaNeeds(id: number, difficulty: Difficulty = 0): Set<string> {
 
 /**
  * The order the rest streams in after the title's (assets.stream): the overworld's areas past the
- * camp, in the order a hero comes to them, then the dungeons
+ * camp, then the dungeons, each the nearer the camp the sooner (the steps there on the connection
+ * graph, areas.ts routeTo; the lower Id where they tie)
  */
 export function streamOrder(): string[] {
-  const areas = areaList().filter((a) => a.kind !== 'town');
+  const steps = (id: number) => routeTo(CAMP_AREA, id)?.length ?? Infinity;
+  const areas = areaList()
+    .filter((a) => a.kind !== 'town')
+    .sort((a, b) => steps(a.id) - steps(b.id) || a.id - b.id);
   return [...areas.filter((a) => a.kind === 'outdoor'), ...areas.filter((a) => a.kind === 'dungeon')].flatMap((a) => [...areaNeeds(a.id)]);
 }
