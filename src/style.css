@@ -1109,12 +1109,14 @@ body {
   letter-spacing: 12px;
   color: #c8a86a;
 }
+/* a save that didn't go in: over the overlays, the pause menu (whose opening saves), settings and the
+   notice of a hero gone to another tab (whose last write may be the one refused) */
 .unsaved-badge {
   position: absolute;
   top: calc(8px + env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
-  z-index: 40;
+  z-index: 47;
   padding: 6px 14px;
   background: rgba(60, 8, 8, 0.92);
   border: 1px solid #a03020;
@@ -1173,6 +1175,11 @@ body {
 .overlay.settings .menu {
   width: 200px;
   margin-top: 22px;
+}
+/* another tab has the hero (Game.heroElsewhere): over whatever was open here, the pause menu and
+   settings too, since nothing more is played here */
+.overlay.hero-gone {
+  z-index: 46;
 }
 .title-settings {
   margin-top: 22px;

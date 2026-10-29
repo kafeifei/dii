@@ -29,7 +29,7 @@ import { CHARGE_PREFIX, Player } from './player';
 import { castItemSkill, startCast, toggleAura, updatePlayer, type PlayerAction } from './playerctl';
 import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
-import { claimedElsewhere, claimHero, handOver, heartbeat, heroTaken, isReadOnly, loadSave, loadShared, markInGame, mayWriteLast, savedWaypoints, setSlot, syncShared, waitHandOver, writeSave, type Difficulty } from './save';
+import { claimedElsewhere, claimHero, handOver, heroTaken, isReadOnly, loadSave, loadShared, markInGame, mayWriteLast, savedWaypoints, setSlot, syncShared, waitHandOver, writeSave, type Difficulty } from './save';
 import { debugOpts } from './debug';
 import { WILD_MAPS } from '../world/levelgen';
 import { CAMP_AREA, DEN_OF_EVIL, areaDef, areaForDepth, areaLevel, builtWaypoints, depthForArea, dungeonArea, isBuilt, trialFloor, type AreaDef, type AreaKind } from '../world/areas';
@@ -203,6 +203,11 @@ export class Game {
   /** how fast the day goes by (0 holds it, for screenshots: ?tod=) */
   clockRate = 1;
   paused = false;
+  /**
+   * another tab has this hero now (heroElsewhere): the game here has stopped for good, the pause menu
+   * shut or not, as nothing done here would be kept
+   */
+  elsewhere = false;
   /** driven externally (balance bot): the page loop neither steps nor renders */
   headless = false;
   started = false;
@@ -315,6 +320,7 @@ export class Game {
     this.sharedNote = r.note;
     this.toldUnsaved = false;
     this.toldTaken = -Infinity;
+    this.elsewhere = false;
   }
 
   private tellShared() {
@@ -434,6 +440,8 @@ export class Game {
       this.hooks.inventoryChanged();
     }
     // nothing done here would be kept from now on, so the game here stops rather than play on unsaved
+    // (and stays stopped: PauseMenu.toggle leaves it paused once the menu is shut)
+    this.elsewhere = true;
     this.paused = true;
     if (this.hooks.heroGone) {
       this.hooks.heroGone();
@@ -895,8 +903,6 @@ export class Game {
         L.monsters = kept;
       }
     }
-    // the tab playing the hero says it is still here, so another tab opening it waits for it (save.ts heartbeat)
-    heartbeat();
     this.saveTimer += dt;
     if (this.saveTimer > 8) {
       this.saveTimer = 0;
