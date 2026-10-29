@@ -90,6 +90,18 @@ export interface Template {
 
 const source = (file: string, keys: readonly string[], pack: boolean): Source => ({ file, keys, pack, state: 'idle', prio: LATER, seq: 0, tries: 0, gaveUp: false, timer: undefined, settle: [], fetch: null, stopped: false });
 
+/**
+ * Something else that downloads over the same network and keeps to these holds as the files nothing
+ * waits on do (the townsfolk's lines Sfx fetches ahead, src/main.ts): it asks busy() before it starts
+ * one, stops what has most of its file to go when they make way, and hears when nothing holds them back
+ */
+export interface Yielder {
+  /** as makeWay stops the downloads nothing waits on */
+  makeWay(): void;
+  /** nothing holds the network back now (busy() is false): what waited may go */
+  free(): void;
+}
+
 class AssetLib {
   private templates = new Map<string, Template>();
   /** the templates' own geometries and materials, which their clones share: never disposed with a view */
@@ -108,6 +120,8 @@ class AssetLib {
   private backgroundLoads = 0;
   /** things the files not waited on (all but NOW) hold back for (hold) */
   private holds = 0;
+  /** others that hold back and make way as those files do (yieldWith) */
+  private yielders: Yielder[] = [];
   private seq = 0;
   /** the misses being noted, a set for each watch under way */
   private watching: Set<string>[] = [];
@@ -237,6 +251,12 @@ class AssetLib {
       s.stopped = true;
       f.stop.abort();
     }
+    for (const y of this.yielders) y.makeWay();
+  }
+
+  /** `y` holds back and makes way as the downloads nothing waits on do: told to make way with them, and when nothing holds them back */
+  yieldWith(y: Yielder) {
+    this.yielders.push(y);
   }
 
   /** every file not asked for yet queued in the background, those of `first` (keys) first, in that order */
@@ -291,6 +311,8 @@ class AssetLib {
    * goes as soon as the network can bring what it waits on
    */
   private pump() {
+    // what holds back with them goes first once it may: a few small files, wanted sooner than these
+    if (this.yielders.length && !this.busy()) for (const y of this.yielders) y.free();
     while (this.loads < MAX_LOADS) {
       let next: Source | null = null;
       for (const s of this.sources) if (s.state === 'queued' && (!next || s.prio < next.prio || (s.prio === next.prio && s.seq < next.seq))) next = s;

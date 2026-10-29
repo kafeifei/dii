@@ -3,7 +3,7 @@ import { Buffers, leadIn, pickVariant, toMono } from './buffers';
 import { FILES, type SoundFiles } from './files';
 import { Players, Stream, type Track } from './music';
 import { Score, seedOf } from './score';
-import { areaKey, areaSound, isNight, LINE, NPC_LINE, PRIORITY, SOUNDS, VARY, type AmbId, type AreaSound, type Bed, type FileId, type Place, type Playing, type SoundId, type Synth, type VoiceId } from './sounds';
+import { areaKey, areaKind, areaSound, isNight, LINE, NPC_LINE, PRIORITY, SOUNDS, VARY, type AmbId, type AreaSound, type Bed, type FileId, type Place, type Playing, type SoundId, type Synth, type VoiceId } from './sounds';
 
 /**
  * Game code plays sounds by id (src/audio/sounds.ts); one with a place in the world is heard from
@@ -84,17 +84,59 @@ export const MAX_RATE = 48000;
 /** where the recordings are served from */
 const fileUrl = (file: string) => `${import.meta.env.BASE_URL}audio/${file}`;
 
+/** a download that can be stopped (makeWay): how, and how much of its file has come, of how much (0: not said) */
+interface Fetching {
+  stop: AbortController;
+  got: number;
+  size: number;
+}
+
 /**
- * A recording's bytes, as served. Every error names the file: a dev server, or a host that falls
- * back to its index page, answers a missing file with HTML
+ * A recording's bytes, as served, counted in `f` as they come if it's given. Every error names the
+ * file: a dev server, or a host that falls back to its index page, answers a missing file with HTML
  */
-async function fetchFile(url: string): Promise<ArrayBuffer> {
-  const res = await fetch(url);
+async function fetchFile(url: string, f?: Fetching): Promise<ArrayBuffer> {
+  const res = await fetch(url, f && { signal: f.stop.signal });
   if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
   const type = res.headers.get('content-type') ?? '';
   if (type.startsWith('text/')) throw new Error(`${url}: not found (served as ${type})`);
-  return res.arrayBuffer();
+  if (!f || !res.body) return res.arrayBuffer();
+  f.size = Number(res.headers.get('content-length')) || 0;
+  const parts: Uint8Array[] = [];
+  const reader = res.body.getReader();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    parts.push(value);
+    f.got += value.byteLength;
+  }
+  const out = new Uint8Array(f.got);
+  let at = 0;
+  for (const p of parts) {
+    out.set(p, at);
+    at += p.byteLength;
+  }
+  return out.buffer;
 }
+
+/**
+ * What else downloads over the same network: the model library (src/render/assets.ts, src/main.ts),
+ * whose holds what's fetched ahead keeps to as its own downloads nothing waits on do
+ */
+export interface Network {
+  /** something goes first (a level's tile textures, the models its arrival waits on) */
+  busy(): boolean;
+}
+
+/** a line fetched ahead and stopped to make way has more than this share of its file to go: one nearly in finishes (as src/render/assets.ts STOP_LEFT) */
+const STOP_LEFT = 0.5;
+/** the bytes in that count as nearly in when the file's length isn't said */
+const STOP_GOT = 64 * 1024;
+/**
+ * the longest what's warmed in the camp (preload) waits for the line a townsperson will say next
+ * (prefetch) to come first: as long as src/render/assets.ts holds its stream back for a level's tiles
+ */
+const NEXT_LINE_WAIT_MS = 10000;
 
 /** a sound starts this long after it's played: a render quantum or two ahead, so it starts where it's asked to */
 const START = 0.005;
@@ -434,11 +476,22 @@ export class Sfx {
   private lines = new Lines();
   /** the townsfolk's lines being said, or still to come (speak): those cut off by the next are stopped */
   private speeches: { id: VoiceId; solo: boolean; speech: Speech; done: () => boolean }[] = [];
-  /** the files fetched ahead (prefetch), by URL: their bytes, or their fetch under way */
+  /** the files fetched ahead (prefetch), by URL: their bytes, once they come (queued, under way or in) */
   private ahead = new Map<string, Promise<ArrayBuffer>>();
+  /** how each of those still to come is given its bytes, or told it failed */
+  private aheadSettle = new Map<string, { resolve: (b: ArrayBuffer) => void; reject: (e: unknown) => void }>();
   /** those still to be fetched ahead, in turn, one at a time */
   private aheadQueue: string[] = [];
-  private aheadBusy = false;
+  /** the one under way in its turn: how to stop it (makeWay), and whether it was */
+  private aheadGoing: { url: string; f: Fetching; stopped: boolean } | null = null;
+  /** those under way, in turn or out of it (bytes) */
+  private aheadComing = new Set<string>();
+  /** the takes of the line a townsperson will say next (the first asked for: prefetch), fetched first whatever else goes on */
+  private nextLine = new Set<string>();
+  /** what waits for those to come (preload, in the camp) */
+  private nextLineWaits: (() => void)[] = [];
+  /** what else downloads over the same network (the model library, src/main.ts): the other lines fetched ahead keep to its holds */
+  network: Network | null = null;
   /** where sounds are heard from: the hero, kept up to date by the game */
   private listener: P2 = { x: 0, z: 0 };
   /** what the camera shows; until the renderer says, nothing is panned */
@@ -830,37 +883,129 @@ export class Sfx {
    * decoded they'd take the buffers' budget (a 30 s line decodes to 6 MB; compressed, all of a
    * townsperson's lines are under a megabyte). What was fetched ahead and isn't asked for now is let
    * go: said by now, its decoded take is in the buffers. Needs no click first: nothing is decoded.
+   * The first line asked for is the one they'll say next (a quest's word, said as soon as they're
+   * spoken to): its takes go at once, as the models a level's arrival waits on do, and in the camp
+   * before what's only warmed there (preload); the rest keep to the network's holds as the model
+   * downloads nothing waits on do (Network: a level's tile textures first), and make way with them
+   * (makeWay). On a slow link her intro shared it with all of those and came 9.8 s after 新的冒险
    */
   prefetch(ids: readonly FileId[]) {
     // nothing to play them with (Node, a browser without WebAudio)
     if (typeof AudioContext === 'undefined') return;
-    const urls = [...new Set(ids.filter((id) => this.recorded(id)).flatMap((id) => this.files[id]!.files.map(fileUrl)))];
-    for (const u of [...this.ahead.keys()]) if (!urls.includes(u)) this.ahead.delete(u);
-    this.aheadQueue = urls.filter((u) => !this.ahead.has(u) && !this.buffers?.has(u));
+    const lines = ids.filter((id) => this.recorded(id));
+    const urls = [...new Set(lines.flatMap((id) => this.files[id]!.files.map(fileUrl)))];
+    this.nextLine = new Set(lines.length ? this.files[lines[0]]!.files.map(fileUrl) : []);
+    for (const u of [...this.ahead.keys()]) if (!urls.includes(u)) this.letGo(u);
+    for (const u of urls) if (!this.ahead.has(u) && !this.buffers?.has(u)) this.queueAhead(u);
+    // in the order asked
+    this.aheadQueue = urls.filter((u) => this.aheadQueue.includes(u));
     this.fetchNext();
+    this.wakeNextLine();
   }
 
-  /** the next file to fetch ahead, once the last is in */
-  private fetchNext() {
-    if (this.aheadBusy) return;
-    const url = this.aheadQueue.shift();
-    if (url === undefined) return;
-    this.aheadBusy = true;
-    const next = () => {
-      this.aheadBusy = false;
-      this.fetchNext();
-    };
-    this.fetchAhead(url).then(next, next);
-  }
-
-  /** `url` fetched now and kept as fetched ahead; one that fails is let go, to be fetched again when it's said */
-  private fetchAhead(url: string): Promise<ArrayBuffer> {
-    const p = fetchFile(url);
-    this.ahead.set(url, p);
+  /** `url` queued to be fetched ahead, its bytes promised (ahead); one that fails is let go, to be fetched again when it's said */
+  private queueAhead(url: string) {
+    const p = new Promise<ArrayBuffer>((resolve, reject) => this.aheadSettle.set(url, { resolve, reject }));
     p.catch(() => {
       if (this.ahead.get(url) === p) this.ahead.delete(url);
     });
-    return p;
+    this.ahead.set(url, p);
+    this.aheadQueue.push(url);
+  }
+
+  /** fetched ahead and no longer wanted: let go; queued, not fetched (one under way comes, but isn't kept) */
+  private letGo(url: string) {
+    this.ahead.delete(url);
+    const i = this.aheadQueue.indexOf(url);
+    if (i < 0) return;
+    this.aheadQueue.splice(i, 1);
+    this.aheadSettle.get(url)?.reject(new Error(`${url}: not wanted any more`));
+    this.aheadSettle.delete(url);
+  }
+
+  /**
+   * The next file to fetch ahead, once the last is in: a take of the line said next at once; any
+   * other only while the network isn't held for something that goes first (free tells when it isn't)
+   */
+  private fetchNext() {
+    if (this.aheadGoing) return;
+    const url = this.aheadQueue.find((u) => this.nextLine.has(u)) ?? (this.network?.busy() ? undefined : this.aheadQueue[0]);
+    if (url === undefined) return;
+    this.aheadQueue.splice(this.aheadQueue.indexOf(url), 1);
+    this.fetchAhead(url, true);
+  }
+
+  /**
+   * `url`, queued to be fetched ahead, fetched now, in its turn (the next waits for it, and it may be
+   * stopped to make way) or out of it (wanted now: bytes)
+   */
+  private fetchAhead(url: string, inTurn: boolean) {
+    const f: Fetching = { stop: new AbortController(), got: 0, size: 0 };
+    const going = { url, f, stopped: false };
+    if (inTurn) this.aheadGoing = going;
+    this.aheadComing.add(url);
+    const done = () => {
+      this.aheadComing.delete(url);
+      if (this.aheadGoing === going) {
+        this.aheadGoing = null;
+        this.fetchNext();
+      }
+      this.wakeNextLine();
+    };
+    const settle = (b: ArrayBuffer | null, e?: unknown) => {
+      const s = this.aheadSettle.get(url);
+      this.aheadSettle.delete(url);
+      // (let go while it came, and asked for again since: queued again, and here now)
+      const i = this.aheadQueue.indexOf(url);
+      if (i >= 0) this.aheadQueue.splice(i, 1);
+      if (b) s?.resolve(b);
+      else s?.reject(e);
+    };
+    fetchFile(url, f).then(
+      (b) => {
+        settle(b);
+        done();
+      },
+      (e) => {
+        // stopped to make way: first in the queue again, to start over once it may (unless it was let go meanwhile)
+        if (!going.stopped || !this.ahead.has(url)) settle(null, e);
+        else if (!this.aheadQueue.includes(url)) this.aheadQueue.unshift(url);
+        done();
+      },
+    );
+  }
+
+  /**
+   * Something else goes first on the network (a level's tile textures, the models its arrival waits
+   * on: src/render/assets.ts makeWay): the line fetched ahead in its turn, unless it's the one said
+   * next, stops if it has most of its file to go, queued again first, as model downloads do
+   */
+  makeWay() {
+    const g = this.aheadGoing;
+    if (!g || g.stopped || this.nextLine.has(g.url)) return;
+    const f = g.f;
+    if (f.size ? f.size - f.got < f.size * STOP_LEFT : f.got > STOP_GOT) return;
+    g.stopped = true;
+    f.stop.abort();
+  }
+
+  /** nothing holds the network back now (src/render/assets.ts): what waited to be fetched ahead goes */
+  free() {
+    this.fetchNext();
+  }
+
+  /** whether a take of the line said next is still to come (queued, or under way) */
+  private nextLineComing(): boolean {
+    for (const u of this.nextLine) if (this.aheadComing.has(u) || this.aheadQueue.includes(u)) return true;
+    return false;
+  }
+
+  /** what waits for the line said next goes once it's in */
+  private wakeNextLine() {
+    if (!this.nextLineWaits.length || this.nextLineComing()) return;
+    const w = this.nextLineWaits;
+    this.nextLineWaits = [];
+    for (const go of w) go();
   }
 
   /**
@@ -869,12 +1014,12 @@ export class Sfx {
    * that failed; anything else fetched now
    */
   private bytes(url: string): Promise<ArrayBuffer> {
-    let p = this.ahead.get(url);
-    if (!p) {
-      const i = this.aheadQueue.indexOf(url);
-      if (i < 0) return fetchFile(url);
+    const p = this.ahead.get(url);
+    if (!p) return fetchFile(url);
+    const i = this.aheadQueue.indexOf(url);
+    if (i >= 0) {
       this.aheadQueue.splice(i, 1);
-      p = this.fetchAhead(url);
+      this.fetchAhead(url, false);
     }
     return p.then(
       (b) => b.slice(0),
@@ -925,7 +1070,9 @@ export class Sfx {
    * Decode these now (the sounds of the areas next to the hero's), so their first play is the
    * recording and not the synthesized stand-in. Music streams, so there's nothing to warm for it.
    * Resolves when they're in, or have failed; asked before the first click, only once that click
-   * has made an AudioContext to decode them with.
+   * has made an AudioContext to decode them with. In the camp, once the line a townsperson will say
+   * next has come (prefetch; NEXT_LINE_WAIT_MS at most): on a slow link some fifty files fetched at
+   * once would have it come seconds into the line, when she's spoken to as the game starts
    */
   preload(ids: readonly FileId[]): Promise<void> {
     if (!this.ctx) {
@@ -937,8 +1084,12 @@ export class Sfx {
       for (const id of ids) this.early.ids.add(id);
       return this.early.done;
     }
-    const loads = ids.map((id) => (isMusic(id) ? null : isAmb(id) ? this.loadAmb(id) : this.load(id as OneShot)));
-    return Promise.all(loads).then(() => {});
+    const decode = () => Promise.all(ids.map((id) => (isMusic(id) ? null : isAmb(id) ? this.loadAmb(id) : this.load(id as OneShot)))).then(() => {});
+    if (this.area === null || areaKind(this.area) !== 'town' || !this.nextLineComing()) return decode();
+    return new Promise<void>((go) => {
+      this.nextLineWaits.push(go);
+      setTimeout(go, NEXT_LINE_WAIT_MS);
+    }).then(decode);
   }
 
   private synth(name: Synth, t: number) {

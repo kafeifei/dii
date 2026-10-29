@@ -766,12 +766,13 @@ export class Game {
     // switch back so soon after the last waits a moment (Sfx SWITCH_HOLD)
     this.sfx.setTime(this.clock);
     this.sfx.enterArea(area, how === 'walk');
-    // decode what's heard here and in the areas next to it, so it plays recorded from the first time
-    void this.sfx.preload(soundsNear(area, this.areasNext(area), isNight(this.clock), p.cls));
     // the quests hear of it (ChangedLevel); one may give the hero a line of its own to say
     const quest = this.quests.areaChanged(area, prev);
-    // in the camp, what its people may say now is fetched ahead
+    // in the camp, what its people may say now is fetched ahead, the line they'll say next first
     this.fetchAhead();
+    // decode what's heard here and in the areas next to it, so it plays recorded from the first time
+    // (in the camp, after that line: Sfx.preload)
+    void this.sfx.preload(soundsNear(area, this.areasNext(area), isNight(this.clock), p.cls));
     const line = (prev && how !== 'respawn' && quest) || this.arrivalLine(area, prev, how);
     if (prev && prev.kind !== area.kind) this.leftKind.set(prev.kind, this.time);
     if (area.kind === 'dungeon') this.wentUnder = true;
@@ -2055,7 +2056,8 @@ export class Game {
    * files only, decoded when they're said): on a slow connection a line said at once (Akara's quest,
    * her reward) would otherwise come late, a greeting after its moment. Each one's line a quest has
    * them open with first, then their greetings, what 交谈 has them say and their farewells, as things
-   * stand; asked again as they change (a line heard, the hero back in the camp)
+   * stand; asked again as they change (a line heard, the hero back in the camp). The first of them is
+   * the line said next: Sfx fetches it before anything else it fetches or warms here
    */
   private fetchAhead() {
     if (this.area?.kind !== 'town') return;

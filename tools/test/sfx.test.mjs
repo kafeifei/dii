@@ -7,7 +7,8 @@
 // again, only that one decoded), a townsperson's line taking the floor and giving it back when cut
 // short, said by its own clock (heard from its start when it's in at once, joining its text where
 // that has got to when it comes late), their greeting said beside the hero's line, and what's
-// decoded walking into an area, or fetched ahead and decoded only when it's said.
+// decoded walking into an area, or fetched ahead and decoded only when it's said (the line said next
+// first, the rest keeping to the network's holds and making way, what the camp warms after that line).
 // tools/scenarios/sfx.mjs renders the same in a page.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -542,6 +543,91 @@ export default async (load) => {
       check(asked.at(-1) === 'y.2.m4a', `a take asked for while queued waited its turn: ${asked.join(' ')}`);
       while (pending.length) pending.shift()();
       check((await now).byteLength === 16, 'a take fetched out of turn has no bytes');
+    } finally {
+      globalThis.fetch = realFetch;
+      if (!hadAC) delete globalThis.AudioContext;
+    }
+  }
+
+  // the line said next (the first asked for: every take of it) is fetched ahead at once, whatever holds
+  // the network; the others not while it's held (Network: the model library's holds), and the one under
+  // way with most of its file to go stops to make way, first in the queue again, to start over once the
+  // network is free; the line said next never stops. In the camp what's warmed (preload) waits for the
+  // line said next to come; elsewhere it doesn't
+  {
+    const realFetch = globalThis.fetch;
+    const hadAC = 'AudioContext' in globalThis;
+    const asked = [];
+    const pending = new Map();
+    globalThis.fetch = (url, opts = {}) => {
+      const file = String(url).split('/').pop();
+      asked.push(file);
+      return new Promise((r, no) => {
+        pending.set(file, () => r({ ok: true, headers: { get: () => 'audio/mp4' }, arrayBuffer: async () => new ArrayBuffer(16) }));
+        opts.signal?.addEventListener('abort', () => {
+          pending.delete(file);
+          no(new DOMException('stopped', 'AbortError'));
+        });
+      });
+    };
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    const come = async (file) => {
+      pending.get(file)?.();
+      pending.delete(file);
+      await tick();
+      await tick();
+    };
+    try {
+      globalThis.AudioContext = class {};
+      const sfx = new Sfx();
+      let held = true;
+      sfx.network = { busy: () => held };
+      sfx.files = { 'voice.akara.g': { files: ['g.1.m4a', 'g.2.m4a'] }, 'voice.akara.x': { files: ['x.1.m4a'] }, 'voice.akara.y': { files: ['y.1.m4a'] } };
+      // in the camp, with something to decode with: what it warms noted, not decoded
+      sfx.area = camp;
+      sfx.ctx = {};
+      const warmed = [];
+      sfx.load = (id) => (warmed.push(id), Promise.resolve(true));
+      sfx.prefetch(['voice.akara.g', 'voice.akara.x', 'voice.akara.y']);
+      check(asked.join() === 'g.1.m4a', `held, fetching ahead began with ${asked.join(' ') || 'nothing'}, not the line said next`);
+      const warm = sfx.preload(['ui.click']);
+      sfx.makeWay();
+      await tick();
+      check(!warmed.length && pending.has('g.1.m4a'), `in the camp before the line said next: warmed ${warmed.join(' ') || 'nothing'}, the line ${pending.has('g.1.m4a') ? 'coming' : 'stopped to make way'}`);
+      await come('g.1.m4a');
+      check(asked.join() === 'g.1.m4a,g.2.m4a' && !warmed.length, `held, after the line's first take: fetched ${asked.join(' ')}, warmed ${warmed.join(' ') || 'nothing'}`);
+      await come('g.2.m4a');
+      await warm;
+      check(warmed.join() === 'ui.click' && asked.length === 2, `the line said next in: warmed ${warmed.join(' ') || 'nothing'}, fetched ${asked.join(' ')} while held`);
+      held = false;
+      sfx.free();
+      check(asked.at(-1) === 'x.1.m4a', `freed: fetched ${asked.join(' ')}`);
+      // made way while under way: stopped, first in the queue again, not fetched while held, then again
+      held = true;
+      sfx.makeWay();
+      await tick();
+      await tick();
+      check(!pending.has('x.1.m4a') && sfx.aheadQueue[0] === '/audio/x.1.m4a' && sfx.ahead.has('/audio/x.1.m4a'), `made way: ${pending.has('x.1.m4a') ? 'still coming' : 'stopped'}, queued ${sfx.aheadQueue.join(' ')}`);
+      sfx.free();
+      check(asked.filter((f) => f === 'x.1.m4a').length === 1, `held, a line that made way started over: ${asked.join(' ')}`);
+      held = false;
+      sfx.free();
+      check(asked.filter((f) => f === 'x.1.m4a').length === 2, `freed, a line that made way didn't start over: ${asked.join(' ')}`);
+      await come('x.1.m4a');
+      check(asked.at(-1) === 'y.1.m4a' && (await sfx.ahead.get('/audio/x.1.m4a')).byteLength === 16, `after it: fetched ${asked.join(' ')}`);
+      await come('y.1.m4a');
+      // out of the camp what's warmed doesn't wait for a line said next
+      const out = new Sfx();
+      out.network = { busy: () => true };
+      out.files = { 'voice.akara.z': { files: ['z.1.m4a'] } };
+      out.area = moor;
+      out.ctx = {};
+      const warmedOut = [];
+      out.load = (id) => (warmedOut.push(id), Promise.resolve(true));
+      out.prefetch(['voice.akara.z']);
+      await out.preload(['combat.hit']);
+      check(warmedOut.join() === 'combat.hit' && pending.has('z.1.m4a'), `out of the camp: warmed ${warmedOut.join(' ') || 'nothing'} while the line said next came`);
+      await come('z.1.m4a');
     } finally {
       globalThis.fetch = realFetch;
       if (!hadAC) delete globalThis.AudioContext;

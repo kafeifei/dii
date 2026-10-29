@@ -23,6 +23,10 @@ if (!resuming && !DEV && wasInGame()) markInGame(false);
 
 const canvas = document.getElementById('world') as HTMLCanvasElement;
 const sfx = new Sfx();
+// the townsfolk's lines fetched ahead, but the one said next, hold back and make way as the model
+// downloads nothing waits on do: a level's tile textures go first (Sfx.prefetch)
+sfx.network = assets;
+assets.yieldWith(sfx);
 const input = new Input(canvas, () => sfx.ensure());
 const game = new Game(input, sfx);
 const settings = loadSettings();
@@ -93,9 +97,10 @@ window.addEventListener('pagehide', () => {
   releaseHero();
 });
 // back from the back-forward cache: the hero again this tab's (played, or a reload's still loading),
-// unless another tab has opened it since
+// unless another tab has opened it since, or this tab handed it over before it went (Game.elsewhere:
+// claimed again, it would stop the tab playing it now, and beat on so that it never handed over again)
 window.addEventListener('pageshow', (e) => {
-  if (!e.persisted || !(game.started || game.resumeClaimed)) return;
+  if (!e.persisted || !(game.started || game.resumeClaimed) || game.elsewhere) return;
   if (playedElsewhere(slotNow())) game.heroClaimed();
   else claimHero();
 });

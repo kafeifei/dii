@@ -6,7 +6,9 @@
 // quitting. A copy of the tab (opened from it, carrying its sessionStorage, as a duplicated tab
 // does) starts at the title, not in the game, and lists the hero as played in another window. Gold
 // picked up in the first tab and not yet autosaved is then in the copy once it takes the hero over:
-// the first tab saves it, hands it over and stops behind its notice, writing nothing more. Back in
+// the first tab saves it, hands it over and stops behind its notice, writing nothing more; brought
+// back from the back-forward cache (a synthetic pagehide and pageshow, persisted, with the claim as the
+// hand-over left it) it doesn't claim the hero back, and the copy plays on. Back in
 // the first tab, its notice's button leads to the title. Then storage that refuses the write: the
 // game says so and keeps saying it until a write goes in. Last, a townsperson's line cut off by
 // quitting: the hero (now the copy's) is given the Den of Evil by Akara in a scrolling line, and
@@ -128,6 +130,29 @@ export default async function (page, shot, log) {
     expect((await stored(page2)).gold === gold, 'the first tab still writes the hero');
     await shot('first-tab-stopped', page);
     facts.push('copy starts at the title; take-over hands over the latest progress; the old tab stops');
+
+    step = 'back from the back-forward cache';
+    // the first tab, stopped since it handed the hero over, leaves for the back-forward cache and
+    // comes back (pagehide, pageshow persisted): it doesn't claim the hero again, so the copy plays on.
+    // The claim as the hand-over left it (handed to the copy: save.ts handOver), as it stays until the
+    // copy's next beat, or for good once the copy has gone: nothing then says another tab has the hero
+    const claims = (pg) => pg.evaluate(() => Object.fromEntries(Object.keys(localStorage).filter((k) => k.startsWith('dii-tab:')).map((k) => [k, JSON.parse(localStorage.getItem(k)).tab])));
+    await page2.evaluate(() => {
+      for (const k of Object.keys(localStorage).filter((k) => k.startsWith('dii-tab:'))) {
+        const c = JSON.parse(localStorage.getItem(k));
+        localStorage.setItem(k, JSON.stringify({ ...c, handedTo: c.tab }));
+      }
+    });
+    const claimed = await claims(page2);
+    await page.evaluate(() => {
+      window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true }));
+      window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+    });
+    await page2.waitForTimeout(800);
+    const reclaimed = await claims(page2);
+    const copyNow = await page2.evaluate(() => ({ paused: game.paused, notice: !!document.querySelector('.hero-gone.open') }));
+    expect(JSON.stringify(reclaimed) === JSON.stringify(claimed) && !copyNow.paused && !copyNow.notice, `the first tab back from the back-forward cache took the hero back: claims ${JSON.stringify(claimed)} → ${JSON.stringify(reclaimed)}, the copy ${JSON.stringify(copyNow)}`);
+    facts.push('the old tab back from the back-forward cache leaves the hero with the copy');
 
     step = 'back to the title';
     await Promise.all([page.waitForEvent('load'), page.click('.hero-gone .btn')]);
