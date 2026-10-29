@@ -1,13 +1,12 @@
 import type { Input } from '../core/input';
 import { dist, type P2 } from '../core/math';
 import type { Sfx } from '../audio/sfx';
-import { ENTER_LINE, heroLine, isNight, npcLine, soundsNear, type HeroLine, type VoiceId } from '../audio/sounds';
+import { heroLine, isNight, npcLine, type HeroLine, type VoiceId } from '../audio/sounds';
 import { CLASSES, type PlayerClass } from '../data/classes';
 import { SKILL_BY_ID } from '../data/skills';
 import { createItem, newGameDrops, starterKit, type Drop } from '../items/gen';
 import { CAMP_VENDORS, fillStore, Store } from '../items/vendor';
 import { displayName, type Item } from '../items/item';
-import { isTome, isTownPortal, readable, townPortalFrom } from '../items/tomes';
 import { SharedStash } from '../items/stash';
 import type { Grid } from '../items/grid';
 import type { DeathPenalty } from './d2/death';
@@ -22,13 +21,13 @@ import { CHARGE_PREFIX, Player } from './player';
 import { startCast, toggleAura, updatePlayer, type PlayerAction } from './playerctl';
 import { celebrateLevelUp, killMonster, killPlayer, onProc, rollLoot, wake } from './kills';
 import { layOutCorpses, respawn, takeCorpse } from './bodies';
-import { autoBeltInsert, beltInsert, drink, drinkable, dropBlock, dropFromBag, dropItem, heldGrids, holds, layOutUnplaced, moveStashGold, pickupGround, readHeld, refuseDrop, spawnDrops, stashBlock, useBelt, type Finds } from './items';
+import { castTownPortal, closePortals, enterArea, enterLevel, enterTrial, openTownPortal, readTownPortal, teleportWithin, tellClosed, travel, travelToArea, updateArea, walkExits, type Trip } from './travel';
+import { autoBeltInsert, beltInsert, drink, drinkable, dropBlock, dropFromBag, dropItem, heldGrids, layOutUnplaced, moveStashGold, pickupGround, readHeld, refuseDrop, spawnDrops, stashBlock, useBelt, type Finds } from './items';
 import { ACTIVE_RADIUS, chargedBolts, clearCorpses, separate, updateAuras, updateBlasts, updateHammers, updateProjectiles } from './fight';
 import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
 import { claimedElsewhere, claimHero, handOver, heroTaken, isReadOnly, loadSave, loadShared, markInGame, mayWriteLast, neverWrite, playedElsewhere, reclaimHero, savedWaypoints, setSlot, slotNow, syncShared, waitHandOver, writeSave, writtenElsewhere, type Difficulty } from './save';
-import { CAMP_AREA, areaDef, areaForDepth, areaLevel, builtWaypoints, depthForArea, dungeonArea, trialFloor, type AreaDef, type AreaKind } from '../world/areas';
-import type { Overworld } from '../world/overworld';
+import { CAMP_AREA, areaLevel, builtWaypoints, trialFloor, type AreaDef } from '../world/areas';
 import { SHRINE_BY_ID } from '../data/shrines';
 import { Quests } from './quests/control';
 import type { Topic } from './quests/quest';
@@ -101,11 +100,6 @@ const LOW_LIFE = 0.3;
 const LOW_LIFE_REARM = 0.5;
 /** and this many seconds have gone by */
 const LOW_LIFE_AGAIN = 30;
-/**
- * seconds since walking out of a kind of area within which walking back into it says nothing: to and
- * fro over the camp's seam the hero doesn't remark on it at every step (as the area banner, src/ui/banner.ts)
- */
-const REENTRY = 4;
 
 /** spells a dragged touch button lays on a spot of ground */
 const AIM_SPOT = new Set(['meteor', 'blizzard', 'fire_wall', 'heavens_wrath', 'teleport']);
@@ -149,8 +143,8 @@ export class Game {
    * GAME_CreateNewEmptyGame seeds dwInitSeed afresh), the saved one carried across a reload
    */
   worldSeed = 0;
-  /** the closed way the hero is at, told once until they step off it */
-  private atClosed: WorldObject | null = null;
+  /** what the game remembers of the hero's comings and goings (src/game/travel.ts) */
+  trip: Trip = { atClosed: null, leftKind: new Map(), wentUnder: false };
   /** the monsters this sim step runs: those near the hero (Level.monstersNear) */
   private stepped: Monster[] = [];
   /**
@@ -223,10 +217,6 @@ export class Game {
   private lowLife = { was: false, armed: true, quiet: 0 };
   /** it was night under the sky last frame (isNight) */
   private night = false;
-  /** when the hero last walked out of each kind of area (Game.time), for REENTRY */
-  private leftKind = new Map<AreaKind, number>();
-  /** the hero has been underground this game: enter_dungeon is said the first time */
-  private wentUnder = false;
   /** the quests of this game, made with it from the hero's record in the difficulty played (src/game/quests) */
   quests = new Quests(this);
   /** the rifts: the camp's obelisk, the one open now, the tiers cleared (src/game/rift.ts) */
@@ -394,9 +384,9 @@ export class Game {
     // a rift is a game's: the next game opens its own
     this.rift.forget();
     this.area = null;
-    this.atClosed = null;
-    this.leftKind.clear();
-    this.wentUnder = false;
+    this.trip.atClosed = null;
+    this.trip.leftKind.clear();
+    this.trip.wentUnder = false;
     this.lastDeath = null;
     newGameDrops();
     this.startQuests();
@@ -580,230 +570,30 @@ export class Game {
     return this.maps.hasMap(id);
   }
 
-  /**
-   * Go to area `id`, onto the map that holds it, arriving `how`: by a stair or an exit at the way
-   * back to where they came from, by waypoint beside its waypoint, through a town portal at its
-   * other end, else where the area starts. On the map the hero is on already it is a jump
-   * (teleportWithin): nothing is rebuilt. False when this build has no map of it
-   */
+  // ───────────────────────── travel (src/game/travel.ts) ─────────────────────────
+
   enterArea(id: number, how: Arrival): boolean {
-    if (how === 'portal') return this.throughPortal(id);
-    const level = this.maps.levelFor(id, how === 'stairs');
-    if (!level) return false;
-    const at = this.arrival(level, id, how, this.area?.id);
-    this.arrive(level, at.pos, true, how, at.facing);
-    return true;
+    return enterArea(this, id, how);
   }
 
-  /** the old way in, by depth (?dev&lvl, tools): 0 the camp, WILD_MAPS Blood Moor, deeper the trial ground's floors */
   enterLevel(depth: number, how: Arrival) {
-    this.enterArea(areaForDepth(depth).id, how);
+    enterLevel(this, depth, how);
   }
 
-  /** the debug panel's trial ground: floor `floor` of the endless dungeon, made anew, played in difficulty `d` */
   enterTrial(floor: number, d?: Difficulty) {
-    // the new difficulty's game begins on this floor, made once (setDifficulty would make one where the hero is)
-    if (d !== undefined) this.switchDifficulty(d);
-    this.sfx.play('env.waypoint', { pos: this.player.pos });
-    this.enterArea(dungeonArea(floor), 'stairs');
+    enterTrial(this, floor, d);
   }
 
-  /**
-   * The hero set down at `at` on `level`: a jump on the map they're on, else onto it, its view built
-   * anew; a map kept from earlier is found as it was left, its survivors healed and home again
-   * (`reenter`, not through a town portal), coming `how`
-   */
-  private arrive(level: Level, at: P2, reenter: boolean, how: Arrival, facing?: number) {
-    const p = this.player;
-    this.atClosed = null;
-    if (level === this.level) this.teleportWithin(at, how);
-    else {
-      if (reenter) level.reenter();
-      this.level = level;
-      // on a rift's floor its tier's difficulty's rules hold for the hero, the one played's anywhere else
-      const ruled = this.rift.difficultyOf(level);
-      if (ruled !== p.ruled) {
-        p.ruled = ruled;
-        p.markDirty();
-      }
-      this.placePlayer(at);
-      this.hooks.levelChanged(level);
-      // a new level is always announced, even in the same area as the last
-      this.updateArea(true, how);
-    }
-    if (facing !== undefined) p.facing = facing;
-    const here = this.area?.id ?? CAMP_AREA;
-    if (trialFloor(here) !== undefined) p.depthReached = Math.max(p.depthReached, depthForArea(here)!);
-    this.save();
-  }
-
-  /** where on `level` the hero comes to area `id` by `how`, coming from area `from` */
-  private arrival(level: Level, id: number, how: Arrival, from?: number): { pos: P2; facing?: number } {
-    // out of a rift, by its obelisk
-    const out = this.rift.arrival(id, how, from);
-    if (out) return out;
-    // by the way back to where they came from, a step in from it, facing in
-    if ((how === 'stairs' || how === 'exit') && from !== undefined) {
-      const back = level.objects.find((o) => (o.kind === 'stairs' || o.kind === 'exit') && o.dest === from && level.areaAt(o.pos.x, o.pos.z).id === id);
-      if (back?.inward) {
-        const d = back.radius + 1.6;
-        return { pos: { x: back.pos.x + back.inward.x * d, z: back.pos.z + back.inward.z * d }, facing: Math.atan2(back.inward.x, back.inward.z) };
-      }
-    }
-    // by waypoint, beside it (D2Game OBJECTS/ObjMode.cpp OBJMODE_TravelViaWaypoint warps the hero to the waypoint)
-    const wp = how === 'waypoint' ? this.waypointIn(level, id) : undefined;
-    if (wp) return { pos: { x: wp.pos.x + 1.2, z: wp.pos.z + 0.6 } };
-    return { pos: this.areaStart(level, id) };
-  }
-
-  /** area `id`'s waypoint on `level`, if it has one there */
-  private waypointIn(level: Level, id: number): WorldObject | undefined {
-    return level.objects.find((o) => o.kind === 'waypoint' && level.areaAt(o.pos.x, o.pos.z).id === id);
-  }
-
-  /**
-   * Where area `id` starts on `level`: the map's start if it's in it (the camp's, a dungeon's), else
-   * beside its waypoint, else a couple of steps in from the seam on the camp's side (Blood Moor past
-   * the camp's gate), else its tile nearest the start
-   */
-  private areaStart(level: Level, id: number): P2 {
-    const L = level.layout;
-    if (level.areaAt(L.start.x, L.start.z).id === id) return L.start;
-    const wp = this.waypointIn(level, id);
-    if (wp) return { x: wp.pos.x + 1.2, z: wp.pos.z + 0.6 };
-    const ow = L as Partial<Overworld>;
-    const rank = (a: number) => ow.order?.indexOf(a) ?? 0;
-    const seam = ow.seams?.filter((sm) => sm.a === id || sm.b === id).sort((x, y) => rank(x.a === id ? x.b : x.a) - rank(y.a === id ? y.b : y.a))[0];
-    if (seam) {
-      const [inside, out] = seam.b === id ? [seam.tb, seam.ta] : [seam.ta, seam.tb];
-      return { x: 3 * inside.x - 2 * out.x, z: 3 * inside.z - 2 * out.z };
-    }
-    return level.wayTo(id, L.start)?.pos ?? L.start;
-  }
-
-  /**
-   * Through the town portal: from its far end into the camp, where its other end stands by the
-   * start; from that end back to where it was opened, both ends closing (D2: the portal closes once
-   * its owner comes back through it). On one map either way is a jump. With no portal open the way
-   * back goes as a waypoint would
-   */
-  private throughPortal(id: number): boolean {
-    const L = this.portalLevel;
-    const far = L?.objects.find((o) => o.kind === 'portal' && !L.inTown(o.pos));
-    if (id === CAMP_AREA) {
-      const camp = this.maps.levelFor(CAMP_AREA)!;
-      camp.objects = camp.objects.filter((o) => !(o.kind === 'portal' && camp.inTown(o.pos)));
-      const s = camp.layout.start;
-      const pt = { x: s.x - 2.5, z: s.z + 0.5 };
-      const there = far && L ? L.areaAt(far.pos.x, far.pos.z) : undefined;
-      const portal = new WorldObject('portal', pt, `传送门 · ${there?.name ?? '?'}`, 0.6);
-      portal.dest = there?.id ?? CAMP_AREA;
-      camp.objects.push(portal);
-      this.arrive(camp, { x: pt.x + 1.2, z: pt.z + 0.6 }, false, 'portal');
-      return true;
-    }
-    this.closePortals();
-    if (!L || !far) return this.enterArea(id, 'waypoint');
-    this.arrive(L, { x: far.pos.x + 1, z: far.pos.z + 0.8 }, false, 'portal');
-    return true;
-  }
-
-  /** the hero's town portal gone, both its ends, wherever they are */
   closePortals() {
-    // a rift's own ways (src/game/rift.ts) aren't the hero's portal
-    for (const L of [...this.maps.kept(), this.portalLevel, ...this.rift.levels()]) if (L) L.objects = L.objects.filter((o) => o.kind !== 'portal' || o.rift);
-    this.portalLevel = null;
+    closePortals(this);
   }
 
-  /**
-   * Move the hero elsewhere on this map without leaving it (a waypoint, a town portal or respawning
-   * on the overworld, coming `how`; the tools' jumps, no way in): the view jumps there and a new area
-   * is announced, nothing is rebuilt.
-   */
   teleportWithin(pos: P2, how: Arrival | null = null) {
-    this.placePlayer(pos);
-    this.hooks.teleported(how);
-    this.updateArea(false, how);
+    teleportWithin(this, pos, how);
   }
 
-  /** the hero set down on walkable ground near `pos`, standing still, whatever they were doing dropped */
-  private placePlayer(pos: P2) {
-    const p = this.player;
-    const safe = this.level.map.nearestWalkable(pos.x, pos.z) ?? pos;
-    p.pos = { ...safe };
-    p.prevPos = { ...safe };
-    p.intent = null;
-    p.path = null;
-    p.setState('idle');
-    p.knockVel = { x: 0, z: 0 };
-    p.zealHitsLeft = 0;
-    p.chargeTarget = null;
-    this.playerAction = null;
-    this.lmbMode = 'none';
-    this.sfx.setListener(p.pos);
-  }
-
-  /**
-   * announce the hero's area when it changed (or always, `entered` a level): its banner, its
-   * ambience and music, and what the hero says coming to it. `how` they came: on foot over a seam
-   * ('walk'), by a way in (Arrival), or null for a jump the tools made
-   */
   private updateArea(entered = false, how: Arrival | 'walk' | null = null) {
-    const p = this.player;
-    const area = this.level.areaAt(p.pos.x, p.pos.z);
-    if (area === this.area && !entered) return;
-    const prev = this.area;
-    this.area = area;
-    // into the camp, by any way in: the merchant has new stock, as D2's do each time the hero comes
-    // back to town, and what fits nowhere waits by the stash
-    if (area.kind === 'town' && (entered || prev?.kind !== 'town')) {
-      this.refreshShop();
-      this.layOutUnplaced(this.level);
-    }
-    // its ambience at this time of day, and its music, over the last area's; walked over a seam, a
-    // switch back so soon after the last waits a moment (Sfx SWITCH_HOLD)
-    this.sfx.setTime(this.clock);
-    this.sfx.enterArea(area, how === 'walk');
-    // the quests hear of it (ChangedLevel); one may give the hero a line of its own to say
-    const quest = this.quests.areaChanged(area, prev);
-    // in the camp, what its people may say now is fetched ahead, the line they'll say next first
-    this.fetchAhead();
-    // decode what's heard here and in the areas next to it, so it plays recorded from the first time
-    // (in the camp, after that line: Sfx.preload)
-    void this.sfx.preload(soundsNear(area, this.areasNext(area), isNight(this.clock), p.cls));
-    const line = (prev && how !== 'respawn' && quest) || this.arrivalLine(area, prev, how);
-    if (prev && prev.kind !== area.kind) this.leftKind.set(prev.kind, this.time);
-    if (area.kind === 'dungeon') this.wentUnder = true;
-    if (line) this.say(line);
-    this.hooks.areaChanged(area, prev);
-  }
-
-  /**
-   * What the hero says coming into `area` from `prev`: walking out of the camp, back into it,
-   * underground the first time this game; not as a game starts or a dead hero is brought back, nor
-   * walking back into a kind of area left a moment ago (REENTRY)
-   */
-  private arrivalLine(area: AreaDef, prev: AreaDef | null, how: Arrival | 'walk' | null): HeroLine | null {
-    if (!prev || prev.kind === area.kind || how === 'start' || how === 'respawn') return null;
-    if (area.kind === 'dungeon' && this.wentUnder) return null;
-    if (how === 'walk' && this.time - (this.leftKind.get(area.kind) ?? -Infinity) < REENTRY) return null;
-    return ENTER_LINE[area.kind];
-  }
-
-  /** the areas next to `area` on this map: across its seams, and where its ways on lead (stairs, exits, a portal) */
-  private areasNext(area: AreaDef): AreaDef[] {
-    const L = this.level;
-    const out = new Set<number>();
-    for (const sm of (L.layout as Partial<Overworld>).seams ?? []) {
-      if (sm.a === area.id) out.add(sm.b);
-      else if (sm.b === area.id) out.add(sm.a);
-    }
-    for (const o of L.objects) {
-      const way = o.kind === 'stairs' || o.kind === 'exit' || o.kind === 'portal';
-      if (way && !o.closed && o.dest !== undefined && L.areaAt(o.pos.x, o.pos.z) === area) out.add(o.dest);
-    }
-    out.delete(area.id);
-    return [...out].flatMap((id) => areaDef(id) ?? []);
+    updateArea(this, entered, how);
   }
 
   /** the hero says its line for the moment: Sfx has it say one at a time, and the same one not too often */
@@ -910,15 +700,7 @@ export class Game {
       if (gi.gold > 0 && gi.age > 0.5 && !p.dead && dist(gi.pos, p.pos) < 1.1) this.pickupGround(gi);
     }
     for (const o of L.objects) if (o.used) o.usedTime += dt;
-    // exits are walked through
-    if (!p.dead) {
-      const exit = L.objects.find((o) => o.kind === 'exit' && dist(o.pos, p.pos) < o.radius);
-      if (exit?.closed) this.tellClosed(exit);
-      else if (exit) {
-        this.enterArea(exit.dest, 'exit');
-        return;
-      } else this.atClosed = null;
-    }
+    if (walkExits(this, L)) return;
     this.updateArea(false, 'walk');
     this.layOutCorpses();
     clearCorpses(this, L);
@@ -1357,7 +1139,7 @@ export class Game {
         break;
       }
       case 'stairs':
-        if (obj.closed) this.tellClosed(obj);
+        if (obj.closed) tellClosed(this, obj);
         else this.enterArea(obj.dest, 'stairs');
         break;
       case 'waypoint': {
@@ -1383,7 +1165,7 @@ export class Game {
         takeCorpse(this, obj);
         break;
       case 'exit':
-        if (obj.closed) this.tellClosed(obj);
+        if (obj.closed) tellClosed(this, obj);
         else this.enterArea(obj.dest, 'exit');
         break;
       case 'shrine': {
@@ -1411,12 +1193,6 @@ export class Game {
     }
   }
 
-  /** a way on to an area this build has no map of yet: said once while the hero is at it */
-  private tellClosed(obj: WorldObject) {
-    if (this.atClosed === obj) return;
-    this.atClosed = obj;
-    this.hooks.message(`通往${areaDef(obj.dest)?.name ?? '那里'}的路还没有开通`, '#aaa', 2);
-  }
 
   /**
    * Speaking to a townsperson, as in Diablo II: Akara's heal first (D2GAME_NPC_Heal, SUnitNpc.cpp:
@@ -1452,7 +1228,7 @@ export class Game {
    * stand; asked again as they change (a line heard, the hero back in the camp). The first of them is
    * the line said next: Sfx fetches it before anything else it fetches or warms here
    */
-  private fetchAhead() {
+  fetchAhead() {
     if (this.area?.kind !== 'town') return;
     const ids: VoiceId[] = [];
     const say = (t: Topic | null) => t && ids.push(npcLine(t.npc, t.id, t.quest));
@@ -1485,86 +1261,26 @@ export class Game {
     this.hooks.message(`${vendor.npc ?? '商人'}为你恢复了生命与法力`, '#c8a86a', 2);
   }
 
+  // ───────────────────────── travel (src/game/travel.ts) ─────────────────────────
+
   openTownPortal() {
-    const L = this.level;
-    if (L.inTown(this.player.pos)) {
-      this.hooks.message('你已经在营地里了', '#aaa', 1.5);
-      this.say('cant_here');
-      return;
-    }
-    // one town portal a hero: a new one closes the last, both its ends
-    this.closePortals();
-    const p = this.player;
-    const a = p.facing;
-    let pt = { x: p.pos.x + Math.sin(a) * 1.5, z: p.pos.z + Math.cos(a) * 1.5 };
-    if (!L.map.circleClear(pt.x, pt.z, 0.4)) pt = { ...p.pos };
-    const portal = new WorldObject('portal', pt, '回城传送门', 0.6);
-    portal.dest = CAMP_AREA;
-    L.objects.push(portal);
-    this.portalLevel = L;
-    this.fx.burst('portal', pt);
-    this.sfx.play('env.portal_open', { pos: pt });
+    openTownPortal(this);
   }
 
-  /**
-   * Read a town portal (the P key, a right-click on a tome or scroll of town portal, or its belt
-   * column used): the hero casts it from `from`, else from the bag's tome of town portal, then a
-   * scroll of it in the bag, then one in the belt (tomes.ts townPortalFrom). Nothing to read it
-   * from, or a tome with no charge left: the hero says so. In the camp nothing is read, as D2's town
-   * portal fails there and uses nothing
-   */
   castTownPortal(from?: Item) {
-    const p = this.player;
-    if (p.dead || !(p.state === 'idle' || p.state === 'move')) return;
-    if (this.level.inTown(p.pos)) {
-      this.hooks.message('你已经在营地里了', '#aaa', 1.5);
-      this.say('cant_here');
-      return;
-    }
-    const src = from ?? townPortalFrom(p.inventory, p.belt);
-    if (!src || !isTownPortal(src) || !readable(src)) return this.noTownPortal(src);
-    p.setState('cast', 0.7);
-    this.playerAction = { skill: 'townportal', target: null, point: { ...p.pos }, item: src };
-    p.intent = null;
+    castTownPortal(this, from);
   }
 
-  /**
-   * The cast town portal opens: its scroll is used up, or its tome loses a charge, now (a cast cut
-   * short uses none). Read from `from` while the hero still holds it, in a grid or the belt, with
-   * something left to read, else from what the bag and the belt have now
-   */
   readTownPortal(from?: Item) {
-    const p = this.player;
-    if (this.level.inTown(p.pos)) return;
-    const held = from && holds(this, from) && readable(from) ? from : townPortalFrom(p.inventory, p.belt);
-    if (!held || !this.readHeld(held)) return this.noTownPortal(from);
-    this.openTownPortal();
-    this.hooks.inventoryChanged();
+    readTownPortal(this, from);
   }
 
-  /**
-   * No town portal to read: the hero says so (a message: no recorded line of theirs is for it), an
-   * empty tome that it has nothing left
-   */
-  private noTownPortal(tome?: Item) {
-    const empty = tome && isTome(tome);
-    this.hooks.message(empty ? `${displayName(tome)}里没有卷轴了` : '没有城镇传送卷轴了', '#ff6060', 1.5);
-    this.sfx.play('ui.cant_use');
-  }
-
-  /** by waypoint to area `id`: on the map the hero is on, a jump (teleportWithin). False when this build has no map of it */
   travel(id: number): boolean {
-    if (!this.hasMap(id)) return false;
-    this.sfx.play('env.waypoint', { pos: this.player.pos });
-    return this.enterArea(id, 'waypoint');
+    return travel(this, id);
   }
 
-  /**
-   * Go to an area as a waypoint does, touched or not, for the tools (the debug panel, the bench, the
-   * bot): beside its waypoint, or where it starts. False when this build has no map of it
-   */
   travelToArea(id: number): boolean {
-    return this.travel(id);
+    return travelToArea(this, id);
   }
 
   /**
@@ -1587,7 +1303,7 @@ export class Game {
   }
 
   /** another difficulty's game, the hero not yet moved into it: its waypoints and penalties, no maps of the old one. False if it is the one played */
-  private switchDifficulty(d: Difficulty): boolean {
+  switchDifficulty(d: Difficulty): boolean {
     const p = this.player;
     if (d === p.difficulty) return false;
     // the waypoints so far stay with the difficulty they were touched in
