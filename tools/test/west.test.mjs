@@ -108,7 +108,7 @@ export default async (load) => {
   game.interact(mouth);
   const den = game.level;
   check(den !== west && game.area.id === DEN_OF_EVIL && notes.levels === 2, `down the mouth: area ${game.area.key}, ${notes.levels} level(s) built`);
-  check(den.layout.theme.key === 'cave' && !den.objects.some((o) => o.kind === 'waypoint') && !den.layout.stairs, `the den is ${den.layout.theme.key}, waypoints ${den.objects.filter((o) => o.kind === 'waypoint').length}, stairs down ${!!den.layout.stairs}`);
+  check(['cave', 'grotto'].includes(den.layout.theme.key) && !den.objects.some((o) => o.kind === 'waypoint') && !den.layout.stairs, `the den is ${den.layout.theme.key}, waypoints ${den.objects.filter((o) => o.kind === 'waypoint').length}, stairs down ${!!den.layout.stairs}`);
   check(den.areas.every((a) => a === DEN_OF_EVIL), 'the den is not all the Den of Evil');
   const up = den.objects.find((o) => o.kind === 'stairs' && o.dest === WILD_AREA);
   check(up && dist(p.pos, up.pos) < 3.5, `the hero arrived ${up ? dist(p.pos, up.pos).toFixed(1) : '-'} from the den's way up`);
@@ -255,33 +255,38 @@ export default async (load) => {
 
   // ── the dungeons' makers (docs/M2A-STEP0.md 2.10): a built dungeon's map made once, by its maker,
   // from the world's seed and its Id (levelSeed), in the difficulty played; kept with the rest and
-  // forgotten with them. The Den's alone so far (its seed its own still: the replay test holds it) ──
+  // forgotten with them. Every one of the west's, the Den's among them (tools/test/dungeons.test.mjs
+  // plays them) ──
   {
     const M = await load('/src/game/maps.ts');
     const { BUILT_DUNGEONS } = await load('/src/world/built-dungeons.ts');
-    const { generateDen } = await load('/src/world/den.ts');
     const { CAVE_1 } = await load('/src/world/areas.ts');
     check(M.levelSeed(0xffffffff, 9) === 8 && M.levelSeed(1000, 18) === 1018, `levelSeed: ${M.levelSeed(0xffffffff, 9)}, ${M.levelSeed(1000, 18)}`);
     // the quests' word on the hireling (QuestHost), stubs until she is played
     check(game.hasMerc() === false && game.giveFreeMerc() === false, 'hasMerc or giveFreeMerc is not the stub');
-    check(Object.keys(M.DUNGEON_MAKERS).join() === String(DEN_OF_EVIL), `the makers: ${Object.keys(M.DUNGEON_MAKERS)}`);
+    check(Object.keys(M.DUNGEON_MAKERS).join() === '8,9,13,18,19' && BUILT_DUNGEONS.join() === '8,9,13,18,19', `the makers: ${Object.keys(M.DUNGEON_MAKERS)}, built ${BUILT_DUNGEONS}`);
     const made = [];
+    const real = M.DUNGEON_MAKERS[CAVE_1];
     M.DUNGEON_MAKERS[CAVE_1] = (seed, d) => {
       made.push([seed, d]);
-      return generateDen(seed);
+      return real(seed, d);
     };
     const maps = new M.Maps(game);
+    const at = BUILT_DUNGEONS.indexOf(CAVE_1);
     try {
+      BUILT_DUNGEONS.splice(at, 1);
       check(!maps.hasMap(CAVE_1) && maps.levelFor(CAVE_1) === null, 'a dungeon not built has a map');
-      BUILT_DUNGEONS.push(CAVE_1);
+      BUILT_DUNGEONS.splice(at, 0, CAVE_1);
       const L = maps.levelFor(CAVE_1);
       check(!!L && maps.levelFor(CAVE_1) === L && maps.mapOf(CAVE_1) === L && maps.kept().includes(L), 'a built dungeon was not made once and kept');
       check(made.length === 1 && made[0][0] === M.levelSeed(game.worldSeed, CAVE_1) && made[0][1] === game.player.difficulty, `the maker was given ${JSON.stringify(made)}, the world's seed ${game.worldSeed}`);
+      const den = maps.levelFor(DEN_OF_EVIL);
+      check(!!den && maps.mapOf(DEN_OF_EVIL) === den && maps.kept().includes(den), 'the Den is not one of the dungeons kept');
       maps.forget();
-      check(maps.mapOf(CAVE_1) === null && !maps.kept().includes(L), 'a dungeon kept past forget()');
+      check(maps.mapOf(CAVE_1) === null && maps.mapOf(DEN_OF_EVIL) === null && !maps.kept().includes(L), 'a dungeon kept past forget()');
     } finally {
-      delete M.DUNGEON_MAKERS[CAVE_1];
-      BUILT_DUNGEONS.length = 1;
+      M.DUNGEON_MAKERS[CAVE_1] = real;
+      if (!BUILT_DUNGEONS.includes(CAVE_1)) BUILT_DUNGEONS.splice(at, 0, CAVE_1);
     }
   }
 

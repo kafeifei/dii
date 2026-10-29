@@ -1,7 +1,9 @@
-// The dungeons of the west this build has a map of (src/game/maps.ts DUNGEON_MAKERS makes each): M2a's
-// D line adds the Cave's two levels, the Crypt and the Mausoleum here as it builds them. By
-// levels.txt Id, in order (areas.ts merges this list with built-west.ts into BUILT); written as
-// numbers, not areas.ts's names, as areas.ts reads this file while it is itself still loading.
+// The dungeons of the west this build has a map of (src/game/maps.ts DUNGEON_MAKERS makes each, D2's
+// maze: src/world/maze.ts). By levels.txt Id, in order (areas.ts merges this list with built-west.ts
+// into BUILT); written as numbers, not areas.ts's names, as areas.ts reads this file while it is
+// itself still loading. Their ways up lead where levels.json's warps say: the Den to Blood Moor, Cave
+// Level 1 to Cold Plains (its mouth there is the W line's), Cave Level 2 to Cave Level 1, the Crypt
+// and the Mausoleum to the Burial Grounds (closed until that area is built: Level, Entrance).
 
-/** the Den of Evil (levels.txt 8) */
-export const BUILT_DUNGEONS: number[] = [8];
+/** the Den of Evil, Cave Levels 1 and 2, the Crypt, the Mausoleum (levels.txt 8, 9, 13, 18, 19) */
+export const BUILT_DUNGEONS: number[] = [8, 9, 13, 18, 19];
