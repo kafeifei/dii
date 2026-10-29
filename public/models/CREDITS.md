@@ -12,7 +12,7 @@
 
 | 模型 | 内容 | 源文件 |
 | --- | --- | --- |
-| `sorceress`、`paladin`、`npc_*`、`mon_*`（人形） | 职业、营地 NPC、怪物，带动作 | `models-src/ai/`，由 `tools/meshy-merge.mjs` 合成 |
+| `sorceress`、`paladin`、`npc_*`、`merc_rogue`、`mon_*`（人形） | 职业、营地 NPC、佣兵、怪物，带动作 | `models-src/ai/`，由 `tools/meshy-merge.mjs` 合成；`mon_bloodraven` 的底色图在 `tools/build-models.mjs` 里重新调色（`RECOLOUR`：皮甲染成深红、提亮，皮肤调白） |
 | `mon_spider` | 蜘蛛，Tripo 生成并绑骨，带走路 | `models-src/ai/`，由 `tools/tripo-merge.mjs` 导入 |
 | `mon_bat` | 非人形怪，静态 | `models-src/ai-props/` |
 | `d_*`、`h_*`、`x_*`，`axe_*`、`skeleton_*` 武器和盾 | 替换原 KayKit 地牢、墓园、营地建筑、武器的同名模型 | `models-src/ai-props/`，由 `tools/ai-props.mjs` 导入 |
