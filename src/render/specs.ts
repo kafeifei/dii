@@ -245,6 +245,10 @@ export function monsterSpec(m: Monster): ModelSpec {
     case 'bat':
       // wide wings: size by wingspan
       return ranked({ model: 'mon_bat', rig: 'quat', height: 2.5 * sc, fitWidth: true, float: 0.9, motion: 'flap', clips: NO_CLIPS });
+    case 'nest':
+      // PLACEHOLDER (src/data/monsters.ts LOOKS.crownest): a prop for a body, swaying a little and
+      // keeling over when it dies (ModelSpec.motion), as tall over a zombie as D2's nest (pixHeight 128 to 72)
+      return ranked({ model: 'h_tree_dead_small', rig: 'quat', height: 3 * sc, motion: 'hover', clips: NO_CLIPS });
     case 'yeti': {
       const h = 1.75 * sc;
       return ranked({ model: 'mon_yeti', rig: 'quat', height: h, clips: meshyClips(h, 1.42, 4.68, atk(['Attack', 'Attack2'])) });

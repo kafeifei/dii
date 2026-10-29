@@ -63,7 +63,10 @@ export default async (load) => {
   for (const d of lookedMonsters()) if (d.row.spawns && !d.boss) can.add(d.id);
   for (const id of can) {
     const def = monsterDef(id);
-    if (!check(def, `${id} can spawn but has no look`)) continue;
+    if (!def) {
+      problems.push(`${id} can spawn but has no look`);
+      continue;
+    }
     const s = monsterSpec(new Monster(def, def.row.diff[0].level, 'normal', { x: 0, z: 0 }));
     check(built.has(s.model), `${id} is drawn as ${s.model}, not a built model`);
     check(def.name && !/[A-Za-z]/.test(def.name), `${id} is named ${def.name}`);
