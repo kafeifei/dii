@@ -32,6 +32,9 @@ const CAMP = 1;
 const MOOR = 2;
 const PLAINS = 3;
 const DEN = 8;
+/** Stony Field and the Burial Grounds, on the overworld with the camp, Blood Moor and Cold Plains (levels.txt 4, 17) */
+const STONY = 4;
+const BARROW = 17;
 
 export default async function (page, shot, log) {
   const t0 = Date.now();
@@ -657,17 +660,21 @@ export default async function (page, shot, log) {
         const opts = [...(s?.options ?? [])];
         return { values: opts.map((o) => o.value), value: s?.value, here: String(game.area.id) };
       });
-      expect(list.values.join() === [CAMP, MOOR, PLAINS, DEN].join() && list.value === list.here, `the area list is ${list.values.join()}, ${list.value} picked (the hero is in ${list.here})`);
+      expect(list.values.join() === [CAMP, MOOR, PLAINS, STONY, DEN, BARROW].join() && list.value === list.here, `the area list is ${list.values.join()}, ${list.value} picked (the hero is in ${list.here})`);
       await debugRow('前往').locator('select').selectOption(String(PLAINS));
       await debugButton('前往', '去').click();
       await frames();
       const a = await ev(() => ({ id: game.area.id, west: game.level === window.__smoke.west }));
       expect(a.id === PLAINS && a.west, `the list led to area ${a.id}, on the overworld ${a.west}, not Cold Plains`);
-      // the next one on, by Id: the den, a map of its own
+      // the next one on, by Id: Stony Field, on the same map; then the den, a map of its own
+      await debugButton('前往', '下一个').click();
+      await frames();
+      const s4 = await ev(() => ({ id: game.area.id, west: game.level === window.__smoke.west }));
+      expect(s4.id === STONY && s4.west, `next from Cold Plains went to area ${s4.id}, on the overworld ${s4.west}`);
       await debugButton('前往', '下一个').click();
       await frames();
       const b = await ev(() => ({ id: game.area.id, west: game.level === window.__smoke.west }));
-      expect(b.id === DEN && !b.west, `next from Cold Plains went to area ${b.id}, on the overworld ${b.west}`);
+      expect(b.id === DEN && !b.west, `next from Stony Field went to area ${b.id}, on the overworld ${b.west}`);
       // the trial ground: a floor and a difficulty picked, then the next floor down
       await debugRow('试炼场').locator('select').first().selectOption('3');
       await debugButton('试炼场', '进入').click();
