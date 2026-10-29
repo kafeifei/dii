@@ -1,5 +1,7 @@
 import { SHRINE_BY_ID } from '../data/shrines';
 import type { Game } from '../game/game';
+import type { Level } from '../game/level';
+import type { AreaDef } from '../world/areas';
 import { T_FLOOR, T_PROP, T_WALL, type TileMap } from '../world/tilemap';
 import { h } from './common';
 
@@ -117,6 +119,8 @@ export class Automap {
   private full: ScaledTiles | null = null;
   /** the minimap's copy of the layer, to whole pixels, before the last part of a pixel's shift */
   private shifted = h('canvas');
+  /** what the minimap was last drawn for: the map, and the area the hero was in (named under it) */
+  private shown: { level: Level | null; area: AreaDef | null } = { level: null, area: null };
 
   constructor(
     private game: Game,
@@ -143,10 +147,15 @@ export class Automap {
     r.appendChild(this.el);
   }
 
-  /** every frame: explore around the player, the blessing, and the maps drawn again five times a second */
+  /**
+   * every frame: explore around the player, the blessing, and the maps drawn again five times a
+   * second, and at once on another map or in another area (a jump, a way in, a seam walked over), so
+   * the minimap never names the area just left
+   */
   update(dt: number) {
     this.updateExplored();
-    const p = this.game.player;
+    const g = this.game;
+    const p = g.player;
     const bl = p.shrine && SHRINE_BY_ID[p.shrine.id];
     const blText = bl ? `${bl.name} ${Math.ceil(p.shrine!.left)}` : '';
     if (this.blessingEl.textContent !== blText) {
@@ -154,9 +163,10 @@ export class Automap {
       if (bl) this.blessingEl.style.color = bl.color;
     }
     this.timer -= dt;
-    if (this.timer <= 0) {
+    const area = g.level.areaAt(p.pos.x, p.pos.z);
+    if (this.timer <= 0 || g.level !== this.shown.level || area !== this.shown.area) {
       this.timer = 0.2;
-      this.drawMinimap();
+      this.drawMinimap(area);
       if (this.isOpen) this.drawAutomap();
     }
     this.el.classList.toggle('open', this.isOpen);
@@ -265,11 +275,12 @@ export class Automap {
     dot(p.pos.x, p.pos.z, '#ffffff', Math.max(2, scale * 0.9));
   }
 
-  private drawMinimap() {
+  /** the minimap round the hero, `area` (the one they're in) named under it */
+  private drawMinimap(area: AreaDef) {
     const ctx = this.minimap.getContext('2d')!;
     const p = this.game.player;
     this.drawMapTo(ctx, 4, p.pos.x, p.pos.z, 32, 240, 240);
-    const area = this.game.level.areaAt(p.pos.x, p.pos.z);
+    this.shown = { level: this.game.level, area };
     this.minimapLabel.textContent = area.label ?? area.name;
   }
 
