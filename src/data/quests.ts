@@ -30,11 +30,11 @@ const quest = (key: QuestKey, name: string, nameEn: string, icon: QuestIcon): Qu
  * Trade (a1q3), though D2 numbers that one earlier
  */
 export const ACT1_QUESTS: readonly QuestDef[] = [
-  quest('a1q1', '涤荡邪巢', 'Purge the Foul Nest', 'den'),
+  quest('a1q1', '涤荡邪巢', 'Purge the Den of Iniquity', 'den'),
   quest('a1q2', '众姊妹之冢', 'Where the Sisters Lie', 'graves'),
   quest('a1q4', '解救喀因', "Kahin's Deliverance", 'cain'),
-  quest('a1q5', '尘封之塔', 'The Dust-Sealed Spire', 'tower'),
-  quest('a1q3', '匠人之器', "The Artisan's Hammer", 'hammer'),
+  quest('a1q5', '尘封之塔', 'The Long-Forgotten Spire', 'tower'),
+  quest('a1q3', '匠人之器', 'Tools of the Craft', 'hammer'),
   quest('a1q6', '为姊妹雪恨', 'Vengeance for the Sisters', 'demon'),
 ];
 

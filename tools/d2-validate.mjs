@@ -11,10 +11,13 @@
 //   the Warlock expansion), and every row as 2.7 has it, for the values the game reads;
 // - the names: every unique, set and runeword in scope is named or listed in tools/d2-names/report.md,
 //   no official proper noun anywhere, runes "N 号符文";
-// - the English names (tools/d2-names/style-en.md): every renamed row has one, never Blizzard's,
-//   plain ASCII in Title Case, the glossary's forms, no two alike, hirelings three letters apart and
-//   no three of them with one ending; a warning, not a failure, for one a letter or two from
-//   Blizzard's or holding Blizzard's whole;
+// - the names against the official ones (tools/d2-names/style.md, style-en.md, hard rule 1): none
+//   is its row's official Chinese with only 的 or 之 changed, nor Blizzard's English with only small
+//   words or the order changed; a warning, not a failure, for an English one a letter or two from
+//   Blizzard's (a homophone, and whether a veteran knows a name at a glance, are for a person);
+// - the English names (tools/d2-names/style-en.md): every renamed row has one, plain ASCII in Title
+//   Case, the glossary's forms, no two alike, hirelings three letters apart and no three of them
+//   with one ending;
 // - the units: charstats quarters, monster stats as monlvl percentages through D2MOO's ApplyRatio,
 //   the expansion columns, HitShift, manashift and frames in skills;
 // - the drops: Andariel's and the Countess' items per kill against d2data's tcprecalc, worked out
@@ -515,6 +518,14 @@ section('Names');
     ...Object.entries({ ...X.D2X_SKILLS, ...X.D2X_SKILL_REFS }).filter(([n]) => !renamedSkills[n]).map(([, s]) => s.name),
   ]);
   check(`no name of ours (${named.length}) is an official proper-noun string`, named.filter(([, n]) => proper.has(n.trim()) && !generic.has(n)).map(([w, n]) => `${w} ${n}`));
+  // nor its own row's official with only 的 or 之, a middle dot or a space changed (风的力 for 风之力:
+  // tools/d2-names/style.md, hard rule 1), the official as the names files keep it (D2CE's zhCN)
+  const zhKey = (s) => s.trim().replace(/[的之·・\s]/g, '');
+  const sameZh = [];
+  for (const f of fs.readdirSync(path.join(ROOT, 'tools/d2-names')).filter((f) => f.endsWith('.json') && !f.startsWith('glossary'))) {
+    for (const [k, v] of Object.entries(ours(f.replace(/\.json$/, '')))) if (v?.name && v.official && zhKey(v.name) && zhKey(v.name) === zhKey(v.official)) sameZh.push(`${f} ${k} ${v.name} = ${v.official}`);
+  }
+  check("no name of ours is its row's official Chinese with only 的, 之, · or spaces changed", sameZh);
   const terms = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/d2-names/glossary.json'), 'utf8')).map((g) => g.official).filter((o) => o && o.length >= 2);
   const leaks = [];
   for (const f of files) {
@@ -538,6 +549,17 @@ section('English names');
 {
   // case, "the", apostrophes, spaces and hyphens aside, as tools/d2-names/style-en.md compares
   const norm = (s) => s.toLowerCase().replace(/\bthe\b/g, '').replace(/['’\s-]/g, '');
+  // ...and "of", "a", "an", a possessive 's and the order of the words too: what a name reads as
+  // against its row's own English (style-en.md, hard rule 1: "Wind Force" and "Force of the Wind" are
+  // Windforce's words, "Oak Heart" Heart of the Oak's)
+  const readsAs = (s) => {
+    const w = s.toLowerCase().replace(/['’]s\b/g, '').replace(/['’]/g, '').split(/[\s-]+/).filter((x) => x && !['of', 'the', 'a', 'an'].includes(x));
+    return [w.join(''), [...w].sort().join(' ')];
+  };
+  const sameWords = (a, b) => {
+    const [x, y] = [readsAs(a), readsAs(b)];
+    return !!x[0] && (x[0] === y[0] || x[1] === y[1]);
+  };
   const ours = (f) => JSON.parse(fs.readFileSync(path.join(ROOT, `tools/d2-names/${f}.json`), 'utf8'));
   const renamedBases = ours('bases');
   const renamedSkills = ours('skills');
@@ -582,7 +604,10 @@ section('English names');
     "a skill named by a runeword has the runeword's English name too",
     allSkills.filter(([, s]) => runewordOf.has(s.name) && s.nameEn !== runewordOf.get(s.name).nameEn).map(([n, s]) => `${n} ${s.nameEn}`),
   );
-  check('nameEn is never the official English (case, "the", apostrophes, spaces and hyphens aside)', named.filter((r) => r.en && norm(r.nameEn) === norm(r.en)).map((r) => `${r.where} ${r.nameEn} = ${r.en}`));
+  check(
+    'nameEn never reads as its official English (case, apostrophes, spaces, hyphens, "of", "the", "a", "an", a possessive \'s and the word order aside)',
+    named.filter((r) => r.en && sameWords(r.nameEn, r.en)).map((r) => `${r.where} ${r.nameEn} = ${r.en}`),
+  );
   // nor, for a whole name (not a word of an affix or a composed name, where "Steel" or "Fiend" is an
   // ordinary word), any other row's official English: uniques, sets, runewords, monsters, areas, NPCs
   const world = await strings('monsters', 'levels', 'npcs');
@@ -594,10 +619,10 @@ section('English names');
   check('a whole name is no official English name of a unique, set, runeword, monster, area or NPC', named.filter((r) => !WORDS.has(r.group) && officialEn.has(norm(r.nameEn))).map((r) => `${r.where} ${r.nameEn} = ${officialEn.get(norm(r.nameEn))}`));
   check('nameEn is plain ASCII', named.filter((r) => !/^[\x20-\x7E]+$/.test(r.nameEn)).map((r) => `${r.where} ${r.nameEn}`));
   // Title Case: every word, and every part of a hyphenated one ("Death's-Head"), capitalised but the
-  // small ones inside a name ("of", "the", "Man-at-Arms"); a name starts lowercase only where its slot
+  // small ones inside a name ("of", "the", "Man-at-Arms", "Black as Pitch"); a name starts lowercase only where its slot
   // reads on from the base or monster name: a magic suffix with "of" (an automagic row as the
   // suffix its English is), a monster title with "the"
-  const SMALL = new Set(['of', 'the', 'a', 'an', 'and', 'or', 'nor', 'in', 'on', 'at', 'to', 'for', 'from', 'with', 'by']);
+  const SMALL = new Set(['of', 'the', 'a', 'an', 'and', 'or', 'nor', 'in', 'on', 'at', 'to', 'for', 'from', 'with', 'by', 'as']);
   const leading = (r) => (r.group === 'suffixes' || (r.group === 'automagic' && /^of /.test(r.en)) ? 'of' : r.group === 'unique monster titles' ? 'the' : undefined);
   const titleCase = (r) =>
     r.nameEn.split(' ').every((w, i) => w.split('-').every((p, j) => /^[A-Z0-9]/.test(p) || (SMALL.has(p) && (i > 0 || j > 0 || p === leading(r)))));
@@ -652,22 +677,23 @@ section('English names');
     named.flatMap((r) => forms.filter((g) => r.zh.includes(g.new) && !r.nameEn.includes(g.newEn)).map((g) => `${r.where} ${r.zh} ${r.nameEn}: ${g.new} is ${g.newEn}`)),
   );
   // and no English name keeps one of D2's (its people, places and powers: Horadric, Akara, Zakarum, …)
-  // ("tarn" is also English, a mountain lake: Beryl's Tarn-Green is its colour; Tarnhelm is still D2's)
+  // ("tarn" is also English, a mountain lake, free for a name of ours; Tarnhelm is still D2's)
   const blizzard = glossaryEn.flatMap((g) => g.en.split(/ \/ | \(|\)/).map((t) => t.trim()).filter((t) => t && t !== 'Tarn').map((t) => ({ t, g })));
   check(
     "no English name keeps a name of D2's the glossary replaces",
     named.flatMap((r) => blizzard.filter(({ t }) => new RegExp(`(^|[^A-Za-z])${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z])`).test(r.nameEn)).map(({ t, g }) => `${r.where} ${r.nameEn}: ${t} is ${g.newEn}`)),
   );
   // Close to Blizzard's: a name a letter or two away from its row's own English, after the norm above
-  // ("Haenna" for Hannah, "Pock" for Pox), reads as a respelling of it (tools/d2-names/style-en.md,
-  // "Similar but different"). Printed for a look, never failed, since a short word can be that close
-  // and still be another word ("Rime" for Ice). Blizzard's English of a row, `en`, is the enUS of the
+  // ("Haenna" for Hannah, "Pock" for Pox, "of Freezing Arrow" for of Freezing Arrows), reads as a
+  // respelling of it, the English for a homophone (tools/d2-names/style-en.md, hard rule 1). Printed
+  // for a look, never failed, since a short word can be that close and still be another word ("Rime"
+  // for Ice). Blizzard's English of a row, `en`, is the enUS of the
   // string the d2data table names it by (uniqueitems and setitems index, sets index, runes Name,
   // magicprefix, magicsuffix and automagic Name, rareprefix and raresuffix name, monstats NameStr,
   // superuniques Name, levels LevelName, uniqueprefix, uniquesuffix and uniqueappellation Name,
   // hireling NameFirst..NameLast), in D2CE's string tables. The glossary's transliterations are taken
-  // out of both first (ours from ours, D2's from D2's: "Chashi" for Charsi was looked at there), and
-  // what is left is compared, so a name whose person is all that changed is compared too ("Weirte's
+  // out of both first (ours from ours, D2's from D2's: "Aledor" for Aldur is looked at there), and
+  // what is left is compared, so a name whose person is all that changed is compared too ("Weirtel's
   // Leg" for Wirt's Leg).
   const editDistance = (a, b) => {
     let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
@@ -680,7 +706,7 @@ section('English names');
   };
   const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   // one RegExp per term, longest first ("Daikor Kahin" before "Kahin"), with its "of" or "'s" ("Lance
-  // of Yaggai" and "Yagayi's Lance" are both the person's lance)
+  // of Yaggai" and "Yagorai's Tilting Spear" are both the person's lance)
   const terms = (list) =>
     [...new Set(list)].sort((a, b) => b.length - a.length).map((t) => new RegExp(`(^|[^A-Za-z])(?:of (?:the )?)?${esc(t)}(?:['’]s)?(?![a-z])`, 'g'));
   const ourTerms = terms(forms.map((g) => g.newEn));
@@ -723,21 +749,16 @@ section('English names');
     `nameEn within edit distance 2 of its row's official English (case, "the", apostrophes, spaces and hyphens aside), the glossary's transliterations taken out of both (${byDesign.length} more, only the transliteration changed as in our Chinese, not listed)`,
     near.filter((x) => !byDesign.includes(x)).map((x) => `${where(x)} ${x.r.nameEn} ~ ${x.r.en} (${x.d})`),
   );
-  // Blizzard's whole name inside ours, a word added to it ("Bitter Rain" for Rain, "Batwing" for Wing):
-  // style-en.md's "nor Blizzard's whole name with a word added", on the same `en`. The edit distance
-  // above misses these, the added word being longer than two letters. The same norm and a suffix's
-  // "of" aside ("of Sinfire" holds "of Fire"), and the transliterations taken out of both as above,
-  // so a name that swaps the person for the glossary's and adds a word to the rest is listed too
-  // ("Ishenhed's Twin Horns" for Isenhart's Horns); where only the person changed, it is the edit
-  // distance's. An English of two letters or fewer ("Ox") is too short to tell.
-  const core = (s) => norm(s.replace(/^of /, ''));
+  // The glossary's English forms against Blizzard's own: a transliteration a letter or two from
+  // Blizzard's name is a respelling of it (style-en.md, hard rules 1 and 5), which the comparison
+  // above cannot see, the transliterations being taken out of both there. Printed for a look: a short
+  // name can be that close and still read as another.
   warn(
-    "nameEn holds its row's official English whole, a word added (the same norm, a suffix's \"of\" aside, the glossary's transliterations out of both)",
-    rest
-      .map((x) => ({ ...x, ours: core(strip(x.r.nameEn, ourTerms)), theirs: core(strip(x.r.en, theirTerms)) }))
-      .filter(({ ours, theirs }) => theirs.length >= 3 && ours !== theirs && ours.includes(theirs))
-      .map((x) => `${where(x)} ${x.r.nameEn} ⊃ ${x.r.en}`),
+    "a glossary English form (glossary-en.json newEn) within edit distance 2 of Blizzard's name (case, \"the\", apostrophes, spaces and hyphens aside)",
+    blizzard.filter(({ t, g }) => editDistance(norm(g.newEn), norm(t)) <= 2).map(({ t, g }) => `${g.newEn} ~ ${t} (${editDistance(norm(g.newEn), norm(t))})`),
   );
+  // (Blizzard's whole name with a word added, "Bitter Rain" for Rain, is not listed: it keeps what a
+  // veteran knows the row by and changes more than a respelling; style-en.md, hard rules 1 and 2.)
   // A name word that is a whole name of Blizzard's carries that name into ours: "the Lacerator" was a
   // monster title and Lacerator is a unique throwing axe (uniqueitems index Lacerator). The affixes,
   // rare words and monster name words (magicprefix, magicsuffix, automagic Name; rareprefix,

@@ -1,8 +1,8 @@
 {
-  "qstsa1q1": {"name":"涤荡邪巢","nameEn":"Purge the Foul Nest","en":"Den of Evil","official":"邪恶洞穴","note":"与区域「邪秽巢穴」呼应但不重名"},
+  "qstsa1q1": {"name":"涤荡邪巢","nameEn":"Purge the Den of Iniquity","en":"Den of Evil","official":"邪恶洞穴","note":"与区域「邪秽巢穴」呼应但不重名；英文曾用名 Purge the Foul Nest：留 Den，随区域 Den of Iniquity"},
   "qstsa1q2": {"name":"众姊妹之冢","nameEn":"Where the Sisters Lie","en":"Sisters' Burial Grounds","official":"修女的埋骨地","note":"原「姊妹葬骨冢」结构同官方，三处都只是同义换字"},
-  "qstsa1q3": {"name":"匠人之器","nameEn":"The Artisan's Hammer","en":"Tools of the Trade","official":"交易的工具"},
+  "qstsa1q3": {"name":"匠人之器","nameEn":"Tools of the Craft","en":"Tools of the Trade","official":"交易的工具","note":"英文曾用名 The Artisan's Hammer：留 Tools，Trade 换 Craft"},
   "qstsa1q4": {"name":"解救喀因","nameEn":"Kahin's Deliverance","en":"The Search for Cain","official":"搜寻凯恩","note":"原「追寻喀因」动词只换一字；任务实为救出喀因；凯恩→喀因（术语表）"},
-  "qstsa1q5": {"name":"尘封之塔","nameEn":"The Dust-Sealed Spire","en":"The Forgotten Tower","official":"遗忘之塔","note":"与区域「湮忘古塔」区分"},
+  "qstsa1q5": {"name":"尘封之塔","nameEn":"The Long-Forgotten Spire","en":"The Forgotten Tower","official":"遗忘之塔","note":"与区域「湮忘古塔」区分；英文曾用名 The Dust-Sealed Spire：留 Forgotten，尘封＝long-forgotten"},
   "qstsa1q6": {"name":"为姊妹雪恨","nameEn":"Vengeance for the Sisters","en":"Sisters to the Slaughter","official":"为了姐妹们"}
 }

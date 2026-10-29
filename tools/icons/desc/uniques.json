@@ -1,7 +1,7 @@
 {
  "invhaxu": {
   "desc": "A famed war hatchet, the plain hatchet made into a rare piece: its single blade flares into a broad fan, taller than the plain one, the cutting edge cut into a row of jagged triangular teeth like a gnashing jaw, a short curved spike rising from the top of the head and a square poll behind; the head dark pitted iron with a bronze collar where it grips the haft; a short straight haft bound in criss-crossed dark leather with bronze rings at both ends of the grip. Shown upright, axe head at the top, the blade to the right.",
-  "note": "for Fleshgnawer (also Rimeslayer, Boneshaver): a toothed fan blade and a top spike read at 1x; neutral iron and bronze, the game recolours Rimeslayer"
+  "note": "for Gnashmaw (also Coldslayer, Razor's Bite): a toothed fan blade and a top spike read at 1x; neutral iron and bronze, the game recolours Coldslayer"
  },
  "invaxeu": {
   "desc": "A famed one-handed axe, the plain axe made into a rare piece: its blade made much longer, a long down-swept blade like a grave-digger's spade that hangs down along the haft to a hooked point a third of the way down, its edge honed bright, a row of three round holes pierced through the blade; behind the socket a long curved hook instead of the plain spike; a small iron skull riveted on the socket; dark iron, the haft bound with dark leather cords and iron rings. Shown upright, the axe head at the top, side view.",
@@ -23,15 +23,15 @@
  },
  "invwndu": {
   "desc": "A famed wand, the plain wand made into a rare piece, a wand like a small torch: a short shaft of blackened wood, and at its top an iron cage of four curved prongs holding a rough crystal shaped like a tongue of flame, glowing a dim ember orange from within, soot darkening the prongs; the lower shaft bound with iron rings. Shown upright, the crystal at the top.",
-  "note": "for Yirro's Brand: a flame-shaped ember crystal in a prong cage; ember orange, ours"
+  "note": "for Iroth's Brand: a flame-shaped ember crystal in a prong cage; ember orange, ours"
  },
  "invbwnu": {
   "desc": "A famed bone wand, the plain bone wand made into a rare piece: the shaft a short length of spine, a column of small yellowed vertebrae threaded tightly together, and at its top a pair of long curved fangs curling toward each other like pincers, bound on with sinew; thin carved rune marks on the bones, a grip of dark leather at the bottom. Shown upright, the fangs at the top.",
-  "note": "for Runescored Backbone (also King Lyolig's Arm, Marrowless Umbra, Sangdar's Portents): a spine shaft topped by a pincer of two fangs"
+  "note": "for Graven Backbone (also King Lyolig's Arm, Bonewraith, Sandreth's Blind Faith): a spine shaft topped by a pincer of two fangs"
  },
  "invclbu": {
   "desc": "A famed war club, the plain gnarled club made into a rare piece: the thick end of the dark oak club bound with three heavy iron hoops, each hoop studded with square rivet heads, a few long iron nails driven into the wood between them, the wood blackened and scorched near the head; a grip of leather thongs at the thin end. Shown upright, the thick end at the top, side view.",
-  "note": "for Baleful Oakbough (also Netherkin Grindmaul, Northbrute's Fleshpounder): the iron-hooped head reads as special"
+  "note": "for Fell Oakwood (also Dark Clan Breaker, Northman's Tenderizer): the iron-hooped head reads as special"
  },
  "invspcu": {
   "desc": "A famed spiked club, the plain spiked club made into a rare piece: one huge square iron nail, three times as long as the club is wide, driven sideways right through its head so it sticks far out on both sides, the head bound with two iron bands and bristling with shorter curved iron spikes; the shaft dark wood with a leather-wrapped grip. Shown upright, the spiked end at the top, side view.",
@@ -39,19 +39,19 @@
  },
  "invmstu": {
   "desc": "A famed morning star, the plain morning star made into a rare piece: its head a small iron ball from which eight long straight spikes radiate evenly like the points of a star, the spikes much longer than the ball is wide, set on a tall bronze collar; the haft bound with alternating bands of dark leather and iron rings, an iron butt cap. Shown upright, the head at the top, side view.",
-  "note": "for Daystar of Welling Gore (also Riven Crescent's Plunging Star, Bahlanno's Sidereal Maul, Aledor's Pulse): a star of long spikes"
+  "note": "for Bloodmorn (also Moonplunge, Bahlanno's Sidereal Maul, Aledor's Cadence): a star of long spikes"
  },
  "invmauu": {
   "desc": "A famed two-handed maul, the plain maul made into a rare piece: its iron block head replaced by the huge skull of a horned beast, bleached and cracked bone, set crosswise on top of the haft so its face looks out to one side, short curled horns, bound to the haft with heavy iron straps; three short iron spikes along the upper haft, a leather grip low down and an iron ring at the butt. Shown upright, the head at the top, side view.",
-  "note": "for Marrowcrack Maul: a beast's skull as the head"
+  "note": "for Bonecrack: a beast's skull as the head"
  },
  "invscmu": {
   "desc": "A famed scimitar, the plain scimitar made into a rare piece: its curved blade widening toward the tip into a broad crescent, the back edge near the tip cut into three sharp hooked notches, a thin blood groove along the blade; a crescent-shaped guard whose two horns point up toward the blade, a grip of dark cord and a small domed pommel. Shown upright, the hilt at the bottom, the blade curving away to the right as it rises, side view.",
-  "note": "for Redmoon Edge (also Frostiron Gaze, Spiritbutcher): the widened tip with hooked notches and a crescent guard"
+  "note": "for Crimson Crescent (also Coldsteel Stare, Djinn Hewer): the widened tip with hooked notches and a crescent guard"
  },
  "inv9sbu": {
   "desc": "A famed sabre, the plain sabre made into a rare piece: along the spine of its long curved blade a row of four small sharp barbs hooking back toward the hilt, the point turned slightly upward like a skewer's tip; a dark iron knuckle bow sweeping from the guard to the pommel, a ridged grip of dark leather. Shown upright, the hilt at the bottom, the blade curving gently to the right as it rises, side view.",
-  "note": "for Kalinz's Iron Prong and Herald's Crescent Blade: barbs along the spine"
+  "note": "for Kharintz's Iron Prong and Seraphic Sickle: barbs along the spine"
  },
  "invflcu": {
   "desc": "A famed falchion, the plain falchion made into a rare piece: a long curved hook like the blade of a sickle growing out of the back of the blade near its tip and sweeping up and forward, the broad blade's edge frosted with a pale cold bloom, the guard two downturned hooks, a ring pommel with a short leather tassel. Shown upright, point at the top, the pommel at the bottom, side view.",
@@ -61,7 +61,7 @@
  },
  "invcrsu": {
   "desc": "A famed crystal sword, the plain crystal sword made into a rare piece: its blade a single long clear crystal, gently curved and evenly tapering, clear as ice with a bright line of light running down its core, both edges serrated into rows of small sharp crystal teeth; set in an ornate pewter-grey guard with swept quillons curling toward the blade, a wire-bound grip and a faceted pommel stone. Shown upright, point at the top, the pommel at the bottom, straight front view.",
-  "note": "for Firmament's Ire (also Radiant Curveblade): a curved clear crystal with a toothed edge and a swept guard; colourless, not blue"
+  "note": "for Azurerage (also Lightbrand): a curved clear crystal with a toothed edge and a swept guard; colourless, not blue"
  },
  "invbsdu": {
   "desc": "A famed broad sword, the plain broad sword made into a rare piece, a master smith's own blade: the lower half of its broad blade glowing a dull forge orange as if just drawn from the fire, fading up into dark hammered steel, a row of saw teeth along one edge near the guard, a heavy guard shaped like a small anvil, a pommel like a hammer head. Shown upright, point at the top, the pommel at the bottom, straight front view.",
@@ -69,7 +69,7 @@
  },
  "invlsdu": {
   "desc": "A famed long sword, the plain long sword made into a rare piece: its narrow blade long and tapering to a fine point, its cross-guard sweeping into two long quillons that curl back toward the blade like ram's horns, a side ring below them, the grip bound with twisted wire, a faceted pear-shaped pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
-  "note": "for Abyssal Pestilence, Northgale of Bitter Rime, Kelegaro's Snarling Tusk, Saint Sazhabai's World-Absolving Edge: curled swept quillons"
+  "note": "for Netherplague, Frostgale, Clegaro's Sharp Tooth, Saint Sazhabai's Cobalt Savior: curled swept quillons"
  },
  "inv2hsu": {
   "desc": "A famed two-handed sword, the plain two-handed sword made into a rare piece: a long strip of tattered black shroud cloth wound around the leather ricasso and the guard and hanging down past the pommel in ragged tails; the blade dark-stained with its edges ground bright, narrowing to a fang-like point; the guard's ends curling down. Shown upright, point at the top, the pommel at the bottom, straight front view.",
@@ -77,7 +77,7 @@
  },
  "invgisu": {
   "desc": "A famed giant sword, the plain giant sword made into a rare piece: its long narrow blade tapering to an awl-like point, and its guard two large upswept curling tongues of bronze rising beside the blade like flames, a round dark stone set at their centre, a long grip of dark leather and a flame-shaped pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
-  "note": "for Chinmiel's Bodkin (also Shell of the Festering, Howling Conflagration): a large upswept flame-shaped guard"
+  "note": "for Kinmael's Bodkin (also The Vile Carcass, Flameroar): a large upswept flame-shaped guard"
  },
  "invbswu": {
   "desc": "A famed bastard sword, the plain bastard sword made into a rare piece: a broad blackened blade, wider than the plain one, splitting at its point into two sharp prongs like a serpent's forked tongue, a thin fuller down its middle; a small serpent of dark bronze coiled around the guard and the top of the grip, its head on the guard; a guard with turned-down ends, a long grip bound with black cord and a pear-shaped pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
@@ -93,15 +93,15 @@
  },
  "invkrsu": {
   "desc": "A famed kris dagger, the plain kris made into a rare piece: its wavy blade with more and tighter waves, and a knuckle guard of bronze shaped like a curved claw that wraps around the front of the grip, a round green stone set in the pommel, the grip of dark ridged horn. Shown upright, point at the top, the hilt at the bottom, side view.",
-  "note": "for Kingfisher Jade Point (also Inkmire Keenblade, Sinewcarver): a claw knuckle guard and a green pommel stone"
+  "note": "for Jade Point (also Blackbog's Edge, Fleshtearer): a claw knuckle guard and a green pommel stone"
  },
  "invtriu": {
   "desc": "A famed trident, the plain trident made into a rare piece: its three tines long and barbed, each with two backward hooks along its length, the middle tine the longest; below the head a length of knotted fishing net and rope wound about the shaft and hanging down in loose loops, small lead weights on its corners; the long shaft dark wood with bronze rings. Shown perfectly upright, the prongs at the top, front view.",
-  "note": "for Razorhone Fork (also Drownwraith Net): barbed tines and a net hanging from the head"
+  "note": "for Razorfork (also Kelpie Fishfork): barbed tines and a net hanging from the head"
  },
  "invscyu": {
   "desc": "A famed war scythe, the plain scythe made into a rare piece: its long curved blade serrated along the inner edge with small hooked teeth, and its snath wrapped from top to bottom in a spiral of small vertebrae and curved ribs bound with sinew like a spine winding round it, a bone knob at the top joint, a leather grip low on the shaft. Shown upright, the snath vertical, the blade across the top.",
-  "note": "for Scythe of Mown Souls: a toothed blade and a spine wound round the snath"
+  "note": "for Soul Reaping: a toothed blade and a spine wound round the snath"
  },
  "invcstu": {
   "desc": "A famed staff, the plain gnarled staff made into a rare piece: a second thinner branch winds around the whole staff in a tight spiral from the foot to the head like a twisting vine, and a third even thinner one spirals the other way, so the shaft looks twisted like a rope; at the top the branches open and curl round a small pale round stone, thin bronze bands at three joints. Shown perfectly upright, the head at the top.",
@@ -109,7 +109,7 @@
  },
  "invcbwu": {
   "desc": "A famed composite bow, the plain composite bow made into a rare piece: along the back of both limbs a row of short curved thorns like a bramble stem, the limb tips ending in hooked thorn points, the grip wrapped in dark green-stained leather, a few dry leaves bound in at the grip, a thin pale string. Shown upright, side view, the string on the left.",
-  "note": "for Bow of the Greenwood (also Pelting Without Respite): thorns along the limbs"
+  "note": "for Rogue's Recurve (also Ceaseless Hail): thorns along the limbs"
  },
  "invsbbu": {
   "desc": "A famed short battle bow, the plain battle bow made into a rare piece: its limbs sprouting like a living branch, many small leafy twigs growing out all along both limbs and bound on with cord, a large tuft of leaves at each tip and a ring of leaves round the grip, the leaves dull olive and brown, a thin pale string. Shown upright, side view, the string on the left, the bow arching to the right.",
@@ -117,7 +117,7 @@
  },
  "invswbu": {
   "desc": "A famed war bow, the plain war bow made into a rare piece: along the back of each limb three backward-swept horn spurs like antler tines, curved and pointed, the limb tips carved into hooks, the grip bound in dark leather with bronze rings, a thin pale string. Shown upright, side view, the string on the left.",
-  "note": "for Nethergaol Levinbolt, Sorcerer's Indignation, Sower of Widows, Scarlet Rook's Raid, Icefield Hornbow: swept horn spurs on the limbs"
+  "note": "for Netherclap, Magerage, Sower of Widows, Scarlet Raven's Charge, Polar Horn: swept horn spurs on the limbs"
  },
  "invlxbu": {
   "desc": "A famed light crossbow seen from directly above, the plain light crossbow made into a rare piece: its front tip carved as a big crow's head with a long open beak, the bow's two ends each hung with a bunch of long black feathers, black feathers tied along the tiller too, the tiller dark wood inlaid with grey lead strips. The prod at the top, the butt at the bottom.",
@@ -129,7 +129,7 @@
  },
  "invhxbu": {
   "desc": "A famed heavy crossbow seen from directly above, the plain heavy crossbow made into a rare piece: a long curved blade like a sword fixed beneath the butt end and sweeping back past it, two forked prongs at the front instead of the stirrup ring, the thick steel prod blackened, the tiller bound with iron bands and the winding crank at the butt. The prod at the top, the butt at the bottom.",
-  "note": "for Purgatorial Quarrel (also Avalanche Bombard, Rack of the Nine Depths): the blade at the butt and the forked front"
+  "note": "for Nethercast (also Buriza-Do Daikyanon, Purgatory Rack): the blade at the butt and the forked front"
  },
  "invrxbu": {
   "desc": "A famed repeating crossbow seen from directly above, the plain repeating crossbow made into a rare piece: a tall wooden magazine box on top of the tiller packed with a fan of bolts whose heads stick up out of it, a long curved lever arm along its side, small bone teeth set in rows along the stock, the bow's ends curling back into scrolls. The prod at the top, the butt at the bottom.",
@@ -142,7 +142,7 @@
  },
  "invhlmu": {
   "desc": "A famed iron helm, the plain helm made into a rare piece, shown empty on its own: a rounded iron helm with a full face plate shaped like a stern grimacing face, hollow eye holes under heavy brows, a ridge of a nose, and a grille of short vertical bars for the mouth, riveted cheeks, no head inside. Front three-quarter view.",
-  "note": "for Laurel Mailhood (also Skullseizer Helm, Blackiron Shadowcowl, Frenzied Champion's Bascinet): the face mask"
+  "note": "for Coif of Laurels (also Snatchskull, Steel Cowl, Berserker's War Helm): the face mask"
  },
  "invfhlu": {
   "desc": "A famed full helm, the plain full helm made into a rare piece, shown empty on its own: a tall brush crest of stiff dark horsehair standing up along the top of the helm from the brow to the nape like a mane, set in an iron ridge; the face opening shaped like a T, a narrow eye slit across and a slot down to the chin; a flared neck guard; no head inside. Front three-quarter view.",
@@ -150,11 +150,11 @@
  },
  "invbhmu": {
   "desc": "A famed bone helm, the plain bone helm made into a rare piece, shown empty on its own: a helm made from a whole huge skull of real bone, its cranium cracked and bored with small worm holes, deep empty eye sockets, the upper teeth along its lower front edge, a hood of dark leather behind it. Front three-quarter view from slightly below, so the open lined underside shows.",
-  "note": "for Grubgnawed Cranium (also Eye of the Bloodquaffer, Tangelier's Withered Cranium, Nadhalia's Forebears, Thangur's False Countenance): a real skull"
+  "note": "for Grubskull (also Vampire Glower, Tangreth's Skullbone, Nadhalia's Carved Totem, Thangur's False Face): a real skull"
  },
  "invfulu": {
   "desc": "A famed full plate armour, the plain plate made into a rare piece, hollow and empty: every plate covered in gold leaf, worn through to brass and grey steel at the edges, the breastplate embossed with a raised central ridge and flowing scrolls, flared shoulder plates, the arm and thigh plates as the plain armour has. Laid flat, front view, empty, no person.",
-  "note": "for Gilded Vessel (also Tangelier's Iron Backbone): gold leaf over the plate"
+  "note": "for Goldhide (also Tangreth's Iron Backbone): gold leaf over the plate"
  },
  "invaaru": {
   "desc": "A famed ancient armour, the plain ancient armour made into a rare piece, hollow and empty: its arm plates replaced by long loose sleeves of heavy embroidered brocade cloth hanging from under the shoulder plates down past the hips, a cloth sash across the chest from one shoulder to the other hip, the sculpted cuirass and the skirt of hanging plates with tasselled ends kept. Laid flat, front view, empty, no person.",
@@ -162,15 +162,15 @@
  },
  "invbucu": {
   "desc": "A famed buckler, the plain buckler made into a rare piece: a small round shield of dark iron whose whole face bears a large raised crescent moon of tarnished bronze lying across it, its horns pointing up around the central boss, a ring of rivets around the rolled rim, dents and scratches. Front view.",
-  "note": "for Quartermoon Buckler (also Gutgouger, Shalush's Roundel): a crescent emblem across the face"
+  "note": "for Pelta Crescens (also Viscera Gouge, Shalush's Iron Hand): a crescent emblem across the face"
  },
  "invsmlu": {
   "desc": "A famed small shield, the plain round shield made into a rare piece: a round shield of dark oak planks with an iron rim, and in its centre a black iron disc ringed by a thin bright ring of brass like an eclipse of the sun, short straight rays incised outward from the ring across the planks to the rim. Front view.",
-  "note": "for Wheel of the Eclipse (also Inkoak Aegis, Kelegaro's Barbed Hook): the eclipse ring and rays"
+  "note": "for Umbral Wheel (also Blackoak Aegis, Clegaro's Iron Claw): the eclipse ring and rays"
  },
  "invlrgu": {
   "desc": "A famed large shield, the plain oval shield made into a rare piece: a tall oval shield of iron-bound planks whose face carries three concentric raised iron rings, and at its centre, in place of the plain boss, a round bronze boss cast as the face of a wind spirit with puffed cheeks and pursed lips, blowing, its hair streaming out into the rings. Front view, upright.",
-  "note": "for Oath of the Gale (also Shiwebor's Hallowed Rampart): concentric rings around a wind-face boss"
+  "note": "for Stormleague (also Siverbor's Holy Ward): concentric rings around a wind-face boss"
  },
  "invbshu": {
   "desc": "A famed bone shield, the plain bone shield made into a rare piece: its whole face covered with dozens of small skulls packed tightly in rows, skull beside skull, their empty gouged eye sockets staring out, so no long bones show on the face, only skulls, held in a rim of bound vertebrae. Front view, upright.",
@@ -178,23 +178,23 @@
  },
  "invspku": {
   "desc": "A famed spiked shield, the plain spiked shield made into a rare piece: a round shield of dark iron-bound wood whose rim bristles with long thin blades like sword blades fanning out all around it, much longer than the plain spikes, the face crossed by two bands of thorny iron and a long central spike. Front three-quarter view.",
-  "note": "for Bastion of Bladed Spines (also Bramble Palisade): sword-like blades fanning from the rim"
+  "note": "for Swordspine Hold (also Spike Bramble): sword-like blades fanning from the rim"
  },
  "invkitu": {
   "desc": "A famed kite shield, the plain kite shield made into a rare piece: a tall kite shield with a rounded top and a long pointed bottom, its dark face bearing a large raised emblem of hammered iron, a winged serpent with outspread bat-like wings and a long coiled tail curling down toward the point, a rim of riveted steel. Front view.",
-  "note": "for Chorus of Iron (also Fellwyrm's Bellow, Tempest Bastion, Mirobeiga's Sovereign Pearl): a winged serpent emblem"
+  "note": "for Steelclamor (also Tiamat's Reproach, Storm Bastion, Mirobeiga's Precious Orb): a winged serpent emblem"
  },
  "invtowu": {
   "desc": "A famed tower shield, the plain tower shield made into a rare piece: a tall curved rectangular shield whose top edge is cut into square battlements like the top of a castle wall, its face carved in relief with courses of grey stone blocks, two narrow arrow slits and a small arched gate with an iron portcullis near the bottom, an iron rim. Upright.",
-  "note": "for Beiwelli Fortress (also Gaikor's Refuge, Meidossa's Stone Eye, Shigund's Redoubt): battlements and a carved keep"
+  "note": "for Beverith Fortress (also Gerrick's Refuge, Meidossa's Stone Eye, Shigund's Defender): battlements and a carved keep"
  },
  "invgtsu": {
   "desc": "A famed gothic shield, the plain gothic shield made into a rare piece: the tall narrow lancet shield of dark iron with two long curved horns rising from its pointed top and two short horn spikes jutting from its bottom point, a raised spine of bronze down the middle, and at its centre a small bronze ram's head with curled horns. Front view, upright.",
-  "note": "for Hallowed Boundary (also Ladanmon's Demesne, Redoubt of the Unquiet, Ishenhed's Bladeward): horns at both ends and a ram's head"
+  "note": "for Hallowed Ward (also Rhadamon's Domain, Spirit Sentinel, Ishenhed's Riposte): horns at both ends and a ram's head"
  },
  "invvip": {
   "desc": "An amulet: a pendant made as a bronze serpent coiled in a tight flat spiral, scales engraved along its body, its head raised at the top holding a small amber stone in its open jaws, filling most of the frame, a short loop of fine chain at its top.",
-  "note": "for Coiled Adder Pendant: its own picture (the base's uniqueinvfile), a coiled serpent",
+  "note": "for Pendant of the Viper: its own picture (the base's uniqueinvfile), a coiled serpent",
   "fill": 0.92
  },
  "inv9btu": {
@@ -207,11 +207,11 @@
  },
  "inv9gwu": {
   "desc": "A famed grim wand, the plain skull wand made into a rare piece, made like a great key: a small blackened skull as the key's bow at the top, a twisted shaft of dark bone below it, and at the lower end a broad flat key bit with square teeth sticking out to one side, a ring of iron at the neck under the skull. Shown upright, the skull at the top.",
-  "note": "for Key of the Inkpalm: the key bit at the bottom; blackened bone"
+  "note": "for Blackpalm Key: the key bit at the bottom; blackened bone"
  },
  "inv9gmu": {
   "desc": "A famed great maul, the plain maul made into a rare piece, a judge's gavel of war: its head a large round drum of dark hardwood like a gavel's, bound with two thick iron hoops, both striking faces studded with short pyramid spikes; a long iron-banded haft and a butt ringed with short iron spikes. Shown upright, the head at the top, side view.",
-  "note": "for Maul of Penance: a hooped drum head with spiked faces"
+  "note": "for The Gavel of Agony: a hooped drum head with spiked faces"
  },
  "invsbru": {
   "desc": "A famed sabre, the plain sabre made into a rare piece: flame-shaped tongues of dark bronze licking up from the guard along the base of the blade, the curved blade etched along its length with a wavy flame line and blackened near the hilt, widening a little near the point, the knuckle bow wrapped in red-brown cord, a round dark red stone in the pommel. Shown upright, the hilt at the bottom, the blade curving gently to the right as it rises, side view.",
@@ -219,7 +219,7 @@
  },
  "inv9cru": {
   "desc": "A famed crystal sword, the plain crystal sword made into a rare piece: its crystal blade split down its length by a dark jagged crack, the two halves slightly parted with a faint glow inside the rift, small shards breaking away from its edges; an iron guard with two hooked arms, a wire-bound grip and a round iron pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
-  "note": "for Ganthe's Fissure: the rift down the blade"
+  "note": "for Ghintor's Fissure: the rift down the blade"
  },
  "inv9lsu": {
   "desc": "A famed long sword, the plain long sword made into a rare piece: a small iron plague bell and a long strip of stained rag hanging from its guard on a cord, the blade streaked and blotched with green-grey corrosion, the guard of two drooping quillons each ending in a small round sickly green glass bead, a grip wrapped in stained rag. Shown upright, point at the top, the pommel at the bottom, straight front view.",
@@ -227,7 +227,7 @@
  },
  "inv9fbu": {
   "desc": "A famed flamberge, the plain flamberge made into a rare piece: its long wavy blade glowing a dull red-hot along its lower half and fading upward into dark steel, a guard of upswept flame-shaped tongues of bronze around a small ember stone, a long grip of dark leather and a flame-shaped pommel. Shown upright, point at the top, the pommel at the bottom, straight front view.",
-  "note": "for Lifepyre: the glowing lower blade and flame guard"
+  "note": "for Todesfaelle Feuer: the glowing lower blade and flame guard"
  },
  "inv9blu": {
   "desc": "A famed long dagger, the plain blade made into a rare piece: copper wire wound in a spiral along the whole length of its blade, the edges notched into a zigzag like a bolt of lightning, the guard a forked bronze piece like a split lightning bolt, a grip wound with copper wire and a small spiked pommel. Shown upright, point at the top, the butt at the bottom, side view.",
@@ -239,15 +239,15 @@
  },
  "inv9s8u": {
   "desc": "A famed war scythe, the plain scythe made into a rare piece: its blade a long curved tusk of old yellowed ivory ground to a sharp inner edge, fixed to the top of the snath in a bronze socket bound with braided cord, the snath slender and gently curved like a drawn bow, a leather grip low down. Shown upright, the snath vertical, the blade across the top.",
-  "note": "for Asseni's Fury: an ivory tusk for a blade"
+  "note": "for Athaenis' Thunderous Wrath: an ivory tusk for a blade"
  },
  "inv8wsu": {
   "desc": "A famed war staff, the plain horned staff made into a rare piece: its top a whole skull held in a cage of curved iron bands that rise from the shaft, its eye sockets dark, and strung beneath it strings of small finger bones and dark beads hanging down the shaft; the shaft dark wood bound with iron rings and an iron butt spike. Shown perfectly upright, the skull at the top.",
-  "note": "for Ossuary Warden (also Mahng Sung's Ferule): a caged skull and strings of finger bones"
+  "note": "for Skull Gatherer (also Mahng Seung's Teaching): a caged skull and strings of finger bones"
  },
  "inv8lbu": {
   "desc": "A famed long bow, the plain long bow made into a rare piece: its limbs bound along their whole length with spiral strips of dark lacquered cord, the tips ending in carved finials shaped like tongues of flame, and a tassel of long feathers hanging from the grip, a thin pale string. Shown upright, side view, the string on the left, the bow arching to the right.",
-  "note": "for Arrow of Scarlet Flame: lacquered cord wrap, flame finials and a feather tassel"
+  "note": "for Kuko Shakuen: lacquered cord wrap, flame finials and a feather tassel"
  },
  "inv8s8u": {
   "desc": "A famed short bow, the plain short bow made into a rare piece, a witch's bow: hanging from the middle of the bow on long cords a big bundle of charms, a small animal skull, bone fetishes, beads and black feathers, its limbs painted with crooked dark bands, the string a twisted cord of several strands. Shown upright, side view, the string on the left, the bow arching to the right.",
@@ -259,7 +259,7 @@
  },
  "inv8mxu": {
   "desc": "A famed crossbow seen from directly above, the plain crossbow made into a rare piece: a bloated leather bladder lashed beneath the front of the tiller with a short brass nozzle pointing forward, the stock wrapped in stained rags and cord, the bow dark and corroded. The prod at the top, the butt at the bottom.",
-  "note": "for Festerspew: the bladder and nozzle"
+  "note": "for Pus Spewer: the bladder and nozzle"
  },
  "invxkpu": {
   "desc": "A famed skull cap, the plain skull cap made into a rare piece, shown empty on its own: its dome hewn from rough grey stone, chipped and cracked like a boulder, bound with two crossed bands of bronze riveted at the crown, a curtain of mail hanging from its rim at the back and sides. Front three-quarter view.",
@@ -280,11 +280,11 @@
  },
  "invxmlu": {
   "desc": "A famed round shield, the plain round shield made into a rare piece: a round shield of dark wood with an iron rim, at its centre a raised bronze open hand, palm forward and fingers together, ringed by a halo of short straight rays and an outer circle of rivets. Front view.",
-  "note": "for Mawse's Sacred Halo (also Huitsdan's Garrison Shield): the open hand in a halo"
+  "note": "for Moshele's Sacred Halo (also Witsdane's Shieldguard): the open hand in a halo"
  },
  "invxrgu": {
   "desc": "A famed large shield, the plain oval shield made into a rare piece: a tall oval shield of dark iron whose face bears six jagged lightning bolts of raised polished iron radiating from a central domed boss out to the rim, the metal between them scorched. Front view, upright.",
-  "note": "for Thunderhound: lightning bolts radiating from the boss"
+  "note": "for Stormhunter: lightning bolts radiating from the boss"
  },
  "invxshu": {
   "desc": "A famed bone shield, the plain bone shield made into a rare piece: three large skulls fixed across its face in a row from top to bottom, each skull as wide as half the shield and covering the bones behind it, each with staring round eyes of dull glass set in its sockets, bound on with rope. Front view, upright.",
@@ -304,6 +304,6 @@
  },
  "invaxfu": {
   "desc": "A famed hatchet-fist punch blade, the plain hatchet fist made into a rare piece: its head a dark curved blade shaped like a rising wisp of black flame, with a smaller hooked spur on each side, set on the H-shaped iron hilt with its leather-wrapped crossbar grip. Shown upright, the blade at the top, front view, empty, no hand.",
-  "note": "for Smiter of Shades: a flame-shaped dark blade with side spurs"
+  "note": "for Shadow Slayer: a flame-shaped dark blade with side spurs"
  }
 }

@@ -99,12 +99,23 @@ export default async (load) => {
     for (const e of g.en.split(/\s*[/(]\s*/)) if (e.length > 3) officialEn.add(e.replace(/\)$/, ''));
   }
   officialEn.delete('Camp');
+  // a name of ours may hold an official one whole (a word added to it: tools/d2-names/style.md), so
+  // our names are cut out of a line before it is looked through for the official ones
+  const ours = { zh: [], en: [] };
+  for (const f of fs.readdirSync(path.join(root, 'tools/d2-names')).filter((f) => f.endsWith('.json'))) {
+    for (const row of Object.values(json(f))) {
+      ours.zh.push(row?.name, row?.new);
+      ours.en.push(row?.nameEn, row?.newEn);
+    }
+  }
+  const cut = (s, names) => [...new Set(names)].filter(Boolean).sort((a, b) => b.length - a.length).reduce((acc, n) => acc.split(n).join('\u0000'), s);
   const review = fs.readFileSync(REVIEW, 'utf8');
   for (const line of lines) {
     const l = fillLine(line, { n: 3 });
     check(l.zh && l.en && !/[{}]/.test(l.zh + l.en), `a line unfilled or half there: ${JSON.stringify(l)}`);
-    for (const o of official) check(!l.zh.includes(o), `an official name ${o}: ${l.zh}`);
-    for (const o of officialEn) check(!l.en.includes(o), `an official name ${o}: ${l.en}`);
+    const [zh, en] = [cut(l.zh, ours.zh), cut(l.en, ours.en)];
+    for (const o of official) check(!zh.includes(o), `an official name ${o}: ${l.zh}`);
+    for (const o of officialEn) check(!en.includes(o), `an official name ${o}: ${l.en}`);
     check(!l.zh.includes('艾莉娜'), `the merchant's old name: ${l.zh}`);
     check(review.includes(l.zh), `not on the review page: ${l.zh}`);
   }
@@ -153,7 +164,7 @@ export default async (load) => {
   };
   const ticks = (n) => game.quests.update(QUEST_TICK * n + 1e-6);
 
-  check(akara()?.npc === '亚珈萝' && game.quests.hasNews('akara') && word() === 0, `a new game: ${akara()?.npc}, news ${game.quests.hasNews('akara')}, word ${word()}`);
+  check(akara()?.npc === '亚喀蕾' && game.quests.hasNews('akara') && word() === 0, `a new game: ${akara()?.npc}, news ${game.quests.hasNews('akara')}, word ${word()}`);
   check(game.quests.log('a1q1').state === 'none' && ACT1_QUESTS.filter((q) => q.key !== 'a1q1').every((q) => game.quests.log(q.key).state === 'off'), 'the log of a new hero');
   toAkara();
   const intro = game.talkTo(akara());

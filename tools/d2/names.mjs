@@ -15,11 +15,34 @@ const unnamed = {};
 const noEnglish = {};
 const excluded = {};
 
-/** two English names that read the same: case, "the", apostrophes, spaces and hyphens aside */
-export const sameEnglish = (a, b) => {
-  const norm = (s) => (s ?? '').toLowerCase().replace(/\bthe\b/g, '').replace(/['’\s-]/g, '');
-  return !!a && !!b && norm(a) === norm(b);
+// What reads as the official name (style.md and style-en.md, hard rule 1). Only what a program can
+// tell is here: a homophone, a respelling and whether a veteran knows the name at a glance are for
+// a person to judge.
+
+/** a Chinese name with 的 and 之, the middle dot and spaces taken out */
+export const zhKey = (s) => (s ?? '').trim().replace(/[的之·・\s]/g, '');
+/** two Chinese names that read as one: they differ only in 的 and 之, the middle dot or spaces (风的力 for 风之力) */
+export const sameChinese = (a, b) => !!zhKey(a) && zhKey(a) === zhKey(b);
+
+const SMALL = new Set(['of', 'the', 'a', 'an']);
+/** an English name's words, lower case, without "of", "the", "a", "an" and a possessive 's */
+const enWords = (s) =>
+  (s ?? '').toLowerCase().replace(/['’]s\b/g, '').replace(/['’]/g, '').split(/[\s-]+/).filter((w) => w && !SMALL.has(w));
+/** what an English name reads as: its words run together ("Wind Force" is Windforce) and in any order ("Oak Heart" is Heart of the Oak) */
+export const enKeys = (s) => {
+  const w = enWords(s);
+  return w.length ? [w.join(''), [...w].sort().join(' ')] : [];
 };
+/** two English names that read the same: case, apostrophes, spaces, hyphens, "of", "the", "a", "an", a possessive 's and the order of the words aside */
+export const sameEnglish = (a, b) => {
+  const [x, y] = [enKeys(a), enKeys(b)];
+  return x.length > 0 && y.length > 0 && (x[0] === y[0] || x[1] === y[1]);
+};
+
+/** `s` with each of `names` cut out, longest first: an official name inside one of ours is ours (长风之力 holds 风之力) */
+export function withoutNames(s, names) {
+  return [...new Set(names)].filter(Boolean).sort((a, b) => b.length - a.length).reduce((acc, n) => acc.split(n).join('\u0000'), s);
+}
 
 const note = (to, category, id, en) => {
   const u = (to[category] ??= []);
@@ -30,13 +53,15 @@ const note = (to, category, id, en) => {
 export function names(category) {
   maps[category] ??= JSON.parse(fs.readFileSync(path.join(DIR, `${category}.json`), 'utf8'));
   const m = maps[category];
-  /** our Chinese name for a row; `official` is the official Chinese, which the name must differ from */
+  /** our Chinese name for a row; `official` is the official Chinese, which the name must differ from by more than 的 and 之 */
   function get(id, en, official) {
     const n = m[id]?.name;
     if (!n) return note(unnamed, category, id, en);
     // (some official strings end in a space)
     const off = official?.trim();
-    if (n === off || n === m[id].official) throw new Error(`${category}.json ${id}: ${n} is the official name`);
+    for (const o of [off, m[id].official]) {
+      if (sameChinese(n, o)) throw new Error(`${category}.json ${id}: ${n} is the official name ${o}${n === o.trim() ? '' : ' with only 的, 之, · or spaces changed'}`);
+    }
     // a name written against another row's strings is a mix-up (vip once had its unique's name)
     const other = (a, b) => a && b && a.trim() !== b.trim();
     if (other(m[id].en, en) || other(m[id].official, off)) throw new Error(`${category}.json ${id}: written for "${m[id].en}" / ${m[id].official}, the row is "${en}" / ${off}`);
@@ -47,7 +72,7 @@ export function names(category) {
     const n = m[id]?.nameEn;
     if (!n) return note(noEnglish, category, id, en);
     if (!/^[\x20-\x7E]+$/.test(n)) throw new Error(`${category}.json ${id}: nameEn "${n}" is not plain ASCII`);
-    if (sameEnglish(n, en ?? m[id].en)) throw new Error(`${category}.json ${id}: nameEn "${n}" is the official English "${en ?? m[id].en}"`);
+    if (sameEnglish(n, en ?? m[id].en)) throw new Error(`${category}.json ${id}: nameEn "${n}" reads as the official English "${en ?? m[id].en}" (only case, spaces, hyphens, "of", "the", "a", "'s" or the order of the words changed)`);
     return n;
   }
   return {
