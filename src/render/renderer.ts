@@ -3,7 +3,8 @@ import type { P2 } from '../core/math';
 import { SKILL_BY_ID } from '../data/skills';
 import type { Game, Picker } from '../game/game';
 import type { Level } from '../game/level';
-import { THEMES, type Layout } from '../world/levelgen';
+import { THEMES, type House, type Layout, type Npc, type Torch } from '../world/levelgen';
+import type { Prop, WallDecor } from '../world/furnish';
 import { CAMP_AREA, areaDef } from '../world/areas';
 import { areaShares, lookMix, type AreaShare } from '../world/seams';
 import type { Monster, MonsterAct } from '../game/monster';
@@ -12,7 +13,8 @@ import type { Player } from '../game/player';
 import { itemColor } from '../items/item';
 import { T_FLOOR, T_PROP, T_WALL } from '../world/tilemap';
 import { Effects } from './effects';
-import { assets } from './assets';
+import { assets, HERE, NEXT, NOW, TEXTURE_SLOTS, type Template } from './assets';
+import { areaNeeds, levelNeeds, specNeeds } from './needs';
 import { monsterLook, playerLook, playerLookKey, vendorLook } from './looks';
 import { ModelRig, rigKey, type ModelSpec } from './models';
 import { ownDepth, PropBatches, Scenery, sphereInFrustum, sphereInShadows, type Chunk, type PropPart, type StaticLight, type Viewers } from './chunks';
@@ -24,11 +26,11 @@ import { makeGround } from './ground';
 import { skyAt, type SkyLook } from './sky';
 import { SHRINE_BY_ID } from '../data/shrines';
 import {
-  assetProp, glowSprite, makeBarrel, makeBrazier, makeHouse, makeChest, makeDecor, makeGroundItem, makeHammer, makePortal, makeProjectile, makeStairs, makeTorch, makeTree, makeWaypoint, sharedResource, topCentroid,
+  assetProp, glowSprite, makeBarrel, makeBrazier, makeHouse, makeChest, makeDecor, makeGroundItem, makeHammer, makePortal, makeProjectile, makeStairs, makeTorch, makeTree, makeWaypoint, MODELS, sharedResource, topCentroid,
 } from './props';
 import { Rig, type AnimInput, type RigLook } from './rig';
 import { monsterSpec, npcSpec, playerSpec, vendorSpec } from './specs';
-import { aimLineTexture, glowTexture, ringTexture, runeCircleTexture, shadowTexture, tileTexture } from './textures';
+import { admitTile, aimLineTexture, glowTexture, ringTexture, runeCircleTexture, shadowTexture, tileTexture, tilesLoaded, tilesPending } from './textures';
 
 const CAM_YAW = Math.PI / 4;
 const CAM_PITCH = 0.68; // ~39°
@@ -87,6 +89,18 @@ const MAX_LAG = 5;
 const LIGHT_REACH = 22;
 /** a campfire throws sparks while this near the middle of the view */
 const CAMPFIRE_SEEN = 30;
+/**
+ * A level whose essentials (the models of the area the hero arrives in) still aren't in this long
+ * after it's built is veiled, the world held, until they are: Diablo II veils its loading between areas
+ */
+const VEIL_MS = 1500;
+/**
+ * A frame's time for swapping in models that came for what stood in for them, past its first swap:
+ * the rest wait for the next frame, so a phone's frame stays well under ~50 ms. A character's rig
+ * (models.ts) costs more than its making: three works out its skinned body's bounds, bone by bone, as
+ * it's first drawn; so one a frame
+ */
+const SWAP_MS = 4;
 
 interface OccUniforms {
   uPlayer: { value: THREE.Vector3 };
@@ -205,19 +219,26 @@ function castShadows(root: THREE.Object3D, cast = true) {
   });
 }
 
-/** CC0 model when the packs loaded, procedural rig otherwise */
-function makeCharRig(spec: () => ModelSpec, look: () => RigLook): CharRig {
-  if (assets.ready && !assets.failed) {
+/**
+ * The CC0 model's rig once its models are in (the body and what it carries), else the procedural rig
+ * standing in for it; `waits` are the models it missed (assets.watch), null when it's the model's own
+ */
+function makeCharRig(spec: () => ModelSpec, look: () => RigLook): { rig: CharRig; waits: Set<string> | null } {
+  const [rig, waits] = assets.watch((): CharRig => {
     const s = spec();
-    if (assets.get(s.model)) return new ModelRig(s);
-  }
-  return new Rig(look());
+    return assets.all(specNeeds(s)) ? new ModelRig(s) : new Rig(look());
+  });
+  return { rig, waits };
 }
 
 interface ActorView {
   rig: CharRig;
   shadow: THREE.Mesh;
   key?: string;
+  /** the models its rig stands in for until they're in */
+  waits?: Set<string> | null;
+  /** a townsperson's place */
+  npc?: Npc;
 }
 
 /** a monster's body: its rig, and what it is culled by (its round shadow is one of Blobs') */
@@ -227,6 +248,31 @@ interface MonsterBody {
   pool: string | null;
   /** whether the camera sees it and whether its shadow can fall in view, this frame */
   cull: { main: boolean; shadow: boolean };
+  /** the models it stands in for until they're in */
+  waits: Set<string> | null;
+}
+
+/** something on the level made without models that weren't in (assets.watch), made again once they are */
+interface StandIn {
+  waits: Set<string>;
+  /** whether a view reaches it now: only then are its models' pictures put on the GPU before the swap (out of view they go up as it's first drawn, as everything's always have) */
+  seen(): boolean;
+  /** made again with them, in its place; what that missed in turn (it waits again), if anything */
+  swap(): Set<string> | null;
+}
+
+/** a level's essentials coming: since when, whether in, whether its veil is up, the frames rushed behind the veil since they came */
+interface Essentials {
+  since: number;
+  done: boolean;
+  shown: boolean;
+  flushed: number;
+}
+
+/** a prop, wall hanging or house placed on a level before its model was in: placed once it comes, the house drawn in code meanwhile let go */
+interface LatePlace {
+  place(t: Template): void;
+  standIn?: { chunk: Chunk; obj: THREE.Object3D };
 }
 
 /** a monster near the hero: its body made, or taken from the pool, once first drawn */
@@ -243,6 +289,8 @@ interface ObjView {
   lightIntensity?: number;
   /** what else to let go with it (the merchant's rig) */
   free?: () => void;
+  /** the models it stands in for until they're in */
+  waits?: Set<string> | null;
 }
 
 /**
@@ -388,15 +436,29 @@ export class Renderer implements Picker {
       disposeView(v, sharedResource);
     },
   );
+  /** the item views that stand in for models not in yet, and those models */
+  private groundWaits = new WeakMap<THREE.Group, Set<string>>();
+  /** the level's scenery made without models not in yet (torches, decor, pillars), each swapped once they come */
+  private standIns: StandIn[] = [];
+  /** the props, wall hangings and houses waiting for their model, by its key */
+  private lateProps = new Map<string, LatePlace[]>();
+  /** what the level built last waits on before it is shown whole (its essentials) */
+  private essentials: Essentials | null = null;
+  /** models' pictures to put on the GPU before what waits for them is swapped in (warmed), a frame at a time */
+  private warming: THREE.Texture[] = [];
+  private onGpu = new WeakSet<THREE.Texture>();
+  /** models with their pictures on the GPU, and those whose pictures are going there */
+  private warm = new Set<string>();
+  private cold = new Map<string, THREE.Texture[]>();
+  /** when this frame's first swap was made (0: none yet), and whether a rig was swapped in; behind the veil everything ready swaps at once */
+  private swapStart = 0;
+  private rigSwapped = false;
+  private rush = false;
   private projViews = new Map<Projectile, { group: THREE.Group; light: string | null }>();
   private hammerViews = new Map<Hammer, THREE.Group>();
   private objViews = new NearViews<WorldObject, ObjView>(
     (o) => this.makeObjView(o),
-    (_o, v) => {
-      v.group.removeFromParent();
-      v.free?.();
-      disposeView(v.group, sharedResource);
-    },
+    (_o, v) => this.freeObjView(v),
   );
   /** the objects that had a view before: one made again shows them as they were left (views.ts) */
   private viewed = new WeakSet<WorldObject>();
@@ -426,12 +488,6 @@ export class Renderer implements Picker {
   readonly atmos = newAtmos();
   /** the sky's grade, shifted by the air's */
   private grade: Grade = { ...GRADES.town };
-  /**
-   * textures of the level's scenery that may first show far from where the hero comes in (the
-   * wilderness's ruins), put on the GPU as soon as they've loaded rather than on the frame they
-   * first come into view: a hitch out on the moor
-   */
-  private uploads: THREE.Texture[] = [];
   /** where the shadow-casting light stands from the view's centre: the sun or the moon outdoors */
   private sunOffset = new THREE.Vector3(-8, 20, 4);
   /** how much lanterns, fires and the hero's light count: all of it below ground and by night */
@@ -604,17 +660,22 @@ export class Renderer implements Picker {
 
   buildLevel(level: Level) {
     this.level = level;
+    // no model download but those the arrival waits on starts until the tile textures the level asks
+    // for as it's built have come: its ground shows as soon as it did before models streamed
+    let built = () => {};
+    assets.hold(new Promise<void>((r) => (built = r)).then(() => tilesLoaded()));
+    this.request(level);
     // clear
+    this.standIns = [];
+    this.lateProps.clear();
     this.monsterViews.clear();
     this.monsterList = null;
     this.blobs.begin();
     this.blobs.end();
     this.blobs.prime();
     // the rigs put by of monsters the new level hasn't go: they would only keep room and memory
-    if (assets.ready && !assets.failed) {
-      const looks = new Set(level.monsters.map((m) => rigKey(monsterSpec(m))));
-      this.rigPool.retain((k) => looks.has(k));
-    }
+    const looks = new Set(level.monsters.map((m) => rigKey(monsterSpec(m))));
+    this.rigPool.retain((k) => looks.has(k));
     this.groundViews.clear();
     for (const p of this.projViews.values()) p.group.removeFromParent();
     this.projViews.clear();
@@ -720,6 +781,11 @@ export class Renderer implements Picker {
     const one = new THREE.Vector3(1, 1, 1);
     const col = new THREE.Color();
     const floors: THREE.InstancedMesh[] = [];
+    // the tile textures it asks for (the ground's and the floor's by now, the walls' below) have the
+    // network to themselves: the downloads under way that nothing waits on make way (assets.makeWay)
+    const makeWay = () => {
+      if (tilesPending()) assets.makeWay();
+    };
     if (!this.ground) {
       const floorMat = new THREE.MeshStandardMaterial({ map: tileTexture(`${theme.key}_floor`), roughness: 0.95, metalness: 0 });
       applyWorldUv(floorMat, 'floor', 4);
@@ -745,6 +811,8 @@ export class Renderer implements Picker {
       }
     }
 
+    makeWay();
+
     // walls, as the area each stands in builds them: the camp's palisade is uneven, the wilderness's
     // ruins are broken off low (so their tops show stone), other walls are capped in shadow
     const wallMats = new Map<WallKind, THREE.Material[]>();
@@ -758,7 +826,6 @@ export class Renderer implements Picker {
           ? new THREE.MeshStandardMaterial({ map: tileTexture('crypt_wall'), roughness: 0.95 })
           : new THREE.MeshStandardMaterial({ color: new THREE.Color(t.wall).lerp(new THREE.Color(t.wallDark), 0.35), roughness: 1 });
       if (kind === 'ruins') applyWorldUv(top, 'floor', 2);
-      for (const m of [side.map, top.map]) if (m && !this.uploads.includes(m)) this.uploads.push(m);
       applyOcclusionFade(side, this.occ);
       applyWorldUv(side, 'wall', 2);
       applyOcclusionFade(top, this.occ);
@@ -792,65 +859,96 @@ export class Renderer implements Picker {
     }
 
     if (pillarTiles.length) {
-      let pGeo: THREE.BufferGeometry;
-      let pMat: THREE.Material = wallMat(wallKind(pillarTiles[0][0], pillarTiles[0][1]))[0];
-      const tpl = assets.ready ? assets.get('d_pillar_decorated') : undefined;
-      const pMesh = tpl ? (tpl.gltf.scene.getObjectByProperty('isMesh', true) as THREE.Mesh | undefined) : undefined;
-      if (tpl && pMesh) {
-        // bake the node transform + fit to one tile, ~WALL_H+0.3 tall
-        pMesh.updateWorldMatrix(true, false);
-        pGeo = pMesh.geometry.clone().applyMatrix4(pMesh.matrixWorld);
-        pGeo.translate(-tpl.center.x, -tpl.min.y, -tpl.center.z);
-        pGeo.scale(0.95 / tpl.size.x, (WALL_H + 0.3) / tpl.size.y, 0.95 / tpl.size.x);
-        pMat = (pMesh.material as THREE.Material).clone();
-        applyOcclusionFade(pMat, this.occ);
-      } else {
-        pGeo = new THREE.CylinderGeometry(0.36, 0.42, WALL_H + 0.3, 8);
-        pGeo.translate(0, (WALL_H + 0.3) / 2, 0);
-      }
+      const column = wallMat(wallKind(pillarTiles[0][0], pillarTiles[0][1]))[0];
+      const shape = this.pillarShape(column);
+      const meshes: THREE.InstancedMesh[] = [];
+      const chunks: Chunk[] = [];
       for (const [c, tiles] of byChunk(pillarTiles)) {
-        const pillars = new THREE.InstancedMesh(pGeo, pMat, tiles.length);
+        chunks.push(c);
+        const pillars = new THREE.InstancedMesh(shape.geo, shape.mat, tiles.length);
         tiles.forEach(([x, y], i) => {
           m4.compose(new THREE.Vector3(x + 0.5, 0, y + 0.5), new THREE.Quaternion(), one);
           pillars.setMatrixAt(i, m4);
         });
         c.group.add(pillars);
+        meshes.push(pillars);
+      }
+      // the columns drawn in code stand in for the model until it's in
+      if (!shape.model) {
+        this.standIns.push({
+          waits: new Set([MODELS.pillar]),
+          seen: () => chunks.some((c) => c.attached),
+          swap: () => {
+            const s = this.pillarShape(column);
+            if (!s.model) return new Set([MODELS.pillar]);
+            for (const m of meshes) {
+              m.geometry = s.geo;
+              m.material = s.mat;
+              m.boundingSphere = m.boundingBox = null;
+              castShadows(m);
+            }
+            shape.geo.dispose();
+            return null;
+          },
+        });
       }
     }
+    // every tile texture it wears asked for: the hold lasts until they've come
+    makeWay();
+    built();
 
     // furniture, wall hangings and town buildings (instanced CC0 models)
     this.buildProps(L, scenery);
     // townsfolk
     for (const n of L.npcs ?? []) {
-      const rig = makeCharRig(() => npcSpec(n.model), vendorLook);
-      rig.root.position.set(n.x, 0, n.z);
-      rig.root.rotation.y = n.rot;
-      this.scene.add(rig.root);
-      castShadows(rig.root);
+      const made = this.npcRig(n);
       const shadow = this.makeShadow(0.4);
       shadow.position.set(n.x, 0.02, n.z);
       this.scene.add(shadow);
-      this.npcViews.push({ rig, shadow });
+      this.npcViews.push({ ...made, shadow, npc: n });
     }
 
-    // torches
+    // torches; one drawn in code stands in until its model is in
     for (const t of L.torches) {
-      const { group, flame } = makeTorch(theme.torch);
-      group.position.set(t.x, 0, t.z);
-      group.rotation.y = Math.atan2(t.nx, t.nz);
-      const c = scenery.add(group, t.x, t.z);
-      c.flames.push(flame);
-      group.updateMatrixWorld(true);
-      c.spots.push(flame.getWorldPosition(new THREE.Vector3()));
+      const made = this.torch(t, theme.torch);
+      const c = scenery.add(made.group, t.x, t.z);
+      c.flames.push(made.flame);
+      made.group.updateMatrixWorld(true);
+      const spot = made.flame.getWorldPosition(new THREE.Vector3());
+      c.spots.push(spot);
       c.lights.push({ pos: new THREE.Vector3(t.x + t.nx * 0.5, 1.9, t.z + t.nz * 0.5), color: new THREE.Color(theme.torch), intensity: 16, flicker: 1, distance: 8 });
+      if (!made.waits) continue;
+      let cur = made;
+      let at = spot;
+      this.standIns.push({
+        waits: made.waits,
+        seen: () => c.attached,
+        swap: () => {
+          const now = this.torch(t, theme.torch);
+          scenery.swap(c, cur.group, now.group, [now.flame]);
+          disposeView(cur.group, sharedResource);
+          castShadows(now.group);
+          c.flames[c.flames.indexOf(cur.flame)] = now.flame;
+          const next = now.flame.getWorldPosition(new THREE.Vector3());
+          c.spots[c.spots.indexOf(at)] = next;
+          cur = now;
+          at = next;
+          return now.waits;
+        },
+      });
     }
-    // decor
+    // decor; what's drawn in code stands in until its models are in
     const treeMats: THREE.Material[] = [];
     for (const d of L.decor) {
-      const g = d.kind === 'tree' ? makeTree(d.scale, Math.random() < 0.3) : makeDecor(d.kind, theme.key);
-      g.position.set(d.x, 0, d.z);
-      g.rotation.y = d.rot;
-      if (d.kind !== 'tree') g.scale.multiplyScalar(d.scale);
+      const dead = d.kind === 'tree' && Math.random() < 0.3;
+      const make = () => {
+        const g = d.kind === 'tree' ? makeTree(d.scale, dead) : makeDecor(d.kind, theme.key);
+        g.position.set(d.x, 0, d.z);
+        g.rotation.y = d.rot;
+        if (d.kind !== 'tree') g.scale.multiplyScalar(d.scale);
+        return g;
+      };
+      const [g, waits] = assets.watch(make);
       if (d.kind === 'tree') {
         g.traverse((o) => {
           const mm = (o as THREE.Mesh).material as THREE.Material | undefined;
@@ -862,6 +960,21 @@ export class Renderer implements Picker {
         c.lights.push({ pos: new THREE.Vector3(d.x, 0.8, d.z), color: new THREE.Color('#ff8030'), intensity: 45, flicker: 1.5, distance: 14 });
       }
       if (d.kind === 'crystal') c.lights.push({ pos: new THREE.Vector3(d.x, 0.6, d.z), color: new THREE.Color('#4a90d0'), intensity: 6, flicker: 0, distance: 5 });
+      if (!waits) continue;
+      let cur = g;
+      this.standIns.push({
+        waits,
+        seen: () => c.attached,
+        swap: () => {
+          const [now, again] = assets.watch(make);
+          if (d.kind === 'tree') this.fadeTree(now);
+          scenery.swap(c, cur, now);
+          disposeView(cur, sharedResource);
+          castShadows(now);
+          cur = now;
+          return again;
+        },
+      });
     }
     for (const mm of treeMats) {
       const cloned = mm;
@@ -903,12 +1016,85 @@ export class Renderer implements Picker {
     this.camTarget.set(p.pos.x, 0, p.pos.z);
   }
 
+  /**
+   * What `level` is made of asked for: the area the hero arrives in first, its veil coming up if that
+   * isn't in by VEIL_MS; then the rest of it; then the areas its ways off lead to (so going there is
+   * usually instant). Everything else streams in behind (main.ts)
+   */
+  private request(level: Level) {
+    const p = this.game.player.pos;
+    const first = [...levelNeeds(level, level.areaAt(p.x, p.z).id)].filter((k) => !assets.settled(k));
+    if (first.length) {
+      const e: Essentials = { since: performance.now(), done: false, shown: false, flushed: 0 };
+      this.essentials = e;
+      void assets.ensure(first, NOW).then(() => (e.done = true));
+      // the downloads nothing waits on make way for them
+      assets.makeWay();
+    } else this.essentials = null;
+    void assets.ensure(levelNeeds(level), HERE);
+    const ways = new Set<number>();
+    for (const o of level.objects) if ((o.kind === 'stairs' || o.kind === 'exit') && !o.closed && o.dest !== undefined) ways.add(o.dest);
+    for (const id of ways) void assets.ensure(areaNeeds(id, level.difficulty), NEXT);
+  }
+
+  /** whether the level is veiled, the world held, while its essentials come (VEIL_MS) */
+  get veiled(): boolean {
+    return !!this.essentials?.shown;
+  }
+
+  /** a townsperson's rig where they stand, in the scene; the procedural one stands in while their models aren't in */
+  private npcRig(n: Npc): { rig: CharRig; waits: Set<string> | null } {
+    const made = makeCharRig(() => npcSpec(n.model), vendorLook);
+    made.rig.root.position.set(n.x, 0, n.z);
+    made.rig.root.rotation.y = n.rot;
+    this.scene.add(made.rig.root);
+    castShadows(made.rig.root);
+    return made;
+  }
+
+  /** a torch on its wall, and the models it missed (drawn in code while they aren't in) */
+  private torch(t: Torch, color: string): { group: THREE.Group; flame: THREE.Sprite; waits: Set<string> | null } {
+    const [{ group, flame }, waits] = assets.watch(() => makeTorch(color));
+    group.position.set(t.x, 0, t.z);
+    group.rotation.y = Math.atan2(t.nx, t.nz);
+    return { group, flame, waits };
+  }
+
+  /** a tree swapped in: its materials fade where it hides the hero, as the level's first trees' do */
+  private fadeTree(g: THREE.Object3D) {
+    g.traverse((o) => {
+      const mm = (o as THREE.Mesh).material as THREE.Material | undefined;
+      if (!mm || Array.isArray(mm)) return;
+      applyOcclusionFade(mm, this.occ);
+      mm.needsUpdate = true;
+    });
+  }
+
+  /** the dungeon's pillar: the model fitted to a tile, about WALL_H + 0.3 tall, else a column drawn in code (`column` its material) */
+  private pillarShape(column: THREE.Material): { geo: THREE.BufferGeometry; mat: THREE.Material; model: boolean } {
+    const tpl = assets.get(MODELS.pillar);
+    const pMesh = tpl ? (tpl.gltf.scene.getObjectByProperty('isMesh', true) as THREE.Mesh | undefined) : undefined;
+    if (tpl && pMesh) {
+      // bake the node transform + fit to one tile, ~WALL_H+0.3 tall
+      pMesh.updateWorldMatrix(true, false);
+      const geo = pMesh.geometry.clone().applyMatrix4(pMesh.matrixWorld);
+      geo.translate(-tpl.center.x, -tpl.min.y, -tpl.center.z);
+      geo.scale(0.95 / tpl.size.x, (WALL_H + 0.3) / tpl.size.y, 0.95 / tpl.size.x);
+      const mat = (pMesh.material as THREE.Material).clone();
+      applyOcclusionFade(mat, this.occ);
+      return { geo, mat, model: true };
+    }
+    const geo = new THREE.CylinderGeometry(0.36, 0.42, WALL_H + 0.3, 8);
+    geo.translate(0, (WALL_H + 0.3) / 2, 0);
+    return { geo, mat: column, model: false };
+  }
+
   private makeObjectView(o: WorldObject): ObjView {
     const g = new THREE.Group();
     g.position.set(o.pos.x, 0, o.pos.z);
     switch (o.kind) {
       case 'chest': {
-        const { group, lid } = makeChest(false);
+        const { group, lid } = makeChest();
         group.rotation.y = Math.PI / 4 + Math.PI;
         g.add(group);
         const looted = () => {
@@ -933,7 +1119,7 @@ export class Renderer implements Picker {
       case 'stash': {
         // the one chest in the camp, the gold-bound kind that opens in the dungeon too, made big and
         // set on a pool of warm light so it is easy to find
-        const { group } = makeChest(false);
+        const { group } = makeChest();
         group.rotation.y = Math.PI / 4 + Math.PI;
         group.scale.multiplyScalar(1.8);
         // lit from within, not by the camp's pooled lights, which go to whatever is nearest
@@ -1051,7 +1237,7 @@ export class Renderer implements Picker {
       case 'shrine': {
         // the shrine stone, lit by its own colour until it has been touched
         const color = SHRINE_BY_ID[o.shrine ?? '']?.color ?? '#ffffff';
-        const model = assetProp('h_shrine', 0.6);
+        const model = assetProp(MODELS.shrine, 0.6);
         if (model) {
           model.rotation.y = CAM_YAW;
           g.add(model);
@@ -1080,7 +1266,8 @@ export class Renderer implements Picker {
         return view;
       }
       case 'vendor': {
-        const rig = makeCharRig(vendorSpec, vendorLook);
+        // what its rig misses is noted for the view (makeObjView): it's made again once that's in
+        const { rig } = makeCharRig(vendorSpec, vendorLook);
         g.add(rig.root);
         const shadow = this.makeShadow(0.5);
         this.dynGroup.add(shadow);
@@ -1104,7 +1291,7 @@ export class Renderer implements Picker {
         const c = o.corpse;
         if (!c) break;
         const body = { cls: c.cls, equipment: c.equipment } as Player;
-        const rig = makeCharRig(() => playerSpec(body), () => playerLook(body));
+        const { rig } = makeCharRig(() => playerSpec(body), () => playerLook(body));
         rig.root.rotation.y = (o.id * 2.39996) % (Math.PI * 2);
         g.add(rig.root);
         const lying: AnimInput = { state: 'dead', stateTime: 0, stateDur: 0, speed: 0, dead: true, deathTime: 2, hitFlash: 0, chilled: false, poisoned: false, blood: 'red', killedBy: 'phys' };
@@ -1156,6 +1343,10 @@ export class Renderer implements Picker {
     return spot;
   }
 
+  /**
+   * The level's props, wall hangings and houses, a batch a model (PropBatches). One whose model isn't
+   * in yet is placed when it comes (lateProps, placeLate), a house drawn in code standing in meanwhile
+   */
   private buildProps(L: Layout, scenery: Scenery) {
     const theme = L.theme.key;
     const props = (this.props = new PropBatches([this.dir.shadow.getFrustum(), this.heroLight.shadow.getFrustum()]));
@@ -1167,21 +1358,17 @@ export class Renderer implements Picker {
       const glow = glowSprite(color, 0.5 * Math.min(1.4, s / 0.5), 0.85);
       glow.position.copy(pos);
       glow.userData.base = glow.scale.x;
-      const c = scenery.add(glow, pos.x, pos.z);
-      c.lights.push({ pos: pos.clone().setY(pos.y + 0.1), color: new THREE.Color(color), intensity: 7, flicker: 0.6, distance: 4.5 });
+      const c = scenery.add(glow, pos.x, pos.z, [glow]);
+      scenery.addLight(c, { pos: pos.clone().setY(pos.y + 0.1), color: new THREE.Color(color), intensity: 7, flicker: 0.6, distance: 4.5 });
       c.flames.push(glow);
     };
-    for (const p of L.props) {
-      const t = assets.get(p.model);
-      if (!t) continue;
+    const prop = (p: Prop) => (t: Template) => {
       const m = new THREE.Matrix4().compose(new THREE.Vector3(p.x, 0, p.z), new THREE.Quaternion().setFromAxisAngle(yAxis, p.rot), new THREE.Vector3(p.scale, p.scale, p.scale));
       m.multiply(new THREE.Matrix4().makeTranslation(-t.center.x, -t.min.y, -t.center.z));
       props.add(p.model, m);
       if (p.light) light(p.model, m, p.light, p.scale);
-    }
-    for (const w of L.wallDecor) {
-      const t = assets.get(w.model);
-      if (!t) continue;
+    };
+    const wall = (w: WallDecor) => (t: Template) => {
       // back of the piece against the wall face, centred on the spot
       const off = -t.min.z * w.scale + 0.02;
       const m = new THREE.Matrix4().compose(
@@ -1192,37 +1379,75 @@ export class Renderer implements Picker {
       m.multiply(new THREE.Matrix4().makeTranslation(-t.center.x, 0, 0));
       props.add(w.model, m);
       if (w.light) light(w.model, m, w.light, w.scale);
-    }
-    for (const hs of L.houses ?? []) {
-      const t = hs.model ? assets.get(hs.model) : undefined;
-      if (!t || !hs.model) {
-        scenery.add(makeHouse(hs.w, hs.h, hs.x, hs.y), hs.x + hs.w / 2, hs.y + hs.h / 2);
-        continue;
-      }
+    };
+    const house = (hs: House & { model: string }) => (t: Template) => {
       const rot = hs.rot ?? 0;
       const turned = Math.abs(Math.sin(rot)) > 0.5;
       const s = Math.min(hs.w / (turned ? t.size.z : t.size.x), hs.h / (turned ? t.size.x : t.size.z)) * 1.08;
       const m = new THREE.Matrix4().compose(new THREE.Vector3(hs.x + hs.w / 2, 0, hs.y + hs.h / 2), new THREE.Quaternion().setFromAxisAngle(yAxis, rot), new THREE.Vector3(s, s, s));
       m.multiply(new THREE.Matrix4().makeTranslation(-t.center.x, -t.min.y, -t.center.z));
       props.add(hs.model, m);
+    };
+    const place = (key: string, at: LatePlace['place'], standIn?: () => LatePlace['standIn']) => {
+      const t = assets.get(key);
+      if (t) return at(t);
+      // a model no file of this build carries never comes: left out, a house drawn in code, as always
+      if (!assets.serves(key)) return void standIn?.();
+      let list = this.lateProps.get(key);
+      if (!list) this.lateProps.set(key, (list = []));
+      list.push({ place: at, standIn: standIn?.() });
+    };
+    for (const p of L.props) place(p.model, prop(p));
+    for (const w of L.wallDecor) place(w.model, wall(w));
+    for (const hs of L.houses ?? []) {
+      const standIn = () => {
+        const obj = makeHouse(hs.w, hs.h, hs.x, hs.y);
+        return { chunk: scenery.add(obj, hs.x + hs.w / 2, hs.y + hs.h / 2), obj };
+      };
+      if (!hs.model) standIn();
+      else place(hs.model, house({ ...hs, model: hs.model }), standIn);
     }
-    // each model's meshes in the theme's tint; opaque lit ones cast and take shadows (castShadows)
-    props.build((key) => {
-      const t = assets.get(key as Parameters<typeof assets.get>[0]);
-      if (!t) return null;
-      const parts: PropPart[] = [];
-      t.gltf.scene.updateMatrixWorld(true);
-      t.gltf.scene.traverse((o) => {
-        const mesh = o as THREE.Mesh;
-        if (!mesh.isMesh) return;
-        const material = Array.isArray(mesh.material) ? mesh.material.map((x) => this.propMat(x, theme)) : this.propMat(mesh.material, theme);
-        const mats = Array.isArray(material) ? material : [material];
-        const lit = mats.every((x) => !(x as THREE.MeshBasicMaterial).isMeshBasicMaterial && !x.transparent);
-        parts.push({ geometry: mesh.geometry, material, matrix: mesh.matrixWorld.clone(), lit });
-      });
-      return parts;
-    });
+    props.build((key) => this.propParts(key, theme));
     this.levelGroup.add(props.group);
+  }
+
+  /** a prop model's meshes in the theme's tint; opaque lit ones cast and take shadows (castShadows) */
+  private propParts(key: string, theme: string): PropPart[] | null {
+    const t = assets.get(key);
+    if (!t) return null;
+    const parts: PropPart[] = [];
+    t.gltf.scene.updateMatrixWorld(true);
+    t.gltf.scene.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const material = Array.isArray(mesh.material) ? mesh.material.map((x) => this.propMat(x, theme)) : this.propMat(mesh.material, theme);
+      const mats = Array.isArray(material) ? material : [material];
+      const lit = mats.every((x) => !(x as THREE.MeshBasicMaterial).isMeshBasicMaterial && !x.transparent);
+      parts.push({ geometry: mesh.geometry, material, matrix: mesh.matrixWorld.clone(), lit });
+    });
+    return parts;
+  }
+
+  /** the props of the models that came placed, their houses drawn in code let go (as many as the frame's time allows) */
+  private placeLate() {
+    const L = this.level?.layout;
+    if (!L || !this.props) return;
+    let placed = false;
+    for (const [key, list] of this.lateProps) {
+      // placed once in: their pictures go up as each is first drawn, as every prop's always have
+      if (!this.swappable([key], false)) continue;
+      this.lateProps.delete(key);
+      const t = assets.get(key)!;
+      for (const l of list) {
+        if (l.standIn) {
+          l.standIn.obj.removeFromParent();
+          disposeView(l.standIn.obj, sharedResource);
+        }
+        l.place(t);
+      }
+      placed = true;
+    }
+    if (placed) this.props.build((k) => this.propParts(k, L.theme.key));
   }
 
   private makeShadow(r: number): THREE.Mesh {
@@ -1233,13 +1458,20 @@ export class Renderer implements Picker {
     return s;
   }
 
-  /** an object's view, in the scene */
+  /** an object's view, in the scene; one made without models that weren't in stands in until they are (waits) */
   private makeObjView(o: WorldObject): ObjView {
-    const v = this.makeObjectView(o);
+    const [v, waits] = assets.watch(() => this.makeObjectView(o));
+    v.waits = waits;
     this.viewed.add(o);
     castShadows(v.group);
     this.dynGroup.add(v.group);
     return v;
+  }
+
+  private freeObjView(v: ObjView) {
+    v.group.removeFromParent();
+    v.free?.();
+    disposeView(v.group, sharedResource);
   }
 
   /** the views of the objects near the hero (views.ts), animated */
@@ -1255,7 +1487,16 @@ export class Renderer implements Picker {
       if ((o.pos.x - p.x) ** 2 + (o.pos.z - p.z) ** 2 <= nearR * nearR) near.push(o);
     }
     this.objViews.sync(p, near as WorldObject[], (o) => !seen.has(o), farR);
-    for (const [o, v] of this.objViews.views) v.update?.(dt, o);
+    for (const [o, had] of this.objViews.views) {
+      let v = had;
+      // made again once what it stood in for is in (the merchant and a corpse are rigs)
+      if (v.waits && this.swappable(v.waits, true, o.kind === 'vendor' || o.kind === 'corpse')) {
+        this.freeObjView(v);
+        v = this.makeObjView(o);
+        this.objViews.views.set(o, v);
+      }
+      v.update?.(dt, o);
+    }
   }
 
   /**
@@ -1267,15 +1508,16 @@ export class Renderer implements Picker {
     return [near, near + VIEW_FAR - VIEW_NEAR];
   }
 
-  /** a monster's body, its rig one put by for a monster that looked the same when there is one */
+  /**
+   * a monster's body, its rig one put by for a monster that looked the same when there is one; the
+   * procedural rig stands in while its models aren't in (waits)
+   */
   private makeMonsterBody(m: Monster): MonsterBody {
-    const made = assets.ready && !assets.failed ? monsterSpec(m) : null;
-    const spec = made && assets.get(made.model) ? made : null;
-    const pool = spec ? rigKey(spec) : null;
-    let v = pool ? this.rigPool.take(pool) : undefined;
+    const spec = monsterSpec(m);
+    let v = specNeeds(spec).every((k) => assets.has(k)) ? this.rigPool.take(rigKey(spec) ?? '') : undefined;
     if (v) (v.rig as ModelRig).reset();
     else {
-      const rig = makeCharRig(() => spec ?? monsterSpec(m), () => monsterLook(m));
+      const { rig, waits } = makeCharRig(() => spec, () => monsterLook(m));
       castShadows(rig.root);
       // drawn where the camera sees it and into the shadow maps only where its shadow can fall in
       // view (the frame's `cull`): a skinned body's own bounds don't follow its clips
@@ -1287,7 +1529,8 @@ export class Renderer implements Picker {
         mesh.frustumCulled = true;
         mesh.intersectsFrustum = (f: THREE.Frustum) => (shadows.includes(f) ? cull.shadow : cull.main);
       });
-      v = { rig, pool, cull };
+      // a stand-in isn't put by for others: it goes once its own models are in
+      v = { rig, pool: waits ? null : rigKey(spec), cull, waits };
     }
     this.dynGroup.add(v.rig.root);
     v.rig.root.rotation.y = m.facing;
@@ -1303,9 +1546,10 @@ export class Renderer implements Picker {
     else b.rig.dispose();
   }
 
-  /** an item on the ground's view, a beam over the best */
+  /** an item on the ground's view, a beam over the best; one drawn in code stands in while its model isn't in (groundWaits) */
   private makeGroundView(gi: GroundItem): THREE.Group {
-    const v = makeGroundItem(gi.item, gi.item ? itemColor(gi.item) : '#e8c040');
+    const [v, waits] = assets.watch(() => makeGroundItem(gi.item, gi.item ? itemColor(gi.item) : '#e8c040'));
+    if (waits) this.groundWaits.set(v, waits);
     // turned by its id, not at random: the same way each time its view is made again
     v.rotation.y = ((gi.id * 0.618034) % 1) * Math.PI * 2;
     this.dynGroup.add(v);
@@ -1330,7 +1574,22 @@ export class Renderer implements Picker {
       'chunks in all': this.scenery?.all.length ?? 0,
       'props in view': this.props?.drawn.view ?? 0,
       'props in shadow': this.props?.drawn.shadow ?? 0,
+      'stand-ins': this.standInCount(),
     };
+  }
+
+  /**
+   * What on the level still stands in for models not in (scenery, props, people, objects, items, and
+   * the monsters drawn so far), for the tools: none once everything has come and been swapped in
+   */
+  standInCount(): number {
+    let n = this.standIns.length + this.lateProps.size;
+    for (const v of this.monsterViews.views.values()) if (v.body?.waits) n++;
+    for (const v of this.npcViews) if (v.waits) n++;
+    if (this.playerView?.waits) n++;
+    for (const v of this.objViews.views.values()) if (v.waits) n++;
+    for (const v of this.groundViews.views.values()) if (this.groundWaits.has(v)) n++;
+    return n;
   }
 
   // ─────────────────────────── per-frame ───────────────────────────
@@ -1387,12 +1646,80 @@ export class Renderer implements Picker {
     }
   }
 
-  /** the first of `uploads` that has loaded, onto the GPU (one a frame: each is a few ms) */
+  /**
+   * A tile texture that has loaded onto the GPU (admitTile: one a frame, the moment it's let on,
+   * wherever it first shows), or else one of the pictures of models that came for what waits on them
+   * (warmed); behind the veil, all of those
+   */
   private uploadLoaded() {
-    const i = this.uploads.findIndex((t) => t.version > 0);
-    if (i < 0) return;
-    this.webgl.initTexture(this.uploads[i]);
-    this.uploads.splice(i, 1);
+    if (admitTile(this.webgl) && !this.rush) return;
+    while (this.warming.length) {
+      const t = this.warming.shift()!;
+      if (this.onGpu.has(t)) continue;
+      this.webgl.initTexture(t);
+      this.onGpu.add(t);
+      if (!this.rush) break;
+    }
+  }
+
+  /** whether model `key` is in with its pictures on the GPU; those not there yet are queued for uploadLoaded */
+  private warmed(key: string): boolean {
+    if (this.warm.has(key)) return true;
+    let pics = this.cold.get(key);
+    if (!pics) {
+      const t = assets.get(key);
+      if (!t) return false;
+      const list: THREE.Texture[] = [];
+      t.gltf.scene.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (!m.isMesh) return;
+        for (const mat of Array.isArray(m.material) ? m.material : [m.material]) {
+          for (const slot of TEXTURE_SLOTS) {
+            const tex = (mat as THREE.MeshStandardMaterial)[slot];
+            if (tex && !this.onGpu.has(tex) && !list.includes(tex)) list.push(tex);
+          }
+        }
+      });
+      for (const tex of list) if (!this.warming.includes(tex)) this.warming.push(tex);
+      this.cold.set(key, (pics = list));
+    }
+    if (pics.some((tex) => !this.onGpu.has(tex))) return false;
+    this.cold.delete(key);
+    this.warm.add(key);
+    return true;
+  }
+
+  /**
+   * Whether what stands in for `keys` may be swapped now: every one in, with its pictures on the GPU
+   * when `warm` (what's in view: several going up in one frame would show), and the frame's time for
+   * swaps not spent (SWAP_MS past its first; a character's `rig` one a frame; behind the veil, no limit)
+   */
+  private swappable(keys: Iterable<string>, warm = true, rig = false): boolean {
+    let ready = true;
+    for (const k of keys) if (warm ? !this.warmed(k) : !assets.has(k)) ready = false;
+    if (!ready) return false;
+    if (this.rush) return true;
+    if (rig && this.rigSwapped) return false;
+    const now = performance.now();
+    if (!this.swapStart) this.swapStart = now;
+    else if (now - this.swapStart > SWAP_MS) return false;
+    if (rig) this.rigSwapped = true;
+    return true;
+  }
+
+  /** the scenery standing in for models that came, swapped for them (as many as the frame's time allows) */
+  private swapScenery() {
+    if (!this.standIns.length) return;
+    const left: StandIn[] = [];
+    for (const s of this.standIns) {
+      if (!this.swappable(s.waits, s.seen())) {
+        left.push(s);
+        continue;
+      }
+      const again = s.swap();
+      if (again) left.push({ ...s, waits: again });
+    }
+    this.standIns = left;
   }
 
   /** the level's one look, as a share of the air (airShares) */
@@ -1438,6 +1765,16 @@ export class Renderer implements Picker {
     if (!level) return;
     this.time += dt;
     this.alpha = alpha;
+    // the veil comes up if the essentials aren't in by VEIL_MS; behind it, everything ready swaps at once
+    const e = this.essentials;
+    if (e && !e.shown) {
+      if (e.done) this.essentials = null;
+      else if (performance.now() - e.since > VEIL_MS) e.shown = true;
+    }
+    this.rush = this.veiled;
+    this.swapStart = 0;
+    this.rigSwapped = false;
+    assets.drew(this.rush);
     this.adaptResolution(dt);
     const p = g.player;
     const pp = this.at(p);
@@ -1482,23 +1819,27 @@ export class Renderer implements Picker {
     // the scenery and props the views reach, for this frame's camera and lights
     this.updateViewers();
     this.uploadLoaded();
+    // models that came for what stood in for them
+    this.swapScenery();
+    this.placeLate();
 
     // player rig
     const key = playerLookKey(p);
-    if (!this.playerView || this.playerView.key !== key) {
-      if (this.playerView) {
-        this.playerView.rig.dispose();
-        this.playerView.shadow.removeFromParent();
+    const was = this.playerView;
+    if (!was || was.key !== key || (was.waits && this.swappable(was.waits, true, true))) {
+      if (was) {
+        was.rig.dispose();
+        was.shadow.removeFromParent();
       }
-      const rig = makeCharRig(() => playerSpec(p), () => playerLook(p));
+      const { rig, waits } = makeCharRig(() => playerSpec(p), () => playerLook(p));
       // the light is overhead: the hero's own shadow would be a dark disc around the feet
       castShadows(rig.root, false);
       this.scene.add(rig.root);
       const shadow = this.makeShadow(p.radius);
       this.scene.add(shadow);
-      this.playerView = { rig, shadow, key };
+      this.playerView = { rig, shadow, key, waits };
     }
-    const pv = this.playerView;
+    const pv = this.playerView!;
     pv.rig.root.position.x = pp.x;
     pv.rig.root.position.z = pp.z;
     if (!p.dead) pv.rig.root.position.y = 0;
@@ -1511,6 +1852,10 @@ export class Renderer implements Picker {
     for (const n of this.npcViews) {
       const r = n.rig.root.position;
       const near = (r.x - p.pos.x) ** 2 + (r.z - p.pos.z) ** 2 <= VIEW_FAR * VIEW_FAR;
+      if (near && n.waits && n.npc && this.swappable(n.waits, true, true)) {
+        n.rig.dispose();
+        Object.assign(n, this.npcRig(n.npc));
+      }
       n.rig.root.visible = n.shadow.visible = near;
       if (near) n.rig.update(dt, IDLE_ANIM);
     }
@@ -1563,6 +1908,12 @@ export class Renderer implements Picker {
       const main = near && sphereInFrustum(vw.main, mp.x, y, mp.z, r);
       const shadow = near && sphereInShadows(vw, mp.x, y, mp.z, m.dead ? r : MONSTER_SHADE * k);
       const drawn = main || shadow;
+      // a stand-in body goes once its models are in: made again at once below if it's drawn, else
+      // as it next is (out of sight it just goes, outside the frame's budget: nothing shows)
+      if (v.body?.waits && (drawn ? this.swappable(v.body.waits, true, true) : [...v.body.waits].every((k) => assets.has(k)))) {
+        this.freeMonsterView(v);
+        v.body = null;
+      }
       if (drawn && !v.body) {
         v.body = this.makeMonsterBody(m);
         // one first seen dead lies where its death has got to by now
@@ -1613,7 +1964,15 @@ export class Renderer implements Picker {
       if ((gi.pos.x - p.pos.x) ** 2 + (gi.pos.z - p.pos.z) ** 2 <= nearR * nearR) gnear.push(gi);
     }
     this.groundViews.sync(p.pos, gnear as GroundItem[], (gi) => !gseen.has(gi), farR);
-    for (const [gi, v] of this.groundViews.views) {
+    for (const [gi, had] of this.groundViews.views) {
+      let v = had;
+      const waits = this.groundWaits.get(v);
+      if (waits && this.swappable(waits)) {
+        v.removeFromParent();
+        disposeView(v, sharedResource);
+        v = this.makeGroundView(gi);
+        this.groundViews.views.set(gi, v);
+      }
       const t = Math.min(1, gi.age / 0.45);
       const x = gi.from.x + (gi.pos.x - gi.from.x) * t;
       const z = gi.from.z + (gi.pos.z - gi.from.z) * t;
@@ -1701,6 +2060,9 @@ export class Renderer implements Picker {
     this.post.render(dt);
     const ps = this.project(new THREE.Vector3(p.pos.x, 1.0, p.pos.z));
     this.playerScreen = ps;
+    // behind the veil once its essentials are in: two frames rushed (the pictures up, then what waited swapped in), then it lifts
+    const ess = this.essentials;
+    if (ess?.shown && ess.done && ++ess.flushed >= 2 && !this.warming.length) this.essentials = null;
   }
 
   /**

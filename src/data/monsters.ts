@@ -4,7 +4,7 @@ import type { D2xMonster } from './d2x/types';
 /** the body a monster is drawn with (src/render/specs.ts); the later ones are named for D2's MonStats ids */
 export type MonsterModel =
   | 'zombie' | 'skeleton' | 'skelarcher' | 'imp' | 'shaman' | 'ghoul' | 'wraith' | 'spider' | 'demon' | 'butcher' | 'lich' | 'overlord'
-  | 'skullfly' | 'skelmage' | 'bat' | 'mushroom' | 'yeti' | 'dragon'
+  | 'skelmage' | 'bat' | 'yeti'
   | 'corruptrogue' | 'cr_lancer' | 'cr_archer' | 'quillrat';
 export type Blood = 'red' | 'bone' | 'green' | 'ghost' | 'black' | 'fire';
 export type Elem = 'phys' | 'fire' | 'cold' | 'light' | 'poison' | 'magic';

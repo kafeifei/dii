@@ -37,11 +37,30 @@ function add(parent: THREE.Object3D, geo: THREE.BufferGeometry, mat: THREE.Mater
 }
 
 /**
+ * The models the builders here make things of (needs.ts asks for them before a level is built): a
+ * torch on the wall, the chest (a trunk if its lid can't be found), a barrel, the way down and its
+ * braziers, a waypoint, a shrine, a campfire, gold on the ground
+ */
+export const MODELS = {
+  torch: 'd_torch_mounted',
+  chest: 'd_chest_gold',
+  trunk: 'd_trunk_medium_A',
+  barrel: 'd_barrel_large',
+  entrance: 'p_entrance',
+  brazier: 'p_brazier',
+  waypoint: 'p_waypoint',
+  shrine: 'h_shrine',
+  campfire: 'p_campfire',
+  coins: 'd_coin_stack_small',
+  /** the dungeons' pillars (Renderer.buildLevel) */
+  pillar: 'd_pillar_decorated',
+} as const satisfies Record<string, ModelKey>;
+
+/**
  * Instance of a CC0 prop model, standing on y=0. `center` recentres it on x/z (otherwise the
- * model's own origin is kept, e.g. a torch's wall mount). Returns null if the packs aren't loaded.
+ * model's own origin is kept, e.g. a torch's wall mount). Returns null while the model isn't in.
  */
 export function assetProp(key: ModelKey, scale: number | [number, number, number], opts: { center?: boolean; ownMaterials?: boolean } = {}): THREE.Group | null {
-  if (!assets.ready || assets.failed) return null;
   const t = assets.get(key);
   if (!t) return null;
   const sv = typeof scale === 'number' ? new THREE.Vector3(scale, scale, scale) : new THREE.Vector3(...scale);
@@ -89,7 +108,7 @@ export function topCentroid(root: THREE.Object3D, band: number): THREE.Vector3 {
 }
 
 export function makeTorch(color: string): { group: THREE.Group; flame: THREE.Sprite } {
-  const model = assetProp('d_torch_mounted', 0.8, { center: false });
+  const model = assetProp(MODELS.torch, 0.8, { center: false });
   if (model) {
     const g = new THREE.Group();
     model.position.y = 1.3;
@@ -118,59 +137,57 @@ export function makeTorch(color: string): { group: THREE.Group; flame: THREE.Spr
   return { group: g, flame };
 }
 
-export function makeChest(big = false): { group: THREE.Group; lid: THREE.Group } {
-  if (!big) {
-    const model = assetProp('d_chest_gold', 0.5, { ownMaterials: true });
-    const lidMesh = model?.getObjectByName('chest_gold_lid');
-    if (model && lidMesh?.parent) {
-      // the lid's own origin is its middle: hinge it on the back edge instead
-      model.updateMatrixWorld(true);
-      const box = new THREE.Box3().setFromObject(lidMesh);
-      const hinge = new THREE.Vector3((box.min.x + box.max.x) / 2, box.min.y, box.min.z);
-      const pivot = new THREE.Group();
-      lidMesh.parent.add(pivot);
-      pivot.position.copy(lidMesh.parent.worldToLocal(hinge));
-      pivot.updateMatrixWorld(true);
-      pivot.attach(lidMesh);
-      // the lid of a one-piece model is cut off a closed shell: show the inner faces once it opens
-      // and put a dark floor in the hollow
-      model.traverse((c) => {
-        const m = c as THREE.Mesh;
-        if (m.isMesh) (m.material as THREE.Material).side = THREE.DoubleSide;
-      });
-      const inside = new THREE.Mesh(new THREE.PlaneGeometry(box.max.x - box.min.x, box.max.z - box.min.z).rotateX(-Math.PI / 2), stdMat('#120c08', 1));
-      inside.scale.setScalar(0.9);
-      model.add(inside);
-      inside.position.copy(model.worldToLocal(new THREE.Vector3((box.min.x + box.max.x) / 2, box.min.y - 0.02, (box.min.z + box.max.z) / 2)));
-      model.userData.looted = false;
-      return { group: model, lid: pivot };
-    }
-  }
-  const model = big ? assetProp('d_trunk_large_A', 0.72, { ownMaterials: true }) : assetProp('d_trunk_medium_A', 0.82, { ownMaterials: true });
-  if (model) {
-    // single-mesh trunk: no lid to swing, the renderer dims it once looted
+/** a chest (the stash is one made bigger): the gold-bound chest, else a trunk, else drawn in code */
+export function makeChest(): { group: THREE.Group; lid: THREE.Group } {
+  const model = assetProp(MODELS.chest, 0.5, { ownMaterials: true });
+  const lidMesh = model?.getObjectByName('chest_gold_lid');
+  if (model && lidMesh?.parent) {
+    // the lid's own origin is its middle: hinge it on the back edge instead
+    model.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(lidMesh);
+    const hinge = new THREE.Vector3((box.min.x + box.max.x) / 2, box.min.y, box.min.z);
+    const pivot = new THREE.Group();
+    lidMesh.parent.add(pivot);
+    pivot.position.copy(lidMesh.parent.worldToLocal(hinge));
+    pivot.updateMatrixWorld(true);
+    pivot.attach(lidMesh);
+    // the lid of a one-piece model is cut off a closed shell: show the inner faces once it opens
+    // and put a dark floor in the hollow
+    model.traverse((c) => {
+      const m = c as THREE.Mesh;
+      if (m.isMesh) (m.material as THREE.Material).side = THREE.DoubleSide;
+    });
+    const inside = new THREE.Mesh(new THREE.PlaneGeometry(box.max.x - box.min.x, box.max.z - box.min.z).rotateX(-Math.PI / 2), stdMat('#120c08', 1));
+    inside.scale.setScalar(0.9);
+    model.add(inside);
+    inside.position.copy(model.worldToLocal(new THREE.Vector3((box.min.x + box.max.x) / 2, box.min.y - 0.02, (box.min.z + box.max.z) / 2)));
     model.userData.looted = false;
-    return { group: model, lid: new THREE.Group() };
+    return { group: model, lid: pivot };
+  }
+  const trunk = assetProp(MODELS.trunk, 0.82, { ownMaterials: true });
+  if (trunk) {
+    // single-mesh trunk: no lid to swing, the renderer dims it once looted
+    trunk.userData.looted = false;
+    return { group: trunk, lid: new THREE.Group() };
   }
   const g = new THREE.Group();
-  const s = big ? 1.4 : 1;
   const wood = stdMat('#5a3a1e');
   const iron = stdMat('#4a4a4a', 0.5, 0.7);
-  add(g, new THREE.BoxGeometry(0.8 * s, 0.42 * s, 0.5 * s), wood, 0, 0.21 * s, 0);
-  add(g, new THREE.BoxGeometry(0.84 * s, 0.06, 0.54 * s), iron, 0, 0.05, 0);
-  add(g, new THREE.BoxGeometry(0.06, 0.44 * s, 0.54 * s), iron, -0.25 * s, 0.22 * s, 0);
-  add(g, new THREE.BoxGeometry(0.06, 0.44 * s, 0.54 * s), iron, 0.25 * s, 0.22 * s, 0);
+  add(g, new THREE.BoxGeometry(0.8, 0.42, 0.5), wood, 0, 0.21, 0);
+  add(g, new THREE.BoxGeometry(0.84, 0.06, 0.54), iron, 0, 0.05, 0);
+  add(g, new THREE.BoxGeometry(0.06, 0.44, 0.54), iron, -0.25, 0.22, 0);
+  add(g, new THREE.BoxGeometry(0.06, 0.44, 0.54), iron, 0.25, 0.22, 0);
   const lid = new THREE.Group();
-  lid.position.set(0, 0.42 * s, -0.25 * s);
+  lid.position.set(0, 0.42, -0.25);
   g.add(lid);
-  add(lid, new THREE.BoxGeometry(0.82 * s, 0.14 * s, 0.52 * s), wood, 0, 0.07 * s, 0.25 * s);
-  add(lid, new THREE.BoxGeometry(0.86 * s, 0.05, 0.08), iron, 0, 0.12 * s, 0.25 * s);
-  add(lid, new THREE.BoxGeometry(0.1, 0.12, 0.06), stdMat('#c8a040', 0.4, 0.8), 0, 0.0, 0.52 * s);
+  add(lid, new THREE.BoxGeometry(0.82, 0.14, 0.52), wood, 0, 0.07, 0.25);
+  add(lid, new THREE.BoxGeometry(0.86, 0.05, 0.08), iron, 0, 0.12, 0.25);
+  add(lid, new THREE.BoxGeometry(0.1, 0.12, 0.06), stdMat('#c8a040', 0.4, 0.8), 0, 0.0, 0.52);
   return { group: g, lid };
 }
 
 export function makeBarrel(): THREE.Group {
-  const model = assetProp('d_barrel_large', 0.36);
+  const model = assetProp(MODELS.barrel, 0.36);
   if (model) return model;
   const g = new THREE.Group();
   const wood = stdMat('#6a4a2a');
@@ -183,7 +200,7 @@ export function makeBarrel(): THREE.Group {
 
 export function makeStairs(town: boolean): THREE.Group {
   // a stone stairway under a gothic arch, opening toward +z
-  const model = assetProp('p_entrance', town ? 1 : 0.85);
+  const model = assetProp(MODELS.entrance, town ? 1 : 0.85);
   if (model) return model;
   const g = new THREE.Group();
   const stone = stdMat(town ? '#5a5248' : '#4a4640');
@@ -205,7 +222,7 @@ export function makeStairs(town: boolean): THREE.Group {
 
 /** an iron fire bowl on three legs; the renderer adds the flames */
 export function makeBrazier(): THREE.Group {
-  const model = assetProp('p_brazier', 1);
+  const model = assetProp(MODELS.brazier, 1);
   if (model) {
     // glowing coals in the bowl and the flame over them
     const top = new THREE.Box3().setFromObject(model).max.y;
@@ -238,7 +255,7 @@ function surfaceY(root: THREE.Object3D, x: number, z: number): number | null {
 }
 
 export function makeWaypoint(): { group: THREE.Group; rune: THREE.Mesh } {
-  const model = assetProp('p_waypoint', 1);
+  const model = assetProp(MODELS.waypoint, 1);
   const g = model ?? new THREE.Group();
   const stone = stdMat('#6a6660');
   if (!model) add(g, new THREE.CylinderGeometry(1.25, 1.35, 0.16, 16), stone, 0, 0.08, 0);
@@ -278,7 +295,7 @@ export function makePortal(color: string): { group: THREE.Group; disc: THREE.Mes
 }
 
 export function makeCampfire(): THREE.Group {
-  const model = assetProp('p_campfire', 1);
+  const model = assetProp(MODELS.campfire, 1);
   if (model) {
     // embers under the logs and a low flame; the renderer adds the light
     const y = surfaceY(model, 0, 0) ?? 0.2;
@@ -303,8 +320,12 @@ export function makeCampfire(): THREE.Group {
   return g;
 }
 
+/** a dead tree's model, and a living one's two */
+const TREES: Record<'dead' | 'alive', ModelKey[]> = { dead: ['h_tree_dead_medium'], alive: ['x_tree_single_A', 'x_tree_single_B'] };
+
 export function makeTree(scale: number, dead: boolean): THREE.Group {
-  const model = dead ? assetProp('h_tree_dead_medium', 0.5 * scale) : assetProp(Math.random() < 0.5 ? 'x_tree_single_A' : 'x_tree_single_B', 2.5 * scale);
+  // both of a living tree's in, or it would draw in code until one comes and then perhaps again for the other
+  const model = !assets.all(TREES[dead ? 'dead' : 'alive']) ? null : dead ? assetProp('h_tree_dead_medium', 0.5 * scale) : assetProp(Math.random() < 0.5 ? 'x_tree_single_A' : 'x_tree_single_B', 2.5 * scale);
   if (model) return model;
   const g = new THREE.Group();
   const bark = stdMat('#3a2a1c');
@@ -356,9 +377,17 @@ const DECOR_MODELS: Partial<Record<DecorKind, [ModelKey, number][]>> = {
   ],
 };
 
+/** the models a piece of decor of `kind` is one of (or, a tree, the trees; a campfire, its fire) */
+export function decorModels(kind: DecorKind): ModelKey[] {
+  if (kind === 'tree') return [...TREES.dead, ...TREES.alive];
+  if (kind === 'campfire') return [MODELS.campfire];
+  return (DECOR_MODELS[kind] ?? []).map(([k]) => k);
+}
+
 export function makeDecor(kind: DecorKind, themeKey: string): THREE.Group {
   const opts = DECOR_MODELS[kind];
-  if (opts) {
+  // every one it may be in before one is picked: what's drawn in code meanwhile is swapped once, for the one picked then
+  if (opts && assets.all(opts.map(([k]) => k))) {
     const [key, sc] = pickKey(opts);
     const model = assetProp(key, sc);
     if (model) {
@@ -487,6 +516,15 @@ export function heldModel(b: (typeof ITEM_BASES)[string]): [ModelKey, number] | 
   return null;
 }
 
+/** the models an item lying on the ground is drawn with (gold when there's no item) */
+export function groundModels(item: Item | null): ModelKey[] {
+  if (!item) return [MODELS.coins];
+  const b = ITEM_BASES[item.baseId];
+  const held = b && heldModel(b);
+  const own = b && GROUND_MODELS[b.type];
+  return held ? [held[0]] : own ? [own] : [];
+}
+
 /** a held piece (+y up, flat side facing z) laid flat on its back, centred and resting on y=0 */
 function lyingFlat(key: ModelKey, scale: number): THREE.Group | null {
   const m = assetProp(key, scale, { center: false });
@@ -503,7 +541,7 @@ function lyingFlat(key: ModelKey, scale: number): THREE.Group | null {
 export function makeGroundItem(item: Item | null, color: string): THREE.Group {
   const g = new THREE.Group();
   if (!item) {
-    const coins = assetProp('d_coin_stack_small', 0.32);
+    const coins = assetProp(MODELS.coins, 0.32);
     if (coins) return coins;
     const gold = stdMat('#e8c040', 0.35, 0.9, '#5a4008', 0.6);
     for (let i = 0; i < 5; i++) add(g, new THREE.CylinderGeometry(0.07, 0.07, 0.025, 8), gold, (Math.random() - 0.5) * 0.18, 0.02 + i * 0.02, (Math.random() - 0.5) * 0.18);

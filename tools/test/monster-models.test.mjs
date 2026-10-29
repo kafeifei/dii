@@ -15,11 +15,11 @@ export default async (load) => {
   const THREE = await load('three');
   const { GLTFLoader } = await load('three/examples/jsm/loaders/GLTFLoader.js');
   const { monsterSpec } = await load('/src/render/specs.ts');
-  const { MODEL_FILES } = await load('/src/render/model-list.ts');
+  const { MODEL_KEYS } = await load('/src/render/model-list.ts');
   const { QuadRig } = await load('/src/render/legs.ts');
   const problems = [];
   const check = (ok, what) => ok || problems.push(what);
-  const built = new Set(MODEL_FILES);
+  const built = new Set(MODEL_KEYS);
   const mon = (model, id = 1) => ({ id, def: { model, scale: 1 }, rank: 'normal' });
 
   // the hunter: over many monsters, every weapon look and with and without a shield

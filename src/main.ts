@@ -2,8 +2,10 @@ import './data/legendary';
 import { Sfx } from './audio/sfx';
 import { Input } from './core/input';
 import { Game } from './game/game';
-import { claimHero, markInGame, playedElsewhere, releaseHero, slotNow, useDevSlot, wasInGame } from './game/save';
-import { assets } from './render/assets';
+import { GALLERY } from './game/level';
+import { claimHero, heartbeat, markInGame, playedElsewhere, releaseHero, slotNow, useDevSlot, wasInGame } from './game/save';
+import { assets, NOW } from './render/assets';
+import { CORE, streamOrder } from './render/needs';
 import { Renderer } from './render/renderer';
 import { loadSettings } from './ui/settings';
 import { UI } from './ui/ui';
@@ -39,8 +41,12 @@ function frame(now: number) {
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
   let steps = 0;
+  // the world waits behind a level's loading veil (Renderer.veiled): nothing steps, nothing piles up for after
+  const held = renderer.veiled;
   if (game.started && !game.paused && !game.headless) {
-    acc += dt;
+    acc = held ? 0 : acc + dt;
+    // the world held, the hero still this tab's: it keeps saying so (a veil can outlast save.ts's GONE_MS)
+    if (held) heartbeat();
     while (acc >= STEP && steps < 6) {
       game.update(STEP);
       acc -= STEP;
@@ -58,7 +64,7 @@ function frame(now: number) {
   }
   ui.update(dt);
   input.wheel = 0;
-  if (steps > 0 || !game.started || game.paused) input.endFrame();
+  if (steps > 0 || !game.started || game.paused || held) input.endFrame();
 }
 function raf(now: number) {
   lastRaf = performance.now();
@@ -90,10 +96,13 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') game.save();
 });
 
-assets
-  .load((done, total) => ui.loadProgress(done, total))
+// The title lets a game start once the core models are in (the heroes, what they hold and drop, the
+// camp); the rest streams in behind, each level asking for its own first as it's built
+// (Renderer.buildLevel). ?gallery's showroom has every model there is: it waits for them all
+(GALLERY ? assets.ensureAll(NOW, (done, total) => ui.loadProgress(done, total)) : assets.ensure(CORE, NOW, (done, total) => ui.loadProgress(done, total)))
   .then(() => {
     ui.loadProgress(1, 1);
+    assets.stream(streamOrder());
     if (DEV) {
       ui.devStart();
       // ?dev&lvl=3: start on that floor of the trial ground (for testing on devices without a console)
@@ -110,6 +119,7 @@ assets
     else if (resuming) ui.resume();
   });
 
-// debug handle
+// debug handles (the tools wait on assets.ensureAll)
 (window as unknown as { game: Game }).game = game;
 (window as unknown as { renderer: Renderer }).renderer = renderer;
+(window as unknown as { assets: typeof assets }).assets = assets;

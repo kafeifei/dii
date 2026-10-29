@@ -199,7 +199,8 @@ const HIDE_MARGIN = 4;
  * A level's static scenery by 16-tile chunk: walls, pillars, floor tiles, torches and decor, each
  * placed in the chunk it stands in. A chunk is put in the scene only while the camera or a shadow-
  * casting light reaches it, so a big map costs the scene graph, the culling and the lights no more
- * than the bit around the hero. Its things are static: their matrices are made once (finish).
+ * than the bit around the hero. Its things are static: their matrices are made once (finish), and
+ * so are those of what is added or swapped in later (a model that came after the level was built).
  */
 export class Scenery {
   readonly group = new THREE.Group();
@@ -208,6 +209,8 @@ export class Scenery {
   private chunks: (Chunk | undefined)[];
   private list: Chunk[] = [];
   private shown: Chunk[] = [];
+  /** finish has been: what comes after is fixed in place as it is added */
+  private finished = false;
 
   constructor(w: number, h: number) {
     this.cols = Math.max(1, Math.ceil(w / CHUNK));
@@ -229,11 +232,40 @@ export class Scenery {
     return c;
   }
 
-  /** `obj` (placed in world space) into the chunk at x, z */
-  add(obj: THREE.Object3D, x: number, z: number): Chunk {
+  /**
+   * `obj` (placed in world space) into the chunk at x, z. After finish its matrices are made at once
+   * but for those of `live` (glows that flicker), and the chunk's box grows to take it in
+   */
+  add(obj: THREE.Object3D, x: number, z: number, live: readonly THREE.Object3D[] = []): Chunk {
     const c = this.at(x, z);
     c.group.add(obj);
+    if (this.finished) this.fix(c, obj, live);
     return c;
+  }
+
+  /** a light standing in chunk `c`; after finish, its box grows to take it in */
+  addLight(c: Chunk, l: StaticLight) {
+    c.lights.push(l);
+    if (this.finished) growBox(c.box, l.pos.x, l.pos.y, l.pos.z, l.pos.x, l.pos.y, l.pos.z);
+  }
+
+  /** `now` in chunk `c` in place of `was` (what stood in for it), fixed in place as add does */
+  swap(c: Chunk, was: THREE.Object3D, now: THREE.Object3D, live: readonly THREE.Object3D[] = []) {
+    was.removeFromParent();
+    c.group.add(now);
+    if (this.finished) this.fix(c, now, live);
+  }
+
+  /** what was added to a finished chunk: matrices made once (not `live`'s), the box grown to take it in */
+  private fix(c: Chunk, obj: THREE.Object3D, live: readonly THREE.Object3D[]) {
+    obj.updateMatrixWorld(true);
+    obj.traverse((o) => {
+      if (live.includes(o)) return;
+      o.updateMatrix();
+      o.matrixAutoUpdate = false;
+    });
+    const box = new THREE.Box3().setFromObject(obj);
+    if (!box.isEmpty()) growBox(c.box, box.min.x, box.min.y, box.min.z, box.max.x, box.max.y, box.max.z);
   }
 
   /** every chunk made */
@@ -264,6 +296,7 @@ export class Scenery {
       for (const s of c.spots) growBox(c.box, s.x, s.y, s.z, s.x, s.y, s.z);
       if (c.box[3] < c.box[0]) growBox(c.box, c.cx * CHUNK, 0, c.cz * CHUNK, (c.cx + 1) * CHUNK, 0, (c.cz + 1) * CHUNK);
     }
+    this.finished = true;
   }
 
   /** the chunks a view reaches into the scene, the rest out of it (with a margin, so none flaps) */
@@ -374,6 +407,7 @@ export class PropBatches {
   private byKey = new Map<string, THREE.Matrix4[]>();
   private parts: Part[] = [];
   private cells: PropChunk[] = [];
+  private cellsAt = new Map<string, PropChunk>();
   /** the views last culled for, to skip a frame where nothing moved */
   private last = new Float64Array(64);
 
@@ -387,10 +421,13 @@ export class PropBatches {
     l.push(m);
   }
 
-  /** done adding: the meshes made, `parts` giving each model's (null for one not loaded) */
+  /**
+   * done adding: the meshes made, `parts` giving each model's (null for one not loaded). Built again
+   * after more is added (a model that came later), it makes the meshes of what was added since
+   */
   build(parts: (key: string) => PropPart[] | null) {
     const chunkOf = (m: THREE.Matrix4) => `${Math.floor(m.elements[12] / CHUNK)},${Math.floor(m.elements[14] / CHUNK)}`;
-    const cells = new Map<string, PropChunk>();
+    const cells = this.cellsAt;
     const tmp = new THREE.Matrix4();
     const c = new THREE.Vector3();
     const shadowOnly = this.shadowFrusta;
@@ -569,6 +606,7 @@ export class PropBatches {
     }
     this.parts = [];
     this.cells = [];
+    this.cellsAt.clear();
     this.group.clear();
     this.group.removeFromParent();
   }
