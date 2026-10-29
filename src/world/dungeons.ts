@@ -2,7 +2,7 @@ import { D2X_AREAS, D2X_WARPS } from '../data/d2x/areas';
 import { D2X_MAZES } from '../data/d2x/maze';
 import type { Difficulty } from '../items/d2/types';
 import { DEN_OF_EVIL } from './areas';
-import { THEMES } from './levelgen';
+import { THEMES, type Layout } from './levelgen';
 import { generateMaze, type MazeResult, type MazeSpec, type MazeSpecial, type MazeStyle } from './maze';
 
 /**
@@ -118,14 +118,22 @@ export function isDungeon(id: number): boolean {
   return id in DUNGEONS;
 }
 
-/** the spec of dungeon `id` for a game's seed and difficulty; it looks like the old dungeons' cave or crypt (levelgen.ts THEMES) */
+/**
+ * The spec of dungeon `id` for a level's seed and difficulty: an Act 1 cave in the grotto's look (its
+ * own tiles once they come, levelgen.ts GROTTO_TILES), a crypt in the old crypts' (levelgen.ts THEMES)
+ */
 export function dungeonSpec(id: number, seed: number, difficulty: Difficulty): MazeSpec {
   const d = DUNGEONS[id];
   if (!d || !D2X_MAZES[id]) throw new Error(`area ${id} is not a dungeon`);
-  return { ...d, seed, difficulty, theme: d.style === 'cave' ? THEMES.cave : THEMES.crypt };
+  return { ...d, seed, difficulty, theme: d.style === 'cave' ? THEMES.grotto : THEMES.crypt };
 }
 
-/** dungeon `id` for a game's seed and difficulty (maze.ts generateMaze) */
+/** dungeon `id` for a level's seed and difficulty (maze.ts generateMaze) */
 export function generateDungeonLevel(id: number, seed: number, difficulty: Difficulty): MazeResult {
   return generateMaze(dungeonSpec(id, seed, difficulty));
+}
+
+/** the map of dungeon `id` the game hosts (src/game/maps.ts DUNGEON_MAKERS): its level's Layout */
+export function dungeonLayout(id: number, seed: number, difficulty: Difficulty): Layout {
+  return generateDungeonLevel(id, seed, difficulty).layout;
 }

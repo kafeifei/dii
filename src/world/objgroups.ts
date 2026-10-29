@@ -165,13 +165,28 @@ export class ObjectRoller {
     return this.rooms > 0 && Math.floor((this.done << 7) / this.rooms) > 96 && !this.healing;
   }
 
+  /**
+   * Past ¾ of the rooms with no healing shrine yet, D2MOO makes a group's roll 100 when the Objects.txt
+   * row numbered like the group has a SubClass (Objects.cpp:2107-2111; D2xMaze.healSkip). 100 passes no
+   * ObjPrb under 100, so the group is skipped and nothing comes in its place: in the caves groups 6
+   * (Cave Wells: a well, a health, a mana and a magic shrine) and 4 (rogue corpses), rows 6 and 4 being a
+   * chest and a large urn (SubClass 8); in the crypts nothing, rows 7–10 having none. So a cave makes no
+   * healing shrine late (its one shrine group is the one skipped), a crypt's shrine group goes on
+   * rolling and PopulateFn2 makes its shrine a healing one (shrine2: no roll, 30 tries, Parm1 or 84).
+   *
+   * Taken as D2MOO writes it, not as "force a healing shrine" (2026-10-29, the D line): the line can
+   * only skip a group, so forcing one needs both another key and another value (0, not 100); the
+   * likelier key, ObjGroup.txt's SHRINES and WELLS, is loaded (ObjectsTbls.cpp:237-238, D2ObjGroupTxt
+   * nShrines/nWells, ObjectsTbls.h:115-116) but read nowhere in D2MOO, and D2R 2.7's objgroup.txt drops
+   * both columns (tools/d2/maze.mjs GROUP_COLS), which it could only do if the game never read them.
+   * The forcing D2MOO does is PopulateFn2's alone (Objects.cpp:1523-1533, 1595-1609).
+   */
   populate(rooms: SubRoom[], groups: { group: number; prob: number; healSkip?: true }[]) {
     this.rooms = rooms.length;
     for (const room of rooms) {
       this.done++;
       for (const g of groups) {
         let p = this.seed.roll() % 100;
-        // D2MOO reads the Objects.txt row numbered like the group here (D2xMaze.healSkip)
         if (g.healSkip && this.wantHealing()) p = 100;
         if (p > g.prob) continue;
         const pr = this.seed.roll() % 100;

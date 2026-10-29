@@ -1,10 +1,11 @@
 import { RNG, type P2 } from '../core/math';
 import { D2X_AREAS } from '../data/d2x/areas';
 import { D2X_MAZES } from '../data/d2x/maze';
+import { D2X_OBJECTS } from '../data/d2x/objects';
 import { D2X_SUPERUNIQUES } from '../data/d2x/superuniques';
 import type { Difficulty } from '../items/d2/types';
 import { dressRooms, Furnisher, PROP_DEFS, type Prop } from './furnish';
-import { bfsDistances, type Entrance, type Layout, type Room, type SuperUnique, type Theme, type Torch } from './levelgen';
+import { THEMES, bfsDistances, type Entrance, type Layout, type PresetSpot, type Room, type SuperUnique, type Theme, type Torch } from './levelgen';
 import { ObjectRoller, RANDOM_CHEST, SUB, type PlacedBarrel, type PlacedCasket, type PlacedChest, type PlacedObject, type PlacedRemains, type PlacedShrine, type SubRoom } from './objgroups';
 import { fbm, valueNoise } from './outdoors';
 import { TileMap, T_FLOOR, T_PROP, T_VOID, T_WALL } from './tilemap';
@@ -29,7 +30,9 @@ import { flood, OUT_SCALE } from './zone';
  * dressing (furnish.ts) goes round those, and its look-alikes of them are taken out again. Cave
  * Level 2 is one preset map in D2 (DrlgType 2); here it is one hall carved from a fixed seed.
  *
- * Nothing here is wired into the game yet: dungeons.ts says which area is which maze.
+ * dungeons.ts says which area is which maze; src/game/maps.ts DUNGEON_MAKERS makes the game's from
+ * each level's seed (levelSeed). The Layout carries what D2 rolled for each object (its Objects.txt
+ * row, lock, trap, spark chest), its caskets, rogue corpses and wells, and its special rooms (presets).
  */
 
 /** how a maze's rooms are cut: D2's Act 1 caves (LvlTypes.txt 3) or crypts (4) */
@@ -336,7 +339,17 @@ export function mazeGraph(spec: MazeSpec): MazeGraphRoom[] {
 
   // the files (DRLGMAZE_RollBasicPresets, DrlgMaze.cpp:3208-3330): each room's map picks one at
   // random (DRLGPRESET_AllocDrlgMap, DrlgPreset.cpp:1496-1503); a plain shape's then take turns
-  // from a random one over the rooms of that shape
+  // from a random one over the rooms of that shape. Then the room is built (DRLGPRESET_BuildArea,
+  // DrlgPreset.cpp:1240-1294) before the next one picks: each of D2's rooms it is cut into
+  // (DRLGPRESET_InitPresetRoomData → DRLGROOM_AllocRoomEx, DrlgPreset.cpp:953-958,
+  // DrlgDrlgRoom.cpp:15-23) takes its seed from the level's, a roll the next room's file comes after:
+  // a cave's 24×24 room is nine 8×8 rooms, a crypt's 8×8 one (one room up to 12×12, DrlgMaze.cpp:3337).
+  // A preset with Scan (the ways in and out, lvlprest.json) also reads its DS1's units with the
+  // level's seed then (DRLGPRESET_AddPresetUnitToDrlgMap, DrlgPreset.cpp:1313-1317, 667-755), a
+  // roll for each floor trap, 581 chest and a few monsters in it; D2's DS1s aren't in d2data, so
+  // those are taken to hold none (an approximation)
+  const [sx, sy] = maze.size;
+  const parts = sx <= 12 && sy <= 12 ? 1 : Math.ceil(sx / 8) * Math.ceil(sy / 8);
   const turns = new Map<number, number>();
   for (const r of rooms) {
     const files = r.special >= 0 ? (spec.specials[r.special].files ?? 1) : r.theme ? style.themeFiles : style.files;
@@ -347,6 +360,7 @@ export function mazeGraph(spec: MazeSpec): MazeGraphRoom[] {
       turns.set(r.preset, file);
     }
     r.variant = file;
+    for (let k = 0; k < parts; k++) level.roll();
   }
 
   const ordered = rooms.slice().sort((a, b) => a.order - b.order);
@@ -373,6 +387,8 @@ const CAVE_MOUTH_DEPTH = 3;
 const CHAMBER_NOISE = 3;
 const TUNNEL_NOISE = 1.0;
 const WARP = 3;
+/** from a cave stairway's middle to the rock at its back, in tiles: the stairway is about 2 across (render/props.ts makeStairs) */
+const STAIRS_BACK = 1;
 // A crypt room (ours too): walls round an 8×8 floor with doors 4 tiles wide at the middles of its open
 // sides, or corridors as wide from those sides to its middle.
 const DOOR0 = 3;
@@ -482,10 +498,23 @@ function carveCave(map: TileMap, rect: Room, mask: number, variant: number, them
     caps.push(...t);
     for (const c of t) coreCaps.push([c[0], c[1], c[2], c[3], 1.6]);
   }
+  // a way in or out stands against the end of its dead end, as D2's Cave Prev / Down rooms have their
+  // stairs in the rock: no floor behind it, the rock closing round its back in a shallow curve
+  let behind: ((px: number, py: number) => boolean) | null = null;
+  if (kind && kind !== 'boss') {
+    const far = (open[0] + 2) & 3;
+    const back = h - 5 + STAIRS_BACK;
+    behind = (px, py) => {
+      const along = (px - h) * DX[far] + (py - h) * DY[far];
+      const across = Math.abs((px - h) * DY[far] - (py - h) * DX[far]);
+      return along > back + Math.max(0, across - 2.5) * 0.7;
+    };
+  }
   for (let v = 0; v < C; v++) {
     for (let u = 0; u < C; u++) {
       const px = u + 0.5;
       const py = v + 0.5;
+      if (behind?.(px, py)) continue;
       let floor = false;
       const mouth = open.some((d) =>
         d === 0 ? u < CAVE_MOUTH_DEPTH && Math.abs(py - h) < CAVE_MOUTH
@@ -569,7 +598,7 @@ function carveCrypt(map: TileMap, rect: Room, mask: number, shape: 'room' | 'cor
 }
 
 /** where Cave Level 2's hall has its way up (the south end) and its chest (on a dais against the north wall), in its own tiles */
-const HALL_UP: [number, number] = [15, 25.5];
+const HALL_UP: [number, number] = [15, 26];
 const HALL_CHEST: [number, number] = [15, 5];
 
 /** Cave Level 2's hall (lvlprest Def 104 "Act 1 - Cave Treasure 2", the whole 24×24-tile level): a long cave, the way up at one end, the treasure at the other */
@@ -588,6 +617,8 @@ function carveHall(map: TileMap, rect: Room, rng: RNG, noise: Noise): CellPoints
     for (let u = CAVE_RIM; u < C - CAVE_RIM; u++) {
       const px = u + 0.5;
       const py = v + 0.5;
+      // the way up against the hall's south end, the rock round its back (carveCave's dead ends)
+      if (py > HALL_UP[1] + STAIRS_BACK + Math.max(0, Math.abs(px - HALL_UP[0]) - 2.5) * 0.7) continue;
       const n = fbm(noise, (rect.x + u) / 7, (rect.y + v) / 7);
       let dc = distSeg(px, py, hall) - hall[4];
       for (const d of discs) dc = Math.min(dc, Math.hypot(px - d[0], py - d[1]) - d[2]);
@@ -822,19 +853,26 @@ export function generateMaze(spec: MazeSpec): MazeResult {
 
   // ── D2's objects, then our dressing round them, so the objects come at D2's density (Cave Level
   // 2's hall, one fixed map, is dressed first by its own seed, as D2's preset holds its own) ──
-  const objs = new ObjectRoller(map, new D2Seed(stream(spec.seed, 2)), { trap: maze.trap, lock: maze.lock });
+  const objSeed = new D2Seed(stream(spec.seed, 2));
+  const objs = new ObjectRoller(map, objSeed, { trap: maze.trap, lock: maze.lock });
   objs.occ.keep(from, 3);
   for (const e of entrances) objs.occ.keep({ x: e.x, z: e.z }, 3);
   for (const u of superUniques) objs.occ.keep(u.pos, 2);
   if (treasure) objs.occ.keep(treasure.pos, 1.5);
+  /** every object placed so far */
+  const placed = (): PlacedObject[] => [...objs.chests, ...objs.barrels, ...objs.shrines, ...objs.caskets, ...objs.remains, ...objs.wells];
+  /** the tiles round an object the dressing keeps off: its Objects.txt size (subtiles) halved, at least one */
+  const clearOf = (o: PlacedObject) => Math.max(1, Math.ceil(Math.max(...(D2X_OBJECTS[o.id]?.size ?? [1, 1])) / SUB / 2));
   const placeObjects = () => {
     if (treasure) objs.presetChest(treasure.chest, Math.floor(treasure.pos.x * SUB), Math.floor(treasure.pos.z * SUB));
     objs.populate(subRooms, maze.objGroups);
     // a cave theme room holds a chest of its preset's (581); how many the unseen Cave*Theme1.ds1
-    // have isn't known, so one, nearest its chamber's middle
+    // have isn't known, so one, nearest its chamber's middle. Its units are read as the room comes
+    // (a theme preset has no Scan: DRLGPRESET_SpawnHardcodedPresetUnits, DrlgPreset.cpp:784-792),
+    // and a 581 is left out on !(rand & 3), one time in four (AddPresetUnitToDrlgMap, 744-750)
     if (cave) {
       cells.forEach((c, i) => {
-        if (!c.theme) return;
+        if (!c.theme || !(objSeed.roll() & 3)) return;
         const mid = points[i].centre;
         const own = order.map((k, s) => ({ k, s })).filter(({ k }) => rooms[k].cell === i);
         own.sort((a, b) => Math.hypot(rooms[a.k].room.x + R / 2 - mid.x, rooms[a.k].room.y + R / 2 - mid.z) - Math.hypot(rooms[b.k].room.x + R / 2 - mid.x, rooms[b.k].room.y + R / 2 - mid.z));
@@ -856,7 +894,7 @@ export function generateMaze(spec: MazeSpec): MazeResult {
     const f = new Furnisher(map, furnRng, from, keep);
     f.reserveAround(from, 3);
     for (const e of entrances) f.reserveAround({ x: e.x, z: e.z }, 3);
-    for (const list of [objs.chests, objs.barrels, objs.shrines, objs.caskets, objs.remains, objs.wells]) for (const o of list) f.reserveAround(o.pos, 1);
+    for (const o of placed()) f.reserveAround(o.pos, clearOf(o));
     // a torch or two on each crypt room's walls facing the camera, a corridor's one time in two;
     // D2's caves have none, only the hero's light (decisions: 洞里照原版不点火把)
     if (!cave) {
@@ -878,7 +916,8 @@ export function generateMaze(spec: MazeSpec): MazeResult {
       if (!cave && c.shape === 'room') plain.push({ x: c.rect.x + 1, y: c.rect.y + 1, w: c.rect.w - 2, h: c.rect.h - 2 });
       if (!cave && c.shape === 'corridor') plain.push({ x: c.rect.x + DOOR0, y: c.rect.y + DOOR0, w: DOOR1 - DOOR0, h: DOOR1 - DOOR0 });
     });
-    dressRooms(f, map, furnRng, spec.theme, plain, cave, { sparse: new Set(), torches });
+    // a cave's rooms dressed as the old caves' whatever its look (levelgen.ts GROTTO_TILES)
+    dressRooms(f, map, furnRng, cave ? THEMES.cave : spec.theme, plain, cave, { sparse: new Set(), torches });
     cells.forEach((c, i) => {
       const p = points[i];
       const kind = c.special >= 0 ? spec.specials[c.special].kind : undefined;
@@ -918,14 +957,21 @@ export function generateMaze(spec: MazeSpec): MazeResult {
       for (let k = 0; k < 12; k++) f.scatter(furnRng.pick(BONES), r.x + furnRng.range(3, r.w - 3), r.y + furnRng.range(3, r.h - 3));
       for (const [dx, dz] of [[-1.6, 0.4], [1.6, 0.4], [-0.9, 1.4], [0.9, 1.4]]) f.scatter('d_coin_stack_large', t.x + dx, t.z + dz);
     }
-    // no look-alikes of the real objects, and in a cave no lights but the hero's
+    // no look-alikes of the real objects, and in a cave no lights but the hero's: no candles, lanterns
+    // or lit shelves, on the floor or on the walls
     f.props = dropProps(map, f.props, (m) => LOOKALIKE.has(m) || (cave && !!PROP_DEFS[m]?.light));
+    if (cave) f.wall = f.wall.filter((w) => !w.light);
     return f;
   };
   let f: Furnisher;
   if (fixed) {
     f = furnish();
     placeObjects();
+    // the hall was dressed first, as its preset is: what lies loose on the floor (bones, coin) where
+    // an object came is taken up again, so nothing lies on a well or under a chest; the solid
+    // pieces were rock to the objects already (Occupancy)
+    const objects = placed();
+    f.props = f.props.filter((p) => PROP_DEFS[p.model]?.solid || !objects.some((o) => Math.max(Math.abs(p.x - o.pos.x), Math.abs(p.z - o.pos.z)) < clearOf(o) + 0.5));
   } else {
     placeObjects();
     f = furnish();
@@ -950,6 +996,12 @@ export function generateMaze(spec: MazeSpec): MazeResult {
     if (floor >= 16 && !close) spawnRooms.push(r);
   }
 
+  // the special rooms by their lvlprest Def (the side's: W, E, S, N after the west one), and Cave
+  // Level 2's one hall by its own, as Layout.presets has them
+  const presets: PresetSpot[] = fixed
+    ? [{ kind: 'hall', d2: spec.fixed, rect: { ...cells[0].rect }, area: spec.area }]
+    : cells.flatMap((c) => (c.special < 0 ? [] : [{ kind: spec.specials[c.special].kind, d2: c.preset, rect: { ...c.rect }, area: spec.area }]));
+
   const layout: Layout = {
     map,
     theme: spec.theme,
@@ -959,11 +1011,23 @@ export function generateMaze(spec: MazeSpec): MazeResult {
     spawnRooms,
     torches,
     decor: f.decor,
-    chests: objs.chests.map((c) => c.pos),
-    barrels: objs.barrels.map((b) => b.pos),
+    // the objects with what D2 rolled for them, which the game's objects take (level.ts): what using
+    // them does is the objects' own (src/game/containers.ts, interact.ts)
+    chests: objs.chests.map((c) => ({
+      ...c.pos,
+      d2: c.id,
+      ...(c.locked ? { locked: true } : {}),
+      ...(c.trap ? { trap: c.trap } : {}),
+      ...(c.sparkly ? { sparkly: c.consolation ? ('consolation' as const) : ('unique' as const) } : {}),
+    })),
+    barrels: objs.barrels.map((b) => ({ ...b.pos, d2: b.id, ...(b.exploding ? { exploding: true } : {}), ...(b.opened ? { opened: true } : {}) })),
     pillars,
     services: [],
-    shrines: objs.shrines.map((s) => s.pos),
+    shrines: objs.shrines.map((s) => ({ ...s.pos, kind: s.kind })),
+    caskets: objs.caskets,
+    remains: objs.remains,
+    wells: objs.wells,
+    presets,
     props: f.props,
     wallDecor: f.wall,
     areaOf: new Uint16Array(map.w * map.h).fill(spec.area),
