@@ -1,6 +1,6 @@
 import type { Sfx } from '../audio/sfx';
 import { debugEnabled } from '../game/debug';
-import type { Arrival, Game, GameHooks } from '../game/game';
+import type { Arrival, Game, GameHooks, HandOver } from '../game/game';
 import type { Level } from '../game/level';
 import type { ObjKind, WorldObject } from '../game/objects';
 import { heroClaimKey, markInGame, sharedKey } from '../game/save';
@@ -32,6 +32,17 @@ import { isTouchDevice, TouchControls } from './touch';
 
 /** what the touch interact button says it does to each kind of thing */
 const USE_VERB: Record<ObjKind, string> = { chest: '打开', barrel: '打碎', stairs: '进入', waypoint: '使用', vendor: '交谈', stash: '打开', portal: '进入', exit: '前往', shrine: '触摸', corpse: '拾取' };
+
+/**
+ * the hand-over notice's word on what became of the play here (GameHooks.heroGone): only what is
+ * true, so a last write that didn't go in (its unsaved badge shows over the notice) isn't called saved
+ */
+const GONE_NOTE: Record<HandOver, string> = {
+  saved: '这个角色在另一个窗口里打开了。这里的进度已经保存，交给了那个窗口；为了不丢东西，这里的游戏已经停下。',
+  unsaved: '这个角色在另一个窗口里打开了。这里最后的进度没能保存，那个窗口接着的是上一次存下的进度；这里再玩也存不下来，游戏已经停下。',
+  unplayed: '这个角色在另一个窗口里打开了。这里刷新后还没开始玩，就把它交给了那个窗口；这个窗口不会再接着玩。',
+  stale: '这个窗口离开时，这个角色在另一个窗口里玩过并存了档。这里的进度已经过时，为了不覆盖那边的进度，这里不再保存，游戏已经停下。回到标题再选这个角色，就是那边存下的进度。',
+};
 
 /**
  * The HTML interface over the world, and the game's hooks into it. The HUD, the panels and the
@@ -119,9 +130,10 @@ export class UI implements GameHooks, UIContext {
     window.addEventListener('keydown', (e) => onKey(this, e));
     window.addEventListener('pointermove', (e) => this.onPointerMove(e));
     window.addEventListener('storage', (e) => {
-      if (!this.game.started) return;
-      // another tab opened this hero: it is that tab's from now on (Game.heroClaimed)
+      // another tab opened this hero: it is that tab's from now on (Game.heroClaimed), whether it is
+      // played here or a reload here is still loading it
       if (e.key !== null && e.key === heroClaimKey()) this.game.heroClaimed();
+      if (!this.game.started) return;
       // another tab of the game wrote the shared stash: taken in now (Game.syncShared), so an open stash shows what is there
       if (e.key === null || e.key === sharedKey()) this.game.syncShared();
     });
@@ -156,8 +168,10 @@ export class UI implements GameHooks, UIContext {
     startIdentify(this, scroll);
   }
 
-  /** a quest moved on: its news waits on the log's button, unless the log is open to show it */
-  heroGone() {
+  /** another tab has the hero: the notice, saying what became of the play here, over everything but the unsaved badge */
+  heroGone(how: HandOver) {
+    this.goneEl.querySelector('.gone-title')!.textContent = how === 'stale' ? '已在别处玩过' : '已在别处打开';
+    this.goneEl.querySelector('.note')!.textContent = GONE_NOTE[how];
     this.goneEl.classList.add('open');
     // the game here has stopped: so has whoever was speaking
     this.sfx.hush();
@@ -167,6 +181,7 @@ export class UI implements GameHooks, UIContext {
     this.unsavedEl.hidden = ok;
   }
 
+  /** a quest moved on: its news waits on the log's button, unless the log is open to show it */
   questsChanged() {
     if (this.left !== 'quests') this.questNews = true;
     this.dirty = true;
@@ -251,9 +266,10 @@ export class UI implements GameHooks, UIContext {
     this.root.appendChild(this.title.el);
     this.death = new DeathScreen(this.game);
     this.root.appendChild(this.death.el);
-    // another tab took the hero: this one has saved and handed it over, and plays no more (Game.heroElsewhere)
+    // another tab took the hero (this one has saved and handed it over), or played it while this page was
+    // away (the hero here out of date): this one plays no more (Game.heroElsewhere)
     this.goneEl = h('div', 'overlay ui-block hero-gone');
-    this.goneEl.innerHTML = `<div class="death-title gone-title">已在别处打开</div><div class="note">这个角色在另一个窗口里打开了。这里的进度已经保存，交给了那个窗口；为了不丢东西，这里的游戏已经停下。</div><div class="menu"><button class="btn">回到标题</button></div>`;
+    this.goneEl.innerHTML = `<div class="death-title gone-title">已在别处打开</div><div class="note"></div><div class="menu"><button class="btn">回到标题</button></div>`;
     (this.goneEl.querySelector('.btn') as HTMLButtonElement).onclick = () => {
       // to the title, not back into the game: the hero is the other tab's
       markInGame(false);
@@ -311,10 +327,15 @@ export class UI implements GameHooks, UIContext {
     this.title.loadProgress(done, total);
   }
 
-  /** continue the saved run without going through the title screen */
-  resume() {
-    // a reload mid-game: on in the same world, where the hero was
-    if (!this.game.continueGame(undefined, true)) return;
+  /**
+   * continue the saved run without going through the title screen: a reload mid-game, on in the same
+   * world, where the hero was (Game.resume). Should it first wait for another window to hand the hero
+   * over, the title's buttons are held meanwhile, saying so
+   */
+  async resume() {
+    const on = await this.game.resume(() => this.title.hold('正在从另一个窗口接过这个角色…'));
+    this.title.loadProgress(1, 1);
+    if (!on) return;
     this.touch?.gameStarted();
     this.title.el.classList.remove('open');
     this.dirty = true;

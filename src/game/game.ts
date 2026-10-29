@@ -29,7 +29,7 @@ import { CHARGE_PREFIX, Player } from './player';
 import { castItemSkill, startCast, toggleAura, updatePlayer, type PlayerAction } from './playerctl';
 import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
-import { claimedElsewhere, claimHero, handOver, heroTaken, isReadOnly, loadSave, loadShared, markInGame, mayWriteLast, savedWaypoints, setSlot, syncShared, waitHandOver, writeSave, type Difficulty } from './save';
+import { claimedElsewhere, claimHero, handOver, heroTaken, isReadOnly, loadSave, loadShared, markInGame, mayWriteLast, neverWrite, playedElsewhere, reclaimHero, savedWaypoints, setSlot, slotNow, syncShared, waitHandOver, writeSave, writtenElsewhere, type Difficulty } from './save';
 import { debugOpts } from './debug';
 import { WILD_MAPS } from '../world/levelgen';
 import { CAMP_AREA, DEN_OF_EVIL, areaDef, areaForDepth, areaLevel, builtWaypoints, depthForArea, dungeonArea, isBuilt, trialFloor, type AreaDef, type AreaKind } from '../world/areas';
@@ -64,8 +64,12 @@ export interface GameHooks {
   npcMenu?(obj: WorldObject, opening: Topic | null): void;
   /** a quest moved on: the quest log has news */
   questsChanged?(): void;
-  /** another tab has this hero now: this one has handed it over and stops (Game.heroElsewhere) */
-  heroGone?(): void;
+  /**
+   * another tab has this hero now: this one has handed it over and stops (Game.heroElsewhere), or, a
+   * reload still loading it, never starts it (Game.resume); or another tab played it while this page
+   * was away, and the hero here, out of date, stops (Game.outdated); `how` says what became of the play here
+   */
+  heroGone?(how: HandOver): void;
   /** whether the last save went into storage (false: it couldn't, and the player should know until one does) */
   saveState?(ok: boolean): void;
   /** a scroll of identify read from the belt: the next item clicked is identified with it (the bag's identify cursor) */
@@ -88,6 +92,18 @@ const STILL_PUSH = 0.3;
 
 /** how the hero comes to where they arrive (Game.enterArea) */
 export type Arrival = 'start' | 'stairs' | 'waypoint' | 'portal' | 'respawn' | 'exit';
+
+/**
+ * What became of the play here as another tab took the hero (GameHooks.heroGone): `saved`, it is all
+ * in what that tab reads (the last write went in, or that tab wrote first with nothing played here
+ * since the last write that did); `unsaved`, it isn't (storage refused the last write, that tab wrote
+ * first over play here since, or this build never writes this save); `unplayed`, a reload gave the
+ * hero up while its models were still coming, before anything here was read or played (Game.resume);
+ * `stale`, another tab opened the hero while this page was away (the back-forward cache, frozen in the
+ * background), played it and let it go: its play is in the save, and the hero here, out of date, is
+ * never written over it (Game.outdated)
+ */
+export type HandOver = 'saved' | 'unsaved' | 'unplayed' | 'stale';
 
 /** a seed for a map made anew */
 const newSeed = () => (Math.random() * 2 ** 31) | 0;
@@ -196,8 +212,11 @@ export class Game {
   private sharedNote: string | null = null;
   /** storage refused a save this game: said once */
   private toldUnsaved = false;
-  /** when the player was last told another tab has this hero (save.ts claimHero), by Date.now() */
-  private toldTaken = -Infinity;
+  /**
+   * Game.time when the hero last went into storage (persist): while it hasn't moved on, nothing has
+   * been played here since (heroClaimed)
+   */
+  private savedAt = -1;
   /** the time of day under the sky, 0 → 1 from midnight (src/render/sky.ts); it starts in the morning */
   clock = 0.3;
   /** how fast the day goes by (0 holds it, for screenshots: ?tod=) */
@@ -208,6 +227,12 @@ export class Game {
    * shut or not, as nothing done here would be kept
    */
   elsewhere = false;
+  /**
+   * a reload's hero, claimed as the page started (claimToResume) to be played on once the models are
+   * in (resume): the page keeps the claim fresh meanwhile as a game's (main.ts), and another window
+   * opening the hero before then has it (heroClaimed)
+   */
+  resumeClaimed = false;
   /** driven externally (balance bot): the page loop neither steps nor renders */
   headless = false;
   started = false;
@@ -273,11 +298,6 @@ export class Game {
   }
 
   /**
-   * Resume a saved character (the current slot when none is given). Like a game of Diablo II it
-   * starts in the camp, its maps made anew, the waypoints as they were; a `reload` mid-game plays on
-   * in the same world, in the area it was saved in (the camp, if this build has no map of that)
-   */
-  /**
    * Before continuing a hero another tab is playing (save.ts playedElsewhere): claimed, and that tab
    * given time to save it a last time and hand it over, so nothing done there is lost. True when it did
    */
@@ -287,6 +307,11 @@ export class Game {
     return waitHandOver();
   }
 
+  /**
+   * Resume a saved character (the current slot when none is given). Like a game of Diablo II it
+   * starts in the camp, its maps made anew, the waypoints as they were; a `reload` mid-game plays on
+   * in the same world, in the area it was saved in (the camp, if this build has no map of that)
+   */
   continueGame(slot?: number, reload = false): boolean {
     if (slot !== undefined) setSlot(slot);
     // claimed before it is read: a tab playing it writes it a last time, then no more (save.ts claimHero)
@@ -309,6 +334,49 @@ export class Game {
   }
 
   /**
+   * A reload of this tab goes back to its hero (main.ts): claimed as the page starts, while the models
+   * load, so a tab still playing it writes it a last time before it is read here (save.ts claimHero).
+   * Until it is played on (resume) the page keeps the claim fresh as a game's (heartbeat), and another
+   * window opening the hero meanwhile has it (heroClaimed)
+   */
+  claimToResume() {
+    claimHero();
+    this.resumeClaimed = true;
+  }
+
+  /**
+   * The reload's hero, once the models are in: played on in the same world, where it was
+   * (continueGame). Another window holding a fresh claim on it by now (its storage event not in yet)
+   * is first waited for to save it a last time and hand it over, as from the title (takeOver), with
+   * `waiting` called meanwhile. False when it isn't played on: given up to another window during the
+   * load or that wait (heroClaimed), or no save
+   */
+  async resume(waiting?: () => void): Promise<boolean> {
+    if (!this.resumeClaimed) return false;
+    const slot = slotNow();
+    if (playedElsewhere(slot)) {
+      waiting?.();
+      await this.takeOver(slot);
+      // opened in yet another window while this one waited, its storage event still on the way: that one has it
+      if (this.resumeClaimed && claimedElsewhere()) this.giveUpResume();
+      if (!this.resumeClaimed) return false;
+    }
+    this.resumeClaimed = false;
+    return this.continueGame(undefined, true);
+  }
+
+  /**
+   * A reload's hero opened in another window before it is played on here: handed over at once, as
+   * nothing here has been read or played since the reload (the page before saved it as it went), and
+   * never started here
+   */
+  private giveUpResume() {
+    this.resumeClaimed = false;
+    handOver();
+    this.tellGone('unplayed');
+  }
+
+  /**
    * The shared pages as a game starts, whoever the hero (save.ts loadShared): those of a hero who won't
    * be saved this time can be looked at only, as what moved between them would be lost. What fits on
    * none of them waits by the camp stash with the hero's own
@@ -319,8 +387,10 @@ export class Game {
     this.player.unplaced.push(...r.overflow);
     this.sharedNote = r.note;
     this.toldUnsaved = false;
-    this.toldTaken = -Infinity;
+    this.savedAt = -1;
     this.elsewhere = false;
+    // a game started, however: no reload's claim waits to be played on any more
+    this.resumeClaimed = false;
   }
 
   private tellShared() {
@@ -372,19 +442,30 @@ export class Game {
    * neither. True when another tab's changes came in: what shows them is drawn again
    */
   syncShared(): boolean {
-    return this.persist(false);
+    return this.persist(false).adopted;
   }
 
   /**
-   * The shared pages synced, then the hero saved: `always`, or because the pages were written. Not
-   * once another tab has the hero (save.ts heroTaken), but for this tab's `last` write of it
+   * The shared pages synced, then the hero saved: `always`, or because the pages were written.
+   * `adopted`: another tab's changes to the pages came in; `saved`: the hero went into storage. Not
+   * once another tab has the hero (save.ts heroTaken), but for this tab's `last` write of it: a claim
+   * of another tab's found here before its storage event came (the autosave, the menu's save or a
+   * sync got there first, or the event never came) hands the hero over just as the event would
    */
-  private persist(always: boolean, last = false): boolean {
-    if (!this.started || !this.level) return false;
+  private persist(always: boolean, last = false): { adopted: boolean; saved: boolean } {
+    const none = { adopted: false, saved: false };
+    // stopped for another tab (heroElsewhere): nothing more, the saves as the page goes away included
+    if (!this.started || !this.level || this.elsewhere) return none;
     const p = this.player;
-    if (!last && heroTaken(p)) {
-      this.heroElsewhere();
-      return false;
+    if (!last && claimedElsewhere()) {
+      this.heroClaimed();
+      return none;
+    }
+    // written by a tab that has let it go again since: this page was frozen past its claim, the storage
+    // events gone by while there was a claim to find (pageshow finds it as the back-forward cache gives the page back)
+    if (!last && writtenElsewhere()) {
+      this.outdated();
+      return none;
     }
     const r = syncShared(this.shared);
     if (r.refund) p.gold += r.refund;
@@ -393,18 +474,20 @@ export class Game {
       this.hooks.message(`共享储物箱放不下的 ${r.overflow.length} 件物品放在了营地的储物箱旁边`, '#c8a86a', 5);
       if (this.level.inTown(p.pos)) this.layOutUnplaced(this.level);
     }
+    let saved = false;
     if (r.failed) {
       // the hero without the pages could lose what went from one to the other: neither, this time
       this.tellUnsaved();
     } else if (always || r.wrote || r.refund || r.overflow.length) {
       // the area the hero stands in, not the map's: one map may hold several
-      const ok = writeSave(p, this.level.areaAt(p.pos.x, p.pos.z).id, this.worldSeed, this.hooks.getCursorItem(), last);
-      if (!ok && r.wrote) r.undo();
-      if (!ok && !isReadOnly(p)) this.tellUnsaved();
-      else if (ok) this.hooks.saveState?.(true);
+      saved = writeSave(p, this.level.areaAt(p.pos.x, p.pos.z).id, this.worldSeed, this.hooks.getCursorItem(), last);
+      if (!saved && r.wrote) r.undo();
+      if (!saved && !isReadOnly(p)) this.tellUnsaved();
+      else if (saved) this.hooks.saveState?.(true);
+      if (saved) this.savedAt = this.time;
     }
     if (r.adopted) this.hooks.inventoryChanged();
-    return r.adopted;
+    return { adopted: r.adopted, saved };
   }
 
   private tellUnsaved() {
@@ -416,25 +499,62 @@ export class Game {
   }
 
   /**
-   * Another tab claimed this hero (its storage event: save.ts claimHero). Written here a last time
-   * if nothing has been written over it since, so that tab, reading it after, has what was done
-   * here; then only played here, never written, the shared pages only looked at (D2R: a character
-   * is in one game at a time)
+   * Another tab claimed this hero (its storage event: save.ts claimHero; or a save here that found the
+   * claim first: persist). Written here a last time if nothing has been written over it since and this
+   * build writes it at all, so that tab, reading it after, has what was done here; then handed over,
+   * never written here again, the game here stopped (D2R: a character is in one game at a time). A
+   * reload still loading the hero gives it up instead, never starting it (giveUpResume). Once only
    */
   heroClaimed() {
-    if (!this.started || isReadOnly(this.player) || !claimedElsewhere()) return;
-    if (mayWriteLast()) this.persist(true, true);
-    heroTaken(this.player);
+    if (this.elsewhere || !claimedElsewhere()) return;
+    if (!this.started) {
+      if (this.resumeClaimed) this.giveUpResume();
+      return;
+    }
+    const p = this.player;
+    // the play here is in what the other tab reads: written now; or, that tab having written the hero
+    // first (its wait for this one ran out: this tab frozen, hidden, in the back-forward cache), with
+    // nothing played here since the last write that went in
+    const saved = !isReadOnly(p) && (mayWriteLast() ? this.persist(true, true).saved : this.savedAt === this.time);
+    heroTaken(p);
     // the other tab reads the hero only now, with what was done here in it (save.ts waitHandOver)
     handOver();
-    this.heroElsewhere();
+    this.heroElsewhere(saved ? 'saved' : 'unsaved');
   }
 
   /**
-   * This hero is another tab's now: the shared pages only looked at from here on, and the player
-   * told, again as the game would save (the autosave), since nothing here is kept any more
+   * Back from the back-forward cache (main.ts pageshow), the hero let go as the page went (pagehide):
+   * played here, or a reload's still loading. Another tab playing it now has it (heroClaimed); one that
+   * opened it meanwhile, played and let it go again has written it since this tab last did, so the hero
+   * here is out of date and stops (outdated); else it is this tab's again, played on. Nothing once this
+   * tab has handed it over (elsewhere): claimed again, it would stop the tab playing it now, and beat on
+   * so that it never handed over again
    */
-  private heroElsewhere() {
+  backFromCache() {
+    if (!(this.started || this.resumeClaimed) || this.elsewhere) return;
+    if (playedElsewhere(slotNow())) this.heroClaimed();
+    // nothing read here yet: the reload reads whatever was written meanwhile once its models are in
+    else if (!this.started) claimHero();
+    else if (writtenElsewhere()) this.outdated();
+    else reclaimHero();
+  }
+
+  /**
+   * The hero written by another tab since this one last read or wrote it, with no claim of that tab's
+   * left (writtenElsewhere): what is played here is out of date. Never written here again, so that
+   * tab's play stays in the save for the hero picked again, here or anywhere; the game here stopped as
+   * at a hand-over, with nothing to hand over, as nobody waits
+   */
+  private outdated() {
+    neverWrite(this.player);
+    this.heroElsewhere('stale');
+  }
+
+  /**
+   * This hero is another tab's now: the shared pages only looked at from here on, and the player told
+   * what became of the play here (`how`), as nothing here is kept any more
+   */
+  private heroElsewhere(how: HandOver) {
     if (!this.shared.readOnly) {
       this.shared.readOnly = '这个角色已在另一个窗口打开：这里只能查看';
       this.hooks.inventoryChanged();
@@ -443,13 +563,13 @@ export class Game {
     // (and stays stopped: PauseMenu.toggle leaves it paused once the menu is shut)
     this.elsewhere = true;
     this.paused = true;
-    if (this.hooks.heroGone) {
-      this.hooks.heroGone();
-      return;
-    }
-    if (Date.now() - this.toldTaken < 10000) return;
-    this.toldTaken = Date.now();
-    this.hooks.message('这个角色已在另一个窗口打开：这里不再保存', '#ff8060', 10);
+    this.tellGone(how);
+  }
+
+  /** the player told another tab has the hero: the hand-over notice (UI.heroGone), or without one a message */
+  private tellGone(how: HandOver) {
+    if (this.hooks.heroGone) this.hooks.heroGone(how);
+    else this.hooks.message('这个角色已在另一个窗口打开：这里不再保存', '#ff8060', 10);
   }
 
   /** the grids the hero's items lie in, the shared pages too while they can change, for reading a scroll or tome from */
@@ -685,12 +805,13 @@ export class Game {
     // switch back so soon after the last waits a moment (Sfx SWITCH_HOLD)
     this.sfx.setTime(this.clock);
     this.sfx.enterArea(area, how === 'walk');
-    // decode what's heard here and in the areas next to it, so it plays recorded from the first time
-    void this.sfx.preload(soundsNear(area, this.areasNext(area), isNight(this.clock), p.cls));
     // the quests hear of it (ChangedLevel); one may give the hero a line of its own to say
     const quest = this.quests.areaChanged(area, prev);
-    // in the camp, what its people may say now is fetched ahead
+    // in the camp, what its people may say now is fetched ahead, the line they'll say next first
     this.fetchAhead();
+    // decode what's heard here and in the areas next to it, so it plays recorded from the first time
+    // (in the camp, after that line: Sfx.preload)
+    void this.sfx.preload(soundsNear(area, this.areasNext(area), isNight(this.clock), p.cls));
     const line = (prev && how !== 'respawn' && quest) || this.arrivalLine(area, prev, how);
     if (prev && prev.kind !== area.kind) this.leftKind.set(prev.kind, this.time);
     if (area.kind === 'dungeon') this.wentUnder = true;
@@ -1974,7 +2095,8 @@ export class Game {
    * files only, decoded when they're said): on a slow connection a line said at once (Akara's quest,
    * her reward) would otherwise come late, a greeting after its moment. Each one's line a quest has
    * them open with first, then their greetings, what 交谈 has them say and their farewells, as things
-   * stand; asked again as they change (a line heard, the hero back in the camp)
+   * stand; asked again as they change (a line heard, the hero back in the camp). The first of them is
+   * the line said next: Sfx fetches it before anything else it fetches or warms here
    */
   private fetchAhead() {
     if (this.area?.kind !== 'town') return;

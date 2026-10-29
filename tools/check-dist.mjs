@@ -11,8 +11,9 @@
 //
 // The budget's bytes were 40 MiB until 2026-10-29, when the voices merged (each hero line in four
 // takes, and Akarelle's lines: 193 more files, 3.15 MiB) took the release line to 41.75 MiB, 38.60
-// without them. It is 44 MiB since: still 6 under the internal host's hard 50 MiB (52,428,800 bytes), and
-// compressing the pictures in the models and the ground textures comes next, before M2a adds its art.
+// without them. It is 44 MiB since: still 6 under the internal host's hard 50 MiB (52,428,800 bytes). The
+// pictures in the models and the ground textures were compressed next (the same day: 37.41 MiB),
+// which leaves the room under it for M2a's art.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

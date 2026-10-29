@@ -1,9 +1,12 @@
-// Headless test runner: node tools/play.mjs <scenario.mjs> [--url http://localhost:5174/?dev] [--out dir] [--w 1280] [--h 800]
+// Headless test runner: node tools/play.mjs <scenario.mjs> [--url http://localhost:5174/?dev] [--dev] [--sorc] [--out dir] [--w 1280] [--h 800]
 // A scenario exports `default async function (page, shot, log)`. The run exits 1 when the scenario
 // throws or logs a result line of FAIL ("SMOKE FAIL …": a word in capitals, then FAIL), 2 when the
 // page crashes or the browser goes away, else 0. With ?dev the game starts once the title's models
 // are in and the rest stream in behind (src/render/assets.ts): a scenario starts once every model is
 // in and swapped in for what stood in for it, as the game had them all before.
+// --dev and --sorc add ?dev and &sorc to the url (where it hasn't them), so a command needs no "?"
+// (a hook in isolated worktrees refuses commands with one):
+//   node tools/play.mjs tools/scenarios/smoke.mjs --url http://localhost:5185/ --dev --sorc
 import { chromium } from 'playwright-core';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -15,7 +18,15 @@ const opt = (k, d) => {
   return i >= 0 ? args[i + 1] : d;
 };
 const scenario = args[0];
-const url = opt('url', 'http://localhost:5174/?dev');
+/** `u` with dev and sorc in its query for --dev and --sorc, where it hasn't them already */
+function withFlags(u) {
+  const has = new URL(u).searchParams;
+  const add = ['dev', 'sorc'].filter((k) => args.includes(`--${k}`) && !has.has(k));
+  if (!add.length) return u;
+  const [base, ...hash] = u.split('#');
+  return `${base}${base.includes('?') ? '&' : '?'}${add.join('&')}${hash.length ? `#${hash.join('#')}` : ''}`;
+}
+const url = withFlags(opt('url', 'http://localhost:5174/?dev'));
 const out = opt('out', path.join(os.tmpdir(), 'dii-shots'));
 const width = +opt('w', 1280);
 const height = +opt('h', 800);
