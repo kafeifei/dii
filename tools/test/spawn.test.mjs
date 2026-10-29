@@ -3,7 +3,10 @@
 // areas for the test (the boss room wholly on one side): each call places monsters only on its own
 // area's tiles, at the floor's level (D2's champion +2, a berserk one, unique and minion +3 on
 // top), and the boss only in the area with its room, one of Act 1's bosses. Last, Level on that cut floor: each area
-// spawns from an rng of its own, so the east gets the same monsters whether the west gets any.
+// spawns from an rng of its own, so the east gets the same monsters whether the west gets any. Then
+// the overworld's presets: one Blood Raven in the Burial Grounds (presetMonster), the one monster with
+// a quest ('a1q2'), her party of the Hungry Dead round her, the same each time; Rakanishu and his
+// minions in the Cairn Stones; none on a trial floor counts for a quest.
 // What spawns, D2's rules, is tools/test/d2-population.test.mjs.
 const SEEDS = [1, 7, 0x5eed, 20261026];
 /** how far above the floor's level each rank stands: D2's leveladd +3, a champion's one back (MonsterUnique.cpp:268-298) */
@@ -83,6 +86,8 @@ export default async (load) => {
       check(!!level.boss === (area === bossIn), `${what}: boss ${level.boss?.def.id ?? 'none'}, the boss room is ${bossIn === west ? 'west' : 'east'}`);
       const floor = area === west ? 4 : 8;
       check(!level.boss || (level.boss.def.id === BOSS[floor] && ms.includes(level.boss)), `${what}: Level.boss is ${level.boss?.def.id}, not floor ${floor}'s ${BOSS[floor]} among its monsters`);
+      // a trial floor's Blood Raven is no quest's (only the Burial Grounds' counts: docs/M2A.md 怪物)
+      check(!ms.some((m) => m.quest), `${what}: a monster on a trial floor counts for quest ${ms.find((m) => m.quest)?.quest}`);
       const again = cutFloor(seed).level;
       spawnArea(again, area, new RNG(seed), opts);
       check(listing(again.monsters) === listing(ms), `${what}: the same rng spawned different monsters`);
@@ -105,6 +110,41 @@ export default async (load) => {
   }
 
   check(elites > 0, 'no champions, uniques or minions on any cut floor');
+
+  // ── the overworld's presets: one Blood Raven in the Burial Grounds, put down by presetMonster with her
+  // quest (the only monster with one), her party round her; Rakanishu in the Cairn Stones. In each difficulty ──
+  const { generateOverworld } = await load('/src/world/overworld.ts');
+  const { D2X_SUPERUNIQUES } = await load('/src/data/d2x/superuniques.ts');
+  const { D2X_MONSTERS } = await load('/src/data/d2x/monsters.ts');
+  const { STONY_FIELD, BURIAL_GROUNDS } = await load('/src/world/areas.ts');
+  const rak = D2X_SUPERUNIQUES.find((u) => u.key === 'Rakanishu');
+  const presets = [];
+  for (const seed of SEEDS) {
+    const ow = generateOverworld(seed);
+    for (const d of [0, 1, 2]) {
+      const level = new Level(WILD_MAPS, ow.seed, ow, d);
+      const what = `the overworld, seed ${seed}, difficulty ${d}`;
+      const spot = ow.presetMonsters[0].pos;
+      const ravens = level.monsters.filter((m) => m.def.id === 'bloodraven');
+      const r = ravens[0];
+      check(ravens.length === 1 && r.quest === 'a1q2' && r.rank === 'boss' && tileArea(level, r.pos) === BURIAL_GROUNDS && Math.hypot(r.pos.x - spot.x, r.pos.z - spot.z) < 1e-9, `${what}: Blood Raven ${JSON.stringify(ravens.map((m) => ({ quest: m.quest, rank: m.rank, area: tileArea(level, m.pos), x: m.pos.x, z: m.pos.z })))}, her spot ${JSON.stringify(spot)}`);
+      check(!r || r.level === D2X_MONSTERS.bloodraven.diff[d].level, `${what}: Blood Raven is level ${r?.level}, her row's ${D2X_MONSTERS.bloodraven.diff[d].level}`);
+      check(level.monsters.filter((m) => m.quest).length === 1, `${what}: ${level.monsters.filter((m) => m.quest).length} monsters count for a quest`);
+      const party = r ? r.pack.filter((m) => m !== r) : [];
+      const [lo, hi] = D2X_MONSTERS.bloodraven.party;
+      check(party.length >= lo && party.length <= hi && party.every((m) => m.def.id === 'zombie2' && !m.quest && tileArea(level, m.pos) === BURIAL_GROUNDS && Math.hypot(m.pos.x - r.pos.x, m.pos.z - r.pos.z) < 3), `${what}: her party ${party.map((m) => m.def.id).join(',')}`);
+      // the same map, the same party
+      const again = new Level(WILD_MAPS, ow.seed, ow, d).monsters.find((m) => m.def.id === 'bloodraven');
+      check(again && listing(again.pack) === listing(r.pack), `${what}: built twice, Blood Raven's party differs`);
+      const raks = level.monsters.filter((m) => m.superUnique === 'Rakanishu');
+      const k = raks[0];
+      const c = ow.cairn.center;
+      check(raks.length === 1 && k.def.id === rak.mon && k.displayName === rak.name && tileArea(level, k.pos) === STONY_FIELD && Math.hypot(k.pos.x - c.x, k.pos.z - c.z) < 1.5, `${what}: Rakanishu ${JSON.stringify(raks.map((m) => ({ id: m.def.id, name: m.displayName, x: m.pos.x, z: m.pos.z })))}, the cairn at ${c.x},${c.z}`);
+      const minions = level.monsters.filter((m) => m.leader === k);
+      check(minions.length > 0 && minions.every((m) => Math.hypot(m.pos.x - c.x, m.pos.z - c.z) < 4), `${what}: Rakanishu's ${minions.length} minions by the cairn`);
+      if (d === 0) presets.push(`${party.length}+${minions.length}`);
+    }
+  }
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
-  console.log(`  ${SEEDS.length} seeds built twice alike, the camp empty; floor 4 cut in two areas, monsters west/east by seed: ${counts.join(', ')}, ${elites} champions, uniques and minions`);
+  console.log(`  ${SEEDS.length} seeds built twice alike, the camp empty; floor 4 cut in two areas, monsters west/east by seed: ${counts.join(', ')}, ${elites} champions, uniques and minions; the overworld's one Blood Raven with her quest and Rakanishu at the cairn in each difficulty (party + minions in normal: ${presets.join(', ')})`);
 };

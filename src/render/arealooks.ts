@@ -34,6 +34,11 @@ export const GROUND_LOOKS: Record<string, GroundLook> = {
   town: { layers: [['wild_grass', 4], ['town_floor', 4], ['wild_road', 3.5], ['crypt_floor', 4]] },
   // Cold Plains: the moor's ground gone pale and grey under the frost
   frost: { layers: WILD_LAYERS, desat: 0.3, tint: '#e4ecf0', gain: 1.12 },
+  // Stony Field: drier and greyer, dry earth in patches through it (zone.ts stony); the moor's
+  // pictures until the A line's gravel (docs/M2A.md 地图: 列石荒野新做一张碎石地贴图)
+  stony: { layers: WILD_LAYERS, desat: 0.22, tint: '#ece2d2', gain: 1.02 },
+  // the Burial Grounds: dark, wet earth gone colourless
+  barrow: { layers: WILD_LAYERS, desat: 0.36, tint: '#cac8ba', gain: 0.96 },
 };
 
 /**
@@ -96,6 +101,22 @@ const AREA_LOOKS: Record<string, AreaLook> = {
     mist: { color: '#b4c4dc', opacity: 0.32 },
     grade: { shadow: '#1a2c58', light: '#e0eeff', tone: 0.4, saturation: 0.86, gamma: 1.02, vignette: 0.03, bloom: 0.9 },
     motes: [['frost', 1], ['fireflies', 0.25]],
+  },
+  // Stony Field: a dry, open light, the darks a dusty violet, seeds on the wind; its cliffs are Layout.cliffs'
+  stonyfield: {
+    ground: 'stony',
+    walls: 'ruins',
+    mist: { color: '#9a948a', opacity: 0.22 },
+    grade: { shadow: '#34283a', light: '#ffe4c4', tone: 0.24, saturation: 0.9, gamma: 1.0, vignette: 0, bloom: 1 },
+    motes: [['seeds', 1], ['fireflies', 0.5]],
+  },
+  // the Burial Grounds: a heavy grey-green murk, the colour drained, dust over the graves
+  burialgrounds: {
+    ground: 'barrow',
+    walls: 'ruins',
+    mist: { color: '#7a8676', opacity: 0.33 },
+    grade: { shadow: '#1c2c26', light: '#d0dcc8', tone: 0.38, saturation: 0.78, gamma: 1.03, vignette: 0.07, bloom: 0.95 },
+    motes: [['dust', 0.7], ['fireflies', 0.2]],
   },
 };
 

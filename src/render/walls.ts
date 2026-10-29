@@ -4,7 +4,7 @@ import type { WallKind } from './arealooks';
 import { tileTexture } from './textures';
 
 /** a wall's height as a share of WALL_H, by how it's built: at least the first, up to the first and the second */
-export const WALL_HEIGHT: Record<WallKind, [number, number]> = { palisade: [0.85, 0.25], ruins: [0.2, 0.4], wall: [0.96, 0.08], cliff: [1.05, 0.35] };
+export const WALL_HEIGHT: Record<WallKind, [number, number]> = { palisade: [0.85, 0.25], ruins: [0.2, 0.4], wall: [0.96, 0.08], cliff: [1.45, 0.18] };
 
 export interface OccUniforms {
   uPlayer: { value: THREE.Vector3 };

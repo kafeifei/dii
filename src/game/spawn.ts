@@ -1,4 +1,4 @@
-import type { P2, RNG } from '../core/math';
+import { RNG, type P2 } from '../core/math';
 import { D2X_AREAS } from '../data/d2x/areas';
 import { D2X_MONSTERS } from '../data/d2x/monsters';
 import { D2X_SUPERUNIQUES } from '../data/d2x/superuniques';
@@ -466,11 +466,45 @@ function middle(r: Room): P2 {
 
 /**
  * A monster a map's preset sets down that isn't a superunique (Layout.presetMonsters: the Burial
- * Grounds' Blood Raven, with her quest, Monster.quest): put on `level` where it says. M2a's W line's;
- * nothing yet, as no map has one
+ * Grounds' Blood Raven, D2's place_bloodraven), put on `level` where it says, awake to nothing yet: at
+ * its D2 numbers for the area and difficulty (spawnLevel; a boss keeps its own level), a boss as one,
+ * with the party its row brings (MONSTERSPAWN_SpawnMinionParty: hers 5–9 of the Hungry Dead round
+ * her), and the quest its death counts for (Monster.quest). Its rolls come from an rng of its own,
+ * seeded by what and where it is, so the same map sets down the same party. Null when it has no look,
+ * or it would stand in a town
  */
-export function presetMonster(_level: Level, _pm: PresetMonster): Monster | null {
-  return null;
+export function presetMonster(level: Level, pm: PresetMonster): Monster | null {
+  const area = level.areaAt(pm.pos.x, pm.pos.z);
+  const row = D2X_MONSTERS[pm.monster];
+  if (!row || !monsterDef(pm.monster) || area.kind === 'town') return null;
+  const d = level.difficulty;
+  const alvl = areaLevel(area, d);
+  let h = Math.imul(Math.floor(pm.pos.x * 64), 0x9e3779b1) ^ Math.imul(Math.floor(pm.pos.z * 64), 0x85ebca6b) ^ d;
+  for (let i = 0; i < pm.monster.length; i++) h = Math.imul(h ^ pm.monster.charCodeAt(i), 0x01000193);
+  const rng = new RNG(h >>> 0);
+  const map = level.monsterMap;
+  const at: Placement = {
+    rooms: [],
+    camps: [],
+    uniques: [],
+    walk: () => 0,
+    area: 0,
+    randomIn: () => null,
+    // her party on ground monsters may stand on, in her area, in sight of her
+    near(c, r) {
+      for (let k = 0; k < 16; k++) {
+        const q = { x: c.x + rng.range(-r, r), z: c.z + rng.range(-r, r) };
+        if (map.walkableAt(q.x, q.z) && map.circleClear(q.x, q.z, 0.3) && map.los(c, q) && level.areaAt(q.x, q.z) === area) return q;
+      }
+      return { ...c };
+    },
+    roomOf: () => 0,
+  };
+  const report: SpawnReport = { kinds: [], rolls: 0, packs: 0, bossPacks: 0, bossAt: [], count: 0, superUniques: [], rooms: 0, superUniqueRooms: [] };
+  const s: Spawn = { level, rng, difficulty: d, region: trialRegion(alvl), kinds: [], lvl: (id) => spawnLevel(D2X_MONSTERS[id], d, alvl), at, count: 0, report };
+  const m = withParty(s, pm.monster, row.boss ? 'boss' : 'normal', { ...pm.pos }, []);
+  if (m && pm.quest) m.quest = pm.quest;
+  return m;
 }
 
 /**

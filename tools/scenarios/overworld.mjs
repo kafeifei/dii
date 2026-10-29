@@ -7,11 +7,18 @@
 // area past AIR_SEAM), the ground wears the three areas' looks, the minimap (by the next frame) and
 // the music the hero's area names follow (the sound started with a click: its recorded track streaming, or with none
 // shipped, its composed music), and stepping to and fro over a seam doesn't say the area's name again
-// (src/ui/banner.ts). Then 30 s of sim by the camp's edge, a pack
-// of Blood Moor's monsters woken just outside it: 10 s with the hero out there, 20 s with them just
-// inside; no monster may ever stand on a camp tile. Page and console errors fail the run. Shots:
-// the camp's palisade gate, the camp's seam, Blood Moor's seam with Cold Plains, Cold Plains'
-// waypoint, and the camp's edge after the sim. The last line is "OVERWORLD OK …" or "OVERWORLD FAIL …".
+// (src/ui/banner.ts). Then on from Cold Plains into Stony Field and the Burial Grounds, walked
+// through their seams (each announced, the minimap naming it the next frame): Stony Field's cliffs
+// along its north and west, the Underground Passage's mouth at the cliff's foot (used, it says it isn't
+// open yet and goes nowhere), the Cairn Stones with Rakanishu in them, its waypoint lit and listed
+// after Cold Plains'; the Burial Grounds' graveyard gate, the Mausoleum, the Crypt's way (closed, the
+// same), Blood Raven the one monster with a quest; back to Cold Plains by waypoint. Then 30 s of sim
+// by the camp's edge, a pack of Blood Moor's monsters woken just outside it: 10 s with the hero out
+// there, 20 s with them just inside; no monster may ever stand on a camp tile. Page and console
+// errors fail the run. Shots: the camp's palisade gate, the camp's seam, Blood Moor's seam with Cold
+// Plains, Cold Plains' waypoint, Stony Field's seam, its cliff, the passage's mouth, the cairn, the
+// graveyard's gate, the Mausoleum, the Crypt's way, and the camp's edge after the sim. The last line
+// is "OVERWORLD OK …" or "OVERWORLD FAIL …".
 
 /** the areas walked through, in order (src/world/areas.ts CAMP_AREA, WILD_AREA, COLD_PLAINS) */
 const ROUTE = [1, 2, 3];
@@ -279,10 +286,172 @@ export default async function (page, shot, log) {
         return { areas: areas.join(''), said, key, shown: shown() };
       });
       expect(d.areas === '323232' && d.said === 0, `to and fro over the seam (areas ${d.areas}) said the name ${d.said} more time(s)`);
-      expect(d.key.startsWith('ground-3-'), `the ground's shader is ${d.key}, not one of three looks`);
+      expect(d.key.startsWith('ground-5-'), `the ground's shader is ${d.key}, not one of five looks (the camp, Blood Moor, Cold Plains, Stony Field, the Burial Grounds)`);
       facts.push(`air at the openings ${air.join(', ')}; mist ${[1, 2, 3].map((a) => mist[a].toFixed(2)).join('/')}; ${d.shown} names said`);
       await frames();
       await shot('coldplains-seam');
+    },
+
+    async west() {
+      // ── on from Cold Plains into Stony Field and the Burial Grounds, walked through their seams ──
+      const plan = await ev(() => {
+        const ow = game.level.layout;
+        const seam = (a, b) => {
+          const s = ow.seams.find((x) => x.a === a && x.b === b);
+          if (s) return s;
+          const r = ow.seams.find((x) => x.a === b && x.b === a);
+          return r && { a, b, ta: r.tb, tb: r.ta };
+        };
+        const S = window.__ow;
+        S.stonySeam = seam(3, 4);
+        S.barrowSeam = seam(3, 17);
+        S.areas.length = 0;
+        return { stony: !!S.stonySeam, barrow: !!S.barrowSeam, cliffs: ow.cliffs?.size ?? 0 };
+      });
+      if (!expect(plan.stony && plan.barrow && plan.cliffs > 0, `seams to Stony Field ${plan.stony}, the Burial Grounds ${plan.barrow}, ${plan.cliffs} cliff tiles`)) return;
+      /** a path found on the hero's map, hopped along a tile at a time (as the walk above) */
+      const go = async (to, what) => {
+        const r = await ev(
+          ({ to, what }) => {
+            const S = window.__ow;
+            const L = game.level;
+            const p = game.player;
+            const path = S.path(L.map, p.pos, to, 600000, 0.3);
+            if (!path) return { error: `no path ${what}` };
+            for (const pt of path) {
+              const n = Math.max(1, Math.ceil(S.dist(p.pos, pt)));
+              const from = { ...p.pos };
+              for (let k = 1; k <= n; k++) game.teleportWithin({ x: from.x + ((pt.x - from.x) * k) / n, z: from.z + ((pt.z - from.z) * k) / n });
+            }
+            return { end: S.dist(p.pos, to), same: game.level === S.west };
+          },
+          { to, what },
+        );
+        if (r.error) throw new Error(r.error);
+        expect(r.end < 1.5 && r.same, `${what}: ended ${r.end.toFixed(1)} from the spot, same level ${r.same}`);
+      };
+      const label = () => ev(() => ({ minimap: document.querySelector('#minimap .lvl')?.textContent, label: game.area.label ?? game.area.name, area: game.area.id }));
+      /** a step in front of the way down into area `dest` */
+      const before = (dest) =>
+        ev((dest) => {
+          const o = game.level.objects.find((x) => x.kind === 'stairs' && x.dest === dest);
+          return o && game.level.map.nearestWalkable(o.pos.x + o.inward.x * 2.2, o.pos.z + o.inward.z * 2.2);
+        }, dest);
+      /** that way used twice: closed, one message that it isn't open, nowhere gone */
+      const useClosed = (dest) =>
+        ev((dest) => {
+          const o = game.level.objects.find((x) => x.kind === 'stairs' && x.dest === dest);
+          const said = [];
+          const h = game.hooks;
+          const msg = h.message;
+          h.message = (t, ...r) => (said.push(t), msg.call(h, t, ...r));
+          const area = game.area.id;
+          game.interact(o);
+          game.interact(o);
+          h.message = msg;
+          return { said, closed: !!o.closed, name: o.name, stayed: game.level === window.__ow.west && game.area.id === area };
+        }, dest);
+      const closedOk = (u, what) => expect(u.closed && u.stayed && u.said.length === 1 && u.said[0].includes('还没有开通'), `${what} (${u.name}): closed ${u.closed}, said ${u.said.join(' / ') || 'nothing'}, stayed ${u.stayed}`);
+
+      // Stony Field: in through its seam, the minimap naming it the next frame
+      const s = await ev(() => window.__ow.stonySeam);
+      await go(s.ta, 'to the Stony Field seam');
+      await go(s.tb, 'into Stony Field');
+      await frames(1);
+      let l = await label();
+      expect(l.area === 4 && l.minimap === l.label, `in Stony Field: area ${l.area}, the minimap says ${l.minimap}, not ${l.label}`);
+      await frames();
+      await shot('stony-seam');
+      // the foot of its cliff, the north side's middle (else the west's)
+      const cliff = await ev(() => {
+        const L = game.level;
+        const b = L.layout.boxes.find((x) => x.area === 4);
+        for (const [x0, z0, dx, dz] of [[b.x + b.w / 2, b.z, 0, 1], [b.x, b.z + b.h / 2, 1, 0]]) {
+          for (let k = 3; k < 20; k++) {
+            const p = { x: Math.floor(x0 + dx * k) + 0.5, z: Math.floor(z0 + dz * k) + 0.5 };
+            if (L.layout.cliffs.has(Math.floor(p.z - dz) * L.map.w + Math.floor(p.x - dx)) && L.map.walkableAt(p.x, p.z)) return L.map.nearestWalkable(p.x + dx * 2.5, p.z + dz * 2.5);
+          }
+        }
+        return null;
+      });
+      if (expect(cliff, "no ground at the foot of Stony Field's cliff")) {
+        await go(cliff, "to the foot of Stony Field's cliff");
+        await frames();
+        await shot('stony-cliff');
+      }
+      // the Underground Passage's mouth in the cliff: closed
+      const mouth = await before(10);
+      if (expect(mouth, 'no way to the Underground Passage')) {
+        await go(mouth, "to the Underground Passage's mouth");
+        closedOk(await useClosed(10), "the Underground Passage's mouth");
+        await frames();
+        await shot('stony-passage-mouth');
+      }
+      // the Cairn Stones, Rakanishu among them
+      const cairn = await ev(() => {
+        const L = game.level;
+        const c = L.layout.cairn;
+        const rak = L.monsters.find((m) => m.superUnique === 'Rakanishu');
+        return c && { at: L.map.nearestWalkable(c.center.x + 2, c.center.z + 4), stones: c.stones.length, rak: rak ? window.__ow.dist(rak.pos, c.center) : null, name: rak?.displayName };
+      });
+      if (expect(cairn && cairn.stones === 5 && cairn.rak !== null && cairn.rak < 2, `the cairn ${JSON.stringify(cairn)}`)) {
+        await go(cairn.at, 'to the Cairn Stones');
+        await frames();
+        await shot('stony-cairn');
+      }
+      // its waypoint lit, listed after Cold Plains'
+      const wp = await ev(() => {
+        const L = game.level;
+        const o = L.objects.find((x) => x.kind === 'waypoint' && L.areaAt(x.pos.x, x.pos.z).id === 4);
+        if (!o) return null;
+        game.teleportWithin(L.map.nearestWalkable(o.pos.x + 1.2, o.pos.z + 0.6));
+        // its panel isn't wanted here: the hook notes it instead of opening it
+        const h = game.hooks;
+        const open = h.openPanel;
+        const panels = [];
+        h.openPanel = (k) => panels.push(k);
+        game.interact(o);
+        h.openPanel = open;
+        return { waypoints: game.player.waypoints.slice(), panels };
+      });
+      expect(wp && wp.waypoints[0] === 1 && wp.waypoints.at(-1) === 4 && wp.panels.join() === 'waypoint', `Stony Field's waypoint: the hero's waypoints ${wp?.waypoints.join()}, panels ${wp?.panels.join()}`);
+
+      // the Burial Grounds: back to Cold Plains by waypoint, walked in through the seam
+      await ev(() => game.travel(3));
+      const b = await ev(() => window.__ow.barrowSeam);
+      await go(b.ta, 'to the Burial Grounds seam');
+      await go(b.tb, 'into the Burial Grounds');
+      await frames(1);
+      l = await label();
+      expect(l.area === 17 && l.minimap === l.label, `in the Burial Grounds: area ${l.area}, the minimap says ${l.minimap}, not ${l.label}`);
+      const gate = await ev(() => {
+        const S = window.__ow;
+        const t = S.barrowSeam.tb;
+        const d = { x: Math.sign(Math.round(t.x - S.barrowSeam.ta.x)), z: Math.sign(Math.round(t.z - S.barrowSeam.ta.z)) };
+        return game.level.map.nearestWalkable(t.x + d.x * 6, t.z + d.z * 6);
+      });
+      await go(gate, "to the graveyard's gate");
+      await frames();
+      await shot('barrow-gate');
+      // the Mausoleum and the Crypt: closed while their maps aren't built
+      for (const [dest, name] of [[19, 'barrow-mausoleum'], [18, 'barrow-crypt']]) {
+        const to = await before(dest);
+        if (!expect(to, `no way into area ${dest}`)) continue;
+        await go(to, `to the way into area ${dest}`);
+        closedOk(await useClosed(dest), `the way into area ${dest}`);
+        await frames();
+        await shot(name);
+      }
+      const quested = await ev(() => {
+        const L = game.level;
+        return L.monsters.filter((m) => m.quest).map((m) => ({ id: m.def.id, quest: m.quest, area: L.areaAt(m.pos.x, m.pos.z).id }));
+      });
+      expect(quested.length === 1 && quested[0].id === 'bloodraven' && quested[0].quest === 'a1q2' && quested[0].area === 17, `the monsters with a quest: ${JSON.stringify(quested)}`);
+      const r = await ev(() => ({ areas: window.__ow.areas.slice(), levels: window.__ow.levels }));
+      expect(r.areas.join(' ') === '3>4 4>3 3>17' && r.levels === 0, `areaChanged fired ${r.areas.join(' ')}, ${r.levels} levelChanged`);
+      facts.push(`west block: ${plan.cliffs} cliff tiles, ${cairn?.name} at the cairn, areas ${r.areas.join(' ')}`);
+      // back to Cold Plains' waypoint, where the sim's walk out starts
+      await ev(() => game.travel(3));
     },
 
     async sim() {

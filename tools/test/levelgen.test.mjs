@@ -129,8 +129,10 @@ export default async (load) => {
     const wl = of('well');
     if (wl.length !== 1 || wl[0].d2 !== 130 || !wl[0].name || spent(wl[0])) problems.push(`the hand-made floor's well: ${JSON.stringify(wl.map((o) => ({ d2: o.d2, name: o.name })))}`);
     if (lv.layout.cliffs?.size !== 3 || lv.layout.cairn?.stones.length !== 2 || lv.layout.presets?.length !== 1 || lv.layout.presetMonsters?.length !== 1) problems.push('the hand-made floor lost a field it was made with');
-    // the preset's monster is the W line's to put down (spawn.ts presetMonster): none yet, and none other spawned for it
-    if (lv.monsters.some((m) => m.def.id === 'bloodraven' || m.quest)) problems.push('the hand-made floor put down a preset monster before presetMonster does');
+    // the preset's monster put down where it says (spawn.ts presetMonster), the one with the quest, her party round her without it
+    const pm = lv.monsters.filter((m) => m.def.id === 'bloodraven');
+    const quested = lv.monsters.filter((m) => m.quest);
+    if (pm.length !== 1 || pm[0].quest !== 'a1q2' || quested.length !== 1 || Math.hypot(pm[0].pos.x - s.x - 5, pm[0].pos.z - s.z - 5) > 1e-9 || pm[0].rank !== 'boss') problems.push(`the hand-made floor's preset monster: ${JSON.stringify(pm.map((m) => ({ quest: m.quest, rank: m.rank, x: m.pos.x - s.x, z: m.pos.z - s.z })))}, ${quested.length} with a quest`);
     const kashya = of('vendor').filter((o) => o.serves?.includes('hire'));
     if (kashya.length !== 1 || kashya[0].npcId !== 'kashya' || kashya[0].name !== D2X_MONSTERS.kashya.name || kashya[0].serves.join() !== 'hire') problems.push(`the hand-made floor's Kashya: ${JSON.stringify(kashya.map((o) => ({ name: o.name, npcId: o.npcId, serves: o.serves })))}`);
     // her place in the camp, where its rogue stands, not among its services yet: the camp as it was
