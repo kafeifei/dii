@@ -16,7 +16,7 @@ import { nullFx, type Fx } from './fx';
 import type { Level } from './level';
 import { Maps, newSeed } from './maps';
 import type { Monster } from './monster';
-import { GroundItem, WorldObject } from './objects';
+import { GroundItem, WorldObject, spent } from './objects';
 import { CHARGE_PREFIX, Player } from './player';
 import { startCast, toggleAura, updatePlayer, type PlayerAction } from './playerctl';
 import { celebrateLevelUp, killMonster, killPlayer, onProc, rollLoot, wake } from './kills';
@@ -725,7 +725,7 @@ export class Game {
     if (!ground && !inp.overUI) {
       const near = this.level.monstersNear(this.player.pos, 22).filter((m) => !m.dead && dist(m.pos, this.player.pos) < 22);
       monster = this.picker.pickMonster(inp.mx, inp.my, near);
-      if (!monster) object = this.picker.pickObject(inp.mx, inp.my, this.level.objects.filter((o) => !(o.used && (o.kind === 'chest' || o.kind === 'barrel' || o.kind === 'shrine'))));
+      if (!monster) object = this.picker.pickObject(inp.mx, inp.my, this.level.objects.filter((o) => !spent(o)));
     }
     this.hover = { monster, object, ground };
   }
@@ -956,7 +956,7 @@ export class Game {
       }
     }
     for (const o of this.level.objects) {
-      if (o.used && (o.kind === 'chest' || o.kind === 'barrel' || o.kind === 'shrine')) continue;
+      if (spent(o)) continue;
       const d = dist(o.pos, p.pos) - o.radius;
       if (d < bd) {
         bd = d;

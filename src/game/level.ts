@@ -16,6 +16,12 @@ import { createItem } from '../items/gen';
 import { DelayedBlast, GroundItem, Hammer, Projectile, WorldObject } from './objects';
 import { SHRINES } from '../data/shrines';
 
+/**
+ * What the kinds no map sets down yet are called when hovered, until the rename tables name them
+ * (rule 5: the O line's, with the objects themselves): the words docs/M2A-STEP0.md 2.5 uses
+ */
+const PENDING_NAMES = { casket: '石棺', remains: '遗骸', well: '井' } as const;
+
 /** the box an area's tiles fill on a level's map: first and last column (x) and row (z), inclusive */
 export interface AreaBox {
   x0: number;
@@ -86,8 +92,9 @@ export class Level {
     }
     const shrineRng = new RNG(seed ^ 0x51ed);
     for (const s of L.shrines ?? []) {
+      // one of any kind, as the wilderness's are; a maze's kind (ShrineSpot.kind) is the O line's to honour
       const def = shrineRng.pick(SHRINES);
-      const o = new WorldObject('shrine', s, def.name, 0.6);
+      const o = new WorldObject('shrine', { x: s.x, z: s.z }, def.name, 0.6);
       o.shrine = def.id;
       this.objects.push(o);
     }
@@ -122,8 +129,43 @@ export class Level {
         this.objects.push(new WorldObject('stash', s.pos, '储物箱', 0.8));
       }
     }
-    for (const c of L.chests) this.objects.push(new WorldObject('chest', c, '宝箱', 0.45));
-    for (const b of L.barrels) this.objects.push(new WorldObject('barrel', b, '木桶', 0.35));
+    // chests and barrels with what a maze's object groups say of them (objgroups.ts): the old
+    // generators' plain spots are plain chests and barrels, as ever
+    for (const c of L.chests) {
+      const o = new WorldObject('chest', { x: c.x, z: c.z }, '宝箱', 0.45);
+      if (c.d2 !== undefined) o.d2 = c.d2;
+      if (c.locked) o.locked = true;
+      if (c.trap) o.trap = c.trap;
+      if (c.sparkly) o.sparkly = c.sparkly;
+      this.objects.push(o);
+    }
+    for (const b of L.barrels) {
+      const o = new WorldObject('barrel', { x: b.x, z: b.z }, '木桶', 0.35);
+      if (b.d2 !== undefined) o.d2 = b.d2;
+      if (b.exploding) o.exploding = true;
+      // one that came broken already (PreOperate, Objects.cpp:418-423) is spent from the start
+      if (b.opened) o.used = true;
+      this.objects.push(o);
+    }
+    // a maze's caskets and holes, rogue corpses and wells (what using them does is the O line's: interact.ts USE)
+    for (const c of L.caskets ?? []) {
+      const o = new WorldObject('casket', c.pos, PENDING_NAMES.casket, 0.5);
+      o.d2 = c.id;
+      if (c.hole) o.hole = true;
+      if (c.opened) o.used = true;
+      this.objects.push(o);
+    }
+    for (const c of L.remains ?? []) {
+      const o = new WorldObject('remains', c.pos, PENDING_NAMES.remains, 0.5);
+      o.d2 = c.id;
+      if (c.flies) o.flies = true;
+      this.objects.push(o);
+    }
+    for (const w of L.wells ?? []) {
+      const o = new WorldObject('well', w.pos, PENDING_NAMES.well, 0.7);
+      o.d2 = w.id;
+      this.objects.push(o);
+    }
     this.populate(seed);
     if (GALLERY && !layout && this.inTown(L.start)) {
       // a monster of every look in a row, held still (the stun never wears off)

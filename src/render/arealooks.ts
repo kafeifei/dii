@@ -53,8 +53,11 @@ export interface GradeShift {
 /** the sky's grade as it is */
 export const NO_SHIFT: GradeShift = { shadow: '#ffffff', light: '#ffffff', tone: 0, saturation: 1, gamma: 1, vignette: 0, bloom: 1 };
 
-/** how a wall tile is built: the camp's tall palisade, the wilderness's ruins broken off low, a dungeon's walls */
-export type WallKind = 'palisade' | 'ruins' | 'wall';
+/**
+ * how a wall tile is built: the camp's tall palisade, the wilderness's ruins broken off low, a
+ * dungeon's walls, a cliff (Layout.cliffs: Stony Field's north and west edges, docs/M2A.md 地图)
+ */
+export type WallKind = 'palisade' | 'ruins' | 'wall' | 'cliff';
 
 export interface AreaLook {
   /** GROUND_LOOKS key */

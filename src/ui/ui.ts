@@ -32,7 +32,7 @@ import { Tooltip } from './tooltip';
 import { isTouchDevice, TouchControls } from './touch';
 
 /** what the touch interact button says it does to each kind of thing */
-const USE_VERB: Record<ObjKind, string> = { chest: '打开', barrel: '打碎', stairs: '进入', waypoint: '使用', vendor: '交谈', stash: '打开', portal: '进入', exit: '前往', shrine: '触摸', corpse: '拾取', obelisk: '使用' };
+const USE_VERB: Record<ObjKind, string> = { chest: '打开', barrel: '打碎', stairs: '进入', waypoint: '使用', vendor: '交谈', stash: '打开', portal: '进入', exit: '前往', shrine: '触摸', corpse: '拾取', obelisk: '使用', casket: '打开', remains: '搜查', well: '饮用' };
 
 /**
  * the hand-over notice's word on what became of the play here (GameHooks.heroGone): only what is

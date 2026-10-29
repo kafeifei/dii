@@ -72,6 +72,11 @@ export function objectNeeds(o: WorldObject, outdoor: boolean): ModelKey[] {
       return specNeeds(vendorSpec());
     case 'corpse':
       return o.corpse ? specNeeds(playerSpec({ cls: o.corpse.cls, equipment: o.corpse.equipment } as Player)) : [];
+    // a maze's caskets, rogue corpses and wells: drawn in code until they have models (the O line's: objviews.ts)
+    case 'casket':
+    case 'remains':
+    case 'well':
+      return [];
   }
   return [];
 }

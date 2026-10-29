@@ -22,6 +22,10 @@ export type FxKind =
   | 'swing'
   | 'chest'
   | 'barrel'
+  // a maze's objects as they are used: a casket opened, a corpse searched, a well drunk from
+  | 'casket'
+  | 'remains'
+  | 'well'
   | 'aura_switch'
   | 'shield_buff'
   | 'gold'

@@ -361,6 +361,20 @@ export class Effects implements Fx {
           this.norm.spawn({ x, y: 0.4, z, vx: Math.sin(a) * s, vy: 2 + Math.random() * 3, vz: Math.cos(a) * s, color: '#6a4a2a', size: 0.12, life: 0.8, gravity: 12, floor: true });
         }
         break;
+      case 'casket':
+        // its lid shoved off: grave dust, and a glint of what lay inside
+        for (let i = 0; i < 6; i++) this.norm.spawn({ x: x + (Math.random() - 0.5) * 0.8, y: 0.3, z: z + (Math.random() - 0.5) * 0.8, vy: 0.5, color: '#6a6458', size: 0.5, life: 0.9, alpha: 0.3, endSize: 2.2, drag: 2 });
+        this.sparks(x, 0.5, z, '#d8c890', 8, 1.5, 0.12, 0.5, 2);
+        break;
+      case 'remains':
+        // searched: a puff of dust off the body
+        for (let i = 0; i < 4; i++) this.norm.spawn({ x: x + (Math.random() - 0.5) * 0.6, y: 0.15, z: z + (Math.random() - 0.5) * 0.6, vy: 0.3, color: '#5a5040', size: 0.4, life: 0.7, alpha: 0.3, endSize: 1.8, drag: 2 });
+        break;
+      case 'well':
+        // drunk from: a cool ring off the water, and droplets rising
+        this.ring(pos, '#80c8ff', 0.2, 1.1, 0.6, 0.7, 0.5);
+        this.sparks(x, 0.6, z, '#a0d8ff', 12, 1.2, 0.12, 0.7, -1);
+        break;
       case 'aura_switch':
         this.ring(pos, opts.color ?? '#ffffff', 0.3, 2.5, 0.5, 0.9);
         this.sparks(x, 0.3, z, opts.color ?? '#ffffff', 20, 2, 0.2, 0.6, -2);

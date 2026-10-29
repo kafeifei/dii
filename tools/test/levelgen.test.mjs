@@ -1,6 +1,8 @@
 // Map generation: the camp, the wilderness and dungeon floors 1–5, a few seeds each, built the way
 // the game builds them (new Level). Each must finish, start on walkable ground, and reach every
-// way on from there: the stairs, the exits, and in the camp the waypoint, merchant and stash.
+// way on from there: the stairs, the exits, and in the camp the waypoint, merchant and stash. Then
+// the Layout's fields for M2a's maps: a floor made by hand with all of them gets the objects they say
+// (chests and barrels with D2's word on them, caskets, corpses, wells), an old floor's say nothing new.
 const SEEDS = [1, 7, 0x5eed, 20261026];
 const FLOORS = 5;
 /** a map taking longer than this has stopped being a loading pause */
@@ -80,6 +82,51 @@ export default async (load) => {
     }
     const ms = times.map((x) => Math.round(x));
     console.log(`  depth ${depth} ${levelLabel(depth)}: ${ms.join(' / ')} ms`);
+  }
+
+  // ── the Layout's fields for M2a's maps (docs/M2A-STEP0.md 2.4): a floor made by hand with every
+  // one of them gets the objects they say, with what D2 says of each; an old map's objects are as
+  // they were, none of them saying anything new ──
+  {
+    const { generateDungeon } = await load('/src/world/levelgen.ts');
+    const { spent } = await load('/src/game/objects.ts');
+    const { dungeonArea } = await load('/src/world/areas.ts');
+    const OLD_KINDS = ['chest', 'barrel', 'stairs', 'waypoint', 'shrine', 'exit'];
+    const NEW_FIELDS = ['d2', 'locked', 'trap', 'sparkly', 'exploding', 'hole', 'flies', 'charges', 'serves'];
+    const plain = new Level(WILD_MAPS + 2, SEEDS[1]);
+    const said = plain.objects.filter((o) => NEW_FIELDS.some((k) => o[k] !== undefined));
+    if (said.length || plain.objects.some((o) => !OLD_KINDS.includes(o.kind))) problems.push(`an old floor: objects ${[...new Set(plain.objects.map((o) => o.kind))].join()}, ${said.length} saying something new`);
+    const L = generateDungeon(2, SEEDS[1], dungeonArea(2));
+    const s = L.start;
+    const at = (dx, dz) => ({ x: s.x + dx, z: s.z + dz });
+    const chests = L.chests.length;
+    const barrels = L.barrels.length;
+    L.chests = [{ ...at(1, 0), d2: 397, locked: true, trap: 3, sparkly: 'consolation' }, ...L.chests];
+    L.barrels = [{ ...at(2, 0), d2: 11, exploding: true }, { ...at(3, 0), opened: true }, ...L.barrels];
+    L.shrines = [{ ...at(0, 1), kind: 'health' }];
+    L.caskets = [{ pos: at(0, 2), id: 5, hole: false, opened: false }, { pos: at(1, 2), id: 28, hole: true, opened: true }];
+    L.remains = [{ pos: at(2, 2), id: 54, flies: true }];
+    L.wells = [{ pos: at(3, 2), id: 130 }];
+    L.cliffs = new Set([0, 1, 2]);
+    L.cairn = { center: at(4, 4), stones: [at(4, 3), at(5, 4)] };
+    L.presets = [{ kind: 'cairn', d2: 22, rect: { x: 1, y: 1, w: 8, h: 8 }, area: dungeonArea(2) }];
+    L.presetMonsters = [{ pos: at(5, 5), monster: 'bloodraven', quest: 'a1q2' }];
+    const lv = new Level(WILD_MAPS + 2, SEEDS[1], L);
+    const of = (kind) => lv.objects.filter((o) => o.kind === kind);
+    const ch = of('chest');
+    if (ch.length !== chests + 1 || ch[0].d2 !== 397 || !ch[0].locked || ch[0].trap !== 3 || ch[0].sparkly !== 'consolation' || ch[0].pos.d2 !== undefined || ch.slice(1).some((o) => o.d2 !== undefined || o.locked)) problems.push(`the hand-made floor's chests: ${JSON.stringify(ch.slice(0, 2).map((o) => ({ d2: o.d2, locked: o.locked, trap: o.trap, sparkly: o.sparkly, pos: o.pos })))}, ${ch.length} of ${chests + 1}`);
+    const br = of('barrel');
+    if (br.length !== barrels + 2 || br[0].d2 !== 11 || !br[0].exploding || br[0].used || !br[1].used || !spent(br[1])) problems.push(`the hand-made floor's barrels: ${JSON.stringify(br.slice(0, 2).map((o) => ({ d2: o.d2, exploding: o.exploding, used: o.used })))}`);
+    const sh = of('shrine');
+    if (sh.length !== 1 || !sh[0].shrine) problems.push(`the hand-made floor's shrine: ${JSON.stringify(sh.map((o) => o.shrine))}`);
+    const cs = of('casket');
+    if (cs.length !== 2 || cs[0].d2 !== 5 || cs[0].hole || cs[0].used || cs[1].d2 !== 28 || !cs[1].hole || !cs[1].used || !spent(cs[1]) || spent(cs[0])) problems.push(`the hand-made floor's caskets: ${JSON.stringify(cs.map((o) => ({ d2: o.d2, hole: o.hole, used: o.used })))}`);
+    const rm = of('remains');
+    if (rm.length !== 1 || rm[0].d2 !== 54 || !rm[0].flies || !rm[0].name) problems.push(`the hand-made floor's remains: ${JSON.stringify(rm.map((o) => ({ d2: o.d2, flies: o.flies, name: o.name })))}`);
+    const wl = of('well');
+    if (wl.length !== 1 || wl[0].d2 !== 130 || !wl[0].name || spent(wl[0])) problems.push(`the hand-made floor's well: ${JSON.stringify(wl.map((o) => ({ d2: o.d2, name: o.name })))}`);
+    if (lv.layout.cliffs?.size !== 3 || lv.layout.cairn?.stones.length !== 2 || lv.layout.presets?.length !== 1 || lv.layout.presetMonsters?.length !== 1) problems.push('the hand-made floor lost a field it was made with');
+    console.log(`  a floor with every new Layout field: ${ch.length} chests, ${br.length} barrels, a shrine, ${cs.length} caskets, ${rm.length} corpse, ${wl.length} well; an old floor's ${plain.objects.length} objects say nothing new`);
   }
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
 };

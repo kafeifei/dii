@@ -1,9 +1,28 @@
 import { SHRINE_BY_ID } from '../data/shrines';
 import type { Game } from '../game/game';
 import type { Level } from '../game/level';
+import type { ObjKind, WorldObject } from '../game/objects';
 import type { AreaDef } from '../world/areas';
 import { T_FLOOR, T_PROP, T_WALL, type TileMap } from '../world/tilemap';
 import { h } from './common';
+
+/**
+ * How an object shows on the maps, by its kind: its dot's colour, its size in tiles, and when it shows
+ * (a shrine until touched). A kind not here isn't marked (a maze's caskets, corpses and wells: how D2
+ * marks them is to be checked, docs/M2A-STEP0.md 5)
+ */
+const MARKS: Partial<Record<ObjKind, { color: string; size: number; show?: (o: WorldObject) => boolean }>> = {
+  stairs: { color: '#ffd040', size: 1.4 },
+  exit: { color: '#ffd040', size: 1.4 },
+  waypoint: { color: '#40a0ff', size: 1.4 },
+  portal: { color: '#ff4040', size: 1.2 },
+  vendor: { color: '#40ff60', size: 1 },
+  stash: { color: '#40ff60', size: 1 },
+  shrine: { color: '#80e0ff', size: 1.2, show: (o) => !o.used },
+};
+
+/** the hireling on the maps: a green dot, as the townsfolk's (how D2 draws her is to be checked, docs/M2A-STEP0.md 5) */
+const MERC_MARK = '#40ff60';
 
 /** how an explored tile shows on the maps, by its kind: [r, g, b, alpha 0-1] */
 const TILE_COLOR: Record<number, [number, number, number, number]> = {
@@ -245,11 +264,8 @@ export class Automap {
         ctx.arc(ox + o.pos.x * scale, oy + o.pos.z * scale, scale * (1.6 + k * 3), 0, Math.PI * 2);
         ctx.stroke();
       }
-      if (o.kind === 'stairs' || o.kind === 'exit') dot(o.pos.x, o.pos.z, '#ffd040', scale * 1.4);
-      else if (o.kind === 'waypoint') dot(o.pos.x, o.pos.z, '#40a0ff', scale * 1.4);
-      else if (o.kind === 'portal') dot(o.pos.x, o.pos.z, '#ff4040', scale * 1.2);
-      else if (o.kind === 'vendor' || o.kind === 'stash') dot(o.pos.x, o.pos.z, '#40ff60', scale);
-      else if (o.kind === 'shrine' && !o.used) dot(o.pos.x, o.pos.z, '#80e0ff', scale * 1.2);
+      const mark = MARKS[o.kind];
+      if (mark && (!mark.show || mark.show(o))) dot(o.pos.x, o.pos.z, mark.color, scale * mark.size);
       // a townsperson with quest news: their yellow mark, upright on the map turned 45° (the CSS)
       if (o.npcId && g.quests.hasNews(o.npcId)) {
         const size = Math.max(11, scale * 3.2);
@@ -272,6 +288,8 @@ export class Automap {
       if (m.dead || Math.hypot(m.pos.x - p.pos.x, m.pos.z - p.pos.z) > 12) continue;
       dot(m.pos.x, m.pos.z, m.rank === 'boss' || m.rank === 'unique' ? '#ffb040' : '#d02020', Math.max(1.5, scale * 0.6));
     }
+    const merc = g.merc;
+    if (merc && !merc.dead) dot(merc.pos.x, merc.pos.z, MERC_MARK, Math.max(1.8, scale * 0.8));
     dot(p.pos.x, p.pos.z, '#ffffff', Math.max(2, scale * 0.9));
   }
 

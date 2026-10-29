@@ -598,7 +598,9 @@ export class Renderer implements Picker {
     this.oneLook = new Set(this.looks.values()).size < 2;
     const grounds = [...new Set([...this.looks.values()].map((l) => l.ground))];
     const groundSlot = new Map([...this.looks].map(([a, l]) => [a, grounds.indexOf(l.ground)]));
-    const wallKind = (x: number, y: number) => this.looks.get(level.areas[y * map.w + x])!.walls;
+    // a cliff where the layout says (Layout.cliffs), else as the area builds its walls
+    const cliffs = level.layout.cliffs;
+    const wallKind = (x: number, y: number): WallKind => (cliffs?.has(y * map.w + x) ? 'cliff' : this.looks.get(level.areas[y * map.w + x])!.walls);
     this.scene.background = new THREE.Color(theme.bg);
     this.sunOffset.set(-8, 20, 4);
     this.lamps = 1;

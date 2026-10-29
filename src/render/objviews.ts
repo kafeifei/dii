@@ -7,7 +7,7 @@ import { assets } from './assets';
 import { playerLook, vendorLook } from './looks';
 import { ModelRig, type ModelSpec } from './models';
 import { specNeeds } from './needs';
-import { assetProp, glowSprite, makeBarrel, makeBrazier, makeChest, makePortal, makeStairs, makeWaypoint, MODELS, sharedResource } from './props';
+import { assetProp, glowSprite, makeBarrel, makeBrazier, makeChest, makePortal, makeStairs, makeWaypoint, MODELS, sharedResource, stdMat } from './props';
 import type { Renderer } from './renderer';
 import { Rig, type AnimInput, type RigLook } from './rig';
 import { playerSpec, vendorSpec } from './specs';
@@ -262,6 +262,10 @@ export function makeObjectView(r: Renderer, o: WorldObject): ObjView {
         },
       };
     }
+    case 'casket':
+    case 'remains':
+    case 'well':
+      return makePendingView(o, g);
     case 'corpse': {
       // the hero's body as it fell, in the gear left on it (game/corpse.ts)
       const c = o.corpse;
@@ -277,5 +281,53 @@ export function makeObjectView(r: Renderer, o: WorldObject): ObjView {
       return { group: g, free: () => rig.dispose(), update: (dt) => rig.update(dt, lying) };
     }
   }
+  return { group: g };
+}
+
+/**
+ * A maze's casket (or its hole), rogue corpse or well, drawn in code until they have models (the O
+ * line's, with objectNeeds): a stone coffin whose lid slides off once opened, a body under a cloak
+ * with bones by it, a stone ring round dark water
+ */
+function makePendingView(o: WorldObject, g: THREE.Group): ObjView {
+  // stdMat's, shared and so never disposed with a view let go (disposeView); the geometries are the view's own
+  const m = { stone: stdMat('#6c665c', 0.95), lid: stdMat('#5a554c', 0.95), dark: stdMat('#141210', 1), cloth: stdMat('#5a3a30', 1), bone: stdMat('#c8bca0', 0.9), water: stdMat('#203848', 0.2, 0.1) };
+  const site = new THREE.Group();
+  site.rotation.y = CAM_YAW + ((o.id * 1.618) % 1) * 0.6 - 0.3;
+  g.add(site);
+  if (o.kind === 'casket' && o.hole) {
+    const pit = new THREE.Mesh(new THREE.CircleGeometry(0.45, 14).rotateX(-Math.PI / 2), m.dark);
+    pit.position.y = 0.02;
+    site.add(pit);
+    return { group: g };
+  }
+  if (o.kind === 'casket') {
+    const box = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.38, 1.1), m.stone);
+    box.position.y = 0.19;
+    const lid = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.08, 1.15), m.lid);
+    lid.position.y = 0.42;
+    site.add(box, lid);
+    const open = () => {
+      lid.position.set(0.32, 0.3, 0.1);
+      lid.rotation.z = -0.35;
+    };
+    if (o.used) open();
+    return { group: g, update: (_dt, ob) => void (ob.used && open()) };
+  }
+  if (o.kind === 'remains') {
+    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.7, 4, 8).rotateX(Math.PI / 2), m.cloth);
+    body.position.y = 0.14;
+    const skull = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), m.bone);
+    skull.position.set(0, 0.12, 0.55);
+    site.add(body, skull);
+    return { group: g };
+  }
+  const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.68, 0.55, 16, 1, true), m.stone);
+  ring.position.y = 0.27;
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.64, 0.07, 6, 16).rotateX(Math.PI / 2), m.stone);
+  rim.position.y = 0.55;
+  const water = new THREE.Mesh(new THREE.CircleGeometry(0.6, 16).rotateX(-Math.PI / 2), m.water);
+  water.position.y = 0.32;
+  site.add(ring, rim, water);
   return { group: g };
 }

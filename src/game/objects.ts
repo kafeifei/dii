@@ -1,6 +1,7 @@
 import type { P2 } from '../core/math';
 import type { ProjectileKind } from '../data/monsters';
 import type { Item } from '../items/item';
+import type { ServiceKind } from '../world/levelgen';
 import type { Actor, DamagePacket, Faction } from './actor';
 import type { Corpse } from './corpse';
 import type { FxKind } from './fx';
@@ -23,7 +24,15 @@ export class GroundItem {
   }
 }
 
-export type ObjKind = 'chest' | 'barrel' | 'stairs' | 'waypoint' | 'vendor' | 'stash' | 'portal' | 'exit' | 'shrine' | 'corpse' | 'obelisk';
+export type ObjKind = 'chest' | 'barrel' | 'stairs' | 'waypoint' | 'vendor' | 'stash' | 'portal' | 'exit' | 'shrine' | 'corpse' | 'obelisk' | 'casket' | 'remains' | 'well';
+
+/** the kinds that are used once and then stay spent: chests, barrels, shrines, caskets, corpses searched, wells (theirs by charges, the O line's) */
+const ONCE = new Set<ObjKind>(['chest', 'barrel', 'shrine', 'casket', 'remains', 'well']);
+
+/** an object that is spent: used, of a kind used once (ONCE); it is no longer hovered nor offered to the touch button */
+export function spent(o: WorldObject): boolean {
+  return o.used && ONCE.has(o.kind);
+}
 
 export class WorldObject {
   readonly id = ++objIds;
@@ -52,6 +61,25 @@ export class WorldObject {
    * the camp from the first floor, the way out its guardian leaves
    */
   rift?: 'obelisk' | 'in' | 'home' | 'out';
+  // ── what Diablo II's objects say of themselves (a map's object groups: src/world/objgroups.ts) ──
+  /** its Objects.txt id */
+  d2?: number;
+  /** a chest that needs a key */
+  locked?: boolean;
+  /** a chest's trap, D2's roll for it (0 or none: no trap) */
+  trap?: number;
+  /** a spark chest: the unique chest's rules (580) or the consolation's (397) */
+  sparkly?: 'unique' | 'consolation';
+  /** a barrel that explodes */
+  exploding?: boolean;
+  /** a casket cluster's hole in the ground */
+  hole?: boolean;
+  /** a rogue corpse with flies over it */
+  flies?: boolean;
+  /** a well's drinks left */
+  charges?: number;
+  /** a townsperson's services past their talk (Service kinds: 'hire' for Kashya's hirelings), for their menu */
+  serves?: ServiceKind[];
   constructor(kind: ObjKind, pos: P2, name: string, radius = 0.5) {
     this.kind = kind;
     this.pos = { ...pos };

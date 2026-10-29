@@ -1,5 +1,7 @@
 import { RNG, type P2 } from '../core/math';
 import { D2X_MONSTERS } from '../data/d2x/monsters';
+import type { QuestKey } from '../data/quests';
+import type { PlacedCasket, PlacedObject, PlacedRemains, PlacedShrine } from './objgroups';
 import { dressRooms, Furnisher, PROP_DEFS, WALL_DEFS, type Prop, type WallDecor } from './furnish';
 import { clamp01, fbm, growWoods, valueNoise } from './outdoors';
 import { TileMap, T_FLOOR, T_PROP, T_VOID, T_WALL } from './tilemap';
@@ -177,6 +179,34 @@ export interface Service {
 }
 
 /**
+ * A chest as a map sets it down (Level makes the object): where, and on a map Diablo II's object
+ * groups furnished (src/world/objgroups.ts PlacedChest), its Objects.txt id, whether it needs a key,
+ * the trap D2 rolled for it (0 none), and a spark chest's rules (580's or 397's). The old generators'
+ * plain spots are chests too
+ */
+export type ChestSpot = P2 & { d2?: number; locked?: boolean; trap?: number; sparkly?: 'unique' | 'consolation' };
+/** a barrel as a map sets it down: its Objects.txt id, an exploding one, one that came broken (objgroups.ts PlacedBarrel) */
+export type BarrelSpot = P2 & { d2?: number; exploding?: boolean; opened?: boolean };
+/** a shrine as a map sets it down: its kind by Objects.txt Parm0 (objgroups.ts PlacedShrine); none, any */
+export type ShrineSpot = P2 & { kind?: PlacedShrine['kind'] };
+
+/** a preset room or unit a map was made with (D2's LvlPrest.txt): what, which, where, in which area */
+export interface PresetSpot {
+  kind: string;
+  /** its LvlPrest.txt Def */
+  d2?: number;
+  rect: Room;
+  area: number;
+}
+
+/** a monster a preset sets down that isn't a superunique (the Burial Grounds' Blood Raven): its MonStats id, and the quest it counts for */
+export interface PresetMonster {
+  pos: P2;
+  monster: string;
+  quest?: QuestKey;
+}
+
+/**
  * The camp's merchant: Akara's counterpart (D2 has her heal and sell the staves, potions, scrolls
  * and tomes; this one keeps Charsi's shelves too), named by her row (tools/d2-names/npcs.json)
  */
@@ -192,16 +222,28 @@ export interface Layout {
   spawnRooms: Room[];
   torches: Torch[];
   decor: Decor[];
-  chests: P2[];
-  barrels: P2[];
+  chests: ChestSpot[];
+  barrels: BarrelSpot[];
   pillars: Set<number>;
   /** the camp's merchant and stash, and the campfires (the camp's, the wilderness's monster camps) */
   services: Service[];
   exits?: Exit[];
   /** outdoor maps: per tile, how much grass, dirt, road and stone (four bytes, 0-255); the renderer blends their textures */
   ground?: Uint8Array;
-  /** the wilderness's shrines */
-  shrines?: P2[];
+  /** the wilderness's shrines, and a maze's */
+  shrines?: ShrineSpot[];
+  /** a maze's caskets (and the holes among them), its rogue corpses and its wells, as its object groups placed them (objgroups.ts) */
+  caskets?: PlacedCasket[];
+  remains?: PlacedRemains[];
+  wells?: PlacedObject[];
+  /** the wall tiles that are cliffs, by tile index (y × width + x): drawn as rock (render/walls.ts 'cliff') */
+  cliffs?: Set<number>;
+  /** the Cairn Stones: their middle and each stone (props for now: docs/M2A.md 凯恩之石) */
+  cairn?: { center: P2; stones: P2[] };
+  /** the preset rooms and units it was made with */
+  presets?: PresetSpot[];
+  /** the monsters its presets set down that aren't superuniques (spawn.ts presetMonster) */
+  presetMonsters?: PresetMonster[];
   /** monster camps: an elite pack waits by each */
   elites?: P2[];
   bossRoom?: Room;

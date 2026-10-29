@@ -4,7 +4,7 @@ import type { WallKind } from './arealooks';
 import { tileTexture } from './textures';
 
 /** a wall's height as a share of WALL_H, by how it's built: at least the first, up to the first and the second */
-export const WALL_HEIGHT: Record<WallKind, [number, number]> = { palisade: [0.85, 0.25], ruins: [0.2, 0.4], wall: [0.96, 0.08] };
+export const WALL_HEIGHT: Record<WallKind, [number, number]> = { palisade: [0.85, 0.25], ruins: [0.2, 0.4], wall: [0.96, 0.08], cliff: [1.05, 0.35] };
 
 export interface OccUniforms {
   uPlayer: { value: THREE.Vector3 };
@@ -99,13 +99,14 @@ export function wallMaterials(theme: Theme, occ: OccUniforms): (kind: WallKind) 
   return (kind: WallKind): THREE.Material[] => {
     const had = wallMats.get(kind);
     if (had) return had;
-    const t = kind === 'palisade' ? THEMES.town : theme;
+    // a cliff is the caves' rock for now, its look its own to come (M2a's A line)
+    const t = kind === 'palisade' ? THEMES.town : kind === 'cliff' ? THEMES.cave : theme;
     const side = new THREE.MeshStandardMaterial({ map: tileTexture(kind === 'ruins' ? 'crypt_wall' : `${t.key}_wall`), roughness: 0.92 });
     const top =
-      kind === 'ruins'
-        ? new THREE.MeshStandardMaterial({ map: tileTexture('crypt_wall'), roughness: 0.95 })
+      kind === 'ruins' || kind === 'cliff'
+        ? new THREE.MeshStandardMaterial({ map: tileTexture(kind === 'ruins' ? 'crypt_wall' : `${t.key}_wall`), roughness: 0.95 })
         : new THREE.MeshStandardMaterial({ color: new THREE.Color(t.wall).lerp(new THREE.Color(t.wallDark), 0.35), roughness: 1 });
-    if (kind === 'ruins') applyWorldUv(top, 'floor', 2);
+    if (kind === 'ruins' || kind === 'cliff') applyWorldUv(top, 'floor', 2);
     applyOcclusionFade(side, occ);
     applyWorldUv(side, 'wall', 2);
     applyOcclusionFade(top, occ);
