@@ -1177,9 +1177,10 @@ body {
   margin-top: 22px;
 }
 /* another tab has the hero (Game.heroElsewhere): over whatever was open here, the pause menu and
-   settings too, since nothing more is played here */
+   settings too, since nothing more is played here; opaque, so their buttons don't show through it */
 .overlay.hero-gone {
   z-index: 46;
+  background: radial-gradient(ellipse at center, rgb(20, 8, 4), rgb(0, 0, 0));
 }
 .title-settings {
   margin-top: 22px;

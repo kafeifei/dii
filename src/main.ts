@@ -13,13 +13,13 @@ import { UI } from './ui/ui';
 const DEV = location.search.includes('dev');
 // ?dev&slot=1: a dev hero of its own, for two tabs with two heroes
 if (DEV) useDevSlot(Number(new URLSearchParams(location.search).get('slot')) || 0);
-// A reload of this tab goes back to the hero it had: claimed now, while the models load (save.ts
-// claimHero). A copy of this tab (duplicated, or opened from it) carries the in-game mark along in its
-// sessionStorage, but must not take the hero from the tab still playing it: it starts at the title
+// A reload of this tab goes back to the hero it had: claimed as the page starts, while the models load
+// (Game.claimToResume, below). A copy of this tab (duplicated, or opened from it) carries the in-game
+// mark along in its sessionStorage, but must not take the hero from the tab still playing it: it
+// starts at the title
 const nav = (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type;
 const resuming = !DEV && wasInGame() && (nav === 'reload' || nav === 'back_forward') && !playedElsewhere(slotNow());
-if (resuming) claimHero();
-else if (!DEV && wasInGame()) markInGame(false);
+if (!resuming && !DEV && wasInGame()) markInGame(false);
 
 const canvas = document.getElementById('world') as HTMLCanvasElement;
 const sfx = new Sfx();
@@ -31,6 +31,9 @@ const ui = new UI(game, renderer, sfx, settings);
 game.fx = renderer.fx;
 game.picker = renderer;
 game.hooks = ui;
+// the reload's hero claimed now: kept fresh while the models load, played on once they're in (ui.resume)
+// unless another window opens it first (Game.heroClaimed, from ui.ts's storage events)
+if (resuming) game.claimToResume();
 
 const STEP = 1 / 60;
 let acc = 0;
@@ -45,8 +48,9 @@ function frame(now: number) {
   const held = renderer.veiled;
   // a game in play says its hero is still this tab's on every frame the page runs, paused in the menu
   // or held behind a veil as much as playing: either can outlast save.ts's GONE_MS, and a tab silent
-  // that long counts as gone, its hero read elsewhere without waiting for its last save (save.ts heartbeat)
-  if (game.started) heartbeat();
+  // that long counts as gone, its hero read elsewhere without waiting for its last save (save.ts
+  // heartbeat). So does a reload holding its hero while the models load, which can take as long
+  if (game.started || game.resumeClaimed) heartbeat();
   if (game.started && !game.paused && !game.headless) {
     acc = held ? 0 : acc + dt;
     while (acc >= STEP && steps < 6) {
@@ -88,9 +92,10 @@ window.addEventListener('pagehide', () => {
   // gone for good, or into the back-forward cache: let the hero go either way (pageshow takes it back)
   releaseHero();
 });
-// back from the back-forward cache: the hero again this tab's, unless another tab has opened it since
+// back from the back-forward cache: the hero again this tab's (played, or a reload's still loading),
+// unless another tab has opened it since
 window.addEventListener('pageshow', (e) => {
-  if (!e.persisted || !game.started) return;
+  if (!e.persisted || !(game.started || game.resumeClaimed)) return;
   if (playedElsewhere(slotNow())) game.heroClaimed();
   else claimHero();
 });

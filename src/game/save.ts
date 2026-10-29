@@ -105,8 +105,10 @@ export function wasInGame(): boolean {
 // would each write over what the other moved to or from the shared pages, and an item would end up
 // in neither. D2R's rule is the same: a character is in one game at a time, and logging in again
 // drops the session before. The tab that opens a hero last has it (claimHero, before it reads the
-// save); the tab that had it is told by a storage event, writes it once more if nothing has been
-// written over it since (mayWriteLast), and then never again (heroTaken).
+// save); the tab that had it is told by a storage event (or finds the claim at a save before the event
+// comes: the same), writes it once more if nothing has been written over it since (mayWriteLast),
+// hands it over (handOver) and then never writes it again (heroTaken). A reload still loading the hero
+// it claimed gives it up to a tab that opens it meanwhile (Game.heroClaimed).
 
 /** this page's own: made anew on each load, as a duplicated tab copies sessionStorage */
 const TAB = uid('tab');
@@ -160,7 +162,10 @@ export function claimHero() {
 
 let lastBeat = 0;
 
-/** While playing: the claim kept fresh, so a tab opening this hero knows this one is still here */
+/**
+ * While playing, or holding a reload's hero as the models load (Game.claimToResume): the claim kept
+ * fresh, so a tab opening this hero knows this one is still here and waits for it to hand it over
+ */
 export function heartbeat() {
   if (!held || Date.now() - lastBeat < BEAT_MS) return;
   lastBeat = Date.now();
