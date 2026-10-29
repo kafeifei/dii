@@ -648,8 +648,8 @@ export default async function (page, shot, log) {
     },
 
     async jump() {
-      // the debug panel's area list: normal play's areas in order, the hero's picked; its trial
-      // ground. It stays open through the jumps, the game playing on
+      // the debug panel's area list: normal play's areas by levels.txt Id (areas.ts areaList), the
+      // hero's picked; its trial ground. It stays open through the jumps, the game playing on
       await key('Backquote', DEBUG_OPEN, 'the debug panel to open');
       const list = await ev(() => {
         const r = [...document.querySelectorAll('.debug-dock .dbg-row')].find((x) => x.querySelector('.dbg-label > span')?.textContent === '前往');
@@ -657,16 +657,17 @@ export default async function (page, shot, log) {
         const opts = [...(s?.options ?? [])];
         return { values: opts.map((o) => o.value), value: s?.value, here: String(game.area.id) };
       });
-      expect(list.values.join() === [CAMP, MOOR, DEN, PLAINS].join() && list.value === list.here, `the area list is ${list.values.join()}, ${list.value} picked (the hero is in ${list.here})`);
-      await debugRow('前往').locator('select').selectOption(String(DEN));
+      expect(list.values.join() === [CAMP, MOOR, PLAINS, DEN].join() && list.value === list.here, `the area list is ${list.values.join()}, ${list.value} picked (the hero is in ${list.here})`);
+      await debugRow('前往').locator('select').selectOption(String(PLAINS));
       await debugButton('前往', '去').click();
       await frames();
-      expect((await ev(() => game.area.id)) === DEN, 'the list did not lead to the den');
-      // the next one on
+      const a = await ev(() => ({ id: game.area.id, west: game.level === window.__smoke.west }));
+      expect(a.id === PLAINS && a.west, `the list led to area ${a.id}, on the overworld ${a.west}, not Cold Plains`);
+      // the next one on, by Id: the den, a map of its own
       await debugButton('前往', '下一个').click();
       await frames();
       const b = await ev(() => ({ id: game.area.id, west: game.level === window.__smoke.west }));
-      expect(b.id === PLAINS && b.west, `next from the den went to area ${b.id}, on the overworld ${b.west}`);
+      expect(b.id === DEN && !b.west, `next from Cold Plains went to area ${b.id}, on the overworld ${b.west}`);
       // the trial ground: a floor and a difficulty picked, then the next floor down
       await debugRow('试炼场').locator('select').first().selectOption('3');
       await debugButton('试炼场', '进入').click();
