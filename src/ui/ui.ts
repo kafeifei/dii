@@ -14,6 +14,8 @@ import { AreaBanner } from './banner';
 import { renderChar } from './character';
 import { h, type LeftPanel, type RightPanel, type UIContext } from './common';
 import { renderCube } from './cube';
+import { renderHire } from './hire';
+import { renderMerc } from './merc';
 import { DebugPanel } from './debug';
 import { Hud, SkillPicker } from './hud';
 import { CELL } from './icons';
@@ -151,11 +153,17 @@ export class UI implements GameHooks, UIContext {
     this.hud.clearMessages();
   }
 
-  openPanel(kind: 'shop' | 'stash' | 'waypoint' | 'rift') {
+  openPanel(kind: 'shop' | 'stash' | 'waypoint' | 'rift' | 'hire' | 'merc') {
     this.left = kind;
-    if (kind !== 'waypoint' && kind !== 'rift') this.right = 'inv';
+    // the bag beside what items go between: the merchant's, the stash, the hireling's gear
+    if (kind !== 'waypoint' && kind !== 'rift' && kind !== 'hire') this.right = 'inv';
     this.dirty = true;
     this.sfx.play('ui.open');
+  }
+
+  /** the hireling changed: her panel, if it's open, drawn again */
+  mercChanged() {
+    if (this.left === 'merc' || this.left === 'hire') this.dirty = true;
   }
 
   /** a townsperson spoken to (Game.talkTo): what a quest has them say at once, then their menu */
@@ -195,7 +203,7 @@ export class UI implements GameHooks, UIContext {
     this.labels.clear();
     this.marks.clear();
     this.npc.close(true);
-    if (this.left === 'shop' || this.left === 'stash' || this.left === 'waypoint' || this.left === 'rift') this.left = null;
+    if (this.left === 'shop' || this.left === 'stash' || this.left === 'waypoint' || this.left === 'rift' || this.left === 'hire') this.left = null;
     this.dirty = true;
   }
 
@@ -427,6 +435,12 @@ export class UI implements GameHooks, UIContext {
       case 'quests':
         renderQuestLog(this, this.leftEl);
         break;
+      case 'hire':
+        renderHire(this, this.leftEl);
+        break;
+      case 'merc':
+        renderMerc(this, this.leftEl);
+        break;
     }
     if (this.right === 'inv') renderInventory(this, this.rightEl);
     else if (this.right === 'skills') this.skillTree.render(this.rightEl);
@@ -473,8 +487,8 @@ export class UI implements GameHooks, UIContext {
     this.npc.update(dt);
     if (this.touch) this.updateInteract();
     // close shop/stash when walking away
-    if ((this.left === 'shop' || this.left === 'stash' || this.left === 'waypoint' || this.left === 'rift') && g.level) {
-      const kind = this.left === 'shop' ? 'vendor' : this.left === 'rift' ? 'obelisk' : this.left;
+    if ((this.left === 'shop' || this.left === 'stash' || this.left === 'waypoint' || this.left === 'rift' || this.left === 'hire') && g.level) {
+      const kind = this.left === 'shop' || this.left === 'hire' ? 'vendor' : this.left === 'rift' ? 'obelisk' : this.left;
       // the nearest: the overworld has a waypoint in more than one area
       const near = Math.min(...g.level.objects.filter((x) => x.kind === kind).map((o) => Math.hypot(o.pos.x - p.pos.x, o.pos.z - p.pos.z)));
       if (!(near <= 4)) {

@@ -6,7 +6,7 @@ import type { D2xArea, D2xSuperUnique } from '../data/d2x/types';
 import { lookedMonsters, monsterDef } from '../data/monsters';
 import type { Difficulty } from '../items/d2/types';
 import { areaLevel, trialFloor, type AreaDef } from '../world/areas';
-import type { Room, SuperUnique } from '../world/levelgen';
+import type { PresetMonster, Room, SuperUnique } from '../world/levelgen';
 import { CHAMPMODS, spawnLevel } from './d2/monstats';
 import * as P from './d2/population';
 import type { Level } from './level';
@@ -462,4 +462,21 @@ function floorBoss(s: Spawn, floor: number, c: P2) {
 
 function middle(r: Room): P2 {
   return { x: r.x + r.w / 2, z: r.y + r.h / 2 };
+}
+
+/**
+ * A monster a map's preset sets down that isn't a superunique (Layout.presetMonsters: the Burial
+ * Grounds' Blood Raven, with her quest, Monster.quest): put on `level` where it says. M2a's W line's;
+ * nothing yet, as no map has one
+ */
+export function presetMonster(_level: Level, _pm: PresetMonster): Monster | null {
+  return null;
+}
+
+/**
+ * One monster of `area`'s kinds come up at `at` on `level` (a casket's zombie or skeleton, 18% of
+ * them: docs/M2A.md 地下城), awake. M2a's O line's; none yet
+ */
+export function spawnOne(_level: Level, _area: AreaDef, _at: P2, _rng: RNG): Monster | null {
+  return null;
 }

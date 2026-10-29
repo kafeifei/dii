@@ -6,6 +6,7 @@ import { attackAt, attackElems, monStats, monsterMissile, type AttackMode, type 
 import { auraEnchant, auraNumbers, type AuraNumbers } from './d2/monai';
 import { MPS_PER_VELOCITY } from './d2/stats';
 import type { Friendly } from './merc';
+import type { QuestKey } from '../data/quests';
 
 export type MonsterRank = MonRank;
 
@@ -98,6 +99,11 @@ export class Monster extends Actor {
    * hero and the hireling within reach of being a target; null when neither was, when it goes by the hero
    */
   target: Friendly | null = null;
+  /**
+   * the quest its death counts for, set by the preset that placed it (Layout.presetMonsters): the
+   * Burial Grounds' Blood Raven's 'a1q2'; none for one spawned anywhere else (the trial ground's, a rift's)
+   */
+  quest?: QuestKey;
   /** the hero's weapon made it flee ("hit causes monster to flee"), seconds */
   fleeTime = 0;
   /** seconds until it next thinks, while it stands (D2's AITHINK event) */

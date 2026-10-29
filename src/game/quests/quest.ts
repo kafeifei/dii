@@ -30,6 +30,10 @@ export interface QuestHost {
   save(): void;
   /** the map that holds area `id` in this game, if it has been made yet */
   mapOf(id: number): Level | null;
+  /** the hero has a hireling, dead or alive (the Sisters' reward isn't given then: hireling.ts freeHireling) */
+  hasMerc(): boolean;
+  /** the Sisters' reward: the first hireling on offer, for nothing; whether one was given */
+  giveFreeMerc(): boolean;
 }
 
 /** something a townsperson says: a quest's line, or their small talk */

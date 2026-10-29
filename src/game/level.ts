@@ -10,7 +10,7 @@ import { generateWild } from '../world/wild';
 export const GALLERY = typeof location !== 'undefined' && location.search.includes('gallery');
 import { Monster } from './monster';
 import { MonsterGrid } from './monstergrid';
-import { areaBoxes, spawnArea, type SpawnReport } from './spawn';
+import { areaBoxes, presetMonster, spawnArea, type SpawnReport } from './spawn';
 import { ITEM_BASES, UNKNOWN_BASE } from '../data/items';
 import { createItem } from '../items/gen';
 import { DelayedBlast, GroundItem, Hammer, Projectile, WorldObject } from './objects';
@@ -118,12 +118,14 @@ export class Level {
       this.objects.push(o);
     }
     for (const w of L.waypoints) this.objects.push(new WorldObject('waypoint', w.pos, '传送点', 0.8));
-    // the town's people and the stash are used where they stand; a campfire is only to look at
+    // the town's people and the stash are used where they stand; a campfire is only to look at. Kashya
+    // ('hire') is a townsperson as the merchant is, her menu offering her hirelings (WorldObject.serves)
     for (const s of L.services) {
-      if (s.kind === 'vendor') {
-        const o = new WorldObject('vendor', s.pos, s.npc ? `商人 · ${s.npc}` : '商人', 0.5);
+      if (s.kind === 'vendor' || s.kind === 'hire') {
+        const o = new WorldObject('vendor', s.pos, s.kind === 'hire' ? (s.npc ?? '') : s.npc ? `商人 · ${s.npc}` : '商人', 0.5);
         o.npc = s.npc;
         o.npcId = s.npcId;
+        if (s.kind === 'hire') o.serves = ['hire'];
         this.objects.push(o);
       } else if (s.kind === 'stash') {
         this.objects.push(new WorldObject('stash', s.pos, '储物箱', 0.8));
@@ -167,6 +169,8 @@ export class Level {
       this.objects.push(o);
     }
     this.populate(seed);
+    // the monsters its presets set down besides (spawn.ts presetMonster: the Burial Grounds' Blood Raven)
+    for (const pm of L.presetMonsters ?? []) presetMonster(this, pm);
     if (GALLERY && !layout && this.inTown(L.start)) {
       // a monster of every look in a row, held still (the stun never wears off)
       const looks = lookedMonsters();

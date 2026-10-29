@@ -54,7 +54,7 @@ export class NpcPanel {
   private trading: WorldObject | null = null;
 
   constructor(
-    private ui: UIContext & { openPanel(kind: 'shop'): void },
+    private ui: UIContext & { openPanel(kind: 'shop' | 'hire'): void },
     private renderer: Renderer,
   ) {
     this.el = h('div');
@@ -125,7 +125,7 @@ export class NpcPanel {
     this.voice(obj, 'farewell');
   }
 
-  /** the menu: talk, their trade (the merchant also repairs, as Charsi does), cancel */
+  /** the menu: talk, their trade (the merchant also repairs, as Charsi does), their hirelings (Kashya: WorldObject.serves), cancel */
   private showMenu() {
     const obj = this.obj;
     if (!obj) return;
@@ -146,11 +146,18 @@ export class NpcPanel {
       const t = this.ui.game.npcTalk(obj);
       if (t) this.say(t);
     });
-    if (obj.kind === 'vendor') {
+    // a merchant is a townsperson who serves nothing else (Kashya serves her hirelings)
+    if (obj.kind === 'vendor' && !obj.serves) {
       item('交易／修理', () => {
         this.close(true);
         this.trading = obj;
         this.ui.openPanel('shop');
+      });
+    }
+    if (obj.serves?.includes('hire')) {
+      item('雇佣', () => {
+        this.close(true);
+        this.ui.openPanel('hire');
       });
     }
     item('取消', () => this.close(), ' cancel');

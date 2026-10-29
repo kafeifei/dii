@@ -111,6 +111,9 @@ export default async (load) => {
     L.cairn = { center: at(4, 4), stones: [at(4, 3), at(5, 4)] };
     L.presets = [{ kind: 'cairn', d2: 22, rect: { x: 1, y: 1, w: 8, h: 8 }, area: dungeonArea(2) }];
     L.presetMonsters = [{ pos: at(5, 5), monster: 'bloodraven', quest: 'a1q2' }];
+    // Kashya's service (docs/M2A-STEP0.md 2.12): a townsperson as the merchant is, serving her hirelings
+    const { D2X_MONSTERS } = await load('/src/data/d2x/monsters.ts');
+    L.services = [...L.services, { kind: 'hire', pos: at(6, 6), npc: D2X_MONSTERS.kashya.name, npcId: 'kashya' }];
     const lv = new Level(WILD_MAPS + 2, SEEDS[1], L);
     const of = (kind) => lv.objects.filter((o) => o.kind === kind);
     const ch = of('chest');
@@ -126,7 +129,16 @@ export default async (load) => {
     const wl = of('well');
     if (wl.length !== 1 || wl[0].d2 !== 130 || !wl[0].name || spent(wl[0])) problems.push(`the hand-made floor's well: ${JSON.stringify(wl.map((o) => ({ d2: o.d2, name: o.name })))}`);
     if (lv.layout.cliffs?.size !== 3 || lv.layout.cairn?.stones.length !== 2 || lv.layout.presets?.length !== 1 || lv.layout.presetMonsters?.length !== 1) problems.push('the hand-made floor lost a field it was made with');
-    console.log(`  a floor with every new Layout field: ${ch.length} chests, ${br.length} barrels, a shrine, ${cs.length} caskets, ${rm.length} corpse, ${wl.length} well; an old floor's ${plain.objects.length} objects say nothing new`);
+    // the preset's monster is the W line's to put down (spawn.ts presetMonster): none yet, and none other spawned for it
+    if (lv.monsters.some((m) => m.def.id === 'bloodraven' || m.quest)) problems.push('the hand-made floor put down a preset monster before presetMonster does');
+    const kashya = of('vendor').filter((o) => o.serves?.includes('hire'));
+    if (kashya.length !== 1 || kashya[0].npcId !== 'kashya' || kashya[0].name !== D2X_MONSTERS.kashya.name || kashya[0].serves.join() !== 'hire') problems.push(`the hand-made floor's Kashya: ${JSON.stringify(kashya.map((o) => ({ name: o.name, npcId: o.npcId, serves: o.serves })))}`);
+    // her place in the camp, where its rogue stands, not among its services yet: the camp as it was
+    const { campPreset } = await load('/src/world/presets.ts');
+    const cp = campPreset();
+    const rogue = cp.npcs.find((n) => n.model === 'rogue');
+    if (cp.hire.kind !== 'hire' || cp.hire.npcId !== 'kashya' || cp.hire.npc !== D2X_MONSTERS.kashya.name || cp.hire.pos.x !== rogue.x || cp.hire.pos.z !== rogue.z || cp.services.some((s) => s.kind === 'hire')) problems.push(`Kashya's place in the camp: ${JSON.stringify(cp.hire)}, services ${cp.services.map((s) => s.kind)}`);
+    console.log(`  a floor with every new Layout field: ${ch.length} chests, ${br.length} barrels, a shrine, ${cs.length} caskets, ${rm.length} corpse, ${wl.length} well, Kashya serving her hirelings; an old floor's ${plain.objects.length} objects say nothing new; her place in the camp kept aside`);
   }
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
 };

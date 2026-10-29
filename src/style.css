@@ -828,6 +828,14 @@ body {
   height: 44px;
 }
 
+/* a panel whose content is still to come (the hireling's: ui/hire.ts, ui/merc.ts) */
+.pending-note {
+  padding: 24px 12px;
+  text-align: center;
+  color: #9a9080;
+  font-size: 15px;
+}
+
 /* waypoint */
 .wplist {
   display: flex;

@@ -262,6 +262,8 @@ export default async (load) => {
     const { generateDen } = await load('/src/world/den.ts');
     const { CAVE_1 } = await load('/src/world/areas.ts');
     check(M.levelSeed(0xffffffff, 9) === 8 && M.levelSeed(1000, 18) === 1018, `levelSeed: ${M.levelSeed(0xffffffff, 9)}, ${M.levelSeed(1000, 18)}`);
+    // the quests' word on the hireling (QuestHost), stubs until she is played
+    check(game.hasMerc() === false && game.giveFreeMerc() === false, 'hasMerc or giveFreeMerc is not the stub');
     check(Object.keys(M.DUNGEON_MAKERS).join() === String(DEN_OF_EVIL), `the makers: ${Object.keys(M.DUNGEON_MAKERS)}`);
     const made = [];
     M.DUNGEON_MAKERS[CAVE_1] = (seed, d) => {

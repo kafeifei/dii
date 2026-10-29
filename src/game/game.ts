@@ -38,7 +38,7 @@ import { Rifts } from './rift';
 
 export interface GameHooks {
   message(text: string, color?: string, dur?: number): void;
-  openPanel(kind: 'shop' | 'stash' | 'waypoint' | 'rift'): void;
+  openPanel(kind: 'shop' | 'stash' | 'waypoint' | 'rift' | 'hire' | 'merc'): void;
   levelChanged(level: Level): void;
   /** the hero came into an area: on entering a level (prev is the last level's), or walking or teleporting into another */
   areaChanged(area: AreaDef, prev: AreaDef | null): void;
@@ -71,6 +71,8 @@ export interface GameHooks {
   saveState?(ok: boolean): void;
   /** a scroll of identify read from the belt: the next item clicked is identified with it (the bag's identify cursor) */
   identifyWith?(scroll: Item): void;
+  /** the hireling changed (hired, levelled, dressed, fallen, paid back to life): what shows her is drawn again */
+  mercChanged?(): void;
 }
 
 export interface Picker {
@@ -406,6 +408,19 @@ export class Game {
   /** the map this game keeps that holds area `id`, if it has been made yet (none is made here) */
   mapOf(id: number): Level | null {
     return this.maps.mapOf(id);
+  }
+
+  /**
+   * whether the hero has a hireling, for the quests (QuestHost): a stub, false, until the hireling is
+   * played (M2a's M and Q lines make it Player.merc's, dead or alive)
+   */
+  hasMerc(): boolean {
+    return false;
+  }
+
+  /** the Sisters' reward, a hireling for nothing (QuestHost): a stub, giving none, until hiring is played (M2a's M and Q lines) */
+  giveFreeMerc(): boolean {
+    return false;
   }
 
   /** whether a quest has lit `level` up (the Den of Evil, cleared in this game) */

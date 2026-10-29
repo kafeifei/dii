@@ -1,4 +1,5 @@
 import type { P2, RNG } from '../core/math';
+import { D2X_MONSTERS } from '../data/d2x/monsters';
 import type { Furnisher, Prop } from './furnish';
 import { generateTown, type Decor, type House, type Npc, type Service } from './levelgen';
 import { BIG_ROCKS } from './outdoors';
@@ -33,6 +34,13 @@ export interface CampPreset {
   houses: House[];
   npcs: Npc[];
   services: Service[];
+  /**
+   * Kashya's place (docs/M2A-STEP0.md 2.12): her hirelings' service, where the camp's rogue stands now
+   * (its npcs' 'rogue', the npc_rogue she is to be drawn from: docs/M2A.md 美术), named by her row
+   * (tools/d2-names/npcs.json). Not among `services` yet: M2a's M line puts her there, in that rogue's
+   * place, once hiring is played, so the camp is as it was until then
+   */
+  hire: Service;
   waypoint: P2;
   start: P2;
   /** the east gate, where the road out leaves the palisade: its one way out, so it is the camp's port */
@@ -53,6 +61,9 @@ export function campPreset(): CampPreset {
   // its furniture stands on its own tiles; the woods it grew stand on the void round them
   const mine = (p: P2) => map.get(Math.floor(p.x), Math.floor(p.z)) !== T_VOID;
   const exit = L.exits![0];
+  const rogue = (L.npcs ?? []).find((n) => n.model === 'rogue');
+  if (!rogue) throw new Error("campPreset: the camp has no rogue where Kashya is to stand");
+  const kashya = D2X_MONSTERS.kashya;
   camp = {
     w: map.w,
     h: map.h,
@@ -63,6 +74,7 @@ export function campPreset(): CampPreset {
     houses: L.houses ?? [],
     npcs: L.npcs ?? [],
     services: L.services,
+    hire: { kind: 'hire', pos: { x: rogue.x, z: rogue.z }, npc: kashya.name, npcId: kashya.id },
     waypoint: L.waypoints[0].pos,
     start: L.start,
     // the exit's normal points back in; the road leaves the other way, from the map's edge
@@ -87,6 +99,7 @@ export function stampCamp(map: TileMap, ox: number, oz: number) {
     houses: c.houses.map((h) => ({ ...h, x: h.x + ox, y: h.y + oz })),
     npcs: c.npcs.map((n) => ({ ...n, x: n.x + ox, z: n.z + oz })),
     services: c.services.map((s) => ({ ...s, pos: at(s.pos) })),
+    hire: { ...c.hire, pos: at(c.hire.pos) },
     waypoint: at(c.waypoint),
     start: at(c.start),
     gate: { ...c.gate, x: c.gate.x + ox, z: c.gate.z + oz },
