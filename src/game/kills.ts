@@ -1,5 +1,5 @@
 import { chance, randInt } from '../core/math';
-import { LARGE_MONSTER } from '../audio/sounds';
+import { DEATH_SOUND, LARGE_MONSTER } from '../audio/sounds';
 import { SKILL_BY_ID } from '../data/skills';
 import { D2_TO_GAME } from '../data/d2/skillmap';
 import type { Drop } from '../items/gen';
@@ -75,9 +75,9 @@ export function killMonster(g: Game, m: Monster, elem: Elem, killer: Killer = 'h
   g.rift.killed(m);
   // fx
   g.fx.death(m, m.def.blood, elem);
-  // its look's death cry (src/data/monsters.ts voice), a big one's or a boss's the large one
+  // its look's death cry (src/data/monsters.ts voice, sounds.ts DEATH_SOUND), a big one's or a boss's the large one, bones' always their own
   const big = m.rank === 'boss' || m.def.scale >= LARGE_MONSTER;
-  const snd = m.def.voice === 'bone' ? 'monster.die_bone' : big ? 'monster.die_large' : m.def.voice === 'imp' ? 'monster.die_imp' : 'monster.die';
+  const snd = big && m.def.voice !== 'bone' ? 'monster.die_large' : DEATH_SOUND[m.def.voice];
   g.sfx.play(snd, { pos: m.pos });
   // a fire-enchanted (MonUMod 9) leader bursts as it dies, a cold-enchanted (18) one freezes round it
   // (src/game/d2/monstats.ts): only a champion's or unique's mode change sets them off, not its minions'

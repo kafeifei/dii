@@ -858,7 +858,7 @@ async function shippedLevels(ev) {
   return { fails, facts };
 }
 
-/** the monsters' deaths other than a flesh-and-blood one's (monster.die), by kind (src/game/game.ts) */
+/** the monsters' deaths other than a flesh-and-blood one's (monster.die), by kind, of those recorded (src/audio/sounds.ts DEATH_SOUND) */
 const DEATHS = ['monster.die_imp', 'monster.die_large', 'monster.die_bone'];
 /** how far under monster.die one may be, in dB: a Fallen's sat 5 dB under, all but lost in the music */
 const DEATH_UNDER_DB = 1.5;

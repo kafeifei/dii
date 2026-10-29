@@ -8,6 +8,8 @@
  */
 import type { PlayerClass } from '../data/classes';
 import type { ItemType } from '../data/items';
+import type { Voice } from '../data/monsters';
+import type { ObjKind } from '../game/objects';
 import type { AreaDef, AreaKind } from '../world/areas';
 
 /** the recipes Sfx synthesizes */
@@ -115,6 +117,19 @@ const GROUPS = {
     die_imp: { synth: 'impdie', vol: 1.35, max: 4 },
     /** a big one (LARGE_MONSTER) or a boss: a step over die */
     die_large: { synth: 'die', vol: 1, max: 2, prio: 'high' },
+    // M2a's monsters (DEATH_SOUND), synthesized as the nearest there is until each is recorded
+    /** a foul crow's squawk: an imp's shriek stands in */
+    die_bird: { synth: 'impdie', vol: 1.35, max: 4 },
+    /** a goatman's */
+    die_goat: { synth: 'die', vol: 0.9, max: 4 },
+    /** a rogue's (the hireling's, a Dark Ranger's), a woman's cry */
+    die_rogue: { synth: 'die', vol: 0.9, max: 2 },
+    /** the hireling struck (HURT_SOUND): D2 gives her a hit cry and a death cry, no lines (docs/M2A.md 佣兵) */
+    hurt_rogue: { synth: 'hurt', vol: 0.6, max: 1, prio: 'high' },
+    /** a foul crows' nest hatching them */
+    nest_hatch: { synth: 'barrel', vol: 0.6, max: 2 },
+    /** Blood Raven raising her dead */
+    raven_summon: { synth: 'holy', vol: 0.5, max: 2 },
     /** a boss notices the hero */
     boss_wake: { synth: 'boss', max: 1, prio: 'high' },
     /** a shaman raises a corpse */
@@ -206,6 +221,13 @@ const GROUPS = {
     waypoint: { synth: 'portal', max: 1, prio: 'high' },
     /** the merchant put life and mana back */
     vendor_heal: { synth: 'holy', max: 1, prio: 'high' },
+    // a maze's objects as they're used (USE_SOUND), synthesized as the nearest there is until recorded
+    /** a casket's lid shoved off */
+    casket: { synth: 'chest', max: 2 },
+    /** a drink from a well */
+    well: { synth: 'potion', max: 1, prio: 'high' },
+    /** a body searched */
+    search: { synth: 'pickup', max: 2 },
   },
 } satisfies Record<SoundCategory, Record<string, SoundDef>>;
 
@@ -265,6 +287,38 @@ export const DROP_SOUND: Partial<Record<ItemType, SoundId>> = {
 
 /** a monster drawn this much bigger than a man (MonsterDef.scale) dies as a big one: monster.die_large */
 export const LARGE_MONSTER = 1.3;
+
+/**
+ * A monster's death cry by its kind of cry (MonsterDef.voice); a big one (LARGE_MONSTER) or a boss
+ * dies as monster.die_large, unless it is bone (src/game/kills.ts)
+ */
+export const DEATH_SOUND: Record<Voice, SoundId> = {
+  flesh: 'monster.die',
+  bone: 'monster.die_bone',
+  imp: 'monster.die_imp',
+  bird: 'monster.die_bird',
+  goat: 'monster.die_goat',
+  rogue: 'monster.die_rogue',
+};
+
+/** the cry of one struck, by its kind of cry, for those that have one: the hireling's (the M line plays it) */
+export const HURT_SOUND: Partial<Record<Voice, SoundId>> = { rogue: 'monster.hurt_rogue' };
+
+/** what M2a's monsters' own moments sound like (the B line plays them): a nest hatching its crows, Blood Raven raising her dead */
+export const MONSTER_SOUND = { nestHatch: 'monster.nest_hatch', ravenSummon: 'monster.raven_summon' } as const satisfies Record<string, SoundId>;
+
+/**
+ * What using an object sounds like, by its kind: chests, barrels and shrines as ever (containers.ts),
+ * a maze's caskets, corpses and wells as the O line has them used
+ */
+export const USE_SOUND: Partial<Record<ObjKind, SoundId>> = {
+  chest: 'env.chest',
+  barrel: 'env.barrel',
+  shrine: 'env.shrine',
+  casket: 'env.casket',
+  remains: 'env.search',
+  well: 'env.well',
+};
 
 /**
  * What the hero says, by the moment, as Diablo II's heroes do: each class has its own words for
@@ -394,6 +448,9 @@ const ENVIRONS = {
   town: { bed: 'town', amb: ['amb.town'], night: ['amb.town_night'], music: 'music.town', score: 'town' },
   wilderness: { bed: 'wild', amb: ['amb.wild'], night: ['amb.wild_night'], music: 'music.wild', score: 'outdoor' },
   cave: { bed: 'dungeon', amb: ['amb.dungeon'], music: 'music.dungeon', score: 'dungeon' },
+  // ESOUNDENVIRON_CRYPT: the Crypt's and the Mausoleum's, their own loop and music to come (M2a's A
+  // line); a dungeon's drone and composed music until they are recorded
+  crypt: { bed: 'dungeon', amb: ['amb.crypt'], music: 'music.crypt', score: 'dungeon' },
 } satisfies Record<string, AreaSound>;
 
 type Environ = keyof typeof ENVIRONS;
@@ -401,7 +458,7 @@ type Environ = keyof typeof ENVIRONS;
 /**
  * Each area's environment, by its key, as levels.json SoundEnv has it: the camp 1; Blood Moor,
  * Cold Plains, Stony Field and the Burial Grounds all 2, so the wilderness's music and wind play on
- * from one into the next; the Den of Evil 4
+ * from one into the next; the Den of Evil and the Cave 4; the Crypt and the Mausoleum their own (docs/M2A-STEP0.md 2.7)
  */
 const AREA_ENVIRON: Record<string, Environ> = {
   camp: 'town',
@@ -410,6 +467,10 @@ const AREA_ENVIRON: Record<string, Environ> = {
   stonyfield: 'wilderness',
   burialgrounds: 'wilderness',
   denofevil: 'cave',
+  cave1: 'cave',
+  cave2: 'cave',
+  crypt: 'crypt',
+  mausoleum: 'crypt',
 };
 
 /** an area with no row of its own sounds like its kind: the trial ground's floors are dungeons */

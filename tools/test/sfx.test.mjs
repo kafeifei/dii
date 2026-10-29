@@ -124,8 +124,11 @@ export default async (load) => {
       says++;
       for (const said of results(firstArg(src, m.index + m[0].length - 1))) check(HERO_LINES.includes(said), `${line(m.index)}: the hero has no line '${said}'`);
     }
-    for (const m of src.matchAll(/'([^'\n]*)'|"([^"\n]*)"|`([^`$]*)`/g)) {
-      const s = m[1] ?? m[2] ?? m[3];
+    // a template literal is taken whole, its substitutions and all, so its closing backtick isn't
+    // read as the opening of another (a type like `${C}.${…}` hid every string after it in a file);
+    // only one with no substitution can be an id
+    for (const m of src.matchAll(/'([^'\n]*)'|"([^"\n]*)"|`((?:[^`\\]|\\[\s\S])*)`/g)) {
+      const s = m[1] ?? m[2] ?? (m[3].includes('${') ? '' : m[3]);
       if (idShaped.test(s)) use(s, line(m.index));
     }
   }

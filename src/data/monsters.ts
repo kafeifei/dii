@@ -29,8 +29,8 @@ export interface MonsterLook {
   color2: string;
   /** what its missile looks like (src/game/objects.ts); what it does is its D2 missile's */
   missile?: ProjectileKind;
-  /** its death cry: monster.die, die_bone, die_imp (src/audio/sounds.ts); a big one dies as die_large */
-  voice: 'flesh' | 'bone' | 'imp';
+  /** its death cry (src/audio/sounds.ts DEATH_SOUND): monster.die, die_bone, die_imp…; a big one dies as die_large */
+  voice: Voice;
   /**
    * how far its blow reaches from its middle, m: its model's arm, which D2 doesn't give (its sprites
    * have none); D2's MonStats2 MeleeRng adds to it (src/game/ai.ts meleeReach)
@@ -117,6 +117,13 @@ export function lookKey(row: D2xMonster): string {
 }
 
 /** a monster as the game fights it: its D2 row and its look */
+/**
+ * A monster's kind of cry (MonsterDef.voice): its death sound by it (src/audio/sounds.ts DEATH_SOUND).
+ * M2a's birds (the foul crows), goats (the goatmen) and rogues (the hireling, the Dark Rangers) have
+ * theirs to come, synthesized until recorded
+ */
+export type Voice = 'flesh' | 'bone' | 'imp' | 'bird' | 'goat' | 'rogue';
+
 export interface MonsterDef extends MonsterLook {
   /** the D2X_MONSTERS id, 'zombie1' */
   id: string;
