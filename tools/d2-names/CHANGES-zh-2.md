@@ -97,3 +97,91 @@
 | mercenaries.json | Floria | 弗萝利亚 → 芙罗莉娅 → 芙罗蕾娅 | Ferolie（不变） | 芙罗莉娅念出来就是弗萝利亚 |
 | mercenaries.json | Diane | 戴安妮 → 黛安 → 黛菀 | Daevanne（不变） | 黛安只是戴安妮的同音字少一个字 |
 | mercenaries.json | Wendy | 温迪 → 雯蒂 → 雯瑟 | Wenthe（不变） | 雯蒂和温迪只差声调 |
+
+## 术语表：音译（glossary.json、glossary-en.json）
+
+`glossary.json`、`glossary-en.json` 的 118 条音译逐条对照官方中文和 Blizzard 英文重审，改了下面 74 条（中文改了 45 条，英文改了 71 条），其余照旧。各条的 `note` 里记了曾用名和理由。
+
+- 标准：中文对着官方中文念，英文对着 Blizzard 英文念，一听就对上原名，又不能念出来就是官方名（`style.md` 规则 1、5，`style-en.md` 规则 1、5）。
+- 中文有两种毛病。一种念出来就是官方名：寰音（桓因）、该娅（盖亚）两个字都同音，只差声调。另一种挪得太远：每个音都换了，或者少了一个音（波勒迦托、楚丝琅、卓库勒、季约穆、钦弥勒……），往回拉成只改一个音，其余用同音字（翠思忒琅、铎谷勒、锦迈勒）。官方的「卡」统一写「喀」（札喀仑、亚喀蕾、喀森、喀廉、罗喀倪秀，原有的喀因、喀麟兹），卡夏写「柯霞」，免得营地里三个人都是喀字头。官方自己另起炉灶的（塔格奥、莱姗德、宋满、两个「威廉」），中文对着官方中文，英文对着 Blizzard 英文，两边不强求同音：Guillaume 和 Wilhelm 官方都叫威廉，季琏留「廉」的音、韦阑留「威」的音。
+- 英文也有两种毛病。一种是我们中文的拼音，丢了原名的音（Yajalo、Jiasha、Wengde、Shiwebor、Peizhel、Lojanishiu、Zhokul……，规则 5 点名的就是这种），改回 Blizzard 的音，首音（K、R、B、V、Dr、Tr）都留住。另一种只动一两个字母，念出来就是原名（Huanyin、Yali Bhaba、Mahng Sung、Weirte、Yinifus、Lan Ersen、Chashi、Sangdar、Danghun、Yagayi），改到念出来是另一个名字。Hellforge 原来的 Nether Furnace 两个词都换了，只剩结构，改成 Netherforge，留 Forge（炉＝Forge，同「烈炉」Roaring Forge）。
+- `d2-validate.mjs` 列的「术语表英文离 Blizzard 原名不超过 2 个字母」原来 21 条，现在 19 条，都看过：Aledor、Kahin、Dimorg、Diyabelo、Ba'eh、Tahmor、Mailahe 七条不改（理由写在 `glossary-en.json` 的 note 里）；另外 12 条是这次新起的（Ghiyed、Nadji、Iroth、Yagorai、Gherim、Durayel、Marlah、Tiruel、Angdarael、Aerlien、Khorast、Felovie），都多了一个音节或换了重读的元音，念出来不是原名。Iro、Naj、Grim、Mara 这种短名字，再改远就认不出了。
+- `CHANGES-zh.md` 那 28 条都不在术语表里，这一组没有要回看的。
+- 跟着要改的别处：各张表里还有 138 行用着旧写法（`sets.json` 59、`uniques.json` 50、`bases.json` 18、`npcs.json` 5、`monsters.json` 3、`areas.json`、`prefixes.json`、`suffixes.json` 各 1），照上表把旧的中文、英文写法换成新的就行；换完之前 `node tools/d2-validate.mjs` 的「transliterated names use the glossary」会失败（中文没变、英文变了的 50 行）。商人改名亚喀蕾以后，`tools/test/areas.test.mjs`、`tools/test/quests.test.mjs`、`tools/scenarios/quests.mjs`、`tools/bot.mjs`、`README.md` 里手抄的「亚珈萝」也要跟着改，`DIALOGUE-zh.md` 重新生成。
+
+| 文件 | 原版 | 官方 → 旧名 → 新名 | 新英文名 | 为什么 |
+| --- | --- | --- | --- | --- |
+| glossary | Zakarum | 萨卡兰姆 → 札迦仑 → 札喀仑 | Zakhalun（原 Zajalun） | 迦念 jiā，丢了「卡」的 k 音，英文 Zajalun 也丢了 k（同 Yajalo）；喀＝卡的音，札喀仑读 za-ka-lun，英文留 Zak- |
+| glossary | Akara | 阿卡拉 → 亚珈萝 → 亚喀蕾 | Akarelle（原 Yajalo） | Yajalo 是 style-en.md 点名的反例：罗马化的中文，丢了 Akara 的音；中文的「珈」也丢了 k；亚喀蕾读 ya-ka-lei，英文整留 Akar- |
+| glossary | Charsi | 恰西 → 查茜（不变） | Charessa（原 Chashi） | 中文认得出，不改；Chashi 只动两个字母，念出来就是 Charsi（规则 1）；改为留 Char- 的三音节名 |
+| glossary | Gheed | 基德 → 吉伊得（不变） | Ghiyed（原 Jiyed） | 中文认得出，不改；Jiyed 把硬音 G 念成了 J；改回 Gh-，和中文一样多一个音节（Ghee-yed），不是 Gheed 换拼写 |
+| glossary | Kashya | 卡夏 → 迦霞 → 柯霞 | Khassia（原 Jiasha） | 迦念 jiā，对不上「卡」；柯霞 ke-xia，霞＝夏的音，营地里也不和「喀因」撞字头；Jiasha 丢了 K |
+| glossary | Tancred | 坦克雷 → 檀格烈（不变） | Tangreth（原 Tangelier） | 中文认得出，不改；Tangelier 只剩 Tan-，读来像 tangerine；Tangreth 留 Tan-c-red 的骨架 |
+| glossary | Bul-Kathos | 布尔凯索 → 波勒迦托 → 波勒铠梭 | Bol-Khatos（原 Bolegath） | 波勒迦托四个音都挪了，认不出「布尔凯索」；铠梭＝凯索的音，波勒≈布尔；Bolegath 丢了 -thos，新英文留连字符和 Kathos 的音 |
+| glossary | Hwanin | 桓因 → 寰音 → 寰涅 | Hwaneth（原 Huanyin） | 寰音和桓因两字都同音（huán yīn），念出来就是官方名（规则 1），Huanyin 也就是 Hwanin；留第一个音，改第二个 |
+| glossary | Guillaume | 威廉 → 季约穆 → 季琏 | Guilhem（原 Jeyomu） | 官方两人都叫「威廉」；季约穆认不出是威廉；季琏留「廉」的音，韦阑（Wilhelm）留「威」的音，一人留一半；Jeyomu 是罗马化的中文，Guilhem 是 Guillaume 的奥克语形式 |
+| glossary | Wilhelm | 威廉 → 韦尔汉 → 韦阑 | Wilhan（原 Weirhan） | 韦尔汉（wei-er-han）离「威廉」远；韦阑 wei-lan，只改廉→阑；Weirhan 丢了 Wil-，Wilhan 留 Wil-h- |
+| glossary | Whitstan | 威斯顿 → 惠茨丹 → 韦思丹 | Witsdane（原 Huitsdan） | 惠茨丹三个音都挪了；韦思丹只把顿换成丹；Huitsdan 是拼音，Witsdane 留 Wit-s- |
+| glossary | Cathan | 卡珊 → 伽森 → 喀森 | Khathen（原 Ghasen） | 伽森的伽念 jiā，对不上「卡」；喀森 ka-sen；Ghasen 把 C 念成了 G，Khathen 留 K 和 th |
+| glossary | Sander | 山德 → 桑达尔 → 善铎 | Sandreth（原 Sangdar） | 桑达尔 sang-da-er 离「山德」远（声母、韵母都挪了，还多一个音）；善铎 shan-duo；Sangdar 念出来几乎就是 Sander |
+| glossary | Trang-Oul | 塔格奥 → 唐古尔 → 陀戈敖 | Thangur（不变） | 唐古尔跟的是英文，对不上官方的「塔格奥」，还像唐古拉山；陀戈敖只把塔换成陀（同「陀·剌沙」）；英文 Thangur 对 Trang-Oul 认得出，不改 |
+| glossary | Civerb | 希弗伯 → 锡维勃（不变） | Siverbor（原 Shiwebor） | 中文认得出，不改；Shiwebor 是拼音（Shi-），丢了 Civ- 的音 |
+| glossary | Dangoon | 覃君 → 丹衮 → 谭衮 | Tangun（原 Danghun） | 丹衮两个声母都换了（覃 t→d，君 j→g）；谭衮 tan-gun，谭＝覃的音；Danghun 念出来几乎就是 Dangoon；Tangun 是檀君（Dangun）的另一种罗马字 |
+| glossary | Taebaek | 泰白 → 太魄（不变） | Taibeck（原 Taipor） | 中文认得出，不改；Taipor 丢了 -baek |
+| glossary | Ondal | 温达 → 翁德（不变） | Ondamir（原 Wengde） | 中文认得出，不改；Wengde 是拼音，和 Ondal 没有一个音对得上；Ondamir 留 Onda- |
+| glossary | Vidala | 维达拉 → 薇朵菈（不变） | Veydola（原 Weydola） | 中文认得出，不改；Weydola 把 V 念成了 W |
+| glossary | Cleglaw | 克雷格劳 → 柯勒戈罗（不变） | Clegaro（原 Kelegaro） | 中文认得出，不改；Kelegaro 拆开了 Cleg-，新英文留 Cleg- |
+| glossary | Iratha | 艾蕾萨 → 依蕊莎 → 爱蕊莎 | Eirusha（原 Yirusha） | 依蕊莎三个音都挪了；爱＝艾的音，只剩蕊莎两个音改了；Yirusha 多了 Y，Eirusha 随中文 |
+| glossary | Naj | 诺吉 → 纳奇 → 纳济 | Nadji（原 Natchi） | 纳奇两个音都挪了；纳济留「吉」的音；Natchi 丢了 j，Nadji 两个音节，不是 Naj 换拼写 |
+| glossary | Iro | 伊洛 → 以若（不变） | Iroth（原 Yirro） | 中文认得出，不改；Yirro 念出来就是 Iro 加个 Y；Iroth 多了 -th 的音 |
+| glossary | Rixot | 瑞克撒特 → 里柯索 → 睿柯索 | Rikosso（原 Lykosso） | 里柯索把瑞换成里，认不出「瑞克撒特」；睿＝瑞的音；Lykosso 丢了 R |
+| glossary | Krintiz | 克林茨 → 喀麟兹（不变） | Kharintz（原 Kalinz） | 中文认得出，不改；Kalinz 丢了 r 和 t |
+| glossary | Kinemil | 金麦尔 → 钦弥勒 → 锦迈勒 | Kinmael（原 Chinmiel） | 钦弥勒三个音都挪了，还含「弥勒」（弥勒佛）；锦迈＝金麦的音，只改尔→勒；Chinmiel 丢了 K |
+| glossary | Yaggai | 亚盖 → 雅嘎伊（不变） | Yagorai（原 Yagayi） | 中文认得出，不改；Yagayi 念出来几乎就是 Yaggai；Yagorai 多了 -or- |
+| glossary | Tarn (Tarnhelm) | 塔恩 → 坦伦 → 坦恩 | Tharen（原 Tanlun） | 坦伦离「塔恩」远（恩→伦）；坦恩只把塔换成坦；Tanlun 丢了 r |
+| glossary | Bverrit | 贝弗提 → 碑维利 → 碑孚利 | Beverith（原 Beiwelli） | 碑维利两个音挪了；孚＝弗的音，只改提→利；Beiwelli 是拼音，丢了 v |
+| glossary | Cthon | 克索恩 → 刻顿 → 刻梭温 | Kesthon（原 Kedhun） | 刻顿少一个音，「索」没了；刻梭＝克索的音；Kedhun 丢了 th |
+| glossary | Etlich | 艾利奇 → 厄特里 → 埃特里齐 | Etterlich（原 Etterli） | 厄特里和「艾利奇」只剩一个里；埃特里齐是艾利奇中间加一个特；英文补回 -lich |
+| glossary | Mahim | 马哈姆 → 摩欣 → 玛翰穆 | Mahannim（原 Mohshin） | 摩欣认不出「马哈姆」；玛翰穆 ma-han-mu；Mohshin 丢了 Mah- |
+| glossary | Manald | 马纳德 → 曼诺尔 → 玛诺铎 | Manodor（原 Mannoer） | 曼诺尔丢了德的 d；玛诺铎 ma-nuo-duo；Mannoer 也丢了 d |
+| glossary | Jordan | 乔丹 → 觉旦 → 樵顿 | Jourdaine（原 Juedan） | 觉 jué 和乔 qiáo 差得远；樵顿 qiao-dun，樵＝乔的音，只改丹→顿；Juedan 是拼音，Jourdaine 是 Jordan 的法语形式加 e |
+| glossary | Khalim | 卡林姆 → 哈廉 → 喀廉 | Khalyan（原 Halyan） | 哈廉丢了 k；喀＝卡的音；Halyan 丢了 Kh- |
+| glossary | Baezil | 贝希尔 → 裴哲勒 → 碑夕勒 | Baeshel（原 Peizhel） | 裴哲勒三个音都挪了（b→p）；碑夕＝贝希的音，只改尔→勒；Peizhel 是拼音，也成了 P |
+| glossary | Ali Baba | 阿里巴巴 → 亚利芭芭（不变） | Yalim Bhaba（原 Yali Bhaba） | 中文认得出，不改；Yali Bhaba 念出来就是 Ali Baba（只加了 Y 和不发音的 h） |
+| glossary | Ginther | 金瑟 → 甘忒 → 晋忒 | Ghintor（原 Ganthe） | 甘忒两个音都挪了；晋＝金的音，只改瑟→忒；Ganthe 丢了 Gin- |
+| glossary | Grim | 格里姆 → 戈临（不变） | Gherim（原 Ghelin） | 中文认得出，不改；Ghelin 丢了 r 和 m；Gherim 两个音节，不是 Grim 换拼写 |
+| glossary | Duriel | 督瑞尔 → 杜里埃（不变） | Durayel（原 Dulyai） | 中文认得出，不改；Dulyai 丢了 r；Durayel 重音落在 ray 上，不是 Duriel 换拼写 |
+| glossary | Skullder | 诗寇蒂 → 丝珂黛 → 施蔻黛 | Skuldra（原 Sikedai） | 丝珂黛三个音都挪了；施蔻＝诗寇的音，只改蒂→黛；Sikedai 是拼音 |
+| glossary | Atma | 阿特玛 → 娅忒嫚（不变） | Atemane（原 Yatemane） | 中文认得出，不改；Yatemane 多了 Y，英文留 At- |
+| glossary | Moser | 摩西尔 → 茂瑟 → 莫希勒 | Moshele（原 Mawse） | 茂瑟少一个音，两个音都挪了；莫希＝摩西的音，只改尔→勒；Mawse 丢了 -er |
+| glossary | Gerke | 基尔克 → 盖柯 → 吉勒柯 | Gerrick（原 Gaikor） | 盖柯少一个音，基变成了盖；吉勒柯 ji-le-ke；Gaikor 丢了 Ger- |
+| glossary | Radament | 罗达门特 → 剌丹蒙（不变） | Rhadamon（原 Ladanmon） | 中文认得出，不改；Ladanmon 把 R 也换成了 L，英文留 R |
+| glossary | Arkaine | 阿凯尼 → 埃铿 → 埃铠倪 | Arkhaeni（原 Aikhen） | 埃铿少一个音；铠倪＝凯尼的音；Aikhen 丢了 r |
+| glossary | Schaefer | 舍费尔 → 谢孚 → 奢斐勒 | Shaevel（原 Shiefu） | 谢孚少一个音；奢斐＝舍费的音，只改尔→勒；Shiefu 是拼音 |
+| glossary | Mara | 玛拉 → 茉菈（不变） | Marlah（原 Molah） | 中文认得出，不改；Molah 丢了 Mar；Marlah 是另一个名字（Marla），不是 Mara 换拼写 |
+| glossary | Lycander | 莱姗德 → 莉坎朵 → 睐珊朵 | Likando（不变） | 莉坎朵跟英文走，对不上官方的「莱姗德」；睐珊＝莱姗的音，只改德→朵；英文 Likando 对 Lycander 认得出，不改 |
+| glossary | Tyrael | 泰瑞尔 → 提睿埃（不变） | Tiruel（原 Tiruai） | 中文认得出，不改；Tiruai 是拼音（rui）；Tiruel 两个元音都变了，不是 Tyrael 换拼写 |
+| glossary | Mang Song | 宋满 → 芒颂 → 颂芒 | Mahng Seung（原 Mahng Sung） | 官方作「宋满」，芒颂把顺序倒了；颂芒只改满→芒；Mahng Sung 念出来就是 Mang Song |
+| glossary | Kira | 奇拉 → 绮蕾（不变） | Kireth（原 Chilae） | 中文认得出，不改；Chilae 丢了 K |
+| glossary | Ormus | 奥玛斯 → 欧牧司（不变） | Aurmos（原 Oumusi） | 中文认得出，不改；Oumusi 是拼音 |
+| glossary | Dracul | 德古拉 → 卓库勒 → 铎谷勒 | Drokhul（原 Zhokul） | 「德古拉」是 Dracula 的通行译名，老玩家熟，卓库勒三个音都挪了；铎谷勒 duo-gu-le；Zhokul 丢了 Dr- |
+| glossary | Astreon | 阿斯特隆 → 埃垂昂 → 埃思忒昂 | Aesthrion（原 Aechrion） | 埃垂昂少一个音，「斯」没了；埃思忒＝阿斯特的音，只改隆→昂；Aechrion 丢了 s |
+| glossary | Arioc | 艾里欧克 → 阿瑞厄格 → 埃理鸥格 | Arriogh（原 Aruegh） | 阿瑞厄格四个音都挪了；埃理鸥＝艾里欧的音，只改克→格；Aruegh 丢了 -io- |
+| glossary | Bishibosh | 毕须博须 → 必希鲍什（不变） | Bishibaushi（原 Pishibaush） | 中文认得出，不改；Pishibaush 把 B 换成了 P |
+| glossary | Rakanishu | 拉卡尼休 → 罗迦倪秀 → 罗喀倪秀 | Lokhanishu（原 Lojanishiu） | 罗迦的迦念 jiā，丢了「卡」；喀＝卡的音；Lojanishiu 丢了 k |
+| glossary | Andariel | 安达莉尔 → 昂妲蕾（不变） | Angdarael（原 Angdalae） | 中文认得出，不改；Angdalae 丢了 dar；Angdarael 多了 g、重音换了，不是 Andariel 换拼写 |
+| glossary | Mephisto (Ars Dul'Mephistos) | 墨菲斯托 → 迷弗忒 → 迷斐思陀 | Mefistor（原 Miphoth） | 迷弗忒少一个音，「菲斯托」只剩弗忒；斐思陀＝菲斯托的音，只改墨→迷；Miphoth 丢了 -isto |
+| glossary | Athena | 雅典娜 → 阿瑟妮 → 娅甸妮 | Asseni（不变） | 阿瑟妮跟英文走，丢了「雅典」的典，老玩家熟的是雅典娜；娅甸＝雅典的音，只改娜→妮；英文 Asseni 认得出，不改 |
+| glossary | Gaea (Gaean) | 盖亚 → 该娅 → 噶娅 | Ghayah（原 Ghaiyah） | 该娅和盖亚两字都同音（只差声调），念出来就是官方名（规则 1）；噶娅 ga-ya；英文随中文 |
+| glossary | Leviathan | 利维坦 → 勒韦屯 → 勒韦滩 | Livyatan（原 Lewetun） | 屯和坦只剩韵母相近；滩＝坦的音；Lewetun 丢了 v 和 -than，Livyatan 是 Leviathan 的希伯来文形式 |
+| glossary | Titan | 泰坦 → 堤丹 → 太丹 | Taedan（原 Dydan） | 堤丹两个声母都换了（t→d）；太＝泰的音，只改坦→丹；Dydan 丢了 T |
+| glossary | Tristram | 崔斯特姆 → 楚丝琅 → 翠思忒琅 | Trystrang（原 Chuslang） | 楚丝琅换了崔、丢了特，认不出「崔斯特姆」；翠思忒＝崔斯特的音，只改姆→琅；Chuslang 丢了 Tr- |
+| glossary | Arreat | 亚瑞特 → 阿列忒 → 阿睿忒 | Arrieth（原 Alieth） | 阿列忒的列和瑞对不上；睿＝瑞的音；Alieth 丢了 r |
+| glossary | Jared | 杰瑞德 → 贾睿铎（不变） | Jarredor（原 Jaruidor） | 中文认得出，不改；Jaruidor 是拼音（rui） |
+| glossary | Aerin | 艾琳 → 埃芮恩 → 埃莲 | Aerlien（原 Airuen） | 埃芮恩多一个音，芮恩对不上琳；埃莲 ai-lian，只改琳→莲；Aerlien 三个音节，不是 Aerin 换拼写 |
+| glossary | Kurast | 库拉斯特 → 柯剌斯（不变） | Khorast（原 Kolass） | 中文认得出，不改；Kolass 丢了 r；Khorast 重读的元音换了（同 Thol 对 Tal） |
+| glossary | Wirt | 怀特 → 韦尔特（不变） | Weirtel（原 Weirte） | 中文认得出，不改；Weirte 念出来就是 Wirt |
+| glossary | Lam Esen | 兰姆·艾森 → 岚·厄森（不变） | Lan Ershen（原 Lan Ersen） | 中文认得出，不改；Lan Ersen 念出来几乎就是 Lam Esen |
+| glossary | Inifuss | 艾尼弗斯 → 伊妮孚斯（不变） | Ennifoss（原 Yinifus） | 中文认得出，不改；Yinifus 念出来就是 Inifuss |
+| glossary | Hellforge / Hell Forge | 地狱熔炉 → 狱炉（不变） | Netherforge（原 Nether Furnace） | 中文认得出，不改；Nether Furnace 两个词都换了，只剩结构（规则 2）；留 Forge（炉＝Forge，同「烈炉」Roaring Forge） |
+| glossary | Flavie | 弗拉维 → 菲萝薇（不变） | Felovie（原 Feilowei） | 中文认得出，不改；Feilowei 是拼音；Felovie 三个音节，不是 Flavie 换拼写 |
