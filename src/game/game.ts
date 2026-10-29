@@ -1,37 +1,35 @@
 import type { Input } from '../core/input';
-import { chance, dist, rand, randInt, type P2 } from '../core/math';
+import { dist, rand, randInt, type P2 } from '../core/math';
 import type { Sfx } from '../audio/sfx';
-import { DROP_SOUND, ENTER_LINE, LARGE_MONSTER, heroLine, isNight, npcLine, soundsNear, type HeroLine, type VoiceId } from '../audio/sounds';
+import { DROP_SOUND, ENTER_LINE, heroLine, isNight, npcLine, soundsNear, type HeroLine, type VoiceId } from '../audio/sounds';
 import { CLASSES, type PlayerClass } from '../data/classes';
 import { SKILL_BY_ID } from '../data/skills';
-import { D2_TO_GAME } from '../data/d2/skillmap';
 import { createItem, isGold, newGameDrops, starterKit, type Drop } from '../items/gen';
 import { CAMP_VENDORS, fillStore, Store } from '../items/vendor';
 import { baseOf, displayName, isUnknown, type Item } from '../items/item';
 import { fillableTome, isBookScroll, isTome, isTownPortal, mergeTome, readable, readFrom, scrollIntoTome, tomeCharges, tomeMax, townPortalFrom } from '../items/tomes';
-import { coldEnchantBurst, fireEnchantBurst, lightEnchantBolts } from './d2/monstats';
+import { lightEnchantBolts } from './d2/monstats';
 import { autoBeltable, freeBeltColumn } from '../items/belt';
 import { depositable, SharedStash, sharedBlock, withdrawable } from '../items/stash';
 import type { Grid } from '../items/grid';
 import { charStats, potionHeal } from './d2/stats';
-import { deathPenalty, type DeathPenalty } from './d2/death';
-import { killXp } from './d2/xp';
-import { containerLoot, monsterLoot, type Finder } from './loot';
+import type { DeathPenalty } from './d2/death';
+import { containerLoot, type Finder } from './loot';
 import { bodyItems, leaveBody, takeBody } from './corpse';
 import { emptyPacket } from './actor';
-import { blastDamage, corpseGone, monsterDied, notice, updateMonster } from './ai';
+import { blastDamage, corpseGone, updateMonster } from './ai';
 import { applyDamage, monsterStrike } from './combat';
 import { nullFx, type Fx } from './fx';
 import type { Level } from './level';
 import { Maps, newSeed } from './maps';
 import type { Monster } from './monster';
-import { DelayedBlast, GroundItem, Projectile, WorldObject } from './objects';
+import { GroundItem, Projectile, WorldObject } from './objects';
 import { CHARGE_PREFIX, Player } from './player';
-import { castItemSkill, startCast, toggleAura, updatePlayer, type PlayerAction } from './playerctl';
+import { startCast, toggleAura, updatePlayer, type PlayerAction } from './playerctl';
+import { celebrateLevelUp, killMonster, killPlayer, onProc, rollLoot, wake } from './kills';
 import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
 import { claimedElsewhere, claimHero, handOver, heroTaken, isReadOnly, loadSave, loadShared, markInGame, mayWriteLast, neverWrite, playedElsewhere, reclaimHero, savedWaypoints, setSlot, slotNow, syncShared, waitHandOver, writeSave, writtenElsewhere, type Difficulty } from './save';
-import { debugOpts } from './debug';
 import { CAMP_AREA, areaDef, areaForDepth, areaLevel, builtWaypoints, depthForArea, dungeonArea, trialFloor, type AreaDef, type AreaKind } from '../world/areas';
 import type { Overworld } from '../world/overworld';
 import { SHRINE_BY_ID } from '../data/shrines';
@@ -170,7 +168,7 @@ export class Game {
    * when each corpse last aged (Monster.deathTime), by its map's clock (Level.time): those far off,
    * not stepped, catch up as the dead are cleared, by the time the hero spent on that map
    */
-  private aged = new WeakMap<Monster, number>();
+  aged = new WeakMap<Monster, number>();
   /** the area the hero is in (Level.areaAt), announced through hooks.areaChanged when it changes */
   area: AreaDef | null = null;
   fx: Fx = nullFx;
@@ -1517,141 +1515,30 @@ export class Game {
     this.sfx.play('skill.lightning_cast', { pos: m.pos, vol: 0.25 });
   }
 
-  /** a monster struck before it noticed the hero: it notices them, its pack with it, as seeing them has it (src/game/ai.ts notice) */
+  // ───────────────────────── kills (src/game/kills.ts) ─────────────────────────
+
   wake(m: Monster) {
-    notice(this, m);
+    wake(this, m);
   }
 
   killMonster(m: Monster, elem: Elem) {
-    if (m.dead) return;
-    const p = this.player;
-    m.dead = true;
-    m.life = 0;
-    m.deathTime = 0;
-    m.killedBy = elem;
-    m.setState('dead');
-    m.path = null;
-    m.move = null;
-    m.act = null;
-    // a cold kill shatters it (the renderer draws it so): no shaman raises it (D2's freeze state, STATES_CheckStateMaskUdeadOnUnit)
-    m.corpseRaisable = elem !== 'cold';
-    this.aged.set(m, this.level.time);
-    monsterDied(this, m);
-    // Diablo II's experience for the kill (SUNITDMG_ComputeExperienceGain: game/d2/xp.ts killXp):
-    // the level gap's two tables, ExpRatio, then "+X% experience gained" and the shrine's on top;
-    // none for a raised or summoned one, nor a drop (UNITFLAG_NOXP | UNITFLAG_NOTC)
-    const addPct = (p.shrine ? (SHRINE_BY_ID[p.shrine.id].xpPct ?? 0) : 0) + (p.stats.bag.xpPct ?? 0);
-    const gained = m.noXp ? 0 : p.gainXp(Math.floor(killXp(m.xp, p.level, m.level, addPct) * debugOpts.xp));
-    if (gained > 0) {
-      this.onProc('procLevelUp', null);
-      this.celebrateLevelUp();
-    }
-    const d = p.stats;
-    this.onProc('procKill', m);
-    if (m.def.demon && d.bag.demonHeal) p.life = Math.min(d.maxLife, p.life + d.bag.demonHeal);
-    if (d.lifePerKill) p.life = Math.min(d.maxLife, p.life + d.lifePerKill);
-    if (d.manaPerKill) p.mana = Math.min(d.maxMana, p.mana + d.manaPerKill);
-    // loot
-    if (!m.noXp) this.spawnDrops(m.pos, this.rollLoot((hero) => monsterLoot(m, hero)));
-    // the quests count it (MonsterKilled): the Den of Evil's last one done
-    this.quests.monsterKilled(m);
-    // and the rift's progress
-    this.rift.killed(m);
-    // fx
-    this.fx.death(m, m.def.blood, elem);
-    // its look's death cry (src/data/monsters.ts voice), a big one's or a boss's the large one
-    const big = m.rank === 'boss' || m.def.scale >= LARGE_MONSTER;
-    const snd = m.def.voice === 'bone' ? 'monster.die_bone' : big ? 'monster.die_large' : m.def.voice === 'imp' ? 'monster.die_imp' : 'monster.die';
-    this.sfx.play(snd, { pos: m.pos });
-    // a fire-enchanted (MonUMod 9) leader bursts as it dies, a cold-enchanted (18) one freezes round it
-    // (src/game/d2/monstats.ts): only a champion's or unique's mode change sets them off, not its minions'
-    // (MonsterUnique.cpp:1052-1058, 2016-2020: bUnique is MONTYPEFLAG_UNIQUE, which a minion hasn't)
-    if (m.hasOwn(9)) {
-      const b = fireEnchantBurst(m.def.row, m.difficulty, m.level, randInt);
-      const pk = emptyPacket();
-      pk.phys = b.phys;
-      pk.fire = b.fire;
-      pk.spell = true;
-      pk.source = m;
-      this.level.blasts.push(new DelayedBlast(m.pos, b.radius, 0.45, pk, 'monster', 'fire', m));
-      setTimeout(() => {
-        this.fx.burst('fireblast', m.pos, { radius: b.radius });
-        this.sfx.play('skill.fire_impact', { pos: m.pos, vol: 0.7 });
-      }, 400);
-    }
-    if (m.hasOwn(18)) {
-      const b = coldEnchantBurst(m.level);
-      const pk = emptyPacket();
-      pk.cold = randInt(b.cold[0], b.cold[1]);
-      pk.chill = b.chill;
-      pk.spell = true;
-      pk.source = m;
-      this.level.blasts.push(new DelayedBlast(m.pos, b.radius, 0.1, pk, 'monster', 'frost', m));
-      this.fx.burst('frostnova', m.pos, { radius: b.radius });
-      this.sfx.play('skill.cold_impact', { pos: m.pos, vol: 0.7 });
-    }
-    if (m.rank === 'boss') {
-      this.fx.shake(0.8);
-      this.hooks.message(`${m.displayName} 被击败了！`, '#c8a86a', 4);
-      this.say('boss_dead');
-      this.save();
-    }
+    killMonster(this, m, elem);
   }
 
-  /** chance-to-cast mods on the player's gear, for one kind of event */
-  /** the burst, sound and message of a level gained */
   celebrateLevelUp() {
-    const p = this.player;
-    this.fx.burst('levelup', p.pos);
-    this.sfx.play('player.level_up', { pos: p.pos });
-    this.hooks.message(`等级提升！你现在是 ${p.level} 级`, '#ffd24a', 3);
-    this.say('level_up');
-    this.hooks.levelUp();
+    celebrateLevelUp(this);
   }
 
-  /** loot from a monster or a container (src/game/loot.ts) for the hero, rolled once more for each extra pass the debug panel asks for */
-  private rollLoot(roll: (hero: Finder) => Item[]): Drop[] {
-    const s = this.player.stats;
-    const p = this.player;
-    // a rift's floors drop in its tier's difficulty, never a quest's class: its kills are no quest's
-    const hero: Finder = { mf: s.mf, gf: s.gf, difficulty: p.rules, quests: p.ruled === null ? p.quests[p.difficulty] : 'done' };
-    const drops: Drop[] = [];
-    for (let i = 0; i < debugOpts.loot; i++) for (const item of roll(hero)) drops.push({ kind: 'item', item });
-    return drops;
+  rollLoot(roll: (hero: Finder) => Item[]): Drop[] {
+    return rollLoot(this, roll);
   }
 
   onProc(kind: StatKey, target: Monster | null) {
-    const p = this.player;
-    for (const m of p.stats.procs) {
-      if (m.stat !== kind || !chance(m.value / 100)) continue;
-      castItemSkill(this, p, (SKILL_BY_ID[m.param ?? ''] ? m.param : D2_TO_GAME[m.param ?? ''])!, m.lvl ?? 1, target && !target.dead ? target : null);
-    }
+    onProc(this, kind, target);
   }
 
   killPlayer() {
-    const p = this.player;
-    if (p.dead) return;
-    if (debugOpts.god) {
-      p.life = p.d.maxLife;
-      return;
-    }
-    this.onProc('procDeath', null);
-    p.dead = true;
-    p.life = 0;
-    p.setState('dead');
-    p.intent = null;
-    // Diablo II's death penalty as the death starts (PLAYER_ApplyDeathPenalty: game/d2/death.ts):
-    // min(level, 20) % of all the gold, the inventory's first, and in nightmare and hell some of
-    // the level's experience; the gold left in the inventory drops by the body (leaveCorpse). The
-    // shared pages' gold is out of reach of it, as in D2R
-    const pen = deathPenalty({ level: p.level, xp: p.xp, gold: p.gold, stashGold: p.stashGold, diff: p.rules });
-    p.gold = pen.goldDropped;
-    p.stashGold = pen.stashGold;
-    p.xp = pen.xp;
-    this.lastDeath = pen;
-    this.sfx.play('player.death', { pos: p.pos });
-    this.fx.death(p, 'red', 'phys');
-    this.hooks.playerDied();
+    killPlayer(this);
   }
 
   /**
