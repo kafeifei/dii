@@ -21,15 +21,15 @@
    "parts": 1,
    "shadow": true
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/inv2hsu.webp",
-    "sha1": "233fde7cb81c"
-   },
-   "1x": {
-    "file": "public/icons/items/inv2hsu.1x.webp",
-    "sha1": "44b6d5185e16"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    544,
+    0,
+    68,
+    272
+   ],
+   "sha1": "233fde7cb81c"
   }
  },
  "inv8lbu": {
@@ -54,15 +54,15 @@
    "parts": 1,
    "shadow": true
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/inv8lbu.webp",
-    "sha1": "25004440d425"
-   },
-   "1x": {
-    "file": "public/icons/items/inv8lbu.1x.webp",
-    "sha1": "c19d93780b79"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    0,
+    0,
+    136,
+    272
+   ],
+   "sha1": "25004440d425"
   }
  },
  "inv8lxu": {
@@ -87,15 +87,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/inv8lxu.webp",
-    "sha1": "1855198a29b1"
-   },
-   "1x": {
-    "file": "public/icons/items/inv8lxu.1x.webp",
-    "sha1": "44f14ec99531"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    408,
+    272,
+    136,
+    204
+   ],
+   "sha1": "1855198a29b1"
   }
  },
  "inv8mxu": {
@@ -120,15 +120,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/inv8mxu.webp",
-    "sha1": "3f49da07bfcb"
-   },
-   "1x": {
-    "file": "public/icons/items/inv8mxu.1x.webp",
-    "sha1": "b750812d664b"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    408,
+    476,
+    136,
+    204
+   ],
+   "sha1": "3f49da07bfcb"
   }
  },
  "inv8s8u": {
@@ -153,15 +153,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/inv8s8u.webp",
-    "sha1": "2877b9171d9b"
-   },
-   "1x": {
-    "file": "public/icons/items/inv8s8u.1x.webp",
-    "sha1": "cf61f4b97fd0"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    0,
+    544,
+    136,
+    204
+   ],
+   "sha1": "2877b9171d9b"
   }
  },
  "inv8wsu": {
@@ -186,15 +186,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/inv8wsu.webp",
-    "sha1": "d49e6abe034a"
-   },
-   "1x": {
-    "file": "public/icons/items/inv8wsu.1x.webp",
-    "sha1": "22a14b631483"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    136,
+    0,
+    136,
+    272
+   ],
+   "sha1": "d49e6abe034a"
   }
  },
  "inv9blu": {
@@ -219,15 +219,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/inv9blu.webp",
-    "sha1": "c9728eb60f04"
-   },
-   "1x": {
-    "file": "public/icons/items/inv9blu.1x.webp",
-    "sha1": "99632f25b981"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    544,
+    272,
+    68,
+    204
+   ],
+   "sha1": "c9728eb60f04"
   }
  },
  "inv9bru": {
@@ -252,15 +252,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/inv9bru.webp",
-    "sha1": "9081ba9377ad"
-   },
-   "1x": {
-    "file": "public/icons/items/inv9bru.1x.webp",
-    "sha1": "9597b9dd4879"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    272,
+    0,
+    136,
+    272
+   ],
+   "sha1": "9081ba9377ad"
   }
  },
  "inv9btu": {
@@ -285,15 +285,15 @@
    "parts": 1,
    "shadow": true
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/inv9btu.webp",
-    "sha1": "61b7ad3c25c9"
-   },
-   "1x": {
-    "file": "public/icons/items/inv9btu.1x.webp",
-    "sha1": "e998f9756775"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    136,
+    272,
+    136,
+    204
+   ],
+   "sha1": "61b7ad3c25c9"
   }
  },
  "inv9cru": {
@@ -318,15 +318,15 @@
    "parts": 1,
    "shadow": true
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/inv9cru.webp",
-    "sha1": "b17f60cb58e5"
-   },
-   "1x": {
-    "file": "public/icons/items/inv9cru.1x.webp",
-    "sha1": "4a7b8cc753f5"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    272,
+    272,
+    136,
+    204
+   ],
+   "sha1": "b17f60cb58e5"
   }
  },
  "inv9fbu": {
@@ -351,15 +351,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/inv9fbu.webp",
-    "sha1": "c4cb5130096d"
-   },
-   "1x": {
-    "file": "public/icons/items/inv9fbu.1x.webp",
-    "sha1": "6d603d6d4f24"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    0,
+    0,
+    136,
+    272
+   ],
+   "sha1": "c4cb5130096d"
   }
  },
  "inv9giu": {
@@ -384,15 +384,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/inv9giu.webp",
-    "sha1": "b70ed190af1d"
-   },
-   "1x": {
-    "file": "public/icons/items/inv9giu.1x.webp",
-    "sha1": "f51f19e1cd2e"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    408,
+    272,
+    136,
+    204
+   ],
+   "sha1": "b70ed190af1d"
   }
  },
  "inv9gmu": {
@@ -417,15 +417,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/inv9gmu.webp",
-    "sha1": "e521970b46cd"
-   },
-   "1x": {
-    "file": "public/icons/items/inv9gmu.1x.webp",
-    "sha1": "212330c77511"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    136,
+    476,
+    136,
+    204
+   ],
+   "sha1": "e521970b46cd"
   }
  },
  "inv9gwu": {
@@ -450,15 +450,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/inv9gwu.webp",
-    "sha1": "8e8073ad3f1b"
-   },
-   "1x": {
-    "file": "public/icons/items/inv9gwu.1x.webp",
-    "sha1": "f5422106f8a7"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    544,
+    272,
+    68,
+    136
+   ],
+   "sha1": "8e8073ad3f1b"
   }
  },
  "inv9lsu": {
@@ -483,15 +483,15 @@
    "parts": 1,
    "shadow": true
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/inv9lsu.webp",
-    "sha1": "17070ad09708"
-   },
-   "1x": {
-    "file": "public/icons/items/inv9lsu.1x.webp",
-    "sha1": "ca380ac0e584"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    272,
+    476,
+    136,
+    204
+   ],
+   "sha1": "17070ad09708"
   }
  },
  "inv9s8u": {
@@ -516,15 +516,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/inv9s8u.webp",
-    "sha1": "ef1413eedc9a"
-   },
-   "1x": {
-    "file": "public/icons/items/inv9s8u.1x.webp",
-    "sha1": "8dcb3f5361fa"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    408,
+    0,
+    136,
+    272
+   ],
+   "sha1": "ef1413eedc9a"
   }
  },
  "inv9sbu": {
@@ -549,15 +549,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/inv9sbu.webp",
-    "sha1": "7909219cc296"
-   },
-   "1x": {
-    "file": "public/icons/items/inv9sbu.1x.webp",
-    "sha1": "bf597e6dd967"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    544,
+    476,
+    68,
+    204
+   ],
+   "sha1": "7909219cc296"
   }
  },
  "invaaru": {
@@ -582,15 +582,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invaaru.webp",
-    "sha1": "07ad72fef1f7"
-   },
-   "1x": {
-    "file": "public/icons/items/invaaru.1x.webp",
-    "sha1": "28946e07b5ea"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    136,
+    0,
+    136,
+    204
+   ],
+   "sha1": "07ad72fef1f7"
   }
  },
  "invaxeu": {
@@ -615,15 +615,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invaxeu.webp",
-    "sha1": "13104f5deb4a"
-   },
-   "1x": {
-    "file": "public/icons/items/invaxeu.1x.webp",
-    "sha1": "8ff118889839"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    408,
+    476,
+    136,
+    204
+   ],
+   "sha1": "13104f5deb4a"
   }
  },
  "invaxfu": {
@@ -648,15 +648,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invaxfu.webp",
-    "sha1": "dede702beda2"
-   },
-   "1x": {
-    "file": "public/icons/items/invaxfu.1x.webp",
-    "sha1": "aafed46332b4"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    544,
+    680,
+    68,
+    204
+   ],
+   "sha1": "dede702beda2"
   }
  },
  "invbhmu": {
@@ -681,15 +681,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invbhmu.webp",
-    "sha1": "43b91ccbb18b"
-   },
-   "1x": {
-    "file": "public/icons/items/invbhmu.1x.webp",
-    "sha1": "9dcc2c0327e9"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    272,
+    408,
+    136,
+    136
+   ],
+   "sha1": "43b91ccbb18b"
   }
  },
  "invbsdu": {
@@ -714,15 +714,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invbsdu.webp",
-    "sha1": "d54eeb261e6d"
-   },
-   "1x": {
-    "file": "public/icons/items/invbsdu.1x.webp",
-    "sha1": "832da38f9321"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    0,
+    544,
+    136,
+    204
+   ],
+   "sha1": "d54eeb261e6d"
   }
  },
  "invbshu": {
@@ -747,15 +747,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invbshu.webp",
-    "sha1": "259913b6f241"
-   },
-   "1x": {
-    "file": "public/icons/items/invbshu.1x.webp",
-    "sha1": "fd45b26ad607"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    272,
+    0,
+    136,
+    204
+   ],
+   "sha1": "259913b6f241"
   }
  },
  "invbswu": {
@@ -780,15 +780,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invbswu.webp",
-    "sha1": "03d781bb2549"
-   },
-   "1x": {
-    "file": "public/icons/items/invbswu.1x.webp",
-    "sha1": "cb82fdde941d"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    0,
+    272,
+    68,
+    272
+   ],
+   "sha1": "03d781bb2549"
   }
  },
  "invbtxu": {
@@ -813,15 +813,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invbtxu.webp",
-    "sha1": "92a4f3ae6504"
-   },
-   "1x": {
-    "file": "public/icons/items/invbtxu.1x.webp",
-    "sha1": "6e903fd5fa2e"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    136,
+    680,
+    136,
+    204
+   ],
+   "sha1": "92a4f3ae6504"
   }
  },
  "invbucu": {
@@ -846,15 +846,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invbucu.webp",
-    "sha1": "369c03d53155"
-   },
-   "1x": {
-    "file": "public/icons/items/invbucu.1x.webp",
-    "sha1": "3c2d504a9105"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    408,
+    408,
+    136,
+    136
+   ],
+   "sha1": "369c03d53155"
   }
  },
  "invbwnu": {
@@ -879,15 +879,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invbwnu.webp",
-    "sha1": "4514e9c6692e"
-   },
-   "1x": {
-    "file": "public/icons/items/invbwnu.1x.webp",
-    "sha1": "00533145770b"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    544,
+    408,
+    68,
+    136
+   ],
+   "sha1": "4514e9c6692e"
   }
  },
  "invcapu": {
@@ -912,15 +912,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invcapu.webp",
-    "sha1": "524aa56f11f5"
-   },
-   "1x": {
-    "file": "public/icons/items/invcapu.1x.webp",
-    "sha1": "36226f8ea676"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    544,
+    408,
+    136,
+    136
+   ],
+   "sha1": "524aa56f11f5"
   }
  },
  "invcbwu": {
@@ -945,15 +945,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invcbwu.webp",
-    "sha1": "5d3bb7151451"
-   },
-   "1x": {
-    "file": "public/icons/items/invcbwu.1x.webp",
-    "sha1": "b2e22f10a4a8"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    136,
+    544,
+    136,
+    204
+   ],
+   "sha1": "5d3bb7151451"
   }
  },
  "invclbu": {
@@ -978,15 +978,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invclbu.webp",
-    "sha1": "55e1f44ebd8b"
-   },
-   "1x": {
-    "file": "public/icons/items/invclbu.1x.webp",
-    "sha1": "8f7d5f21ad2a"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    136,
+    884,
+    68,
+    204
+   ],
+   "sha1": "55e1f44ebd8b"
   }
  },
  "invcrsu": {
@@ -1011,15 +1011,15 @@
    "parts": 1,
    "shadow": true
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invcrsu.webp",
-    "sha1": "6b2b592bdef1"
-   },
-   "1x": {
-    "file": "public/icons/items/invcrsu.1x.webp",
-    "sha1": "1081c9731f9c"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    272,
+    680,
+    136,
+    204
+   ],
+   "sha1": "6b2b592bdef1"
   }
  },
  "invcstu": {
@@ -1044,15 +1044,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invcstu.webp",
-    "sha1": "033b5026820a"
-   },
-   "1x": {
-    "file": "public/icons/items/invcstu.1x.webp",
-    "sha1": "1946893619f5"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    544,
+    0,
+    68,
+    272
+   ],
+   "sha1": "033b5026820a"
   }
  },
  "invfhlu": {
@@ -1077,15 +1077,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invfhlu.webp",
-    "sha1": "8de6c66b4407"
-   },
-   "1x": {
-    "file": "public/icons/items/invfhlu.1x.webp",
-    "sha1": "9774534ab3c7"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    680,
+    408,
+    136,
+    136
+   ],
+   "sha1": "8de6c66b4407"
   }
  },
  "invflcu": {
@@ -1110,15 +1110,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invflcu.webp",
-    "sha1": "9d11da7a0f22"
-   },
-   "1x": {
-    "file": "public/icons/items/invflcu.1x.webp",
-    "sha1": "2609a93d07c4"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    204,
+    884,
+    68,
+    204
+   ],
+   "sha1": "9d11da7a0f22"
   }
  },
  "invfulu": {
@@ -1143,15 +1143,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invfulu.webp",
-    "sha1": "4f6c0b04875b"
-   },
-   "1x": {
-    "file": "public/icons/items/invfulu.1x.webp",
-    "sha1": "080e3337459b"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    408,
+    0,
+    136,
+    204
+   ],
+   "sha1": "4f6c0b04875b"
   }
  },
  "invgaxu": {
@@ -1176,15 +1176,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgaxu.webp",
-    "sha1": "e4d1cad5fa2f"
-   },
-   "1x": {
-    "file": "public/icons/items/invgaxu.1x.webp",
-    "sha1": "fdd6929ef9b7"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    136,
+    0,
+    136,
+    272
+   ],
+   "sha1": "e4d1cad5fa2f"
   }
  },
  "invgisu": {
@@ -1209,15 +1209,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgisu.webp",
-    "sha1": "5b484280a068"
-   },
-   "1x": {
-    "file": "public/icons/items/invgisu.1x.webp",
-    "sha1": "7bafadf829ca"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    68,
+    272,
+    68,
+    272
+   ],
+   "sha1": "5b484280a068"
   }
  },
  "invgsdu": {
@@ -1242,15 +1242,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsdu.webp",
-    "sha1": "b9237a59a849"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsdu.1x.webp",
-    "sha1": "6729a74ba3ab"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    272,
+    0,
+    136,
+    272
+   ],
+   "sha1": "b9237a59a849"
   }
  },
  "invgtsu": {
@@ -1275,15 +1275,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgtsu.webp",
-    "sha1": "ff7b1e59d537"
-   },
-   "1x": {
-    "file": "public/icons/items/invgtsu.1x.webp",
-    "sha1": "27be18567496"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    0,
+    0,
+    136,
+    272
+   ],
+   "sha1": "ff7b1e59d537"
   }
  },
  "invhaxu": {
@@ -1308,15 +1308,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invhaxu.webp",
-    "sha1": "43c665487993"
-   },
-   "1x": {
-    "file": "public/icons/items/invhaxu.1x.webp",
-    "sha1": "bd7e287c58c2"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    272,
+    884,
+    68,
+    204
+   ],
+   "sha1": "43c665487993"
   }
  },
  "invhlmu": {
@@ -1341,15 +1341,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invhlmu.webp",
-    "sha1": "2ff111d31146"
-   },
-   "1x": {
-    "file": "public/icons/items/invhlmu.1x.webp",
-    "sha1": "c7472971fc48"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    0,
+    476,
+    136,
+    136
+   ],
+   "sha1": "2ff111d31146"
   }
  },
  "invhxbu": {
@@ -1374,15 +1374,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invhxbu.webp",
-    "sha1": "33ea39d82417"
-   },
-   "1x": {
-    "file": "public/icons/items/invhxbu.1x.webp",
-    "sha1": "bf1cad5e7e6f"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    0,
+    272,
+    136,
+    272
+   ],
+   "sha1": "33ea39d82417"
   }
  },
  "invkitu": {
@@ -1407,15 +1407,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invkitu.webp",
-    "sha1": "3da70e99fadb"
-   },
-   "1x": {
-    "file": "public/icons/items/invkitu.1x.webp",
-    "sha1": "b9ea42cb158f"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    544,
+    0,
+    136,
+    204
+   ],
+   "sha1": "3da70e99fadb"
   }
  },
  "invkrsu": {
@@ -1440,15 +1440,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invkrsu.webp",
-    "sha1": "31ac528b3c99"
-   },
-   "1x": {
-    "file": "public/icons/items/invkrsu.1x.webp",
-    "sha1": "9ebab7fc7788"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    340,
+    884,
+    68,
+    204
+   ],
+   "sha1": "31ac528b3c99"
   }
  },
  "invlrgu": {
@@ -1473,15 +1473,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invlrgu.webp",
-    "sha1": "a6f78d98fea2"
-   },
-   "1x": {
-    "file": "public/icons/items/invlrgu.1x.webp",
-    "sha1": "6b8249a52c1a"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    680,
+    0,
+    136,
+    204
+   ],
+   "sha1": "a6f78d98fea2"
   }
  },
  "invlsdu": {
@@ -1506,15 +1506,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invlsdu.webp",
-    "sha1": "d39051246e41"
-   },
-   "1x": {
-    "file": "public/icons/items/invlsdu.1x.webp",
-    "sha1": "a3d69e500a9f"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    408,
+    680,
+    136,
+    204
+   ],
+   "sha1": "d39051246e41"
   }
  },
  "invlxbu": {
@@ -1539,15 +1539,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invlxbu.webp",
-    "sha1": "5c824a07d606"
-   },
-   "1x": {
-    "file": "public/icons/items/invlxbu.1x.webp",
-    "sha1": "b17478727600"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    272,
+    544,
+    136,
+    204
+   ],
+   "sha1": "5c824a07d606"
   }
  },
  "invmauu": {
@@ -1572,15 +1572,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invmauu.webp",
-    "sha1": "ad494c153bb3"
-   },
-   "1x": {
-    "file": "public/icons/items/invmauu.1x.webp",
-    "sha1": "cc527956bfd4"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    408,
+    0,
+    136,
+    272
+   ],
+   "sha1": "ad494c153bb3"
   }
  },
  "invmpiu": {
@@ -1605,15 +1605,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invmpiu.webp",
-    "sha1": "dc3147609ab1"
-   },
-   "1x": {
-    "file": "public/icons/items/invmpiu.1x.webp",
-    "sha1": "961816668f08"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    0,
+    748,
+    136,
+    204
+   ],
+   "sha1": "dc3147609ab1"
   }
  },
  "invmstu": {
@@ -1638,15 +1638,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invmstu.webp",
-    "sha1": "f5580f9559f7"
-   },
-   "1x": {
-    "file": "public/icons/items/invmstu.1x.webp",
-    "sha1": "68bedce32e5c"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    408,
+    884,
+    68,
+    204
+   ],
+   "sha1": "f5580f9559f7"
   }
  },
  "invmxbu": {
@@ -1671,15 +1671,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invmxbu.webp",
-    "sha1": "5edc2e30e403"
-   },
-   "1x": {
-    "file": "public/icons/items/invmxbu.1x.webp",
-    "sha1": "ed36abffdcd2"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    408,
+    680,
+    136,
+    204
+   ],
+   "sha1": "5edc2e30e403"
   }
  },
  "invrxbu": {
@@ -1704,15 +1704,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrxbu.webp",
-    "sha1": "458bfe7e39d2"
-   },
-   "1x": {
-    "file": "public/icons/items/invrxbu.1x.webp",
-    "sha1": "fe178f6477dc"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    0,
+    748,
+    136,
+    204
+   ],
+   "sha1": "458bfe7e39d2"
   }
  },
  "invsbbu": {
@@ -1737,15 +1737,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invsbbu.webp",
-    "sha1": "7c750b8614d7"
-   },
-   "1x": {
-    "file": "public/icons/items/invsbbu.1x.webp",
-    "sha1": "0fca947613ce"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    136,
+    748,
+    136,
+    204
+   ],
+   "sha1": "7c750b8614d7"
   }
  },
  "invsbru": {
@@ -1770,15 +1770,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invsbru.webp",
-    "sha1": "be38c0fb388e"
-   },
-   "1x": {
-    "file": "public/icons/items/invsbru.1x.webp",
-    "sha1": "fbd8ab7a5fae"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    476,
+    884,
+    68,
+    204
+   ],
+   "sha1": "be38c0fb388e"
   }
  },
  "invscmu": {
@@ -1803,15 +1803,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invscmu.webp",
-    "sha1": "ace0a2f2912e"
-   },
-   "1x": {
-    "file": "public/icons/items/invscmu.1x.webp",
-    "sha1": "90171f207d98"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    544,
+    884,
+    68,
+    204
+   ],
+   "sha1": "ace0a2f2912e"
   }
  },
  "invscyu": {
@@ -1836,15 +1836,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invscyu.webp",
-    "sha1": "ee07666bdc0f"
-   },
-   "1x": {
-    "file": "public/icons/items/invscyu.1x.webp",
-    "sha1": "a8d940578155"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    136,
+    272,
+    136,
+    272
+   ],
+   "sha1": "ee07666bdc0f"
   }
  },
  "invsmlu": {
@@ -1869,15 +1869,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invsmlu.webp",
-    "sha1": "4b7c561f59ee"
-   },
-   "1x": {
-    "file": "public/icons/items/invsmlu.1x.webp",
-    "sha1": "8162cc1de95c"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    272,
+    544,
+    136,
+    136
+   ],
+   "sha1": "4b7c561f59ee"
   }
  },
  "invspcu": {
@@ -1902,15 +1902,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invspcu.webp",
-    "sha1": "f8a50620e997"
-   },
-   "1x": {
-    "file": "public/icons/items/invspcu.1x.webp",
-    "sha1": "bc62bbb56767"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    0,
+    952,
+    68,
+    204
+   ],
+   "sha1": "f8a50620e997"
   }
  },
  "invspku": {
@@ -1935,15 +1935,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invspku.webp",
-    "sha1": "3f73fb0a690c"
-   },
-   "1x": {
-    "file": "public/icons/items/invspku.1x.webp",
-    "sha1": "6db3c86cce1d"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    136,
+    204,
+    136,
+    204
+   ],
+   "sha1": "3f73fb0a690c"
   }
  },
  "invswbu": {
@@ -1968,15 +1968,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invswbu.webp",
-    "sha1": "4caec055749b"
-   },
-   "1x": {
-    "file": "public/icons/items/invswbu.1x.webp",
-    "sha1": "22c8d97a08dd"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    272,
+    748,
+    136,
+    204
+   ],
+   "sha1": "4caec055749b"
   }
  },
  "invtk3": {
@@ -2001,15 +2001,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invtk3.webp",
-    "sha1": "d9a69800a835"
-   },
-   "1x": {
-    "file": "public/icons/items/invtk3.1x.webp",
-    "sha1": "c7c300893630"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-blades.webp",
+   "rect": [
+    68,
+    952,
+    68,
+    136
+   ],
+   "sha1": "d9a69800a835"
   }
  },
  "invtowu": {
@@ -2034,15 +2034,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invtowu.webp",
-    "sha1": "f954bcfa8028"
-   },
-   "1x": {
-    "file": "public/icons/items/invtowu.1x.webp",
-    "sha1": "839b5cd8575f"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    272,
+    204,
+    136,
+    204
+   ],
+   "sha1": "f954bcfa8028"
   }
  },
  "invtriu": {
@@ -2067,15 +2067,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invtriu.webp",
-    "sha1": "e612877e603e"
-   },
-   "1x": {
-    "file": "public/icons/items/invtriu.1x.webp",
-    "sha1": "a93df5c8ffab"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    272,
+    272,
+    136,
+    272
+   ],
+   "sha1": "e612877e603e"
   }
  },
  "invvip": {
@@ -2100,15 +2100,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invvip.webp",
-    "sha1": "a6e7591ab0fd"
-   },
-   "1x": {
-    "file": "public/icons/items/invvip.1x.webp",
-    "sha1": "d2a2f912b7eb"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    0,
+    612,
+    68,
+    68
+   ],
+   "sha1": "a6e7591ab0fd"
   }
  },
  "invwndu": {
@@ -2133,15 +2133,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invwndu.webp",
-    "sha1": "0b0881c03799"
-   },
-   "1x": {
-    "file": "public/icons/items/invwndu.1x.webp",
-    "sha1": "1cfe3c54d008"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-long.webp",
+   "rect": [
+    544,
+    544,
+    68,
+    136
+   ],
+   "sha1": "0b0881c03799"
   }
  },
  "invxaru": {
@@ -2166,15 +2166,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invxaru.webp",
-    "sha1": "6a030fbf9e03"
-   },
-   "1x": {
-    "file": "public/icons/items/invxaru.1x.webp",
-    "sha1": "268cffb986c7"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    408,
+    204,
+    136,
+    204
+   ],
+   "sha1": "6a030fbf9e03"
   }
  },
  "invxkpu": {
@@ -2199,15 +2199,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invxkpu.webp",
-    "sha1": "e5c612398a5d"
-   },
-   "1x": {
-    "file": "public/icons/items/invxkpu.1x.webp",
-    "sha1": "fbe797515668"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    408,
+    544,
+    136,
+    136
+   ],
+   "sha1": "e5c612398a5d"
   }
  },
  "invxmlu": {
@@ -2232,15 +2232,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invxmlu.webp",
-    "sha1": "008f28241163"
-   },
-   "1x": {
-    "file": "public/icons/items/invxmlu.1x.webp",
-    "sha1": "12b7b08252fb"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    544,
+    544,
+    136,
+    136
+   ],
+   "sha1": "008f28241163"
   }
  },
  "invxpku": {
@@ -2265,15 +2265,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invxpku.webp",
-    "sha1": "0e4b53c8d8b0"
-   },
-   "1x": {
-    "file": "public/icons/items/invxpku.1x.webp",
-    "sha1": "eaf5b8b27f8f"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    544,
+    204,
+    136,
+    204
+   ],
+   "sha1": "0e4b53c8d8b0"
   }
  },
  "invxrgu": {
@@ -2298,15 +2298,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invxrgu.webp",
-    "sha1": "72444a63922b"
-   },
-   "1x": {
-    "file": "public/icons/items/invxrgu.1x.webp",
-    "sha1": "810dc4463402"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    680,
+    204,
+    136,
+    204
+   ],
+   "sha1": "72444a63922b"
   }
  },
  "invxrnu": {
@@ -2331,15 +2331,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invxrnu.webp",
-    "sha1": "192eb3f4f44f"
-   },
-   "1x": {
-    "file": "public/icons/items/invxrnu.1x.webp",
-    "sha1": "c6ebce78e1b9"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    680,
+    544,
+    136,
+    136
+   ],
+   "sha1": "192eb3f4f44f"
   }
  },
  "invxshu": {
@@ -2364,15 +2364,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invxshu.webp",
-    "sha1": "7918cb0fd779"
-   },
-   "1x": {
-    "file": "public/icons/items/invxshu.1x.webp",
-    "sha1": "1340384fe36b"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    0,
+    272,
+    136,
+    204
+   ],
+   "sha1": "7918cb0fd779"
   }
  },
  "invxtuu": {
@@ -2397,15 +2397,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invxtuu.webp",
-    "sha1": "765ba8f338b2"
-   },
-   "1x": {
-    "file": "public/icons/items/invxtuu.1x.webp",
-    "sha1": "8a220118c1b6"
-   }
+  "atlas": {
+   "file": "public/icons/items/uniques-armour.webp",
+   "rect": [
+    136,
+    408,
+    136,
+    204
+   ],
+   "sha1": "765ba8f338b2"
   }
  }
 }

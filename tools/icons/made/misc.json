@@ -17,15 +17,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invamu1.webp",
-    "sha1": "9b6c4dc23f62"
-   },
-   "1x": {
-    "file": "public/icons/items/invamu1.1x.webp",
-    "sha1": "201f8c5e682e"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    68,
+    204,
+    68,
+    68
+   ],
+   "sha1": "9b6c4dc23f62"
   }
  },
  "invamu2": {
@@ -46,15 +46,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invamu2.webp",
-    "sha1": "a6c8311a2fda"
-   },
-   "1x": {
-    "file": "public/icons/items/invamu2.1x.webp",
-    "sha1": "dd1ab7321f46"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    136,
+    204,
+    68,
+    68
+   ],
+   "sha1": "a6c8311a2fda"
   }
  },
  "invamu3": {
@@ -75,15 +75,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invamu3.webp",
-    "sha1": "bc6fbc272a70"
-   },
-   "1x": {
-    "file": "public/icons/items/invamu3.1x.webp",
-    "sha1": "791a48bc4ec1"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    68,
+    272,
+    68,
+    68
+   ],
+   "sha1": "bc6fbc272a70"
   }
  },
  "invbbb": {
@@ -104,15 +104,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invbbb.webp",
-    "sha1": "c04021a131a9"
-   },
-   "1x": {
-    "file": "public/icons/items/invbbb.1x.webp",
-    "sha1": "84e22d3c2a46"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    0,
+    0,
+    136,
+    136
+   ],
+   "sha1": "c04021a131a9"
   }
  },
  "invbbk": {
@@ -133,15 +133,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invbbk.webp",
-    "sha1": "5e682b9d69af"
-   },
-   "1x": {
-    "file": "public/icons/items/invbbk.1x.webp",
-    "sha1": "1096f2168879"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    0,
+    0,
+    68,
+    136
+   ],
+   "sha1": "5e682b9d69af"
   }
  },
  "invbet": {
@@ -162,15 +162,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invbet.webp",
-    "sha1": "003f3d434f65"
-   },
-   "1x": {
-    "file": "public/icons/items/invbet.1x.webp",
-    "sha1": "db63f7430f84"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    68,
+    408,
+    68,
+    68
+   ],
+   "sha1": "003f3d434f65"
   }
  },
  "invbox": {
@@ -191,15 +191,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invbox.webp",
-    "sha1": "ce4d0f46bc49"
-   },
-   "1x": {
-    "file": "public/icons/items/invbox.1x.webp",
-    "sha1": "97f353ae8c65"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    136,
+    0,
+    136,
+    136
+   ],
+   "sha1": "ce4d0f46bc49"
   }
  },
  "invbrnz": {
@@ -220,15 +220,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invbrnz.webp",
-    "sha1": "0488e6632cab"
-   },
-   "1x": {
-    "file": "public/icons/items/invbrnz.1x.webp",
-    "sha1": "697c5298db17"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    136,
+    408,
+    68,
+    68
+   ],
+   "sha1": "0488e6632cab"
   }
  },
  "invbsc": {
@@ -249,15 +249,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invbsc.webp",
-    "sha1": "363cc002a229"
-   },
-   "1x": {
-    "file": "public/icons/items/invbsc.1x.webp",
-    "sha1": "c2ff124d70b0"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    0,
+    136,
+    68,
+    68
+   ],
+   "sha1": "363cc002a229"
   }
  },
  "invceh": {
@@ -278,15 +278,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invceh.webp",
-    "sha1": "5e00844d03de"
-   },
-   "1x": {
-    "file": "public/icons/items/invceh.1x.webp",
-    "sha1": "5e7b2728c4c7"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    204,
+    408,
+    68,
+    68
+   ],
+   "sha1": "5e00844d03de"
   }
  },
  "invch1": {
@@ -307,15 +307,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invch1.webp",
-    "sha1": "a9b9554fc5d0"
-   },
-   "1x": {
-    "file": "public/icons/items/invch1.1x.webp",
-    "sha1": "75a7552ae35e"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    136,
+    272,
+    68,
+    68
+   ],
+   "sha1": "a9b9554fc5d0"
   }
  },
  "invch2": {
@@ -336,15 +336,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invch2.webp",
-    "sha1": "9e5940806083"
-   },
-   "1x": {
-    "file": "public/icons/items/invch2.1x.webp",
-    "sha1": "437bc2c63fb1"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    204,
+    0,
+    68,
+    136
+   ],
+   "sha1": "9e5940806083"
   }
  },
  "invch3": {
@@ -365,15 +365,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invch3.webp",
-    "sha1": "79c5a7bae9df"
-   },
-   "1x": {
-    "file": "public/icons/items/invch3.1x.webp",
-    "sha1": "c80ee3c41674"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    0,
+    0,
+    68,
+    204
+   ],
+   "sha1": "79c5a7bae9df"
   }
  },
  "invch4": {
@@ -394,15 +394,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invch4.webp",
-    "sha1": "ee53e52e9381"
-   },
-   "1x": {
-    "file": "public/icons/items/invch4.1x.webp",
-    "sha1": "9204d6f52cd5"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    204,
+    272,
+    68,
+    68
+   ],
+   "sha1": "ee53e52e9381"
   }
  },
  "invch5": {
@@ -423,15 +423,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invch5.webp",
-    "sha1": "55c081026bc1"
-   },
-   "1x": {
-    "file": "public/icons/items/invch5.1x.webp",
-    "sha1": "165f293ae2e8"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    204,
+    136,
+    68,
+    136
+   ],
+   "sha1": "55c081026bc1"
   }
  },
  "invch6": {
@@ -452,15 +452,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invch6.webp",
-    "sha1": "59ef8c83e28a"
-   },
-   "1x": {
-    "file": "public/icons/items/invch6.1x.webp",
-    "sha1": "5587190d1493"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    68,
+    0,
+    68,
+    204
+   ],
+   "sha1": "59ef8c83e28a"
   }
  },
  "invch7": {
@@ -481,15 +481,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invch7.webp",
-    "sha1": "69521cc1c448"
-   },
-   "1x": {
-    "file": "public/icons/items/invch7.1x.webp",
-    "sha1": "4f5f889780da"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    0,
+    340,
+    68,
+    68
+   ],
+   "sha1": "69521cc1c448"
   }
  },
  "invch8": {
@@ -510,15 +510,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invch8.webp",
-    "sha1": "d1b05a6bdcb5"
-   },
-   "1x": {
-    "file": "public/icons/items/invch8.1x.webp",
-    "sha1": "26b6c0fb0af9"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    0,
+    204,
+    68,
+    136
+   ],
+   "sha1": "d1b05a6bdcb5"
   }
  },
  "invch9": {
@@ -539,15 +539,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invch9.webp",
-    "sha1": "5e5d65892566"
-   },
-   "1x": {
-    "file": "public/icons/items/invch9.1x.webp",
-    "sha1": "4c0dc05309d9"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    136,
+    0,
+    68,
+    204
+   ],
+   "sha1": "5e5d65892566"
   }
  },
  "invear": {
@@ -568,15 +568,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invear.webp",
-    "sha1": "52491623a994"
-   },
-   "1x": {
-    "file": "public/icons/items/invear.1x.webp",
-    "sha1": "d9a368d1ced1"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    68,
+    476,
+    68,
+    68
+   ],
+   "sha1": "52491623a994"
   }
  },
  "inveye": {
@@ -597,15 +597,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/inveye.webp",
-    "sha1": "f30d5593a276"
-   },
-   "1x": {
-    "file": "public/icons/items/inveye.1x.webp",
-    "sha1": "aee1b309643a"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    136,
+    476,
+    68,
+    68
+   ],
+   "sha1": "f30d5593a276"
   }
  },
  "invfang": {
@@ -626,15 +626,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invfang.webp",
-    "sha1": "16cff59d06f2"
-   },
-   "1x": {
-    "file": "public/icons/items/invfang.1x.webp",
-    "sha1": "eb672c62d1fd"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    204,
+    476,
+    68,
+    68
+   ],
+   "sha1": "16cff59d06f2"
   }
  },
  "invfed": {
@@ -655,15 +655,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invfed.webp",
-    "sha1": "31d97e24deed"
-   },
-   "1x": {
-    "file": "public/icons/items/invfed.1x.webp",
-    "sha1": "cc6438533e2e"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    0,
+    544,
+    68,
+    68
+   ],
+   "sha1": "31d97e24deed"
   }
  },
  "invflag": {
@@ -684,15 +684,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invflag.webp",
-    "sha1": "1e4531fd54f8"
-   },
-   "1x": {
-    "file": "public/icons/items/invflag.1x.webp",
-    "sha1": "0e622f25fc39"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    68,
+    544,
+    68,
+    68
+   ],
+   "sha1": "1e4531fd54f8"
   }
  },
  "invgbi": {
@@ -713,15 +713,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgbi.webp",
-    "sha1": "1f9f143d678b"
-   },
-   "1x": {
-    "file": "public/icons/items/invgbi.1x.webp",
-    "sha1": "2a72ea973219"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    136,
+    272,
+    68,
+    136
+   ],
+   "sha1": "1f9f143d678b"
   }
  },
  "invgld": {
@@ -742,15 +742,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgld.webp",
-    "sha1": "863fb02d3a34"
-   },
-   "1x": {
-    "file": "public/icons/items/invgld.1x.webp",
-    "sha1": "101f7634cb19"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    68,
+    136,
+    68,
+    68
+   ],
+   "sha1": "863fb02d3a34"
   }
  },
  "invgsba": {
@@ -771,15 +771,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsba.webp",
-    "sha1": "feaeb5fb06c1"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsba.1x.webp",
-    "sha1": "a76152c2efa7"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    0,
+    0,
+    68,
+    68
+   ],
+   "sha1": "feaeb5fb06c1"
   }
  },
  "invgsbb": {
@@ -800,15 +800,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsbb.webp",
-    "sha1": "6ad4e8739e25"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsbb.1x.webp",
-    "sha1": "603f803ab14b"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    68,
+    0,
+    68,
+    68
+   ],
+   "sha1": "6ad4e8739e25"
   }
  },
  "invgsbc": {
@@ -829,15 +829,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsbc.webp",
-    "sha1": "3a8cd0abc841"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsbc.1x.webp",
-    "sha1": "08d9de394fcd"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    136,
+    0,
+    68,
+    68
+   ],
+   "sha1": "3a8cd0abc841"
   }
  },
  "invgsbd": {
@@ -858,15 +858,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsbd.webp",
-    "sha1": "d4bf6407cfee"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsbd.1x.webp",
-    "sha1": "10119dc75461"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    204,
+    0,
+    68,
+    68
+   ],
+   "sha1": "d4bf6407cfee"
   }
  },
  "invgsbe": {
@@ -887,15 +887,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsbe.webp",
-    "sha1": "f408ac56935b"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsbe.1x.webp",
-    "sha1": "e6e95ca3488d"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    272,
+    0,
+    68,
+    68
+   ],
+   "sha1": "f408ac56935b"
   }
  },
  "invgsga": {
@@ -916,15 +916,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsga.webp",
-    "sha1": "cb526b7ea58b"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsga.1x.webp",
-    "sha1": "347cf690b838"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    0,
+    68,
+    68,
+    68
+   ],
+   "sha1": "cb526b7ea58b"
   }
  },
  "invgsgb": {
@@ -945,15 +945,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsgb.webp",
-    "sha1": "ee49f160e0ee"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsgb.1x.webp",
-    "sha1": "c2f832460240"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    68,
+    68,
+    68,
+    68
+   ],
+   "sha1": "ee49f160e0ee"
   }
  },
  "invgsgc": {
@@ -974,15 +974,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsgc.webp",
-    "sha1": "b2f1f1a9b5cf"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsgc.1x.webp",
-    "sha1": "fa879f3f23ba"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    136,
+    68,
+    68,
+    68
+   ],
+   "sha1": "b2f1f1a9b5cf"
   }
  },
  "invgsgd": {
@@ -1003,15 +1003,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsgd.webp",
-    "sha1": "c0a4f25e0fa6"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsgd.1x.webp",
-    "sha1": "11ebbe082501"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    204,
+    68,
+    68,
+    68
+   ],
+   "sha1": "c0a4f25e0fa6"
   }
  },
  "invgsge": {
@@ -1032,15 +1032,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsge.webp",
-    "sha1": "6f34610be04f"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsge.1x.webp",
-    "sha1": "02549c3fd930"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    272,
+    68,
+    68,
+    68
+   ],
+   "sha1": "6f34610be04f"
   }
  },
  "invgsra": {
@@ -1061,15 +1061,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsra.webp",
-    "sha1": "445f21e35c31"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsra.1x.webp",
-    "sha1": "d0212d5f4f59"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    0,
+    136,
+    68,
+    68
+   ],
+   "sha1": "445f21e35c31"
   }
  },
  "invgsrb": {
@@ -1090,15 +1090,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsrb.webp",
-    "sha1": "aae409aff63a"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsrb.1x.webp",
-    "sha1": "6ddcae4c7dda"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    68,
+    136,
+    68,
+    68
+   ],
+   "sha1": "aae409aff63a"
   }
  },
  "invgsrc": {
@@ -1119,15 +1119,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsrc.webp",
-    "sha1": "7191599aee3d"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsrc.1x.webp",
-    "sha1": "9f800255828c"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    136,
+    136,
+    68,
+    68
+   ],
+   "sha1": "7191599aee3d"
   }
  },
  "invgsrd": {
@@ -1148,15 +1148,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsrd.webp",
-    "sha1": "a9e87c505c57"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsrd.1x.webp",
-    "sha1": "1927e7984b9e"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    204,
+    136,
+    68,
+    68
+   ],
+   "sha1": "a9e87c505c57"
   }
  },
  "invgsre": {
@@ -1177,15 +1177,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsre.webp",
-    "sha1": "e0883584af87"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsre.1x.webp",
-    "sha1": "08b54030c52a"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    272,
+    136,
+    68,
+    68
+   ],
+   "sha1": "e0883584af87"
   }
  },
  "invgsva": {
@@ -1206,15 +1206,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsva.webp",
-    "sha1": "a893bc019770"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsva.1x.webp",
-    "sha1": "94d9f04bc1ff"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    0,
+    204,
+    68,
+    68
+   ],
+   "sha1": "a893bc019770"
   }
  },
  "invgsvb": {
@@ -1235,15 +1235,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsvb.webp",
-    "sha1": "17d0cf9f80f9"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsvb.1x.webp",
-    "sha1": "00085c97e635"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    68,
+    204,
+    68,
+    68
+   ],
+   "sha1": "17d0cf9f80f9"
   }
  },
  "invgsvc": {
@@ -1264,15 +1264,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsvc.webp",
-    "sha1": "83b2cac1a541"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsvc.1x.webp",
-    "sha1": "e44a5e089d95"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    136,
+    204,
+    68,
+    68
+   ],
+   "sha1": "83b2cac1a541"
   }
  },
  "invgsvd": {
@@ -1293,15 +1293,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsvd.webp",
-    "sha1": "f96811289330"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsvd.1x.webp",
-    "sha1": "560c766a3440"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    204,
+    204,
+    68,
+    68
+   ],
+   "sha1": "f96811289330"
   }
  },
  "invgsve": {
@@ -1322,15 +1322,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsve.webp",
-    "sha1": "10a8f63e780c"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsve.1x.webp",
-    "sha1": "dc31733e6ce8"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    272,
+    204,
+    68,
+    68
+   ],
+   "sha1": "10a8f63e780c"
   }
  },
  "invgswa": {
@@ -1351,15 +1351,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgswa.webp",
-    "sha1": "3ec11865e19c"
-   },
-   "1x": {
-    "file": "public/icons/items/invgswa.1x.webp",
-    "sha1": "34dbd876cc6a"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    0,
+    272,
+    68,
+    68
+   ],
+   "sha1": "3ec11865e19c"
   }
  },
  "invgswb": {
@@ -1380,15 +1380,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgswb.webp",
-    "sha1": "e8b43e85be2a"
-   },
-   "1x": {
-    "file": "public/icons/items/invgswb.1x.webp",
-    "sha1": "1449ce15c125"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    68,
+    272,
+    68,
+    68
+   ],
+   "sha1": "e8b43e85be2a"
   }
  },
  "invgswc": {
@@ -1409,15 +1409,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgswc.webp",
-    "sha1": "d8c68ab3d37c"
-   },
-   "1x": {
-    "file": "public/icons/items/invgswc.1x.webp",
-    "sha1": "d5f5a2d0db35"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    136,
+    272,
+    68,
+    68
+   ],
+   "sha1": "d8c68ab3d37c"
   }
  },
  "invgswd": {
@@ -1438,15 +1438,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgswd.webp",
-    "sha1": "03a60188344e"
-   },
-   "1x": {
-    "file": "public/icons/items/invgswd.1x.webp",
-    "sha1": "08d45ef6b04d"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    204,
+    272,
+    68,
+    68
+   ],
+   "sha1": "03a60188344e"
   }
  },
  "invgswe": {
@@ -1467,15 +1467,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgswe.webp",
-    "sha1": "3dc2f87cabbd"
-   },
-   "1x": {
-    "file": "public/icons/items/invgswe.1x.webp",
-    "sha1": "d3fff21ba4dc"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    272,
+    272,
+    68,
+    68
+   ],
+   "sha1": "3dc2f87cabbd"
   }
  },
  "invgsya": {
@@ -1496,15 +1496,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsya.webp",
-    "sha1": "ca0ec6e42464"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsya.1x.webp",
-    "sha1": "e765e2fe1dd7"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    0,
+    340,
+    68,
+    68
+   ],
+   "sha1": "ca0ec6e42464"
   }
  },
  "invgsyb": {
@@ -1525,15 +1525,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsyb.webp",
-    "sha1": "c6632a51968e"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsyb.1x.webp",
-    "sha1": "3571dd74b8d1"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    68,
+    340,
+    68,
+    68
+   ],
+   "sha1": "c6632a51968e"
   }
  },
  "invgsyc": {
@@ -1554,15 +1554,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsyc.webp",
-    "sha1": "4256f033dcbf"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsyc.1x.webp",
-    "sha1": "b7a16ece4641"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    136,
+    340,
+    68,
+    68
+   ],
+   "sha1": "4256f033dcbf"
   }
  },
  "invgsyd": {
@@ -1583,15 +1583,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsyd.webp",
-    "sha1": "76cdf93b68a6"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsyd.1x.webp",
-    "sha1": "041e7df477a7"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    204,
+    340,
+    68,
+    68
+   ],
+   "sha1": "76cdf93b68a6"
   }
  },
  "invgsye": {
@@ -1612,15 +1612,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgsye.webp",
-    "sha1": "a47f48426219"
-   },
-   "1x": {
-    "file": "public/icons/items/invgsye.1x.webp",
-    "sha1": "8b0206dbe0f4"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    272,
+    340,
+    68,
+    68
+   ],
+   "sha1": "a47f48426219"
   }
  },
  "invhorn": {
@@ -1641,15 +1641,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invhorn.webp",
-    "sha1": "a9b5133ea013"
-   },
-   "1x": {
-    "file": "public/icons/items/invhorn.1x.webp",
-    "sha1": "71b50a02eb52"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    136,
+    544,
+    68,
+    68
+   ],
+   "sha1": "a9b5133ea013"
   }
  },
  "invhp1": {
@@ -1670,15 +1670,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invhp1.webp",
-    "sha1": "47288530ea92"
-   },
-   "1x": {
-    "file": "public/icons/items/invhp1.1x.webp",
-    "sha1": "348441cd0c40"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    136,
+    136,
+    68,
+    68
+   ],
+   "sha1": "47288530ea92"
   }
  },
  "invhp2": {
@@ -1699,15 +1699,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invhp2.webp",
-    "sha1": "64b69fc637ef"
-   },
-   "1x": {
-    "file": "public/icons/items/invhp2.1x.webp",
-    "sha1": "9927dc566b42"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    0,
+    204,
+    68,
+    68
+   ],
+   "sha1": "64b69fc637ef"
   }
  },
  "invhp3": {
@@ -1728,15 +1728,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invhp3.webp",
-    "sha1": "129964353eb7"
-   },
-   "1x": {
-    "file": "public/icons/items/invhp3.1x.webp",
-    "sha1": "6ecf446e79a7"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    68,
+    204,
+    68,
+    68
+   ],
+   "sha1": "129964353eb7"
   }
  },
  "invhp4": {
@@ -1757,15 +1757,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invhp4.webp",
-    "sha1": "b2b2fc3e4786"
-   },
-   "1x": {
-    "file": "public/icons/items/invhp4.1x.webp",
-    "sha1": "0af80386d8bc"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    136,
+    204,
+    68,
+    68
+   ],
+   "sha1": "b2b2fc3e4786"
   }
  },
  "invhp5": {
@@ -1786,15 +1786,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invhp5.webp",
-    "sha1": "e34b6e7f06f8"
-   },
-   "1x": {
-    "file": "public/icons/items/invhp5.1x.webp",
-    "sha1": "9571479dc1e4"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    0,
+    272,
+    68,
+    68
+   ],
+   "sha1": "e34b6e7f06f8"
   }
  },
  "invhrb": {
@@ -1815,15 +1815,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invhrb.webp",
-    "sha1": "69922a46899a"
-   },
-   "1x": {
-    "file": "public/icons/items/invhrb.1x.webp",
-    "sha1": "3a2fe29f9185"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    68,
+    272,
+    68,
+    68
+   ],
+   "sha1": "69922a46899a"
   }
  },
  "invhrt": {
@@ -1844,15 +1844,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invhrt.webp",
-    "sha1": "4f6b8d33d895"
-   },
-   "1x": {
-    "file": "public/icons/items/invhrt.1x.webp",
-    "sha1": "e8fdc7bb7f78"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    204,
+    544,
+    68,
+    68
+   ],
+   "sha1": "4f6b8d33d895"
   }
  },
  "invhscr": {
@@ -1873,15 +1873,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invhscr.webp",
-    "sha1": "6b3755fab06d"
-   },
-   "1x": {
-    "file": "public/icons/items/invhscr.1x.webp",
-    "sha1": "9d18310262a9"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    0,
+    136,
+    136,
+    136
+   ],
+   "sha1": "6b3755fab06d"
   }
  },
  "invjaw": {
@@ -1902,15 +1902,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invjaw.webp",
-    "sha1": "56b28fd921ab"
-   },
-   "1x": {
-    "file": "public/icons/items/invjaw.1x.webp",
-    "sha1": "104d4c27bd16"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    0,
+    612,
+    68,
+    68
+   ],
+   "sha1": "56b28fd921ab"
   }
  },
  "invjbi": {
@@ -1931,15 +1931,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invjbi.webp",
-    "sha1": "1c5f5af32574"
-   },
-   "1x": {
-    "file": "public/icons/items/invjbi.1x.webp",
-    "sha1": "3ebce80cfaad"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    204,
+    272,
+    68,
+    136
+   ],
+   "sha1": "1c5f5af32574"
   }
  },
  "invjw1": {
@@ -1960,15 +1960,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invjw1.webp",
-    "sha1": "19f0243442b0"
-   },
-   "1x": {
-    "file": "public/icons/items/invjw1.1x.webp",
-    "sha1": "69db42f4e6f8"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    68,
+    340,
+    68,
+    68
+   ],
+   "sha1": "19f0243442b0"
   }
  },
  "invjw2": {
@@ -1989,15 +1989,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invjw2.webp",
-    "sha1": "9e38ec53ae2c"
-   },
-   "1x": {
-    "file": "public/icons/items/invjw2.1x.webp",
-    "sha1": "6065da19a54d"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    136,
+    340,
+    68,
+    68
+   ],
+   "sha1": "9e38ec53ae2c"
   }
  },
  "invjw3": {
@@ -2018,15 +2018,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invjw3.webp",
-    "sha1": "b039fd4cb20b"
-   },
-   "1x": {
-    "file": "public/icons/items/invjw3.1x.webp",
-    "sha1": "3ab2d7851fc0"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    204,
+    340,
+    68,
+    68
+   ],
+   "sha1": "b039fd4cb20b"
   }
  },
  "invjw4": {
@@ -2047,15 +2047,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invjw4.webp",
-    "sha1": "32bbdd871c1f"
-   },
-   "1x": {
-    "file": "public/icons/items/invjw4.1x.webp",
-    "sha1": "4a33923d47a8"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    0,
+    408,
+    68,
+    68
+   ],
+   "sha1": "32bbdd871c1f"
   }
  },
  "invjw5": {
@@ -2076,15 +2076,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invjw5.webp",
-    "sha1": "a528f4f6c351"
-   },
-   "1x": {
-    "file": "public/icons/items/invjw5.1x.webp",
-    "sha1": "b11fac8f6142"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    68,
+    408,
+    68,
+    68
+   ],
+   "sha1": "a528f4f6c351"
   }
  },
  "invjw6": {
@@ -2105,15 +2105,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invjw6.webp",
-    "sha1": "32a1df8df59e"
-   },
-   "1x": {
-    "file": "public/icons/items/invjw6.1x.webp",
-    "sha1": "a1a4fd34fc75"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    136,
+    408,
+    68,
+    68
+   ],
+   "sha1": "32a1df8df59e"
   }
  },
  "invkey": {
@@ -2134,15 +2134,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invkey.webp",
-    "sha1": "42be72f5ce0b"
-   },
-   "1x": {
-    "file": "public/icons/items/invkey.1x.webp",
-    "sha1": "89412adc689d"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    136,
+    272,
+    68,
+    68
+   ],
+   "sha1": "42be72f5ce0b"
   }
  },
  "invmp1": {
@@ -2163,15 +2163,15 @@
    "parts": 1,
    "shadow": true
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invmp1.webp",
-    "sha1": "ffb5b49ef6f2"
-   },
-   "1x": {
-    "file": "public/icons/items/invmp1.1x.webp",
-    "sha1": "6ce30812853e"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    0,
+    340,
+    68,
+    68
+   ],
+   "sha1": "ffb5b49ef6f2"
   }
  },
  "invmp2": {
@@ -2192,15 +2192,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invmp2.webp",
-    "sha1": "2ae49c2d140c"
-   },
-   "1x": {
-    "file": "public/icons/items/invmp2.1x.webp",
-    "sha1": "1b2dabd09610"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    68,
+    340,
+    68,
+    68
+   ],
+   "sha1": "2ae49c2d140c"
   }
  },
  "invmp3": {
@@ -2221,15 +2221,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invmp3.webp",
-    "sha1": "cb9bb285771c"
-   },
-   "1x": {
-    "file": "public/icons/items/invmp3.1x.webp",
-    "sha1": "18f11164ad86"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    136,
+    340,
+    68,
+    68
+   ],
+   "sha1": "cb9bb285771c"
   }
  },
  "invmp4": {
@@ -2250,15 +2250,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invmp4.webp",
-    "sha1": "2c759a673a95"
-   },
-   "1x": {
-    "file": "public/icons/items/invmp4.1x.webp",
-    "sha1": "4bd2053d400d"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    0,
+    408,
+    68,
+    68
+   ],
+   "sha1": "2c759a673a95"
   }
  },
  "invmp5": {
@@ -2279,15 +2279,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invmp5.webp",
-    "sha1": "a5cd35602b1f"
-   },
-   "1x": {
-    "file": "public/icons/items/invmp5.1x.webp",
-    "sha1": "c5e9f7a19083"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    68,
+    408,
+    68,
+    68
+   ],
+   "sha1": "a5cd35602b1f"
   }
  },
  "invmph": {
@@ -2308,15 +2308,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invmph.webp",
-    "sha1": "5272d04b827c"
-   },
-   "1x": {
-    "file": "public/icons/items/invmph.1x.webp",
-    "sha1": "5333792c2407"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    68,
+    0,
+    68,
+    136
+   ],
+   "sha1": "5272d04b827c"
   }
  },
  "invmss": {
@@ -2337,15 +2337,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invmss.webp",
-    "sha1": "28361136098a"
-   },
-   "1x": {
-    "file": "public/icons/items/invmss.1x.webp",
-    "sha1": "13ffefcd03dc"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    68,
+    612,
+    68,
+    68
+   ],
+   "sha1": "28361136098a"
   }
  },
  "invnps": {
@@ -2366,15 +2366,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invnps.webp",
-    "sha1": "b07837797b05"
-   },
-   "1x": {
-    "file": "public/icons/items/invnps.1x.webp",
-    "sha1": "742d6df61ad7"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    136,
+    408,
+    68,
+    68
+   ],
+   "sha1": "b07837797b05"
   }
  },
  "invpot": {
@@ -2395,15 +2395,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invpot.webp",
-    "sha1": "0e5f7fc8a7d0"
-   },
-   "1x": {
-    "file": "public/icons/items/invpot.1x.webp",
-    "sha1": "45371a7340cd"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    0,
+    476,
+    68,
+    68
+   ],
+   "sha1": "0e5f7fc8a7d0"
   }
  },
  "invquil": {
@@ -2424,15 +2424,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invquil.webp",
-    "sha1": "1cb825aa1084"
-   },
-   "1x": {
-    "file": "public/icons/items/invquil.1x.webp",
-    "sha1": "1c84b2088d9f"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    136,
+    612,
+    68,
+    68
+   ],
+   "sha1": "1cb825aa1084"
   }
  },
  "invramn": {
@@ -2453,15 +2453,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invramn.webp",
-    "sha1": "a0844d68c710"
-   },
-   "1x": {
-    "file": "public/icons/items/invramn.1x.webp",
-    "sha1": "c3bc4043217b"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    0,
+    0,
+    68,
+    68
+   ],
+   "sha1": "a0844d68c710"
   }
  },
  "invrber": {
@@ -2482,15 +2482,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrber.webp",
-    "sha1": "fe1b2e6edc76"
-   },
-   "1x": {
-    "file": "public/icons/items/invrber.1x.webp",
-    "sha1": "be4246c37b0d"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    68,
+    0,
+    68,
+    68
+   ],
+   "sha1": "fe1b2e6edc76"
   }
  },
  "invrbk": {
@@ -2511,15 +2511,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrbk.webp",
-    "sha1": "7ac8067892e9"
-   },
-   "1x": {
-    "file": "public/icons/items/invrbk.1x.webp",
-    "sha1": "178ea5142611"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    136,
+    0,
+    68,
+    136
+   ],
+   "sha1": "7ac8067892e9"
   }
  },
  "invrcham": {
@@ -2540,15 +2540,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrcham.webp",
-    "sha1": "f71476d806a1"
-   },
-   "1x": {
-    "file": "public/icons/items/invrcham.1x.webp",
-    "sha1": "3b3bba909558"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    136,
+    0,
+    68,
+    68
+   ],
+   "sha1": "f71476d806a1"
   }
  },
  "invrdol": {
@@ -2569,15 +2569,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrdol.webp",
-    "sha1": "25503007ecda"
-   },
-   "1x": {
-    "file": "public/icons/items/invrdol.1x.webp",
-    "sha1": "a9d68932f553"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    0,
+    68,
+    68,
+    68
+   ],
+   "sha1": "25503007ecda"
   }
  },
  "invrel": {
@@ -2598,15 +2598,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrel.webp",
-    "sha1": "8d9578828d12"
-   },
-   "1x": {
-    "file": "public/icons/items/invrel.1x.webp",
-    "sha1": "7c2145941152"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    68,
+    68,
+    68,
+    68
+   ],
+   "sha1": "8d9578828d12"
   }
  },
  "invreld": {
@@ -2627,15 +2627,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invreld.webp",
-    "sha1": "7777cbea1ca1"
-   },
-   "1x": {
-    "file": "public/icons/items/invreld.1x.webp",
-    "sha1": "d01ab82e32fa"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    136,
+    68,
+    68,
+    68
+   ],
+   "sha1": "7777cbea1ca1"
   }
  },
  "invreth": {
@@ -2656,15 +2656,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invreth.webp",
-    "sha1": "9913a2e5a6e2"
-   },
-   "1x": {
-    "file": "public/icons/items/invreth.1x.webp",
-    "sha1": "94c1f8b228dd"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    0,
+    136,
+    68,
+    68
+   ],
+   "sha1": "9913a2e5a6e2"
   }
  },
  "invrfal": {
@@ -2685,15 +2685,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrfal.webp",
-    "sha1": "7847085ecc04"
-   },
-   "1x": {
-    "file": "public/icons/items/invrfal.1x.webp",
-    "sha1": "a6da264c2aba"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    68,
+    136,
+    68,
+    68
+   ],
+   "sha1": "7847085ecc04"
   }
  },
  "invrgul": {
@@ -2714,15 +2714,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrgul.webp",
-    "sha1": "e86776afd6ac"
-   },
-   "1x": {
-    "file": "public/icons/items/invrgul.1x.webp",
-    "sha1": "764627029c61"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    136,
+    136,
+    68,
+    68
+   ],
+   "sha1": "e86776afd6ac"
   }
  },
  "invrhel": {
@@ -2743,15 +2743,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrhel.webp",
-    "sha1": "b6e73690ce13"
-   },
-   "1x": {
-    "file": "public/icons/items/invrhel.1x.webp",
-    "sha1": "5308a33301f9"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    0,
+    204,
+    68,
+    68
+   ],
+   "sha1": "b6e73690ce13"
   }
  },
  "invrin1": {
@@ -2772,15 +2772,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrin1.webp",
-    "sha1": "618470e27224"
-   },
-   "1x": {
-    "file": "public/icons/items/invrin1.1x.webp",
-    "sha1": "a524a63489d8"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    204,
+    408,
+    68,
+    68
+   ],
+   "sha1": "618470e27224"
   }
  },
  "invrin2": {
@@ -2801,15 +2801,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrin2.webp",
-    "sha1": "2a03ece47ff0"
-   },
-   "1x": {
-    "file": "public/icons/items/invrin2.1x.webp",
-    "sha1": "594c43daaad4"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    0,
+    476,
+    68,
+    68
+   ],
+   "sha1": "2a03ece47ff0"
   }
  },
  "invrin3": {
@@ -2830,15 +2830,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrin3.webp",
-    "sha1": "774587121b03"
-   },
-   "1x": {
-    "file": "public/icons/items/invrin3.1x.webp",
-    "sha1": "4ec8b4fedac4"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    68,
+    476,
+    68,
+    68
+   ],
+   "sha1": "774587121b03"
   }
  },
  "invrin4": {
@@ -2859,15 +2859,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrin4.webp",
-    "sha1": "47d858c6bb8f"
-   },
-   "1x": {
-    "file": "public/icons/items/invrin4.1x.webp",
-    "sha1": "288c2225c214"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    136,
+    476,
+    68,
+    68
+   ],
+   "sha1": "47d858c6bb8f"
   }
  },
  "invrin5": {
@@ -2888,15 +2888,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrin5.webp",
-    "sha1": "6b794fd294cd"
-   },
-   "1x": {
-    "file": "public/icons/items/invrin5.1x.webp",
-    "sha1": "a68f563b2fb8"
-   }
+  "atlas": {
+   "file": "public/icons/items/jewellery.webp",
+   "rect": [
+    204,
+    476,
+    68,
+    68
+   ],
+   "sha1": "6b794fd294cd"
   }
  },
  "invrio": {
@@ -2917,15 +2917,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrio.webp",
-    "sha1": "545c4e5ae126"
-   },
-   "1x": {
-    "file": "public/icons/items/invrio.1x.webp",
-    "sha1": "923986301a57"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    68,
+    204,
+    68,
+    68
+   ],
+   "sha1": "545c4e5ae126"
   }
  },
  "invrist": {
@@ -2946,15 +2946,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrist.webp",
-    "sha1": "3f88c4882837"
-   },
-   "1x": {
-    "file": "public/icons/items/invrist.1x.webp",
-    "sha1": "cb0ef97474d6"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    136,
+    204,
+    68,
+    68
+   ],
+   "sha1": "3f88c4882837"
   }
  },
  "invrith": {
@@ -2975,15 +2975,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrith.webp",
-    "sha1": "675e759f331e"
-   },
-   "1x": {
-    "file": "public/icons/items/invrith.1x.webp",
-    "sha1": "b123474dcc71"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    0,
+    272,
+    68,
+    68
+   ],
+   "sha1": "675e759f331e"
   }
  },
  "invrjo": {
@@ -3004,15 +3004,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrjo.webp",
-    "sha1": "782f7a708b85"
-   },
-   "1x": {
-    "file": "public/icons/items/invrjo.1x.webp",
-    "sha1": "0ef613359d97"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    68,
+    272,
+    68,
+    68
+   ],
+   "sha1": "782f7a708b85"
   }
  },
  "invrko": {
@@ -3033,15 +3033,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrko.webp",
-    "sha1": "a619ac33638d"
-   },
-   "1x": {
-    "file": "public/icons/items/invrko.1x.webp",
-    "sha1": "09da1d7a9e9e"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    136,
+    272,
+    68,
+    68
+   ],
+   "sha1": "a619ac33638d"
   }
  },
  "invrlem": {
@@ -3062,15 +3062,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrlem.webp",
-    "sha1": "644beda0c047"
-   },
-   "1x": {
-    "file": "public/icons/items/invrlem.1x.webp",
-    "sha1": "af58dd5b67c1"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    0,
+    340,
+    68,
+    68
+   ],
+   "sha1": "644beda0c047"
   }
  },
  "invrlo": {
@@ -3091,15 +3091,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrlo.webp",
-    "sha1": "c174c98c69a4"
-   },
-   "1x": {
-    "file": "public/icons/items/invrlo.1x.webp",
-    "sha1": "4e1dac300928"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    68,
+    340,
+    68,
+    68
+   ],
+   "sha1": "c174c98c69a4"
   }
  },
  "invrlum": {
@@ -3120,15 +3120,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrlum.webp",
-    "sha1": "1558d0f2595e"
-   },
-   "1x": {
-    "file": "public/icons/items/invrlum.1x.webp",
-    "sha1": "3327e092327d"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    136,
+    340,
+    68,
+    68
+   ],
+   "sha1": "1558d0f2595e"
   }
  },
  "invrmal": {
@@ -3149,15 +3149,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrmal.webp",
-    "sha1": "e73343c5a88f"
-   },
-   "1x": {
-    "file": "public/icons/items/invrmal.1x.webp",
-    "sha1": "67d22584e911"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    0,
+    408,
+    68,
+    68
+   ],
+   "sha1": "e73343c5a88f"
   }
  },
  "invrnef": {
@@ -3178,15 +3178,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrnef.webp",
-    "sha1": "b79ba136d055"
-   },
-   "1x": {
-    "file": "public/icons/items/invrnef.1x.webp",
-    "sha1": "ea86ba7a964f"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    68,
+    408,
+    68,
+    68
+   ],
+   "sha1": "b79ba136d055"
   }
  },
  "invrohm": {
@@ -3207,15 +3207,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrohm.webp",
-    "sha1": "75be8e9ac0e3"
-   },
-   "1x": {
-    "file": "public/icons/items/invrohm.1x.webp",
-    "sha1": "40a81b7e2641"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    136,
+    408,
+    68,
+    68
+   ],
+   "sha1": "75be8e9ac0e3"
   }
  },
  "invrort": {
@@ -3236,15 +3236,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrort.webp",
-    "sha1": "f4c4ea59d3bd"
-   },
-   "1x": {
-    "file": "public/icons/items/invrort.1x.webp",
-    "sha1": "bda75648767f"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    0,
+    476,
+    68,
+    68
+   ],
+   "sha1": "f4c4ea59d3bd"
   }
  },
  "invrpul": {
@@ -3265,15 +3265,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrpul.webp",
-    "sha1": "a970c08ddfe8"
-   },
-   "1x": {
-    "file": "public/icons/items/invrpul.1x.webp",
-    "sha1": "6aa75048a3b9"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    68,
+    476,
+    68,
+    68
+   ],
+   "sha1": "a970c08ddfe8"
   }
  },
  "invrral": {
@@ -3294,15 +3294,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrral.webp",
-    "sha1": "cd1b9857d647"
-   },
-   "1x": {
-    "file": "public/icons/items/invrral.1x.webp",
-    "sha1": "5af996e1d705"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    136,
+    476,
+    68,
+    68
+   ],
+   "sha1": "cd1b9857d647"
   }
  },
  "invrsc": {
@@ -3323,15 +3323,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrsc.webp",
-    "sha1": "751e455e2f59"
-   },
-   "1x": {
-    "file": "public/icons/items/invrsc.1x.webp",
-    "sha1": "0f3d326f4a07"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    68,
+    476,
+    68,
+    68
+   ],
+   "sha1": "751e455e2f59"
   }
  },
  "invrshae": {
@@ -3352,15 +3352,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrshae.webp",
-    "sha1": "447e3f3fb9ed"
-   },
-   "1x": {
-    "file": "public/icons/items/invrshae.1x.webp",
-    "sha1": "ba4900973926"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    0,
+    544,
+    68,
+    68
+   ],
+   "sha1": "447e3f3fb9ed"
   }
  },
  "invrsol": {
@@ -3381,15 +3381,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrsol.webp",
-    "sha1": "9c3fe2a9fb79"
-   },
-   "1x": {
-    "file": "public/icons/items/invrsol.1x.webp",
-    "sha1": "2edeb68aba8e"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    68,
+    544,
+    68,
+    68
+   ],
+   "sha1": "9c3fe2a9fb79"
   }
  },
  "invrsur": {
@@ -3410,15 +3410,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrsur.webp",
-    "sha1": "5682b0ed5895"
-   },
-   "1x": {
-    "file": "public/icons/items/invrsur.1x.webp",
-    "sha1": "74b99a5829f6"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    136,
+    544,
+    68,
+    68
+   ],
+   "sha1": "5682b0ed5895"
   }
  },
  "invrtal": {
@@ -3439,15 +3439,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrtal.webp",
-    "sha1": "9301668ae5e3"
-   },
-   "1x": {
-    "file": "public/icons/items/invrtal.1x.webp",
-    "sha1": "2feb33aa87f4"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    0,
+    612,
+    68,
+    68
+   ],
+   "sha1": "9301668ae5e3"
   }
  },
  "invrthul": {
@@ -3468,15 +3468,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrthul.webp",
-    "sha1": "9649fdbfb269"
-   },
-   "1x": {
-    "file": "public/icons/items/invrthul.1x.webp",
-    "sha1": "24a6a3611f78"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    68,
+    612,
+    68,
+    68
+   ],
+   "sha1": "9649fdbfb269"
   }
  },
  "invrtir": {
@@ -3497,15 +3497,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrtir.webp",
-    "sha1": "c8b038875c84"
-   },
-   "1x": {
-    "file": "public/icons/items/invrtir.1x.webp",
-    "sha1": "75fde823994d"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    136,
+    612,
+    68,
+    68
+   ],
+   "sha1": "c8b038875c84"
   }
  },
  "invrum": {
@@ -3526,15 +3526,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrum.webp",
-    "sha1": "65e121e7d036"
-   },
-   "1x": {
-    "file": "public/icons/items/invrum.1x.webp",
-    "sha1": "233aea817c53"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    0,
+    680,
+    68,
+    68
+   ],
+   "sha1": "65e121e7d036"
   }
  },
  "invrvex": {
@@ -3555,15 +3555,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrvex.webp",
-    "sha1": "4c1dde4aaaf1"
-   },
-   "1x": {
-    "file": "public/icons/items/invrvex.1x.webp",
-    "sha1": "72b0bd1f80dc"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    68,
+    680,
+    68,
+    68
+   ],
+   "sha1": "4c1dde4aaaf1"
   }
  },
  "invrzod": {
@@ -3584,15 +3584,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrzod.webp",
-    "sha1": "aee7fdcfa147"
-   },
-   "1x": {
-    "file": "public/icons/items/invrzod.1x.webp",
-    "sha1": "c8fe74fa1d81"
-   }
+  "atlas": {
+   "file": "public/icons/items/runes.webp",
+   "rect": [
+    136,
+    680,
+    68,
+    68
+   ],
+   "sha1": "aee7fdcfa147"
   }
  },
  "invsbk": {
@@ -3613,15 +3613,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invsbk.webp",
-    "sha1": "f9354ab63bd0"
-   },
-   "1x": {
-    "file": "public/icons/items/invsbk.1x.webp",
-    "sha1": "95e8f563ab03"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    136,
+    136,
+    136,
+    136
+   ],
+   "sha1": "f9354ab63bd0"
   }
  },
  "invscb": {
@@ -3642,15 +3642,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invscb.webp",
-    "sha1": "adf2fe0447d6"
-   },
-   "1x": {
-    "file": "public/icons/items/invscb.1x.webp",
-    "sha1": "688473c7e25c"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    0,
+    272,
+    136,
+    136
+   ],
+   "sha1": "adf2fe0447d6"
   }
  },
  "invskc": {
@@ -3671,15 +3671,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invskc.webp",
-    "sha1": "fa8eef620133"
-   },
-   "1x": {
-    "file": "public/icons/items/invskc.1x.webp",
-    "sha1": "0a57858ea4aa"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    0,
+    408,
+    68,
+    68
+   ],
+   "sha1": "fa8eef620133"
   }
  },
  "invskf": {
@@ -3700,15 +3700,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invskf.webp",
-    "sha1": "7a0fed084508"
-   },
-   "1x": {
-    "file": "public/icons/items/invskf.1x.webp",
-    "sha1": "dd5ca5e22dba"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    68,
+    408,
+    68,
+    68
+   ],
+   "sha1": "7a0fed084508"
   }
  },
  "invskl": {
@@ -3729,15 +3729,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invskl.webp",
-    "sha1": "afc9eacc5f1e"
-   },
-   "1x": {
-    "file": "public/icons/items/invskl.1x.webp",
-    "sha1": "12205010baa5"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    136,
+    408,
+    68,
+    68
+   ],
+   "sha1": "afc9eacc5f1e"
   }
  },
  "invsku": {
@@ -3758,15 +3758,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invsku.webp",
-    "sha1": "f8be89fdb15b"
-   },
-   "1x": {
-    "file": "public/icons/items/invsku.1x.webp",
-    "sha1": "85769d01da20"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    204,
+    408,
+    68,
+    68
+   ],
+   "sha1": "f8be89fdb15b"
   }
  },
  "invskz": {
@@ -3787,15 +3787,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invskz.webp",
-    "sha1": "f210943bd080"
-   },
-   "1x": {
-    "file": "public/icons/items/invskz.1x.webp",
-    "sha1": "618cf5f8a309"
-   }
+  "atlas": {
+   "file": "public/icons/items/gems.webp",
+   "rect": [
+    272,
+    408,
+    68,
+    68
+   ],
+   "sha1": "f210943bd080"
   }
  },
  "invsple": {
@@ -3816,15 +3816,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invsple.webp",
-    "sha1": "353db9dcfb45"
-   },
-   "1x": {
-    "file": "public/icons/items/invsple.1x.webp",
-    "sha1": "940467f7af67"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    204,
+    612,
+    68,
+    68
+   ],
+   "sha1": "353db9dcfb45"
   }
  },
  "invtail": {
@@ -3845,15 +3845,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invtail.webp",
-    "sha1": "9935c8d461fc"
-   },
-   "1x": {
-    "file": "public/icons/items/invtail.1x.webp",
-    "sha1": "df0ea2d2f452"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    0,
+    680,
+    68,
+    68
+   ],
+   "sha1": "9935c8d461fc"
   }
  },
  "invtes": {
@@ -3874,15 +3874,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invtes.webp",
-    "sha1": "7e131507f19f"
-   },
-   "1x": {
-    "file": "public/icons/items/invtes.1x.webp",
-    "sha1": "0c95057c560d"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    68,
+    680,
+    68,
+    68
+   ],
+   "sha1": "7e131507f19f"
   }
  },
  "invtoa": {
@@ -3903,15 +3903,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invtoa.webp",
-    "sha1": "252434cfcce0"
-   },
-   "1x": {
-    "file": "public/icons/items/invtoa.1x.webp",
-    "sha1": "bf829d2d02c8"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    136,
+    680,
+    68,
+    68
+   ],
+   "sha1": "252434cfcce0"
   }
  },
  "invtrch": {
@@ -3932,15 +3932,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invtrch.webp",
-    "sha1": "1698ed333096"
-   },
-   "1x": {
-    "file": "public/icons/items/invtrch.1x.webp",
-    "sha1": "99d708394732"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    0,
+    408,
+    68,
+    136
+   ],
+   "sha1": "1698ed333096"
   }
  },
  "invvpl": {
@@ -3961,15 +3961,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invvpl.webp",
-    "sha1": "a9570f6cc9fa"
-   },
-   "1x": {
-    "file": "public/icons/items/invvpl.1x.webp",
-    "sha1": "cc141cc795b1"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    136,
+    476,
+    68,
+    68
+   ],
+   "sha1": "a9570f6cc9fa"
   }
  },
  "invvps": {
@@ -3990,15 +3990,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invvps.webp",
-    "sha1": "6a0b15b2bd07"
-   },
-   "1x": {
-    "file": "public/icons/items/invvps.1x.webp",
-    "sha1": "5379cbcef1ad"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    0,
+    544,
+    68,
+    68
+   ],
+   "sha1": "6a0b15b2bd07"
   }
  },
  "invwps": {
@@ -4019,15 +4019,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invwps.webp",
-    "sha1": "7864f72caccb"
-   },
-   "1x": {
-    "file": "public/icons/items/invwps.1x.webp",
-    "sha1": "6791e2ed37f7"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    68,
+    544,
+    68,
+    68
+   ],
+   "sha1": "7864f72caccb"
   }
  },
  "invxyz": {
@@ -4048,15 +4048,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invxyz.webp",
-    "sha1": "780e2a83e1b4"
-   },
-   "1x": {
-    "file": "public/icons/items/invxyz.1x.webp",
-    "sha1": "375475b3145c"
-   }
+  "atlas": {
+   "file": "public/icons/items/quest.webp",
+   "rect": [
+    204,
+    680,
+    68,
+    68
+   ],
+   "sha1": "780e2a83e1b4"
   }
  },
  "invyps": {
@@ -4077,15 +4077,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invyps.webp",
-    "sha1": "d8d2b381bcf8"
-   },
-   "1x": {
-    "file": "public/icons/items/invyps.1x.webp",
-    "sha1": "c354186af1bf"
-   }
+  "atlas": {
+   "file": "public/icons/items/potions.webp",
+   "rect": [
+    136,
+    544,
+    68,
+    68
+   ],
+   "sha1": "d8d2b381bcf8"
   }
  }
 }

@@ -8,7 +8,7 @@ model or traced. This gives the number; a reviewer's side-by-side look (--sheet)
   python3 tools/icons/similarity.py --pairs PAIRS.json [--bg TEMPLATE.png ...] [--out SCORES.json]
   python3 tools/icons/similarity.py --template OUT.png ORIGINAL ...
 
-OURS is an RGBA cut-out (public/icons/items, a run's candidates). ORIGINAL is RGBA, or RGB on a dark
+OURS is an RGBA cut-out (a run's candidates). ORIGINAL is RGBA, or RGB on a dark
 ground: the object is what differs from that ground, which is a flat colour (the border's median), a
 smooth vignette (a normalised blur of the non-object pixels) or, with --bg, a template of a textured
 ground many originals share (--template: the per-pixel mode over them). PAIRS is a JSON list of

@@ -4,12 +4,18 @@
 // and kept through a save and a reload, an older item's from its uid), its colour by D2's
 // ITEMS_GetColor (a magic item's first suffix with a colour, else its first prefix's; a unique's or
 // set item's invtransform; a gem in a normal item's first socket; InvTrans 0 none), the remap the
-// same as tools/icons/colours.py's, and every picture an item can show painted and listed.
+// same as tools/icons/colours.py's, every picture an item can show painted and listed in an atlas
+// that is there (the picture inside it), and the 1x pictures' sharpen the export's (grade.py
+// sharpen(): PIL's bytes on the same pixels).
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+
+/** tools/icons/box/grade.py sharpen() on this 6×5 RGBA patch (python3, PIL 11): src/ui/sharpen.ts must give the same bytes */
+const SHARPEN_IN = [34,32,204,255,151,153,182,0,124,37,102,0,140,18,138,0,193,242,250,0,222,94,37,0,113,169,254,255,219,35,89,255,63,171,117,255,240,209,214,255,251,251,34,255,78,141,210,255,251,90,237,255,184,60,151,205,230,230,230,32,230,230,230,70,230,230,230,229,77,110,61,37,219,172,19,255,144,230,254,55,230,230,230,51,230,230,230,120,230,230,230,178,190,86,228,4,0,40,1,255,51,117,209,176,102,13,127,8,153,216,18,150,204,79,238,81,255,22,198,44];
+const SHARPEN_OUT = [29,26,216,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,106,192,255,255,254,23,81,255,51,198,127,255,255,235,254,255,255,255,10,255,77,152,248,255,255,85,255,255,190,54,155,205,103,119,103,32,160,163,174,70,255,255,255,229,0,0,0,37,244,195,2,255,55,199,227,55,220,215,215,51,240,238,248,120,255,255,255,178,0,0,0,4,0,30,0,255,52,128,244,176,0,0,0,8,163,243,0,150,188,37,245,81,255,0,185,44];
 
 /** tools/icons/colours.py on these pixels (python3, numpy float32): the TS port must agree within 1 (a clear one it leaves) */
 const PY_IN = [[128, 128, 132, 255], [200, 200, 205, 255], [40, 40, 44, 255], [120, 80, 50, 255], [150, 110, 60, 200], [220, 180, 60, 255], [180, 30, 30, 255], [90, 70, 55, 255], [250, 250, 250, 128], [60, 90, 160, 255], [30, 20, 10, 0], [170, 140, 100, 255]];
@@ -27,7 +33,8 @@ export default async (load) => {
   const check = (ok, what) => ok || problems.push(what);
   const P = await load('/src/items/picture.ts');
   const { recolourPixels, rangesOf } = await load('/src/ui/recolour.ts');
-  const { ITEM_PICTURES } = await load('/src/data/itempics.ts');
+  const { sharpen, SHARPEN } = await load('/src/ui/sharpen.ts');
+  const { ITEM_ATLASES, ITEM_PICTURES } = await load('/src/data/itempics.ts');
   const { createItem } = await load('/src/items/gen.ts');
   const { makeMagicWith } = await load('/src/items/make.ts');
   const { D2_BASES } = await load('/src/items/d2/bases.ts');
@@ -145,9 +152,29 @@ export default async (load) => {
   // the quest items' and such with no picture painted keep the drawn icon: count them
   const unpainted = [...can].filter((f) => !ITEM_PICTURES[f]);
   check(unpainted.length === 0, `pictures an item can show that aren't painted: ${unpainted.join(' ')}`);
+  // each listed picture in an atlas that is there, inside it (its size from the WebP header), at whole cells
   const dir = path.join(root, 'public/icons/items');
-  for (const f of Object.keys(ITEM_PICTURES)) for (const n of [`${f}.webp`, `${f}.1x.webp`]) check(fs.existsSync(path.join(dir, n)), `src/data/itempics.ts lists ${f}, but ${n} is missing`);
+  const sizes = {};
+  for (const [name, v] of Object.entries(ITEM_ATLASES)) {
+    const file = path.join(dir, `${name}.webp`);
+    check(/^[0-9a-f]{8}$/.test(v), `atlas ${name}'s version ${v}`);
+    if (!check(fs.existsSync(file), `src/data/itempics.ts lists the atlas ${name}, but public/icons/items/${name}.webp is missing`)) continue;
+    const b = fs.readFileSync(file);
+    sizes[name] = b.toString('ascii', 12, 16) === 'VP8X' ? [1 + b.readUIntLE(24, 3), 1 + b.readUIntLE(27, 3)] : null;
+  }
+  for (const [f, [name, x, y, w, h]] of Object.entries(ITEM_PICTURES)) {
+    const s = sizes[name];
+    check(s && x >= 0 && y >= 0 && x + w <= s[0] && y + h <= s[1] && [x, y, w, h].every((v) => v % 68 === 0) && w && h, `${f}: at ${[x, y, w, h]} in ${name} (${s})`);
+  }
   check(Object.keys(ITEM_PICTURES).length === 400, `${Object.keys(ITEM_PICTURES).length} pictures listed, not 400`);
+
+  // the 1x pictures' sharpen: grade.py sharpen()'s numbers, and PIL's bytes on the same pixels
+  const py = fs.readFileSync(path.join(root, 'tools/icons/box/grade.py'), 'utf8').match(/def sharpen\(img, radius=([\d.]+), percent=(\d+)\)/);
+  check(py && +py[1] === SHARPEN.radius && +py[2] === SHARPEN.percent, `src/ui/sharpen.ts ${JSON.stringify(SHARPEN)}, grade.py sharpen(${py?.slice(1)})`);
+  const patch = new Uint8ClampedArray(SHARPEN_IN);
+  sharpen(patch, 6, 5);
+  const off = [...patch].filter((v, i) => v !== SHARPEN_OUT[i]).length;
+  check(off === 0, `sharpen: ${off} bytes differ from grade.py's (${[...patch].join()})`);
 
   // ── the colours: every one an item can take has a ramp; the remap is colours.py's ──
   const colours = new Set([...D2X_PREFIXES, ...D2X_SUFFIXES, ...D2X_AUTOMAGIC].map((a) => a.color).concat(D2X_UNIQUES.map((u) => u.invColor), D2X_SET_ITEMS.map((s) => s.invColor), D2X_GEMS.map((g) => g.color)).filter(Boolean));
@@ -163,5 +190,5 @@ export default async (load) => {
   }
 
   if (problems.length) throw new Error(problems.join('\n'));
-  console.log(`  tiers share a picture; own and column pictures for uniques and set items; colours by suffix, prefix, invtransform, gem; ${kept.length} variants kept through 2 reloads; ${can.size} pictures an item can show, all painted; ${colours.size} colours, the remap within 1 of colours.py`);
+  console.log(`  tiers share a picture; own and column pictures for uniques and set items; colours by suffix, prefix, invtransform, gem; ${kept.length} variants kept through 2 reloads; ${can.size} pictures an item can show, all painted, in ${Object.keys(ITEM_ATLASES).length} atlases; ${colours.size} colours, the remap within 1 of colours.py; the 1x sharpen grade.py's to the byte`);
 };

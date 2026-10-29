@@ -17,15 +17,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invaar.webp",
-    "sha1": "608e2bbd6279"
-   },
-   "1x": {
-    "file": "public/icons/items/invaar.1x.webp",
-    "sha1": "13970c5815fe"
-   }
+  "atlas": {
+   "file": "public/icons/items/armour.webp",
+   "rect": [
+    0,
+    0,
+    136,
+    204
+   ],
+   "sha1": "608e2bbd6279"
   }
  },
  "invbrs": {
@@ -46,15 +46,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invbrs.webp",
-    "sha1": "fd7d7cd3b943"
-   },
-   "1x": {
-    "file": "public/icons/items/invbrs.1x.webp",
-    "sha1": "682a10cab225"
-   }
+  "atlas": {
+   "file": "public/icons/items/armour.webp",
+   "rect": [
+    136,
+    0,
+    136,
+    204
+   ],
+   "sha1": "fd7d7cd3b943"
   }
  },
  "invchn": {
@@ -75,15 +75,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invchn.webp",
-    "sha1": "3369b75e4e53"
-   },
-   "1x": {
-    "file": "public/icons/items/invchn.1x.webp",
-    "sha1": "0652142a1629"
-   }
+  "atlas": {
+   "file": "public/icons/items/armour.webp",
+   "rect": [
+    272,
+    0,
+    136,
+    204
+   ],
+   "sha1": "3369b75e4e53"
   }
  },
  "invfld": {
@@ -104,15 +104,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invfld.webp",
-    "sha1": "c7085446b3e2"
-   },
-   "1x": {
-    "file": "public/icons/items/invfld.1x.webp",
-    "sha1": "3c559a305992"
-   }
+  "atlas": {
+   "file": "public/icons/items/armour.webp",
+   "rect": [
+    408,
+    0,
+    136,
+    204
+   ],
+   "sha1": "c7085446b3e2"
   }
  },
  "invful": {
@@ -133,15 +133,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invful.webp",
-    "sha1": "c5a5e0408a45"
-   },
-   "1x": {
-    "file": "public/icons/items/invful.1x.webp",
-    "sha1": "f310939df45e"
-   }
+  "atlas": {
+   "file": "public/icons/items/armour.webp",
+   "rect": [
+    544,
+    0,
+    136,
+    204
+   ],
+   "sha1": "c5a5e0408a45"
   }
  },
  "invgth": {
@@ -162,15 +162,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invgth.webp",
-    "sha1": "a1cbaaba8fc0"
-   },
-   "1x": {
-    "file": "public/icons/items/invgth.1x.webp",
-    "sha1": "eebfe1671a1e"
-   }
+  "atlas": {
+   "file": "public/icons/items/armour.webp",
+   "rect": [
+    0,
+    204,
+    136,
+    204
+   ],
+   "sha1": "a1cbaaba8fc0"
   }
  },
  "invhbl": {
@@ -191,15 +191,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invhbl.webp",
-    "sha1": "90718cd4f726"
-   },
-   "1x": {
-    "file": "public/icons/items/invhbl.1x.webp",
-    "sha1": "0fe77b8ac5f0"
-   }
+  "atlas": {
+   "file": "public/icons/items/gear.webp",
+   "rect": [
+    0,
+    272,
+    136,
+    68
+   ],
+   "sha1": "90718cd4f726"
   }
  },
  "invhbt": {
@@ -220,15 +220,15 @@
    "parts": 2,
    "shadow": true
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invhbt.webp",
-    "sha1": "3da56d297fbc"
-   },
-   "1x": {
-    "file": "public/icons/items/invhbt.1x.webp",
-    "sha1": "aa853c92f8dc"
-   }
+  "atlas": {
+   "file": "public/icons/items/gear.webp",
+   "rect": [
+    0,
+    0,
+    136,
+    136
+   ],
+   "sha1": "3da56d297fbc"
   }
  },
  "invhgl": {
@@ -249,15 +249,15 @@
    "parts": 2,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invhgl.webp",
-    "sha1": "89c77a33a2cb"
-   },
-   "1x": {
-    "file": "public/icons/items/invhgl.1x.webp",
-    "sha1": "ca89e1b1cc1c"
-   }
+  "atlas": {
+   "file": "public/icons/items/gear.webp",
+   "rect": [
+    136,
+    0,
+    136,
+    136
+   ],
+   "sha1": "89c77a33a2cb"
   }
  },
  "invhla": {
@@ -278,15 +278,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invhla.webp",
-    "sha1": "7737bfa703fe"
-   },
-   "1x": {
-    "file": "public/icons/items/invhla.1x.webp",
-    "sha1": "31f1ca3f1341"
-   }
+  "atlas": {
+   "file": "public/icons/items/armour.webp",
+   "rect": [
+    136,
+    204,
+    136,
+    204
+   ],
+   "sha1": "7737bfa703fe"
   }
  },
  "invlbl": {
@@ -307,15 +307,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invlbl.webp",
-    "sha1": "06eb69d4c3a9"
-   },
-   "1x": {
-    "file": "public/icons/items/invlbl.1x.webp",
-    "sha1": "37296fc3493b"
-   }
+  "atlas": {
+   "file": "public/icons/items/gear.webp",
+   "rect": [
+    136,
+    272,
+    136,
+    68
+   ],
+   "sha1": "06eb69d4c3a9"
   }
  },
  "invlbt": {
@@ -336,15 +336,15 @@
    "parts": 2,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invlbt.webp",
-    "sha1": "991f2f16132b"
-   },
-   "1x": {
-    "file": "public/icons/items/invlbt.1x.webp",
-    "sha1": "dd2cde37f5c0"
-   }
+  "atlas": {
+   "file": "public/icons/items/gear.webp",
+   "rect": [
+    272,
+    0,
+    136,
+    136
+   ],
+   "sha1": "991f2f16132b"
   }
  },
  "invlea": {
@@ -365,15 +365,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invlea.webp",
-    "sha1": "24992f1a2457"
-   },
-   "1x": {
-    "file": "public/icons/items/invlea.1x.webp",
-    "sha1": "4357e20b43de"
-   }
+  "atlas": {
+   "file": "public/icons/items/armour.webp",
+   "rect": [
+    272,
+    204,
+    136,
+    204
+   ],
+   "sha1": "24992f1a2457"
   }
  },
  "invlgl": {
@@ -394,15 +394,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invlgl.webp",
-    "sha1": "77fb1bb42b76"
-   },
-   "1x": {
-    "file": "public/icons/items/invlgl.1x.webp",
-    "sha1": "fe49ba08f7f3"
-   }
+  "atlas": {
+   "file": "public/icons/items/gear.webp",
+   "rect": [
+    408,
+    0,
+    136,
+    136
+   ],
+   "sha1": "77fb1bb42b76"
   }
  },
  "invltp": {
@@ -423,15 +423,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invltp.webp",
-    "sha1": "4364e67e97fd"
-   },
-   "1x": {
-    "file": "public/icons/items/invltp.1x.webp",
-    "sha1": "f1794f6b5d51"
-   }
+  "atlas": {
+   "file": "public/icons/items/armour.webp",
+   "rect": [
+    408,
+    204,
+    136,
+    204
+   ],
+   "sha1": "4364e67e97fd"
   }
  },
  "invmbl": {
@@ -452,15 +452,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invmbl.webp",
-    "sha1": "af43fea1a9bd"
-   },
-   "1x": {
-    "file": "public/icons/items/invmbl.1x.webp",
-    "sha1": "5c2bd8bc6c32"
-   }
+  "atlas": {
+   "file": "public/icons/items/gear.webp",
+   "rect": [
+    272,
+    272,
+    136,
+    68
+   ],
+   "sha1": "af43fea1a9bd"
   }
  },
  "invmbt": {
@@ -481,15 +481,15 @@
    "parts": 2,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invmbt.webp",
-    "sha1": "acdef4326a76"
-   },
-   "1x": {
-    "file": "public/icons/items/invmbt.1x.webp",
-    "sha1": "cea426ec084f"
-   }
+  "atlas": {
+   "file": "public/icons/items/gear.webp",
+   "rect": [
+    544,
+    0,
+    136,
+    136
+   ],
+   "sha1": "acdef4326a76"
   }
  },
  "invmgl": {
@@ -510,15 +510,15 @@
    "parts": 2,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invmgl.webp",
-    "sha1": "4f9409ec552b"
-   },
-   "1x": {
-    "file": "public/icons/items/invmgl.1x.webp",
-    "sha1": "1da50c15ee10"
-   }
+  "atlas": {
+   "file": "public/icons/items/gear.webp",
+   "rect": [
+    0,
+    136,
+    136,
+    136
+   ],
+   "sha1": "4f9409ec552b"
   }
  },
  "invplt": {
@@ -539,15 +539,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invplt.webp",
-    "sha1": "f82d187bb151"
-   },
-   "1x": {
-    "file": "public/icons/items/invplt.1x.webp",
-    "sha1": "87d6e82d2a96"
-   }
+  "atlas": {
+   "file": "public/icons/items/armour.webp",
+   "rect": [
+    544,
+    204,
+    136,
+    204
+   ],
+   "sha1": "f82d187bb151"
   }
  },
  "invqlt": {
@@ -568,15 +568,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invqlt.webp",
-    "sha1": "f06c19821459"
-   },
-   "1x": {
-    "file": "public/icons/items/invqlt.1x.webp",
-    "sha1": "dd70e6c929e1"
-   }
+  "atlas": {
+   "file": "public/icons/items/armour.webp",
+   "rect": [
+    0,
+    408,
+    136,
+    204
+   ],
+   "sha1": "f06c19821459"
   }
  },
  "invrng": {
@@ -597,15 +597,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invrng.webp",
-    "sha1": "e8fa40fb3f5c"
-   },
-   "1x": {
-    "file": "public/icons/items/invrng.1x.webp",
-    "sha1": "583da8adb3f0"
-   }
+  "atlas": {
+   "file": "public/icons/items/armour.webp",
+   "rect": [
+    136,
+    408,
+    136,
+    204
+   ],
+   "sha1": "e8fa40fb3f5c"
   }
  },
  "invscl": {
@@ -626,15 +626,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invscl.webp",
-    "sha1": "7e866ca96c9b"
-   },
-   "1x": {
-    "file": "public/icons/items/invscl.1x.webp",
-    "sha1": "99af3f4b2b22"
-   }
+  "atlas": {
+   "file": "public/icons/items/armour.webp",
+   "rect": [
+    272,
+    408,
+    136,
+    204
+   ],
+   "sha1": "7e866ca96c9b"
   }
  },
  "invspl": {
@@ -655,15 +655,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invspl.webp",
-    "sha1": "0ee181b4d45c"
-   },
-   "1x": {
-    "file": "public/icons/items/invspl.1x.webp",
-    "sha1": "36e841035e1e"
-   }
+  "atlas": {
+   "file": "public/icons/items/armour.webp",
+   "rect": [
+    408,
+    408,
+    136,
+    204
+   ],
+   "sha1": "0ee181b4d45c"
   }
  },
  "invstu": {
@@ -684,15 +684,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invstu.webp",
-    "sha1": "a7bc2b552cfe"
-   },
-   "1x": {
-    "file": "public/icons/items/invstu.1x.webp",
-    "sha1": "d407507653c4"
-   }
+  "atlas": {
+   "file": "public/icons/items/armour.webp",
+   "rect": [
+    544,
+    408,
+    136,
+    204
+   ],
+   "sha1": "a7bc2b552cfe"
   }
  },
  "invtbl": {
@@ -713,15 +713,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invtbl.webp",
-    "sha1": "7a37e3d72d32"
-   },
-   "1x": {
-    "file": "public/icons/items/invtbl.1x.webp",
-    "sha1": "28917d7421e1"
-   }
+  "atlas": {
+   "file": "public/icons/items/gear.webp",
+   "rect": [
+    408,
+    272,
+    136,
+    68
+   ],
+   "sha1": "7a37e3d72d32"
   }
  },
  "invtbt": {
@@ -742,15 +742,15 @@
    "parts": 2,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invtbt.webp",
-    "sha1": "11de7e05069b"
-   },
-   "1x": {
-    "file": "public/icons/items/invtbt.1x.webp",
-    "sha1": "27d174252fad"
-   }
+  "atlas": {
+   "file": "public/icons/items/gear.webp",
+   "rect": [
+    136,
+    136,
+    136,
+    136
+   ],
+   "sha1": "11de7e05069b"
   }
  },
  "invtgl": {
@@ -771,15 +771,15 @@
    "parts": 2,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invtgl.webp",
-    "sha1": "beaf94988775"
-   },
-   "1x": {
-    "file": "public/icons/items/invtgl.1x.webp",
-    "sha1": "19daf9e8eb62"
-   }
+  "atlas": {
+   "file": "public/icons/items/gear.webp",
+   "rect": [
+    272,
+    136,
+    136,
+    136
+   ],
+   "sha1": "beaf94988775"
   }
  },
  "invvbl": {
@@ -800,15 +800,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invvbl.webp",
-    "sha1": "d8d702b3fff9"
-   },
-   "1x": {
-    "file": "public/icons/items/invvbl.1x.webp",
-    "sha1": "ab5f8419ba2c"
-   }
+  "atlas": {
+   "file": "public/icons/items/gear.webp",
+   "rect": [
+    544,
+    272,
+    136,
+    68
+   ],
+   "sha1": "d8d702b3fff9"
   }
  },
  "invvbt": {
@@ -829,15 +829,15 @@
    "parts": 1,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invvbt.webp",
-    "sha1": "228e9481d9f3"
-   },
-   "1x": {
-    "file": "public/icons/items/invvbt.1x.webp",
-    "sha1": "c5c43413abcd"
-   }
+  "atlas": {
+   "file": "public/icons/items/gear.webp",
+   "rect": [
+    408,
+    136,
+    136,
+    136
+   ],
+   "sha1": "228e9481d9f3"
   }
  },
  "invvgl": {
@@ -858,15 +858,15 @@
    "parts": 2,
    "shadow": false
   },
-  "files": {
-   "2x": {
-    "file": "public/icons/items/invvgl.webp",
-    "sha1": "d340bd490477"
-   },
-   "1x": {
-    "file": "public/icons/items/invvgl.1x.webp",
-    "sha1": "51f3a3009478"
-   }
+  "atlas": {
+   "file": "public/icons/items/gear.webp",
+   "rect": [
+    544,
+    136,
+    136,
+    136
+   ],
+   "sha1": "d340bd490477"
   }
  }
 }

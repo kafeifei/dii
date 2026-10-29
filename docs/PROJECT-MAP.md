@@ -36,7 +36,7 @@
 | `src/render/` | 模型（角色各一个文件，道具按用处合成几个包，按需加载）、动画、地面分块、灯光、昼夜、特效 | `renderer.ts`、`assets.ts`（按需加载模型和道具包）、`needs.ts`（什么要哪些模型）、`models.ts`、`specs.ts`、`chunks.ts` |
 | `src/ui/` | 面板、HUD、标题页、物品图标（画好的图加原版换色） | `ui.ts`、`inventory.ts`、`title.ts`、`icons.ts`、`itempics.ts` |
 | `src/audio/` | 音效、语音、音乐（录好的文件；缺失时退回代码合成） | `sfx.ts`、`music.ts`、`sounds.ts`、`files.ts`（生成的） |
-| `tools/` | 导入原版数据、生成美术和声音、无头测试、bot | `d2-import.mjs`、`ai-icons.mjs`、`ai-audio.mjs`、`play.mjs`、`bot.mjs` |
+| `tools/` | 导入原版数据、生成美术和声音、无头测试、bot、构建后的体积检查 | `d2-import.mjs`、`ai-icons.mjs`、`ai-audio.mjs`、`play.mjs`、`bot.mjs`、`check-dist.mjs` |
 
 ## 存档：存什么、什么时候存、谁能写
 
@@ -88,14 +88,15 @@
 
 ## 测试
 
-**单元测试** `npm test`（37 个文件，约 13 秒）：
+**单元测试** `npm test`（38 个文件，约 13 秒）：
 - 原版公式和数据：`d2-*.test.mjs`、`d2treasure`、`d2affixes`、`d2quality`、`d2legendary`；
 - 物品和交易：`items`、`tomes`、`stash`、`ctrlclick`、`services`；
 - 存档迁移：`save`；
 - 地图：`areas`、`levelgen`、`overworld`、`west`、`seamless`、`seams`；
 - 怪物：`spawn`、`d2-population`、`d2-monsters`、`d2-ai`；
 - 模型：`models`（清单和 `public/models` 的角色文件、`packs/` 下的道具包一一对上，包里每张图只存一份，地图摆的、手里拿的都在清单里）、`monster-models`、`needs`（标题页等的核心模型包括营地的一切、主角能拿的每件武器、每种掉落和尸体；各个造东西的函数要的模型都在需求里；去下一个地方前预取的就是那里要的）、`assets`（假网络上：`NOW` 插在后台前面、它在下时别的不开始，失败再试一次后放手、不让人一直等，贴图先下时后台让路：还差一半以上的停下、不算失败、放开后从头下，快下完的接着下）；
-- 任务、图标、声音：`quests`、`icons`、`itempics`、`audio`、`sfx`、`ai-audio`。
+- 任务、图标、声音：`quests`、`icons`、`itempics`、`audio`、`sfx`、`ai-audio`；
+- 构建：`check-dist`（`dist/` 怎么清点，体积上限卡在哪，`npm run build` 接着 `vite build` 跑它）。
 
 **场景测试**（无头浏览器，`node tools/play.mjs tools/scenarios/<名>.mjs --url <地址> --out <目录>`）。带 `?dev` 时 `play.mjs` 先等全部模型下完、替身全部换掉（`assets.ensureAll()`、`renderer.standInCount()`）再开始，和以前模型一次全部加载时一样；`bench.mjs` 也这样等。
 
@@ -134,6 +135,8 @@
 - **内部站点**：发布方法、地址和登录都不在仓库里，用本机的内部站点 skill 发布，记下它报的版本。
   - 平台限制：最多 5000 个文件、总共 50 MB。2026-10-28 我们是 1117 个文件、43.2 MB；道具打包后（2026-10-29）是 987 个文件、39.5 MB，资源压缩还在做。
 - `dist/` 只带游戏显示得出来的模型：调试用的（`?aihero`、`?knight`，见 `src/render/dev-models.ts`）只在 `npm run dev` 里有，构建时 `vite.config.ts` 去掉；用不到的列在 `tools/build-models.mjs` 的 `UNUSED`，不构建（2026-10-28 去掉这 8 个后是 1109 个文件、39.6 MB）。道具合成 `public/models/packs/` 下的 7 个包，模型从 154 个文件减到 32 个（2026-10-29 是 987 个文件、39.5 MB）。
+- **体积上限**：`npm run build` 在 `vite build` 之后跑 `tools/check-dist.mjs`，按顶层目录列出 `dist/` 的文件数和大小；超过 2000 个文件、总共 40 MB，或者有一个文件超过 25 MB，就说出超在哪（最大的几个目录，或那个文件）并让构建失败。`vercel build` 跑的也是 `npm run build`，两边发布都要过这一关。内部站点的上限是 5000 个文件、50 MB，单个文件 25 MB（Cloudflare 的限制）；我们留出余量，新加的大资源在还来得及压缩、打包时就会被发现。MB 都按 1024×1024 字节算。
+  - 2026-10-29：物品图拼成图集后是 336 个文件、42.2 MB，`npm run build` 因此失败；模型那条线的第一步（调试模型不进 `dist/`、5 个用不到的不构建）合进来后算下来是 328 个、38.6 MB，能过。
 
 ## 并行开发怎么做
 

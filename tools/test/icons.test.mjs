@@ -2,11 +2,18 @@
 // line's tiers; variants for rings, amulets, jewels and charms; a unique's or set item's own file,
 // else its base's column, else its base's picture, a fixed file overriding the variant roll); the
 // prompt is the approved style's, built as the samples built it; the descriptions and picks name
-// pictures and guides that exist; every file in public/icons/items/ is a pick's, recorded in
-// tools/icons/made/, at exactly w×68 by h×68 px (2x) or w×34 by h×34 (1x); and the credits name the models.
+// pictures and guides that exist; public/icons/items/ holds the atlases and nothing else, each the
+// one recorded in tools/icons/made/atlases.json, every pick recorded in tools/icons/made/ and placed
+// in the atlas of its kind (tools/icons/atlas.mjs) at a rect of exactly its cells (w×68 by h×68 px),
+// inside the atlas and apart from the others, each rect showing a picture inside its clear margin and
+// nothing showing outside the rects; the packer packs, splits what won't fit and places each once;
+// and the credits name the models.
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import sharp from 'sharp';
+import { CELL, MAX_SIDE, atlasOf, pack } from '../icons/atlas.mjs';
 import { buildPictures, listOf, pictureOf } from '../icons/pictures.mjs';
 import { FRAME, GUIDE_PREFIX, MATERIAL, STYLE, canvasFor, promptFor } from '../icons/style.mjs';
 
@@ -82,22 +89,79 @@ export default async () => {
     }
   }
 
-  // public/icons/items: a pick's files, recorded, at the cells' exact size
-  const made = Object.assign({}, ...readDir('made').map(([, m]) => m));
+  // the packer: a few pictures where they always go; a kind too big for one atlas split in its order,
+  // every part within MAX_SIDE, every picture placed once, at its cells, apart from the others
+  check(JSON.stringify(pack('t', [{ id: 'a', w: 2, h: 3 }, { id: 'b', w: 1, h: 1 }, { id: 'c', w: 1, h: 4 }, { id: 'd', w: 2, h: 2 }])) === '[{"name":"t","w":204,"h":340,"rects":{"c":[0,0,68,272],"a":[68,0,136,204],"d":[68,204,136,136],"b":[0,272,68,68]}}]', 'pack() moved four pictures');
+  const many = Array.from({ length: 1300 }, (_, i) => ({ id: `p${i}`, w: 1 + (i % 2), h: 1 + (i % 4) }));
+  const parts = pack('big', many);
+  const placed = parts.flatMap((a) => Object.keys(a.rects));
+  check(parts.length > 1 && parts.every((a, i) => a.name === `big-${i + 1}` && a.w <= MAX_SIDE && a.h <= MAX_SIDE), `1300 pictures packed as ${parts.map((a) => `${a.name} ${a.w}x${a.h}`).join(', ')}`);
+  check(placed.length === many.length && new Set(placed).size === many.length, `1300 pictures placed ${placed.length} times, ${new Set(placed).size} of them`);
+  for (const a of parts) {
+    const grid = new Uint8Array((a.w / CELL) * (a.h / CELL));
+    for (const [id, [x, y, w, h]] of Object.entries(a.rects)) {
+      const it = many[+id.slice(1)];
+      check(w === it.w * CELL && h === it.h * CELL && x + w <= a.w && y + h <= a.h, `${a.name} ${id}: ${[x, y, w, h]}`);
+      for (let cy = y / CELL; cy < (y + h) / CELL; cy++) for (let cx = x / CELL; cx < (x + w) / CELL; cx++) check(!grid[cy * (a.w / CELL) + cx]++, `${a.name}: ${id} overlaps another`);
+    }
+  }
+
+  // public/icons/items: the atlases, each the one recorded; every pick in the atlas of its kind, at its cells' size, apart
+  const made = Object.assign({}, ...readDir('made').filter(([f]) => f !== 'atlases.json').map(([, m]) => m));
+  const atlases = fs.existsSync(dir('made/atlases.json')) ? JSON.parse(fs.readFileSync(dir('made/atlases.json'), 'utf8')) : {};
   const out = path.join(root, 'public/icons/items');
-  const files = fs.existsSync(out) ? fs.readdirSync(out).filter((f) => f.endsWith('.webp')) : [];
-  for (const f of files) {
-    const [id, scale] = f.replace(/\.webp$/, '').split('.');
+  const files = fs.existsSync(out) ? fs.readdirSync(out) : [];
+  for (const f of files) check(f.endsWith('.webp') && atlases[f.slice(0, -5)], `public/icons/items/${f}: not an atlas of made/atlases.json`);
+  const sha1 = (file) => crypto.createHash('sha1').update(fs.readFileSync(file)).digest('hex').slice(0, 12);
+  const inAtlas = {};
+  for (const id of Object.keys(picks)) {
     const p = byId.get(id);
     const m = made[id];
-    check(p && picks[id] && m, `public/icons/items/${f}: no pick or no record`);
-    if (!p || !m) continue;
+    if (!check(p && m?.atlas, `${id} is picked but in no atlas: node tools/ai-icons.mjs`)) continue;
     check(m.run === picks[id].run && m.seed === picks[id].seed, `${id}: made from run ${m.run} s${m.seed}, picked run ${picks[id].run} s${picks[id].seed}`);
-    const cell = scale === '1x' ? 34 : 68;
-    const size = webpSize(path.join(out, f));
-    check(size?.[0] === p.w * cell && size?.[1] === p.h * cell, `${f}: ${size} px, not ${p.w * cell}x${p.h * cell}`);
+    const name = path.basename(m.atlas.file, '.webp');
+    check(name === atlasOf(p) || name.startsWith(`${atlasOf(p)}-`), `${id} is in ${name}, not in ${atlasOf(p)}`);
+    const [x, y, w, h] = m.atlas.rect;
+    check(w === p.w * CELL && h === p.h * CELL && x % CELL === 0 && y % CELL === 0, `${id}: at ${m.atlas.rect} in ${name}, not its ${p.w}x${p.h} cells`);
+    (inAtlas[name] ??= []).push([id, m.atlas.rect]);
   }
-  for (const id of Object.keys(picks)) for (const f of [`${id}.webp`, `${id}.1x.webp`]) check(files.includes(f), `${id} is picked but ${f} is missing: node tools/ai-icons.mjs`);
+  for (const [id, m] of Object.entries(made)) check(picks[id] || !m.atlas, `${id} is in an atlas but not picked`);
+  for (const [name, a] of Object.entries(atlases)) {
+    const file = path.join(out, `${name}.webp`);
+    if (!check(fs.existsSync(file), `made/atlases.json has ${name}, but public/icons/items/${name}.webp is missing: node tools/ai-icons.mjs`)) continue;
+    check(sha1(file) === a.sha1, `public/icons/items/${name}.webp isn't the one made/atlases.json records`);
+    const size = webpSize(file);
+    check(size?.[0] === a.w && size?.[1] === a.h && a.w <= MAX_SIDE && a.h <= MAX_SIDE, `${name}.webp: ${size} px, recorded ${a.w}x${a.h}`);
+    const rects = inAtlas[name] ?? [];
+    check(rects.length === a.pictures && rects.length > 0, `${name}: ${rects.length} pictures placed in it, ${a.pictures} recorded`);
+    // what it shows: a picture in each rect, clear 2 px in from its edge (the export's margin is 4), and nothing outside the rects
+    const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    if (info.width !== a.w || info.height !== a.h) continue;
+    const covered = new Uint8Array(a.w * a.h);
+    for (const [id, [x, y, w, h]] of rects) {
+      let ring = 0;
+      let solid = 0;
+      for (let row = 0; row < h; row++) {
+        for (let col = 0; col < w; col++) {
+          const k = (y + row) * a.w + x + col;
+          if (x + w > a.w || y + h > a.h) break;
+          if (covered[k]++) {
+            check(false, `${name}: ${id} overlaps another picture`);
+            row = h;
+            break;
+          }
+          const al = data[k * 4 + 3];
+          if (row < 2 || col < 2 || row >= h - 2 || col >= w - 2) ring += al;
+          else if (al > 200) solid++;
+        }
+      }
+      check(x + w <= a.w && y + h <= a.h, `${name}: ${id} at ${[x, y, w, h]} is outside its ${a.w}x${a.h}`);
+      check(ring === 0 && solid > w * h * 0.03, `${name}: ${id}'s rect isn't a picture (margin alpha ${ring}, ${solid} solid px)`);
+    }
+    let stray = 0;
+    for (let k = 0; k < covered.length; k++) if (!covered[k] && data[k * 4 + 3]) stray++;
+    check(stray === 0, `${name}: ${stray} px show outside its pictures`);
+  }
   // the credits name every model and licence the records do (ai-icons.mjs writes them from the records)
   const credits = path.join(root, 'public/icons/CREDITS.md');
   if (files.length) {
@@ -106,5 +170,6 @@ export default async () => {
   }
 
   if (problems.length) throw new Error(problems.join('\n'));
-  console.log(`  ${pictures.length} pictures (${counts.pictures.base} base, ${counts.pictures.variant} variants, ${counts.pictures.unique} unique, ${counts.pictures.set} set); ${Object.keys(picks).length} picked, ${files.length} files`);
+  const kb = Object.values(atlases).reduce((s, a) => s + a.bytes, 0) / 1024;
+  console.log(`  ${pictures.length} pictures (${counts.pictures.base} base, ${counts.pictures.variant} variants, ${counts.pictures.unique} unique, ${counts.pictures.set} set); ${Object.keys(picks).length} picked, in ${files.length} atlases (${kb.toFixed(0)} KB), each picture where the map says`);
 };

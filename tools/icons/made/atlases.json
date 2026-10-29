@@ -1,0 +1,306 @@
+{
+ "armour": {
+  "file": "public/icons/items/armour.webp",
+  "w": 680,
+  "h": 612,
+  "pictures": 15,
+  "bytes": 133588,
+  "sha1": "ce7556048309",
+  "webp": {
+   "quality": 92,
+   "alphaQuality": 100,
+   "effort": 6
+  },
+  "worstPsnr": 47.4,
+  "worstPicture": "invscl",
+  "inputs": "c55a930cb304"
+ },
+ "axes": {
+  "file": "public/icons/items/axes.webp",
+  "w": 544,
+  "h": 612,
+  "pictures": 12,
+  "bytes": 62496,
+  "sha1": "5f216c98fd4d",
+  "webp": {
+   "quality": 92,
+   "alphaQuality": 100,
+   "effort": 6
+  },
+  "worstPsnr": 49.4,
+  "worstPicture": "invtax",
+  "inputs": "f1c043f5d865"
+ },
+ "bows": {
+  "file": "public/icons/items/bows.webp",
+  "w": 408,
+  "h": 1224,
+  "pictures": 22,
+  "bytes": 111734,
+  "sha1": "839b78b93a5d",
+  "webp": {
+   "quality": 92,
+   "alphaQuality": 100,
+   "effort": 6
+  },
+  "worstPsnr": 44.1,
+  "worstPicture": "invops",
+  "inputs": "ca1beef84e4b"
+ },
+ "gear": {
+  "file": "public/icons/items/gear.webp",
+  "w": 680,
+  "h": 340,
+  "pictures": 15,
+  "bytes": 97436,
+  "sha1": "172a90efd921",
+  "webp": {
+   "quality": 92,
+   "alphaQuality": 100,
+   "effort": 6
+  },
+  "worstPsnr": 46.5,
+  "worstPicture": "invtgl",
+  "inputs": "b211f97bebf0"
+ },
+ "gems": {
+  "file": "public/icons/items/gems.webp",
+  "w": 340,
+  "h": 476,
+  "pictures": 35,
+  "bytes": 47426,
+  "sha1": "8bfd07bbc7b0",
+  "webp": {
+   "quality": 92,
+   "alphaQuality": 100,
+   "effort": 6
+  },
+  "worstPsnr": 44.4,
+  "worstPicture": "invgswd",
+  "inputs": "363e2b5f0bd3"
+ },
+ "helms": {
+  "file": "public/icons/items/helms.webp",
+  "w": 408,
+  "h": 1224,
+  "pictures": 27,
+  "bytes": 167406,
+  "sha1": "bd9e72fa263a",
+  "webp": {
+   "quality": 92,
+   "alphaQuality": 100,
+   "effort": 6
+  },
+  "worstPsnr": 47.4,
+  "worstPicture": "invdr2",
+  "inputs": "a6903cb1e3ae"
+ },
+ "jewellery": {
+  "file": "public/icons/items/jewellery.webp",
+  "w": 272,
+  "h": 544,
+  "pictures": 23,
+  "bytes": 56302,
+  "sha1": "0ec2a7e18869",
+  "webp": {
+   "quality": 92,
+   "alphaQuality": 100,
+   "effort": 6
+  },
+  "worstPsnr": 45.4,
+  "worstPicture": "invch8",
+  "inputs": "481382f17f45"
+ },
+ "maces": {
+  "file": "public/icons/items/maces.webp",
+  "w": 476,
+  "h": 612,
+  "pictures": 13,
+  "bytes": 72780,
+  "sha1": "22003384bef5",
+  "webp": {
+   "quality": 92,
+   "alphaQuality": 100,
+   "effort": 6
+  },
+  "worstPsnr": 48.7,
+  "worstPicture": "invmst",
+  "inputs": "942d2a1f11ac"
+ },
+ "potions": {
+  "file": "public/icons/items/potions.webp",
+  "w": 204,
+  "h": 612,
+  "pictures": 24,
+  "bytes": 38880,
+  "sha1": "cd30a0e745eb",
+  "webp": {
+   "quality": 92,
+   "alphaQuality": 100,
+   "effort": 6
+  },
+  "worstPsnr": 45.8,
+  "worstPicture": "invmp4",
+  "inputs": "273038536760"
+ },
+ "quest": {
+  "file": "public/icons/items/quest.webp",
+  "w": 272,
+  "h": 748,
+  "pictures": 26,
+  "bytes": 61298,
+  "sha1": "45e7cfb37374",
+  "webp": {
+   "quality": 92,
+   "alphaQuality": 100,
+   "effort": 6
+  },
+  "worstPsnr": 46.7,
+  "worstPicture": "invjbi",
+  "inputs": "3f45abc222e5"
+ },
+ "runes": {
+  "file": "public/icons/items/runes.webp",
+  "w": 204,
+  "h": 748,
+  "pictures": 33,
+  "bytes": 45766,
+  "sha1": "8e2cec9c2986",
+  "webp": {
+   "quality": 92,
+   "alphaQuality": 100,
+   "effort": 6
+  },
+  "worstPsnr": 46.4,
+  "worstPicture": "invreld",
+  "inputs": "caaa0f4caf91"
+ },
+ "sets": {
+  "file": "public/icons/items/sets.webp",
+  "w": 272,
+  "h": 408,
+  "pictures": 5,
+  "bytes": 38742,
+  "sha1": "85cb0825a661",
+  "webp": {
+   "quality": 92,
+   "alphaQuality": 100,
+   "effort": 6
+  },
+  "worstPsnr": 47.2,
+  "worstPicture": "invxrss",
+  "inputs": "444f3548341d"
+ },
+ "shields": {
+  "file": "public/icons/items/shields.webp",
+  "w": 272,
+  "h": 1292,
+  "pictures": 13,
+  "bytes": 100754,
+  "sha1": "e42c5a5cb8b2",
+  "webp": {
+   "quality": 92,
+   "alphaQuality": 100,
+   "effort": 6
+  },
+  "worstPsnr": 46.4,
+  "worstPicture": "invsml",
+  "inputs": "04d98526e4de"
+ },
+ "spears": {
+  "file": "public/icons/items/spears.webp",
+  "w": 544,
+  "h": 1088,
+  "pictures": 19,
+  "bytes": 73198,
+  "sha1": "8113ced44c09",
+  "webp": {
+   "quality": 92,
+   "alphaQuality": 100,
+   "effort": 6
+  },
+  "worstPsnr": 50.4,
+  "worstPicture": "invjav",
+  "inputs": "644498d1cc90"
+ },
+ "staves": {
+  "file": "public/icons/items/staves.webp",
+  "w": 476,
+  "h": 612,
+  "pictures": 19,
+  "bytes": 72864,
+  "sha1": "8f34101ad341",
+  "webp": {
+   "quality": 92,
+   "alphaQuality": 100,
+   "effort": 6
+  },
+  "worstPsnr": 46.5,
+  "worstPicture": "invob2",
+  "inputs": "d28445031d62"
+ },
+ "swords": {
+  "file": "public/icons/items/swords.webp",
+  "w": 748,
+  "h": 612,
+  "pictures": 26,
+  "bytes": 99516,
+  "sha1": "5b19925ac547",
+  "webp": {
+   "quality": 92,
+   "alphaQuality": 100,
+   "effort": 6
+  },
+  "worstPsnr": 48.7,
+  "worstPicture": "invaxf",
+  "inputs": "b4ae9fc11506"
+ },
+ "uniques-armour": {
+  "file": "public/icons/items/uniques-armour.webp",
+  "w": 816,
+  "h": 680,
+  "pictures": 23,
+  "bytes": 183594,
+  "sha1": "e4f47da2480f",
+  "webp": {
+   "quality": 92,
+   "alphaQuality": 100,
+   "effort": 6
+  },
+  "worstPsnr": 45.6,
+  "worstPicture": "invxrgu",
+  "inputs": "92c188fc4d84"
+ },
+ "uniques-blades": {
+  "file": "public/icons/items/uniques-blades.webp",
+  "w": 612,
+  "h": 1156,
+  "pictures": 30,
+  "bytes": 172642,
+  "sha1": "d5b3a0c17890",
+  "webp": {
+   "quality": 92,
+   "alphaQuality": 100,
+   "effort": 6
+  },
+  "worstPsnr": 48,
+  "worstPicture": "invmstu",
+  "inputs": "25cc6be58749"
+ },
+ "uniques-long": {
+  "file": "public/icons/items/uniques-long.webp",
+  "w": 612,
+  "h": 952,
+  "pictures": 20,
+  "bytes": 139540,
+  "sha1": "feb72489e122",
+  "webp": {
+   "quality": 92,
+   "alphaQuality": 100,
+   "effort": 6
+  },
+  "worstPsnr": 50.6,
+  "worstPicture": "invbwnu",
+  "inputs": "12a7cb04ea0b"
+ }
+}
