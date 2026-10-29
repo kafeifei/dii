@@ -3,7 +3,7 @@
 // of its theme; the layouts' waypoints and services become the objects they did. Then
 // Game.teleportWithin on the overworld, across the camp's gate: the hero moves, the view is told to
 // jump, a new area is announced, nothing is rebuilt. Then what the tools go by: areas by key and in
-// order (by levels.txt Id), M2a's four dungeons (defined, not built), the connection graph and the
+// order (by levels.txt Id), M2a's four dungeons (built), the connection graph and the
 // way over built areas (routeTo, never through one not built), the waypoint list by Id, the way from
 // a map into an area (Level.wayTo), a jump by area (Game.travelToArea) and the difficulty
 // (Game.setDifficulty), whose waypoints are kept apart in the save.
@@ -11,6 +11,7 @@ const SEED = 7;
 const FLOORS = 13;
 
 export default async (load) => {
+  const A0 = await load('/src/world/areas.ts');
   const { CAMP_AREA, WILD_AREA, COLD_PLAINS, DEN_OF_EVIL, STONY_FIELD, BURIAL_GROUNDS, areaByKey, areaDef, areaForDepth, areaLevel, areaList, builtWaypoints, dungeonArea, isBuilt, nextArea, trialLevel: monsterLevel } = await load('/src/world/areas.ts');
   const { D2X_AREAS } = await load('/src/data/d2x/areas.ts');
   const { THEMES, WILD_MAPS, isWild, dungeonFloor, levelLabel, themeForFloor } = await load('/src/world/levelgen.ts');
@@ -129,7 +130,9 @@ export default async (load) => {
   const wayOut = west.wayTo(WILD_AREA, home);
   check(wayOut && !wayOut.obj && west.areaAt(wayOut.pos.x, wayOut.pos.z).id === WILD_AREA && map.walkableAt(wayOut.pos.x, wayOut.pos.z), `on the overworld the way from the camp into Blood Moor is ${JSON.stringify(wayOut)}`);
   check(west.wayTo(CAMP_AREA, home)?.pos && near(west.wayTo(CAMP_AREA, home).pos, home), 'the way into the area the hero is in is not where they stand');
-  check(west.wayTo(DEN_OF_EVIL, home)?.obj?.kind === 'stairs' && west.wayTo(STONY_FIELD, home) === null, `the overworld's way into the den is ${west.wayTo(DEN_OF_EVIL, home)?.obj?.kind}, into Stony Field ${JSON.stringify(west.wayTo(STONY_FIELD, home))}`);
+  // the Den by its mouth; Stony Field and the Burial Grounds are on the overworld, walked into; the Crypt's way closed while it has no map
+  const toStony = west.wayTo(STONY_FIELD, home);
+  check(west.wayTo(DEN_OF_EVIL, home)?.obj?.kind === 'stairs' && toStony && !toStony.obj && west.areaAt(toStony.pos.x, toStony.pos.z).id === STONY_FIELD && west.wayTo(BURIAL_GROUNDS, home)?.obj === undefined && west.wayTo(A0.CRYPT, home) === null, `the overworld's way into the den is ${west.wayTo(DEN_OF_EVIL, home)?.obj?.kind}, into Stony Field ${JSON.stringify(toStony)}, into the Crypt ${JSON.stringify(west.wayTo(A0.CRYPT, home))}`);
   // the old separate camp, its east half made wilderness for the test
   const camp = new Level(0, SEED);
   const cm = camp.layout.map;
@@ -152,13 +155,13 @@ export default async (load) => {
   // ── areas by key and in order: normal play's, and the trial ground's floors after one another ──
   const list = areaList();
   // by levels.txt Id (docs/M2A-STEP0.md 2.9)
-  check(list.map((a) => a.key).join() === 'camp,wild,coldplains,denofevil,cave1,cave2,crypt,mausoleum', `areaList(): ${list.map((a) => a.key).join()}`);
+  check(list.map((a) => a.key).join() === 'camp,wild,coldplains,stonyfield,denofevil,cave1,cave2,burialgrounds,crypt,mausoleum', `areaList(): ${list.map((a) => a.key).join()}`);
   check(list.every((a, i) => i === 0 || nextArea(list[i - 1]) === a) && nextArea(list.at(-1)) === undefined, 'nextArea does not follow the list, or goes on past its end');
-  check(list.every((a) => isBuilt(a.id)) && !isBuilt(STONY_FIELD) && !isBuilt(dungeonArea(1)), 'isBuilt is not the list');
+  check(list.every((a) => isBuilt(a.id)) && isBuilt(STONY_FIELD) && isBuilt(BURIAL_GROUNDS) && isBuilt(A0.CAVE_1) && !isBuilt(dungeonArea(1)), 'isBuilt is not the list');
   check(nextArea(areaDef(dungeonArea(3))) === areaDef(dungeonArea(4)), 'the trial ground does not go on floor by floor');
   check(list.every((a) => areaByKey(a.key) === a) && areaByKey('floor40') === areaDef(dungeonArea(40)), 'an area is not found by its key');
   check(areaByKey('floor0') === undefined && areaByKey('nowhere') === undefined && nextArea({ id: 999 }) === undefined, 'a key or an area that is not there is found');
-  check([...list, areaDef(STONY_FIELD), areaDef(dungeonArea(7))].every((a) => /^[A-Z]/.test(a.en ?? '')), 'an area has no English name');
+  check([...list, areaDef(dungeonArea(7))].every((a) => /^[A-Z]/.test(a.en ?? '')), 'an area has no English name');
   // ── M2a's dungeons, the two BUILT lists, the connection graph (docs/M2A-STEP0.md 2.9) ──
   {
     const A = await load('/src/world/areas.ts');
@@ -169,15 +172,19 @@ export default async (load) => {
       const row = D2X_AREAS.find((r) => r.id === id);
       check(a?.key === key && areaByKey(key) === a && a.kind === 'dungeon' && !a.waypoint && a.name === row.name && a.en === row.nameEn && a.alvl.join() === row.lvl.join() && isBuilt(id), `area ${id}: ${JSON.stringify(a)}`);
     }
-    // the D line's dungeons built (src/game/maps.ts DUNGEON_MAKERS): the Den, the Cave's two levels, the crypts
-    check(BUILT_WEST.join() === '1,2,3' && BUILT_DUNGEONS.join() === '8,9,13,18,19', `the BUILT lists: west ${BUILT_WEST}, dungeons ${BUILT_DUNGEONS}`);
+    // the W line's overworld and the D line's dungeons (src/game/maps.ts DUNGEON_MAKERS), all of the west block built
+    check(BUILT_WEST.join() === '1,2,3,4,17' && BUILT_DUNGEONS.join() === '8,9,13,18,19', `the BUILT lists: west ${BUILT_WEST}, dungeons ${BUILT_DUNGEONS}`);
     check(A.areaLinks(COLD_PLAINS).join() === '2,4,9,17' && A.areaLinks(A.CRYPT).join() === '17' && A.areaLinks(DEN_OF_EVIL).join() === '2' && A.areaLinks(A.CAVE_2).join() === '9' && A.areaLinks(dungeonArea(3)).length === 0, `links: Cold Plains ${A.areaLinks(COLD_PLAINS)}, the Crypt ${A.areaLinks(A.CRYPT)}, the Den ${A.areaLinks(DEN_OF_EVIL)}`);
     const route = (a, b) => A.routeTo(a, b)?.join() ?? 'none';
     check(route(CAMP_AREA, COLD_PLAINS) === '1,2,3' && route(CAMP_AREA, DEN_OF_EVIL) === '1,2,8' && route(DEN_OF_EVIL, COLD_PLAINS) === '8,2,3' && route(COLD_PLAINS, COLD_PLAINS) === '3', `routeTo: 1→3 ${route(1, 3)}, 1→8 ${route(1, 8)}, 8→3 ${route(8, 3)}`);
+    // the west block's overworld: Stony Field and the Burial Grounds by Cold Plains
+    check(route(CAMP_AREA, STONY_FIELD) === '1,2,3,4' && route(CAMP_AREA, BURIAL_GROUNDS) === '1,2,3,17' && route(STONY_FIELD, BURIAL_GROUNDS) === '4,3,17' && route(DEN_OF_EVIL, STONY_FIELD) === '8,2,3,4', `routeTo: 1→4 ${route(1, 4)}, 1→17 ${route(1, 17)}, 4→17 ${route(4, 17)}, 8→4 ${route(8, 4)}`);
+    // and under it: the Cave under Cold Plains, the crypts under the Burial Grounds
     check(route(CAMP_AREA, A.CAVE_1) === '1,2,3,9' && route(CAMP_AREA, A.CAVE_2) === '1,2,3,9,13' && route(A.CAVE_2, DEN_OF_EVIL) === '13,9,3,2,8', `routeTo the Cave: 1→9 ${route(1, 9)}, 1→13 ${route(1, 13)}, 13→8 ${route(13, 8)}`);
-    // never through an area not built: none to one that isn't, nor to a built one only it leads to
-    // (the crypts, under the Burial Grounds)
-    check(route(CAMP_AREA, STONY_FIELD) === 'none' && route(CAMP_AREA, A.CRYPT) === 'none' && route(A.CRYPT, A.MAUSOLEUM) === 'none' && route(CAMP_AREA, dungeonArea(1)) === 'none', `routeTo an area not built: ${route(1, 4)}, ${route(1, 18)}`);
+    check(route(CAMP_AREA, A.CRYPT) === '1,2,3,17,18' && route(A.CRYPT, A.MAUSOLEUM) === '18,17,19' && route(A.CAVE_2, A.MAUSOLEUM) === '13,9,3,17,19', `routeTo the crypts: 1→18 ${route(1, 18)}, 18→19 ${route(18, 19)}, 13→19 ${route(13, 19)}`);
+    // never through an area not built: none to one that isn't (the Underground Passage, a trial floor),
+    // nor to a built one only it leads to
+    check(route(STONY_FIELD, 10) === 'none' && route(CAMP_AREA, 10) === 'none' && route(CAMP_AREA, dungeonArea(1)) === 'none', `routeTo an area not built: ${route(4, 10)}, ${route(1, 10)}`);
     const cave1 = BUILT_DUNGEONS.indexOf(A.CAVE_1);
     BUILT_DUNGEONS.splice(cave1, 1);
     try {
@@ -185,25 +192,21 @@ export default async (load) => {
     } finally {
       BUILT_DUNGEONS.splice(cave1, 0, A.CAVE_1);
     }
-    BUILT_WEST.push(BURIAL_GROUNDS);
+    const barrow = BUILT_WEST.indexOf(BURIAL_GROUNDS);
+    BUILT_WEST.splice(barrow, 1);
     try {
-      check(route(CAMP_AREA, A.CRYPT) === '1,2,3,17,18' && route(A.CRYPT, A.MAUSOLEUM) === '18,17,19', `with the Burial Grounds built: 1→18 ${route(1, 18)}, 18→19 ${route(18, 19)}`);
+      check(isBuilt(A.CRYPT) && route(CAMP_AREA, A.CRYPT) === 'none' && route(A.CRYPT, A.MAUSOLEUM) === 'none', `the crypts built without the Burial Grounds: 1→18 ${route(1, 18)}, 18→19 ${route(18, 19)}`);
     } finally {
-      BUILT_WEST.length = 3;
+      BUILT_WEST.splice(barrow, 0, BURIAL_GROUNDS);
     }
-    // the waypoint list by Id: the camp's, Cold Plains', and Stony Field's after them once it is built
-    check(builtWaypoints([COLD_PLAINS, CAMP_AREA]).join() === '1,3', `waypoints: ${builtWaypoints([3, 1])}`);
-    BUILT_WEST.push(STONY_FIELD);
-    try {
-      check(builtWaypoints([STONY_FIELD, COLD_PLAINS, CAMP_AREA]).join() === '1,3,4' && route(CAMP_AREA, STONY_FIELD) === '1,2,3,4', `with Stony Field built: waypoints ${builtWaypoints([4, 3, 1])}, the way there ${route(1, 4)}`);
-    } finally {
-      BUILT_WEST.length = 3;
-    }
-    check(!isBuilt(STONY_FIELD) && !isBuilt(BURIAL_GROUNDS) && BUILT_DUNGEONS.join() === '8,9,13,18,19', 'a BUILT list was left changed');
+    // the waypoint list by Id: the camp's, Cold Plains', Stony Field's (the Burial Grounds have none),
+    // whatever order they were touched in; one of an area this build lacks stays out of it
+    check(builtWaypoints([COLD_PLAINS, CAMP_AREA]).join() === '1,3' && builtWaypoints([STONY_FIELD, BURIAL_GROUNDS, COLD_PLAINS, CAMP_AREA]).join() === '1,3,4' && builtWaypoints([STONY_FIELD, 5]).join() === '1,4', `waypoints: ${builtWaypoints([3, 1])}; ${builtWaypoints([4, 17, 3, 1])}; ${builtWaypoints([4, 5])}`);
+    check(BUILT_WEST.join() === '1,2,3,4,17' && BUILT_DUNGEONS.join() === '8,9,13,18,19', 'a BUILT list was left changed');
   }
 
   // the Act 1 areas' levels in the three difficulties are levels.json MonLvlEx, (N), (H), as areaLevel gives them
-  for (const a of [...list, areaDef(STONY_FIELD), areaDef(BURIAL_GROUNDS)]) {
+  for (const a of list) {
     const row = D2X_AREAS.find((r) => r.id === a.id);
     check(row && [0, 1, 2].every((d) => areaLevel(a, d) === row.lvl[d]), `${a.key}: area levels ${a.alvl.join('/')}, levels.json's ${row?.lvl.join('/')}`);
     // and their names are the rename table's (tools/d2-names/areas.json name and nameEn)
@@ -214,7 +217,7 @@ export default async (load) => {
   // ── a jump by area, and the difficulty ──
   const saved = () => JSON.parse(localStorage.getItem('dii-save-v1'));
   check(game.travelToArea(dungeonArea(3)) && game.area.key === 'floor3' && game.level.depth === WILD_MAPS + 3, `travelToArea(floor 3) went to ${game.area.key}`);
-  check(!game.travelToArea(999) && !game.travelToArea(STONY_FIELD) && game.area.key === 'floor3', 'a jump to an area with no map went somewhere');
+  check(!game.travelToArea(999) && !game.travelToArea(10) && game.area.key === 'floor3', 'a jump to an area with no map went somewhere');
   check(p.waypoints.join() === String(CAMP_AREA), `the trial ground touched a waypoint: ${p.waypoints.join()}`);
   check(game.travelToArea(COLD_PLAINS) && game.area.id === COLD_PLAINS && game.level === west, `travelToArea(Cold Plains) went to ${game.area.key}`);
   // touched in nightmare, not in normal; nightmare is another game begun in the camp, its overworld made anew

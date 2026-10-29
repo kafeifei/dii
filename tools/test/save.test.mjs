@@ -675,19 +675,23 @@ export default async (load) => {
     ['Blood Moor', WILD_AREA, WILD_AREA],
     ['Cold Plains', COLD_PLAINS, COLD_PLAINS],
     ['the Den of Evil', DEN_OF_EVIL, DEN_OF_EVIL],
-    ['the Burial Grounds (not built)', 17, CAMP_AREA],
+    ['Stony Field', 4, 4],
+    ['the Burial Grounds', 17, 17],
+    ['the Crypt', 18, 18],
+    ['the Underground Passage (not built)', 10, CAMP_AREA],
+    ['the Dark Wood (not built)', 5, CAMP_AREA],
     ['the trial ground', floorArea, CAMP_AREA],
   ]) {
     reset();
     const d = { ...clone(at.get(0).d), area, worldSeed: 99 };
-    d.progress = [{ waypoints: [CAMP_AREA, COLD_PLAINS, 17, floorArea], quests: {} }, { waypoints: [CAMP_AREA], quests: {} }, { waypoints: [CAMP_AREA], quests: {} }];
+    d.progress = [{ waypoints: [CAMP_AREA, COLD_PLAINS, 5, floorArea], quests: {} }, { waypoints: [CAMP_AREA], quests: {} }, { waypoints: [CAMP_AREA], quests: {} }];
     localStorage.setItem(KEY, JSON.stringify(d));
     const s = save.loadSave();
     check(s?.area === want && s.worldSeed === 99, `v4 in ${where}: resumes in area ${s?.area} (want ${want}), seed ${s?.worldSeed}`);
     check(s?.player.waypoints.join() === `${CAMP_AREA},${COLD_PLAINS}`, `v4 in ${where}: waypoints ${s?.player.waypoints}, want the camp's and Cold Plains'`);
     save.writeSave(s.player, s.area, 123);
     const w = JSON.parse(localStorage.getItem(KEY));
-    check(w.worldSeed === 123 && [...w.progress[0].waypoints].sort().join() === [CAMP_AREA, COLD_PLAINS, 17, floorArea].sort().join(), `v4 in ${where}: written seed ${w.worldSeed}, waypoints ${JSON.stringify(w.progress[0].waypoints)}`);
+    check(w.worldSeed === 123 && [...w.progress[0].waypoints].sort().join() === [CAMP_AREA, COLD_PLAINS, 5, floorArea].sort().join(), `v4 in ${where}: written seed ${w.worldSeed}, waypoints ${JSON.stringify(w.progress[0].waypoints)}`);
   }
 
   // ── a newer build's save: played, never written ──

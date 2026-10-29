@@ -50,7 +50,7 @@ export default async (load) => {
 
   // ── every dungeon built, a maker each, all of them areas of normal play ──
   check(DUNGEONS.every((id) => isBuilt(id) && typeof M.DUNGEON_MAKERS[id] === 'function'), `built: ${DUNGEONS.filter(isBuilt)}, makers: ${Object.keys(M.DUNGEON_MAKERS)}`);
-  check(A.areaList().map((a) => a.id).join() === '1,2,3,8,9,13,18,19', `the areas of normal play: ${A.areaList().map((a) => a.id)}`);
+  check(A.areaList().map((a) => a.id).join() === '1,2,3,4,8,9,13,17,18,19', `the areas of normal play: ${A.areaList().map((a) => a.id)}`);
 
   // ── each map: made from its level's seed, of its area all over, in its look, timed ──
   const times = new Map();

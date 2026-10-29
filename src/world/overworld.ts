@@ -1,8 +1,9 @@
 import { RNG, type P2 } from '../core/math';
-import { BURIAL_GROUNDS, CAMP_AREA, COLD_PLAINS, DEN_OF_EVIL, STONY_FIELD, WILD_AREA } from './areas';
+import { D2X_SUPERUNIQUES } from '../data/d2x/superuniques';
+import { BURIAL_GROUNDS, CAMP_AREA, CAVE_1, COLD_PLAINS, CRYPT, DEN_OF_EVIL, MAUSOLEUM, STONY_FIELD, WILD_AREA } from './areas';
 import { BUILT_WEST } from './built-west';
 import type { Prop } from './furnish';
-import { THEMES, type Decor, type House, type Layout, type Npc, type Room, type Service, type Waypoint } from './levelgen';
+import { THEMES, type Decor, type House, type Layout, type Npc, type PresetMonster, type PresetSpot, type Room, type Service, type SuperUnique, type Waypoint } from './levelgen';
 import { growWoods } from './outdoors';
 import { campPreset } from './presets';
 import { TileMap } from './tilemap';
@@ -16,8 +17,10 @@ import { CELL, OUT_SCALE, cellsOf, flood, generateZone, type Entrance, type Side
  * fixed next, so both sides of a seam cut theirs in the same place; then each area is made in a
  * map of its own (zone.ts) and copied into the world's, with the area of every tile. Last, a walk
  * from the camp checks that every port, waypoint and entrance can be reached, and makes an area
- * again with its seed + 1 if not. Stony Field and the Burial Grounds are laid out already (so the
- * ports to them are where they'll be) and slot in by joining BUILT and DRESS.
+ * again with its seed + 1 if not. The west block's five areas are all on it (M2a): the camp, Blood
+ * Moor, Cold Plains, Stony Field and the Burial Grounds; what's under them (the Den, Cold Plains'
+ * Cave, the Crypt, the Mausoleum) and the Underground Passage behind Stony Field's cliff are entered
+ * by their mouths, closed while their maps aren't built.
  *
  * The game is played on it (Game.enterArea): Level takes it as it is, area by area, but the
  * renderer still dresses the map as one area. Still to do:
@@ -34,6 +37,12 @@ import { CELL, OUT_SCALE, cellsOf, flood, generateZone, type Entrance, type Side
 
 /** woods past the areas' edges, so the view never runs off the map (wild.ts kept 22 tiles past its land) */
 const MARGIN = 2 * CELL;
+/** trees grow in the gaps between areas only this near one (docs/M2A.md 地图): the rest is never seen */
+const WOODS_REACH = 32;
+/** the Underground Passage's first level (Levels.txt 10, Act 1 - Cave 3): Stony Field's cliff opens on it, not built in M2a */
+const UNDERGROUND_PASSAGE = 10;
+/** Rakanishu, Stony Field's superunique (superuniques.json, its names the rename table's) */
+const RAKANISHU = D2X_SUPERUNIQUES.find((s) => s.key === 'Rakanishu')!;
 /** times an area is made again before its world is given up on */
 const REROLLS = 12;
 /** worlds tried, the seed's and then the next seeds', before the last is taken as it is */
@@ -59,14 +68,20 @@ const WEST: Link[] = [
   { area: BURIAL_GROUNDS, size: [40, 48], parent: COLD_PLAINS, linker: 'side' },
 ];
 
-/** the areas made so far (built-west.ts, by levels.txt Id); the rest of WEST is laid out but left for later */
+/** the areas made (built-west.ts, by levels.txt Id): all of WEST */
 export const BUILT = BUILT_WEST;
 
 interface Dressing {
-  /** the area whose port the waypoint stands inside */
-  waypointBy?: number;
+  /** a waypoint: with `by`, inside the port to that area, else in a free cell */
+  waypoint?: { by?: number };
   /** the dungeon a cave mouth leads into, far from the camp */
   cave?: number;
+  /** its sides that are cliffs, not woods, and the area a mouth in the cliff leads into, far from the camp */
+  cliffs?: Side[];
+  cliffCave?: number;
+  stony?: boolean;
+  graveyard?: ZoneSpec['graveyard'];
+  sightUniques?: ZoneSpec['sightUniques'];
   shrines: number;
   sights: (rng: RNG) => SightSpec[];
 }
@@ -74,11 +89,17 @@ interface Dressing {
 /**
  * What each area puts in its cells, after D2's DRLGOUTWILD_InitAct1OutdoorLevel: a waypoint in
  * Cold Plains to Black Marsh (DRLGOUTDOORS_SpawnAct12Waypoint), five shrines in Blood Moor to Tamoe
- * Highland (DRLGOUTDOORS_SpawnAct12Shrines(pLevel, 5)), Blood Moor's Den of Evil far from the camp
- * (DRLGOUTWILD_SpawnTownTransitionsAndCaves), and each area's own set pieces
+ * Highland (DRLGOUTDOORS_SpawnAct12Shrines(pLevel, 5)), Blood Moor's Den of Evil and Cold Plains' Cave
+ * far from the camp (DRLGOUTWILD_SpawnTownTransitionsAndCaves), and each area's own set pieces
  * (DRLGOUTWILD_SpawnSpecialPresets) with our sights for D2's: cottages are ruins, fallen camps
  * monster camps, the stone fills outcrops, and Blood Moor's pond a graveyard, until there's water.
- * Cold Plains' own cave (Cave Level 1) comes with its dungeon.
+ * Stony Field: cliffs on its north and west (docs/M2A.md 地图), the Underground Passage's mouth in
+ * them, its own stony ground, and the Cairn Stones (DrlgOutWild.cpp:491-494) with Rakanishu, whom
+ * the cairn's DS1 sets down; its Tower Tome (the same lines) is M2b's, with the quest. Its two stone
+ * fills are ours, approximate: the area's rocks. The Burial Grounds: a graveyard filling the inside
+ * (DrlgOutWild.cpp:586-588), the Crypt's and the Mausoleum's stairways in it and Blood Raven, whom
+ * D2 sets down at its place_bloodraven (MonPreset act 1; D2MOO MonsterRegion.cpp:292-295), the one
+ * whose death counts for Sisters' Burial Grounds (docs/M2A.md 怪物)
  */
 const DRESS: Record<number, Dressing> = {
   [CAMP_AREA]: { shrines: 0, sights: () => [] },
@@ -94,7 +115,8 @@ const DRESS: Record<number, Dressing> = {
     },
   },
   [COLD_PLAINS]: {
-    waypointBy: WILD_AREA,
+    waypoint: { by: WILD_AREA },
+    cave: CAVE_1,
     shrines: 5,
     sights: (rng) => {
       const s: SightSpec[] = [];
@@ -107,6 +129,20 @@ const DRESS: Record<number, Dressing> = {
       s.push({ kind: 'camp', nearRoad: false }, { kind: 'stones', nearRoad: false }, { kind: 'stones', nearRoad: false });
       return s;
     },
+  },
+  [STONY_FIELD]: {
+    waypoint: {},
+    cliffs: ['n', 'w'],
+    cliffCave: UNDERGROUND_PASSAGE,
+    stony: true,
+    shrines: 5,
+    sightUniques: { cairn: { key: RAKANISHU.key, monster: RAKANISHU.mon, name: RAKANISHU.name } },
+    sights: () => [{ kind: 'cairn', nearRoad: false }, { kind: 'stones', nearRoad: false }, { kind: 'stones', nearRoad: false }],
+  },
+  [BURIAL_GROUNDS]: {
+    graveyard: { crypt: CRYPT, mausoleum: MAUSOLEUM, boss: { monster: 'bloodraven', quest: 'a1q2' } },
+    shrines: 0,
+    sights: () => [],
   },
 };
 
@@ -420,8 +456,14 @@ function makeWorld(seed: number, scale: number): Overworld {
       sights: d.sights(new RNG(zs ^ 0x51c475)),
     };
     if (area === CAMP_AREA) spec.camp = campOrigin(box);
-    if (d.waypointBy !== undefined) spec.waypoint = { by: d.waypointBy };
-    if (d.cave !== undefined) spec.cave = { dest: d.cave, farFrom: { x: campBox.x + campBox.w / 2 - box.x, z: campBox.z + campBox.h / 2 - box.z } };
+    if (d.waypoint) spec.waypoint = d.waypoint.by === undefined ? {} : { by: d.waypoint.by };
+    const farFrom = { x: campBox.x + campBox.w / 2 - box.x, z: campBox.z + campBox.h / 2 - box.z };
+    if (d.cave !== undefined) spec.cave = { dest: d.cave, farFrom };
+    if (d.cliffs) spec.cliffs = d.cliffs;
+    if (d.cliffCave !== undefined) spec.cliffCave = { dest: d.cliffCave, farFrom };
+    if (d.stony) spec.stony = true;
+    if (d.graveyard) spec.graveyard = d.graveyard;
+    if (d.sightUniques) spec.sightUniques = d.sightUniques;
     return spec;
   };
   const zones = new Map<number, Zone>();
@@ -463,6 +505,11 @@ function compose(zones: Map<number, Zone>, boxes: AreaBox[], order: number[], se
   const entrances: Entrance[] = [];
   const houses: House[] = [];
   const npcs: Npc[] = [];
+  const cliffs = new Set<number>();
+  const superUniques: SuperUnique[] = [];
+  const presetMonsters: PresetMonster[] = [];
+  const presets: PresetSpot[] = [];
+  let cairn: Overworld['cairn'];
   let start: P2 | undefined;
   const moved = (p: P2, b: Box): P2 => ({ x: p.x + b.x, z: p.z + b.z });
   for (const area of order) {
@@ -478,6 +525,11 @@ function compose(zones: Map<number, Zone>, boxes: AreaBox[], order: number[], se
         for (let k = 0; k < 4; k++) ground[i * 4 + k] = z0.ground[j * 4 + k];
       }
     }
+    for (const j of z0.cliffs) cliffs.add((b.z + Math.floor(j / z0.w)) * W + b.x + (j % z0.w));
+    if (z0.cairn) cairn = { center: moved(z0.cairn.center, b), stones: z0.cairn.stones.map((p) => moved(p, b)) };
+    superUniques.push(...z0.superUniques.map((u) => ({ ...u, pos: moved(u.pos, b) })));
+    presetMonsters.push(...z0.presetMonsters.map((m) => ({ ...m, pos: moved(m.pos, b) })));
+    presets.push(...z0.presets.map((p) => ({ ...p, rect: { ...p.rect, x: p.rect.x + b.x, y: p.rect.y + b.z } })));
     for (const p of z0.props) props.push({ ...p, x: p.x + b.x, z: p.z + b.z });
     for (const d of z0.decor) decor.push({ ...d, x: d.x + b.x, z: d.z + b.z });
     chests.push(...z0.chests.map((p) => moved(p, b)));
@@ -509,7 +561,9 @@ function compose(zones: Map<number, Zone>, boxes: AreaBox[], order: number[], se
     }
   }
 
-  // the margin and the gaps between areas: the nearest area's, and woods, open only where a road runs on out
+  // the margin and the gaps between areas: the nearest area's, and woods within WOODS_REACH of one,
+  // open only where a road runs on out
+  const far = new Uint8Array(W * H);
   const near = (x: number, z: number) => {
     let best = built[0].area;
     let bd = Infinity;
@@ -522,6 +576,7 @@ function compose(zones: Map<number, Zone>, boxes: AreaBox[], order: number[], se
         best = b.area;
       }
     }
+    if (bd > WOODS_REACH * WOODS_REACH) far[z * W + x] = 1;
     return best;
   };
   const roadsOut = entrances.filter((e) => e.kind === 'road');
@@ -543,7 +598,7 @@ function compose(zones: Map<number, Zone>, boxes: AreaBox[], order: number[], se
       ground[i * 4 + 2] = road * 255;
     }
   }
-  const woods = growWoods(new RNG(seed ^ 0x3a7f), { x0: 0, z0: 0, x1: W, z1: H }, (x, z) => inArea[z * W + x] === 1, (x, z) => onRoadOut(x, z, 3));
+  const woods = growWoods(new RNG(seed ^ 0x3a7f), { x0: 0, z0: 0, x1: W, z1: H }, (x, z) => inArea[z * W + x] === 1, (x, z) => far[z * W + x] === 1 || onRoadOut(x, z, 3));
   props.push(...woods.props);
 
   return {
@@ -571,6 +626,11 @@ function compose(zones: Map<number, Zone>, boxes: AreaBox[], order: number[], se
     props,
     wallDecor: [],
     npcs,
+    cliffs,
+    cairn,
+    presets,
+    presetMonsters,
+    superUniques,
     areaOf,
     entrances,
     boxes,

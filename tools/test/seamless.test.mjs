@@ -1,6 +1,6 @@
 // A Level over the West overworld (src/world/overworld.ts), as the game plays it. For a few world
 // seeds: the areas are the overworld's tile by tile, with their levels, and town only on the camp's
-// tiles; each area gets its own monsters (its levels.txt kinds, in normal each at its row's level), on its own tiles, none in the camp;
+// tiles; each area gets its own monsters (its levels.txt kinds, its superuniques and preset monsters with theirs, in normal each at its row's level), on its own tiles, none in the camp;
 // monsters can't walk, slide or path into the camp, and leave a hero who stands in it alone. Maps
 // of one area shut nothing to monsters. The game on it, from a new game on, is tools/test/west.test.mjs.
 const SEEDS = [1, 7, 42, 20261026];
@@ -9,7 +9,9 @@ const DT = 1 / 60;
 
 export default async (load) => {
   const { generateOverworld } = await load('/src/world/overworld.ts');
-  const { CAMP_AREA, WILD_AREA, COLD_PLAINS, areaDef } = await load('/src/world/areas.ts');
+  const { CAMP_AREA, WILD_AREA, COLD_PLAINS, STONY_FIELD, BURIAL_GROUNDS, areaDef } = await load('/src/world/areas.ts');
+  const { D2X_SUPERUNIQUES } = await load('/src/data/d2x/superuniques.ts');
+  const { D2X_MONSTERS } = await load('/src/data/d2x/monsters.ts');
   const { WILD_MAPS, bfsDistances } = await load('/src/world/levelgen.ts');
   const { findPath } = await load('/src/world/pathfinding.ts');
   const { Level } = await load('/src/game/level.ts');
@@ -64,14 +66,17 @@ export default async (load) => {
       const own = m.def.row.diff[0].level;
       if (m.rank === 'normal' && m.level !== own) problems.push(`${what}: a ${m.def.id} in ${a.key} is level ${m.level}, its row's is ${own}`);
       if (m.level < own) problems.push(`${what}: a ${m.rank} ${m.def.id} in ${a.key} is level ${m.level}, under its row's ${own}`);
-      // of the area's kinds, its champions' and uniques', or what they bring (the shamans' and Bishibosh's fallen)
+      // of the area's kinds, its champions' and uniques', or what they bring (the shamans' and Bishibosh's
+      // fallen); its superuniques (Rakanishu's Carvers) and its preset monsters (Blood Raven) with theirs
       const d2 = D2X_AREAS.find((x) => x.id === a.id);
-      if (d2 && ![...d2.mon, ...d2.umon, 'fallen1'].includes(m.def.id)) problems.push(`${what}: a ${m.def.id} in ${a.key}, not one of its kinds`);
+      const presets = [...(d2?.superuniques ?? []).map((k) => D2X_SUPERUNIQUES.find((u) => u.key === k).mon), ...(ow.presetMonsters ?? []).filter((p) => level.areaAt(p.pos.x, p.pos.z) === a).map((p) => p.monster)];
+      const brought = presets.flatMap((id) => D2X_MONSTERS[id].minions ?? []);
+      if (d2 && ![...d2.mon, ...d2.umon, 'fallen1', ...presets, ...brought].includes(m.def.id)) problems.push(`${what}: a ${m.def.id} in ${a.key}, not one of its kinds`);
     }
     check(!by.has(CAMP_AREA), `${what}: ${by.get(CAMP_AREA)} monster(s) in the camp`);
-    check(by.get(WILD_AREA) > 50 && by.get(COLD_PLAINS) > 50, `${what}: ${by.get(WILD_AREA) ?? 0} monsters in Blood Moor, ${by.get(COLD_PLAINS) ?? 0} in Cold Plains`);
+    check(by.get(WILD_AREA) > 50 && by.get(COLD_PLAINS) > 50 && by.get(STONY_FIELD) > 50 && by.get(BURIAL_GROUNDS) > 20, `${what}: ${by.get(WILD_AREA) ?? 0} monsters in Blood Moor, ${by.get(COLD_PLAINS) ?? 0} in Cold Plains, ${by.get(STONY_FIELD) ?? 0} in Stony Field, ${by.get(BURIAL_GROUNDS) ?? 0} in the Burial Grounds`);
     check(level.areaAt(level.monsters[0].pos.x, level.monsters[0].pos.z).kind !== 'town', `${what}: the first monster is in a town`);
-    counts.push(`${by.get(WILD_AREA)}+${by.get(COLD_PLAINS)}`);
+    counts.push(`${by.get(WILD_AREA)}+${by.get(COLD_PLAINS)}+${by.get(STONY_FIELD)}+${by.get(BURIAL_GROUNDS)}`);
     // the same seed, the same monsters
     const again = new Level(WILD_MAPS, ow.seed, ow);
     check(again.monsters.length === level.monsters.length && again.monsters.every((m, k) => m.def === level.monsters[k].def && m.pos.x === level.monsters[k].pos.x), `${what}: built twice, the monsters differ`);
@@ -152,5 +157,5 @@ export default async (load) => {
   }
 
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.slice(0, 40).join('\n  ')}`);
-  console.log(`  ${SEEDS.length} seeds: Blood Moor + Cold Plains monsters ${counts.join(' / ')}, none in or into the camp`);
+  console.log(`  ${SEEDS.length} seeds: Blood Moor + Cold Plains + Stony Field + Burial Grounds monsters ${counts.join(' / ')}, none in or into the camp`);
 };

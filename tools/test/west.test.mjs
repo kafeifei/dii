@@ -5,16 +5,23 @@
 // cave with Corpsefire (D2's zombie1 superunique) in its far room; its way up comes out at the mouth,
 // the overworld as it was left, and the Den is kept as it was too. Cold Plains' waypoint is activated
 // by using it, in the difficulty played, and listed; another difficulty is another game, the
-// overworld made anew in the same world, its monsters of that difficulty; its roads on to Stony Field and the Burial Grounds are
-// closed and the map is shut past them. Chests and barrels roll at their area's level. The trial
-// ground's floors are the debug panel's alone. A new game, or one continued, makes a new world; a
-// reload plays on in the saved one, in the area it was saved in. A built dungeon's map is made once by
-// its maker (Maps DUNGEON_MAKERS) from the world's seed and its Id (levelSeed), kept and forgotten with the rest.
+// overworld made anew in the same world, its monsters of that difficulty. Stony Field and the Burial
+// Grounds are on the same map, gone to by waypoint as a jump: Stony Field's waypoint is activated by
+// using it and saved, listed after Cold Plains'; the ways under the west block that have no map yet
+// (Cold Plains' Cave, the Underground Passage in Stony Field's cliff, the Crypt and the Mausoleum in
+// the Burial Grounds) are closed, and using one says so once and goes nowhere. Chests and barrels roll
+// at their area's level. The trial ground's floors are the debug panel's alone. A new game, or one
+// continued, makes a new world; a reload plays on in the saved one, in the area it was saved in
+// (Stony Field too). A built dungeon's map is made once by its maker (Maps DUNGEON_MAKERS) from the
+// world's seed and its Id (levelSeed), kept and forgotten with the rest.
 const KEY = 'dii-save-v1';
 const DT = 1 / 60;
 
 export default async (load) => {
-  const { CAMP_AREA, WILD_AREA, COLD_PLAINS, STONY_FIELD, BURIAL_GROUNDS, DEN_OF_EVIL, areaDef, dungeonArea, isBuilt } = await load('/src/world/areas.ts');
+  const { CAMP_AREA, WILD_AREA, COLD_PLAINS, STONY_FIELD, BURIAL_GROUNDS, DEN_OF_EVIL, CAVE_1, CRYPT, MAUSOLEUM, areaDef, dungeonArea, isBuilt } = await load('/src/world/areas.ts');
+  const { D2X_AREAS } = await load('/src/data/d2x/areas.ts');
+  /** the Underground Passage's first level (levels.txt 10), behind Stony Field's cliff */
+  const PASSAGE = 10;
   const { BUILT } = await load('/src/world/overworld.ts');
   const { Game } = await load('/src/game/game.ts');
   const { Sfx } = await load('/src/audio/sfx.ts');
@@ -99,7 +106,9 @@ export default async (load) => {
   const mouth = west.objects.find((o) => o.kind === 'stairs' && o.dest === DEN_OF_EVIL);
   const cave = ow.entrances.find((e) => e.kind === 'cave');
   check(mouth && cave && dist(mouth.pos, cave) < 1e-6 && west.areaAt(mouth.pos.x, mouth.pos.z).id === WILD_AREA && !mouth.closed, 'no open way down at the Den of Evil in Blood Moor');
-  check(!west.objects.some((o) => o.kind === 'stairs' && o.dest !== DEN_OF_EVIL), 'the overworld has stairs to somewhere else');
+  // the other ways down are the ones without maps yet, closed
+  const others = west.objects.filter((o) => o.kind === 'stairs' && o.dest !== DEN_OF_EVIL);
+  check(others.map((o) => o.dest).sort((a, b) => a - b).join() === [CAVE_1, PASSAGE, CRYPT, MAUSOLEUM].join() && others.every((o) => o.closed), `the overworld's other stairs: ${others.map((o) => `${o.dest}${o.closed ? ' closed' : ''}`).join(', ')}`);
   // one of Blood Moor's monsters killed before going down stays dead
   const victim = west.monsters.find((m) => !m.dead && west.areaAt(m.pos.x, m.pos.z).id === WILD_AREA);
   game.killMonster(victim, 'phys');
@@ -155,7 +164,7 @@ export default async (load) => {
   // ── Cold Plains' waypoint: used, it is activated and listed; travel by it is a jump ──
   const wp = west.objects.find((o) => o.kind === 'waypoint' && west.areaAt(o.pos.x, o.pos.z).id === COLD_PLAINS);
   if (!wp) throw new Error("no waypoint in Cold Plains");
-  check(!game.travel(STONY_FIELD) && !game.travel(BURIAL_GROUNDS), 'travel to an area with no map went somewhere');
+  check(!game.travel(CAVE_1) && !game.travel(CRYPT) && !game.travel(PASSAGE), 'travel to an area with no map went somewhere');
   const jumps = notes.jumps;
   check(game.travel(COLD_PLAINS) && game.area.id === COLD_PLAINS && dist(p.pos, wp.pos) < 2.5 && notes.jumps === jumps + 1, `the tools' way to Cold Plains: ${game.area.key}, ${dist(p.pos, wp.pos).toFixed(1)} from its waypoint`);
   check(p.waypoints.join() === String(CAMP_AREA), `going there touched its waypoint: ${p.waypoints.join()}`);
@@ -185,23 +194,36 @@ export default async (load) => {
   west = game.level;
   check(west.difficulty === 0 && west !== nm, 'back in normal on the nightmare overworld');
 
-  // ── the roads on out of Cold Plains: closed, the map shut past them ──
-  const roads = west.objects.filter((o) => o.kind === 'exit');
-  check(roads.length >= 1 && roads.every((o) => o.closed && o.name.includes('未开通') && [STONY_FIELD, BURIAL_GROUNDS].includes(o.dest) && west.areaAt(o.pos.x, o.pos.z).id === COLD_PLAINS), `the overworld's exits: ${roads.map((o) => `${o.dest}${o.closed ? ' closed' : ''} ${o.name}`).join(', ')}`);
-  for (const r of roads) {
-    // nothing walks on past the road's end: the tiles beyond are off the map
-    let open = 0;
-    for (let k = 2; k <= 6; k++) if (ow.map.walkableAt(r.pos.x - r.inward.x * k, r.pos.z - r.inward.z * k)) open++;
-    check(!open, `past the road to area ${r.dest}, ${open} tile(s) can be walked`);
-    check(west.wayTo(r.dest, p.pos) === null, `a way leads to area ${r.dest}`);
-  }
-  if (roads[0]) {
+  // ── Stony Field and the Burial Grounds: on this map, gone to by waypoint as a jump ──
+  check(west.objects.every((o) => o.kind !== 'exit'), `the overworld has exits: ${west.objects.filter((o) => o.kind === 'exit').map((o) => o.dest).join()}`);
+  const builtBefore = notes.levels;
+  const stonyWp = west.objects.find((o) => o.kind === 'waypoint' && west.areaAt(o.pos.x, o.pos.z).id === STONY_FIELD);
+  check(!!stonyWp && !west.objects.some((o) => o.kind === 'waypoint' && west.areaAt(o.pos.x, o.pos.z).id === BURIAL_GROUNDS), 'Stony Field has no waypoint, or the Burial Grounds have one');
+  check(game.travel(BURIAL_GROUNDS) && game.area.id === BURIAL_GROUNDS && game.level === west, `the tools' way to the Burial Grounds: ${game.area.key}`);
+  check(game.travel(STONY_FIELD) && game.area.id === STONY_FIELD && game.level === west && notes.levels === builtBefore && dist(p.pos, stonyWp.pos) < 2.5, `the tools' way to Stony Field: ${game.area.key}, ${notes.levels - builtBefore} level(s) built, ${dist(p.pos, stonyWp.pos).toFixed(1)} from its waypoint`);
+  notes.messages = [];
+  game.interact(stonyWp);
+  check(p.waypoints.join() === `${CAMP_AREA},${COLD_PLAINS},${STONY_FIELD}` && notes.messages.includes('传送点已激活') && saved().progress[0].waypoints.includes(STONY_FIELD), `using Stony Field's waypoint: waypoints ${p.waypoints.join()}, saved ${JSON.stringify(saved().progress[0].waypoints)}`);
+
+  // ── the ways under the west block with no map yet: closed, used they say so once and go nowhere ──
+  for (const dest of [CAVE_1, PASSAGE, CRYPT, MAUSOLEUM]) {
+    const o = west.objects.find((x) => x.kind === 'stairs' && x.dest === dest);
+    const name = areaDef(dest)?.name ?? D2X_AREAS.find((a) => a.id === dest).name;
+    if (!o) {
+      problems.push(`no way to area ${dest}`);
+      continue;
+    }
+    const area = west.areaAt(o.pos.x, o.pos.z).id;
+    check(o.closed && o.name === `通往${name}` && area === (dest === CAVE_1 ? COLD_PLAINS : dest === PASSAGE ? STONY_FIELD : BURIAL_GROUNDS), `the way to area ${dest}: ${o.name}, closed ${o.closed}, in area ${area}`);
+    check(west.wayTo(dest, p.pos) === null, `a way leads to area ${dest}`);
+    game.teleportWithin(west.layout.map.nearestWalkable(o.pos.x + o.inward.x * 1.5, o.pos.z + o.inward.z * 1.5));
     notes.messages = [];
-    game.teleportWithin(roads[0].pos);
-    game.update(DT);
-    game.update(DT);
-    check(game.level === west && notes.messages.filter((t) => t.includes('还没有开通')).length === 1, `at a closed road: said ${notes.messages.join(' / ') || 'nothing'}, on the overworld ${game.level === west}`);
+    const built = notes.levels;
+    game.interact(o);
+    game.interact(o);
+    check(game.level === west && game.area.id === area && notes.levels === built && notes.messages.length === 1 && notes.messages[0].includes('还没有开通'), `using the closed way to area ${dest}: said ${notes.messages.join(' / ') || 'nothing'}, in ${game.area.key}, ${notes.levels - built} level(s) built`);
   }
+  game.travel(COLD_PLAINS);
 
   // ── chests and barrels at their area's level ──
   for (const [kind, area] of [['chest', COLD_PLAINS], ['barrel', WILD_AREA], ['chest', WILD_AREA]]) {
@@ -224,7 +246,7 @@ export default async (load) => {
   // ── the trial ground: the debug panel's floors, new each time, no waypoint touched ──
   game.enterTrial(3);
   const t1 = game.level;
-  check(game.area.key === 'floor3' && t1 !== west && p.waypoints.join() === `${CAMP_AREA},${COLD_PLAINS}`, `the trial ground's floor 3: ${game.area.key}, waypoints ${p.waypoints.join()}`);
+  check(game.area.key === 'floor3' && t1 !== west && p.waypoints.join() === `${CAMP_AREA},${COLD_PLAINS},${STONY_FIELD}`, `the trial ground's floor 3: ${game.area.key}, waypoints ${p.waypoints.join()}`);
   game.enterTrial(3);
   check(game.level !== t1 && game.area.key === 'floor3', 'the trial ground gave the same floor again');
   const stairs = game.level.objects.find((o) => o.kind === 'stairs');
@@ -246,9 +268,20 @@ export default async (load) => {
   game.save();
   game.continueGame(0, true);
   check(game.worldSeed === seed && game.area.id === COLD_PLAINS && game.level.layout.seed === ow.seed, `reloaded: seed ${game.worldSeed} (was ${seed}), in ${game.area.key}`);
-  check(game.level !== west && game.player.waypoints.join() === `${CAMP_AREA},${COLD_PLAINS}`, 'reloaded on the old level, or the waypoints are lost');
+  check(game.level !== west && game.player.waypoints.join() === `${CAMP_AREA},${COLD_PLAINS},${STONY_FIELD}`, 'reloaded on the old level, or the waypoints are lost');
+  // saved in Stony Field, a reload plays on there, in the same world, its waypoint kept
+  game.travel(STONY_FIELD);
+  game.save();
+  check(saved().area === STONY_FIELD, `saved in Stony Field as area ${saved().area}`);
+  game.continueGame(0, true);
+  check(game.worldSeed === seed && game.area.id === STONY_FIELD && game.level.layout.seed === ow.seed && game.player.waypoints.includes(STONY_FIELD), `reloaded from Stony Field: seed ${game.worldSeed} (was ${seed}), in ${game.area.key}, waypoints ${game.player.waypoints.join()}`);
+  // and in the Burial Grounds (no waypoint there): beside where it starts, on the overworld
+  game.travel(BURIAL_GROUNDS);
+  game.save();
+  game.continueGame(0, true);
+  check(game.area.id === BURIAL_GROUNDS && game.level.layout.seed === ow.seed, `reloaded from the Burial Grounds: in ${game.area.key}`);
   game.continueGame(0);
-  check(game.worldSeed !== seed && game.area.id === CAMP_AREA && game.player.waypoints.includes(COLD_PLAINS), `continued: seed ${game.worldSeed} (was ${seed}), in ${game.area.key}, waypoints ${game.player.waypoints.join()}`);
+  check(game.worldSeed !== seed && game.area.id === CAMP_AREA && game.player.waypoints.includes(COLD_PLAINS) && game.player.waypoints.includes(STONY_FIELD), `continued: seed ${game.worldSeed} (was ${seed}), in ${game.area.key}, waypoints ${game.player.waypoints.join()}`);
   const s2 = game.worldSeed;
   game.newGame('又一个', 'sorceress');
   check(game.worldSeed !== s2 && game.player.waypoints.join() === String(CAMP_AREA), 'a new game kept the last world, or its waypoints');
@@ -291,5 +324,5 @@ export default async (load) => {
   }
 
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
-  console.log(`  camp → Blood Moor → the Den and back, portals both ways, a respawn and waypoints on one map (${notes.levels} levels built in all); Cold Plains' waypoint activated by use; ${roads.length} closed road(s); a world a game, kept on a reload; a built dungeon made once from levelSeed by its maker`);
+  console.log(`  camp → Blood Moor → the Den and back, portals both ways, a respawn and waypoints on one map (${notes.levels} levels built in all); Cold Plains' and Stony Field's waypoints activated by use; the four ways with no map refused; a world a game, kept on a reload (Stony Field and the Burial Grounds too); a built dungeon made once from levelSeed by its maker`);
 };

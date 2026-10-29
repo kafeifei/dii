@@ -1,20 +1,22 @@
 import { RNG, type P2 } from '../core/math';
+import { D2X_AREAS } from '../data/d2x/areas';
+import type { QuestKey } from '../data/quests';
 import { areaDef } from './areas';
 import { Furnisher, type Prop } from './furnish';
-import type { Decor, Entrance, House, Npc, Room, Service } from './levelgen';
+import type { Decor, Entrance, House, Npc, PresetMonster, PresetSpot, Room, Service, SuperUnique } from './levelgen';
 import { BIG_ROCKS, TREES, clamp01, fbm, growWoods, pickWeighted, valueNoise } from './outdoors';
-import { CELL_PRESETS, campPreset, carveRuins, dressPreset, stampCamp, type CellPreset, type PresetOut, type Way } from './presets';
+import { CELL_PRESETS, campPreset, carveRuins, dressPreset, layGraveyard, onGraveWalk, stampCamp, type CellPreset, type PresetOut, type Way } from './presets';
 import { TileMap, T_FLOOR, T_VOID, T_WALL } from './tilemap';
 
 /**
  * An outdoor area made Diablo II's way (DrlgOutdoors.cpp DRLGOUTDOORS_GenerateLevel, DrlgOutWild.cpp
  * DRLGOUTWILD_InitAct1OutdoorLevel): a grid of 8×8-tile cells. The ring of cells round the edge is
- * border, woods (later cliffs too) that close the area in, opened only at its ports; some cells hold
- * presets (the waypoint, a cave mouth, shrines, stone fills, the sights of wild.ts); a road runs from
- * port to waypoint to port, footpaths run off it to the cave and the sights; the rest is open land
- * with groves and rocks. Every cell inside the border is a room for monsters. It is made in a map
- * of its own, so the Furnisher's flood fills stay small; the overworld (overworld.ts) copies it into
- * the big one.
+ * border, woods or cliffs that close the area in, opened only at its ports; some cells hold presets
+ * (the waypoint, a cave mouth, shrines, stone fills, the sights of wild.ts, the Cairn Stones); a road
+ * runs from port to waypoint to port, footpaths run off it to the caves and the sights; the rest is
+ * open land with groves and rocks. Every cell inside the border is a room for monsters. The Burial
+ * Grounds' inside is one graveyard instead (presets.ts layGraveyard). It is made in a map of its
+ * own, so the Furnisher's flood fills stay small; the overworld (overworld.ts) copies it into the big one.
  */
 
 /** D2's outdoor cell, in tiles (DRLGOUTDOORS_GenerateLevel: nGridWidth = nWidth / 8) */
@@ -60,6 +62,19 @@ export interface ZoneSpec {
   waypoint?: { by?: number };
   /** a cave mouth into area `dest`, in the free cell farthest from `farFrom` (zone tiles) */
   cave?: { dest: number; farFrom: P2 };
+  /** the sides whose border is a cliff rather than woods (Stony Field's north and west: docs/M2A.md 地图); its ports open through it */
+  cliffs?: Side[];
+  /** a cave mouth into area `dest` at a cliff's foot, in the cliff's border cell farthest from `farFrom` (Stony Field's Underground Passage) */
+  cliffCave?: { dest: number; farFrom: P2 };
+  /** dry earth in patches through the grass and more rocks than groves (Stony Field) */
+  stony?: boolean;
+  /**
+   * the inside a graveyard instead of open land (the Burial Grounds: presets.ts layGraveyard), with
+   * its two stairways down and the monster its middle plot sets down, with the quest it counts for
+   */
+  graveyard?: { crypt: number; mausoleum: number; boss: { monster: string; quest?: QuestKey } };
+  /** the superunique a sight sets down, by the sight's kind: Rakanishu in the Cairn Stones */
+  sightUniques?: Partial<Record<CellPreset, { key: string; monster: string; name: string }>>;
   shrines: number;
   sights: SightSpec[];
 }
@@ -92,9 +107,18 @@ export interface Zone {
   start?: P2;
   houses?: House[];
   npcs?: Npc[];
+  /** the wall tiles that are cliffs, by the zone's tile index (z × w + x) */
+  cliffs: number[];
+  /** the Cairn Stones, when it has them */
+  cairn?: { center: P2; stones: P2[] };
+  /** the named unique packs its presets set down, and the monsters that aren't superuniques (Blood Raven) */
+  superUniques: SuperUnique[];
+  presetMonsters: PresetMonster[];
+  /** the presets it was made with, in zone tiles */
+  presets: PresetSpot[];
 }
 
-type Use = 'border' | 'palisade' | 'open' | 'approach' | 'road' | CellPreset;
+type Use = 'border' | 'palisade' | 'open' | 'approach' | 'road' | 'barrow' | CellPreset;
 
 /** half an opening's width in tiles */
 const PORT_HALF = 3;
@@ -104,8 +128,16 @@ const PORT_DEPTH = CELL + 4;
 const EDGE_MIN = 4;
 /** D2's eight neighbours, in its order (DRLGOUTDOORS_SpawnRandomOutdoorDS1) */
 const NEAR8: [number, number][] = [[-1, 0], [0, -1], [0, 1], [1, 0], [-1, -1], [1, 1], [1, -1], [-1, 1]];
+/** how far in from the edge a cave mouth in a cliff stands: the cliff's foot, in its border cell */
+const CLIFF_MOUTH = 5.5;
+/** how many tiles past a graveyard's near sides no tree grows (the camera looks over them) */
+const GRAVE_CLEAR = 6;
+/** the lvlprest.json Def of the presets ours stand for, where it's known (tools/d2/maze.mjs: the Cairn Stones' cairn2.ds1) */
+const PRESET_DEF: Partial<Record<CellPreset, number>> = { cairn: 160 };
 
 const clampI = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
+/** what an area a way leads into is called: its AreaDef's, else its row's in the rename table (D2X_AREAS: an area this build has no def of, the Underground Passage) */
+const nameOf = (id: number) => areaDef(id)?.name ?? D2X_AREAS.find((a) => a.id === id)?.name ?? '';
 const ahead = (w: Way, d: number): P2 => ({ x: w.x + w.nx * d, z: w.z + w.nz * d });
 
 /** points along a Catmull-Rom curve through `pts`, about `step` apart (as wild.ts) */
@@ -254,6 +286,8 @@ export function generateZone(spec: ZoneSpec): Zone {
     if (use[a] === 'open') use[a] = 'approach';
     return a;
   });
+  // the Burial Grounds: every inner cell the graveyard's, its own walks for roads (layGraveyard)
+  if (spec.graveyard) for (let c = 0; c < N; c++) if (use[c] === 'open' || use[c] === 'approach') use[c] = 'barrow';
 
   /** the inner cells in D2's shuffled order: as many swaps of two random cells as there are cells (DRLGOUTDOORS_SpawnOutdoorLevelPreset) */
   const shuffled = () => {
@@ -319,6 +353,47 @@ export function generateZone(spec: ZoneSpec): Zone {
     caveCell = farthest(clearRound);
     if (caveCell < 0) caveCell = farthest((c) => use[c] === 'open');
     if (caveCell >= 0) use[caveCell] = 'cave';
+  }
+
+  // ── a cave mouth in a cliff (Stony Field's way into the Underground Passage, Levels.txt 4's warp to
+  // 10): in a border cell along a cliff side, none at a corner nor by a port, the one farthest from
+  // farFrom by the Den's measure, walked from a random one as D2 walks its cells. D2's DS1 for the
+  // cliff and its mouth isn't ours: where along the cliff it goes is ours, approximate ──
+  let cliffCell = -1;
+  let cliffMouth: P2 | undefined;
+  let cliffFace: P2 = { x: 0, z: 1 };
+  if (spec.cliffCave && spec.cliffs?.length) {
+    const portCells = portWays.map((w) => cellAt(ahead(w, 0.5)));
+    const nearPort = (c: number) => portCells.some((p) => Math.max(Math.abs((p % cw) - (c % cw)), Math.abs(((p / cw) | 0) - ((c / cw) | 0))) <= 1);
+    const cand: { c: number; face: P2; mouth: P2 }[] = [];
+    for (const side of spec.cliffs) {
+      const across = side === 'n' || side === 's';
+      const len = across ? cw : ch;
+      for (let k = 2; k <= len - 3; k++) {
+        const c = side === 'n' ? ci(k, 0) : side === 's' ? ci(k, ch - 1) : side === 'w' ? ci(0, k) : ci(cw - 1, k);
+        if (nearPort(c)) continue;
+        const along = k * CELL + CELL / 2 + 0.5;
+        const mouth = side === 'n' ? { x: along, z: CLIFF_MOUTH } : side === 's' ? { x: along, z: H - CLIFF_MOUTH } : side === 'w' ? { x: CLIFF_MOUTH, z: along } : { x: W - CLIFF_MOUTH, z: along };
+        const face = side === 'n' ? { x: 0, z: 1 } : side === 's' ? { x: 0, z: -1 } : side === 'w' ? { x: 1, z: 0 } : { x: -1, z: 0 };
+        cand.push({ c, face, mouth });
+      }
+    }
+    if (cand.length) {
+      const r0 = rng.int(0, cand.length - 1);
+      let best = -1;
+      for (let k = 0; k < cand.length; k++) {
+        const o = cand[(k + r0) % cand.length];
+        const dx = Math.abs(o.mouth.x - spec.cliffCave.farFrom.x);
+        const dz = Math.abs(o.mouth.z - spec.cliffCave.farFrom.z);
+        const d = Math.max(dx, dz) + Math.min(dx, dz) / 2;
+        if (d <= best) continue;
+        best = d;
+        cliffCell = o.c;
+        cliffMouth = o.mouth;
+        cliffFace = o.face;
+      }
+      use[cliffCell] = 'cliffcave';
+    }
   }
 
   // ── roads, laid cell by cell: the cheapest way through open cells, each cell a little dearer or
@@ -435,6 +510,8 @@ export function generateZone(spec: ZoneSpec): Zone {
       caveFace = Math.abs(dx) > Math.abs(dz) ? { x: Math.sign(dx), z: 0 } : { x: 0, z: Math.sign(dz) || 1 };
     }
   }
+  // the cliff's mouth faces into the area, whichever way its footpath comes
+  if (cliffMouth) footpath(new Set([cliffCell]), cliffMouth);
 
   // ── shrines: five in each Act 1 outdoor area, in random free cells (DRLGOUTDOORS_SpawnAct12Shrines(pLevel, 5)) ──
   const shrinePts: P2[] = [];
@@ -511,6 +588,7 @@ export function generateZone(spec: ZoneSpec): Zone {
   const clearings: { c: P2; r: number; floor: 'dirt' | 'stone' }[] = [];
   if (waypoint) clearings.push({ c: waypoint, r: CELL_PRESETS.waypoint.r, floor: 'stone' });
   if (cave) clearings.push({ c: cave, r: CELL_PRESETS.cave.r, floor: 'stone' });
+  if (cliffMouth) clearings.push({ c: cliffMouth, r: CELL_PRESETS.cliffcave.r, floor: 'stone' });
   for (const c of shrinePts) clearings.push({ c, r: CELL_PRESETS.shrine.r, floor: 'dirt' });
   for (const s of sights) if (CELL_PRESETS[s.kind].r > 0) clearings.push({ c: s.c, r: CELL_PRESETS[s.kind].r, floor: CELL_PRESETS[s.kind].floor });
   // each clearing's tiles, worked out once: 1 inside it, 2 within the groves' 1.5 more; and the
@@ -554,8 +632,9 @@ export function generateZone(spec: ZoneSpec): Zone {
       if (campOwns(x, z)) continue;
       const i = z * W + x;
       const d = Math.min(x, W - 1 - x, z, H - 1 - z);
-      // fbm is within ±1, so past CELL + 4 the noise can't take the land's edge that far in
-      const inLand = d >= EDGE_MIN && (d > CELL + 4 || d + fbm(edgeNoise, x / 14, z / 14) * 5 > CELL - 1);
+      // fbm is within ±1, so past CELL + 4 the noise can't take the land's edge that far in; a
+      // graveyard's land is its inner cells, the woods right behind its fence
+      const inLand = spec.graveyard ? d >= CELL : d >= EDGE_MIN && (d > CELL + 4 || d + fbm(edgeNoise, x / 14, z / 14) * 5 > CELL - 1);
       if (inLand || roadDist[i] < 1.8 || pathDist[i] < 1.3 || inPort(x, z) || inClearing(x, z)) map.tiles[i] = T_FLOOR;
     }
   }
@@ -565,44 +644,87 @@ export function generateZone(spec: ZoneSpec): Zone {
   const start = ahead(ways[0], 3);
   const seen = flood(map, start);
   for (let i = 0; i < W * H; i++) if (map.tiles[i] === T_FLOOR && !seen[i] && !campOwns(i % W, (i / W) | 0)) map.tiles[i] = T_VOID;
+
+  // ── cliffs: along a cliff side, what the land leaves of the border is rock, a wall drawn as a cliff
+  // (Layout.cliffs, render/walls.ts), in place of the woods; the ports and the cave's notch were cut
+  // as land already, so the way through stays open ──
+  const cliffs: number[] = [];
+  if (spec.cliffs?.length) {
+    const sides = spec.cliffs;
+    for (let i = 0; i < W * H; i++) {
+      if (map.tiles[i] !== T_VOID) continue;
+      const x = i % W;
+      const z = (i / W) | 0;
+      const by: [Side, number][] = [['n', z], ['w', x], ['s', H - 1 - z], ['e', W - 1 - x]];
+      const d = Math.min(z, x, H - 1 - z, W - 1 - x);
+      // only the border's: an island the walk left deeper in is woods as anywhere
+      if (d > CELL + 4) continue;
+      if (!by.some(([s, k]) => k === d && sides.includes(s))) continue;
+      map.tiles[i] = T_WALL;
+      cliffs.push(i);
+    }
+  }
   const land = (x: number, z: number) => map.tiles[z * W + x] !== T_VOID;
+  const inner = (x: number, z: number) => x >= CELL && z >= CELL && x < W - CELL && z < H - CELL;
 
   // ── what stands on the land: the presets, then groves and rocks, everything still reachable ──
   const keepClear: P2[] = [];
   for (const w of ways) keepClear.push(ahead(w, 2.5), ahead(w, 4));
   if (waypoint) keepClear.push(waypoint);
   if (cave) keepClear.push(cave);
+  if (cliffMouth) keepClear.push(cliffMouth);
   const furn = new Furnisher(map, rng, start, keepClear);
   for (const k of clearings) furn.reserveAround(k.c, 1);
   const out: PresetOut = { chests: [], barrels: [], shrines: [], elites: [], services: [], rocks: [] };
   const south = { x: 0, z: 1 };
   if (waypoint) dressPreset('waypoint', furn, rng, waypoint, south, out);
   if (cave) dressPreset('cave', furn, rng, cave, caveFace, out);
+  if (cliffMouth) dressPreset('cliffcave', furn, rng, cliffMouth, cliffFace, out);
   for (const c of shrinePts) dressPreset('shrine', furn, rng, c, south, out);
   for (const s of sights) dressPreset(s.kind, furn, rng, s.c, south, out);
+  const grave = spec.graveyard
+    ? layGraveyard(
+        furn,
+        rng,
+        {
+          x0: CELL,
+          z0: CELL,
+          cw: cw - 2,
+          ch: ch - 2,
+          gate: portWays[0],
+          crypt: { dest: spec.graveyard.crypt, name: nameOf(spec.graveyard.crypt) },
+          mausoleum: { dest: spec.graveyard.mausoleum, name: nameOf(spec.graveyard.mausoleum) },
+        },
+        out,
+      )
+    : undefined;
 
-  // groves and rock outcrops, off the roads, the openings and the clearings (as wild.ts); thinner round the camp
+  // groves and rock outcrops, off the roads, the openings and the clearings (as wild.ts); thinner
+  // round the camp, more rock than grove on stony land, none in a graveyard (its own trees)
   const keep = (x: number, z: number) => {
     const i = z * W + x;
     if (roadDist[i] < 3.4 || pathDist[i] < 2 || inPort(x, z) || inClearing(x, z, 1.5)) return true;
     return ways.some((w) => Math.hypot(x + 0.5 - w.x, z + 0.5 - w.z) < 6);
   };
   const thick = town ? 0.4 : 1;
+  const [treeP, rockAt, rockP] = spec.stony ? [0.2, 0.25, 0.32] : [0.45, 0.5, 0.2];
   for (let z = 0; z < H; z++) {
     for (let x = 0; x < W; x++) {
-      if (!land(x, z) || inCampCell(x, z) || keep(x, z)) continue;
+      if (!land(x, z) || inCampCell(x, z) || keep(x, z) || (grave && inner(x, z))) continue;
       const g = fbm(groveNoise, x / 9, z / 9);
       const r = fbm(rockNoise, x / 7, z / 7);
-      if (g > 0.3 && rng.chance(0.45 * thick)) furn.place(pickWeighted(rng, TREES), x, z, rng.int(0, 3), 0.8);
-      else if (r > 0.5 && rng.chance(0.2 * thick)) {
+      if (g > 0.3 && rng.chance(treeP * thick)) furn.place(pickWeighted(rng, TREES), x, z, rng.int(0, 3), 0.8);
+      else if (r > rockAt && rng.chance(rockP * thick)) {
         const big = rng.chance(0.3);
         if (furn.place(rng.pick(big ? BIG_ROCKS : ['x_rock_single_A', 'x_rock_single_B', 'x_rock_single_D']), x, z, rng.int(0, 3), 1)) out.rocks.push({ x: x + (big ? 1 : 0.5), z: z + (big ? 1 : 0.5) });
       }
     }
   }
 
-  // ── the woods: thick by the land, thinner further in, never on a road or in an opening ──
-  const woods = growWoods(rng, { x0: 0, z0: 0, x1: W, z1: H }, land, (x, z) => roadDist[z * W + x] < 2.6 || inPort(x, z));
+  // ── the woods: thick by the land, thinner further in, never on a road or in an opening; a
+  // graveyard's near sides (south and east) bare for a few tiles, so no tree hides its edge plots ──
+  const bareBy = (x: number, z: number) => !!grave && ((z >= H - CELL && z < H - CELL + GRAVE_CLEAR) || (x >= W - CELL && x < W - CELL + GRAVE_CLEAR));
+  const woods = growWoods(rng, { x0: 0, z0: 0, x1: W, z1: H }, land, (x, z) => roadDist[z * W + x] < 2.6 || inPort(x, z) || bareBy(x, z));
 
   // ── the ground: the camp's own inside its palisade; elsewhere road on the roads, earth in the
   // clearings and under the trees, stone round the rocks, grass the rest (as wild.ts) ──
@@ -616,6 +738,9 @@ export function generateZone(spec: ZoneSpec): Zone {
       }
     }
   }
+  // stony land shows dry earth in patches through the grass, the gravel's place until the A line's
+  // texture (docs/M2A.md 地图); made last, so no other area's making moves
+  const bareNoise = spec.stony ? valueNoise(rng) : null;
   for (let z = 0; z < H; z++) {
     for (let x = 0; x < W; x++) {
       const i = z * W + x;
@@ -627,6 +752,12 @@ export function generateZone(spec: ZoneSpec): Zone {
       const roadW = Math.max(clamp01((2.0 - roadDist[i]) / 0.7), clamp01((1.3 - pathDist[i]) / 0.6) * 0.85);
       let dirt = Math.max(clamp01(0.3 - fbm(soilNoise, x / 11, z / 11) * 1.3) * 0.75, clearDirt[i]);
       let st = Math.max(stone[i], clearStone[i]);
+      if (bareNoise && land(x, z)) dirt = Math.max(dirt, clamp01((fbm(bareNoise, x / 6, z / 6) - 0.05) * 2.2) * 0.85);
+      // a graveyard's walks are flagged, its plots dug earth
+      if (grave && inner(x, z)) {
+        if (onGraveWalk(x % CELL, z % CELL)) st = Math.max(st, 0.55);
+        else dirt = Math.max(dirt, 0.65);
+      }
       if (map.tiles[i] === T_WALL) st = 1;
       if (!land(x, z)) dirt = Math.max(dirt, 0.5 + Math.min(0.3, woods.fromLand(x, z) * 0.05));
       const rest = 1 - roadW;
@@ -660,13 +791,29 @@ export function generateZone(spec: ZoneSpec): Zone {
   }
 
   const entrances: Entrance[] = [];
-  if (cave && spec.cave) entrances.push({ x: cave.x, z: cave.z, dest: spec.cave.dest, name: areaDef(spec.cave.dest)?.name ?? '', kind: 'cave', nx: caveFace.x, nz: caveFace.z });
+  if (cave && spec.cave) entrances.push({ x: cave.x, z: cave.z, dest: spec.cave.dest, name: nameOf(spec.cave.dest), kind: 'cave', nx: caveFace.x, nz: caveFace.z });
+  if (cliffMouth && spec.cliffCave) entrances.push({ x: cliffMouth.x, z: cliffMouth.z, dest: spec.cliffCave.dest, name: nameOf(spec.cliffCave.dest), kind: 'cave', nx: cliffFace.x, nz: cliffFace.z });
+  if (grave) entrances.push(...grave.entrances);
   spec.ports.forEach((p, k) => {
     if (!p.closed) return;
     const w = portWays[k];
     const e = ahead(w, 1.5);
-    entrances.push({ x: e.x, z: e.z, dest: p.to, name: areaDef(p.to)?.name ?? '', kind: 'road', nx: w.nx, nz: w.nz });
+    entrances.push({ x: e.x, z: e.z, dest: p.to, name: nameOf(p.to), kind: 'road', nx: w.nx, nz: w.nz });
   });
+
+  // the presets it was made with (Layout.presets), and the monsters they set down
+  const cellRect = (c: number, n: number): Room => ({ x: (c % cw) * CELL, y: ((c / cw) | 0) * CELL, w: n * CELL, h: n * CELL });
+  const presets: PresetSpot[] = [];
+  if (caveCell >= 0) presets.push({ kind: 'cave', rect: cellRect(caveCell, 1), area: spec.area });
+  if (cliffCell >= 0) presets.push({ kind: 'cliffcave', rect: cellRect(cliffCell, 1), area: spec.area });
+  for (const s of sights) presets.push({ kind: s.kind, ...(PRESET_DEF[s.kind] !== undefined ? { d2: PRESET_DEF[s.kind] } : {}), rect: cellRect(s.cells[0], CELL_PRESETS[s.kind].cells), area: spec.area });
+  if (grave) presets.push({ kind: 'barrow', rect: { x: CELL, y: CELL, w: W - 2 * CELL, h: H - 2 * CELL }, area: spec.area });
+  const superUniques: SuperUnique[] = [];
+  for (const s of sights) {
+    const su = spec.sightUniques?.[s.kind];
+    if (su) superUniques.push({ pos: { ...s.c }, ...su });
+  }
+  const presetMonsters: PresetMonster[] = grave && spec.graveyard ? [{ pos: { ...grave.raven }, monster: spec.graveyard.boss.monster, ...(spec.graveyard.boss.quest ? { quest: spec.graveyard.boss.quest } : {}) }] : [];
 
   return {
     area: spec.area,
@@ -690,5 +837,10 @@ export function generateZone(spec: ZoneSpec): Zone {
     start: stamp?.start,
     houses: stamp?.houses,
     npcs: stamp?.npcs,
+    cliffs,
+    cairn: out.cairn,
+    superUniques,
+    presetMonsters,
+    presets,
   };
 }

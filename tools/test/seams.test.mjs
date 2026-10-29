@@ -2,7 +2,7 @@
 // the shares of the areas round a point are all one area deep inside it, half and half on the seam
 // and move smoothly between; the ground's per-tile mix of looks sums to one, is pure a few tiles off
 // a seam and mixed across it, on a straight seam and on the West overworld's for a few seeds; the
-// camp, Blood Moor and Cold Plains each look their own, and their looks blend by share (mist, grade,
+// camp, Blood Moor, Cold Plains, Stony Field and the Burial Grounds each look their own, and their looks blend by share (mist, grade,
 // specks) over the sky's grade by night and by day; and each area names its music and ambience,
 // D2's SoundEnv deciding which play on from one area into the next, which Sfx.enterArea crossfades.
 const SEEDS = [1, 7, 42, 20261026];
@@ -16,7 +16,7 @@ export default async (load) => {
   await load('three');
   const { areaShares, lookMix } = await load('/src/world/seams.ts');
   const { generateOverworld } = await load('/src/world/overworld.ts');
-  const { CAMP_AREA, WILD_AREA, COLD_PLAINS, DEN_OF_EVIL, areaDef, areaList } = await load('/src/world/areas.ts');
+  const { CAMP_AREA, WILD_AREA, COLD_PLAINS, STONY_FIELD, BURIAL_GROUNDS, DEN_OF_EVIL, areaDef, areaList } = await load('/src/world/areas.ts');
   const { GROUND_LOOKS, NO_SHIFT, blendAtmos, hasOwnLook, lookOf, newAtmos, shiftGrade } = await load('/src/render/arealooks.ts');
   const { areaSound, soundKey } = await load('/src/audio/sounds.ts');
   const { Sfx } = await load('/src/audio/sfx.ts');
@@ -75,8 +75,12 @@ export default async (load) => {
     check(hasOwnLook(a), `${a.key} has no look of its own`);
     check(!!GROUND_LOOKS[lookOf(a, 'town').ground], `${a.key}'s ground ${lookOf(a, 'town').ground} isn't a ground look`);
   }
-  const grounds = [camp, moor, plains].map((a) => lookOf(a, 'town').ground);
-  check(new Set(grounds).size === 3, `the camp, Blood Moor and Cold Plains wear grounds ${grounds.join(', ')}`);
+  const stony = areaDef(STONY_FIELD);
+  const barrow = areaDef(BURIAL_GROUNDS);
+  const grounds = [camp, moor, plains, stony, barrow].map((a) => lookOf(a, 'town').ground);
+  check(new Set(grounds).size === 5, `the camp, Blood Moor, Cold Plains, Stony Field and the Burial Grounds wear grounds ${grounds.join(', ')}`);
+  // Stony Field's cliffs are its layout's (Layout.cliffs), its other walls the wilderness's ruins
+  check(lookOf(stony, 'town').walls === 'ruins' && lookOf(barrow, 'town').walls === 'ruins', "Stony Field's or the Burial Grounds' walls aren't the wilderness's ruins");
   check(lookOf(camp, 'town').walls === 'palisade' && lookOf(moor, 'town').walls === 'ruins' && lookOf(plains, 'town').walls === 'ruins', 'the palisade is the camp\'s, the ruins the wilderness\'s');
   const den = lookOf(areaDef(DEN_OF_EVIL), 'cave');
   check(den.ground === 'cave' && den.walls === 'wall' && den.grade === NO_SHIFT && den.motes[0]?.[0] === 'cave', `the Den looks like ${JSON.stringify(den)}`);
@@ -127,16 +131,18 @@ export default async (load) => {
     const ow = generateOverworld(seed);
     const { w, h } = ow.map;
     const what = `seed ${seed}`;
-    const slot = new Map([[CAMP_AREA, 0], [WILD_AREA, 1], [COLD_PLAINS, 2]]);
+    const slot = new Map([[CAMP_AREA, 0], [WILD_AREA, 1], [COLD_PLAINS, 2], [STONY_FIELD, 3], [BURIAL_GROUNDS, 4]]);
     const t = performance.now();
-    const [m] = lookMix(ow.areaOf, w, h, (a) => slot.get(a), 3, GROUND_SEAM);
+    const mixes = lookMix(ow.areaOf, w, h, (a) => slot.get(a), 5, GROUND_SEAM);
     const ms = performance.now() - t;
     check(ms < 60, `${what}: the ground's look mix took ${ms.toFixed(0)} ms`);
+    // slot s's share at tile i, the five over two textures
+    const sh = (i, s) => mixes[s >> 2][i * 4 + (s & 3)];
     let mixed = 0;
     let bad = 0;
     for (let i = 0; i < w * h; i++) {
-      const v = [m[i * 4], m[i * 4 + 1], m[i * 4 + 2]];
-      if (!near(v[0] + v[1] + v[2], 255, 3) || m[i * 4 + 3]) bad++;
+      const v = [0, 1, 2, 3, 4].map((s) => sh(i, s));
+      if (!near(v.reduce((a, b) => a + b, 0), 255, 4) || mixes[1][i * 4 + 1] || mixes[1][i * 4 + 2] || mixes[1][i * 4 + 3]) bad++;
       if (Math.max(...v) < 250) mixed++;
     }
     check(!bad, `${what}: ${bad} tile(s) whose looks don't sum to one`);
@@ -145,13 +151,13 @@ export default async (load) => {
       const at = (p) => Math.floor(p.z) * w + Math.floor(p.x);
       const [ia, ib] = [at(s.ta), at(s.tb)];
       const [sa, sb] = [slot.get(s.a), slot.get(s.b)];
-      check(m[ia * 4 + sb] > 20 && m[ib * 4 + sa] > 20, `${what}: across seam ${s.a}-${s.b} the ground doesn't blend (${m[ia * 4 + sb]}, ${m[ib * 4 + sa]})`);
+      check(sh(ia, sb) > 20 && sh(ib, sa) > 20, `${what}: across seam ${s.a}-${s.b} the ground doesn't blend (${sh(ia, sb)}, ${sh(ib, sa)})`);
       // further in along the way through, each side's own
       const dx = Math.sign(Math.round(s.tb.x - s.ta.x));
       const dz = Math.sign(Math.round(s.tb.z - s.ta.z));
       const inA = at({ x: s.ta.x - dx * (2 * GROUND_SEAM + 1), z: s.ta.z - dz * (2 * GROUND_SEAM + 1) });
       const inB = at({ x: s.tb.x + dx * (2 * GROUND_SEAM + 1), z: s.tb.z + dz * (2 * GROUND_SEAM + 1) });
-      check(m[inA * 4 + sa] >= 250 && m[inB * 4 + sb] >= 250, `${what}: ${2 * GROUND_SEAM + 1} tiles off seam ${s.a}-${s.b} the ground isn't each side's own`);
+      check(sh(inA, sa) >= 250 && sh(inB, sb) >= 250, `${what}: ${2 * GROUND_SEAM + 1} tiles off seam ${s.a}-${s.b} the ground isn't each side's own`);
       // the air, walked through the opening from AIR_SEAM before it to AIR_SEAM past it: from all
       // of the one to all of the other, smoothly
       const shares = [];
@@ -175,7 +181,7 @@ export default async (load) => {
     check(/^music\./.test(s.music ?? '') && (s.amb ?? []).length && s.amb.every((id) => /^amb\./.test(id)), `${a.key} names music ${s.music} and ambience ${s.amb}`);
   }
   check(soundKey(areaSound(camp)) !== soundKey(areaSound(moor)), "the camp sounds like Blood Moor: walking out wouldn't crossfade");
-  check(soundKey(areaSound(moor)) === soundKey(areaSound(plains)), 'Blood Moor and Cold Plains (both SoundEnv 2) sound different');
+  check([plains, stony, barrow].every((a) => soundKey(areaSound(moor)) === soundKey(areaSound(a))), 'Blood Moor, Cold Plains, Stony Field and the Burial Grounds (SoundEnv 2) sound different');
   check(areaSound(camp).music === 'music.town' && areaSound(moor).music === 'music.wild' && areaSound(areaDef(DEN_OF_EVIL)).music === 'music.dungeon', 'the music by SoundEnv');
   // Sfx.enterArea crossfades when the sound changes and plays on when it doesn't (no AudioContext
   // in node: one is pretended, with no recordings, and the beds it starts are watched)
