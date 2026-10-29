@@ -107,6 +107,13 @@ export interface D2xObject {
   damage?: number;
 }
 
+/** an object's hover name: ours in Chinese and English, and the official English it was written against */
+export interface D2xObjectName {
+  name: string;
+  nameEn: string;
+  en: string;
+}
+
 /** the object groups the west block's dungeons roll (ObjGroup.txt), by row */
 export const D2X_OBJGROUPS: Record<number, D2xObjGroup> = {
   "4": {"id":4,"key":"Rogues for act1 w/o staked rogues","objects":[{"id":54,"density":30,"prob":37},{"id":55,"density":30,"prob":37},{"id":56,"density":30,"prob":26}]},
@@ -160,4 +167,19 @@ export const D2X_OBJECTS: Record<number, D2xObject> = {
   "397": {"id":397,"key":"ConsolationChest","nameKey":"chest","desc":"sparklychest","size":[2,2],"subclass":8,"populate":3,"init":57,"operate":4,"parm":[18],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"chest","drop":100,"trap":"rolled","lockable":true,"sparkly":true,"consolation":true},
   "580": {"id":580,"key":"PlaceUniqueChest","nameKey":"PlaceUniqueChest","desc":"Places a Unique Chest - due to legacy reasons this value cannot change","size":[0,0],"populate":0,"init":79,"operate":0,"orientation":0,"kind":"placeholder","sparkly":true,"becomes":[5,6,139,140,141,144,176,177,198,240,241,242,243]},
   "581": {"id":581,"key":"PlaceRandomTreasureChest","nameKey":"PlaceRandomTreasureChest","desc":"Places a random treasure chest - due to legacy reasons this value cannot change","size":[0,0],"populate":0,"init":79,"operate":0,"orientation":0,"kind":"placeholder","becomes":[5,6,139,140,141,144,176,177,198,240,241,242,243]},
+};
+
+/**
+ * The hover names of the objects the game shows (chests, barrels, caskets and their graves, rogue corpses,
+ * wells), ours (tools/d2-names/objects.json), by their Objects.txt Name string key (D2xObject.nameKey),
+ * and lockedchest, a locked chest's
+ */
+export const D2X_OBJECT_NAMES: Record<string, D2xObjectName> = {
+  "Casket": {"name":"棺椁","nameEn":"Burial Casket","en":"Casket"},
+  "chest": {"name":"宝箱","nameEn":"Coffer","en":"Chest"},
+  "lockedchest": {"name":"上锁的宝箱","nameEn":"Locked Coffer","en":"Locked Chest"},
+  "Barrel": {"name":"橡木桶","nameEn":"Oaken Barrel","en":"Barrel"},
+  "HoleAnim": {"name":"未遭亵渎的坟冢","nameEn":"Unprofaned Grave","en":"Undefiled Grave"},
+  "RogueCorpse": {"name":"战死的流离者","nameEn":"Slain Rogue","en":"Dead Rogue"},
+  "Well": {"name":"古井","nameEn":"Old Well","en":"Well"},
 };

@@ -52,6 +52,7 @@
 - `monster-prefixes.json`、`monster-suffixes.json`、`monster-titles.json`：随机暗金怪名字的三个词库（UniquePrefix / UniqueSuffix / UniqueAppellation 的字串键）。中文照官方的拼法：称号 + 前缀 + 后缀，称号以「·」结尾放在最前，比如「刽子手·晦冥蚀触」。前缀两个字，后缀是名词或「X者」，称号是「X者·」或两三个字的绰号。
 - `skills.json`：技能（Skills.txt 的 skill 列，如 `Valkyrie`）。火球术、冰封球这类通用叫法沿用官方译名，不用收；只收带专有名词意味的（召唤物、灵体之类的称谓，比如女武神、橡木智灵）。名字取自符文之语字串的技能（迷狂的变身）自动用 `runewords.json` 里的名字。怪物技能游戏里不显示名字，不用起。
 - `mercenaries.json`：佣兵的人名（Hireling 的 NameFirst…NameLast 之间的字串键，如 `merc01`）和佣兵类型名（字串键，如 `RogueScout`）。技能树名（「火系法术」「防御光环」这类）是通用词，沿用官方叫法。
+- `objects.json`：地图上物件的悬停名（Objects.txt 的 Name 字串键，如 `chest`、`Casket`、`RogueCorpse`、`Well`；上锁的箱子另有 `lockedchest`）。箱子、井这类通用词也不能和官方一样。D2CE 没有物件字串，条目里的 `en`、`official` 照 D2R 2.7 的 `objects.json` 写，起名时还要查别的物件的官方名（「石棺」是官方的 Sarcophagus，「棺材」是 Coffin）。神龛按它的祝福叫（`src/data/shrines.ts`），凯恩之石和发霉的书跟着 M2b 的任务起。
 
 `bases.json` 里 D2CE 没有中文字串的通用名（抗性卷轴这类）标 `"generic": true`：只有中文名，英文沿用官方的。
 

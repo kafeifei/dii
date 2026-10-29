@@ -588,6 +588,7 @@ section('English names');
     ...of('monster', 'monsters', ['monsters', 'npcs'], Object.values(X.D2X_MONSTERS).filter((m) => m.name), (m) => m.id),
     ...of('superunique', 'superuniques', ['monsters'], X.D2X_SUPERUNIQUES, (s) => s.key),
     ...of('area', 'areas', ['areas'], X.D2X_AREAS, (a) => a.id),
+    ...of('object', 'objects', ['objects'], Object.entries(X.D2X_OBJECT_NAMES ?? {}).map(([key, n]) => ({ ...n, key })), (o) => o.key),
     ...['prefix', 'suffix', 'title'].flatMap((k) => of(`unique monster ${k}`, `unique monster ${k}${k === 'title' ? 's' : 'es'}`, [`monster-${k}${k === 'title' ? 's' : 'es'}`], X.D2X_UNIQUE_NAMES[k], (w) => w.key)),
     ...Object.entries(X.D2X_HIRELING_NAMES).map(([k, v]) => ({ where: `hireling name ${k}`, group: 'hireling names', files: ['mercenaries'], zh: v.name, nameEn: v.nameEn, en: merc.en[k] })),
     ...X.D2X_HIRELINGS.filter((h) => h.type).map((h) => ({ where: `hireling ${h.id} type`, group: 'hireling types', files: ['mercenaries'], zh: h.type, nameEn: h.typeEn, en: hire27.get(h.id)?.Hireling })),
@@ -1059,6 +1060,31 @@ section('Dungeons: maze rows, object groups, objects and monster sequences, as 2
       ...(same(OB[7]?.cluster, [7, 11]) && OB[11]?.kind === 'explodingBarrel' ? [] : ['barrel 7']),
     ],
   );
+
+  // The hover names (rule 5): every object of a kind the game sets down (chest, barrel, exploding
+  // barrel, casket and its grave, rogue corpse, well) has ours by its Name string, a lockable chest a
+  // locked chest's too (lockedchest), each from tools/d2-names/objects.json and none the official
+  // Chinese or English it was written against (D2R 2.7's objects.json, which D2CE has not), its
+  // traditional Chinese counted the same as rule 1 has it.
+  {
+    const ON = X.D2X_OBJECT_NAMES ?? {};
+    const theirs = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/d2-names/objects.json'), 'utf8'));
+    const shown = new Set(['chest', 'barrel', 'explodingBarrel', 'casket', 'corpse', 'well']);
+    const nbad = [];
+    for (const o of Object.values(OB)) {
+      if (!shown.has(o.kind)) continue;
+      for (const key of [o.nameKey, ...(o.lockable ? ['lockedchest'] : [])]) if (!ON[key]?.name || !ON[key]?.nameEn) nbad.push(`object ${o.id}: no names for ${key}`);
+    }
+    for (const [key, n] of Object.entries(ON)) {
+      const t = theirs[key];
+      if (!t || t.name !== n.name || t.nameEn !== n.nameEn || t.en !== n.en) nbad.push(`${key}: not objects.json's names`);
+      const zh = (v) => (v ?? '').trim().replace(/[的之·・\s]/g, '');
+      if (t?.official && zh(n.name) === zh(t.official)) nbad.push(`${key}: ${n.name} is the official ${t.official}`);
+      if (t?.en && n.nameEn.toLowerCase().replace(/[\s'-]/g, '') === t.en.toLowerCase().replace(/[\s'-]/g, '')) nbad.push(`${key}: ${n.nameEn} is the official ${t.en}`);
+    }
+    count('object hover names', Object.entries(ON).map(([k, n]) => `${k} ${n.name}`).join('、'));
+    check("every object the game shows has our hover name by its Name string (a lockable chest a locked chest's too), objects.json's, none the official one", nbad);
+  }
 
   // the west block's monsters, worked out again: from the camp short of the Underground Passage (10),
   // what its areas list, its superuniques, Blood Raven (placed in Burial Grounds), the hireling, and
