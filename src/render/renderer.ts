@@ -908,7 +908,7 @@ export class Renderer implements Picker {
     g.position.set(o.pos.x, 0, o.pos.z);
     switch (o.kind) {
       case 'chest': {
-        const { group, lid } = makeChest(false);
+        const { group, lid } = makeChest();
         group.rotation.y = Math.PI / 4 + Math.PI;
         g.add(group);
         const looted = () => {
@@ -933,7 +933,7 @@ export class Renderer implements Picker {
       case 'stash': {
         // the one chest in the camp, the gold-bound kind that opens in the dungeon too, made big and
         // set on a pool of warm light so it is easy to find
-        const { group } = makeChest(false);
+        const { group } = makeChest();
         group.rotation.y = Math.PI / 4 + Math.PI;
         group.scale.multiplyScalar(1.8);
         // lit from within, not by the camp's pooled lights, which go to whatever is nearest

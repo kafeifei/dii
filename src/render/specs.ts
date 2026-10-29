@@ -232,8 +232,6 @@ export function monsterSpec(m: Monster): ModelSpec {
     }
     case 'demon':
       return ranked({ model: 'mon_demon', rig: 'quat', height: 1.45 * sc, emissive: '#2a0800', clips: meshyClips(1.45 * sc, 1.48, 4.83, atk(['Attack', 'Attack2'])) });
-    case 'skullfly':
-      return ranked({ model: 'mon_skullfly', rig: 'quat', height: 0.95 * sc, float: 1.0, motion: 'hover', emissive: '#1a0c04', clips: NO_CLIPS });
     case 'skelmage': {
       const h = 1.7 * sc;
       return ranked({
@@ -247,16 +245,10 @@ export function monsterSpec(m: Monster): ModelSpec {
     case 'bat':
       // wide wings: size by wingspan
       return ranked({ model: 'mon_bat', rig: 'quat', height: 2.5 * sc, fitWidth: true, float: 0.9, motion: 'flap', clips: NO_CLIPS });
-    case 'mushroom': {
-      const h = 1.75 * sc;
-      return ranked({ model: 'mon_mushroom', rig: 'quat', height: h, clips: meshyClips(h, 1.33, 3.98, atk(['Attack'])) });
-    }
     case 'yeti': {
       const h = 1.75 * sc;
       return ranked({ model: 'mon_yeti', rig: 'quat', height: h, clips: meshyClips(h, 1.42, 4.68, atk(['Attack', 'Attack2'])) });
     }
-    case 'dragon':
-      return ranked({ model: 'mon_dragon', rig: 'quat', height: 2.2 * sc, fitWidth: true, float: 0.5, motion: 'flap', emissive: '#200800', clips: NO_CLIPS });
     case 'butcher': {
       const h = 1.65 * sc;
       return ranked({
@@ -422,12 +414,13 @@ function sorceressSpec(p: Player): ModelSpec {
 }
 
 /**
- * Meshy-generated paladin (tools/meshy-merge.mjs) is the default; ?aihero shows the earlier
- * AI hero (tools/ai-*.mjs pipeline), ?knight the KayKit knight
+ * Meshy-generated paladin (tools/meshy-merge.mjs) is the default; in `npm run dev`, ?aihero shows
+ * the earlier AI hero (tools/ai-*.mjs pipeline), ?knight the KayKit knight (dev-models.ts: dist has
+ * neither model)
  */
 const QUERY = typeof location !== 'undefined' ? location.search : '';
-const AI_HERO = QUERY.includes('aihero');
-const KNIGHT = QUERY.includes('knight');
+const AI_HERO = import.meta.env.DEV && QUERY.includes('aihero');
+const KNIGHT = import.meta.env.DEV && QUERY.includes('knight');
 
 /** in-game body height over the height Meshy rigs at (1.7 m): scales measured stride speeds */
 const MESHY_K = (1.8 * 0.9) / 1.7;

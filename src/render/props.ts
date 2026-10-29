@@ -118,54 +118,52 @@ export function makeTorch(color: string): { group: THREE.Group; flame: THREE.Spr
   return { group: g, flame };
 }
 
-export function makeChest(big = false): { group: THREE.Group; lid: THREE.Group } {
-  if (!big) {
-    const model = assetProp('d_chest_gold', 0.5, { ownMaterials: true });
-    const lidMesh = model?.getObjectByName('chest_gold_lid');
-    if (model && lidMesh?.parent) {
-      // the lid's own origin is its middle: hinge it on the back edge instead
-      model.updateMatrixWorld(true);
-      const box = new THREE.Box3().setFromObject(lidMesh);
-      const hinge = new THREE.Vector3((box.min.x + box.max.x) / 2, box.min.y, box.min.z);
-      const pivot = new THREE.Group();
-      lidMesh.parent.add(pivot);
-      pivot.position.copy(lidMesh.parent.worldToLocal(hinge));
-      pivot.updateMatrixWorld(true);
-      pivot.attach(lidMesh);
-      // the lid of a one-piece model is cut off a closed shell: show the inner faces once it opens
-      // and put a dark floor in the hollow
-      model.traverse((c) => {
-        const m = c as THREE.Mesh;
-        if (m.isMesh) (m.material as THREE.Material).side = THREE.DoubleSide;
-      });
-      const inside = new THREE.Mesh(new THREE.PlaneGeometry(box.max.x - box.min.x, box.max.z - box.min.z).rotateX(-Math.PI / 2), stdMat('#120c08', 1));
-      inside.scale.setScalar(0.9);
-      model.add(inside);
-      inside.position.copy(model.worldToLocal(new THREE.Vector3((box.min.x + box.max.x) / 2, box.min.y - 0.02, (box.min.z + box.max.z) / 2)));
-      model.userData.looted = false;
-      return { group: model, lid: pivot };
-    }
-  }
-  const model = big ? assetProp('d_trunk_large_A', 0.72, { ownMaterials: true }) : assetProp('d_trunk_medium_A', 0.82, { ownMaterials: true });
-  if (model) {
-    // single-mesh trunk: no lid to swing, the renderer dims it once looted
+/** a chest (the stash is one made bigger): the gold-bound chest, else a trunk, else drawn in code */
+export function makeChest(): { group: THREE.Group; lid: THREE.Group } {
+  const model = assetProp('d_chest_gold', 0.5, { ownMaterials: true });
+  const lidMesh = model?.getObjectByName('chest_gold_lid');
+  if (model && lidMesh?.parent) {
+    // the lid's own origin is its middle: hinge it on the back edge instead
+    model.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(lidMesh);
+    const hinge = new THREE.Vector3((box.min.x + box.max.x) / 2, box.min.y, box.min.z);
+    const pivot = new THREE.Group();
+    lidMesh.parent.add(pivot);
+    pivot.position.copy(lidMesh.parent.worldToLocal(hinge));
+    pivot.updateMatrixWorld(true);
+    pivot.attach(lidMesh);
+    // the lid of a one-piece model is cut off a closed shell: show the inner faces once it opens
+    // and put a dark floor in the hollow
+    model.traverse((c) => {
+      const m = c as THREE.Mesh;
+      if (m.isMesh) (m.material as THREE.Material).side = THREE.DoubleSide;
+    });
+    const inside = new THREE.Mesh(new THREE.PlaneGeometry(box.max.x - box.min.x, box.max.z - box.min.z).rotateX(-Math.PI / 2), stdMat('#120c08', 1));
+    inside.scale.setScalar(0.9);
+    model.add(inside);
+    inside.position.copy(model.worldToLocal(new THREE.Vector3((box.min.x + box.max.x) / 2, box.min.y - 0.02, (box.min.z + box.max.z) / 2)));
     model.userData.looted = false;
-    return { group: model, lid: new THREE.Group() };
+    return { group: model, lid: pivot };
+  }
+  const trunk = assetProp('d_trunk_medium_A', 0.82, { ownMaterials: true });
+  if (trunk) {
+    // single-mesh trunk: no lid to swing, the renderer dims it once looted
+    trunk.userData.looted = false;
+    return { group: trunk, lid: new THREE.Group() };
   }
   const g = new THREE.Group();
-  const s = big ? 1.4 : 1;
   const wood = stdMat('#5a3a1e');
   const iron = stdMat('#4a4a4a', 0.5, 0.7);
-  add(g, new THREE.BoxGeometry(0.8 * s, 0.42 * s, 0.5 * s), wood, 0, 0.21 * s, 0);
-  add(g, new THREE.BoxGeometry(0.84 * s, 0.06, 0.54 * s), iron, 0, 0.05, 0);
-  add(g, new THREE.BoxGeometry(0.06, 0.44 * s, 0.54 * s), iron, -0.25 * s, 0.22 * s, 0);
-  add(g, new THREE.BoxGeometry(0.06, 0.44 * s, 0.54 * s), iron, 0.25 * s, 0.22 * s, 0);
+  add(g, new THREE.BoxGeometry(0.8, 0.42, 0.5), wood, 0, 0.21, 0);
+  add(g, new THREE.BoxGeometry(0.84, 0.06, 0.54), iron, 0, 0.05, 0);
+  add(g, new THREE.BoxGeometry(0.06, 0.44, 0.54), iron, -0.25, 0.22, 0);
+  add(g, new THREE.BoxGeometry(0.06, 0.44, 0.54), iron, 0.25, 0.22, 0);
   const lid = new THREE.Group();
-  lid.position.set(0, 0.42 * s, -0.25 * s);
+  lid.position.set(0, 0.42, -0.25);
   g.add(lid);
-  add(lid, new THREE.BoxGeometry(0.82 * s, 0.14 * s, 0.52 * s), wood, 0, 0.07 * s, 0.25 * s);
-  add(lid, new THREE.BoxGeometry(0.86 * s, 0.05, 0.08), iron, 0, 0.12 * s, 0.25 * s);
-  add(lid, new THREE.BoxGeometry(0.1, 0.12, 0.06), stdMat('#c8a040', 0.4, 0.8), 0, 0.0, 0.52 * s);
+  add(lid, new THREE.BoxGeometry(0.82, 0.14, 0.52), wood, 0, 0.07, 0.25);
+  add(lid, new THREE.BoxGeometry(0.86, 0.05, 0.08), iron, 0, 0.12, 0.25);
+  add(lid, new THREE.BoxGeometry(0.1, 0.12, 0.06), stdMat('#c8a040', 0.4, 0.8), 0, 0.0, 0.52);
   return { group: g, lid };
 }
 

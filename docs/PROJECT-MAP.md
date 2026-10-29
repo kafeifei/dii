@@ -78,12 +78,13 @@
 
 ## 测试
 
-**单元测试** `npm test`（34 个文件，约 12 秒）：
+**单元测试** `npm test`（35 个文件，约 13 秒）：
 - 原版公式和数据：`d2-*.test.mjs`、`d2treasure`、`d2affixes`、`d2quality`、`d2legendary`；
 - 物品和交易：`items`、`tomes`、`stash`、`ctrlclick`、`services`；
 - 存档迁移：`save`；
 - 地图：`areas`、`levelgen`、`overworld`、`west`、`seamless`、`seams`；
 - 怪物：`spawn`、`d2-population`、`d2-monsters`、`d2-ai`；
+- 模型：`models`（清单和 `public/models` 的文件一一对上，地图摆的、手里拿的都在清单里）、`monster-models`；
 - 任务、图标、声音：`quests`、`icons`、`itempics`、`audio`、`sfx`、`ai-audio`。
 
 **场景测试**（无头浏览器，`node tools/play.mjs tools/scenarios/<名>.mjs --url <地址> --out <目录>`）：
@@ -108,6 +109,7 @@
 - **Vercel**：在没有未提交改动的检出里运行 `vercel build --prod`，再运行 `vercel deploy --prebuilt --prod`，地址是 dii-abyss.vercel.app。工作树里要有 `.vercel/project.json`，没有就从主检出复制。
 - **内部站点**：发布方法、地址和登录都不在仓库里，用本机的内部站点 skill 发布，记下它报的版本。
   - 平台限制：最多 5000 个文件、总共 50 MB。2026-10-28 我们是 1117 个文件、43.2 MB，资源压缩要先做。
+- `dist/` 只带游戏显示得出来的模型：调试用的（`?aihero`、`?knight`，见 `src/render/dev-models.ts`）只在 `npm run dev` 里有，构建时 `vite.config.ts` 去掉；用不到的列在 `tools/build-models.mjs` 的 `UNUSED`，不构建（2026-10-28 去掉这 8 个后是 1109 个文件、39.6 MB）。
 
 ## 并行开发怎么做
 

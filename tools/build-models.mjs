@@ -1,21 +1,33 @@
 // Optimizes models-src/ into public/models/ (run fetch-models.mjs first).
-// node tools/build-models.mjs
+// node tools/build-models.mjs            rebuild them all
+// node tools/build-models.mjs --prune    only drop the UNUSED ones' files and rewrite the list, no rebuild
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { dedup, meshopt, prune, quantize, resample, simplify, textureCompress, weld } from '@gltf-transform/functions';
 import { MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
 
-const SRC = path.resolve('models-src');
-const OUT = path.resolve('public/models');
+// paths from the repo root, wherever this runs from
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const SRC = path.join(ROOT, 'models-src');
+const OUT = path.join(ROOT, 'public/models');
+const PRUNE = process.argv.includes('--prune');
 fs.mkdirSync(OUT, { recursive: true });
 await MeshoptEncoder.ready;
 await MeshoptSimplifier.ready;
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.encoder': MeshoptEncoder });
-for (const f of fs.readdirSync(OUT)) if (f.endsWith('.glb')) fs.rmSync(path.join(OUT, f));
+if (!PRUNE) for (const f of fs.readdirSync(OUT)) if (f.endsWith('.glb')) fs.rmSync(path.join(OUT, f));
 const built = [];
+
+/**
+ * Sources nothing in the game can show any more, left unbuilt (they stay in models-src): the old
+ * monsters' bodies, which no look draws (src/data/monsters.ts LOOKS); the long trunk the stash was
+ * before it became the gold-bound chest; the KayKit shelf, which no room hangs (src/world/furnish.ts)
+ */
+const UNUSED = new Set(['mon_dragon', 'mon_mushroom', 'mon_skullfly', 'd_trunk_large_A', 'd_shelf_large']);
 
 /** KayKit clips we actually play; every KayKit character shares this rig */
 const KAYKIT_CLIPS = new Set([
@@ -53,6 +65,14 @@ function dropAnim(anim) {
 }
 
 async function build(src, out, opts = {}) {
+  const key = out.replace('.glb', '');
+  if (UNUSED.has(key)) return;
+  if (PRUNE) {
+    // the file built last stays as it is
+    if (!fs.existsSync(path.join(OUT, out))) throw new Error(`${out} isn't built yet: run without --prune`);
+    built.push(key);
+    return;
+  }
   // an AI-generated replacement (tools/ai-props.mjs) takes over the pack model's key
   if (!src.startsWith('ai/') && fs.existsSync(path.join(SRC, 'ai-props', out))) src = `ai-props/${out}`;
   const doc = await io.read(path.join(SRC, src));
@@ -72,7 +92,7 @@ async function build(src, out, opts = {}) {
       anim.setName(short);
     }
   }
-  const b = budget(out.replace('.glb', ''));
+  const b = budget(key);
   const before = triangles(root);
   await doc.transform(dedup(), prune(), weld(), resample());
   // lockBorder keeps a chest lid cut from its body from pulling apart along the cut
@@ -83,14 +103,14 @@ async function build(src, out, opts = {}) {
   // meshopt-compressed (the runtime loader decodes it): a quarter to a half of the plain size
   await doc.transform(quantize({ quantizeNormal: 10, quantizePosition: 14 }), meshopt({ encoder: MeshoptEncoder, level: 'high' }));
   await io.write(path.join(OUT, out), doc);
-  built.push(out.replace('.glb', ''));
+  built.push(key);
   const kb = Math.round(fs.statSync(path.join(OUT, out)).size / 1024);
   const after = triangles(root);
   console.log(`${out.padEnd(28)} ${String(kb).padStart(5)} KB  anims=${root.listAnimations().length}${after < before ? `  tris ${Math.round(before)} → ${Math.round(after)}` : ''}`);
 }
 
 // KayKit characters are all replaced by AI ones; the knight (?knight) and the minion carrying the
-// shared animation library stay for comparison
+// shared animation library stay for comparison, in `npm run dev` only (src/render/dev-models.ts)
 await build('kaykit/Skeleton_Minion.glb', 'skeleton_minion.glb', { keepAnims: (n) => KAYKIT_CLIPS.has(n) });
 await build('kaykit/Knight.glb', 'knight.glb');
 for (const n of ['axe_1handed', 'axe_2handed', 'Skeleton_Blade', 'Skeleton_Axe', 'Skeleton_Crossbow', 'Skeleton_Staff', 'Skeleton_Shield_Small_A', 'Skeleton_Shield_Large_A']) {
@@ -111,10 +131,20 @@ if (fs.existsSync(path.join(SRC, 'ai-props'))) {
   for (const f of fs.readdirSync(path.join(SRC, 'ai-props'))) if (f.endsWith('.glb') && !built.includes(f.replace('.glb', ''))) await build(`ai-props/${f}`, f);
 }
 
+if (PRUNE) {
+  for (const f of fs.readdirSync(OUT)) {
+    if (!f.endsWith('.glb')) continue;
+    if (UNUSED.has(f.replace('.glb', ''))) {
+      fs.rmSync(path.join(OUT, f));
+      console.log(`dropped ${f}`);
+    } else if (!built.includes(f.replace('.glb', ''))) console.warn(`${f}: no source builds it any more; left in place, and not loaded`);
+  }
+}
+
 // the runtime preloads exactly what was built
 built.sort();
 fs.writeFileSync(
-  path.resolve('src/render/model-list.ts'),
+  path.join(ROOT, 'src/render/model-list.ts'),
   `// generated by tools/build-models.mjs — do not edit\nexport const MODEL_FILES = [\n${built.map((b) => `  '${b}',`).join('\n')}\n] as const;\n`,
 );
 console.log(`${built.length} models, list written to src/render/model-list.ts`);
