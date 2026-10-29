@@ -19,15 +19,21 @@ function mulberry(seed: number) {
 }
 
 const cache = new Map<string, THREE.Texture>();
-const loader = new THREE.TextureLoader();
+const loader = new THREE.ImageLoader();
 /** the tile textures still loading (tilesLoaded) */
 const loading = new Set<Promise<void>>();
+/** tile textures whose picture has come, waiting their turn to go on the GPU (admitTile) */
+const arrived: [THREE.Texture, HTMLImageElement][] = [];
 
-/** AI-painted tiling texture from public/textures (tools/ai-textures.mjs); draws once it has loaded */
+/**
+ * AI-painted tiling texture from public/textures (tools/ai-textures.mjs), as TextureLoader makes it;
+ * draws once it has loaded and been let onto the GPU (admitTile)
+ */
 export function tileTexture(name: string): THREE.Texture {
   const key = `t-${name}`;
   let t = cache.get(key);
   if (!t) {
+    const tex = (t = new THREE.Texture());
     let done = () => {};
     const coming = new Promise<void>((r) => (done = r));
     loading.add(coming);
@@ -35,7 +41,15 @@ export function tileTexture(name: string): THREE.Texture {
       loading.delete(coming);
       done();
     };
-    t = loader.load(`${import.meta.env.BASE_URL}textures/${name}.webp`, settle, undefined, settle);
+    loader.load(
+      `${import.meta.env.BASE_URL}textures/${name}.webp`,
+      (img) => {
+        arrived.push([tex, img]);
+        settle();
+      },
+      undefined,
+      settle,
+    );
     t.colorSpace = THREE.SRGBColorSpace;
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
     t.anisotropy = 8;
@@ -47,6 +61,26 @@ export function tileTexture(name: string): THREE.Texture {
 /** resolves once every tile texture asked for so far has loaded or failed (the model stream lets them go first) */
 export function tilesLoaded(): Promise<void> {
   return Promise.all([...loading]).then(() => {});
+}
+
+/** how many tile textures are still loading */
+export function tilesPending(): number {
+  return loading.size;
+}
+
+/**
+ * The first tile texture whose picture has come, put on the GPU now: its decode and upload are on the
+ * main thread (60–90 ms with the CPU four times slower), so they go one a frame, never two that came
+ * together in one; until then it draws as one still loading does. Whether one went up
+ */
+export function admitTile(webgl: THREE.WebGLRenderer): boolean {
+  const next = arrived.shift();
+  if (!next) return false;
+  const [t, img] = next;
+  t.image = img;
+  t.needsUpdate = true;
+  webgl.initTexture(t);
+  return true;
 }
 
 export function glowTexture(): THREE.Texture {

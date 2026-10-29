@@ -2,9 +2,11 @@
 // GLTFLoader that makes a pack's models from its listed keys: what's asked for NOW starts while the
 // background is still streaming, and before what's queued for later; a file that fails is tried once
 // more and then let go (failed, settled: what waited goes on with its stand-in), and one that fails
-// once comes the second time; nothing but NOW starts while something holds the stream back (a level's
-// tile textures), and the rest starts once that settles; a key no file serves is never waited on, and
-// only the misses that can come are noted (watch).
+// once comes the second time; nothing but NOW starts while a NOW file is still coming or something
+// holds the stream back (a level's tile textures), and the rest starts once that settles; making way
+// stops a background download with most of its file to go (queued again, no try spent, started over
+// once let go) and lets one nearly in finish; a key no file serves is never waited on, and only the
+// misses that can come are noted (watch).
 export default async (load) => {
   const THREE = await load('three');
   const { assets, NOW, LATER } = await load('/src/render/assets.ts');
@@ -15,18 +17,35 @@ export default async (load) => {
   const fetched = [];
   const fails = new Map();
   const gates = new Map();
+  /** files that come most of the way at once, the rest once this opens */
+  const tails = new Map();
   const fetch0 = globalThis.fetch;
   const warn0 = console.warn;
-  globalThis.fetch = async (url) => {
+  globalThis.fetch = async (url, opts = {}) => {
     const file = /models\/(.+)\.glb$/.exec(String(url))[1];
     fetched.push(file);
-    await gates.get(file);
+    // a stopped download (its signal aborted) fails as fetch does
+    const stopped = new Promise((_, no) => opts.signal?.addEventListener('abort', () => no(new DOMException('stopped', 'AbortError'))));
+    stopped.catch(() => {});
+    await Promise.race([gates.get(file), stopped]);
     const left = fails.get(file) ?? 0;
     if (left > 0) {
       fails.set(file, left - 1);
       return new Response('down', { status: 503 });
     }
-    return new Response(new TextEncoder().encode(file));
+    const bytes = new TextEncoder().encode(file);
+    const tail = tails.get(file);
+    if (!tail) return new Response(bytes);
+    const cut = Math.ceil(bytes.length * 0.8);
+    const body = new ReadableStream({
+      async start(c) {
+        c.enqueue(bytes.slice(0, cut));
+        await tail;
+        c.enqueue(bytes.slice(cut));
+        c.close();
+      },
+    });
+    return new Response(body, { headers: { 'content-length': String(bytes.length) } });
   };
   console.warn = () => {};
   /** what GLTFLoader would make of the file: a pack's models each a root node named by its key */
@@ -92,6 +111,21 @@ export default async (load) => {
       check(Date.now() - t1 < 50, 'a file given up on was waited on again');
       fails.set('mon_yeti', 0);
     }
+    // while a file something waits on (NOW) is coming, nothing else starts; the rest once it's in
+    {
+      fetched.length = 0;
+      const f = lib();
+      const open = gate('mon_skeleton');
+      const now = f.ensure(['mon_skeleton'], NOW);
+      f.stream();
+      await tick(20);
+      check(fetched.join() === 'mon_skeleton', `while the NOW file came, fetched ${fetched.join()}`);
+      open();
+      await now;
+      await tick(20);
+      check(fetched.length > 1, `once it was in, fetched ${fetched.join()}`);
+      await f.ensureAll();
+    }
     // held back: only NOW starts until what holds it settles
     {
       fetched.length = 0;
@@ -106,6 +140,36 @@ export default async (load) => {
       release();
       await later;
       check(c.has('mon_wraith'), 'what was held back came once released');
+    }
+    // making way: the background download with most of its file to go stops and is queued again with
+    // no try spent, starting over once let go; the one nearly in finishes
+    {
+      fetched.length = 0;
+      const e = lib();
+      const src = (f) => e.sources.find((s) => s.file === f);
+      const openGhoul = gate('mon_ghoul');
+      let tailOpen = () => {};
+      tails.set('mon_imp', new Promise((r) => (tailOpen = r)));
+      e.stream(['mon_ghoul', 'mon_imp']);
+      await tick(20);
+      check(fetched.join() === 'mon_ghoul,mon_imp', `the background began with ${fetched.join()}`);
+      let release = () => {};
+      e.hold(new Promise((r) => (release = r)));
+      e.makeWay();
+      await tick(20);
+      const g = src('mon_ghoul');
+      check(g.state === 'queued' && g.tries === 0 && !e.failed('mon_ghoul') && !e.settled('mon_ghoul'), `the download with most to go: ${g.state}, ${g.tries} tries`);
+      check(src('mon_imp').state === 'loading', `the one nearly in: ${src('mon_imp').state}`);
+      tailOpen();
+      await e.ensure(['mon_imp'], LATER);
+      await tick(20);
+      check(e.has('mon_imp') && fetched.length === 2, `while held: in ${e.has('mon_imp')}, fetched ${fetched.join()}`);
+      release();
+      openGhoul();
+      await e.ensure(['mon_ghoul'], LATER);
+      check(e.has('mon_ghoul') && fetched.filter((f) => f === 'mon_ghoul').length === 2 && src('mon_ghoul').tries === 1, `started over once let go: in ${e.has('mon_ghoul')}, fetched ${fetched.filter((f) => f === 'mon_ghoul').length}×`);
+      tails.delete('mon_imp');
+      await e.ensureAll();
     }
     // keys no file serves are never waited on; only misses that can come are noted
     {
@@ -126,5 +190,5 @@ export default async (load) => {
     console.warn = warn0;
   }
   if (problems.length) throw new Error(problems.join('\n'));
-  console.log('  NOW ahead of the background, a retry then let go, held back until released, no wait on what can\'t come');
+  console.log('  NOW ahead of the background and alone while it comes, a retry then let go, held back until released, way made by stopping what had most to go, no wait on what can\'t come');
 };

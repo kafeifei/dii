@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GLTFLoader, type GLTF, type GLTFParser } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { GLTFLoader, type GLTF, type GLTFLoaderPlugin, type GLTFParser } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { DEV_MODELS } from './dev-models';
 import { MODEL_KEYS, MODEL_PACKS } from './model-list';
@@ -42,6 +42,16 @@ interface Source {
   gaveUp: boolean;
   /** what waits on it coming or being given up on */
   settle: (() => void)[];
+  /** while its bytes come: how to stop them, how many have come and of how many (0: not said) */
+  fetch: Fetching | null;
+  /** stopped to let something go first (makeWay): queued again, not a failed try */
+  stopped: boolean;
+}
+
+interface Fetching {
+  stop: AbortController;
+  got: number;
+  size: number;
 }
 
 /** files fetched at once, at most this many of them ones nothing waits on (NEXT, LATER): what a level asks for gets through */
@@ -57,6 +67,12 @@ const RETRY_MAX_MS = 60000;
 const STALL_MS = 15000;
 /** how long a frame's share of making templates is (all the files coming share it): the rest waits for the next frame */
 const SLICE_MS = 4;
+/** behind a level's loading veil nothing moves to hitch: a frame's share is this much, so the veil lifts sooner */
+const VEILED_SLICE_MS = 24;
+/** a download stopped to make way (makeWay) has more than this share of its file to go: one nearly in finishes */
+const STOP_LEFT = 0.5;
+/** the bytes in that count as nearly in when the file's length isn't said */
+const STOP_GOT = 512 * 1024;
 /** the longest the files nothing waits on hold back for something that goes first (hold) */
 const HOLD_MS = 10000;
 
@@ -70,7 +86,7 @@ export interface Template {
   center: THREE.Vector3;
 }
 
-const source = (file: string, keys: readonly string[], pack: boolean): Source => ({ file, keys, pack, state: 'idle', prio: LATER, seq: 0, tries: 0, gaveUp: false, settle: [] });
+const source = (file: string, keys: readonly string[], pack: boolean): Source => ({ file, keys, pack, state: 'idle', prio: LATER, seq: 0, tries: 0, gaveUp: false, settle: [], fetch: null, stopped: false });
 
 class AssetLib {
   private templates = new Map<string, Template>();
@@ -95,9 +111,13 @@ class AssetLib {
   private watching: Set<string>[] = [];
   /** model bytes fetched, for the tools */
   bytes = 0;
-  /** when this frame's share of making templates began, and when the renderer last drew a frame (pause) */
+  /** when this frame's share of making templates began and the frame it's of; the frames drawn, and when the last was (pause) */
   private sliceStart = 0;
+  private sliceFrame = -1;
+  private frame = 0;
   private lastDraw = -Infinity;
+  /** this frame's share: SLICE_MS, or VEILED_SLICE_MS behind the veil */
+  private share = SLICE_MS;
 
   get(name: string): Template | undefined {
     const t = this.templates.get(name);
@@ -120,6 +140,11 @@ class AssetLib {
   /** whether a model's file has been given up on for now: its stand-in stays, and it's tried again later */
   failed(name: string): boolean {
     return !!this.byKey.get(name)?.gaveUp && !this.templates.has(name);
+  }
+
+  /** whether some file of this build carries the model: one that none does never comes */
+  serves(name: string): boolean {
+    return this.byKey.has(name);
   }
 
   /** whether a model is in or given up on, or can't come at all (none of this build's): nothing to wait for */
@@ -168,7 +193,8 @@ class AssetLib {
 
   /**
    * No file but those waited on (NOW) starts until `first` settles, or HOLD_MS: a level's tile
-   * textures go first (Renderer.buildLevel), so its ground shows as soon as it did before streaming
+   * textures go first (Renderer.buildLevel holds before it asks for the level's models, until the
+   * textures it asks for as it's built have come), so its ground shows as soon as it did before streaming
    */
   hold(first: Promise<unknown>) {
     this.holds++;
@@ -181,6 +207,22 @@ class AssetLib {
     };
     void first.then(release, release);
     setTimeout(release, HOLD_MS);
+  }
+
+  /**
+   * The downloads under way that nothing waits on (not NOW) and that have most of their file to go,
+   * stopped: what goes first (a level's tile textures as it's built, the files its veil waits on) has
+   * the network to itself, as before models streamed. Each is queued again as it was, to start over
+   * once nothing holds it back
+   */
+  makeWay() {
+    for (const s of this.sources) {
+      const f = s.fetch;
+      if (!f || s.prio === NOW || s.stopped) continue;
+      if (f.size ? f.size - f.got < f.size * STOP_LEFT : f.got > STOP_GOT) continue;
+      s.stopped = true;
+      f.stop.abort();
+    }
   }
 
   /** every file not asked for yet queued in the background, those of `first` (keys) first, in that order */
@@ -214,13 +256,17 @@ class AssetLib {
     s.seq = ++this.seq;
   }
 
-  /** the soonest wanted of the queued files started, as many as may load at once */
+  /**
+   * The soonest wanted of the queued files started, as many as may load at once; while something holds
+   * the stream back or a file something waits on (NOW) is still coming, none but those: a level's veil
+   * goes as soon as the network can bring what it waits on
+   */
   private pump() {
     while (this.loads < MAX_LOADS) {
       let next: Source | null = null;
       for (const s of this.sources) if (s.state === 'queued' && (!next || s.prio < next.prio || (s.prio === next.prio && s.seq < next.seq))) next = s;
       if (!next) break;
-      if (next.prio > NOW && this.holds) return;
+      if (next.prio > NOW && (this.holds || this.awaited())) return;
       if (next.prio >= NEXT && this.backgroundLoads >= MAX_BACKGROUND) return;
       void this.run(next);
     }
@@ -231,6 +277,11 @@ class AssetLib {
     }
   }
 
+  /** whether a file something waits on (NOW) is still coming: queued, under way or between its quick tries */
+  private awaited(): boolean {
+    return this.sources.some((s) => s.prio === NOW && s.state !== 'in' && s.state !== 'idle' && !s.gaveUp);
+  }
+
   private async run(s: Source) {
     s.state = 'loading';
     const background = s.prio >= NEXT;
@@ -239,10 +290,16 @@ class AssetLib {
     const ok = await this.attempt(s);
     this.loads--;
     if (background) this.backgroundLoads--;
+    const stopped = s.stopped;
+    s.stopped = false;
     if (ok) {
       s.state = 'in';
       s.gaveUp = false;
       this.settle(s);
+    } else if (stopped) {
+      // stopped to make way: queued again as it was, no try spent
+      s.tries--;
+      s.state = 'queued';
     } else if (s.tries < QUICK_TRIES) {
       s.state = 'retry';
       setTimeout(() => {
@@ -274,22 +331,35 @@ class AssetLib {
     for (const f of l) f();
   }
 
-  /** one go at a file, its models made templates; false if it failed, never thrown */
+  /** one go at a file, its models made templates; false if it failed or was stopped (makeWay), never thrown */
   private async attempt(s: Source): Promise<boolean> {
     s.tries++;
     try {
-      const buf = await fetchBytes(`${import.meta.env.BASE_URL}models/${s.file}.glb`);
+      const f: Fetching = (s.fetch = { stop: new AbortController(), got: 0, size: 0 });
+      let buf: ArrayBuffer;
+      try {
+        buf = await fetchBytes(`${import.meta.env.BASE_URL}models/${s.file}.glb`, f);
+      } finally {
+        s.fetch = null;
+      }
       this.bytes += buf.byteLength;
-      // tools/build-models.mjs writes meshopt-compressed files: decoded in a worker where there can be one
-      if (!this.loader) this.loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+      if (!this.loader) {
+        // tools/build-models.mjs writes meshopt-compressed files
+        this.loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+        this.loader.register((parser) => slicePictures(parser, () => this.pause(true)));
+      }
+      // decoded in a worker where there can be one
       if (!this.worker && typeof Worker !== 'undefined') {
         MeshoptDecoder.useWorkers(1);
         this.worker = true;
       }
+      // parsing starts on a share of a frame of its own: what it does at once (some 10 ms for a pack on
+      // a phone, its pictures aside: slicePictures) never piles onto another file's in one frame
+      await this.pause(true);
       await this.add(s, await this.loader.parseAsync(buf, `${import.meta.env.BASE_URL}models/`));
       return true;
     } catch (e) {
-      if (s.tries >= QUICK_TRIES) console.warn('model failed', s.file, e);
+      if (!s.stopped && s.tries >= QUICK_TRIES) console.warn('model failed', s.file, e);
       return false;
     }
   }
@@ -365,39 +435,105 @@ class AssetLib {
     return this.shared.has(x);
   }
 
-  /** the renderer drew a frame: making templates keeps to a frame's share (pause) while it does */
-  drew() {
+  /** the renderer drew a frame (behind a loading veil: `veiled`): making templates keeps to a frame's share (pause) while it does */
+  drew(veiled = false) {
+    this.frame++;
     this.lastDraw = performance.now();
+    this.share = veiled ? VEILED_SLICE_MS : SLICE_MS;
   }
 
   /**
-   * Called now and then while templates are made: once this share (SLICE_MS) is spent, waits until the
-   * next frame has been drawn, while the game is drawing (at the title, or on a hidden page, a moment)
+   * Called now and then while templates are made (`task`: in a task of its own). Once this frame's
+   * share (SLICE_MS, VEILED_SLICE_MS behind the veil; all the files coming share it) is spent, waits
+   * until the next frame has been drawn while the game is drawing; when it isn't (at the title, on a
+   * hidden page), for the next task only: there's no frame to keep, and a hidden page's timers would
+   * wait a second or more
    */
-  private async pause() {
-    const now = performance.now();
-    if (now - this.sliceStart < SLICE_MS) return;
-    const drawing = now - this.lastDraw < 250 && typeof document !== 'undefined' && document.visibilityState === 'visible';
-    await new Promise<void>((r) => (drawing ? requestAnimationFrame(() => setTimeout(r, 0)) : setTimeout(r, 0)));
-    this.sliceStart = performance.now();
+  private async pause(task = false) {
+    if (task) await nextTask();
+    while (performance.now() - this.sliceStart >= this.share) {
+      if (!this.drawing()) {
+        await nextTask();
+        this.sliceStart = performance.now();
+        return;
+      }
+      await afterFrame();
+      // the first back after a frame begins its share; the others back then wait for the next
+      if (this.sliceFrame !== this.frame) {
+        this.sliceFrame = this.frame;
+        this.sliceStart = performance.now();
+      }
+    }
   }
+
+  private drawing(): boolean {
+    return performance.now() - this.lastDraw < 250 && typeof document !== 'undefined' && document.visibilityState === 'visible';
+  }
+}
+
+/** the next task: a message to ourselves, which a hidden page doesn't hold back as it does timers (setTimeout where there's no page) */
+const waiting: (() => void)[] = [];
+let channel: MessageChannel | null = null;
+function nextTask(): Promise<void> {
+  if (typeof document === 'undefined' || typeof MessageChannel === 'undefined') return new Promise((r) => setTimeout(r, 0));
+  if (!channel) {
+    channel = new MessageChannel();
+    channel.port1.onmessage = () => waiting.shift()?.();
+  }
+  const ch = channel;
+  return new Promise((r) => {
+    waiting.push(r);
+    ch.port2.postMessage(0);
+  });
+}
+
+/** once the next frame has been drawn; at once if the page is hidden meanwhile (its frames stop) */
+function afterFrame(): Promise<void> {
+  return new Promise((r) => {
+    let done = false;
+    const go = () => {
+      if (done) return;
+      done = true;
+      document.removeEventListener('visibilitychange', go);
+      r();
+    };
+    document.addEventListener('visibilitychange', go);
+    requestAnimationFrame(() => setTimeout(go, 0));
+  });
+}
+
+/**
+ * A file's pictures made one at a time, each in a task of its own and within a frame's share
+ * (`pause`): each is a Blob, a URL and a fetch on the main thread, which for a pack's dozens came to
+ * some 45 ms at once with the CPU four times slower (a phone). What each texture is stays three's
+ */
+function slicePictures(parser: GLTFParser, pause: () => Promise<void>): GLTFLoaderPlugin {
+  const own = parser.loadImageSource.bind(parser);
+  let turn: Promise<unknown> = Promise.resolve();
+  parser.loadImageSource = (index, loader) => {
+    // the next one's turn comes once this one is made, not once its picture has decoded (off the main thread)
+    const made = turn.then(pause).then(() => ({ texture: own(index, loader) }));
+    turn = made.catch(() => undefined);
+    return made.then((m) => m.texture);
+  };
+  return { name: 'dii_slice_pictures' };
 }
 
 /** the material slots a model's pictures sit in */
 export const TEXTURE_SLOTS = ['map', 'emissiveMap', 'normalMap', 'roughnessMap', 'metalnessMap'] as const;
 
-/** a file's bytes; one that comes back an error, or stalls (STALL_MS without a byte), throws */
-async function fetchBytes(url: string): Promise<ArrayBuffer> {
-  const ctl = new AbortController();
+/** a file's bytes, counted in `f` as they come; one that comes back an error, stalls (STALL_MS without a byte) or is stopped throws */
+async function fetchBytes(url: string, f: Fetching): Promise<ArrayBuffer> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const poke = () => {
     clearTimeout(timer);
-    timer = setTimeout(() => ctl.abort(), STALL_MS);
+    timer = setTimeout(() => f.stop.abort(), STALL_MS);
   };
   poke();
   try {
-    const res = await fetch(url, { signal: ctl.signal });
+    const res = await fetch(url, { signal: f.stop.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    f.size = Number(res.headers.get('content-length')) || 0;
     if (!res.body) return await res.arrayBuffer();
     const parts: Uint8Array[] = [];
     let n = 0;
@@ -408,6 +544,7 @@ async function fetchBytes(url: string): Promise<ArrayBuffer> {
       if (done) break;
       parts.push(value);
       n += value.byteLength;
+      f.got = n;
     }
     const out = new Uint8Array(n);
     let at = 0;

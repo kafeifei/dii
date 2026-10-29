@@ -3,7 +3,7 @@ import { Sfx } from './audio/sfx';
 import { Input } from './core/input';
 import { Game } from './game/game';
 import { GALLERY } from './game/level';
-import { claimHero, markInGame, playedElsewhere, releaseHero, slotNow, useDevSlot, wasInGame } from './game/save';
+import { claimHero, heartbeat, markInGame, playedElsewhere, releaseHero, slotNow, useDevSlot, wasInGame } from './game/save';
 import { assets, NOW } from './render/assets';
 import { CORE, streamOrder } from './render/needs';
 import { Renderer } from './render/renderer';
@@ -45,6 +45,8 @@ function frame(now: number) {
   const held = renderer.veiled;
   if (game.started && !game.paused && !game.headless) {
     acc = held ? 0 : acc + dt;
+    // the world held, the hero still this tab's: it keeps saying so (a veil can outlast save.ts's GONE_MS)
+    if (held) heartbeat();
     while (acc >= STEP && steps < 6) {
       game.update(STEP);
       acc -= STEP;

@@ -30,7 +30,7 @@ import {
 } from './props';
 import { Rig, type AnimInput, type RigLook } from './rig';
 import { monsterSpec, npcSpec, playerSpec, vendorSpec } from './specs';
-import { aimLineTexture, glowTexture, ringTexture, runeCircleTexture, shadowTexture, tileTexture, tilesLoaded } from './textures';
+import { admitTile, aimLineTexture, glowTexture, ringTexture, runeCircleTexture, shadowTexture, tileTexture, tilesLoaded, tilesPending } from './textures';
 
 const CAM_YAW = Math.PI / 4;
 const CAM_PITCH = 0.68; // ~39°
@@ -488,12 +488,6 @@ export class Renderer implements Picker {
   readonly atmos = newAtmos();
   /** the sky's grade, shifted by the air's */
   private grade: Grade = { ...GRADES.town };
-  /**
-   * textures of the level's scenery that may first show far from where the hero comes in (the
-   * wilderness's ruins), put on the GPU as soon as they've loaded rather than on the frame they
-   * first come into view: a hitch out on the moor
-   */
-  private uploads: THREE.Texture[] = [];
   /** where the shadow-casting light stands from the view's centre: the sun or the moon outdoors */
   private sunOffset = new THREE.Vector3(-8, 20, 4);
   /** how much lanterns, fires and the hero's light count: all of it below ground and by night */
@@ -666,6 +660,10 @@ export class Renderer implements Picker {
 
   buildLevel(level: Level) {
     this.level = level;
+    // no model download but those the arrival waits on starts until the tile textures the level asks
+    // for as it's built have come: its ground shows as soon as it did before models streamed
+    let built = () => {};
+    assets.hold(new Promise<void>((r) => (built = r)).then(() => tilesLoaded()));
     this.request(level);
     // clear
     this.standIns = [];
@@ -783,6 +781,11 @@ export class Renderer implements Picker {
     const one = new THREE.Vector3(1, 1, 1);
     const col = new THREE.Color();
     const floors: THREE.InstancedMesh[] = [];
+    // the tile textures it asks for (the ground's and the floor's by now, the walls' below) have the
+    // network to themselves: the downloads under way that nothing waits on make way (assets.makeWay)
+    const makeWay = () => {
+      if (tilesPending()) assets.makeWay();
+    };
     if (!this.ground) {
       const floorMat = new THREE.MeshStandardMaterial({ map: tileTexture(`${theme.key}_floor`), roughness: 0.95, metalness: 0 });
       applyWorldUv(floorMat, 'floor', 4);
@@ -808,6 +811,8 @@ export class Renderer implements Picker {
       }
     }
 
+    makeWay();
+
     // walls, as the area each stands in builds them: the camp's palisade is uneven, the wilderness's
     // ruins are broken off low (so their tops show stone), other walls are capped in shadow
     const wallMats = new Map<WallKind, THREE.Material[]>();
@@ -821,7 +826,6 @@ export class Renderer implements Picker {
           ? new THREE.MeshStandardMaterial({ map: tileTexture('crypt_wall'), roughness: 0.95 })
           : new THREE.MeshStandardMaterial({ color: new THREE.Color(t.wall).lerp(new THREE.Color(t.wallDark), 0.35), roughness: 1 });
       if (kind === 'ruins') applyWorldUv(top, 'floor', 2);
-      for (const m of [side.map, top.map]) if (m && !this.uploads.includes(m)) this.uploads.push(m);
       applyOcclusionFade(side, this.occ);
       applyWorldUv(side, 'wall', 2);
       applyOcclusionFade(top, this.occ);
@@ -889,6 +893,9 @@ export class Renderer implements Picker {
         });
       }
     }
+    // every tile texture it wears asked for: the hold lasts until they've come
+    makeWay();
+    built();
 
     // furniture, wall hangings and town buildings (instanced CC0 models)
     this.buildProps(L, scenery);
@@ -1001,8 +1008,6 @@ export class Renderer implements Picker {
     // static objects get views lazily in sync()
     this.syncObjects(level, 0);
     this.snapCamera();
-    // the models nothing waits on yet wait for its tile textures: its ground shows as soon as it did before
-    assets.hold(tilesLoaded());
   }
 
   /** the camera on the hero at once instead of following (a level built, a jump across the map) */
@@ -1023,6 +1028,8 @@ export class Renderer implements Picker {
       const e: Essentials = { since: performance.now(), done: false, shown: false, flushed: 0 };
       this.essentials = e;
       void assets.ensure(first, NOW).then(() => (e.done = true));
+      // the downloads nothing waits on make way for them
+      assets.makeWay();
     } else this.essentials = null;
     void assets.ensure(levelNeeds(level), HERE);
     const ways = new Set<number>();
@@ -1384,6 +1391,8 @@ export class Renderer implements Picker {
     const place = (key: string, at: LatePlace['place'], standIn?: () => LatePlace['standIn']) => {
       const t = assets.get(key);
       if (t) return at(t);
+      // a model no file of this build carries never comes: left out, a house drawn in code, as always
+      if (!assets.serves(key)) return void standIn?.();
       let list = this.lateProps.get(key);
       if (!list) this.lateProps.set(key, (list = []));
       list.push({ place: at, standIn: standIn?.() });
@@ -1638,15 +1647,12 @@ export class Renderer implements Picker {
   }
 
   /**
-   * The first of `uploads` that has loaded, onto the GPU (one a frame: each is a few ms), and one of the
-   * pictures of models that came for what waits on them (warmed); behind the veil, all of those
+   * A tile texture that has loaded onto the GPU (admitTile: one a frame, the moment it's let on,
+   * wherever it first shows), or else one of the pictures of models that came for what waits on them
+   * (warmed); behind the veil, all of those
    */
   private uploadLoaded() {
-    const i = this.uploads.findIndex((t) => t.version > 0);
-    if (i >= 0) {
-      this.webgl.initTexture(this.uploads[i]);
-      this.uploads.splice(i, 1);
-    }
+    if (admitTile(this.webgl) && !this.rush) return;
     while (this.warming.length) {
       const t = this.warming.shift()!;
       if (this.onGpu.has(t)) continue;
@@ -1768,7 +1774,7 @@ export class Renderer implements Picker {
     this.rush = this.veiled;
     this.swapStart = 0;
     this.rigSwapped = false;
-    assets.drew();
+    assets.drew(this.rush);
     this.adaptResolution(dt);
     const p = g.player;
     const pp = this.at(p);
@@ -1902,8 +1908,9 @@ export class Renderer implements Picker {
       const main = near && sphereInFrustum(vw.main, mp.x, y, mp.z, r);
       const shadow = near && sphereInShadows(vw, mp.x, y, mp.z, m.dead ? r : MONSTER_SHADE * k);
       const drawn = main || shadow;
-      // a stand-in body goes once its models are in: made again at once below
-      if (drawn && v.body?.waits && this.swappable(v.body.waits, true, true)) {
+      // a stand-in body goes once its models are in: made again at once below if it's drawn, else
+      // as it next is (out of sight it just goes, outside the frame's budget: nothing shows)
+      if (v.body?.waits && (drawn ? this.swappable(v.body.waits, true, true) : [...v.body.waits].every((k) => assets.has(k)))) {
         this.freeMonsterView(v);
         v.body = null;
       }

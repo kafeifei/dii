@@ -2,14 +2,16 @@
 // (tools/play.mjs scenario):
 //   node tools/play.mjs tools/scenarios/stream.mjs --url "http://localhost:5174/?dev&tod=0.5"
 // In a context of its own whose network holds back the moor's pack, the dungeon pack and every monster
-// body, the game starts on the title's models. On the moor: things stand in (props not drawn, decor
-// and the way down drawn in code, monsters as procedural rigs); its files let through: every stand-in
-// swapped, none left, no monster drawn in code. Into the Den with its pack still held: veiled after
-// 1.5 s, the world held behind it (the game's clock stops); let through: the veil lifts, nothing
-// stands in. Then straight onto a trial floor whose pack fails outright: the level shows on its stand-
-// ins within its two tries, no veil left up, the file said to have failed; once it loads again a try
-// in the background swaps them in. Page errors fail the run. Shots at each step; the last line is
-// "STREAM OK …" or "STREAM FAIL …".
+// body, the game starts on the title's models, its tile textures held back too for a moment: no model
+// download starts until they're let go (they go first), and after that the stream goes on. On the
+// moor: things stand in (props not drawn, decor and the way down drawn in code, monsters as procedural
+// rigs); its files let through: every stand-in swapped, none left, no monster drawn in code. Into the
+// Den with its pack still held: veiled after 1.5 s, the world held behind it (the game's clock stops);
+// let through: the veil lifts, nothing stands in. Then straight onto a trial floor whose pack fails
+// outright: the level shows on its stand-ins within its two tries, no veil left up, the file said to
+// have failed; once it loads again a try in the background swaps them in. Last ?gallery, which has
+// every model there is: nothing stands in once it's up (a prop no file carries isn't waited for). Page
+// errors fail the run. Shots at each step; the last line is "STREAM OK …" or "STREAM FAIL …".
 export default async function (page, shot, log) {
   const url = page.url().split('?')[0];
   const ctx = await page.context().browser().newContext({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
@@ -26,7 +28,8 @@ export default async function (page, shot, log) {
   const letGo = (re) => {
     const q = held.get(re) ?? [];
     held.delete(re);
-    for (const r of q) r.continue();
+    // one the page has stopped meanwhile (assets.makeWay) can't go on: nothing to answer
+    for (const r of q) r.continue().catch(() => {});
   };
   await ctx.route(/\/models\/.+\.glb/, (route) => {
     const u = route.request().url();
@@ -37,7 +40,36 @@ export default async function (page, shot, log) {
   const WILD = /packs\/wild\.glb/;
   const DUNGEON = /packs\/dungeon\.glb/;
   const MONSTERS = /\/mon_[a-z_]+\.glb/;
-  for (const re of [WILD, DUNGEON, MONSTERS]) held.set(re, []);
+  const TEXTURES = /\/textures\/.+\.webp/;
+  for (const re of [WILD, DUNGEON, MONSTERS, TEXTURES]) held.set(re, []);
+  await ctx.route(TEXTURES, (route) => {
+    const q = held.get(TEXTURES);
+    if (q) q.push(route);
+    else route.continue().catch(() => {});
+  });
+  // the model files fetched, and when the first level began to be built (Renderer.buildLevel), on the page's clock
+  await ctx.addInitScript(() => {
+    window.__glb = [];
+    const f0 = window.fetch;
+    window.fetch = function (input, init) {
+      const u = String(input?.url ?? input);
+      if (/\.glb/.test(u)) window.__glb.push([performance.now(), u.split('/models/').pop()]);
+      return f0.call(this, input, init);
+    };
+    let r;
+    Object.defineProperty(window, 'renderer', {
+      configurable: true,
+      get: () => r,
+      set(v) {
+        r = v;
+        const own = v.buildLevel.bind(v);
+        v.buildLevel = (level) => {
+          window.__built ??= performance.now();
+          return own(level);
+        };
+      },
+    });
+  });
   const fails = [];
   const facts = [];
   const expect = (ok, what) => ok || fails.push(what);
@@ -58,9 +90,21 @@ export default async function (page, shot, log) {
   const until = (f, ms = 30000) => pg.waitForFunction(f, null, { timeout: ms, polling: 100 }).then(() => true, () => false);
   const snap = (name) => shot(name, pg);
   try {
-    await pg.goto(`${url}?dev&tod=0.5`);
+    // (the held textures would hold the page's load event too)
+    await pg.goto(`${url}?dev&tod=0.5`, { waitUntil: 'domcontentloaded' });
     await until(() => window.game?.started);
-    await pg.waitForTimeout(800);
+    // the camp's tile textures held 1.5 s: no model download starts from the moment the camp begins to
+    // be built until they're let go (none of the camp's is waited on); after that the stream goes on
+    await pg.waitForTimeout(1500);
+    const whileHeld = await pg.evaluate(() => window.__glb.filter(([t]) => t >= window.__built).map(([, f]) => f));
+    const heldTextures = held.get(TEXTURES)?.length ?? 0;
+    const releasedAt = await pg.evaluate(() => performance.now());
+    letGo(TEXTURES);
+    const after = () => pg.evaluate((at) => window.__glb.filter(([t]) => t >= at).map(([, f]) => f), releasedAt);
+    for (let i = 0; i < 50 && !(await after()).length; i++) await pg.waitForTimeout(100);
+    const afterHeld = await after();
+    expect(heldTextures > 0 && !whileHeld.length && afterHeld.length > 0, `${heldTextures} textures held; models fetched meanwhile: ${whileHeld.join(' ') || 'none'}; after: ${afterHeld.length}`);
+    facts.push(`camp: ${heldTextures} textures held, no model fetched meanwhile, ${afterHeld.length} once they came`);
     // to the moor's ruins, the monsters held still
     await pg.evaluate(() => {
       const g = window.game;
@@ -118,6 +162,15 @@ export default async function (page, shot, log) {
     await snap('floor-tried-again');
     expect(!back.standIns && !back.failed.length, `the pack back up, tried again: ${JSON.stringify(back)}`);
     facts.push(`a pack failing: shown on ${failed.standIns} stand-ins, no veil; back up, ${back.standIns} left`);
+
+    // the showroom: every model there is in before it's up, nothing left standing in
+    await pg.goto(`${url}?dev&tod=0.5&gallery`);
+    await until(() => window.game?.started, 60000);
+    const whole = await until(() => !window.renderer.standInCount(), 15000);
+    const gallery = await census();
+    await snap('gallery');
+    expect(whole && !gallery.standIns, `?gallery once up: ${JSON.stringify(gallery)}`);
+    facts.push(`gallery: ${gallery.standIns} standing in`);
   } catch (e) {
     fails.push(`error ${e.message}`);
   }
