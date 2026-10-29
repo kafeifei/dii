@@ -10,7 +10,7 @@
 
 `src/main.ts` 建三样东西，每帧按固定步长（1/60 秒）推进：
 
-- **Game**（`src/game/game.ts`）：模拟层，持有主角、当前地图、怪物、物件、共享储物箱、任务、难度。不碰 DOM，通过 `GameHooks` 通知界面（消息、开面板、死亡、换区、主角被别的窗口接管、存档状态等）。
+- **Game**（`src/game/game.ts`）：模拟层，持有主角、当前地图、怪物、物件、共享储物箱、任务、难度，以及地图上的佣兵（`Game.merc`，第 0 步之后由 M 线放上地图，现在一直是空的）。不碰 DOM，通过 `GameHooks` 通知界面（消息、开面板、死亡、换区、主角被别的窗口接管、存档状态、佣兵有变动等）。
 - **Renderer**（`src/render/`）：Three.js 画面，只读 Game 的状态。
 - **UI**（`src/ui/`）：DOM 界面，实现 `GameHooks`；标题页、暂停菜单、各个面板、HUD、触屏控制都在这里。
 
@@ -52,15 +52,15 @@
 
 | 目录 | 管什么 | 关键文件 |
 | --- | --- | --- |
-| `src/game/` | 模拟：主角、怪物、战斗、AI、物件、掉落、尸体、存档、秘境。`Game`（`game.ts`）自己只管开局、存档和交接、每帧调度，别的方法都是一行转发，代码按职责在下面这些模块里：写成 `function xxx(g: Game, …)`，只 `import type { Game }`；各模块的状态挂在 `Game` 上的小对象里（`maps`、`trip`、`finds`）；工具在实例上换掉的 `killMonster`、`rollLoot`、`heroClaimed`、`syncShared`，模块之间也经过 `g.` 调用（M2a 第 0 步，`docs/M2A-STEP0.md` 1.2） | `game.ts`（总控和对外的方法）、`maps.ts`（这局留着的地图）、`travel.ts`（进区域、传送点、回城门、出口）、`kills.ts`（击杀、主角死亡）、`fight.ts`（光环、互相推开、飞行物、锤子、爆炸、尸体清理）、`bodies.ts`（主角的尸体、复活）、`items.ts`（地上、腰带、储物箱里的物品）、`interact.ts`（按物件种类分派的 `USE` 表）、`containers.ts`（宝箱、木桶、神龛）、`townsfolk.ts`（商人、对话）、`playerctl.ts`（主角的动作）、`save.ts`（存档）、`player.ts`、`monster.ts`、`ai.ts`、`combat.ts`、`spawn.ts`、`loot.ts`、`corpse.ts`、`level.ts`、`rift.ts`（秘境）、`riftsave.ts` |
+| `src/game/` | 模拟：主角、怪物、战斗、AI、物件、掉落、尸体、存档、秘境。`Game`（`game.ts`）自己只管开局、存档和交接、每帧调度，别的方法都是一行转发，代码按职责在下面这些模块里：写成 `function xxx(g: Game, …)`，只 `import type { Game }`；各模块的状态挂在 `Game` 上的小对象里（`maps`、`trip`、`finds`）；工具在实例上换掉的 `killMonster`、`rollLoot`、`heroClaimed`、`syncShared`，模块之间也经过 `g.` 调用（M2a 第 0 步，`docs/M2A-STEP0.md` 1.2） | `game.ts`（总控和对外的方法；`friendlies()` 是这张地图上活着的友方：主角和佣兵）、`maps.ts`（这局留着的地图；`DUNGEON_MAKERS` 按区域登记地下城的造图函数，现在只有巢穴，`levelSeed` = 世界种子 + 区域编号，照 D2）、`travel.ts`（进区域、传送点、回城门、出口）、`kills.ts`（击杀、主角死亡；`killMonster` 带 `killer`：主角、佣兵或没人，没人杀的没有经验、不掉东西，佣兵杀的主角拿全份经验、按她的寻宝率掉落，任务和秘境都照算）、`fight.ts`（光环、互相推开、飞行物、锤子、爆炸、尸体清理；`monstersAround` 是这一帧要跑的怪：每个友方附近的怪的并集，主角附近的在前）、`merc.ts`（佣兵：主角留着的 `MercState`（`Player.merc`，随存档读写）、地图上的 `Merc`（照 `hireling.ts` 的 `mercStats` 造）、`mercStruck`（怪打她：她的防御和等级算命中，不格挡，装备不磨损），`updateMerc`、`mercDied` 是空的，M 线填）、`bodies.ts`（主角的尸体、复活）、`items.ts`（地上、腰带、储物箱里的物品）、`interact.ts`（按物件种类分派的 `USE` 表）、`containers.ts`（宝箱、木桶、神龛）、`townsfolk.ts`（商人、对话）、`playerctl.ts`（主角的动作）、`save.ts`（存档）、`player.ts`、`monster.ts`、`ai.ts`（怪在主角和佣兵里挑最近的、不在营地、55 子格以内的当目标：`friendlyTarget`，`Monster.target`）、`combat.ts`、`spawn.ts`（`presetMonster`、`spawnOne` 是桩，W 线、O 线填）、`loot.ts`、`corpse.ts`、`level.ts`（按 `Layout` 造物件：宝箱、木桶、神龛带 D2 的说明，石棺、游侠尸体、井；`'hire'` 服务也造成 `'vendor'` 物件，`serves` 说她雇佣）、`objects.ts`（`spent()` 是用过了的那几种）、`rift.ts`（秘境）、`riftsave.ts` |
 | `src/game/d2/` | 照 D2MOO 写的公式：属性、经验、死亡惩罚、速度档位、怪物数值、刷怪、怪物 AI；技能表达式求值器（照 Fog 的 Calc.cpp 算 Skills.txt、Missiles.txt 的 calc 列）和佣兵的规则（雇佣名单、等级、价钱、属性、技能、经验、装备、复活费），这两个还没接进游戏 | `stats.ts`、`xp.ts`、`death.ts`、`frames.ts`、`monstats.ts`、`population.ts`、`monai.ts`、`skillcalc.ts`、`hireling.ts` |
 | `src/game/quests/` | 任务框架（原版 16 个任务标志位）和「涤荡邪巢」 | `record.ts`、`denofevil.ts` |
 | `src/items/` | 物品：生成、词缀、品质、孔、耐久、价格、商店、卷轴书、储物箱页，调试面板的掉落 | `item.ts`、`gen.ts`、`vendor.ts`、`tomes.ts`、`stash.ts`、`debugloot.ts`、`d2/*` |
-| `src/world/` | 区域、大地图生成（营地 + 血沼荒原 + 凛寒原野无缝相连）、邪秽巢穴、试炼场、秘境的层和小层；照 D2MOO 的 DrlgMaze 长的迷宫（房间图、预设房间、主题房间）、物件摆放（照 Objects.cpp 按物件组掷）和西块的五个地下城（8、9、13、18、19 层），这三个还没接进游戏 | `areas.ts`、`overworld.ts`、`zone.ts`、`presets.ts`、`levelgen.ts`、`rift.ts`、`maze.ts`、`objgroups.ts`、`dungeons.ts` |
+| `src/world/` | 区域、大地图生成（营地 + 血沼荒原 + 凛寒原野无缝相连）、邪秽巢穴、试炼场、秘境的层和小层；照 D2MOO 的 DrlgMaze 长的迷宫（房间图、预设房间、主题房间）、物件摆放（照 Objects.cpp 按物件组掷）和西块的五个地下城（8、9、13、18、19 层），这三个还没接进游戏。区域 9、13、18、19（键 `cave1`、`cave2`、`crypt`、`mausoleum`，名字从改名表读）已定义、还没造；造好的区域按 levels.txt 编号排，是 `built-west.ts`（W 线）和 `built-dungeons.ts`（D 线）两份合起来。连接图 `areaLinks` 从 levels.json 的 walk 和 warps 双向取，`routeTo` 只走造好的区域，bot 和 bench 的路线是一份行程、两站之间用它找路，`nextArea` 只给调试面板 | `areas.ts`、`built-west.ts`、`built-dungeons.ts`、`overworld.ts`、`zone.ts`、`presets.ts`（营地；柯霞的位置 `hire`，站在营地那个女游侠的地方，还没放进服务）、`levelgen.ts`（`Layout`：宝箱木桶神龛的附加信息、`caskets`、`remains`、`wells`、`cliffs`、`cairn`、`presets`、`presetMonsters`）、`rift.ts`、`maze.ts`、`objgroups.ts`、`dungeons.ts` |
 | `src/data/d2x/` | 原版数据表，由 `tools/d2-import.mjs` 生成，**不要手改** | `monsters.ts`、`treasure.ts`、`affixes.ts`、`uniques.ts`、`areas.ts`、`maze.ts`、`objects.ts`、`monseq.ts`… |
-| `src/render/` | 模型（角色各一个文件，道具按用处合成几个包，按需加载）、动画、地面分块、灯光、昼夜、特效 | `renderer.ts`、`objviews.ts`（物件的样子、角色的骨架 `makeCharRig`）、`walls.ts`（墙的高度和材质，挡住主角时的淡出、按世界坐标贴图）、`friends.ts`（友方视图的挂点，给佣兵用，现在三个函数都是空的）、`assets.ts`（按需加载模型和道具包）、`needs.ts`（什么要哪些模型）、`models.ts`、`specs.ts`、`chunks.ts` |
-| `src/ui/` | 面板、HUD、标题页、物品图标（画好的图加原版换色）、秘境面板和进度条 | `ui.ts`、`inventory.ts`、`title.ts`、`icons.ts`、`itempics.ts`、`rift.ts` |
-| `src/audio/` | 音效、语音、音乐（录好的文件；缺失时退回代码合成） | `sfx.ts`、`music.ts`、`sounds.ts`、`files.ts`（生成的） |
+| `src/render/` | 模型（角色各一个文件，道具按用处合成几个包，按需加载）、动画、地面分块、灯光、昼夜、特效 | `renderer.ts`、`objviews.ts`（物件的样子、角色的骨架 `makeCharRig`；石棺、游侠尸体、井还没有模型，先由代码画）、`walls.ts`（墙的高度和材质，挡住主角时的淡出、按世界坐标贴图；悬崖 `'cliff'` 先用洞穴的岩石贴图，`Layout.cliffs` 里的墙格画成悬崖）、`friends.ts`（友方视图的挂点，给佣兵用，现在三个函数都是空的）、`assets.ts`（按需加载模型和道具包）、`needs.ts`（什么要哪些模型）、`models.ts`、`specs.ts`、`chunks.ts` |
+| `src/ui/` | 面板、HUD、标题页、物品图标（画好的图加原版换色）、秘境面板和进度条；小地图的标记是一张按物件种类的表（`automap.ts` 的 `MARKS`），佣兵画成绿点；雇佣和佣兵两个面板（M 线的）现在只写「还没做」，柯霞的菜单（`serves` 有 `'hire'`）有「雇佣」、没有交易 | `ui.ts`、`inventory.ts`、`title.ts`、`icons.ts`、`itempics.ts`、`rift.ts`、`automap.ts`、`hire.ts`、`merc.ts` |
+| `src/audio/` | 音效、语音、音乐（录好的文件；缺失时退回代码合成）。M2a 的声音 id 已加：鸟、羊头人、女游侠三类叫声的死亡声，女游侠受击，鸟巢孵化，绯鸦召唤，石棺、井、搜查，每个先用一个现有的合成音；`DEATH_SOUND`、`HURT_SOUND`、`MONSTER_SOUND`、`USE_SOUND` 几张表；墓窖和安魂陵的环境 `crypt`（录音还没做，先用地牢的底噪和合成音乐） | `sfx.ts`、`music.ts`、`sounds.ts`、`files.ts`（生成的） |
 | `tools/` | 导入原版数据、生成美术和声音、模型构建和图的大小、无头测试、bot、构建后的体积检查 | `d2-import.mjs`、`ai-icons.mjs`、`ai-audio.mjs`、`build-models.mjs`、`texel-density.mjs`、`ai-textures.mjs`、`play.mjs`、`bot.mjs`、`check-dist.mjs` |
 
 ## 存档：存什么、什么时候存、谁能写
@@ -81,9 +81,10 @@
 - 等级、经验、属性、技能和点数、装备、背包、个人储物箱、魔盒、腰带、光标上的物品、身上和储物箱的金币。
 - 快捷键、开着的光环、所在区域和地图种子（刷新时用）、难度。
 - 三个难度各自的传送点和任务标志。
-- 尸体（一具，带物品）、佣兵（还没做，原样写回）、生命和法力。
+- 尸体（一具，带物品）、生命和法力。
+- 佣兵（`SaveV4.merc`，形状和以前一样，没有加版本也没有加迁移步）：读进主角（`Player.merc`，`src/game/merc.ts` 的 `MercState`），写的时候从主角写出，和主角在同一个键里一次写完，交接和往返缓存的保证也就管到她。她的装备和主角的物品一起过 `mapItems`：读档时的 `knownItem` 和每个迁移步都只碰每件一次（items 迁移第 1 步原来单独再转一遍佣兵装备的那段删了）；v1–v3 的存档里有佣兵也照这样留下、转换。认不出的装备拿下来放到储物箱旁边。这个版本认不出的佣兵（没有的 Hireling.txt 行、她没有的装备格、字段类型不对，一般是更新版本的）原样留着（`MercState.raw`），不上场，原样写回；认得的佣兵身上这个版本不认识的字段也原样写回。没有佣兵写 `null`，存档一字不差。现在没有地方雇佣，`Player.merc` 只会来自存档。
 
-存档里不认识的物品放到营地储物箱旁边，不会删掉。
+存档里不认识的物品（佣兵身上的也一样）放到营地储物箱旁边，不会删掉。
 
 **什么时候写**：
 - 每 8 秒自动存。
@@ -118,14 +119,14 @@
 
 ## 测试
 
-**单元测试** `npm test`（47 个文件，约 18 秒）：
-- 原版公式和数据：`d2-*.test.mjs`、`d2treasure`、`d2affixes`、`d2quality`、`d2legendary`；
+**单元测试** `npm test`（47 个文件，约 16 秒）：
+- 原版公式和数据：`d2-*.test.mjs`、`d2treasure`、`d2affixes`、`d2quality`、`d2legendary`；`hero-d2` 还查击杀者：没人杀的没有经验、不掉东西、不算每杀回血，任务和秘境照算；佣兵杀的主角拿全份经验、按她的寻宝率掷，她的箭和毒杀死的算她的；
 - 技能表达式和佣兵（M2a 的地基，还没接进游戏）：`skillcalc`（Fog 的求值规则、佣兵的五个技能 1–60 级、主角十个技能对照原版说明）、`hireling`（雇佣名单、等级和价钱、属性、技能、经验、8 级门槛、能穿什么、复活费）；
 - 物品和交易：`items`、`tomes`、`stash`、`ctrlclick`、`services`，调试面板的掉落 `debugloot`；
-- 存档迁移：`save`；
+- 存档迁移：`save`（还有佣兵：v4 的佣兵读进主角、写出来一样；v1–v3 带佣兵装备时每件只过每一步一次、件数不变、认不出的那件在储物箱旁；v4 的佣兵身上认不出的装备放到储物箱旁、件数不变；认不出的佣兵原样写回、认得的佣兵身上不认识的字段留着；没有佣兵的存档读进来再写出去一字不差；更新版本的存档带佣兵时只读、不回写）；
 - 一个角色只在一个窗口里玩：`handover`（storage 事件到之前的存档、共享储物箱同步也最后存一次、交接、停下，只一次；提示说的存没存上是真的：存储拒绝、另一个窗口先写过而这里之后又玩过、更新版本的存档都说没能保存，另一个窗口先写过但这里没再玩过就说保存了；刷新中的窗口刷新记录，被打开就马上交接、不开始；开始时遇到另一个窗口的新记录，等它交接、读它最后写的，等的时候又被打开就交出去；从往返缓存回来，没人写过就重新认领、接着玩，别的窗口玩过并关掉了就停下、不再写，存档留着那个窗口的进度，冻住的页面下一次存档时也一样），`stash` 里还有两个窗口和共享储物箱的；
-- 地图：`areas`、`levelgen`、`overworld`、`west`、`seamless`、`seams`；西块的地下城（还没接进游戏）：`d2-maze-data`（LvlMaze、ObjGroup、Objects、MonSeq 导入的行对照手算的值）、`maze`（D2Seed、各难度的房间数、特殊房间是死胡同、主题房间，整层都走得到、首领在自己的房间、同一种子同一张图、每层不超过 200 毫秒）；
-- 怪物：`spawn`、`d2-population`、`d2-monsters`、`d2-ai`；
+- 地图：`areas`（还有区域 9、13、18、19 已定义未造，两份 BUILT，连接图：`routeTo(1,3)=[1,2,3]`、`routeTo(1,8)=[1,2,8]`，不经过没造好的区域，传送点列表按编号排，列石荒野造好后是 1、3、4）、`levelgen`（还有一层手造的地图带全部新的 `Layout` 字段，造出对应的物件、柯霞是雇佣的镇民；老地图的物件不多说什么；柯霞在营地的位置）、`overworld`、`west`（还有地下城登记：造好的地下城由它的造图函数用 `levelSeed` 造一次、留着、`forget()` 时放掉；`hasMerc`、`giveFreeMerc` 是桩）、`seamless`、`seams`；西块的地下城（还没接进游戏）：`d2-maze-data`（LvlMaze、ObjGroup、Objects、MonSeq 导入的行对照手算的值）、`maze`（D2Seed、各难度的房间数、特殊房间是死胡同、主题房间，整层都走得到、首领在自己的房间、同一种子同一张图、每层不超过 200 毫秒）；
+- 怪物：`spawn`、`d2-population`、`d2-monsters`、`d2-ai`（还有测试里造的佣兵：选更近的，营地里的和 55 子格以外的不算，目标死了换一个，主角在营地、佣兵在野外时打她）；
 - 模型：`models`（清单和 `public/models` 的角色文件、`packs/` 下的道具包一一对上，包里每张图只存一份，地图摆的、手里拿的都在清单里）、`monster-models`、`needs`（标题页等的核心模型包括营地的一切、主角能拿的每件武器、每种掉落和尸体；各个造东西的函数要的模型都在需求里；去下一个地方前预取的就是那里要的）、`assets`（假网络上：`NOW` 插在后台前面、它在下时别的不开始，失败再试一次后放手、不让人一直等，放手后后台的再试也用完了的，关卡再要它时马上再试、不等它，网络回来就下好，贴图先下时后台让路：还差一半以上的停下、不算失败、放开后从头下，快下完的接着下；跟着后台让路的（`Sfx` 先取的台词）让路时一起让，放开后才告诉它接着取；测试结束前停掉各个库后台的再试，不让它们在别的测试里用真的或别人替换的 `fetch`）；
 - 秘境：`rift`（33 层、开放规则、`dii-rift` 两个窗口合并、每一层的小层和镇守者、整个打一遍，见 `docs/RIFT.md`）；
 - 任务、图标、声音：`quests`、`icons`、`itempics`（每张图都画了、在图集里；图集解码后，游戏图表 `src/data/itempics.ts` 里每张图的位置显示的正是 `tools/icons/made` 给它记的像素（`atlas.pixels`，`tools/ai-icons.mjs` 拼图集时记下），图表和记录说的位置一致，每张图集是图表版本号指的那个文件；把 inv2ax 挪到 invgax 的上半截、或换成 invaxe 的位置都会失败）、`audio`、`sfx`、`ai-audio`；
@@ -216,7 +217,7 @@
 
 ## 已知缺口（2026-10-29）
 
-- 只建了营地、血沼荒原、邪秽巢穴、凛寒原野；从列石荒野往后（计划里的 M2a、M2b、M3）都还没做。
+- 只建了营地、血沼荒原、邪秽巢穴、凛寒原野；从列石荒野往后（计划里的 M2a、M2b、M3）都还没做。M2a 第 0 步的接口（2026-10-29）已经在：佣兵的骨架和存档、怪能打佣兵、新的 `Layout` 字段和物件种类、声音 id、新区域和连接图、地图登记表，以及各条线要填的桩（`docs/M2A-STEP0.md` 2），玩法和以前一样。
 - 技能数值还是原型版，要等计划里的 A5 阶段补全成原版；佣兵、赌博、赋予、各 NPC 分店还没做。
 - 只有亚喀蕾配了音，别的 NPC 还没有。她「感觉」的「觉」元音念对了（jué），声调在连读里念得偏平，没有重录。
 - 返回标题后，标题页下面定格的是退出那一刻的画面，头顶的「!」和刚进区域时的区域名也停在那里：领奖的话说到一半退出，奖励已经给了，亚喀蕾头上的「!」却还在。进了下一局就换掉，不会带过去。
@@ -224,4 +225,6 @@
 - 点「新的冒险」的那一帧很长：CPU 降速 4 倍时约 0.9 秒（长动画帧新版 915–934 毫秒、cf6c750 898–912，2026-10-29 在生产构建上各量 3 次），其中按下时初始化声音（`sfx.ensure`）约 140 毫秒，点击里开新游戏、建大地图约 320 毫秒，接着的第一帧约 380 毫秒。模型按需加载以前就这样，还没拆。接着走过荒原时没有超过 50 毫秒的帧（最长 27–34 毫秒，新旧一样）。
 - 新设备上开局马上打开的第一个面板还要等它的图集下载（拼图集多下的字节先取也来不及）：手机（844×390、3 倍像素、CPU 降速 4 倍、70 毫秒 9 Mbit/s）上背包 1.2–1.5 秒、储物箱 1.39–1.43 秒，每张图一个文件时（cf6c750）是 0.57–0.65 秒和 1.04–1.06 秒；开局 5 秒后打开就从缓存里取，0.31–0.35 秒和 0.39–0.43 秒，比那时还快（2026-10-29 在开发服务器上各量 3 次，每次新开浏览器、不用缓存）。拆细图集能少下一些，但要拆得很碎：估算暗金和套装一张图一个文件（93 个文件）时背包从 1.15 MB 到 0.81 MB，每种 4 张一份（164 个文件）时到 0.28 MB，一个文件一张图是 0.12 MB；没拆。
 - 视野里有几十只替身怪同时换成模型时（CPU 降速 4 倍，2026-10-29 量过 52 只），换的那几帧 40–50 毫秒：每帧只换一只，但 three 第一次画一个蒙皮模型时要逐顶点算它的包围球（排序用），在这些帧里占四分之一到三分之一。模型按需加载以前，怪第一次进视野时也一样要算。
+- `d2-ai` 在游戏里的前半段（血沼荒原空地上，一只堕落者死了、同伴逃开再回来）没有固定随机数，偶尔失败一次（2026-10-29 第 0 步 ⑥ 前后各单跑 20 次，前 1 次、后 0 次；后来又见过一次「the fallen never came back to strike」），重跑通过。
+- `smoke` 场景调试面板那一步「传奇」掉一件（物品等级按角色，11 级）约 12% 什么也不掉：随机挑到护身符时，11 级没有能做传奇的护身符底材（`debugLoot` 单跑 2000 次，第 0 步 ⑥ 前后都是约 230 次空），报「the unique button dropped 0 item(s)」，重跑通过。
 - 单元测试偶尔会有一次失败：是 `nearby`（2026-10-29 单跑十几次出一回），报「the path buffers hold 0 tiles on a 328×160 map」，像是那一局随机开出的大地图上还没有怪寻过路、缓冲区没分配，和模型无关，还要修。`icons` 场景会测手机上的性能，机器忙时偶尔超时失败（2026-10-28 一次用了 47 秒，平时约 18 秒），重跑通过。`monsters` 场景机器忙时也会失败一次（「Bishibosh didn't raise his fallen」）：等必希鲍什复活随从按真实时间等 14 秒，游戏每帧却最多只走 0.1 秒（`src/main.ts:41`），帧率一低，游戏里过的时间就不够；重跑通过。
