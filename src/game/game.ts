@@ -22,7 +22,8 @@ import { emptyPacket } from './actor';
 import { blastDamage, corpseGone, monsterDied, notice, updateMonster } from './ai';
 import { applyDamage, monsterStrike } from './combat';
 import { nullFx, type Fx } from './fx';
-import { GALLERY, Level } from './level';
+import type { Level } from './level';
+import { Maps, newSeed } from './maps';
 import type { Monster } from './monster';
 import { DelayedBlast, GroundItem, Projectile, WorldObject } from './objects';
 import { CHARGE_PREFIX, Player } from './player';
@@ -31,10 +32,8 @@ import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
 import { claimedElsewhere, claimHero, handOver, heroTaken, isReadOnly, loadSave, loadShared, markInGame, mayWriteLast, neverWrite, playedElsewhere, reclaimHero, savedWaypoints, setSlot, slotNow, syncShared, waitHandOver, writeSave, writtenElsewhere, type Difficulty } from './save';
 import { debugOpts } from './debug';
-import { WILD_MAPS } from '../world/levelgen';
-import { CAMP_AREA, DEN_OF_EVIL, areaDef, areaForDepth, areaLevel, builtWaypoints, depthForArea, dungeonArea, isBuilt, trialFloor, type AreaDef, type AreaKind } from '../world/areas';
-import { BUILT as WEST_AREAS, generateOverworld, type Overworld } from '../world/overworld';
-import { generateDen } from '../world/den';
+import { CAMP_AREA, areaDef, areaForDepth, areaLevel, builtWaypoints, depthForArea, dungeonArea, trialFloor, type AreaDef, type AreaKind } from '../world/areas';
+import type { Overworld } from '../world/overworld';
 import { SHRINE_BY_ID } from '../data/shrines';
 import { Quests } from './quests/control';
 import type { Topic } from './quests/quest';
@@ -106,9 +105,6 @@ export type Arrival = 'start' | 'stairs' | 'waypoint' | 'portal' | 'respawn' | '
  */
 export type HandOver = 'saved' | 'unsaved' | 'unplayed' | 'stale';
 
-/** a seed for a map made anew */
-const newSeed = () => (Math.random() * 2 ** 31) | 0;
-
 /** seconds from one midnight to the next under the sky */
 const DAY_LENGTH = 16 * 60;
 
@@ -150,18 +146,17 @@ export class Game {
   level!: Level;
   /** the map the far end of the hero's town portal is on (the camp's end leads back to it) */
   portalLevel: Level | null = null;
-  /** the trial ground's floor visited last, kept so waypoint trips and deaths don't reroll it */
-  lastDungeon: Level | null = null;
+  /** the trial ground's floor visited last (Maps.lastDungeon): the tools set it too (bot.mjs) */
+  get lastDungeon(): Level | null {
+    return this.maps.lastDungeon;
+  }
+  set lastDungeon(level: Level | null) {
+    this.maps.lastDungeon = level;
+  }
   /** the unknown items by the stash were pointed out this game: they may wait there for long */
   private toldUnknown = false;
-  /**
-   * The maps of this game, each made the first time it's entered and kept while the game lasts, as
-   * Diablo II keeps a game's levels: the West overworld (the camp, Blood Moor and Cold Plains on one
-   * map), the Den of Evil, and ?gallery's showroom standing in for the camp
-   */
-  private west: Level | null = null;
-  private den: Level | null = null;
-  private gallery: Level | null = null;
+  /** the maps of this game, made as they're entered (src/game/maps.ts) */
+  maps = new Maps(this);
   /**
    * the seed this game makes its maps from: a new one each game (D2Game GAME/Game.cpp
    * GAME_CreateNewEmptyGame seeds dwInitSeed afresh), the saved one carried across a reload
@@ -409,7 +404,8 @@ export class Game {
    */
   private newWorld(seed: number) {
     this.worldSeed = seed;
-    this.west = this.den = this.gallery = this.lastDungeon = this.portalLevel = null;
+    this.maps = new Maps(this);
+    this.portalLevel = null;
     // a rift is a game's: the next game opens its own
     this.rift.forget();
     this.area = null;
@@ -429,9 +425,7 @@ export class Game {
 
   /** the map this game keeps that holds area `id`, if it has been made yet (none is made here) */
   mapOf(id: number): Level | null {
-    if (WEST_AREAS.includes(id)) return this.west;
-    if (id === DEN_OF_EVIL) return this.den;
-    return null;
+    return this.maps.mapOf(id);
   }
 
   /** whether a quest has lit `level` up (the Den of Evil, cleared in this game) */
@@ -610,39 +604,8 @@ export class Game {
     return Math.abs(n);
   }
 
-  /** whether this build has a map of area `id`: the areas of normal play (isBuilt) and the trial ground's floors */
   hasMap(id: number): boolean {
-    return isBuilt(id) || trialFloor(id) !== undefined || this.rift.levelFor(id) !== null;
-  }
-
-  /**
-   * The map that holds area `id` in this game, made the first time it's asked for: the overworld for
-   * its areas, the Den of Evil's own, a trial floor (a new one when `fresh`, else the one left last).
-   * Null when this build has none
-   */
-  private levelFor(id: number, fresh = false): Level | null {
-    if (id === CAMP_AREA && GALLERY) return (this.gallery ??= new Level(0, this.worldSeed));
-    const rift = this.rift.levelFor(id);
-    if (rift) return rift;
-    if (WEST_AREAS.includes(id)) {
-      if (!this.west) {
-        const ow = generateOverworld(this.worldSeed);
-        // its monsters in the difficulty played (a new difficulty is a new game: setDifficulty)
-        this.west = new Level(WILD_MAPS, ow.seed, ow, this.player.difficulty);
-        this.rift.furnishCamp(this.west);
-      }
-      return this.west;
-    }
-    if (id === DEN_OF_EVIL) {
-      // its own seed from the world's, so a reload finds the same den
-      const seed = (Math.imul(this.worldSeed ^ 0x0de0f, 0x9e3779b1) + DEN_OF_EVIL) >>> 0;
-      return (this.den ??= new Level(WILD_MAPS, seed, generateDen(seed), this.player.difficulty));
-    }
-    if (trialFloor(id) === undefined) return null;
-    const depth = depthForArea(id)!;
-    // like D2: going back to the floor you left (waypoint, after dying) finds it as you left it
-    if (!fresh && this.lastDungeon?.depth === depth && this.lastDungeon.difficulty === this.player.difficulty) return this.lastDungeon;
-    return (this.lastDungeon = new Level(depth, newSeed(), undefined, this.player.difficulty));
+    return this.maps.hasMap(id);
   }
 
   /**
@@ -653,7 +616,7 @@ export class Game {
    */
   enterArea(id: number, how: Arrival): boolean {
     if (how === 'portal') return this.throughPortal(id);
-    const level = this.levelFor(id, how === 'stairs');
+    const level = this.maps.levelFor(id, how === 'stairs');
     if (!level) return false;
     const at = this.arrival(level, id, how, this.area?.id);
     this.arrive(level, at.pos, true, how, at.facing);
@@ -756,7 +719,7 @@ export class Game {
     const L = this.portalLevel;
     const far = L?.objects.find((o) => o.kind === 'portal' && !L.inTown(o.pos));
     if (id === CAMP_AREA) {
-      const camp = this.levelFor(CAMP_AREA)!;
+      const camp = this.maps.levelFor(CAMP_AREA)!;
       camp.objects = camp.objects.filter((o) => !(o.kind === 'portal' && camp.inTown(o.pos)));
       const s = camp.layout.start;
       const pt = { x: s.x - 2.5, z: s.z + 0.5 };
@@ -776,7 +739,7 @@ export class Game {
   /** the hero's town portal gone, both its ends, wherever they are */
   closePortals() {
     // a rift's own ways (src/game/rift.ts) aren't the hero's portal
-    for (const L of [this.west, this.den, this.gallery, this.lastDungeon, this.portalLevel, ...this.rift.levels()]) if (L) L.objects = L.objects.filter((o) => o.kind !== 'portal' || o.rift);
+    for (const L of [...this.maps.kept(), this.portalLevel, ...this.rift.levels()]) if (L) L.objects = L.objects.filter((o) => o.kind !== 'portal' || o.rift);
     this.portalLevel = null;
   }
 
@@ -1724,7 +1687,7 @@ export class Game {
     const L = this.level;
     // the maps this game keeps (levelFor), and the one the hero is on
     const live = new Set<object>([L]);
-    for (const l of [this.west, this.den, this.gallery, this.lastDungeon, this.portalLevel, ...this.rift.levels()]) if (l) live.add(l);
+    for (const l of [...this.maps.kept(), this.portalLevel, ...this.rift.levels()]) if (l) live.add(l);
     // the map holding the camp: the overworld, or ?gallery's showroom (its start is the camp's)
     const camp = L.inTown(L.layout.start);
     p.corpses.forEach((c, i) => {
@@ -2253,7 +2216,7 @@ export class Game {
     const here = this.level ? this.level.areaAt(p.pos.x, p.pos.z).id : undefined;
     const was = this.level;
     if (!this.switchDifficulty(d)) return;
-    if (was && was !== this.gallery && here !== undefined) {
+    if (was && was !== this.maps.gallery && here !== undefined) {
       if (trialFloor(here) !== undefined) this.enterArea(here, 'stairs');
       else this.enterArea(CAMP_AREA, 'waypoint');
     }
@@ -2271,7 +2234,7 @@ export class Game {
     p.markDirty();
     p.waypoints = savedWaypoints(p, d);
     this.closePortals();
-    this.west = this.den = this.lastDungeon = null;
+    this.maps.forget();
     // a game in another difficulty: its quests from that difficulty's record (D2 plays a difficulty a game)
     this.startQuests();
     return true;
