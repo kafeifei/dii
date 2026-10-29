@@ -14,12 +14,18 @@
 // kept to a budget; an ambience loop played round its loop points with no gap, the bed when it's
 // missing; a music track streamed through an <audio> element, faded in to its gain and crossfaded
 // to the next area's composed music, which also stands in for a missing track; a line spoken at its own pitch once
-// it's decoded, never over another, and not at all without a recording. And
+// it's decoded, never over another, and not at all without a recording; a townsperson's line said at
+// once over the hero's (cut off), as loud as NPC_LINE, its length told as it starts, the hero kept
+// from speaking over it, and silent within SPEECH_CUT of being stopped; one whose recording comes
+// late joining at the point its line's clock has reached (the take's own change of pitch heard
+// where the clock puts it), faded in; a greeting said beside the hero's line, both heard whole, and
+// the hero speaking over a greeting. And
 // the composed music: the same samples for the same area, another piece for another, heard but
 // quiet. Last, the game's own recordings against the synthesized sounds they replace, level for
 // level, its music against the music composed in its place and under the ambience and the fighting
-// it's heard with, and the hero's lines against its loudest cues (shippedLevels). The last line is
-// "SFX OK <summary>" or "SFX FAIL <reasons>".
+// it's heard with, every monster's death about as loud as a zombie's and well over the music, and
+// every take of the hero's lines, and of the townsfolk's, against its loudest cues (shippedLevels).
+// The last line is "SFX OK <summary>" or "SFX FAIL <reasons>".
 
 /** a WAV of `secs` seconds, 16-bit, the same in both channels */
 function wav(secs, fn, rate = 44100) {
@@ -58,6 +64,10 @@ const RECORDINGS = {
   // two lines, told apart by their pitch
   'line_a.wav': wav(0.6, tone(440, 0.2)),
   'line_b.wav': wav(0.6, tone(660, 0.2)),
+  // a townsperson's line, told apart from the hero's by its pitch
+  'speech.wav': wav(1.2, tone(330, 0.2)),
+  // one whose pitch changes half a second in: where it joins its line late is heard by where that falls
+  'speech2.wav': wav(1.2, (t) => (t < 0.5 ? tone(330, 0.2)(t) : tone(550, 0.2)(t))),
 };
 
 export default async function (page, shot, log) {
@@ -251,6 +261,8 @@ export default async function (page, shot, log) {
       'voice.paladin.no_mana': { files: ['__test/line_a.wav'] },
       'voice.paladin.bag_full': { files: ['__test/line_b.wav'] },
       'voice.paladin.unique': { files: ['__test/missing_line.wav'] },
+      'voice.akara.test_line': { files: ['__test/speech.wav'] },
+      'voice.akara.test_late': { files: ['__test/speech2.wav'], secs: [1.2] },
     };
     /** a fresh Sfx on an OfflineAudioContext `secs` long, with the scenario's recordings */
     function offline(secs, files = MANIFEST) {
@@ -394,6 +406,112 @@ export default async function (page, shot, log) {
     const after = s.voices.filter((v) => v.id.startsWith('voice.')).map((v) => v.id);
     check(after.join() === 'voice.paladin.bag_full', `lines with no recording, then one with: ${after.join(' ') || 'none'} said`);
     check(Math.abs(stats(await render(s), 0, Math.round(0.5 * RATE)).hz / 660 - 1) < 0.005, 'the line said after a missing one is not the one asked for');
+    // a townsperson's line (Sfx.speak): at once over the hero's, which is cut off; as loud as
+    // NPC_LINE; its take's length told as it starts; the hero kept from speaking over it; stopped
+    // 0.6 s in, silent within SPEECH_CUT, and its handle saying how far it got
+    const { SPEECH_CUT } = await import('/src/audio/sfx.ts');
+    const NPC_VOL = (await import('/src/audio/sounds.ts')).NPC_LINE.vol;
+    s = offline(1.5);
+    s.play('voice.paladin.no_mana');
+    await wait(150);
+    const sp = s.speak('voice.akara.test_line');
+    const spSecs = await Promise.race([sp.started, wait(1500).then(() => 'never')]);
+    s.play('voice.paladin.bag_full');
+    await wait(150);
+    const over = s.voices.filter((v) => v.id === 'voice.paladin.bag_full').length;
+    void s.ctx.suspend(0.6).then(() => {
+      sp.stop();
+      void s.ctx.resume();
+    });
+    const spoke = await render(s);
+    const during = stats(spoke, Math.round(0.1 * RATE), Math.round(0.55 * RATE));
+    const gone = stats(spoke, Math.round((0.6 + SPEECH_CUT + 0.01) * RATE), Math.round(1.4 * RATE));
+    facts.speech = `${during.hz.toFixed(1)} Hz, peak ${during.peak.toFixed(4)}, ${gone.peak.toExponential(1)} after it's stopped at ${sp.elapsed().toFixed(3)} s`;
+    check(typeof spSecs === 'number' && Math.abs(spSecs - 1.2) < 0.02, `a townsperson's line of 1.2 s told as ${spSecs}`);
+    check(Math.abs(during.hz / 330 - 1) < 0.005, `while she speaks: ${during.hz.toFixed(1)} Hz, not her 330 alone (the hero's 440 cut off)`);
+    check(Math.abs(during.peak - 0.2 * NPC_VOL * 0.7) < 0.006, `a townsperson's line peaks at ${during.peak.toFixed(4)}, not ${(0.2 * NPC_VOL * 0.7).toFixed(4)}`);
+    check(over === 0, 'the hero spoke over a townsperson');
+    check(gone.peak < 1e-4, `stopped, her line still sounds at ${gone.peak.toFixed(5)}`);
+    check(Math.abs(sp.elapsed() - 0.6) < 0.02, `stopped 0.6 s in, her line says ${sp.elapsed().toFixed(3)} s of it went by`);
+    // her line's recording come 0.6 s late: it joins where its clock is (SPEECH_WAIT after it was
+    // asked for, plus the time since), so the take's change of pitch at 0.5 s is heard at 0.5 s on
+    // that clock, whenever the recording came; silent before, faded in
+    const { SPEECH_WAIT } = await import('/src/audio/sfx.ts');
+    s = offline(1.5);
+    let open;
+    const gate = new Promise((r) => (open = r));
+    const decodeLate = s.buffers.decode;
+    s.buffers.decode = (u, mono) => gate.then(() => decodeLate(u, mono));
+    const lateLine = s.speak('voice.akara.test_late');
+    let joinedAt = null;
+    void s.ctx.suspend(0.6).then(async () => {
+      open();
+      await lateLine.started;
+      joinedAt = s.ctx.currentTime;
+      void s.ctx.resume();
+    });
+    const lateOut = await render(s);
+    // where it starts sounding, and where its 330 Hz gives way to 550 (the first of two 550 Hz periods
+    // running): both late by the master compressor's look-ahead alike, so it's the gap between them that counts
+    const onset = lateOut.findIndex((v) => Math.abs(v) > 1e-4) / RATE;
+    let swap = -1;
+    for (let i = Math.round((onset + 0.07) * RATE), lastCross = -1, prevGap = 0; i < lateOut.length; i++) {
+      if (!(lateOut[i - 1] < 0 && lateOut[i] >= 0)) continue;
+      if (lastCross >= 0) {
+        const gap = i - lastCross;
+        if (prevGap && Math.abs(RATE / gap - 550) < 40 && Math.abs(RATE / prevGap - 550) < 40) {
+          swap = (lastCross - prevGap) / RATE;
+          break;
+        }
+        prevGap = gap;
+      }
+      lastCross = i;
+    }
+    // started at `joinedAt` + 5 ms, `joined` s into the take: its 0.5 s that much later
+    const start = (joinedAt ?? NaN) + 0.005;
+    const want = 0.5 - lateLine.joined;
+    const delay = onset - start;
+    const first = stats(lateOut, Math.round((onset + 0.07) * RATE), Math.round((swap - 0.01) * RATE));
+    const second = stats(lateOut, Math.round((swap + 0.01) * RATE), Math.round((swap + 0.6) * RATE));
+    const fading = stats(lateOut, Math.round(onset * RATE), Math.round((onset + 0.02) * RATE)).peak;
+    facts.late = `asked at 0, in at ${joinedAt?.toFixed(3)}, joined ${lateLine.joined?.toFixed(3)} s in; the take's change of pitch ${(swap - onset).toFixed(4)} s after it came in (want ${want.toFixed(4)}), the compressor's look-ahead ${(delay * 1000).toFixed(1)} ms; ${first.hz.toFixed(0)} then ${second.hz.toFixed(0)} Hz`;
+    check(joinedAt !== null && Math.abs(lateLine.joined - (start - SPEECH_WAIT)) < 0.002, `come late, her line joined ${lateLine.joined} s in, not where its clock was (${start} - ${SPEECH_WAIT})`);
+    check(delay >= 0 && delay < 0.01, `her late recording came in at ${onset.toFixed(4)} s, not as it started (${start.toFixed(4)} s)`);
+    check(Math.abs(first.hz / 330 - 1) < 0.01 && Math.abs(second.hz / 550 - 1) < 0.01, `joined late: ${first.hz.toFixed(1)} then ${second.hz.toFixed(1)} Hz, not 330 then 550`);
+    check(Math.abs(swap - onset - want) < 0.002, `joined late, the take's 0.5 s came ${(swap - onset).toFixed(4)} s after it came in, not ${want.toFixed(4)}: not where its clock is`);
+    check(fading < 0.5 * first.peak, `joined late it didn't fade in: ${fading.toFixed(4)} in its first 20 ms against ${first.peak.toFixed(4)}`);
+    // a greeting (not solo) beside the hero's line: neither cut, each at its own level; and the hero speaking over one
+    const amp = (d, from, to, hz) => {
+      const w = (2 * Math.PI * hz) / RATE;
+      const c = 2 * Math.cos(w);
+      let s1 = 0;
+      let s2 = 0;
+      for (let i = from; i < to; i++) {
+        const s0 = d[i] + c * s1 - s2;
+        s2 = s1;
+        s1 = s0;
+      }
+      return (2 * Math.sqrt(Math.max(0, s1 * s1 + s2 * s2 - c * s1 * s2))) / (to - from);
+    };
+    s = offline(1.5);
+    s.play('voice.paladin.no_mana');
+    await wait(150);
+    const word = s.speak('voice.akara.test_line', { solo: false });
+    await Promise.race([word.started, wait(1500)]);
+    const both = await render(s);
+    const [a0, a1] = [Math.round(0.1 * RATE), Math.round(0.5 * RATE)];
+    const heroAmp = amp(both, a0, a1, 440);
+    const herAmp = amp(both, a0, a1, 330);
+    facts.beside = `the hero's 440 Hz at ${heroAmp.toFixed(4)}, her greeting's 330 at ${herAmp.toFixed(4)}`;
+    check(Math.abs(heroAmp - 0.2 * LINE_VOL * 0.7) < 0.004, `beside her greeting the hero's line is at ${heroAmp.toFixed(4)}, not ${(0.2 * LINE_VOL * 0.7).toFixed(4)}: cut off`);
+    check(Math.abs(herAmp - 0.2 * NPC_VOL * 0.7) < 0.004, `her greeting beside the hero's line is at ${herAmp.toFixed(4)}, not ${(0.2 * NPC_VOL * 0.7).toFixed(4)}`);
+    s = offline(1.5);
+    const greet = s.speak('voice.akara.test_line', { solo: false });
+    await Promise.race([greet.started, wait(1500)]);
+    s.play('voice.paladin.bag_full');
+    await wait(150);
+    const spokeOver = s.voices.filter((v) => v.id === 'voice.paladin.bag_full').length;
+    check(spokeOver === 1, `the hero kept from speaking over a greeting (${spokeOver} voices)`);
 
     // a missing loop: the bed
     s = offline(2);
@@ -481,19 +599,30 @@ const LINE_MATCH_DB = 4;
  * composed in its place (musicLevels), which plays wherever it won't: it's heard for minutes on end.
  * And it's heard as MUSIC_LEVEL in src/audio/sfx.ts has it: under the ambience of each area it plays
  * in, well under the fighting (FIGHT), its loudest swells under it still (UNDER_FIGHT_DB).
+ * The monsters' deaths (DEATHS), as played (recorded, or synthesized where they aren't), are each
+ * no more than DEATH_UNDER_DB under a flesh-and-blood one's (monster.die), and every one of them
+ * DEATH_OVER_MUSIC_DB over each track: a Fallen's death once sat 2 dB over the music, lost in it.
  * The heroes' lines (HERO_LINES) have nothing synthesized to match:
- * each, played as the game says it (LINE), is held to LINE_MATCH_DB of the loudest of the cues they
- * go with (LINE_CUES, synthesized), as the hero's loudest sounds. Any other shipped id the game can't
- * play this way fails: nothing vouches for it.
+ * each take of each, played as the game says it (LINE), is held to LINE_MATCH_DB of the loudest of the cues they
+ * go with (LINE_CUES, synthesized), as the hero's loudest sounds; so is each take of the townsfolk's
+ * (data/dialogue.ts spokenLines), as Sfx.speak plays it (NPC_LINE), to those cues less the step D2
+ * puts its townsfolk's speech under its heroes' (NPC_LINE.vol against LINE.vol, 210 of 255). Any
+ * other shipped id the game can't play this way fails: nothing vouches for it.
  */
 async function shippedLevels(ev) {
   const { RATE, loudness } = await import('../audio/dsp.mjs');
-  const { SOUNDS, HERO_LINES, LINE, areaSound } = await import('../../src/audio/sounds.ts');
+  const { SOUNDS, HERO_LINES, LINE, NPC_LINE, areaSound } = await import('../../src/audio/sounds.ts');
   const LINE_VOL = LINE.vol;
   // the classes through the page: src/data/classes.ts imports the generated tables without an
   // extension, which only Vite resolves
   const classes = await ev(async () => Object.keys((await import('/src/data/classes.ts')).CLASSES));
   const files = await ev(() => window.game.sfx.files);
+  // what the townsfolk say aloud, by the ids Sfx.speak is given (src/ui/npc.ts)
+  const townIds = await ev(async () => {
+    const { spokenLines } = await import('/src/data/dialogue.ts');
+    const { npcLine } = await import('/src/audio/sounds.ts');
+    return spokenLines().map((s) => npcLine(s.npc, s.id, s.quest));
+  });
   // the areas of normal play (src/world/areas.ts), to find the one a loop is played in
   const AREAS = await ev(async () => (await import('/src/world/areas.ts')).areaList());
   const fails = [];
@@ -501,6 +630,7 @@ async function shippedLevels(ev) {
   const jobs = [];
   const loops = new Map();
   const heroLines = [];
+  const townLines = [];
   /** the music tracks, and the areas that compose their music while they have none */
   const tracks = [];
   /** voice.<class>.<line>, a moment the game has a line for */
@@ -525,9 +655,12 @@ async function shippedLevels(ev) {
       if (!areas.length) fails.push(`shipped ${id}: no area plays it`);
       else tracks.push({ id, areas });
     } else if (heroLine(id)) heroLines.push(id);
+    else if (townIds.includes(id)) townLines.push(id);
     else fails.push(`shipped ${id}: nothing in the game plays it`);
   }
-  for (const id of heroLines) jobs.push({ kind: 'line', id, ids: [id] });
+  // every take of a line, each by itself: Sfx says any one of them
+  for (const id of heroLines) for (const file of files[id].files) jobs.push({ kind: 'line', id, file, ids: [id] });
+  for (const id of townLines) for (const file of files[id].files) jobs.push({ kind: 'speech', id, file, ids: [id] });
   for (const id of LINE_CUES) jobs.push({ kind: 'cue', id, ids: [] });
   for (const { area, night, ids } of loops.values()) jobs.push({ kind: 'amb', id: ids.join('+'), area, night, ids });
   // the ambience a track is heard over where it plays: the area's loops by day and by night, those
@@ -538,6 +671,8 @@ async function shippedLevels(ev) {
   for (const id of FIGHT) if (!files[id]) jobs.push({ kind: 'blow', id, ids: [] });
   const out = await ev(
     async ({ jobs, RATE }) => {
+      // a line's takes measured here: all of them as PCM would be more than the page can hand back
+      const { loudness } = await import('/tools/audio/dsp.mjs');
       const Sfx = window.game.sfx.constructor;
       const files = window.game.sfx.files;
       const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -570,7 +705,9 @@ async function shippedLevels(ev) {
         try {
           s = seeded(() => {
             const s = new Sfx();
-            s.files = recorded ? Object.fromEntries(job.ids.map((id) => [id, files[id]])) : {};
+            // a line's take alone, where the job is one take (and its length alone)
+            const one = (f) => ({ ...f, files: [job.file], secs: f.secs && [f.secs[f.files.indexOf(job.file)]] });
+            s.files = recorded ? Object.fromEntries(job.ids.map((id) => [id, job.file ? one(files[id]) : files[id]])) : {};
             s.ensure();
             return s;
           });
@@ -582,18 +719,20 @@ async function shippedLevels(ev) {
         const failed = job.ids.filter((id) => s.failed.has(id));
         // midnight, for the night's loops
         if (job.night) s.setTime(0);
-        seeded(() => (inArea ? s.enterArea(job.area) : s.play(job.id)));
+        seeded(() => (inArea ? s.enterArea(job.area) : job.kind === 'speech' ? s.speak(job.id) : s.play(job.id)));
         // the loops start once their (preloaded) takes resolve, a line once its take is checked as decoded
         if (!short) await wait(50);
         const buf = await s.ctx.startRendering();
+        if (job.kind === 'line' || job.kind === 'speech') return { failed, lufs: loudness([buf.getChannelData(0), buf.getChannelData(1)], 'momentary') };
         return { failed, chs: [b64(buf.getChannelData(0)), b64(buf.getChannelData(1))] };
       }
       const res = [];
       for (const job of jobs) {
         const one = { ...job, gain: job.ids.map((id) => files[id].gain ?? 1) };
         // a line has nothing synthesized; a cue, a bed and an unrecorded blow are only their synthesized selves
-        if (job.kind === 'sfx' || job.kind === 'amb' || job.kind === 'line') one.rec = await render(job, true);
-        if (job.kind !== 'line') one.synth = await render(job, false);
+        const spoken = job.kind === 'line' || job.kind === 'speech';
+        if (job.kind === 'sfx' || job.kind === 'amb' || spoken) one.rec = await render(job, true);
+        if (!spoken) one.synth = await render(job, false);
         res.push(one);
       }
       return res;
@@ -607,16 +746,24 @@ async function shippedLevels(ev) {
   const momentary = (chs) => loudness(chs.map(pcm), 'momentary');
   const cues = out.filter((r) => r.kind === 'cue').map((r) => ({ id: r.id, lufs: momentary(r.synth.chs) }));
   const cue = cues.reduce((a, b) => (b.lufs > a.lufs ? b : a), cues[0]);
-  const lines = [];
-  for (const r of out) {
-    if (r.kind !== 'line' || r.rec.failed.length) continue;
-    const d = momentary(r.rec.chs) - cue.lufs;
-    lines.push(d);
-    if (!(Math.abs(d) <= LINE_MATCH_DB)) fails.push(`shipped ${r.id}: ${d.toFixed(1)} dB ${d > 0 ? 'louder' : 'quieter'} than ${cue.id} (${cue.lufs.toFixed(1)} LUFS momentary): LINE.vol ${+(LINE_VOL * 10 ** (-d / 20)).toPrecision(2)} in src/audio/sounds.ts would match`);
-  }
-  if (lines.length) {
+  // the townsfolk a step under the heroes, as D2 has them
+  const under = 20 * Math.log10(NPC_LINE.vol / LINE_VOL);
+  for (const [kind, vol, what, name, step] of [
+    ['line', LINE_VOL, 'LINE', 'hero lines', 0],
+    ['speech', NPC_LINE.vol, 'NPC_LINE', "townsfolk's lines", under],
+  ]) {
+    const lines = [];
+    for (const r of out) {
+      if (r.kind !== kind || r.rec.failed.length) continue;
+      const d = r.rec.lufs - cue.lufs;
+      lines.push(d);
+      const off = d - step;
+      if (!(Math.abs(off) <= LINE_MATCH_DB)) fails.push(`shipped ${r.file}: ${d.toFixed(1)} dB ${d > 0 ? 'louder' : 'quieter'} than ${cue.id} (${cue.lufs.toFixed(1)} LUFS momentary)${step ? `, ${(-step).toFixed(1)} dB under it as the townsfolk are` : ''}: ${what}.vol ${+(vol * 10 ** (-off / 20)).toPrecision(2)} in src/audio/sounds.ts would match`);
+    }
+    if (!lines.length) continue;
     const mean = lines.reduce((a, b) => a + b, 0) / lines.length;
-    facts['voice.*'] = `${lines.length} hero lines ${Math.min(...lines).toFixed(1)} to ${Math.max(...lines).toFixed(1)} dB (mean ${mean.toFixed(1)}) against ${cue.id}, ${cue.lufs.toFixed(1)} LUFS momentary`;
+    const said = new Set(out.filter((r) => r.kind === kind).map((r) => r.id)).size;
+    facts[kind === 'line' ? 'voice.*' : 'speech'] = `${said} ${name} in ${lines.length} takes ${Math.min(...lines).toFixed(1)} to ${Math.max(...lines).toFixed(1)} dB (mean ${mean.toFixed(1)}) against ${cue.id}, ${cue.lufs.toFixed(1)} LUFS momentary${step ? `, held ${step.toFixed(1)} dB under it` : ''}`;
   }
   for (const r of out) {
     if (!r.rec) continue;
@@ -628,7 +775,7 @@ async function shippedLevels(ev) {
       const c = chs.map(pcm);
       return r.kind === 'sfx' ? loudness(c, 'momentary') : loudness(c.map((x) => x.subarray(3 * RATE)), 'integrated');
     };
-    if (r.kind === 'line') continue;
+    if (r.kind === 'line' || r.kind === 'speech') continue;
     const rec = level(r.rec.chs);
     const synth = level(r.synth.chs);
     const d = rec - synth;
@@ -656,6 +803,15 @@ async function shippedLevels(ev) {
   }).sort((a, b) => a.lufs - b.lufs);
   const fight = (blows[(blows.length - 1) >> 1].lufs + blows[blows.length >> 1].lufs) / 2;
   facts.fighting = `${fight.toFixed(1)} LUFS momentary (${blows.map((b) => `${b.id} ${b.lufs.toFixed(1)}`).join(', ')})`;
+  // every monster's death as loud as a flesh-and-blood one's, near enough: as played, recorded or
+  // synthesized, the vol that would bring it there (it sets both)
+  const levelOf = (id) => blows.find((b) => b.id === id).lufs;
+  const die = levelOf('monster.die');
+  for (const id of DEATHS) {
+    const d = levelOf(id) - die;
+    facts[`${id} as heard`] = `${d >= 0 ? '+' : ''}${d.toFixed(1)} dB on monster.die`;
+    if (!(d >= -DEATH_UNDER_DB)) fails.push(`${id}: ${(-d).toFixed(1)} dB under monster.die (${levelOf(id).toFixed(1)} vs ${die.toFixed(1)} LUFS momentary), past ${DEATH_UNDER_DB}: vol ${+((SOUNDS[id].vol ?? 1) * 10 ** (-d / 20)).toPrecision(2)} in src/audio/sounds.ts would match`);
+  }
   for (const r of await musicLevels(ev, tracks, RATE)) {
     if (r.failed) {
       fails.push(`shipped ${r.id}: ${r.failed}`);
@@ -666,6 +822,11 @@ async function shippedLevels(ev) {
     // and its loudest 3 s under it still
     const ambs = r.areas.flatMap(ambOf);
     const level = r.recorded.reduce((a, b) => (b.lufs > a.lufs ? b : a));
+    // and every death well over it, each by itself: a death the music covers is lost
+    for (const id of ['monster.die', ...DEATHS]) {
+      const over = levelOf(id) - level.lufs;
+      if (!(over >= DEATH_OVER_MUSIC_DB)) fails.push(`${id}: ${over.toFixed(1)} dB over ${r.id} (${levelOf(id).toFixed(1)} LUFS momentary, the music ${level.lufs.toFixed(1)} integrated), not ${DEATH_OVER_MUSIC_DB}`);
+    }
     const loudest = r.recorded.reduce((a, b) => (b.short > a.short ? b : a));
     const quietest = ambs.reduce((a, b) => (b.lufs < a.lufs ? b : a), ambs[0]);
     const room = [
@@ -696,6 +857,13 @@ async function shippedLevels(ev) {
   }
   return { fails, facts };
 }
+
+/** the monsters' deaths other than a flesh-and-blood one's (monster.die), by kind (src/game/game.ts) */
+const DEATHS = ['monster.die_imp', 'monster.die_large', 'monster.die_bone'];
+/** how far under monster.die one may be, in dB: a Fallen's sat 5 dB under, all but lost in the music */
+const DEATH_UNDER_DB = 1.5;
+/** how far over the music each death is at least, in dB (tools/scenarios/music.mjs LIVE_FIGHT_DB, live) */
+const DEATH_OVER_MUSIC_DB = 6;
 
 /** how far a shipped track may be from the music composed in its place, in dB */
 const MUSIC_MATCH_DB = 1.5;

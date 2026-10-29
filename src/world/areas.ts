@@ -71,10 +71,10 @@ function define(a: AreaDef): AreaDef {
 // name and nameEn, D2X_AREAS), the camp's and Blood Moor's through their themes.
 define({ id: CAMP_AREA, key: 'camp', name: THEMES.town.name, en: THEMES.town.en, label: '营地', alvl: d2Alvl(CAMP_AREA), kind: 'town', waypoint: true });
 define({ id: WILD_AREA, key: 'wild', name: THEMES.wild.name, en: THEMES.wild.en, alvl: d2Alvl(WILD_AREA), kind: 'outdoor', waypoint: false });
-define({ id: COLD_PLAINS, key: 'coldplains', name: '凛寒原野', en: 'Bitterfrost Wilds', alvl: d2Alvl(COLD_PLAINS), kind: 'outdoor', waypoint: true });
-define({ id: STONY_FIELD, key: 'stonyfield', name: '列石荒野', en: 'Menhir Wastes', alvl: d2Alvl(STONY_FIELD), kind: 'outdoor', waypoint: true });
-define({ id: DEN_OF_EVIL, key: 'denofevil', name: '邪秽巢穴', en: 'Festering Lair', alvl: d2Alvl(DEN_OF_EVIL), kind: 'dungeon', waypoint: false });
-define({ id: BURIAL_GROUNDS, key: 'burialgrounds', name: '葬骨荒冢', en: 'Bone-Strewn Barrows', alvl: d2Alvl(BURIAL_GROUNDS), kind: 'outdoor', waypoint: false });
+define({ id: COLD_PLAINS, key: 'coldplains', name: '凛寒原野', en: 'Bitterfrost Plains', alvl: d2Alvl(COLD_PLAINS), kind: 'outdoor', waypoint: true });
+define({ id: STONY_FIELD, key: 'stonyfield', name: '列石荒野', en: 'Stony Wastes', alvl: d2Alvl(STONY_FIELD), kind: 'outdoor', waypoint: true });
+define({ id: DEN_OF_EVIL, key: 'denofevil', name: '邪秽巢穴', en: 'Den of Iniquity', alvl: d2Alvl(DEN_OF_EVIL), kind: 'dungeon', waypoint: false });
+define({ id: BURIAL_GROUNDS, key: 'burialgrounds', name: '葬骨荒冢', en: 'Burial Barrows', alvl: d2Alvl(BURIAL_GROUNDS), kind: 'outdoor', waypoint: false });
 
 /**
  * The areas of normal play this build has a map of, in the order a hero comes to them: the camp,

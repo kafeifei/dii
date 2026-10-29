@@ -108,8 +108,11 @@ const GROUPS = {
      */
     die: { synth: 'die', vol: 0.9, max: 4 },
     die_bone: { synth: 'diebone', vol: 0.8, max: 4 },
-    /** imps and shamans */
-    die_imp: { synth: 'impdie', vol: 0.8, max: 4 },
+    /**
+     * imps and shamans: as loud as die, though theirs is a small shriek. At 0.8 a Fallen's death sat
+     * 5 dB under a zombie's and 2 dB over the music (tools/scenarios/sfx.mjs holds every death to die)
+     */
+    die_imp: { synth: 'impdie', vol: 1.35, max: 4 },
     /** a big one (LARGE_MONSTER) or a boss: a step over die */
     die_large: { synth: 'die', vol: 1, max: 2, prio: 'high' },
     /** a boss notices the hero */
@@ -265,8 +268,10 @@ export const LARGE_MONSTER = 1.3;
 
 /**
  * What the hero says, by the moment, as Diablo II's heroes do: each class has its own words for
- * every one (tools/audio/voice-lines.md), recorded as voice.<class>.<line> (heroLine) and said by
- * Game.say. Those whose moment the game doesn't have yet (a quest, an area cleared) wait for it.
+ * every one, in a few ways of saying it (tools/audio/voice-lines.md), recorded as voice.<class>.<line>
+ * (heroLine), a take for each, and said by Game.say: one of them at random, not the last one again,
+ * and not again within a few seconds (Lines in src/audio/sfx.ts). Those whose moment the game
+ * doesn't have yet (a quest, an area cleared) wait for it.
  */
 export const HERO_LINES = [
   // what the hero can't do
@@ -316,6 +321,23 @@ export const heroLine = (cls: PlayerClass, line: HeroLine): HeroVoiceId => `voic
  * (all made at -18 LUFS) about as loud as the hero's loudest cues (tools/scenarios/sfx.mjs).
  */
 export const LINE: Playing = { vol: 0.45, max: 1, prio: 'critical', vary: 0 };
+
+/**
+ * How a townsperson's line is played (Sfx.speak): as a hero's (LINE), a little under it, as Diablo
+ * II plays its townsfolk's speech at 210 of 255 and its heroes' at 255 (sounds.txt Volume, of the
+ * channels vo/eax/dialog and vo/eax/player-dialog); placed at the speaker, as D2's (Is2D 0, Tracking 1)
+ */
+export const NPC_LINE: Playing = { ...LINE, vol: +((LINE.vol! * 210) / 255).toFixed(3) };
+
+/**
+ * A townsperson's line, recorded (tools/audio/list.mjs reads them off tools/d2-names/DIALOGUE-zh.md):
+ * voice.<npc>.<key>, a quest's line by its quest and its own key (voice.akara.a1q1_remind_out is
+ * data/dialogue.ts DEN_LINES.remindOut), small talk by its place (voice.akara.gossip2), the
+ * greetings by theirs (voice.akara.greeting, voice.akara.farewell: GREETINGS)
+ */
+export function npcLine(npc: string, id: string, quest?: string): VoiceId {
+  return `voice.${npc}.${quest ? `${quest}_` : ''}${id.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`)}`;
+}
 
 /** what the hero says walking into an area of another kind: out of the camp, underground, back */
 export const ENTER_LINE: Record<AreaKind, HeroLine> = { town: 'back_in_town', outdoor: 'enter_wild', dungeon: 'enter_dungeon' };
@@ -460,7 +482,8 @@ const HEARD: Record<AreaKind, readonly SoundCategory[]> = {
  * from the first time rather than as its synthesized stand-in: the effects of that kind of area, and
  * for each area next to it (`next`: across a seam, or where a way on leads) its recordings at this
  * time of day and the hero's line for walking into it. The place's own ambience isn't here: coming
- * in has started it already.
+ * in has started it already. Nor are the townsfolk's lines: long, and decoded only as they're said,
+ * they're fetched ahead without decoding while the hero is in the camp (Game.fetchAhead).
  */
 export function soundsNear(place: Place, next: readonly Place[], night: boolean, cls: PlayerClass): FileId[] {
   const kind = areaKind(place);

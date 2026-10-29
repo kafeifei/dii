@@ -5,7 +5,8 @@
  * only through placeholders, filled from the rename tables as it is shown (src/game/quests/quest.ts
  * fillLine): {camp}, {moor} and {den} are areas 1, 2 and 8 (tools/d2-names/areas.json),
  * {akara} is Akara's row (npcs.json); {n} is a count. tools/d2-names/DIALOGUE-zh.md lists every
- * line for review (tools/dialogue-review.mjs writes it).
+ * line for review (tools/dialogue-review.mjs writes it), with the recording of each line spoken:
+ * the voice reads the page (tools/audio/list.mjs), and plays as the line scrolls (src/ui/npc.ts).
  */
 import type { QuestKey } from './quests';
 
@@ -36,6 +37,29 @@ export const GOSSIP: Record<string, Gossip[]> = {
       after: 'a1q1',
     },
   ],
+};
+
+/**
+ * What a townsperson says as the hero comes to them, and as the hero leaves: spoken, never shown.
+ * Diablo II gives its townsfolk greetings (sounds.txt akara_greeting_1 and _2), a short word for
+ * being clicked again (akara_greeting_inactive_*), one for coming back and three for the time of
+ * day, and no farewells. Here they greet the hero at a visit's first click and bid farewell as it
+ * ends (the farewells are ours), each a take of voice.<npc>.greeting or .farewell (the nth line
+ * take n), said one at random and never the one heard last (src/ui/npc.ts).
+ */
+export const GREETINGS: Record<string, { greeting: Line[]; farewell: Line[] }> = {
+  akara: {
+    greeting: [
+      { zh: '愿火光照着你。', en: 'May the firelight fall on you.' },
+      { zh: '我正等着你呢。', en: 'I was expecting you.' },
+      { zh: '坐吧，歇一歇脚。', en: 'Sit, and rest your feet a while.' },
+    ],
+    farewell: [
+      { zh: '去吧，火会一直燃着。', en: 'Go. The fire will keep burning.' },
+      { zh: '愿你一路无伤。', en: 'May you walk the road unharmed.' },
+      { zh: '记得活着回来。', en: 'Remember to come back alive.' },
+    ],
+  },
 };
 
 /**
@@ -88,3 +112,26 @@ export const DEN_LOG = {
   back: { zh: '{den}已被肃清。回{camp}找{akara}领取报酬。', en: 'The {den} is cleansed. Return to {akara} at the {camp} for your reward.' },
   done: { zh: '任务完成。{akara}传授了你一个技能点。', en: 'Quest complete. {akara} taught you a skill point.' },
 } satisfies Record<string, Line>;
+
+/** a line a townsperson says aloud, as it's recorded: a take for each of its `lines` */
+export interface Spoken {
+  npc: string;
+  /** the quest it belongs to; none for small talk and greetings */
+  quest?: QuestKey;
+  /** which: its key among the quest's lines (DEN_LINES.remindOut), gossip<n>, greeting or farewell */
+  id: string;
+  lines: Line[];
+}
+
+/**
+ * Every line the townsfolk say aloud, each recorded as voice.<npc>.<key> (src/audio/sounds.ts
+ * npcLine) and spoken as it scrolls (src/ui/npc.ts): Akara's words in the Den of Evil (the rest of
+ * DEN_LINES is on screen), their small talk, and their greetings and farewells, a take for each way
+ * of saying them. tools/dialogue-review.mjs puts each on the review page, which the voice reads.
+ */
+export function spokenLines(): Spoken[] {
+  const out: Spoken[] = (['intro', 'remind', 'remindOut', 'reward'] as const).map((id) => ({ npc: 'akara', quest: 'a1q1', id, lines: [DEN_LINES[id]] }));
+  for (const [npc, lines] of Object.entries(GOSSIP)) lines.forEach((g, i) => out.push({ npc, id: `gossip${i}`, lines: [g] }));
+  for (const [npc, g] of Object.entries(GREETINGS)) out.push({ npc, id: 'greeting', lines: g.greeting }, { npc, id: 'farewell', lines: g.farewell });
+  return out;
+}

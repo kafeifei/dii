@@ -1,9 +1,9 @@
 {
-  "Akara": {"name":"亚珈萝","nameEn":"Yajalo","en":"Akara","official":"阿卡拉","note":"术语表"},
-  "Charsi": {"name":"查茜","nameEn":"Chashi","en":"Charsi","official":"恰西","note":"术语表"},
-  "Gheed": {"name":"吉伊得","nameEn":"Jiyed","en":"Gheed","official":"基德","note":"术语表"},
-  "Kashya": {"name":"迦霞","nameEn":"Jiasha","en":"Kashya","official":"卡夏","note":"术语表"},
+  "Akara": {"name":"亚喀蕾","nameEn":"Akarelle","en":"Akara","official":"阿卡拉","note":"术语表；曾用名 亚珈萝 / Yajalo"},
+  "Charsi": {"name":"查茜","nameEn":"Charessa","en":"Charsi","official":"恰西","note":"术语表；曾用英文名 Chashi"},
+  "Gheed": {"name":"吉伊得","nameEn":"Ghiedan","en":"Gheed","official":"基德","note":"曾用英文名 Ghiyed：术语表 Gheed 的英文由 Ghiyed 改作 Ghiedan。术语表；曾用英文名 Jiyed"},
+  "Kashya": {"name":"柯霞","nameEn":"Khassia","en":"Kashya","official":"卡夏","note":"术语表；曾用名 迦霞 / Jiasha"},
   "Warriv": {"name":"沃里弗","nameEn":"Worlif","en":"Warriv","official":"瓦瑞夫","note":"术语表"},
   "DeckardCain": {"name":"戴克尔·喀因","nameEn":"Daikor Kahin","en":"Deckard Cain","official":"迪卡德·凯恩","note":"术语表"},
-  "navi": {"name":"菲萝薇","nameEn":"Feilowei","en":"Flavie","official":"弗拉维","note":"新音译，术语表新增"}
+  "navi": {"name":"菲萝薇","nameEn":"Felovie","en":"Flavie","official":"弗拉维","note":"术语表；曾用英文名 Feilowei"}
 }

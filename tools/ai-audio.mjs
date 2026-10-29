@@ -6,6 +6,8 @@
 //   node tools/ai-audio.mjs --dry [id…]          what would be generated, and the credits it would take
 //   node tools/ai-audio.mjs --budget 6000 [id…]  generate it, stopping before this month's usage passes 6000
 //   node tools/ai-audio.mjs [id…]                only process again what's kept, and rewrite the manifest
+//   node tools/ai-audio.mjs --voices             the voices a speaker may have (GET /v1/voices): each one's
+//                                                labels, description, and the models it's verified to read Mandarin with
 //     id…       just these ids, or those under a prefix ending in '.' (combat. voice.paladin. music.)
 //     --redo    make the chosen ids' takes again, though they're made (needs ids); music is
 //               processed again from its raw take
@@ -90,7 +92,7 @@ const KINDS = {
 };
 
 const args = process.argv.slice(2);
-const FLAGS = ['dry', 'budget', 'redo', 'prune', 'jobs'];
+const FLAGS = ['dry', 'budget', 'redo', 'prune', 'jobs', 'voices'];
 /** the flags followed by a value */
 const VALUED = ['--budget', '--jobs'];
 for (const a of args.filter((a) => a.startsWith('--'))) if (!FLAGS.includes(a.slice(2))) fail(`${a}? The flags are ${FLAGS.map((f) => `--${f}`).join(' ')}`);
@@ -128,7 +130,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---- the list
 
-const { default: LIST_ENTRIES, SPEAKERS = {} } = await import(pathToFileURL(LIST).href);
+const { default: LIST_ENTRIES, SPEAKERS = {}, HEROES = [], SAY_AS = {} } = await import(pathToFileURL(LIST).href);
 /** the game's ids, to check the list against: Node strips the types off sounds.ts itself */
 const sounds = await import(pathToFileURL(path.join(ROOT, 'src/audio/sounds.ts')).href).catch((e) => {
   console.warn(`(the list's ids go unchecked: ${e.message})`);
@@ -159,7 +161,12 @@ function validate(list) {
     }
     if (e.variants !== undefined && !(Number.isInteger(e.variants) && e.variants >= 1)) problems.push(`${where}: variants ${e.variants}`);
     if (e.kind === 'voice') {
-      if (!e.text) problems.push(`${where}: a voice line needs its text`);
+      // its text, or its texts: one take each
+      if (e.texts !== undefined) {
+        if (e.text !== undefined || e.variants !== undefined) problems.push(`${where}: texts are its takes: no text or variants beside them`);
+        if (!Array.isArray(e.texts) || !e.texts.length || !e.texts.every((t) => typeof t === 'string' && t.trim())) problems.push(`${where}: texts ${JSON.stringify(e.texts)}`);
+        else if (new Set(e.texts).size !== e.texts.length) problems.push(`${where}: a text said twice among its takes`);
+      } else if (!e.text) problems.push(`${where}: a voice line needs its text`);
       if (!e.id.startsWith('voice.') || e.id.split('.').length !== 3) problems.push(`${where}: a voice line is voice.<speaker>.<line>`);
       if (!SPEAKERS[speakerOf(e)]) problems.push(`${where}: no speaker ${speakerOf(e)} in SPEAKERS`);
       const [, who, line] = e.id.split('.');
@@ -172,6 +179,12 @@ function validate(list) {
     if (e.kind === 'loop' && !e.id.startsWith('amb.')) problems.push(`${where}: a loop is an area's ambience, amb.*`);
     if (sounds && e.kind === 'sfx' && !(e.id in sounds.SOUNDS)) problems.push(`${where}: not a sound id in src/audio/sounds.ts`);
     if (sounds && e.kind === 'loop' && !sounds.AREA_FILES.includes(e.id)) console.warn(`${where}: no area plays it yet (src/audio/sounds.ts)`);
+  }
+  // a respelling for the voice is for a word its line says
+  for (const [id, pairs] of Object.entries(SAY_AS)) {
+    const e = list.find((x) => x.id === id);
+    if (e?.kind !== 'voice') problems.push(`list: SAY_AS ${id}: not a voice line in the list`);
+    else for (const [word, as] of pairs) if (!(e.texts ?? [e.text]).some((t) => t.includes(word))) problems.push(`list: SAY_AS ${id}: none of its takes says ${word} (to say as ${as})`);
   }
   if (problems.length) fail(problems.join('\n'));
   // a hero who speaks says something at every moment the game has a line for
@@ -186,6 +199,9 @@ function speakerOf(e) {
   return e.voice ?? e.id.split('.')[1];
 }
 
+/** what the voice is given for `text`: its words respelled where the voice misreads them as written (list.mjs SAY_AS) */
+const sayAs = (text, pairs = []) => pairs.reduce((s, [word, as]) => s.split(word).join(as), text);
+
 /**
  * what's asked of ElevenLabs for take n, from the list alone: when it changes, the take is made
  * again. A music take's is what ACE-Step was asked: it picks another raw take
@@ -195,7 +211,11 @@ function request(e, n) {
   if (e.kind === 'music') return musicRequest(e, n);
   if (e.kind === 'voice') {
     const sp = SPEAKERS[speakerOf(e)];
-    return { kind: 'voice', text: e.text, voice: sp.voice, settings: { ...sp.settings, ...e.settings }, lang: sp.lang ?? 'zh', model: e.model ?? sp.model, n };
+    // (take n of a line with texts says the nth: the same request as a line of that text alone)
+    const text = e.texts ? e.texts[n - 1] : e.text;
+    // and where the voice misreads a word as written, what it's given instead (only then: no other take's request changes)
+    const say = sayAs(text, SAY_AS[e.id]);
+    return { kind: 'voice', text, ...(say !== text && { say }), voice: sp.voice, settings: { ...sp.settings, ...e.settings }, lang: sp.lang ?? 'zh', model: e.model ?? sp.model, n };
   }
   return { kind: e.kind, prompt: e.prompt, duration: e.duration ?? k.duration, influence: e.influence ?? k.influence, model: e.model, n };
 }
@@ -207,7 +227,7 @@ function processing(e, key) {
 }
 
 function takesOf(e) {
-  return Array.from({ length: e.kind === 'music' ? e.takes.length : (e.variants ?? 1) }, (_, i) => {
+  return Array.from({ length: e.kind === 'music' ? e.takes.length : (e.texts?.length ?? e.variants ?? 1) }, (_, i) => {
     const n = i + 1;
     const req = request(e, n);
     const key = hash(req);
@@ -290,7 +310,7 @@ function voiceOf(voices, want) {
 function estimate(t, worst = false) {
   if (t.req.kind === 'voice') {
     const rate = speech?.models.get(t.req.model ?? speech.model)?.model_rates?.character_cost_multiplier ?? 1;
-    return Math.ceil([...t.req.text].length * rate);
+    return Math.ceil([...(t.req.say ?? t.req.text)].length * rate);
   }
   return Math.ceil((t.req.duration === 'auto' ? (worst ? AUTO_MAX : AUTO_SECS) : t.req.duration) * SFX_RATE);
 }
@@ -310,7 +330,7 @@ async function generate(t) {
     if (!m?.can_use_style) delete settings.style;
     if (!m?.can_use_speaker_boost) delete settings.use_speaker_boost;
     pathname = `/v1/text-to-speech/${voice.voice_id}`;
-    body = { text: r.text, model_id: model, seed: parseInt(t.key.slice(0, 8), 16) };
+    body = { text: r.say ?? r.text, model_id: model, seed: parseInt(t.key.slice(0, 8), 16) };
     // pinned to Mandarin, as hanzi alone could pass for Japanese (multilingual v2 refuses a code)
     if (!model.startsWith('eleven_multilingual')) body.language_code = r.lang;
     if (Object.keys(settings).length) body.voice_settings = settings;
@@ -457,8 +477,8 @@ const isStale = (t, made) => made[t.name].key !== t.key;
 
 /** the recordings in public/audio/ (<id>.<n>.m4a): what ships, each named as its record in made.json */
 const shipped = () => (fs.existsSync(OUT) ? fs.readdirSync(OUT).filter((f) => /\.\d+\.m4a$/.test(f)).sort() : []);
-/** what a take was asked for, kept in its record for its credit */
-const askedFor = (req) => (req.kind === 'voice' ? { text: req.text } : { prompt: req.prompt });
+/** what a take was asked for, kept in its record for its credit: a line's words, and what the voice was given for them where that differs */
+const askedFor = (req) => (req.kind === 'voice' ? { text: req.text, ...(req.say && { said: req.say }) } : { prompt: req.prompt });
 
 function writeManifest(list, made) {
   const lines = [];
@@ -475,6 +495,8 @@ function writeManifest(list, made) {
     const parts = [`files: [${takes.map((t) => `'${t.file}'`).join(', ')}]`];
     if (loop) parts.push(`loop: { start: ${loop.start}, end: ${loop.end} }`);
     if (e.gain !== undefined && e.gain !== 1) parts.push(`gain: ${e.gain}`);
+    // a line's takes' lengths, known before they're fetched: a townsperson's text scrolls by them
+    if (e.kind === 'voice') parts.push(`secs: [${takes.map((t) => made[t.name].secs).join(', ')}]`);
     lines.push(`  '${e.id}': { ${parts.join(', ')} },`);
   }
   const src = fs.readFileSync(FILES_TS, 'utf8');
@@ -492,7 +514,7 @@ const cell = (s) => String(s).replace(/\|/g, '\\|').replace(/\n/g, ' ');
 const creditOf = (m) =>
   m.kind === 'music'
     ? { what: `${m.prompt}（${m.bpm} BPM，${m.scale}，每小节 ${m.time} 拍，${m.duration} 秒）`, model: `${m.model}，种子 ${m.seed}` }
-    : { what: m.kind === 'voice' ? `「${m.text}」` : m.prompt, model: m.model };
+    : { what: m.kind === 'voice' ? `「${m.text}」${m.said ? `（给配音的字是「${m.said}」）` : ''}` : m.prompt, model: m.model };
 
 /**
  * Every recording in public/audio/, as made.json says it was made: they all ship, so each is credited,
@@ -530,6 +552,19 @@ ${rows.join('\n')}
 }
 
 // ---- the run
+
+// the voices to give a speaker: no credits, nothing written
+if (flag('voices')) {
+  const { voices } = await (await api('/v1/voices')).json();
+  for (const v of voices) {
+    const zh = (v.verified_languages ?? []).filter((l) => l.language === 'zh').map((l) => [l.model_id, l.accent, l.locale].filter(Boolean).join(' '));
+    const labels = Object.entries(v.labels ?? {}).map(([k, x]) => `${k} ${x}`).join(', ');
+    console.log(`${v.name.split(' - ')[0].padEnd(10)} ${v.voice_id}  ${v.category}  ${labels}`);
+    console.log(`  ${v.name}${v.description ? `: ${v.description}` : ''}`);
+    console.log(`  Mandarin: ${zh.length ? zh.join('; ') : 'not verified'}`);
+  }
+  process.exit(0);
+}
 
 const list = validate(LIST_ENTRIES);
 const made = readJson(MADE, {});
@@ -616,7 +651,8 @@ if (sub) console.log(`ElevenLabs (${sub.tier}): ${usedNow()} of ${sub.limit} cre
 
 const describe = (t) => {
   const r = t.req;
-  const what = r.kind === 'voice' ? `「${r.text}」 ${[...r.text].length} chars, ${r.voice}, ${r.model ?? speech?.model ?? TTS_MODELS[0]}` : `${r.duration === 'auto' ? 'auto' : `${r.duration} s`}  ${r.prompt.slice(0, 70)}`;
+  const said = r.say ?? r.text;
+  const what = r.kind === 'voice' ? `「${r.text}」${r.say ? ` said as 「${r.say}」` : ''} ${[...said].length} chars, ${r.voice}, ${r.model ?? speech?.model ?? TTS_MODELS[0]}` : `${r.duration === 'auto' ? 'auto' : `${r.duration} s`}  ${r.prompt.slice(0, 70)}`;
   const most = estimate(t, true) > estimate(t) ? ` (up to ${estimate(t, true)})` : '';
   return `  ${r.kind.padEnd(5)} ${t.name.padEnd(30)} ~${String(estimate(t)).padStart(4)}${most}  ${what}`;
 };
@@ -758,4 +794,8 @@ for (const t of list.flatMap((e) => present(e, made)).filter((t) => isStale(t, m
 
 const ids = writeManifest(list, made);
 console.log(`src/audio/files.ts: ${ids} ids with recordings; public/audio/CREDITS.md`);
+// the townsfolk's lines come off the dialogue's review page, which says what each take says
+if ([...toMake, ...toProcess].some((t) => t.e.kind === 'voice' && !HEROES.includes(speakerOf(t.e)) && made[t.name]?.key === t.key)) {
+  console.log("the townsfolk's takes changed: node tools/dialogue-review.mjs marks them on tools/d2-names/DIALOGUE-zh.md");
+}
 process.exit(errors ? 1 : 0);

@@ -4,8 +4,8 @@
 // Plains, hop by hop along found paths (Game.teleportWithin), and checks the areas are announced
 // camp > Blood Moor > Cold Plains with no level rebuilt. Through each seam's opening the air turns
 // from the one area's to the other's (src/render/arealooks.ts: half each at the opening, all one
-// area past AIR_SEAM), the ground wears the three areas' looks, the minimap and the music the hero's
-// area names follow (the sound started with a click: its recorded track streaming, or with none
+// area past AIR_SEAM), the ground wears the three areas' looks, the minimap (by the next frame) and
+// the music the hero's area names follow (the sound started with a click: its recorded track streaming, or with none
 // shipped, its composed music), and stepping to and fro over a seam doesn't say the area's name again
 // (src/ui/banner.ts). Then 30 s of sim by the camp's edge, a pack
 // of Blood Moor's monsters woken just outside it: 10 s with the hero out there, 20 s with them just
@@ -224,13 +224,14 @@ export default async function (page, shot, log) {
         for (const k of [-AIR_SEAM - 2, 0, AIR_SEAM + 2]) {
           const at = { x: mid.x + dir.x * k, z: mid.z + dir.z * k };
           await ev((at) => game.teleportWithin(game.level.map.nearestWalkable(at.x, at.z) ?? at), at);
-          // a few frames for the renderer's air, and the minimap's next draw (5 a second)
+          // the minimap names the area the hero lands in on the next frame, not at its next draw (5 a second)
+          await frames(1);
+          const minimap = await ev(() => document.querySelector('#minimap .lvl')?.textContent);
+          // a few frames for the renderer's air
           await frames(3);
-          await page.waitForTimeout(260);
           const r = await ev(() => ({
             area: game.area.id,
             label: game.area.label ?? game.area.name,
-            minimap: document.querySelector('#minimap .lvl')?.textContent,
             shares: renderer.airShares.map((x) => ({ area: x.area, w: x.w })),
             mist: renderer.atmos.mist.opacity,
             music: game.sfx.playing.music,
@@ -248,7 +249,7 @@ export default async function (page, shot, log) {
             expect(share(s.a) >= 0.25 && share(s.b) >= 0.25, `${what} at the opening the air is ${JSON.stringify(r.shares)}`);
             air.push(`${what} ${share(s.a).toFixed(2)}/${share(s.b).toFixed(2)}`);
           }
-          expect(r.minimap === r.label, `${what} ${k} tiles on the minimap says ${r.minimap}, not ${r.label}`);
+          expect(minimap === r.label, `${what} ${k} tiles on, the next frame the minimap says ${minimap}, not ${r.label}`);
           expect(r.sfx && r.music === MUSIC[r.area], `${what} ${k} tiles on the sound names ${r.music} for area ${r.area} (Sfx's area is the hero's: ${r.sfx})`);
           const plays = r.files ? r.files.includes(r.track) : r.track === SCORE[r.area];
           expect(plays, `${what} ${k} tiles on ${r.track ?? 'nothing'} plays, not ${r.files ? r.files.join(' or ') : `the ${SCORE[r.area]} music composed`}`);

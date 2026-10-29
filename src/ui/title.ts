@@ -155,6 +155,8 @@ export class PauseMenu {
     title: TitleScreen,
     openSettings: () => void,
     openDebug: () => void,
+    /** whoever the hero is with, left as the game is quit, before it's saved (NpcPanel.quit) */
+    leave: () => void,
   ) {
     const m = h('div', 'overlay ui-block');
     m.innerHTML = `
@@ -180,12 +182,19 @@ export class PauseMenu {
     if (dbg) dbg.onclick = () => openDebug();
     (m.querySelector('.quit') as HTMLButtonElement).onclick = () => {
       const game = this.ui.game;
+      // a townsperson's line still going counts as heard for this hero and is saved with them, not
+      // left under the title for the next hero's game to hear of
+      leave();
       game.save();
+      // nor is the quest log's news (UI.questsChanged): it was this hero's, and the next game starts without it
+      this.ui.questNews = false;
       // the hero let go: another tab may open it without waiting for this one
       releaseHero();
       markInGame(false);
       game.started = false;
       game.paused = false;
+      // a townsperson's line, or the hero's, doesn't follow the hero out to the title
+      this.ui.sfx.hush();
       this.ui.sfx.enterArea('title');
       m.classList.remove('open');
       title.refresh();

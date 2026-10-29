@@ -20,7 +20,7 @@
 // D2MOO references are to github.com/ThePhrozenKeep/D2MOO at commit d9d394f, by file and line.
 import { REF27, importTs, load, record, rows, strings, tables, writeD2x } from './load.mjs';
 import { MISSILE_FNS, SKILL_FNS, calcChecker, calcText, missileRange } from './calc.mjs';
-import { glossaryOfficial, names } from './names.mjs';
+import { glossaryOfficial, names, withoutNames } from './names.mjs';
 import { GAME_CLASSES, WARLOCK } from './scope.mjs';
 import { petsOf } from './world.mjs';
 
@@ -357,6 +357,8 @@ export async function buildSkills({ itemSkills, staffMods, hirelingSkills, monst
   const skillNames = names('skills');
   const runewordNames = names('runewords');
   const renamedOfficial = new Set();
+  /** the names of ours the skills take, from skills.json and runewords.json */
+  const ourNames = new Set();
   const STR_SKILL = new Map();
   for (const s of [...SKILL.values()].sort((a, b) => a['*Id'] - b['*Id'])) {
     const k = s.skilldesc && DESC.get(s.skilldesc)?.['str name'];
@@ -368,9 +370,15 @@ export async function buildSkills({ itemSkills, staffMods, hirelingSkills, monst
     const official = k ? S.zh[k] : undefined;
     if (skillNames.has(s.skill) || (!official && !/^Runeword\d+$/.test(k ?? ''))) {
       if (official) renamedOfficial.add(official.trim());
-      return { ...skillNames.named(s.skill, en, official), en };
+      const nm = skillNames.named(s.skill, en, official);
+      if (nm) ourNames.add(nm.name);
+      return { ...nm, en };
     }
-    if (/^Runeword\d+$/.test(k)) return { ...runewordNames.named(k, en, official), en };
+    if (/^Runeword\d+$/.test(k)) {
+      const nm = runewordNames.named(k, en, official);
+      if (nm) ourNames.add(nm.name);
+      return { ...nm, en };
+    }
     return { name: official.trim(), en };
   }
 
@@ -867,15 +875,17 @@ export async function buildSkills({ itemSkills, staffMods, hirelingSkills, monst
   const gameOnly = GAME_SKILLS.map((s) => s.id).filter((id) => !usedIds.has(id));
 
   // ───────────────────────── checks ─────────────────────────
-  // no glossary-replaced transliteration and no official name of a skill we renamed, in a name or a text
-  const terms = [...glossaryOfficial(), ...renamedOfficial];
+  // no glossary-replaced transliteration and no official name of a skill we renamed, in a name or a
+  // text; one of our names may hold its official whole (tools/d2-names/style.md: a word added to it),
+  // so ours are cut out before looking for the renamed official names
+  const glossary = glossaryOfficial();
   const shown = [
     ...[...Object.values(out), ...Object.values(skillRefs)].map((s) => s.name).filter(Boolean),
     ...Object.values(texts),
   ];
   const leaked = [];
   for (const n of shown) {
-    const t = terms.find((o) => n.includes(o));
+    const t = glossary.find((o) => n.includes(o)) ?? [...renamedOfficial].find((o) => withoutNames(n, ourNames).includes(o));
     if (t) leaked.push(`${n} (${t})`);
   }
   if (leaked.length) throw new Error(`official proper nouns in the skill data:\n  ${leaked.join('\n  ')}`);

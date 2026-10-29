@@ -1,10 +1,11 @@
 // Quests (src/game/quests, D2MOO D2QuestRecord.cpp and QUESTS/ACT1/A1Q1.cpp at d9d394f): the
-// record's flags and D2's reading of it for a new game; the Den of Evil played through Game from
+// record's flags and D2's reading of it for a new game; a line of one game's heard in the next
+// counting for nothing there; the Den of Evil played through Game from
 // Akara's first word to her reward (once), the count said only for the den's own kills, started by
 // walking in without her, its reward collected in a later game; each difficulty's record apart;
 // saves keeping records (unknown quests too) and old saves loading with none; what counts in the
 // den (not neverCount, only hostile); quest drops by the record (Andarielq); the names from the
-// rename table; every line our own, filled, and on the review page.
+// rename table; every line our own, filled, and on the review page, each one spoken with its takes.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -85,7 +86,7 @@ export default async (load) => {
   check(ACT1_QUESTS.length === 6 && new Set(ACT1_QUESTS.map((q) => q.key)).size === 6, 'six quests');
 
   // ── the lines: ours, filled from the rename tables, all on the review page ──
-  const lines = [...Object.values(DLG.DEN_LINES), ...Object.values(DLG.DEN_LOG), ...Object.values(DLG.LOG_LINES), ...Object.values(DLG.GOSSIP).flat()];
+  const lines = [...Object.values(DLG.DEN_LINES), ...Object.values(DLG.DEN_LOG), ...Object.values(DLG.LOG_LINES), ...Object.values(DLG.GOSSIP).flat(), ...Object.values(DLG.GREETINGS).flatMap((g) => [...g.greeting, ...g.farewell])];
   const official = new Set();
   const officialEn = new Set();
   for (const f of ['quests.json', 'npcs.json', 'areas.json']) {
@@ -99,16 +100,36 @@ export default async (load) => {
     for (const e of g.en.split(/\s*[/(]\s*/)) if (e.length > 3) officialEn.add(e.replace(/\)$/, ''));
   }
   officialEn.delete('Camp');
+  // a name of ours may hold an official one whole (a word added to it: tools/d2-names/style.md), so
+  // our names are cut out of a line before it is looked through for the official ones
+  const ours = { zh: [], en: [] };
+  for (const f of fs.readdirSync(path.join(root, 'tools/d2-names')).filter((f) => f.endsWith('.json'))) {
+    for (const row of Object.values(json(f))) {
+      ours.zh.push(row?.name, row?.new);
+      ours.en.push(row?.nameEn, row?.newEn);
+    }
+  }
+  const cut = (s, names) => [...new Set(names)].filter(Boolean).sort((a, b) => b.length - a.length).reduce((acc, n) => acc.split(n).join('\u0000'), s);
   const review = fs.readFileSync(REVIEW, 'utf8');
   for (const line of lines) {
     const l = fillLine(line, { n: 3 });
     check(l.zh && l.en && !/[{}]/.test(l.zh + l.en), `a line unfilled or half there: ${JSON.stringify(l)}`);
-    for (const o of official) check(!l.zh.includes(o), `an official name ${o}: ${l.zh}`);
-    for (const o of officialEn) check(!l.en.includes(o), `an official name ${o}: ${l.en}`);
+    const [zh, en] = [cut(l.zh, ours.zh), cut(l.en, ours.en)];
+    for (const o of official) check(!zh.includes(o), `an official name ${o}: ${l.zh}`);
+    for (const o of officialEn) check(!en.includes(o), `an official name ${o}: ${l.en}`);
     check(!l.zh.includes('艾莉娜'), `the merchant's old name: ${l.zh}`);
     check(review.includes(l.zh), `not on the review page: ${l.zh}`);
   }
-  check(review === (await reviewMarkdown(load)), 'the review page is behind the lines: node tools/dialogue-review.mjs');
+  check(review === (await reviewMarkdown(load)), 'the review page is behind the lines or the recordings: node tools/dialogue-review.mjs');
+  // each line spoken aloud on the page with its recording, a take for each way of saying it, beside its words
+  const { npcLine } = await load('/src/audio/sounds.ts');
+  for (const s of DLG.spokenLines()) {
+    s.lines.forEach((l, i) => {
+      const take = `${npcLine(s.npc, s.id, s.quest)}.${i + 1}`;
+      const row = review.split('\n').find((r) => r.includes(`| \`${take}\``));
+      check(row?.includes(`| ${fillLine(l).zh} |`), `the review page doesn't give ${take} beside its words: ${row}`);
+    });
+  }
 
   // ── the Den of Evil, played ──
   localStorage.clear();
@@ -153,8 +174,14 @@ export default async (load) => {
   };
   const ticks = (n) => game.quests.update(QUEST_TICK * n + 1e-6);
 
-  check(akara()?.npc === '亚珈萝' && game.quests.hasNews('akara') && word() === 0, `a new game: ${akara()?.npc}, news ${game.quests.hasNews('akara')}, word ${word()}`);
+  check(akara()?.npc === '亚喀蕾' && game.quests.hasNews('akara') && word() === 0, `a new game: ${akara()?.npc}, news ${game.quests.hasNews('akara')}, word ${word()}`);
   check(game.quests.log('a1q1').state === 'none' && ACT1_QUESTS.filter((q) => q.key !== 'a1q1').every((q) => game.quests.log(q.key).state === 'off'), 'the log of a new hero');
+  // a line of one game's heard only once the next has begun (left up as its hero was quit, a difficulty left): nothing to the new game
+  toAkara();
+  const stale = game.talkTo(akara());
+  game.newGame('任务测试', 'paladin');
+  game.npcSpoke(stale);
+  check(stale?.id === 'intro' && word() === 0 && den().state === 1 && game.quests.hasNews('akara'), `the last game's line heard in this one: word ${word()}, state ${den().state}`);
   toAkara();
   const intro = game.talkTo(akara());
   check(intro?.id === 'intro' && intro.text.includes('邪秽巢穴'), `Akara's first words: ${intro?.id}`);
@@ -208,6 +235,9 @@ export default async (load) => {
   check(game.talkTo(akara()) === null && p().skillPoints === points + 1, 'the reward handed over twice');
   check(game.quests.log('a1q1').state === 'done' && !game.quests.hasNews('akara'), 'done in the log');
   check(game.quests.unseen().join() === 'a1q1', 'the log has the done quest to show');
+  // what 交谈 would have her say next (fetched ahead: Game.fetchAhead) is what it says, and asking doesn't move her small talk on
+  const next = game.quests.nextTalk('akara')?.id;
+  check(next?.startsWith('gossip') && game.quests.nextTalk('akara')?.id === next && game.npcTalk(akara())?.id === next, `her next small talk ${next}, then ${game.quests.nextTalk('akara')?.id}`);
   const gossip = new Set();
   for (let i = 0; i < 6; i++) gossip.add(game.npcTalk(akara())?.id);
   check(gossip.size === 3, `her small talk once the den is done: ${[...gossip].join()}`);

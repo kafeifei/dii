@@ -7,10 +7,14 @@
 //             on a GPU machine (tools/audio/acestep.py), not by ElevenLabs: it costs no credits
 //   prompt    what the effect or ambience sounds like (sfx, loop), in English: ElevenLabs follows that best
 //   text      the line, as spoken (voice); every character counts a credit
+//   texts     several ways of saying it instead (voice), each its own take: take n says the nth, so
+//             one added at the end is made alone, and one changed makes only its own take again
+//             (where the voice misreads a word as written, SAY_AS below gives it another spelling)
 //   duration  seconds asked for (sfx, loop; 0.5 to 30, default 1 and 20), 'auto' to let the model pick:
 //             it costs about 10 credits a second either way
 //   variants  how many takes (default 1). Variety comes from Sfx picking a take and nudging its pitch,
-//             so a second take is for sounds heard over and over, not the rule
+//             so a second take is for sounds heard over and over, not the rule; a voice line's takes
+//             are its texts
 //   influence how closely it follows the prompt, 0 to 1 (sfx 0.5, loop 0.3 by default)
 //   voice     the speaker (voice; default: the id's second part)
 //   gain      times its level in the game (src/audio/files.ts): every take is normalized alike, and
@@ -55,24 +59,79 @@ export const SPEAKERS = {
   paladin: { voice: 'Brian' },
   /** the sorceress: a cool, assured woman */
   sorceress: { voice: 'Lily' },
+  /**
+   * 亚喀蕾 (Akarelle), the camp's healer and seer, Akara's counterpart: an older woman, warm and
+   * grave. Of the premade women verified for Mandarin (Sarah, Laura, Jessica, Lily), Sarah is the
+   * mature, reassuring one (Laura's and Jessica's are young and bright, Lily is the sorceress);
+   * a little slower than she reads, as an elder speaks
+   */
+  akara: { voice: 'Sarah', settings: { speed: 0.92 } },
+};
+
+/** the speakers with a column in the heroes' script (tools/audio/voice-lines.md), in its order */
+export const HEROES = ['paladin', 'sorceress'];
+
+/**
+ * Where the voice misreads a word of a line as written, what it's given for it instead, by line:
+ * [word, said as] pairs, the word spelled by its sound in characters that have only that reading.
+ * The line shown, and the text made.json records for its takes, keep the word (made.json's `said` is
+ * what the voice was given); a pair changed makes that line's takes again, and no other line's.
+ */
+export const SAY_AS = {
+  // eleven_v4 read 血 in 血沼荒原 as xuě (雪沼, the 3rd tone rising before 沼's), in takes of two
+  // seeds; here it's xuè, as the intro reads it. 谑 is only ever xuè
+  'voice.akara.a1q1_remind': [['血沼', '谑沼']],
 };
 
 /**
- * The heroes' lines, from their script (tools/audio/voice-lines.md, a table of key, when, and each
- * hero's words in 「」): one entry per hero and line, voice.<hero>.<key>. The script is what's
- * written and approved; this only reads it, so a line changed there is made again.
+ * The heroes' lines, from their script (tools/audio/voice-lines.md, a table of key, when, and a
+ * column per hero, each cell the ways that hero says it, in 「」): one entry per hero and line,
+ * voice.<hero>.<key>, its texts in the cell's order, take n the nth (Sfx says one of them at random).
+ * The script is what's written and approved; this only reads it, so a line changed there is made again.
  */
 function heroLines() {
   const md = fs.readFileSync(new URL('./voice-lines.md', import.meta.url), 'utf8');
-  const heroes = Object.keys(SPEAKERS);
   const out = [];
   for (const row of md.split('\n').filter((l) => l.startsWith('| `'))) {
     const key = row.match(/^\| `([a-z0-9_]+)`/)[1];
-    const words = [...row.matchAll(/「([^」]+)」/g)].map((m) => m[1]);
-    if (words.length !== heroes.length) throw new Error(`voice-lines.md: ${key} has ${words.length} lines, not one for each of ${heroes.join(', ')}`);
-    heroes.forEach((hero, i) => out.push({ id: `voice.${hero}.${key}`, kind: 'voice', text: words[i] }));
+    // key, when, then a cell per hero
+    const cells = row.split('|').slice(1, -1);
+    if (cells.length !== 2 + HEROES.length) throw new Error(`voice-lines.md: ${key} has ${cells.length} cells, not key, when and one for each of ${HEROES.join(', ')}`);
+    HEROES.forEach((hero, i) => {
+      const texts = [...cells[2 + i].matchAll(/「([^」]+)」/g)].map((m) => m[1]);
+      if (!texts.length) throw new Error(`voice-lines.md: ${key} has no line for ${hero}`);
+      out.push({ id: `voice.${hero}.${key}`, kind: 'voice', texts });
+    });
   }
   return out;
+}
+
+/**
+ * What the townsfolk say, from the dialogue's review page (tools/d2-names/DIALOGUE-zh.md, which
+ * tools/dialogue-review.mjs writes from src/data/dialogue.ts, the names filled in as the game shows
+ * them): each row whose 配音 cell names a take, `voice.<speaker>.<line>.<n>`, is take n of that line,
+ * saying the row's 中文. The page is what's written and reviewed, and tools/test/quests.test.mjs
+ * fails while it's behind the lines; a line changed there is made again.
+ */
+function townLines() {
+  const md = fs.readFileSync(new URL('../d2-names/DIALOGUE-zh.md', import.meta.url), 'utf8');
+  const lines = new Map();
+  for (const row of md.split('\n').filter((l) => l.startsWith('| `'))) {
+    // key, when, 中文, English, 字数, 配音 (a cell's own | is escaped)
+    const cells = row.split(/(?<!\\)\|/).slice(1, -1).map((c) => c.trim().replace(/\\\|/g, '|'));
+    const take = cells.at(-1).match(/^`voice\.([a-z]+)\.([a-z0-9_]+)\.(\d+)`/);
+    if (!take) continue;
+    if (cells.length !== 6) throw new Error(`DIALOGUE-zh.md: ${cells[0]} has ${cells.length} cells, not key, when, 中文, English, 字数 and 配音`);
+    const [, who, line, n] = take;
+    const id = `voice.${who}.${line}`;
+    const texts = lines.get(id) ?? [];
+    texts[n - 1] = cells[2];
+    lines.set(id, texts);
+  }
+  return [...lines].map(([id, texts]) => {
+    if (texts.some((t) => !t) || texts.length !== Object.keys(texts).length) throw new Error(`DIALOGUE-zh.md: ${id} is missing a take among ${texts.length}`);
+    return { id, kind: 'voice', texts };
+  });
 }
 
 // Sound effects are asked for dry and close, without music: Sfx places them and the mix adds the
@@ -239,4 +298,7 @@ export default [
 
   // ---- the heroes' voices
   ...heroLines(),
+
+  // ---- the townsfolk's
+  ...townLines(),
 ];

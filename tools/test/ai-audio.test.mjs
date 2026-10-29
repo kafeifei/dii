@@ -151,6 +151,11 @@ export default async (load) => {
       check(!!m, `files.ts: ${id}: ${file} isn't in tools/audio/made.json`);
       if (m) check(JSON.stringify(m.loop) === JSON.stringify(f.loop), `files.ts: ${id}: loop ${JSON.stringify(f.loop)}, ${file} was made to loop at ${JSON.stringify(m.loop)}`);
     }
+    // a line's takes' lengths, known before they're fetched (a townsperson's text scrolls by them): made.json's, take by take
+    if (id.startsWith('voice.')) {
+      const want = f.files.map((file) => made[file.replace(/\.m4a$/, '')]?.secs);
+      check(JSON.stringify(f.secs) === JSON.stringify(want), `files.ts: ${id}: secs ${JSON.stringify(f.secs)}, its takes were made ${JSON.stringify(want)} long`);
+    } else check(f.secs === undefined, `files.ts: ${id} has secs: only a voice line's takes do`);
   }
   // every recording that ships is credited, with what it was asked for (the free tier's terms)
   const out = path.join(root, 'public/audio');
@@ -167,20 +172,54 @@ export default async (load) => {
   }
 
   // the heroes' script names the moments the game has lines for, and the list asks for each hero's
-  // words there as they're written
+  // words there as they're written, a take for each way of saying it (HERO_TAKES of them), in order
   const { HERO_LINES } = await load('/src/audio/sounds.ts');
   const script = fs.readFileSync(path.join(root, 'tools/audio/voice-lines.md'), 'utf8');
   const keys = [...script.matchAll(/^\| `([a-z0-9_]+)` \|/gm)].map((m) => m[1]);
   check(keys.join() === HERO_LINES.join(), `tools/audio/voice-lines.md has ${keys.join(' ')}, src/audio/sounds.ts HERO_LINES ${HERO_LINES.join(' ')}`);
-  const { default: list, SPEAKERS } = await import(`${path.join(root, 'tools/audio/list.mjs')}?t=${Date.now()}`);
+  const { default: list, SPEAKERS, HEROES } = await import(`${path.join(root, 'tools/audio/list.mjs')}?t=${Date.now()}`);
+  /** the ways each hero has of saying each line: Sfx says one at random, not the last again */
+  const HERO_TAKES = 4;
   for (const row of script.split('\n').filter((l) => l.startsWith('| `'))) {
     const key = row.match(/`([a-z0-9_]+)`/)[1];
-    const words = [...row.matchAll(/「([^」]+)」/g)].map((m) => m[1]);
-    Object.keys(SPEAKERS).forEach((who, i) => {
+    const cells = row.split('|').slice(1, -1);
+    check(cells.length === 2 + HEROES.length, `tools/audio/voice-lines.md: ${key} has ${cells.length} cells, not key, when and one for each of ${HEROES.join(', ')}`);
+    HEROES.forEach((who, i) => {
+      const words = [...(cells[2 + i] ?? '').matchAll(/「([^」]+)」/g)].map((m) => m[1]);
       const e = list.find((e) => e.id === `voice.${who}.${key}`);
-      check(e?.text === words[i], `tools/audio/list.mjs: voice.${who}.${key} says ${e?.text}, the script ${words[i]}`);
+      check(JSON.stringify(e?.texts) === JSON.stringify(words), `tools/audio/list.mjs: voice.${who}.${key} says ${JSON.stringify(e?.texts)}, the script ${JSON.stringify(words)}`);
+      check(words.length === HERO_TAKES && new Set(words).size === words.length, `tools/audio/voice-lines.md: ${who} says ${key} ${words.length} ways (${words.join(' ')}), not ${HERO_TAKES} different ones`);
     });
   }
+
+  // the townsfolk's lines as the game says them: the list asks for each of Akara's, filled as shown
+  // (it reads them off the review page, which tools/test/quests.test.mjs holds to the lines), under
+  // the id the game plays it by (npcLine), her greetings and farewells a take each; nothing else
+  const DLG = await load('/src/data/dialogue.ts');
+  const { fillLine } = await load('/src/game/quests/quest.ts');
+  const { npcLine } = await load('/src/audio/sounds.ts');
+  const town = Object.fromEntries(DLG.spokenLines().map((s) => [npcLine(s.npc, s.id, s.quest), s.lines]));
+  check(Object.keys(town).length === 9 && town['voice.akara.a1q1_remind_out'] && town['voice.akara.gossip2'], `the lines spoken aloud: ${Object.keys(town).join(' ')}`);
+  for (const [id, lines] of Object.entries(town)) {
+    const e = list.find((e) => e.id === id);
+    const want = lines.map((l) => fillLine(l).zh);
+    check(JSON.stringify(e?.texts) === JSON.stringify(want), `tools/audio/list.mjs: ${id} says ${JSON.stringify(e?.texts)}, the game ${JSON.stringify(want)}`);
+  }
+  check(DLG.GREETINGS.akara.greeting.length === 3 && DLG.GREETINGS.akara.farewell.length === 3, 'Akara has not three greetings and three farewells');
+  // a word the voice misreads is given it respelled (SAY_AS): the take records the line as shown and what the voice was given
+  const { SAY_AS = {} } = await import(`${path.join(root, 'tools/audio/list.mjs')}?t=${Date.now()}`);
+  for (const [id, pairs] of Object.entries(SAY_AS)) {
+    const e = list.find((x) => x.id === id);
+    check(e?.kind === 'voice', `tools/audio/list.mjs: SAY_AS ${id} is no voice line`);
+    (e?.texts ?? []).forEach((text, i) => {
+      const said = pairs.reduce((s, [word, as]) => s.split(word).join(as), text);
+      const m = made[`${id}.${i + 1}`];
+      if (said !== text && m) check(m.text === text && m.said === said, `made.json: ${id}.${i + 1} says ${m.text}, given as ${m.said}, not ${said}`);
+    });
+  }
+  const stray = list.filter((e) => e.kind === 'voice' && !HEROES.includes(e.id.split('.')[1]) && !(e.id in town));
+  check(!stray.length, `tools/audio/list.mjs: townsfolk's lines the game doesn't say: ${stray.map((e) => e.id).join(' ')}`);
+  check(!!SPEAKERS.akara?.voice && !HEROES.includes('akara'), `Akara's voice: ${JSON.stringify(SPEAKERS.akara)}`);
 
   // the music that ships: made by ACE-Step, credited as such with its seed, streamed whole (no loop points)
   for (const e of list.filter((e) => e.kind === 'music')) {
