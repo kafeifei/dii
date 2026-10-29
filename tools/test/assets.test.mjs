@@ -6,8 +6,10 @@
 // once when a level asks for it (not waited on), coming if it can; nothing but NOW starts while a NOW file is still coming or something
 // holds the stream back (a level's tile textures), and the rest starts once that settles; making way
 // stops a background download with most of its file to go (queued again, no try spent, started over
-// once let go) and lets one nearly in finish; a key no file serves is never waited on, and only the
-// misses that can come are noted (watch).
+// once let go) and lets one nearly in finish; what yields with the background (Sfx's lines fetched
+// ahead) is told to make way with it and told it may go once nothing holds the network; a key no file
+// serves is never waited on, and only the misses that can come are noted (watch). The libraries made
+// here have their tries in the background stopped before the real fetch is back.
 export default async (load) => {
   const THREE = await load('three');
   const { assets, NOW, LATER } = await load('/src/render/assets.ts');
@@ -63,7 +65,24 @@ export default async (load) => {
       return { scene, scenes: [scene], animations: [], parser: { associations: new Map(), json: { meshes: [] } } };
     },
   };
-  const lib = () => Object.assign(new Lib(), { loader });
+  /** the libraries made here, done with at the end (dispose) */
+  const libs = [];
+  const lib = () => {
+    const l = Object.assign(new Lib(), { loader });
+    libs.push(l);
+    return l;
+  };
+  /**
+   * a library's tries in the background stopped (a file given up on is tried again seconds to minutes
+   * on): one left waiting would fetch through the real fetch once this test has put it back (a
+   * 'model failed … Failed to parse URL' stack), or through another test's stand-in for it (sfx.test.mjs)
+   */
+  const dispose = (l) => {
+    for (const s of l.sources) {
+      clearTimeout(s.timer);
+      s.timer = undefined;
+    }
+  };
   const gate = (file) => {
     let open = () => {};
     gates.set(file, new Promise((r) => (open = r)));
@@ -110,6 +129,8 @@ export default async (load) => {
       const t1 = Date.now();
       await b.ensure(['mon_yeti'], NOW);
       check(Date.now() - t1 < 50, 'a file given up on was waited on again');
+      // that try over (it fails), its next one waits some seconds off: stopped at the end (dispose)
+      await tick(20);
       fails.set('mon_yeti', 0);
     }
     // given up on, and its tries in the background spent (some 6.7 minutes of them, as after a long
@@ -200,6 +221,23 @@ export default async (load) => {
       tails.delete('mon_imp');
       await e.ensureAll();
     }
+    // what yields with the background (Sfx's lines fetched ahead): told to make way with it, and told
+    // it may go once nothing holds the network, not while something does
+    {
+      const h = lib();
+      const told = [];
+      h.yieldWith({ makeWay: () => told.push('makeWay'), free: () => told.push(`free ${h.busy()}`) });
+      let release = () => {};
+      h.hold(new Promise((r) => (release = r)));
+      const now = h.ensure(['mon_zombie'], NOW);
+      h.makeWay();
+      await now;
+      await tick(20);
+      check(told.join() === 'makeWay', `while held: told ${told.join()}`);
+      release();
+      await tick(20);
+      check(told.length > 1 && told.slice(1).every((t) => t === 'free false'), `once released: told ${told.join()}`);
+    }
     // keys no file serves are never waited on; only misses that can come are noted
     {
       const d = lib();
@@ -215,9 +253,11 @@ export default async (load) => {
       check(none === null, 'a build that missed nothing has misses');
     }
   } finally {
+    // before the real fetch is back: mon_yeti, given up on, would be tried again some seconds on
+    for (const l of libs) dispose(l);
     globalThis.fetch = fetch0;
     console.warn = warn0;
   }
   if (problems.length) throw new Error(problems.join('\n'));
-  console.log('  NOW ahead of the background and alone while it comes, a retry then let go, asked for again once its tries are spent and in, held back until released, way made by stopping what had most to go, no wait on what can\'t come');
+  console.log('  NOW ahead of the background and alone while it comes, a retry then let go, asked for again once its tries are spent and in, held back until released, way made by stopping what had most to go, what yields with it told, no wait on what can\'t come');
 };
