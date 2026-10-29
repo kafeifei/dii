@@ -108,7 +108,10 @@ export function wasInGame(): boolean {
 // save); the tab that had it is told by a storage event (or finds the claim at a save before the event
 // comes: the same), writes it once more if nothing has been written over it since (mayWriteLast),
 // hands it over (handOver) and then never writes it again (heroTaken). A reload still loading the hero
-// it claimed gives it up to a tab that opens it meanwhile (Game.heroClaimed).
+// it claimed gives it up to a tab that opens it meanwhile (Game.heroClaimed). A tab that let the hero
+// go into the back-forward cache, or was frozen past its claim, finds a tab that opened it meanwhile and
+// has let it go again by the save written since (writtenElsewhere): its hero is out of date, never
+// written again (Game.outdated).
 
 /** this page's own: made anew on each load, as a duplicated tab copies sessionStorage */
 const TAB = uid('tab');
@@ -254,6 +257,40 @@ export function mayWriteLast(): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Whether the hero this tab plays has been written by another tab since this one last read or wrote
+ * it: opened there while this page was away (in the back-forward cache, or frozen in the background),
+ * played, and let go, so no claim of that tab's is left to say so. What is played here is out of date
+ * then, and written, would put that tab's play out of the save (Game.outdated). Not when this tab hasn't
+ * read or written it since claiming it (nothing to tell by), nor when it is gone from storage (deleted
+ * from a title: nobody's play to keep), nor when storage can't be read (nor written, then)
+ */
+export function writtenElsewhere(): boolean {
+  if (!held || lastText === null) return false;
+  try {
+    const now = localStorage.getItem(held);
+    return now !== null && now !== lastText;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Back from the back-forward cache with the hero still as this tab left it (Game.backFromCache): the
+ * claim taken again, keeping the save's text as this tab last read or wrote it, so a tab that opens the
+ * hero next still gets this one's last write (mayWriteLast) and a write over this one is still found (writtenElsewhere)
+ */
+export function reclaimHero() {
+  if (!held) return;
+  lastBeat = Date.now();
+  writeClaim(held, { tab: TAB, time: lastBeat });
+}
+
+/** Hero `p`, out of date here (Game.outdated): never written by this tab again */
+export function neverWrite(p: Player) {
+  readOnly.add(p);
 }
 
 // ───────────────────────── the save, version 4 ─────────────────────────
