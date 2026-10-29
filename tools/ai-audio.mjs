@@ -159,7 +159,12 @@ function validate(list) {
     }
     if (e.variants !== undefined && !(Number.isInteger(e.variants) && e.variants >= 1)) problems.push(`${where}: variants ${e.variants}`);
     if (e.kind === 'voice') {
-      if (!e.text) problems.push(`${where}: a voice line needs its text`);
+      // its text, or its texts: one take each
+      if (e.texts !== undefined) {
+        if (e.text !== undefined || e.variants !== undefined) problems.push(`${where}: texts are its takes: no text or variants beside them`);
+        if (!Array.isArray(e.texts) || !e.texts.length || !e.texts.every((t) => typeof t === 'string' && t.trim())) problems.push(`${where}: texts ${JSON.stringify(e.texts)}`);
+        else if (new Set(e.texts).size !== e.texts.length) problems.push(`${where}: a text said twice among its takes`);
+      } else if (!e.text) problems.push(`${where}: a voice line needs its text`);
       if (!e.id.startsWith('voice.') || e.id.split('.').length !== 3) problems.push(`${where}: a voice line is voice.<speaker>.<line>`);
       if (!SPEAKERS[speakerOf(e)]) problems.push(`${where}: no speaker ${speakerOf(e)} in SPEAKERS`);
       const [, who, line] = e.id.split('.');
@@ -195,7 +200,8 @@ function request(e, n) {
   if (e.kind === 'music') return musicRequest(e, n);
   if (e.kind === 'voice') {
     const sp = SPEAKERS[speakerOf(e)];
-    return { kind: 'voice', text: e.text, voice: sp.voice, settings: { ...sp.settings, ...e.settings }, lang: sp.lang ?? 'zh', model: e.model ?? sp.model, n };
+    // (take n of a line with texts says the nth: the same request as a line of that text alone)
+    return { kind: 'voice', text: e.texts ? e.texts[n - 1] : e.text, voice: sp.voice, settings: { ...sp.settings, ...e.settings }, lang: sp.lang ?? 'zh', model: e.model ?? sp.model, n };
   }
   return { kind: e.kind, prompt: e.prompt, duration: e.duration ?? k.duration, influence: e.influence ?? k.influence, model: e.model, n };
 }
@@ -207,7 +213,7 @@ function processing(e, key) {
 }
 
 function takesOf(e) {
-  return Array.from({ length: e.kind === 'music' ? e.takes.length : (e.variants ?? 1) }, (_, i) => {
+  return Array.from({ length: e.kind === 'music' ? e.takes.length : (e.texts?.length ?? e.variants ?? 1) }, (_, i) => {
     const n = i + 1;
     const req = request(e, n);
     const key = hash(req);

@@ -9,7 +9,8 @@ import { areaKey, areaSound, isNight, LINE, PRIORITY, SOUNDS, VARY, type AmbId, 
  * Game code plays sounds by id (src/audio/sounds.ts); one with a place in the world is heard from
  * the listener, the hero. An id with recorded files (src/audio/files.ts) plays one of them, decoded
  * on first use; any other, or one whose files won't load, is synthesized at runtime with WebAudio.
- * A line spoken (voice.<speaker>.<line>) plays its recording or nothing, one line at a time (Lines).
+ * A line spoken (voice.<speaker>.<line>) plays one of its recordings or nothing, one line at a time
+ * and one of its takes at random, never the last one again (Lines).
  * Each area has its ambience (recorded loops, or a synthesized bed) and its music (a recorded track
  * streamed, or music composed on the spot), both crossfaded as the hero moves between areas (walking
  * over a seam of the overworld, or by a jump), or playing on where the next area's is the same.
@@ -135,7 +136,10 @@ export function earGains(pan: number): { l: number; r: number } {
 
 /** after a line ends, this long before another starts: the hero never talks over itself */
 export const LINE_GAP = 1.2;
-/** the same line again this soon isn't said: a cast held with no mana says so once, not on every try */
+/**
+ * the same line again this soon isn't said, in any of its takes: a cast held with no mana says so
+ * once, not on every try. Diablo II's heroes don't chatter
+ */
 export const LINE_AGAIN = 8;
 /** a line still decoding when its moment comes is said once it's in, if that's within this; later it would go with nothing */
 export const LINE_LATE = 0.8;
@@ -144,30 +148,39 @@ export const LINE_LATE = 0.8;
 export interface Booking {
   id: string;
   at: number;
+  /** which of its takes is said (the index of its file) */
+  take: number;
 }
 
 /**
- * Who speaks when: one line at a time, a pause after each, and the same line not again for a while,
- * however often its moment comes. A line is booked as soon as it's asked for, so nothing else starts
- * while it decodes; then it starts, holding the floor until it's done, or gives the floor up. Kept
- * apart from WebAudio so it runs under Node too; times are the AudioContext's, in seconds.
+ * Who speaks when, and in which take: one line at a time, a pause after each, and the same line not
+ * again for a while, however often its moment comes; each time one of its takes at random, never the
+ * one heard last while it has another. A line is booked as soon as it's asked for, so nothing else
+ * starts while it decodes; then it starts, holding the floor until it's done, or gives the floor up.
+ * Kept apart from WebAudio so it runs under Node too; times are the AudioContext's, in seconds.
  */
 export class Lines {
   /** till when nothing else is said */
   private quiet = -Infinity;
   /** each line's last booking */
   private said = new Map<string, number>();
+  /** each line's take heard last: one booked and never started (too late, or it wouldn't load) wasn't */
+  private heard = new Map<string, number>();
   /** the booking holding the floor */
   private held: Booking | null = null;
 
-  /** may `id` be said at `now`? Its booking if so, null if it isn't to be said */
-  book(id: string, now: number): Booking | null {
+  /**
+   * May `id` be said at `now`? Its booking if so, with which of its `takes` it's said in (pickVariant:
+   * at random, not the one heard last); null if it isn't to be said
+   */
+  book(id: string, now: number, takes = 1, rand: () => number = Math.random): Booking | null {
     if (now < this.quiet) return null;
     const last = this.said.get(id);
     if (last !== undefined && now - last < LINE_AGAIN) return null;
     this.said.set(id, now);
     this.quiet = now + LINE_LATE;
-    return (this.held = { id, at: now });
+    const take = pickVariant(Array.from({ length: Math.max(1, takes) }, (_, i) => i), this.heard.get(id), rand);
+    return (this.held = { id, at: now, take });
   }
 
   /**
@@ -181,6 +194,7 @@ export class Lines {
       return false;
     }
     this.quiet = now + secs + LINE_GAP;
+    this.heard.set(b.id, b.take);
     this.held = null;
     return true;
   }
@@ -417,28 +431,31 @@ export class Sfx {
   }
 
   /**
-   * A line: one at a time and not too often (Lines), whatever asks for it. Nothing is synthesized in
-   * its place, so with no recording it isn't said; one still to be decoded is said once it is, if
-   * that's soon enough.
+   * A line: one at a time and not too often (Lines), whatever asks for it, in the take Lines books
+   * (one of them at random, not the last one heard). Only that take is decoded, so a line's first
+   * time is as quick as a line of one take. Nothing is synthesized in its place, so with no
+   * recording it isn't said; a take still to be decoded is said once it is, if that's soon enough.
    */
   private say(id: VoiceId, opts: PlayOpts) {
     if (!this.recorded(id)) return;
-    const booked = this.lines.book(id, this.ctx!.currentTime);
+    const f = this.files[id]!;
+    const booked = this.lines.book(id, this.ctx!.currentTime, f.files.length);
     if (!booked) return;
-    const go = () => {
-      const take = this.variant(id);
+    const go = (buf: AudioBuffer | null) => {
       const now = this.ctx!.currentTime;
       // it wouldn't load, or the sound was turned off while it did
-      if (!take || this.muted) return this.lines.drop(booked, now);
-      if (this.lines.start(booked, now, (take.buf.duration - take.lead) / (opts.pitch ?? 1))) this.sound(id, LINE, opts, take);
+      if (!buf || this.muted) return this.lines.drop(booked, now);
+      const take: Take = { buf, gain: f.gain ?? 1, lead: this.leads.get(buf) ?? 0 };
+      if (this.lines.start(booked, now, (buf.duration - take.lead) / (opts.pitch ?? 1))) this.sound(id, LINE, opts, take);
     };
-    if (this.ready(id)) go();
-    else void this.load(id).then(go);
-  }
-
-  /** every take of it is decoded */
-  private ready(id: OneShot) {
-    return !!this.files[id]?.files.every((file) => this.buffers.has(fileUrl(file)));
+    const url = fileUrl(f.files[booked.take]);
+    const buf = this.buffers.get(url);
+    if (buf) return go(buf);
+    // a take that won't load gives the line up, as any of an id's files does (load)
+    void this.buffers.load(url, true).then(go, (e: Error) => {
+      this.fail(id, e);
+      go(null);
+    });
   }
 
   /** `take`: the recording to play, already chosen (a line's); otherwise one is picked, or its recipe rendered */
