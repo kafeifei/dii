@@ -38,8 +38,10 @@ interface Source {
   /** when it was asked for that soon: first come, first served */
   seq: number;
   tries: number;
-  /** its quick tries all failed: what waits on it is let go, and it's tried again now and then */
+  /** its quick tries all failed: what waits on it is let go, and it's tried again now and then (and whenever a level asks for it: ensure) */
   gaveUp: boolean;
+  /** the wait for its next try, between tries */
+  timer: ReturnType<typeof setTimeout> | undefined;
   /** what waits on it coming or being given up on */
   settle: (() => void)[];
   /** while its bytes come: how to stop them, how many have come and of how many (0: not said) */
@@ -86,7 +88,7 @@ export interface Template {
   center: THREE.Vector3;
 }
 
-const source = (file: string, keys: readonly string[], pack: boolean): Source => ({ file, keys, pack, state: 'idle', prio: LATER, seq: 0, tries: 0, gaveUp: false, settle: [], fetch: null, stopped: false });
+const source = (file: string, keys: readonly string[], pack: boolean): Source => ({ file, keys, pack, state: 'idle', prio: LATER, seq: 0, tries: 0, gaveUp: false, timer: undefined, settle: [], fetch: null, stopped: false });
 
 class AssetLib {
   private templates = new Map<string, Template>();
@@ -154,6 +156,14 @@ class AssetLib {
   }
 
   /**
+   * whether what a level waits on is coming (its essentials, NOW) or holds the rest back (its tile
+   * textures, hold): what can wait as well (the item atlases fetched ahead, src/ui/itempics.ts) waits
+   */
+  busy(): boolean {
+    return this.holds > 0 || this.awaited();
+  }
+
+  /**
    * `build` run, noting the models it asked for that aren't in yet but can come: what it made stands
    * in for them, to be made again once they are in. The misses are null when there were none
    */
@@ -169,13 +179,17 @@ class AssetLib {
 
   /**
    * The files of `keys` loaded, before anything wanted later than `prio`: resolves once each is in or
-   * given up on (QUICK_TRIES), never rejects. `progress` hears as each file settles
+   * given up on (QUICK_TRIES), never rejects. `progress` hears as each file settles. One given up on
+   * already is tried again at once (the network may be back after a long outage; its tries in the
+   * background may be spent), not waited on
    */
   ensure(keys: Iterable<string>, prio = NOW, progress?: (done: number, total: number) => void): Promise<void> {
     const list = new Set<Source>();
     for (const k of keys) {
       const s = this.byKey.get(k);
-      if (s && s.state !== 'in' && !s.gaveUp) list.add(s);
+      if (!s || s.state === 'in') continue;
+      if (s.gaveUp) this.again(s, prio);
+      else list.add(s);
     }
     let done = 0;
     const waits = [...list].map((s) => {
@@ -247,6 +261,21 @@ class AssetLib {
     };
   }
 
+  /**
+   * a file given up on, asked for again at `prio`: between tries (or done with them), queued now, the
+   * wait for its next try cut short and its tries in the background starting over should this one fail
+   * too; waiting its turn for one, sooner; under way, as it is. Nothing waits on it (awaited)
+   */
+  private again(s: Source, prio: number) {
+    if (s.state !== 'retry') return this.want(s, prio);
+    clearTimeout(s.timer);
+    s.timer = undefined;
+    s.state = 'queued';
+    s.tries = QUICK_TRIES - 1;
+    s.prio = prio;
+    s.seq = ++this.seq;
+  }
+
   /** asked for at `prio`: queued if it wasn't, sooner if it was for later */
   private want(s: Source, prio: number) {
     if (s.state === 'in') return;
@@ -302,19 +331,22 @@ class AssetLib {
       s.state = 'queued';
     } else if (s.tries < QUICK_TRIES) {
       s.state = 'retry';
-      setTimeout(() => {
+      s.timer = setTimeout(() => {
+        s.timer = undefined;
         s.state = 'queued';
         this.pump();
       }, RETRY_MS * s.tries);
     } else {
-      // what waits on it goes on without it; it's tried again, further and further apart
+      // what waits on it goes on without it; it's tried again, further and further apart, and when a
+      // level asks for it (again)
       if (!s.gaveUp) console.warn('model failed', s.file, `after ${s.tries} tries: its stand-ins stay until a later try loads it`);
       s.gaveUp = true;
       s.state = 'retry';
       this.settle(s);
       if (s.tries < QUICK_TRIES + LATER_TRIES) {
         const wait = Math.min(RETRY_MAX_MS, RETRY_MS * 2 ** (s.tries - QUICK_TRIES + 2));
-        setTimeout(() => {
+        s.timer = setTimeout(() => {
+          s.timer = undefined;
           s.state = 'queued';
           s.prio = LATER;
           s.seq = ++this.seq;

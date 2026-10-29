@@ -1,11 +1,12 @@
 import type { Sfx } from '../audio/sfx';
 import { debugEnabled } from '../game/debug';
-import type { Game, GameHooks } from '../game/game';
+import type { Arrival, Game, GameHooks } from '../game/game';
 import type { Level } from '../game/level';
 import type { ObjKind, WorldObject } from '../game/objects';
 import { heroClaimKey, markInGame, sharedKey } from '../game/save';
 import type { Topic } from '../game/quests/quest';
 import { baseOf, displayName, itemColor, type Item } from '../items/item';
+import { assets } from '../render/assets';
 import type { Renderer } from '../render/renderer';
 import type { AreaDef } from '../world/areas';
 import { Automap } from './automap';
@@ -16,7 +17,7 @@ import { renderCube } from './cube';
 import { DebugPanel } from './debug';
 import { Hud, SkillPicker } from './hud';
 import { CELL } from './icons';
-import { itemImg } from './itempics';
+import { fetchAhead, holdOthers, itemImg } from './itempics';
 import { dropTrade, renderInventory, startIdentify } from './inventory';
 import { onKey, pressButton } from './keys';
 import { GroundLabels } from './labels';
@@ -71,6 +72,8 @@ export class UI implements GameHooks, UIContext {
   private unsavedEl!: HTMLElement;
   /** over a level whose models are still coming (Renderer.veiled) */
   private veilEl!: HTMLElement;
+  /** the item atlases are fetched ahead of the panels (itempics.ts fetchAhead), since the first game started */
+  private fetchingAhead = false;
 
   // elements
   private root: HTMLElement;
@@ -111,6 +114,8 @@ export class UI implements GameHooks, UIContext {
       renderer.setTouchView(true);
     }
     this.applySettings();
+    // a panel's item atlases coming: no model download nothing waits on starts meanwhile (assets.hold)
+    holdOthers((until) => assets.hold(until));
     window.addEventListener('keydown', (e) => onKey(this, e));
     window.addEventListener('pointermove', (e) => this.onPointerMove(e));
     window.addEventListener('storage', (e) => {
@@ -182,8 +187,11 @@ export class UI implements GameHooks, UIContext {
     this.banner.areaChanged(area, prev);
   }
 
-  teleported() {
-    this.renderer.snapCamera();
+  teleported(how?: Arrival | null) {
+    // by a way in (a waypoint, a town portal, brought back to life) what the area is made of comes
+    // first, veiled as a level is if it isn't in by then; the tools' jumps only move the view
+    if (how) this.renderer.jumped();
+    else this.renderer.snapCamera();
     this.banner.jump();
   }
 
@@ -316,6 +324,21 @@ export class UI implements GameHooks, UIContext {
     this.dirty = true;
   }
 
+  /**
+   * the hero's own items, in the order their pictures are likely wanted: the belt (always shown),
+   * what's worn and in the bag, the cursor's, the cube's, the stash's pages (itempics.ts fetchAhead)
+   */
+  private *ownItems(): Generator<Item | null | undefined> {
+    const p = this.game.player;
+    for (const col of p.belt) yield* col;
+    yield* Object.values(p.equipment);
+    for (const pl of p.inventory.items) yield pl.item;
+    yield this.cursorItem;
+    for (const pl of p.cube.items) yield pl.item;
+    for (const pl of p.stash.items) yield pl.item;
+    for (const g of this.game.shared.pages) for (const pl of g.items) yield pl.item;
+  }
+
   devStart() {
     const sorc = location.search.includes('sorc');
     this.game.newGame(sorc ? '测试法师' : '测试骑士', sorc ? 'sorceress' : 'paladin');
@@ -412,6 +435,15 @@ export class UI implements GameHooks, UIContext {
     if (!g.started) {
       this.vignette.style.background = '';
       return;
+    }
+    // the item atlases fetched ahead of the panels from now on, the hero's own first, while nothing a
+    // level waits on is coming (its veil's models, its tile textures)
+    if (!this.fetchingAhead) {
+      this.fetchingAhead = true;
+      fetchAhead(
+        () => this.ownItems(),
+        () => this.game.started && !this.renderer.veiled && !assets.busy() && document.visibilityState === 'visible',
+      );
     }
     const p = g.player;
     this.npc.update(dt);

@@ -5,11 +5,16 @@
 // ITEMS_GetColor (a magic item's first suffix with a colour, else its first prefix's; a unique's or
 // set item's invtransform; a gem in a normal item's first socket; InvTrans 0 none), the remap the
 // same as tools/icons/colours.py's, every picture an item can show painted and listed in an atlas
-// that is there (the picture inside it), and the 1x pictures' sharpen the export's (grade.py
-// sharpen(): PIL's bytes on the same pixels).
+// that is there (the picture inside it), the atlases decoded and each picture's rect in the game's
+// map showing the pixels recorded for that picture in tools/icons/made (the map saying what the
+// records say, each atlas the file its version names), and the 1x pictures' sharpen the export's
+// (grade.py sharpen(): PIL's bytes on the same pixels).
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import sharp from 'sharp';
+import { pixelsOf } from '../icons/atlas.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -168,6 +173,39 @@ export default async (load) => {
   }
   check(Object.keys(ITEM_PICTURES).length === 400, `${Object.keys(ITEM_PICTURES).length} pictures listed, not 400`);
 
+  // ── the game's map against the atlases' pixels: each atlas the file its version names, decoded; each
+  // picture's rect showing the pixels recorded for that picture (tools/icons/made atlas.pixels: what its
+  // rect showed, decoded, as tools/ai-icons.mjs packed it), and the map saying what the records say
+  const madeDir = path.join(root, 'tools/icons/made');
+  const made = Object.assign({}, ...fs.readdirSync(madeDir).filter((f) => f.endsWith('.json') && f !== 'atlases.json').map((f) => JSON.parse(fs.readFileSync(path.join(madeDir, f), 'utf8'))));
+  const recorded = new Map(Object.entries(made).filter(([, m]) => m.atlas?.pixels).map(([id, m]) => [m.atlas.pixels, id]));
+  check(recorded.size === Object.keys(ITEM_PICTURES).length, `${recorded.size} pictures' pixels recorded apart, for ${Object.keys(ITEM_PICTURES).length} pictures`);
+  const decoded = {};
+  for (const name of Object.keys(ITEM_ATLASES)) {
+    const file = path.join(dir, `${name}.webp`);
+    if (!fs.existsSync(file)) continue;
+    const v = crypto.createHash('sha1').update(fs.readFileSync(file)).digest('hex').slice(0, 8);
+    check(v === ITEM_ATLASES[name], `public/icons/items/${name}.webp isn't the file the map's version names (${ITEM_ATLASES[name]}, the file's ${v}): node tools/ai-icons.mjs`);
+    decoded[name] = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  }
+  const wrong = {};
+  let compared = 0;
+  for (const [f, [name, x, y, w, h]] of Object.entries(ITEM_PICTURES)) {
+    const m = made[f]?.atlas;
+    if (!check(m?.pixels, `${f}: no pixels recorded for it in tools/icons/made: node tools/ai-icons.mjs`)) continue;
+    check(path.basename(m.file, '.webp') === name && m.rect.join() === [x, y, w, h].join(), `${f}: the game's map has it at ${[x, y, w, h]} in ${name}, its record at ${m.rect} in ${path.basename(m.file, '.webp')}`);
+    const d = decoded[name];
+    if (!d) continue;
+    compared++;
+    const px = pixelsOf(d.data, d.info.width, [x, y, w, h]);
+    if (px !== m.pixels) (wrong[name] ??= []).push(`${f} at ${[x, y, w, h]} shows ${recorded.has(px) ? `${recorded.get(px)}'s pixels` : 'pixels recorded for no picture'}, not its own`);
+  }
+  for (const [name, list] of Object.entries(wrong)) {
+    // all of an atlas's off, the file the right one: it decodes differently than when they were recorded
+    const all = Object.values(ITEM_PICTURES).filter((r) => r[0] === name).length;
+    check(false, list.length === all && all > 1 ? `${name}.webp: none of its ${all} pictures decodes to the pixels recorded (another sharp or libwebp?): node tools/ai-icons.mjs records them anew` : `${name}.webp: ${list.join('; ')}`);
+  }
+
   // the 1x pictures' sharpen: grade.py sharpen()'s numbers, and PIL's bytes on the same pixels
   const py = fs.readFileSync(path.join(root, 'tools/icons/box/grade.py'), 'utf8').match(/def sharpen\(img, radius=([\d.]+), percent=(\d+)\)/);
   check(py && +py[1] === SHARPEN.radius && +py[2] === SHARPEN.percent, `src/ui/sharpen.ts ${JSON.stringify(SHARPEN)}, grade.py sharpen(${py?.slice(1)})`);
@@ -190,5 +228,5 @@ export default async (load) => {
   }
 
   if (problems.length) throw new Error(problems.join('\n'));
-  console.log(`  tiers share a picture; own and column pictures for uniques and set items; colours by suffix, prefix, invtransform, gem; ${kept.length} variants kept through 2 reloads; ${can.size} pictures an item can show, all painted, in ${Object.keys(ITEM_ATLASES).length} atlases; ${colours.size} colours, the remap within 1 of colours.py; the 1x sharpen grade.py's to the byte`);
+  console.log(`  tiers share a picture; own and column pictures for uniques and set items; colours by suffix, prefix, invtransform, gem; ${kept.length} variants kept through 2 reloads; ${can.size} pictures an item can show, all painted, in ${Object.keys(ITEM_ATLASES).length} atlases, ${compared} rects of the map showing their recorded pixels; ${colours.size} colours, the remap within 1 of colours.py; the 1x sharpen grade.py's to the byte`);
 };

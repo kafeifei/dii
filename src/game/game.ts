@@ -45,8 +45,12 @@ export interface GameHooks {
   levelChanged(level: Level): void;
   /** the hero came into an area: on entering a level (prev is the last level's), or walking or teleporting into another */
   areaChanged(area: AreaDef, prev: AreaDef | null): void;
-  /** the hero jumped across the map without leaving it: the view goes there at once */
-  teleported(): void;
+  /**
+   * the hero jumped across the map without leaving it, coming `how` (a waypoint, a town portal,
+   * respawning; null: a tools' jump): the view goes there at once, and by a way in what the area is
+   * made of is wanted first (Renderer.jumped)
+   */
+  teleported(how?: Arrival | null): void;
   playerDied(): void;
   inventoryChanged(): void;
   getCursorItem(): Item | null;
@@ -631,7 +635,7 @@ export class Game {
    */
   teleportWithin(pos: P2, how: Arrival | null = null) {
     this.placePlayer(pos);
-    this.hooks.teleported();
+    this.hooks.teleported(how);
     this.updateArea(false, how);
   }
 

@@ -1017,17 +1017,30 @@ export class Renderer implements Picker {
   }
 
   /**
-   * What `level` is made of asked for: the area the hero arrives in first, its veil coming up if that
-   * isn't in by VEIL_MS; then the rest of it; then the areas its ways off lead to (so going there is
-   * usually instant). Everything else streams in behind (main.ts)
+   * The hero jumped across this map by a way in (a waypoint, a town portal, brought back to life:
+   * Game.teleportWithin): the view goes there at once, and what the area they came to is made of is
+   * asked for ahead of the rest of the map, veiled as a level is if it isn't in by VEIL_MS
+   */
+  jumped() {
+    this.snapCamera();
+    if (this.level) this.request(this.level);
+  }
+
+  /**
+   * What `level` is made of asked for: the area the hero is in first (arriving, or jumped to), its
+   * veil coming up if that isn't in by VEIL_MS; then the rest of it; then the areas its ways off lead
+   * to (so going there is usually instant). Everything else streams in behind (main.ts). Files given
+   * up on are asked for again (assets.ensure), not waited on
    */
   private request(level: Level) {
     const p = this.game.player.pos;
-    const first = [...levelNeeds(level, level.areaAt(p.x, p.z).id)].filter((k) => !assets.settled(k));
+    const here = levelNeeds(level, level.areaAt(p.x, p.z).id);
+    const first = [...here].filter((k) => !assets.settled(k));
+    const arrival = assets.ensure(here, NOW);
     if (first.length) {
       const e: Essentials = { since: performance.now(), done: false, shown: false, flushed: 0 };
       this.essentials = e;
-      void assets.ensure(first, NOW).then(() => (e.done = true));
+      void arrival.then(() => (e.done = true));
       // the downloads nothing waits on make way for them
       assets.makeWay();
     } else this.essentials = null;

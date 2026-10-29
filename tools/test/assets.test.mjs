@@ -2,7 +2,8 @@
 // GLTFLoader that makes a pack's models from its listed keys: what's asked for NOW starts while the
 // background is still streaming, and before what's queued for later; a file that fails is tried once
 // more and then let go (failed, settled: what waited goes on with its stand-in), and one that fails
-// once comes the second time; nothing but NOW starts while a NOW file is still coming or something
+// once comes the second time; one let go whose tries in the background are spent is tried again at
+// once when a level asks for it (not waited on), coming if it can; nothing but NOW starts while a NOW file is still coming or something
 // holds the stream back (a level's tile textures), and the rest starts once that settles; making way
 // stops a background download with most of its file to go (queued again, no try spent, started over
 // once let go) and lets one nearly in finish; a key no file serves is never waited on, and only the
@@ -111,6 +112,34 @@ export default async (load) => {
       check(Date.now() - t1 < 50, 'a file given up on was waited on again');
       fails.set('mon_yeti', 0);
     }
+    // given up on, and its tries in the background spent (some 6.7 minutes of them, as after a long
+    // outage): a level asking for it again tries it at once, nothing waiting on it; still down, its
+    // tries in the background start over; back up, it comes
+    {
+      fetched.length = 0;
+      const g = lib();
+      const s = g.sources.find((x) => x.file === 'mon_butcher');
+      const count = () => fetched.filter((f) => f === 'mon_butcher').length;
+      const spent = () => {
+        clearTimeout(s.timer);
+        s.timer = undefined;
+        s.tries = 12;
+      };
+      fails.set('mon_butcher', 99);
+      await g.ensure(['mon_butcher'], NOW);
+      check(g.failed('mon_butcher') && s.state === 'retry' && s.timer && count() === 2, `mon_butcher failing: failed ${g.failed('mon_butcher')}, ${s.state}, a later try ${s.timer ? 'waiting' : 'not waiting'}, fetched ${count()}×`);
+      spent();
+      const t0 = Date.now();
+      await g.ensure(['mon_butcher'], NOW);
+      const waited = Date.now() - t0;
+      await tick(20);
+      check(waited < 50 && count() === 3 && g.failed('mon_butcher') && s.state === 'retry' && s.timer && s.tries === 2, `asked for again, still down: waited ${waited} ms, fetched ${count()}×, failed ${g.failed('mon_butcher')}, ${s.state}, ${s.tries} tries, a later try ${s.timer ? 'waiting' : 'not waiting'}`);
+      fails.set('mon_butcher', 0);
+      spent();
+      await g.ensure(['mon_butcher'], NOW);
+      await tick(20);
+      check(g.has('mon_butcher') && !g.failed('mon_butcher') && g.settled('mon_butcher') && count() === 4 && !s.timer, `asked for again, back up: in ${g.has('mon_butcher')}, failed ${g.failed('mon_butcher')}, fetched ${count()}×`);
+    }
     // while a file something waits on (NOW) is coming, nothing else starts; the rest once it's in
     {
       fetched.length = 0;
@@ -190,5 +219,5 @@ export default async (load) => {
     console.warn = warn0;
   }
   if (problems.length) throw new Error(problems.join('\n'));
-  console.log('  NOW ahead of the background and alone while it comes, a retry then let go, held back until released, way made by stopping what had most to go, no wait on what can\'t come');
+  console.log('  NOW ahead of the background and alone while it comes, a retry then let go, asked for again once its tries are spent and in, held back until released, way made by stopping what had most to go, no wait on what can\'t come');
 };

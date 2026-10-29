@@ -5,15 +5,15 @@
 // pictures and guides that exist; public/icons/items/ holds the atlases and nothing else, each the
 // one recorded in tools/icons/made/atlases.json, every pick recorded in tools/icons/made/ and placed
 // in the atlas of its kind (tools/icons/atlas.mjs) at a rect of exactly its cells (w×68 by h×68 px),
-// inside the atlas and apart from the others, each rect showing a picture inside its clear margin and
-// nothing showing outside the rects; the packer packs, splits what won't fit and places each once;
+// inside the atlas and apart from the others, each rect showing a picture inside its clear margin (the
+// pixels its record has) and nothing showing outside the rects; the packer packs, splits what won't fit and places each once;
 // and the credits name the models.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { CELL, MAX_SIDE, atlasOf, pack } from '../icons/atlas.mjs';
+import { CELL, MAX_SIDE, atlasOf, pack, pixelsOf } from '../icons/atlas.mjs';
 import { buildPictures, listOf, pictureOf } from '../icons/pictures.mjs';
 import { FRAME, GUIDE_PREFIX, MATERIAL, STYLE, canvasFor, promptFor } from '../icons/style.mjs';
 
@@ -157,6 +157,8 @@ export default async () => {
       }
       check(x + w <= a.w && y + h <= a.h, `${name}: ${id} at ${[x, y, w, h]} is outside its ${a.w}x${a.h}`);
       check(ring === 0 && solid > w * h * 0.03, `${name}: ${id}'s rect isn't a picture (margin alpha ${ring}, ${solid} solid px)`);
+      // the pixels recorded for it, what the game's map is checked against (tools/test/itempics.test.mjs)
+      check(made[id].atlas.pixels === pixelsOf(data, a.w, [x, y, w, h]), `${name}: ${id}'s rect doesn't show the pixels its record has: node tools/ai-icons.mjs`);
     }
     let stray = 0;
     for (let k = 0; k < covered.length; k++) if (!covered[k] && data[k * 4 + 3]) stray++;

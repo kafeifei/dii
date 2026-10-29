@@ -8,9 +8,22 @@
 //
 // Everything is in cells of 68 px (the 2x picture: an inventory cell is 34 CSS px), so a picture's
 // rect is exactly its cells and keeps the export's transparent margin (2 CSS px) around the object.
+import crypto from 'node:crypto';
 
 /** a cell of the 2x pictures, in px (src/ui/icons.ts CELL × 2) */
 export const CELL = 68;
+
+/**
+ * What a rect of a decoded atlas shows (RGBA, `stride` px a row; sharp's decode), as the sha1 of its
+ * pixels row by row, 12 hex: recorded with each picture (tools/icons/made, atlas.pixels) by
+ * tools/ai-icons.mjs, and what the game's own map (src/data/itempics.ts) must find at each picture's
+ * rect (tools/test/itempics.test.mjs)
+ */
+export function pixelsOf(data, stride, [x, y, w, h]) {
+  const hash = crypto.createHash('sha1');
+  for (let row = 0; row < h; row++) hash.update(data.subarray(((y + row) * stride + x) * 4, ((y + row) * stride + x + w) * 4));
+  return hash.digest('hex').slice(0, 12);
+}
 /** an atlas's longest side, in px: a kind of thing that wouldn't fit is split (ours are near 1000 px) */
 export const MAX_SIDE = 4096;
 

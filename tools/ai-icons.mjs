@@ -43,7 +43,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { atlasOf, pack } from './icons/atlas.mjs';
+import { atlasOf, pack, pixelsOf } from './icons/atlas.mjs';
 import { GROUPS, KINDS, LISTS, buildPictures, listOf } from './icons/pictures.mjs';
 import { EXPORT, GRADE, MATTE, MODEL, NEGATIVE, SEEDS, STYLE, canvasFor, promptFor, seedsFor } from './icons/style.mjs';
 
@@ -473,7 +473,10 @@ async function apply() {
         atlases[atlas.name] = await drawAtlas(atlas, file, picks, inputs);
         wrote++;
       }
-      for (const [id, rect] of rects) picks[id].entry.atlas = { file: `public/icons/items/${atlas.name}.webp`, rect, sha1: picks[id].sha1 };
+      // what each picture's rect shows as the atlas decodes: the game's map is checked against it (tools/test/itempics.test.mjs)
+      const sharp = (await import('sharp')).default;
+      const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+      for (const [id, rect] of rects) picks[id].entry.atlas = { file: `public/icons/items/${atlas.name}.webp`, rect, sha1: picks[id].sha1, pixels: pixelsOf(data, info.width, rect) };
     }
   }
 

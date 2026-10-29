@@ -1,20 +1,23 @@
 // The painted item pictures through the real UI (src/ui/itempics.ts on src/items/picture.ts; tools/play.mjs scenario):
 //   node tools/play.mjs tools/scenarios/icons.mjs --url "http://localhost:5174/?dev&tod=0.5"
-// Reloads with empty storage. A hero at level 40 wears uniques and set items (their own pictures and
+// Reloads with empty storage. The atlases are fetched ahead as the game starts: each once over the
+// network within moments. A hero at level 40 wears uniques and set items (their own pictures and
 // the bases' set pictures, in their colours), a magic pair of gloves and a ring in colour, the belt
 // full of potions, the bag full (a long sword with a ruby first in its sockets, runes with their
 // numbers, rings, amulets, charms and jewels in their looks, a shako too high for the hero in a red
 // cell). Every item's <img> shows the drawn icon at once and its painted picture once it is in (never
 // blank, the same box before and after), the look D2's rule gives (checked by key for a dozen items),
-// each cut out of its atlas (public/icons/items/<atlas>.webp) into a blob URL, at 1x on this screen
-// of a pixel per CSS pixel (drawn down from the 2x and sharpened); no cell is coloured by quality,
-// only the red one. The camp stash: the personal page with bases beside their
+// each cut out of its atlas (public/icons/items/<atlas>.webp, read from the HTTP cache) into a blob
+// URL kept as WebP, at 1x on this screen of a pixel per CSS pixel (drawn down from the 2x and
+// sharpened); no cell is coloured by quality, only the red one. The camp stash: the personal page with bases beside their
 // uniques and set items, 共享 1 with a cap in each of D2's 21 colours and long swords (InvTrans 2:
 // only the steel shifts); a set item's tooltip, the quality in its name's green; the cube with items
-// in it; the merchant's shelves; an item on the cursor. An atlas that comes broken once is asked for
-// again and its picture shows; one that never comes leaves its item the drawn icon, nothing waiting.
+// in it; the merchant's shelves; an item on the cursor. With nothing fetched ahead (?noahead): an
+// atlas that comes broken once is asked for again and its picture shows, and broken once more after
+// its decoded copy is let go it has its once-more again; one that never comes leaves its item the
+// drawn icon, nothing waiting.
 // Then a phone (844×390 at 3 device pixels, touch controls, CPU slowed 4×, a 4G-like network; its
-// atlases never asked for before), the game paused so the frames timed are the UI's: the bag (2x
+// atlases never asked for before, fetched ahead as its game starts), the game paused so the frames timed are the UI's: the bag (2x
 // pictures), then the stash's personal page full, timed from opening it to every picture in (frame
 // gaps and long tasks against the idle ones, the panel's draw, the work done here), opened again with
 // nothing to wait for, 共享 2 after it cutting only its own pictures; the merchant; then the same stash
@@ -40,6 +43,12 @@ export default async function (desktop, shot, log) {
     });
   };
   watch(desktop, 'desktop');
+  // every atlas request as it goes, with its bytes over the network (0: from the HTTP cache): an
+  // observer from the page's start, as a dev page's buffer of resource timings fills with its modules
+  await desktop.addInitScript(() => {
+    window.__atlasNet = [];
+    new PerformanceObserver((l) => l.getEntries().forEach((e) => e.name.includes('/icons/items/') && window.__atlasNet.push([e.name.split('/').pop().split('?')[0], e.transferSize]))).observe({ type: 'resource' });
+  });
   const expect = (ok, what) => {
     if (!ok) fails.push(`${step}: ${what}`);
     return !!ok;
@@ -227,6 +236,21 @@ export default async function (desktop, shot, log) {
   };
 
   const steps = {
+    async ahead() {
+      // fetched ahead from the start: every atlas asked for within moments, none more than once over the
+      // network (this browser's HTTP cache may have them from play.mjs's page already); the bag's
+      // requests of them, next, read the cache
+      await until(() => window.__itempics.aheadLeft() === 0, null, 'every atlas fetched ahead or for the belt', 30000);
+      const r = await ev(() => ({ net: [...window.__atlasNet], stats: { ...window.__i.pics.PIC_STATS }, atlases: new Set(Object.values(window.__i.map).map((x) => x[0])).size }));
+      const asked = new Set(r.net.map(([n]) => n));
+      const over = {};
+      for (const [n, bytes] of r.net) if (bytes > 0) over[n] = (over[n] ?? 0) + 1;
+      const twice = Object.entries(over).filter(([, k]) => k > 1);
+      expect(asked.size === r.atlases && !twice.length && r.stats.ahead > 0, `fetched ahead: ${r.stats.ahead} atlases ahead, ${asked.size} of ${r.atlases} asked for, over the network more than once ${JSON.stringify(twice)}`);
+      steps.netMark = r.net.length;
+      facts.push(`fetched ahead from the start: ${r.stats.ahead} of the ${r.atlases} atlases (${Math.round(r.stats.aheadKB)} KB), the rest for the belt, none twice over the network`);
+    },
+
     async bag() {
       const before = await ev(() => ({ ...window.__i.pics.PIC_STATS }));
       const ids = await kit();
@@ -248,8 +272,13 @@ export default async function (desktop, shot, log) {
       }, ids);
       expect(bg.magic.join() === 'rgba(0, 0, 0, 0)' && bg.slots.length === 1 && bg.shakoRed && bg.shako === 'rgba(160, 20, 20, 0.35)', `cell colours: ${JSON.stringify(bg)}`);
       expect(after.stats.scale === '1x', `a desktop screen at 1 device pixel cuts its pictures at ${after.stats.scale}`);
+      // its atlases from the HTTP cache, fetched ahead; the cuts and looks kept as WebP (this browser encodes it)
+      const net = await ev((m) => window.__atlasNet.slice(m), steps.netMark ?? 0);
+      expect(net.length > 0 && net.every(([, b]) => b === 0), `the bag's atlases over the network after they were fetched ahead: ${JSON.stringify(net)}`);
+      const kept = after.stats;
+      expect(kept.blobType === 'image/webp' && kept.kept > 0, `the pictures are kept as ${kept.blobType} (${kept.kept} of them)`);
       await shot('bag-equipment-belt');
-      facts.push(`the bag, ${after.n} pictures (${after.stats.cut - before.cut} cut at 1x from ${after.stats.atlases - before.atlases} atlases, ${Math.round(after.stats.atlasKB - before.atlasKB)} KB), each drawn at once then painted in the same box; looks by D2's rule; no quality cell, the shako's red one kept`);
+      facts.push(`the bag, ${after.n} pictures (${after.stats.cut - before.cut} cut at 1x from ${after.stats.atlases - before.atlases} atlases, ${Math.round(after.stats.atlasKB - before.atlasKB)} KB, all ${net.length} read from the HTTP cache), each drawn at once then painted in the same box; looks by D2's rule; no quality cell, the shako's red one kept; ${kept.kept} cuts and looks kept as ${kept.blobType}, ${(kept.keptKB / kept.kept).toFixed(1)} KB each`);
       steps.ids = ids;
     },
 
@@ -406,8 +435,11 @@ export default async function (desktop, shot, log) {
     },
 
     async atlasFails() {
-      // the set pictures' atlas (nothing else here asks for it) broken once, then broken for good
+      // the set pictures' atlas (nothing else here asks for it) broken once, then broken for good;
+      // nothing fetched ahead (noahead): every request of it is a cut's
       const route = '**/icons/items/sets.webp*';
+      const url = new URL(page.url());
+      url.searchParams.set('noahead', '');
       let calls = 0;
       let broken = 0;
       await page.route(route, (r) => (++calls <= broken ? r.fulfill({ status: 200, contentType: 'image/webp', body: 'not a picture' }) : r.continue()));
@@ -415,7 +447,7 @@ export default async function (desktop, shot, log) {
         for (const [times, shows] of [[1, true], [2, false]]) {
           calls = 0;
           broken = times;
-          await load();
+          await load(url.toString());
           const ids = await ev(async () => {
             const S = window.__i;
             const { D2X_SET_ITEMS } = await import('/src/data/d2x/sets.ts');
@@ -442,17 +474,35 @@ export default async function (desktop, shot, log) {
           expect(c.pot.src === 'blob', `the sets atlas broken ${times}×: the potion beside it shows ${c.pot.src}`);
           if (shows) expect(c.set.key?.startsWith('invuhms') && c.set.src === 'blob' && !c.failed, `broken once: the set helm shows ${c.set.key} from ${c.set.src}`);
           else expect(c.set.src === 'drawn' && c.waiting === 0 && c.failed === 1, `broken for good: the set helm shows ${c.set.src}, ${c.waiting} waiting, ${c.failed} atlases given up`);
+          if (!shows) continue;
+          // come on its once-more, its decoded copy let go (KEEP_MS), then broken once again: another of
+          // its pictures has its once-more too (the first came: it's had none since) and shows
+          await page.waitForTimeout(3600);
+          broken = calls + 1;
+          const armour = await ev(async () => {
+            const S = window.__i;
+            const { D2X_SET_ITEMS } = await import('/src/data/d2x/sets.ts');
+            const it = S.make('xrs', 'set', 99, { row: D2X_SET_ITEMS.find((x) => x.code === 'xrs').id });
+            if (!game.player.inventory.add(it)) throw new Error('no room in the bag for the set armour');
+            game.hooks.dirty = true;
+            return it.uid;
+          });
+          await until((u) => document.querySelector(`[data-uid="${u}"] img:not([data-pic])`) && window.__i.pics.picturesPending() === 0, armour, 'the bag, the sets atlas broken again after it came', 10000);
+          const c2 = await ev((u) => ({ cell: window.__i.cell(u), failed: window.__i.pics.PIC_STATS.atlasesFailed }), armour);
+          expect(calls === 4 && c2.cell.key?.startsWith('invxrss') && c2.cell.src === 'blob' && !c2.failed, `broken again after it came: asked for ${calls} times in all, not 4; the set armour shows ${c2.cell.key} from ${c2.cell.src}, ${c2.failed} atlases given up`);
         }
       } finally {
         await page.unroute(route);
       }
-      facts.push('an atlas that came broken was asked for once more and showed; one broken twice left its item the drawn icon, nothing waiting');
+      facts.push('an atlas that came broken was asked for once more and showed, and broken again later had its once-more again; one broken twice left its item the drawn icon, nothing waiting');
     },
 
     async phone() {
-      // a phone of its own: a browser context at its size and pixels, touch, its atlases never asked for here
+      // a phone of its own: a browser context at its size and pixels, touch, its atlases never asked for
+      // here (fetched ahead as the game starts, as a player's are)
       const url = new URL(desktop.url());
       url.searchParams.set('touch', '');
+      url.searchParams.delete('noahead');
       const ctx = await desktop.context().browser().newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
       page = await ctx.newPage();
       watch(page, 'phone');
@@ -656,7 +706,7 @@ export default async function (desktop, shot, log) {
         game.paused = false;
       });
       facts.push(
-        `the phone (4× slower CPU, 4G, its atlases cold), the personal page of ${n} items: drawn in ${m.draws[0]} ms (drawn icons only ${b.draws[0]} ms), every picture in ${m.allIn} ms (${m.cut} cut in ${m.cutMs} ms from ${m.decoded} atlases decoded, ${m.atlases} fetched for it, ${m.atlasKB} KB, ${m.netKB} KB of it over the network; ${m.made} made in ${m.makeMs} ms, the longest piece ${m.longestJob} ms); ` +
+        `the phone (4× slower CPU, 4G, its atlases fetched ahead as its game started), the personal page of ${n} items: drawn in ${m.draws[0]} ms (drawn icons only ${b.draws[0]} ms), every picture in ${m.allIn} ms (${m.cut} cut in ${m.cutMs} ms from ${m.decoded} atlases decoded, ${m.atlases} fetched for it, ${m.atlasKB} KB, ${m.netKB} KB of it over the network; ${m.made} made in ${m.makeMs} ms, the longest piece ${m.longestJob} ms); ` +
           `frames p95 ${m.open.p95} / max ${m.open.max} ms, ${m.open.over50} over 50 ms (drawn only ${b.open.p95} / ${b.open.max}, ${b.open.over50}; idle ${m.idle.p95} / ${m.idle.max}), long tasks ${m.open.longTasks} (longest ${m.open.longest} ms; drawn only ${b.open.longTasks}, ${b.open.longest} ms); ` +
           `opened again ${m.again.at} ms, nothing to wait for; 共享 2 cut ${m.page2.cut} for its ${m.page2.pictures} pictures in ${m.page2.at} ms, ${m.page2.atlases} more atlases`,
       );

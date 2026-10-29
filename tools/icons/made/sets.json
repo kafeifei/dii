@@ -29,7 +29,8 @@
     68,
     204
    ],
-   "sha1": "80483e18d8ca"
+   "sha1": "80483e18d8ca",
+   "pixels": "eb442a296820"
   }
  },
  "invskru": {
@@ -62,7 +63,8 @@
     68,
     204
    ],
-   "sha1": "301fa2db5411"
+   "sha1": "301fa2db5411",
+   "pixels": "ca784ce93359"
   }
  },
  "invuhms": {
@@ -95,7 +97,8 @@
     136,
     136
    ],
-   "sha1": "a1de519a89db"
+   "sha1": "a1de519a89db",
+   "pixels": "e9728642f10a"
   }
  },
  "invutss": {
@@ -128,7 +131,8 @@
     136,
     272
    ],
-   "sha1": "df32721bfdc6"
+   "sha1": "df32721bfdc6",
+   "pixels": "e80744de7efd"
   }
  },
  "invxrss": {
@@ -161,7 +165,8 @@
     136,
     204
    ],
-   "sha1": "af283edc1f43"
+   "sha1": "af283edc1f43",
+   "pixels": "8f3cb245ce12"
   }
  }
 }
