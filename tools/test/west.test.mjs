@@ -8,7 +8,8 @@
 // overworld made anew in the same world, its monsters of that difficulty; its roads on to Stony Field and the Burial Grounds are
 // closed and the map is shut past them. Chests and barrels roll at their area's level. The trial
 // ground's floors are the debug panel's alone. A new game, or one continued, makes a new world; a
-// reload plays on in the saved one, in the area it was saved in.
+// reload plays on in the saved one, in the area it was saved in. A built dungeon's map is made once by
+// its maker (Maps DUNGEON_MAKERS) from the world's seed and its Id (levelSeed), kept and forgotten with the rest.
 const KEY = 'dii-save-v1';
 const DT = 1 / 60;
 
@@ -252,6 +253,36 @@ export default async (load) => {
   game.newGame('又一个', 'sorceress');
   check(game.worldSeed !== s2 && game.player.waypoints.join() === String(CAMP_AREA), 'a new game kept the last world, or its waypoints');
 
+  // ── the dungeons' makers (docs/M2A-STEP0.md 2.10): a built dungeon's map made once, by its maker,
+  // from the world's seed and its Id (levelSeed), in the difficulty played; kept with the rest and
+  // forgotten with them. The Den's alone so far (its seed its own still: the replay test holds it) ──
+  {
+    const M = await load('/src/game/maps.ts');
+    const { BUILT_DUNGEONS } = await load('/src/world/built-dungeons.ts');
+    const { generateDen } = await load('/src/world/den.ts');
+    const { CAVE_1 } = await load('/src/world/areas.ts');
+    check(M.levelSeed(0xffffffff, 9) === 8 && M.levelSeed(1000, 18) === 1018, `levelSeed: ${M.levelSeed(0xffffffff, 9)}, ${M.levelSeed(1000, 18)}`);
+    check(Object.keys(M.DUNGEON_MAKERS).join() === String(DEN_OF_EVIL), `the makers: ${Object.keys(M.DUNGEON_MAKERS)}`);
+    const made = [];
+    M.DUNGEON_MAKERS[CAVE_1] = (seed, d) => {
+      made.push([seed, d]);
+      return generateDen(seed);
+    };
+    const maps = new M.Maps(game);
+    try {
+      check(!maps.hasMap(CAVE_1) && maps.levelFor(CAVE_1) === null, 'a dungeon not built has a map');
+      BUILT_DUNGEONS.push(CAVE_1);
+      const L = maps.levelFor(CAVE_1);
+      check(!!L && maps.levelFor(CAVE_1) === L && maps.mapOf(CAVE_1) === L && maps.kept().includes(L), 'a built dungeon was not made once and kept');
+      check(made.length === 1 && made[0][0] === M.levelSeed(game.worldSeed, CAVE_1) && made[0][1] === game.player.difficulty, `the maker was given ${JSON.stringify(made)}, the world's seed ${game.worldSeed}`);
+      maps.forget();
+      check(maps.mapOf(CAVE_1) === null && !maps.kept().includes(L), 'a dungeon kept past forget()');
+    } finally {
+      delete M.DUNGEON_MAKERS[CAVE_1];
+      BUILT_DUNGEONS.length = 1;
+    }
+  }
+
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
-  console.log(`  camp → Blood Moor → the Den and back, portals both ways, a respawn and waypoints on one map (${notes.levels} levels built in all); Cold Plains' waypoint activated by use; ${roads.length} closed road(s); a world a game, kept on a reload`);
+  console.log(`  camp → Blood Moor → the Den and back, portals both ways, a respawn and waypoints on one map (${notes.levels} levels built in all); Cold Plains' waypoint activated by use; ${roads.length} closed road(s); a world a game, kept on a reload; a built dungeon made once from levelSeed by its maker`);
 };

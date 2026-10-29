@@ -1,12 +1,35 @@
+import type { Difficulty } from '../items/d2/types';
 import { CAMP_AREA, DEN_OF_EVIL, depthForArea, isBuilt, trialFloor } from '../world/areas';
 import { generateDen } from '../world/den';
-import { WILD_MAPS } from '../world/levelgen';
+import { WILD_MAPS, type Layout } from '../world/levelgen';
 import { BUILT as WEST_AREAS, generateOverworld } from '../world/overworld';
 import type { Game } from './game';
 import { GALLERY, Level } from './level';
 
 /** a seed for a map made anew */
 export const newSeed = () => (Math.random() * 2 ** 31) | 0;
+
+/** a dungeon's map from its seed in a difficulty: the layout its Level hosts */
+export type DungeonMaker = (seed: number, difficulty: Difficulty) => Layout;
+
+/**
+ * The dungeons' makers, by area (docs/M2A-STEP0.md 2.10): the Den of Evil's own generator for now.
+ * M2a's D line puts the maze generator's here (src/world/dungeons.ts): the Den's again, the Cave's
+ * two levels, the Crypt's and the Mausoleum's, each made once the area is built (built-dungeons.ts)
+ */
+export const DUNGEON_MAKERS: Record<number, DungeonMaker> = {
+  [DEN_OF_EVIL]: (seed) => generateDen(seed),
+};
+
+/**
+ * A level's seed from the world's: D2's, the level's Id added to the game's start seed (nLevelId +
+ * dwStartSeed), so two levels of one world never share a map. A save keeps only the area, never a
+ * spot on its map, so a new seed or a new maker breaks no save
+ */
+export const levelSeed = (worldSeed: number, id: number) => (worldSeed + id) >>> 0;
+
+/** the Den of Evil's seed as it has been (its own from the world's), until the D line's maker comes with levelSeed */
+const denSeed = (worldSeed: number) => (Math.imul(worldSeed ^ 0x0de0f, 0x9e3779b1) + DEN_OF_EVIL) >>> 0;
 
 /**
  * The maps of this game, each made the first time it's entered and kept while the game lasts, as
@@ -19,7 +42,7 @@ export class Maps {
   gallery: Level | null = null;
   /** the trial ground's floor visited last, kept so waypoint trips and deaths don't reroll it */
   lastDungeon: Level | null = null;
-  /** the dungeons' maps by area (none is made yet) */
+  /** the dungeons' maps by area, the Den's aside (den): none is made yet, none being built (DUNGEON_MAKERS) */
   dungeons = new Map<number, Level>();
 
   constructor(private readonly game: Game) {}
@@ -28,7 +51,7 @@ export class Maps {
   mapOf(id: number): Level | null {
     if (WEST_AREAS.includes(id)) return this.west;
     if (id === DEN_OF_EVIL) return this.den;
-    return null;
+    return this.dungeons.get(id) ?? null;
   }
 
   /** whether this build has a map of area `id`: the areas of normal play (isBuilt) and the trial ground's floors */
@@ -38,8 +61,8 @@ export class Maps {
 
   /**
    * The map that holds area `id` in this game, made the first time it's asked for: the overworld for
-   * its areas, the Den of Evil's own, a trial floor (a new one when `fresh`, else the one left last).
-   * Null when this build has none
+   * its areas, a built dungeon's own (DUNGEON_MAKERS), a trial floor (a new one when `fresh`, else
+   * the one left last). Null when this build has none
    */
   levelFor(id: number, fresh = false): Level | null {
     if (id === CAMP_AREA && GALLERY) return (this.gallery ??= new Level(0, this.game.worldSeed));
@@ -54,11 +77,8 @@ export class Maps {
       }
       return this.west;
     }
-    if (id === DEN_OF_EVIL) {
-      // its own seed from the world's, so a reload finds the same den
-      const seed = (Math.imul(this.game.worldSeed ^ 0x0de0f, 0x9e3779b1) + DEN_OF_EVIL) >>> 0;
-      return (this.den ??= new Level(WILD_MAPS, seed, generateDen(seed), this.game.player.difficulty));
-    }
+    const make = DUNGEON_MAKERS[id];
+    if (make && isBuilt(id)) return this.dungeon(id, make);
     if (trialFloor(id) === undefined) return null;
     const depth = depthForArea(id)!;
     // like D2: going back to the floor you left (waypoint, after dying) finds it as you left it
@@ -66,7 +86,27 @@ export class Maps {
     return (this.lastDungeon = new Level(depth, newSeed(), undefined, this.game.player.difficulty));
   }
 
-  /** the maps made so far and kept (the rifts' floors are the rift's: Rifts.levels) */
+  /**
+   * A dungeon's map, made the first time from its seed (levelSeed; the Den's its own still), its
+   * monsters in the difficulty played, as hard as the first floor: the same one on a reload, the
+   * world's seed carried across it
+   */
+  private dungeon(id: number, make: DungeonMaker): Level {
+    const d = this.game.player.difficulty;
+    if (id === DEN_OF_EVIL) {
+      const seed = denSeed(this.game.worldSeed);
+      return (this.den ??= new Level(WILD_MAPS, seed, make(seed, d), d));
+    }
+    let L = this.dungeons.get(id);
+    if (!L) {
+      const seed = levelSeed(this.game.worldSeed, id);
+      L = new Level(WILD_MAPS, seed, make(seed, d), d);
+      this.dungeons.set(id, L);
+    }
+    return L;
+  }
+
+  /** the maps made so far and kept, every dungeon's among them (the rifts' floors are the rift's: Rifts.levels) */
   kept(): Level[] {
     return [this.west, this.den, this.gallery, this.lastDungeon, ...this.dungeons.values()].filter((L): L is Level => !!L);
   }
