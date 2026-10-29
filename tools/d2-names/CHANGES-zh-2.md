@@ -859,3 +859,226 @@
 | uniques.json | Rotting Fissure | 腐烂裂迹 → 腐瘴地罅 → 腐朽裂迹 | Rotting Crevice（原 Miasmal Earthrent） | 腐瘴地罅全换了；留「腐」「裂迹」，烂换朽；英文留 Rotting（术士版 PreCrafted 同名，一起改） |
 | uniques.json | Bone Break | 白骨裂纹 → 骸骨摧折 → 白骨碎纹 | Bone Shatter（原 Shattered Remains） | 骸骨摧折全换了；留「白骨」「纹」，裂换碎；英文留 Bone（术士版 PreCrafted 同名，一起改） |
 | uniques.json | Black Cleft | 漆黑裂痕 → 幽玄裂谷 → 漆黑裂谷 | Black Ravine（原 The Umbral Ravine） | 幽玄裂谷丢了「漆黑」；留下，痕换谷；英文留 Black（术士版 PreCrafted 同名，一起改） |
+
+## 稀有名词、随机暗金怪名字（rare-prefixes.json、rare-suffixes.json、monster-prefixes.json、monster-suffixes.json、monster-titles.json）
+
+五个词库 347 条逐条对照官方中文和 Blizzard 英文重审（稀有第一词 45、第二词 155，怪物前缀 53、后缀 69、称号 25），改了下面 208 条（中文 170 条、英文 147 条），其余照旧。各行的 `note` 里记了曾用名和理由，旧 note 里替旧名辩护的话删了。
+
+- 标准：这几张表是拼名字用的两三个字的词，照 `style.md`「稀有名词库」那条：两个字留一个、换一个（野兽 → 凶兽）。上一版多半两个字全换了（惊悚 → 战栗、厄运 → 凶兆、混沌 → 狂乱、撕咬 → 啮噬，护甲和饰品的词大都如此：头罩、披风、斗篷、项链、项圈），往回拉成留住官方的一个字；官方中文本身就是误译的（Warp 闪烁、Fiend 妖蝠、Trample 登山鞋、Bile 愤怒、Gore 角刺），中文对着官方中文留字，英文对着 Blizzard 英文起。
+- 英文：上一版大多是生僻词或换了意象（Quietus、Murrain、Eidolon、Flenser、Cerecloth、Gadling、Cuisse、Rowel、Annulet、Volute、Carcanet、Psaltery；Behemoth、Omen、Ouroboros、Pentacle、Pennon、Jackal）。改成 Blizzard 词的常见近义词（Demise、Contagion、Fright、Lyre、Gaze），或者留下 Blizzard 的词再加一个词（Graveghoul、Runestone、Bonesaw、Deathmask、Heelspur、Batwing、Blackheart、Longtongue、Shapeshifter、Goadstaff）。单字的词不能就是 Blizzard 的词，所以总要加一个词或换近义词。
+- 同一个官方词在两张表里的，现在中英文都一样：Bite 啮咬/Gnaw，Razor 剃刃/Shear，Spawn 孽嗣/Brood，Storm 雷暴/Thunderstorm，Shadow 幽影/Umbra，Warp 闪逝/Twist，Plague 疫疠/Contagion，Bone 枯骨/Marrowless，Soul 魂魄/Anima，Dread 惊怖/Fright，Doom 厄难/Downfall，Death 死灭/Demise，Chaos 混冥/Bedlam，Horn 犄角/Antler，Wing 蝠翼/Batwing，Fist 重拳/Pummel，Wraith 怨灵/Wraithling，Slayer 屠命者/Manslayer，Impaler 洞穿者/Transfixer，「碎击」（Sunder、Break）崩碎/Shatter；Steel 和魔法前缀同用精钢/Truesteel。
+- 避开别处已有的名字：官方名（惊惧、混乱、骑枪、壁障、铁头棒、卑劣；Brute、Terror、Tempest、Pestilence、Starlight、Sorrow、Woe、Merciless、Vicious、Devilkin、Jab、Shelter、Truncheon、Cranium、Carver、Fleshrender），别的表里我们的名字（精魂、苍穹、磐岩、坚垒、贯刺者、剜肠、鬼影、锋芒；Lancet、Fleshtearer、Prong、Rawhide、Pendant、Neckguard、Outcry、Lament、Leer、Safeguard），别的作品和品牌（Phantasm 电影、Eidolon《最终幻想》、Creeper《我的世界》、Wolfskin 户外品牌）。
+- `CHANGES-zh.md` 里在这五个文件的 4 条都改回：Steel 燧石 → 精钢，Devil 魍魉 → 邪鬼，Wight 祟尸 → 尸魅，the Destroyer 夷平者 → 灭绝者（见下表）。
+- `d2-validate.mjs` 的「离 Blizzard 原名不超过 2 个字母」里这一组有 5 条，都是另一个词，不改：Wrecker（Breaker）、Trail（Track）、Rime（Ice）、Wail（Call）、the Ungodly（the Unholy）。
+- 跟着要改的别处（不在这一组的文件里）：`style.md` 的例子「刽子手·晦冥蚀触」现在拼作「屠命者·晦暗蚀触」，`style-en.md` 的「Murk Canker the Sledge」不变，但它举的「Loll 为长舌改作 Slander」已改成 Longtongue；`suffixes.json` 的「厉鬼之」of the Ghast（Wraith）和称号原来同用厉鬼＝Ghast，称号现在是怨灵·/the Wraithling；`uniques.json` 的「鬼影潜踪」Visitant 原来和怪物前缀 Shadow 同词，怪物前缀现在是幽影/Umbra。
+
+| 文件 | 原版 | 官方 → 旧名 → 新名 | 新英文名 | 为什么 |
+| --- | --- | --- | --- | --- |
+| rare-prefixes.json | Beast | 野兽 → 凶兽（不变） | Wildbeast（原 Behemoth） | 英文 Behemoth 是巨兽，另一个意象；Wildbeast 留着 Beast（Brute 是官方怪物名） |
+| rare-prefixes.json | Eagle | 雄鹰 → 鹰隼（不变） | Raptor（原 Peregrine） | 英文 Peregrine 是游隼，认不出 Eagle；Raptor 猛禽，正是鹰隼 |
+| rare-prefixes.json | Ghoul | 食尸鬼 → 腐鬼 → 啖尸鬼 | Graveghoul（原 Rotwight） | 腐鬼只剩一个鬼；留住「尸鬼」，食换啖；英文留着 Ghoul |
+| rare-prefixes.json | Dread | 惊悚 → 战栗 → 惊怖 | Fright（原 Tremor） | 战栗/Tremor 换了意象；留「惊」，悚换怖；Fright 与怪物前缀同（惊惧是符文之语 Dread，Terror 是符文之语名） |
+| rare-prefixes.json | Doom | 厄运 → 凶兆 → 厄难 | Downfall（原 Omen） | 凶兆/Omen 是征兆，另一个意象；留「厄」，运换难；与怪物前缀同 |
+| rare-prefixes.json | Grim | 恶毒 → 阴森 → 阴毒 | Sinister（不变） | 阴森与「恶毒」无一字相同；留「毒」 |
+| rare-prefixes.json | Bone | 白骨 → 朽骨 → 枯骨 | Marrowless（原 Charnel） | 与怪物前缀 Bone 同用枯骨＝Marrowless（后缀「枯骨铠之」也是）；Charnel 在别处是「骸」 |
+| rare-prefixes.json | Death | 死亡 → 殒灭 → 死灭 | Demise（原 Quietus） | 殒灭不留「死」；Quietus 是只有词典才知道的词 |
+| rare-prefixes.json | Shadow | 暗影 → 阴翳 → 幽影 | Umbra（原 Pall） | 阴翳/Pall 认不出暗影；留「影」，幽影＝Umbra，与套装「纳妲丽娅的幽影」一致；与怪物前缀同 |
+| rare-prefixes.json | Storm | 风暴 → 雷暴（不变） | Thunderstorm（原 Thunderhead） | 中文留「暴」不变；英文 Thunderhead 是雷雨云，Thunderstorm 留着 Storm；与怪物前缀同（Tempest 是符文之语名） |
+| rare-prefixes.json | Rune | 符文 → 秘符（不变） | Runestone（原 Cipher） | 英文 Cipher 是密码，认不出 Rune；Runestone 留着 Rune |
+| rare-prefixes.json | Plague | 瘟疫 → 疫疠（不变） | Contagion（原 Murrain） | Murrain 是只有词典才知道的词（牲畜瘟）；Pestilence 是符文之语名，且是我们符文之语「黑瘟」的英文 |
+| rare-prefixes.json | Wraith | 怨魂 → 鬼魅 → 怨灵 | Wraithling（原 Phantasm） | 鬼魅与「怨魂」无一字相同；留「怨」；英文 Phantasm 是电影名；与称号 the Wraith 同 |
+| rare-prefixes.json | Spirit | 精神 → 灵焰 → 精魄 | Essence（原 Foxfire） | 灵焰/Foxfire 是鬼火，另一个意象；留「精」（精魂已是符文之语 Spirit 的名字） |
+| rare-prefixes.json | Cruel | 暴虐 → 嗜虐（不变） | Ruthless（原 Fell） | 英文 Fell 作「凶残」是古义；Ruthless 一看就是 Cruel（Merciless、Vicious 是魔法前缀名） |
+| rare-prefixes.json | Empyrian | 穹天 → 霄汉 → 穹霄 | Firmament（原 Zenith） | 霄汉不留「穹」；苍穹已是前缀 Azure；Zenith 是天顶，Firmament 天穹 |
+| rare-prefixes.json | Bramble | 刺棘 → 蒺藜 → 棘丛 | Briar（原 Caltrop） | 蒺藜/Caltrop 是铁蒺藜，另一个意象；留「棘」，棘＝Briar，与「棘棒」一致 |
+| rare-prefixes.json | Loath | 怨念 → 憎厌 → 怨憎 | Spite（不变） | 憎厌与「怨念」无一字相同；留「怨」，怨＝Spite，与怪物「怨魄」Spitewraith 一致 |
+| rare-prefixes.json | Glyph | 雕纹 → 古篆 → 铭纹 | Hieroglyph（原 Carven） | 古篆不留「纹」，Carven 是形容词；铭纹只换一字；Hieroglyph 留着 Glyph |
+| rare-prefixes.json | Imp | 顽魔 → 魍魉 → 顽鬼 | Impling（原 Bogle） | 魍魉与「顽魔」无一字相同，又和怪物前缀 Devil 同名；留「顽」；Impling 留着 Imp |
+| rare-prefixes.json | Fiend | 妖蝠 → 凶煞 → 魔蝠 | Archfiend（原 Malefic） | 官方中文「妖蝠」是蝠，凶煞认不出；留「蝠」；英文对 Blizzard 的 Fiend，Archfiend 留着 Fiend，Malefic 是生僻形容词 |
+| rare-prefixes.json | Dire | 恐怖 → 惨厉 → 恐骇 | Harrowing（不变） | 惨厉与「恐怖」无一字相同；留「恐」，骇＝Harrowing，与后缀「骇啸之」一致 |
+| rare-prefixes.json | Soul | 灵魂 → 魂魄（不变） | Anima（原 Eidolon） | Eidolon 是生僻词，又是《最终幻想》的召唤兽；Anima 拉丁语的魂；与怪物前缀同 |
+| rare-prefixes.json | Carrion | 食腐鸟 → 秃鹫 → 食腐鹫 | Vulture（不变） | 秃鹫没有「食腐」；留「食腐」，鸟换鹫 |
+| rare-prefixes.json | Armageddon | 末日 → 灭世 → 末劫 | Apocalypse（原 Worldruin） | 灭世不留「末」；末劫；Worldruin 是硬拼的词，Apocalypse 一看就是 Armageddon |
+| rare-prefixes.json | Havoc | 浩劫 → 肆虐 → 大劫 | Mayhem（原 Rampage） | 肆虐/Rampage 和「浩劫」无一字相同；留「劫」；Mayhem 是 Havoc 的近义词 |
+| rare-prefixes.json | Entropy | 熵能 → 衰朽 → 熵蚀 | Decay（不变） | 衰朽不留「熵」，老玩家认的就是这个熵 |
+| rare-prefixes.json | Chaos | 混沌 → 狂乱 → 混冥 | Bedlam（不变） | 狂乱与「混沌」无一字相同；留「混」（混乱是魔法前缀 Chaotic 的官方名） |
+| rare-prefixes.json | Warp | 闪烁 → 畸变 → 闪逝 | Twist（原 Aberrant） | 官方中文「闪烁」，畸变认不出；留「闪」；英文对 Blizzard 的 Warp，Aberrant 是形容词；与怪物前缀同 |
+| rare-prefixes.json | Corruption | 腐蚀 → 污秽 → 腐化 | Depravity（原 Filth） | 污秽与「腐蚀」无一字相同；留「腐」；Filth 认不出 Corruption（Corrosion 已是前缀 Corrosive 的词） |
+| rare-suffixes.json | Bite | 撕咬 → 啮噬 → 啮咬 | Gnaw（不变） | 啮噬不留「咬」；与怪物后缀 Bite 同 |
+| rare-suffixes.json | Scratch | 撕扯 → 爪痕 → 抓扯 | Scrape（原 Clawmark） | 爪痕与「撕扯」无一字相同；留「扯」；Scrape 是 Scratch 的近义词 |
+| rare-suffixes.json | Scalpel | 解剖刀 → 剔刃 → 解尸刀 | Dissector（原 Flenser） | 剔刃与「解剖刀」无一字相同；留「解」和「刀」；Flenser 是只有词典才知道的词（Lancet 已是暗金「埃理鸥格之锥」的词） |
+| rare-suffixes.json | Gutter | 开膛刀 → 剜肠 → 剖膛刀 | Disemboweler（原 Entrail） | 剜肠不留「膛」「刀」，又和暗金 Visceratuant 的「剜肠」同名；英文 Entrail 是内脏，Disemboweler 是开膛的人 |
+| rare-suffixes.json | Razor | 剃刀 → 薄刃 → 剃刃 | Shear（原 Sliver） | 薄刃不留「剃」；刀换刃；与怪物后缀 Razor 同 |
+| rare-suffixes.json | Saw | 利锯 → 锯刃 → 骨锯 | Bonesaw（原 Ripper） | 英文 Ripper 是官方怪物后缀名；Bonesaw 留着 Saw |
+| rare-suffixes.json | Cleaver | 切肉者 → 屠刀 → 切骨者 | Bonecleaver（原 Hackblade） | 屠刀与「切肉者」无一字相同；留「切」「者」；Bonecleaver 留着 Cleaver |
+| rare-suffixes.json | Sever | 切割者 → 断喉者 → 割喉者 | Throatcutter（不变） | 断喉者不留「切割」；留「割」，断换割 |
+| rare-suffixes.json | Sunder | 碎击 → 崩摧 → 崩碎 | Shatter（原 Avalanche） | 崩摧不留「碎击」；Avalanche 是雪崩，另一个意象；与怪物后缀 Break 同（官方都是「碎击」） |
+| rare-suffixes.json | Rend | 刮肉者 → 裂躯者 → 裂肉者 | Tearflesh（原 Fleshtearer） | 裂躯者不留「肉」；裂＝Tear，与暗金「裂股靴」Tearflank 一致（Fleshtearer 已是暗金 Fleshripper 的英文，Fleshrender 是官方暗金名） |
+| rare-suffixes.json | Mangler | 残伤者 → 肢解者 → 残毁者 | Mutilator（原 Dismemberer） | 肢解者不留「残」；Mutilator 是 Mangler 的近义词 |
+| rare-suffixes.json | Slayer | 屠杀者 → 诛戮者 → 屠命者 | Manslayer（原 Headsman） | 诛戮者不留「屠」「杀」；Headsman 是刽子手；Manslayer 留着 Slayer；与称号 the Slayer 同 |
+| rare-suffixes.json | Spawn | 魔嗣 → 孽裔 → 孽嗣 | Brood（原 Scion） | 孽裔不留「嗣」；Scion 是贵族后裔；与怪物后缀 Spawn 同 |
+| rare-suffixes.json | Gnash | 猛咬 → 切齿 → 猛噬 | Gnashtooth（原 Rictus） | 切齿不留「猛」；Rictus 是只有词典才知道的词；Gnashtooth 留着 Gnash |
+| rare-suffixes.json | Star | 之星 → 之曜 → 之孤星 | Lornstar（原 Comet） | 之曜不留「星」；Comet 是彗星；与怪物前缀 Star 同用孤星＝Lornstar（Starlight 是符文之语名） |
+| rare-suffixes.json | Blow | 强击 → 重创 → 重击 | Strike（原 Wound） | 重创不留「击」；英文 Wound 是官方怪物后缀名 |
+| rare-suffixes.json | Bane | 之灾 → 之殃 → 之天灾 | Calamity（不变） | 之殃不留「灾」；留「灾」（灾祸是怪物前缀 Bane 的官方名） |
+| rare-suffixes.json | Crusher | 暴砸兽 → 辗轧者 → 猛砸者 | Pulverizer（原 Millstone） | 辗轧者与「暴砸兽」无一字相同；留「砸」；Millstone 是磨盘，又和称号 the Mauler 撞词 |
+| rare-suffixes.json | Breaker | 破坏者 → 破阵者（不变） | Wrecker（原 Onslaught） | 中文留「破」不变；英文 Onslaught 是冲锋，认不出 Breaker |
+| rare-suffixes.json | Grinder | 碾破者 → 磨骨者 → 碾骨者 | Bonegrinder（原 Bonerasp） | 磨骨者不留「碾」；Bonerasp 是硬拼的词；Bonegrinder 留着 Grinder |
+| rare-suffixes.json | Lance | 长枪 → 马槊 → 马枪 | Longspear（不变） | 马槊不留「枪」（骑枪是底材 Lance 的官方名） |
+| rare-suffixes.json | Spike | 尖枪 → 芒刺 → 尖锥 | Spikehead（原 Thorn） | 芒刺不留「尖」；英文 Thorn 是官方怪物后缀名（Prong 已是暗金的词） |
+| rare-suffixes.json | Impaler | 穿刺者 → 贯心者 → 洞穿者 | Transfixer（原 Heartpiercer） | 贯心者不留「穿」「刺」；贯刺者已是暗金 The Impaler 的名字；与称号 the Impaler 同 |
+| rare-suffixes.json | Prod | 戳刺 → 锐锥 → 锥刺 | Awl（不变） | 锐锥不留「戳」「刺」；留「刺」（Jab 是官方技能名） |
+| rare-suffixes.json | Scourge | 灾星 → 天谴 → 祸星 | Affliction（原 Damnation） | 天谴与「灾星」无一字相同；留「星」；Damnation 是天罚，Scourge 是祸害 |
+| rare-suffixes.json | Wrack | 破坏 → 摧残 → 毁坏 | Ravage（不变） | 摧残与「破坏」无一字相同；留「坏」 |
+| rare-suffixes.json | Fletch | 箭羽 → 雕翎 → 雕羽 | Feather（原 Pinion） | 雕翎不留「羽」；羽＝Feather，与「腐羽鸦」「夜羽面纱」一致；Pinion 是生僻词 |
+| rare-suffixes.json | Nock | 弓结 → 弦扣 → 弓弦 | Bowstring（不变） | 弦扣与「弓结」无一字相同；留「弓」 |
+| rare-suffixes.json | Horn | 角刺 → 犄角（不变） | Antler（原 Tine） | 中文留「角」不变；Tine 是鹿角的叉尖，生僻；与怪物后缀 Horn 同 |
+| rare-suffixes.json | Quill | 刺针 → 翎针（不变） | Bristle（原 Hackle） | 中文留「针」不变；Hackle 是只有词典才知道的词 |
+| rare-suffixes.json | Goad | 刺棒 → 驱策 → 刺杖 | Goadstaff（原 Horsewhip） | 驱策与「刺棒」无一字相同；留「刺」；Horsewhip 是马鞭；Goadstaff 留着 Goad（Oxgoad 只比 Goad 多两个字母） |
+| rare-suffixes.json | Call | 呼唤 → 招魂 → 唤魂 | Soulcall（原 Summoning） | 招魂不留「唤」；Summoning 是官方技能树名；Soulcall 留着 Call |
+| rare-suffixes.json | Cry | 哭喊 → 悲号 → 哭号 | Weeping（原 Lament） | 悲号不留「哭」「喊」，又是暗金「娅忒嫚的悲号」的词；Lament 是暗金 Ume's Lament 的词 |
+| rare-suffixes.json | Chant | 吟唱 → 颂祷 → 吟诵 | Litany（不变） | 颂祷与「吟唱」无一字相同；留「吟」 |
+| rare-suffixes.json | Weaver | 编织者 → 织咒者（不变） | Hexspinner（原 Cursewright） | 中文留「织」「者」不变；Cursewright 认不出 Weaver；咒＝Hex，与「邪咒」一致 |
+| rare-suffixes.json | Gnarl | 狂啸 → 怒嗥 → 怒啸 | Howl（不变） | 怒嗥与「狂啸」无一字相同；留「啸」 |
+| rare-suffixes.json | Visage | 面罩 → 狞颜 → 狞面 | Grimace（不变） | 狞颜不留「面」 |
+| rare-suffixes.json | Crest | 头冠 → 盔缨 → 羽冠 | Plume（不变） | 盔缨与「头冠」无一字相同；留「冠」 |
+| rare-suffixes.json | Veil | 面纱 → 黑纱（不变） | Blackveil（原 Mourning） | 中文留「纱」不变；Mourning 是服丧，认不出 Veil |
+| rare-suffixes.json | Hood | 头罩 → 风帽 → 头巾 | Headcloth（原 Coif） | 风帽与「头罩」无一字相同；留「头」；Coif 是生僻词 |
+| rare-suffixes.json | Mask | 覆面甲 → 鬼面（不变） | Deathmask（原 Spectreface） | 中文留「面」不变；Spectreface 是硬拼的词；Deathmask 留着 Mask |
+| rare-suffixes.json | Casque | 战盔 → 玄胄 → 战胄 | Warhelm（原 Sablehelm） | 玄胄不留「战」「盔」；Sablehelm 是硬拼的词 |
+| rare-suffixes.json | Hide | 兽皮 → 生革 → 生皮 | Rawskin（不变） | 生革不留「皮」；英文不变（Rawhide 已是套装「牛首王之兽皮」的词） |
+| rare-suffixes.json | Pelt | 毛皮 → 兽裘 → 毛裘 | Fur（原 Wolfskin） | 兽裘不留「毛」「皮」；Wolfskin 是户外品牌；裘＝Fur，与暗金「铁裘」、套装「极地裘皮」一致 |
+| rare-suffixes.json | Wrap | 罩衣 → 裹衫 → 裹衣 | Swathe（不变） | 裹衫不留「衣」 |
+| rare-suffixes.json | Cloak | 披风 → 大氅 → 风氅 | Windcloak（原 Greatcape） | 大氅不留「披」「风」；Windcloak 留着 Cloak |
+| rare-suffixes.json | Shroud | 罩袍 → 殓衣 → 殓袍 | Graveshroud（原 Cerecloth） | 殓衣不留「袍」；Cerecloth 是生僻词；Graveshroud 留着 Shroud |
+| rare-suffixes.json | Jack | 夹克 → 棉甲 → 夹袄 | Jerkin（原 Gambeson） | 棉甲与「夹克」无一字相同；留「夹」；Gambeson 是生僻词，Jerkin 是 Jack 的近义词 |
+| rare-suffixes.json | Mantle | 斗篷 → 肩帔 → 肩篷 | Cape（原 Tippet） | 肩帔与「斗篷」无一字相同；留「篷」；Tippet 是生僻词 |
+| rare-suffixes.json | Badge | 纹章 → 徽记 → 勋章 | Insignia（不变） | 徽记与「纹章」无一字相同；留「章」 |
+| rare-suffixes.json | Rock | 磐石 → 峭岩 → 峭石 | Crag（不变） | 峭岩与「磐石」无一字相同；留「石」（磐岩已是符文之语 Stone 的名字） |
+| rare-suffixes.json | Aegis | 壁垒 → 庇佑 → 坚壁 | Shieldwall（原 Refuge） | 庇佑与「壁垒」无一字相同；留「壁」（坚垒是符文之语 Bulwark 的名字，壁障是官方怪物名）；Refuge 认不出 Aegis |
+| rare-suffixes.json | Ward | 守御 → 护阵 → 护御 | Safehold（原 Phalanx） | 护阵与「守御」不留「御」；Phalanx 是方阵，另一个意象（Shelter 是官方物品名） |
+| rare-suffixes.json | Tower | 塔盾 → 楼橹 → 塔橹 | Turret（原 Barbican） | 楼橹与「塔盾」无一字相同；留「塔」；Barbican 是生僻词 |
+| rare-suffixes.json | Wing | 飞翼 → 蝠翼（不变） | Batwing（原 Pennon） | 中文留「翼」不变；Pennon 是旗；Batwing 留着 Wing；与怪物后缀 Wing 同 |
+| rare-suffixes.json | Fist | 之拳 → 怒拳 → 重拳 | Pummel（不变） | 怒拳改重拳，与怪物后缀 Fist 同（官方都是「之拳」，英文都是 Pummel） |
+| rare-suffixes.json | Clutches | 之扼 → 魔爪 → 扼颈 | Stranglehold（原 Devilclaw） | 魔爪与「之扼」无一字相同；留「扼」；Devilclaw 是另一个意象 |
+| rare-suffixes.json | Grip | 紧握 → 铁钳 → 紧攥 | Clench（原 Pincers） | 铁钳与「紧握」无一字相同；留「紧」；Pincers 是钳子 |
+| rare-suffixes.json | Grasp | 掌握 → 攫取 → 攫握 | Grapple（不变） | 攫取与「掌握」无一字相同；留「握」 |
+| rare-suffixes.json | Hold | 之握 → 之缚 → 之铁握 | Ironhold（原 Binding） | 之缚不留「握」；Binding 认不出 Hold；Ironhold 留着 Hold，铁＝Iron |
+| rare-suffixes.json | Finger | 护指 → 指铠（不变） | Fingerguard（原 Gadling） | 中文留「指」不变；Gadling 是生僻词 |
+| rare-suffixes.json | Knuckle | 指拳 → 指骨（不变） | Knucklebone（原 Fingerbone） | 中文留「指」不变；Knucklebone 留着 Knuckle |
+| rare-suffixes.json | Shank | 护腿 → 腿铠（不变） | Shankplate（原 Cuisse） | 中文留「腿」不变；Cuisse 是生僻词 |
+| rare-suffixes.json | Spur | 马刺靴 → 踵刺（不变） | Heelspur（原 Rowel） | 中文留「刺」不变；Rowel 是生僻词；Heelspur 留着 Spur |
+| rare-suffixes.json | Stalker | 潜行靴 → 蹑踪 → 潜踪 | Prowler（原 Prowl） | 蹑踪不留「潜」；潜行换潜踪；Prowler 是 Stalker 的近义词 |
+| rare-suffixes.json | Blazer | 拓荒靴 → 辟径 → 拓径 | Pathbreaker（原 Vanguard） | 辟径不留「拓」；Vanguard 是先锋，另一个意象 |
+| rare-suffixes.json | Trample | 登山鞋 → 铁蹄 → 攀山靴 | Stomp（原 Ironhoof） | 官方中文是「登山鞋」，铁蹄认不出；留「山」；英文对 Blizzard 的 Trample |
+| rare-suffixes.json | Brogues | 粗革皮鞋 → 革履（不变） | Leathers（原 Buskin） | 中文留「革」不变；Buskin 是生僻词 |
+| rare-suffixes.json | Track | 足履 → 行迹 → 足迹 | Trail（原 Spoor） | 行迹不留「足」；Spoor 是生僻词 |
+| rare-suffixes.json | Slippers | 便鞋 → 毡履 → 毡鞋 | Feltslipper（原 Feltsole） | 毡履与「便鞋」无一字相同；留「鞋」；Feltsole 认不出 Slippers |
+| rare-suffixes.json | Buckle | 扣带 → 带钩（不变） | Belthook（原 Hasp） | 中文留「带」不变；Hasp 是生僻词 |
+| rare-suffixes.json | Harness | 束带 → 缰辔 → 勒带 | Bridle（不变） | 缰辔与「束带」无一字相同；留「带」，勒＝Bridle |
+| rare-suffixes.json | Fringe | 铰链 → 垂链（不变） | Tassel（原 Pendant） | 中文留「链」不变；英文 Pendant 是暗金「蝮蛇项坠」的词，又认不出 Fringe |
+| rare-suffixes.json | Winding | 缠腰 → 萦带 → 缠带 | Bandage（原 Tendril） | 萦带不留「缠」；Tendril 是卷须，另一个意象 |
+| rare-suffixes.json | Chain | 腰链 → 镣铐 → 镣链 | Shackle（原 Manacle） | 镣铐不留「链」 |
+| rare-suffixes.json | Lash | 腰绳 → 笞鞭 → 鞭绳 | Whipcord（原 Flogging） | 笞鞭与「腰绳」无一字相同；留「绳」；Flogging 是动作 |
+| rare-suffixes.json | Cord | 腰索 → 丝绦 → 丝索 | Silkcord（原 Braid） | 丝绦不留「索」；Silkcord 留着 Cord |
+| rare-suffixes.json | Knot | 绳结 → 死结（不变） | Deathknot（原 Tangle） | 中文留「结」不变；Tangle 认不出 Knot；死＝Death |
+| rare-suffixes.json | Circle | 圆圈 → 法环 → 法圈 | Spellcircle（原 Pentacle） | 法环不留「圈」；Pentacle 是五芒星 |
+| rare-suffixes.json | Loop | 环圈 → 回环（不变） | Snareloop（原 Ouroboros） | 中文留「环」不变；Ouroboros 是衔尾蛇，另一个意象 |
+| rare-suffixes.json | Eye | 法瞳 → 邪眸 → 邪瞳 | Gaze（原 Leer） | 邪眸不留「瞳」；瞳＝Gaze，与前缀「鹰瞳」Hawkgaze 一致；Leer 是暗金「屠夫之眸」的词 |
+| rare-suffixes.json | Turn | 腰环 → 绕环（不变） | Twirl（原 Annulet） | 中文留「环」不变；Annulet 是生僻词 |
+| rare-suffixes.json | Coil | 线圈 → 蟠绕 → 蟠圈 | Serpentcoil（原 Serpentine） | 蟠绕不留「圈」；Serpentcoil 留着 Coil |
+| rare-suffixes.json | Gyre | 环带 → 涡旋 → 涡环 | Vortex（原 Whirlpool） | 涡旋与「环带」无一字相同；留「环」 |
+| rare-suffixes.json | Whorl | 环盘 → 旋纹 → 旋盘 | Swirl（原 Volute） | 旋纹与「环盘」不留「盘」；Volute 是生僻词 |
+| rare-suffixes.json | Heart | 之心 → 之魄 → 之心血 | Heartblood（原 Anima） | 之魄不留「心」；Anima 认不出 Heart；Heartblood 留着 Heart |
+| rare-suffixes.json | Noose | 绳套 → 绞索 → 绞绳 | Garrote（不变） | 绞索与「绳套」无一字相同；留「绳」 |
+| rare-suffixes.json | Necklace | 项链 → 璎珞 → 珠链 | Choker（原 Carcanet） | 璎珞与「项链」无一字相同；留「链」；Carcanet 是生僻词 |
+| rare-suffixes.json | Collar | 项圈 → 颈枷 → 项枷 | Yoke（原 Pillory） | 颈枷不留「项」「圈」；Pillory 是刑台 |
+| rare-suffixes.json | Torc | 颈圈 → 绞环 → 颈环 | Neckring（原 Wreath） | 绞环不留「颈」；Wreath 是花环，另一个意象 |
+| rare-suffixes.json | Gorget | 护颈 → 颈甲（不变） | Neckplate（原 Bevor） | 中文留「颈」不变；Bevor 是生僻词（Neckguard 已是套装「爱蕊莎的护颈环」的词） |
+| rare-suffixes.json | Scarab | 圣甲虫 → 金蜣 → 金甲虫 | Goldbeetle（不变） | 金蜣用生僻字「蜣」；留「甲虫」 |
+| rare-suffixes.json | Brand | 烙印 → 灼痕 → 火印 | Firebrand（原 Scorch） | 灼痕与「烙印」无一字相同；留「印」；Firebrand 留着 Brand |
+| rare-suffixes.json | Bludgeon | 大头棒 → 骨朵 → 瘤头棒 | Knobmace（不变） | 骨朵与「大头棒」无一字相同；留「头棒」，瘤＝Knob（铁头棒是底材 Quarterstaff 的官方名，Truncheon 是底材名） |
+| rare-suffixes.json | Cudgel | 大棒 → 棘棍 → 棘棒 | Briarclub（不变） | 棘棍不留「棒」 |
+| rare-suffixes.json | Harp | 竖琴 → 箜篌 → 骨琴 | Lyre（原 Psaltery） | 箜篌不留「琴」；Psaltery 是生僻词 |
+| rare-suffixes.json | Bar | 木条 → 铁闩 → 铁条 | Ironbar（原 Latch） | 铁闩与「木条」无一字相同；留「条」；Ironbar 留着 Bar |
+| rare-suffixes.json | Crook | 曲木 → 虬杖 → 曲杖 | Crookstaff（原 Wyrmstaff） | 虬杖不留「曲」；Wyrmstaff 是另一个意象；Crookstaff 留着 Crook |
+| rare-suffixes.json | Mar | 残害 → 毁伤 → 戕害 | Scathe（不变） | 毁伤与「残害」不留「害」 |
+| rare-suffixes.json | Shell | 之壳 → 之蜕 → 之空壳 | Husk（原 Slough） | 之蜕不留「壳」；Slough 是蜕下的皮；壳＝Husk，与前缀「栗壳」一致 |
+| rare-suffixes.json | Stake | 木棍 → 刑桩 → 木桩 | Pyrestake（原 Gibbet） | 刑桩与「木棍」无一字相同；留「木」；Gibbet 是绞架 |
+| rare-suffixes.json | Picket | 尖桩 → 拒马 → 锐桩 | Stakewall（不变） | 拒马不留「桩」 |
+| rare-suffixes.json | Pale | 栅木 → 藩篱 → 栅栏 | Palisade（不变） | 藩篱与「栅木」无一字相同；留「栅」 |
+| monster-prefixes.json | Gloom | 幽暗 → 晦冥 → 晦暗 | Murk（不变） | 晦冥与「幽暗」无一字相同；留「暗」 |
+| monster-prefixes.json | Gray | 灰白 → 苍灰（不变） | Grizzled（原 Pallid） | 中文留「灰」不变；Pallid 是苍白，Grizzled 是花白 |
+| monster-prefixes.json | Dire | 凶邪 → 狰恶 → 凶厉 | Fearsome（原 Grisly） | 狰恶与「凶邪」无一字相同；留「凶」；Grisly 是血腥 |
+| monster-prefixes.json | Shadow | 暗影 → 鬼影 → 幽影 | Umbra（原 Visitant） | 鬼影是暗金「鬼影潜踪」的词，Visitant 认不出 Shadow；与稀有名词 Shadow 同用幽影＝Umbra |
+| monster-prefixes.json | Haze | 阴霾 → 烟瘴 → 瘴霾 | Miasma（不变） | 烟瘴与「阴霾」无一字相同；留「霾」 |
+| monster-prefixes.json | Storm | 风暴 → 狂飙 → 雷暴 | Thunderstorm（原 Squall） | 狂飙与「风暴」无一字相同；与稀有名词 Storm 同用雷暴＝Thunderstorm；Squall 是稀有名词「罡风」的词 |
+| monster-prefixes.json | Warp | 闪烁 → 诡变 → 闪逝 | Twist（原 Eldritch） | 诡变与「闪烁」无一字相同；Eldritch 是形容词；与稀有名词 Warp 同 |
+| monster-prefixes.json | Night | 夜幕 → 深宵 → 暮夜 | Nightfall（原 Midwatch） | 深宵与「夜幕」无一字相同；留「夜」；Midwatch 是守夜，Nightfall 留着 Night |
+| monster-prefixes.json | Star | 星界 → 孤星（不变） | Lornstar（原 Lornlight） | 中文留「星」不变；Lornlight 认不出 Star，Lornstar 留着 Star |
+| monster-prefixes.json | Pit | 深渊 → 幽窟 → 幽渊 | Hollow（不变） | 幽窟与「深渊」无一字相同；留「渊」 |
+| monster-prefixes.json | Sharp | 锋利 → 锋芒 → 尖利 | Keen（原 Glint） | 锋芒是符文之语 Edge 的名字（Glinting Edge），Glint 认不出 Sharp；留「利」，锋换尖 |
+| monster-prefixes.json | Ash | 火灰 → 残烬 → 烬灰 | Cinder（不变） | 残烬与「火灰」无一字相同；留「灰」 |
+| monster-prefixes.json | Steel | 钢铁 → 燧石 → 精钢 | Truesteel（原 Flint） | 燧石是另一个意象；照新规则留「钢」，与魔法前缀 Steel 同用精钢＝Truesteel |
+| monster-prefixes.json | Blight | 凋零 → 枯萎 → 凋萎 | Wilt（原 Sere） | 枯萎与「凋零」无一字相同；留「凋」；Sere 是生僻词 |
+| monster-prefixes.json | Plague | 疾疫 → 疫疠（不变） | Contagion（原 Murrain） | 中文留「疫」不变；Murrain 是生僻词；与稀有名词 Plague 同 |
+| monster-prefixes.json | Rot | 恶疮 → 朽腐 → 腐疮 | Putrid（不变） | 朽腐与「恶疮」无一字相同；留「疮」 |
+| monster-prefixes.json | Bile | 愤怒 → 苦胆 → 愤懑 | Gall（不变） | 官方中文「愤怒」，苦胆认不出；留「愤」；英文对 Blizzard 的 Bile，不变 |
+| monster-prefixes.json | Gut | 剖脏 → 剜肠 → 剜脏 | Entrail（不变） | 剜肠不留「脏」，又和暗金 Visceratuant 的「剜肠」同名 |
+| monster-prefixes.json | Gore | 角刺 → 血污 → 抵角 | Hornthrust（原 Clot） | 官方中文「角刺」，血污认不出；留「角」；Clot 是血块 |
+| monster-prefixes.json | Mind | 心智 → 魔念 → 心魔 | Psyche（原 Mania） | 魔念与「心智」无一字相同；留「心」；Mania 是癫狂 |
+| monster-prefixes.json | Soul | 恶魂 → 魂魄（不变） | Anima（原 Eidolon） | 中文留「魂」不变；Eidolon 是生僻词，又是《最终幻想》的召唤兽；与稀有名词 Soul 同 |
+| monster-prefixes.json | Grief | 悲惨 → 哀恸 → 悲恸 | Rue（不变） | 哀恸与「悲惨」无一字相同；留「悲」（Sorrow、Woe 是符文之语名） |
+| monster-prefixes.json | Foul | 歹毒 → 污浊 → 狠毒 | Fetid（不变） | 污浊与「歹毒」无一字相同；留「毒」 |
+| monster-prefixes.json | Vile | 卑鄙 → 龌龊 → 卑污 | Squalid（不变） | 龌龊与「卑鄙」无一字相同；留「卑」（卑劣是魔法前缀 Devious 的官方名） |
+| monster-prefixes.json | Chaos | 混沌 → 淆乱 → 混冥 | Bedlam（原 Tumult） | 淆乱与「混沌」无一字相同；与稀有名词 Chaos 同 |
+| monster-prefixes.json | Dread | 惊悚 → 骇怖 → 惊怖 | Fright（不变） | 骇怖不留「惊」「悚」；与稀有名词 Dread 同 |
+| monster-prefixes.json | Doom | 厄运 → 劫数 → 厄难 | Downfall（原 Fateful） | 劫数与「厄运」无一字相同；与稀有名词 Doom 同 |
+| monster-prefixes.json | Death | 死亡 → 殒灭 → 死灭 | Demise（原 Quietus） | 殒灭不留「死」；与稀有名词 Death 同 |
+| monster-prefixes.json | Devil | 邪魔 → 魍魉 → 邪鬼 | Archdevil（原 Bogle） | 魍魉与「邪魔」无一字相同，又和稀有名词 Imp 同名；留「邪」；Archdevil 留着 Devil（Devilkin 是官方怪物名） |
+| monster-suffixes.json | Feast | 暴食 → 狂宴 → 狂食 | Gorge（原 Revel） | 狂宴不留「食」；Revel 是狂欢 |
+| monster-suffixes.json | Wound | 致伤 → 创痕 → 伤痕 | Scar（不变） | 创痕与「致伤」无一字相同；留「伤」；痕＝Scar，与暗金「天穹裂痕」一致 |
+| monster-suffixes.json | Grin | 狞笑 → 怪笑（不变） | Sneer（原 Cackle） | 中文留「笑」不变；Cackle 是大笑，Sneer 才是狞笑 |
+| monster-suffixes.json | Maim | 残害 → 断肢 → 残肢 | Cripple（原 Lop） | 断肢与「残害」无一字相同；留「残」；Lop 是砍枝 |
+| monster-suffixes.json | Rend | 痛割 → 剐裂 → 裂割 | Tear（原 Rive） | 剐裂与「痛割」无一字相同；留「割」；Rive 是生僻词；裂＝Tear |
+| monster-suffixes.json | Kill | 杀戮 → 屠灭 → 杀伐 | Carnage（不变） | 屠灭与「杀戮」无一字相同；留「杀」 |
+| monster-suffixes.json | Call | 之唤 → 呼号 → 哀唤 | Wail（不变） | 呼号与「之唤」不留「唤」 |
+| monster-suffixes.json | Vex | 妖术 → 缠扰 → 妖法 | Torment（不变） | 缠扰与「妖术」无一字相同；留「妖」 |
+| monster-suffixes.json | Razor | 剃刀 → 削刃 → 剃刃 | Shear（不变） | 削刃不留「剃」；与稀有名词 Razor 同 |
+| monster-suffixes.json | Shifter | 变形者 → 易形者（不变） | Shapeshifter（原 Turnskin） | 中文留「形者」不变；Turnskin 是生僻词；Shapeshifter 留着 Shifter |
+| monster-suffixes.json | Crawler | 爬行者 → 匍行者（不变） | Bellycrawler（原 Creeper） | 中文留「行者」不变；Creeper 是《我的世界》的苦力怕 |
+| monster-suffixes.json | Bender | 酗酒者 → 烂醉者 → 嗜酒者 | Sot（不变） | 烂醉者不留「酒」 |
+| monster-suffixes.json | Spawn | 魔嗣 → 孽种 → 孽嗣 | Brood（原 Whelp） | 孽种不留「嗣」；Whelp 是幼崽；与稀有名词 Spawn 同 |
+| monster-suffixes.json | Wight | 鬼魅 → 祟尸 → 尸魅 | Gravewight（原 Corpsehaunt） | 祟尸与「鬼魅」无一字相同；留「魅」；Corpsehaunt 认不出 Wight，Gravewight 留着 Wight |
+| monster-suffixes.json | Growler | 咆哮 → 低吼 → 咆吼 | Roarer（原 Rumble） | 低吼与「咆哮」无一字相同；留「咆」；Rumble 是隆隆声 |
+| monster-suffixes.json | Snarl | 凶啸 → 狺吠 → 嘶啸 | Yowl（不变） | 狺吠与「凶啸」无一字相同；留「啸」 |
+| monster-suffixes.json | Wolf | 恶狼 → 豺狼（不变） | Wolfkin（原 Jackal） | 中文留「狼」不变；Jackal 是豺，另一种兽 |
+| monster-suffixes.json | Bang | 巨响 → 轰鸣 → 轰响 | Crash（原 Clangor） | 轰鸣与「巨响」无一字相同；留「响」；Clangor 是生僻词 |
+| monster-suffixes.json | Brow | 恶面 → 横眉 → 凶面 | Scowl（不变） | 横眉与「恶面」无一字相同；留「面」 |
+| monster-suffixes.json | Eye | 之眼 → 邪眸 → 邪眼 | Evil-Eye（原 Leer） | 邪眸不留「眼」；Leer 是暗金「屠夫之眸」的词 |
+| monster-suffixes.json | Maw | 之喉 → 巨口 → 巨喉 | Gullet（原 Gape） | 巨口与「之喉」不留「喉」；Gape 是张嘴 |
+| monster-suffixes.json | Tongue | 之舌 → 长舌（不变） | Longtongue（原 Slander） | 中文留「舌」不变；Slander 是诽谤，认不出 Tongue；Longtongue 留着 Tongue |
+| monster-suffixes.json | Horn | 之角 → 犄角（不变） | Antler（原 Tine） | 中文留「角」不变；Tine 是生僻词；与稀有名词 Horn 同 |
+| monster-suffixes.json | Heart | 之心 → 黑心（不变） | Blackheart（原 Coalcore） | 中文留「心」不变；Coalcore 是硬拼的词；Blackheart 留着 Heart |
+| monster-suffixes.json | Wing | 翼魔 → 蝠翼（不变） | Batwing（原 Pennon） | 中文留「翼」不变；Pennon 是旗；与稀有名词 Wing 同 |
+| monster-suffixes.json | Pox | 恶疾 → 痘疮 → 恶痘 | Pustule（原 Blain） | 痘疮与「恶疾」无一字相同；留「恶」；Blain 是生僻词 |
+| monster-suffixes.json | Drool | 涎魔 → 垂涎（不变） | Slobber（原 Slaver） | 中文留「涎」不变；Slaver 又作奴隶贩子 |
+| monster-suffixes.json | Sludge | 污魔 → 淤泥 → 污泥 | Silt（不变） | 淤泥与「污魔」无一字相同；留「污」 |
+| monster-suffixes.json | Break | 碎击 → 崩裂 → 崩碎 | Shatter（不变） | 崩裂与「碎击」无一字相同；留「碎」；与稀有名词 Sunder 同（官方都是「碎击」） |
+| monster-suffixes.json | Shard | 刺头 → 残片 → 骨刺 | Splinter（不变） | 残片与「刺头」无一字相同；留「刺」 |
+| monster-suffixes.json | Maul | 锤击 → 重殴 → 锤打 | Batter（原 Thrash） | 重殴与「锤击」无一字相同；留「锤」；Thrash 是乱打 |
+| monster-suffixes.json | Lust | 邪淫者 → 贪欲者 → 淫欲者 | Lecher（原 Coveter） | 贪欲者不留「淫」；Coveter 是贪婪的人 |
+| monster-titles.json | the Sharp | 尖锋者· → 快刃· → 利锋者· | the Whetted（不变） | 快刃与「尖锋者」无一字相同；留「锋者」 |
+| monster-titles.json | the Jagged | 尖刺者· → 锯齿者· → 锯刺者· | the Sawtooth（不变） | 锯齿者不留「刺」，锯齿又是魔法前缀 Serrated 的官方名；留「刺者」 |
+| monster-titles.json | the Impaler | 穿刺者· → 贯尸者· → 洞穿者· | the Transfixer（不变） | 贯尸者不留「穿」「刺」；与稀有名词 Impaler 同（贯刺者已是暗金 The Impaler 的名字） |
+| monster-titles.json | the Slayer | 屠戮者· → 刽子手· → 屠命者· | the Manslayer（原 the Executioner） | 刽子手与「屠戮者」无一字相同；留「屠」「者」；Executioner 是刽子手；与稀有名词 Slayer 同 |
+| monster-titles.json | the Mauler | 重槌者· → 碾杀者· → 铁槌者· | the Smiter（原 the Millstone） | 碾杀者不留「槌」；Millstone 是磨盘 |
+| monster-titles.json | the Destroyer | 毁灭者· → 夷平者· → 灭绝者· | the Annihilator（原 the Leveler） | 夷平者与「毁灭者」无一字相同；留「灭」「者」；Leveler 认不出 Destroyer |
+| monster-titles.json | the Wraith | 怨魂· → 厉鬼· → 怨灵· | the Wraithling（原 the Ghast） | 厉鬼与「怨魂」无一字相同；留「怨」；与稀有名词 Wraith 同 |
+| monster-titles.json | the Shade | 阴魂· → 幽影· → 幽魂· | the Shadeborn（原 the Umbra） | 幽影与「阴魂」不留「魂」，幽影现在是 Shadow；Shadeborn 留着 Shade |
+| monster-titles.json | the Unholy | 邪秽者· → 渎圣者· → 邪渎者· | the Ungodly（原 the Profaner） | 渎圣者不留「邪」；Ungodly 是 Unholy 的近义词 |
+| monster-titles.json | the Grim | 冷酷者· → 肃杀者· → 冷厉者· | the Pitiless（不变） | 肃杀者与「冷酷者」不留「冷」 |
+| monster-titles.json | the Dark | 黑暗者· → 幽晦者· → 昏暗者· | the Benighted（不变） | 幽晦者与「黑暗者」不留「暗」 |
+| monster-titles.json | the Tainted | 污堕者· → 染秽者· → 秽堕者· | the Befouled（不变） | 染秽者与「污堕者」不留「堕」 |
+| monster-titles.json | the Unclean | 不洁者· → 污秽者· → 不净者· | the Filth-Ridden（不变） | 污秽者与「不洁者」不留「不」 |
+| monster-titles.json | the Cold | 冷冰者· → 霜寒者· → 冰霜者· | the Frostbitten（不变） | 霜寒者与「冷冰者」不留「冰」 |
