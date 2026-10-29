@@ -24,7 +24,7 @@
 | `src/items/` | 物品：生成、词缀、品质、孔、耐久、价格、商店、卷轴书、储物箱页 | `item.ts`、`gen.ts`、`vendor.ts`、`tomes.ts`、`stash.ts`、`d2/*` |
 | `src/world/` | 区域、大地图生成（营地 + 血沼荒原 + 凛寒原野无缝相连）、邪秽巢穴、试炼场 | `areas.ts`、`overworld.ts`、`zone.ts`、`presets.ts`、`levelgen.ts` |
 | `src/data/d2x/` | 原版数据表，由 `tools/d2-import.mjs` 生成，**不要手改** | `monsters.ts`、`treasure.ts`、`affixes.ts`、`uniques.ts`、`areas.ts`… |
-| `src/render/` | 模型、动画、地面分块、灯光、昼夜、特效 | `renderer.ts`、`models.ts`、`specs.ts`、`chunks.ts` |
+| `src/render/` | 模型（角色各一个文件，道具按用处合成几个包）、动画、地面分块、灯光、昼夜、特效 | `renderer.ts`、`assets.ts`（加载模型和道具包）、`models.ts`、`specs.ts`、`chunks.ts` |
 | `src/ui/` | 面板、HUD、标题页、物品图标（画好的图加原版换色） | `ui.ts`、`inventory.ts`、`title.ts`、`icons.ts`、`itempics.ts` |
 | `src/audio/` | 音效、语音、音乐（录好的文件；缺失时退回代码合成） | `sfx.ts`、`music.ts`、`sounds.ts`、`files.ts`（生成的） |
 | `tools/` | 导入原版数据、生成美术和声音、无头测试、bot | `d2-import.mjs`、`ai-icons.mjs`、`ai-audio.mjs`、`play.mjs`、`bot.mjs` |
@@ -84,7 +84,7 @@
 - 存档迁移：`save`；
 - 地图：`areas`、`levelgen`、`overworld`、`west`、`seamless`、`seams`；
 - 怪物：`spawn`、`d2-population`、`d2-monsters`、`d2-ai`；
-- 模型：`models`（清单和 `public/models` 的文件一一对上，地图摆的、手里拿的都在清单里）、`monster-models`；
+- 模型：`models`（清单和 `public/models` 的角色文件、`packs/` 下的道具包一一对上，包里每张图只存一份，地图摆的、手里拿的都在清单里）、`monster-models`；
 - 任务、图标、声音：`quests`、`icons`、`itempics`、`audio`、`sfx`、`ai-audio`。
 
 **场景测试**（无头浏览器，`node tools/play.mjs tools/scenarios/<名>.mjs --url <地址> --out <目录>`）：
@@ -108,8 +108,8 @@
 
 - **Vercel**：在没有未提交改动的检出里运行 `vercel build --prod`，再运行 `vercel deploy --prebuilt --prod`，地址是 dii-abyss.vercel.app。工作树里要有 `.vercel/project.json`，没有就从主检出复制。
 - **内部站点**：发布方法、地址和登录都不在仓库里，用本机的内部站点 skill 发布，记下它报的版本。
-  - 平台限制：最多 5000 个文件、总共 50 MB。2026-10-28 我们是 1117 个文件、43.2 MB，资源压缩要先做。
-- `dist/` 只带游戏显示得出来的模型：调试用的（`?aihero`、`?knight`，见 `src/render/dev-models.ts`）只在 `npm run dev` 里有，构建时 `vite.config.ts` 去掉；用不到的列在 `tools/build-models.mjs` 的 `UNUSED`，不构建（2026-10-28 去掉这 8 个后是 1109 个文件、39.6 MB）。
+  - 平台限制：最多 5000 个文件、总共 50 MB。2026-10-28 我们是 1117 个文件、43.2 MB；道具打包后（2026-10-29）是 987 个文件、39.5 MB，资源压缩还在做。
+- `dist/` 只带游戏显示得出来的模型：调试用的（`?aihero`、`?knight`，见 `src/render/dev-models.ts`）只在 `npm run dev` 里有，构建时 `vite.config.ts` 去掉；用不到的列在 `tools/build-models.mjs` 的 `UNUSED`，不构建（2026-10-28 去掉这 8 个后是 1109 个文件、39.6 MB）。道具合成 `public/models/packs/` 下的 7 个包，模型从 154 个文件减到 32 个（2026-10-29 是 987 个文件、39.5 MB）。
 
 ## 并行开发怎么做
 
@@ -124,4 +124,4 @@
 
 - 只建了营地、血沼荒原、邪秽巢穴、凛寒原野；从石块旷野往后（计划里的 M2a、M2b、M3）都还没做。
 - 技能数值还是原型版，要等计划里的 A5 阶段补全成原版；佣兵、赌博、赋予、各 NPC 分店还没做。
-- 单元测试偶尔会有一次失败，8 次重跑都没复现，怀疑是机器忙时某个带随机的测试超时，还要继续观察。`icons` 场景会测手机上的性能，机器忙时偶尔超时失败（2026-10-28 一次用了 47 秒，平时约 18 秒），重跑通过。
+- 单元测试偶尔会有一次失败：是 `nearby`（2026-10-29 单跑十几次出一回），报「the path buffers hold 0 tiles on a 328×160 map」，像是那一局随机开出的大地图上还没有怪寻过路、缓冲区没分配，和模型无关，还要修。`icons` 场景会测手机上的性能，机器忙时偶尔超时失败（2026-10-28 一次用了 47 秒，平时约 18 秒），重跑通过。

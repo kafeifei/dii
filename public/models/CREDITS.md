@@ -10,7 +10,7 @@
 
 其余全部是本项目用 AI 生成的，不是 CC0：设定图用图像模型按统一的风格版画，再用 Meshy 建模（人形角色和怪物还经过 Meshy 绑骨和动作库；蜘蛛用的是 Tripo 的建模和绑骨）。造型参照《暗黑破坏神 II》的风格，是原创形象，不是暴雪的美术资源。
 
-| 文件 | 内容 | 源文件 |
+| 模型 | 内容 | 源文件 |
 | --- | --- | --- |
 | `sorceress`、`paladin`、`npc_*`、`mon_*`（人形） | 职业、营地 NPC、怪物，带动作 | `models-src/ai/`，由 `tools/meshy-merge.mjs` 合成 |
 | `mon_spider` | 蜘蛛，Tripo 生成并绑骨，带走路 | `models-src/ai/`，由 `tools/tripo-merge.mjs` 导入 |
@@ -18,4 +18,4 @@
 | `d_*`、`h_*`、`x_*`，`axe_*`、`skeleton_*` 武器和盾 | 替换原 KayKit 地牢、墓园、营地建筑、武器的同名模型 | `models-src/ai-props/`，由 `tools/ai-props.mjs` 导入 |
 | `p_*`、`w_*`、`g_*` | 营地物件和地牢装饰、新武器、地上的掉落物 | 同上 |
 
-原始文件由 `tools/fetch-models.mjs` 下载到 `models-src/`（不入库），再由 `tools/build-models.mjs` 裁剪动画、压缩顶点后输出到这里，同时生成运行时加载清单 `src/render/model-list.ts`。
+原始文件由 `tools/fetch-models.mjs` 下载到 `models-src/`（不入库），再由 `tools/build-models.mjs` 裁剪动画、压缩顶点后输出到这里：带动作的角色一个文件一个（`<模型>.glb`），其余的道具按用在哪儿合成 `packs/` 下的几个包，每个模型是包里一个以它命名的根节点；同时生成运行时加载清单 `src/render/model-list.ts`，记着每个模型在哪个包里。
