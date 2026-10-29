@@ -514,20 +514,23 @@ export default async (load) => {
       const { Merc } = await load('/src/game/merc.ts');
       const { friendlyTarget } = await load('/src/game/ai.ts');
       clear();
-      const merc = new Merc(at(2, 0));
+      // along a line from where the hero stands
+      const off = (dx) => ({ x: p.pos.x + dx, z: p.pos.z });
+      const merc = new Merc(off(2));
       merc.life = merc.maxLife = 1e6;
-      merc.level = 5;
+      // level 1 with no defense: a level 2 skeleton lands 95 % of its blows (hitChance's cap), so a few always land
+      merc.level = 1;
       game.merc = merc;
       try {
-        const sk = place('skeleton1', at(4, 0));
+        const sk = place('skeleton1', off(4));
         assert.equal(friendlyTarget(game, sk), merc, 'she 2 m off, the hero 4: not her');
-        merc.pos = at(9, 0);
+        merc.pos = off(9);
         assert.equal(friendlyTarget(game, sk), p, 'she 5 m off, the hero 4: not the hero');
         // 55 subtiles from where it stands, the hero just within, then just past; she past it
         const R = 55 * M_PER_SUBTILE;
-        merc.pos = at(-0.5, 0);
-        assert.equal(friendlyTarget(game, sk, at(R - 0.2, 0)), p, 'the hero just within 55 subtiles: not the target');
-        assert.equal(friendlyTarget(game, sk, at(R + 0.3, 0)), null, 'both 55 subtiles or more off: a target all the same');
+        merc.pos = off(-0.5);
+        assert.equal(friendlyTarget(game, sk, off(R - 0.2)), p, 'the hero just within 55 subtiles: not the target');
+        assert.equal(friendlyTarget(game, sk, off(R + 0.3)), null, 'both 55 subtiles or more off: a target all the same');
         // she in the camp, right by it: not her
         const camp = L.layout.start;
         assert.ok(L.inTown(camp));
@@ -539,7 +542,7 @@ export default async (load) => {
         merc.prevPos = { ...merc.pos };
         sk.awake = true;
         assert.equal(friendlyTarget(game, sk), merc);
-        const struck = run(8, () => merc.life < merc.maxLife);
+        const struck = run(12, () => merc.life < merc.maxLife);
         assert.ok(struck !== null && sk.target === merc, `the hero in the camp, she ${dist(merc.pos, sk.pos).toFixed(1)} m off: never struck (its target ${sk.target === merc ? 'her' : sk.target === p ? 'the hero' : 'none'}, ${sk.state})`);
         // back by her, the hero farther: her; she dies: the hero
         clear();
