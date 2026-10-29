@@ -176,10 +176,42 @@ export const CHARS = {
     { name: 'Shoot', clip: 'Archery_Shot', window: [1.9, 3.5], aim: true },
     HIT, DEATH,
   ]),
+  // the Scarlet Raven (D2 bloodraven, the corrupted rogues' CR body with her own head and legs,
+  // monstats2 HDv/LGv brv): a model of her own, drawn empty-handed (her long war bow, LHv lbb, is the
+  // spec's to attach). Modes DT NU WL GH A1 S1 DD KB SQ RN (monstats2 m*): A1 the shot (her quick
+  // strike, monseq seq_brquickstrike, is its frames 0-6), S1 raising her dead (seq_bloodravencast,
+  // 20 frames at 25 fps = 0.8 s)
+  mon_bloodraven: mon('bloodraven', [
+    // she stands guard upright: Combat_Stance crouches and bows her head, hiding her face from the
+    // game's camera, so it is only her ready stance
+    { name: 'Idle', file: 'animations_extra.glb', clip: 'Idle_3' },
+    { name: 'Stance', clip: 'Combat_Stance' },
+    { name: 'Walk', clip: 'Walking_Woman' },
+    { name: 'Run', clip: 'Run_02' },
+    // the rangers' cut of the same clip
+    { name: 'Shoot', clip: 'Archery_Shot', window: [1.9, 3.5], aim: true },
+    // the charged cast's second half: both hands sweep up from low in front to overhead, at the
+    // top about half-way through, where the sim resolves a cast (QUICK.cast at 55%)
+    { name: 'Cast', clip: 'Charged_Spell_Cast', window: [1.45, 2.25] },
+    HIT, DEATH,
+  ]),
   // camp folk only stand around (and walk when the camp gets busier); prefixed so they don't
   // collide with the KayKit bodies of the same name
   npc_vendor: { src: `${AVATAR}/vendor`, base: 'animations.glb', clips: [{ name: 'Idle', file: 'animations.glb', clip: 'Idle_9', inPlace: true }, ...BASIC_MOVES] },
   npc_mercenary: { src: `${AVATAR}/barbarian`, base: 'animations.glb', clips: [{ name: 'Idle', file: 'animations.glb', clip: 'Idle_02', inPlace: true }, ...BASIC_MOVES] },
   npc_rogue: { src: `${AVATAR}/rogue`, base: 'animations.glb', clips: [{ name: 'Idle', file: 'animations.glb', clip: 'Idle_3', inPlace: true }, ...BASIC_MOVES] },
   npc_warden: { src: `${AVATAR}/warden`, base: 'animations.glb', clips: [{ name: 'Idle', file: 'animations.glb', clip: 'Idle', inPlace: true }, ...BASIC_MOVES] },
+  // the scout mercenary (D2 roguehire): the camp rogues' body (Code RG, as rogue1-3), so npc_rogue's
+  // mesh, re-rigged in the avatar as merc_rogue (Meshy had dropped the 2026-10-09 rig) so all her
+  // clips share one skeleton. Modes DT NU WL GH A1 DD KB RN (monstats2 m*); every skill she has
+  // plays A1 (hireling.txt Mode1-3 = 4), so one Shoot. Merged at npc_rogue's triangles: the merge
+  // and the build budget by prefix, and merc_ has none.
+  merc_rogue: {
+    ...mon('merc_rogue', [
+      { name: 'Idle', clip: 'Idle_3' },
+      { name: 'Shoot', clip: 'Archery_Shot', window: [1.9, 3.5], aim: true },
+      HIT, DEATH,
+    ]),
+    tris: 15000,
+  },
 };

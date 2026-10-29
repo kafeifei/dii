@@ -56,13 +56,13 @@ M2a 开工前做了一轮调研（地图、地下城、怪物、任务和佣兵�
 
 ## 地基（2026-10-29 做完，还没接进游戏）
 
-三个分支都从 98b2442 切出，只加了新文件（导入器和校验器各追加了一段），游戏里还没有任何地方引用。接线时合进 M2a 的集成分支，不进当前的发布。
+三个分支都从 98b2442 切出，只加了新文件（导入器和校验器各追加了一段），游戏里还没有任何地方引用。接线时合进 M2a 的集成分支，不进当前的发布。2026-10-29 按 calc → maze → art 的顺序合进了集成线（第 0 步 ①，三个合并提交），每合一个都跑过 tsc、单元测试、重新导入（`src/data/d2x` 不变）和校验。
 
 | 分支 | 提交 | 内容 |
 | --- | --- | --- |
 | `claude/m2a-calc` | 79f6c09、4c45e7d | `src/game/d2/skillcalc.ts`：照 Fog 的 Calc.cpp 写的技能表达式求值器，127 个 SkillCalc 代码、47 个 MissCalc 代码；`src/game/d2/hireling.ts`：佣兵的雇佣名单、等级、价钱、复活费、属性、技能、经验、装备规则 |
 | `claude/m2a-maze` | 2760fd1、12d4441 | 导入 lvlmaze、objgroup、objects、monseq（`src/data/d2x/maze.ts`、`objects.ts`、`monseq.ts`）；`src/world/maze.ts`（照 DRLGMAZE_GenerateLevel 长房间图）、`objgroups.ts`（物件摆放）、`dungeons.ts`（8、9、13、18、19 层） |
-| `claude/m2a-art` | aa67ed4 | 石窟地面和墙、列石荒野碎石三张贴图（`public/textures`，一合并就会进发布包，约 1.1 MB）；`models-src/ai/merc_rogue.glb`、`mon_bloodraven.glb` |
+| `claude/m2a-art` | aa67ed4 | `models-src/ai/merc_rogue.glb`、`mon_bloodraven.glb`，两份来源说明（`models-src/ai/CREDITS.md`、`public/textures/CREDITS.md`）；石窟地面和墙、列石荒野碎石三张贴图（1024²，约 1.1 MB）合并时**没有**进 `public/textures`：放进去就直接进发布包。A 线给它们加 `SPAN` 后用 `tools/ai-textures.mjs` 重做，分支上的原样还在 aa67ed4 |
 
 **接线时要处理的**（复核时发现，都不阻塞地基本身）：
 - 子格换算不统一：`stats.ts:144` 一子格 0.327 米，大地图 `OUT_SCALE` 是一子格 0.25 米，差 1.31 倍。接线前要定一套，光环半径、技能范围、物件间距都受影响。
