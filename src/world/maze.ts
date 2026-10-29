@@ -695,7 +695,7 @@ function dressCaveTheme(f: Furnisher, rng: RNG, c: P2) {
   const tx = Math.floor(c.x) - 1;
   const ty = Math.floor(c.z) - 1;
   if (!f.place('d_bed_frame', tx, ty, rng.int(0, 1))) f.place('d_bed_frame', tx + 2, ty + 1, 0);
-  f.place('d_table_medium_broken', tx + 3, ty - 1, rng.int(0, 3));
+  f.place('d_table_long_broken', tx + 3, ty - 1, rng.int(0, 3));
   f.scatter('d_sword_shield_broken', c.x - 1.5, c.z + 2);
   f.scatter('d_bottle_A_labeled_brown', c.x + 2, c.z + 1.5);
   for (let k = 0; k < 10; k++) f.scatter(rng.pick(BONES), c.x + rng.range(-6, 6), c.z + rng.range(-6, 6));

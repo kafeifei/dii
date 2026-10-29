@@ -44,7 +44,6 @@ export const PROP_DEFS: Record<string, PropDef> = {
   d_table_long_decorated_A: { s: 0.55, w: 1, d: 2, solid: true },
   d_table_long_tablecloth_decorated_A: { s: 0.55, w: 1, d: 2, solid: true },
   d_table_medium_decorated_A: { s: 0.5, w: 1, d: 1, solid: true },
-  d_table_medium_broken: { s: 0.5, w: 1, d: 1, solid: true },
   d_table_small_decorated_A: { s: 0.6, w: 1, d: 1, solid: true },
   d_table_long_broken: { s: 0.45, w: 1, d: 2, solid: true },
   d_chair: { s: 0.55, w: 1, d: 1, solid: false },
