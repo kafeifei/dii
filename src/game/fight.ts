@@ -5,10 +5,38 @@ import { blastDamage, corpseGone } from './ai';
 import { applyDamage, monsterStrike } from './combat';
 import type { Game } from './game';
 import type { Level } from './level';
+import type { Friendly } from './merc';
 import type { Monster } from './monster';
 import { Projectile } from './objects';
 
 export const ACTIVE_RADIUS = 30;
+
+/** the hero's side, alive, on this map (Game.friendlies); a stand-in game (a test's) has only its hero */
+const friendlies = (g: Game): Friendly[] => g.friendlies?.() ?? (g.player.dead ? [] : [g.player]);
+
+/** the friendlies other than the hero: the hireling, alive, on this map */
+const others = (g: Game): Friendly[] => friendlies(g).filter((f) => f !== g.player);
+
+/**
+ * The monsters a sim step runs (Game.update), added to `out`: those near the hero, alive or dead, in
+ * the grid's order; then those near each other friendly that aren't in yet, so the hireling far off
+ * isn't fought by monsters standing still (docs/M2A-STEP0.md 2.2)
+ */
+export function monstersAround(g: Game, out: Monster[]): Monster[] {
+  const L = g.level;
+  L.monstersNear(g.player.pos, ACTIVE_RADIUS, out);
+  const rest = others(g);
+  if (!rest.length) return out;
+  const seen = new Set(out);
+  for (const f of rest) {
+    for (const m of L.monstersNear(f.pos, ACTIVE_RADIUS)) {
+      if (seen.has(m)) continue;
+      seen.add(m);
+      out.push(m);
+    }
+  }
+  return out;
+}
 
 /**
  * How fast a monster that isn't walking is pushed aside, m/s (separate): a shuffle, as it has
@@ -68,15 +96,22 @@ function updateAura(g: Game, aura: string, lvl: number, pulse: boolean) {
 
 /**
  * Bodies that overlap pushed apart, by their weights; a monster that isn't walking no faster than
- * STILL_PUSH, the rest of it on the hero or the monster walking into it, which so goes round it.
- * The hero charging shoves what stands aside.
+ * STILL_PUSH, the rest of it on the hero, the hireling or the monster walking into it, which so goes
+ * round it. The hero charging shoves what stands aside.
  */
 export function separate(g: Game, dt: number) {
   const p = g.player;
-  const list = g.level.monstersNear(p.pos, ACTIVE_RADIUS).filter((m) => !m.dead && dist(m.pos, p.pos) < ACTIVE_RADIUS);
+  const near = (f: Friendly) => g.level.monstersNear(f.pos, ACTIVE_RADIUS).filter((m) => !m.dead && dist(m.pos, f.pos) < ACTIVE_RADIUS);
+  const list = near(p);
+  const rest = others(g);
+  for (const f of rest) {
+    const seen = new Set(list);
+    for (const m of near(f)) if (!seen.has(m)) list.push(m);
+  }
   const actors: { pos: P2; radius: number; w: number; still: boolean }[] = [];
   const charging = !p.dead && p.state === 'charge';
   if (!p.dead) actors.push({ pos: p.pos, radius: p.radius, w: charging ? 0.05 : 0.2, still: false });
+  for (const f of rest) actors.push({ pos: f.pos, radius: f.radius, w: 0.2, still: false });
   for (const m of list) actors.push({ pos: m.pos, radius: m.radius, w: m.rank === 'boss' ? 0.25 : 1, still: m.state !== 'move' && m.fleeTime <= 0 });
   const cap = STILL_PUSH * dt;
   const n = actors.length;
@@ -112,13 +147,14 @@ export function separate(g: Game, dt: number) {
     }
   }
   if (!p.dead) p.pos = g.level.map.resolveCircle(p.pos, p.radius);
+  for (const f of rest) f.pos = g.level.map.resolveCircle(f.pos, f.radius);
   // pushed about, monsters still keep out of a town (Level.monsterMap)
   for (const m of list) m.pos = g.level.monsterMap.resolveCircle(m.pos, m.radius);
 }
 
 export function updateProjectiles(g: Game, dt: number) {
   const L = g.level;
-  const p = g.player;
+  const friends = friendlies(g);
   for (const pr of L.projectiles) {
     pr.age += dt;
     pr.life -= dt;
@@ -135,10 +171,13 @@ export function updateProjectiles(g: Game, dt: number) {
       continue;
     }
     if (pr.faction === 'monster') {
-      if (!p.dead && dist(pr.pos, p.pos) < pr.radius + p.radius) {
+      // the first of the hero's side it reaches, the hero first (one dead by now is passed)
+      for (const p of friends) {
+        if (p.dead || dist(pr.pos, p.pos) >= pr.radius + p.radius) continue;
         if (pr.owner && (pr.owner as Monster).def) monsterStrike(g, pr.owner as Monster, p, { ...pr.dmg });
         else applyDamage(g, p, { ...pr.dmg }, pr.pos);
         projectileImpact(g, pr);
+        break;
       }
     } else {
       for (const m of L.monstersTouching(pr.pos, pr.radius)) {
@@ -164,9 +203,8 @@ function projectileImpact(g: Game, pr: Projectile) {
     const cold = pr.splashKind === 'cold';
     g.fx.burst(cold ? 'ice_shatter' : 'fireblast', pr.pos, { radius: pr.splash });
     g.sfx.play(cold ? 'skill.cold_impact' : 'skill.fire_impact', { pos: pr.pos, vol: 0.6 });
-    const p = g.player;
-    if (pr.faction === 'monster' && !p.dead && dist(pr.pos, p.pos) < pr.splash + p.radius && !pr.hit.has(p.id)) {
-      applyDamage(g, p, { ...pr.dmg, spell: true }, pr.pos);
+    if (pr.faction === 'monster') {
+      for (const p of friendlies(g)) if (!p.dead && dist(pr.pos, p.pos) < pr.splash + p.radius && !pr.hit.has(p.id)) applyDamage(g, p, { ...pr.dmg, spell: true }, pr.pos);
     } else if (pr.faction === 'player') {
       // the monster hit head-on already took the full packet
       for (const m of g.level.monstersTouching(pr.pos, pr.splash)) {

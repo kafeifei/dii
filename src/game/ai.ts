@@ -15,12 +15,29 @@ import { applyDamage, monsterStrike } from './combat';
 import * as A from './d2/monai';
 import { attackAt, missileDamage, missileFlight, monLvl, skillMissile, type AttackMode } from './d2/monstats';
 import type { Game } from './game';
+import type { Friendly } from './merc';
 import { Monster, type MonsterAct } from './monster';
 import { face, faceNow, moveBy, stepToward } from './movement';
 import { DelayedBlast, Projectile } from './objects';
+import { Player } from './player';
 
 const F = A.frames;
 const SUB = A.subtiles(1);
+
+/**
+ * How far off a friendly may be a monster's target at all (docs/M2A.md 怪物: the nearer of the hero
+ * and the hireling, neither in a town nor 55 subtiles or more off); its notice range decides after
+ */
+const TARGET_RANGE = A.subtiles(55);
+
+/**
+ * The hero's side a monster can go for: the hero and the hireling, alive, on this map
+ * (Game.friendlies); a stand-in game (the seamless test's) has only its hero
+ */
+const friendlies = (g: Game): Friendly[] => g.friendlies?.() ?? (g.player.dead ? [] : [g.player]);
+
+/** the friendly it goes for, as it last thought (Monster.target); with none, the hero, as every monster did before there was another */
+const foe = (g: Game, m: Monster): Friendly => m.target ?? g.player;
 
 /** a roll between two damage ends: a whole one, unless an end is fractional (poison's totals) */
 const between = (lo: number, hi: number) => (Number.isInteger(lo) && Number.isInteger(hi) ? randInt(lo, Math.max(lo, hi)) : lo + Math.random() * Math.max(0, hi - lo));
@@ -230,7 +247,7 @@ function stand(m: Monster, frames: number) {
 function go(g: Game, m: Monster, to: P2 | null, o: { bonus?: number; steps?: number; len?: number; fallback?: boolean; reach?: number } = {}) {
   const path = A.subtiles(Math.min(A.PATH_MAX, o.len ?? A.PATH_STEP));
   const left = !to ? path : o.len ? Math.min(dist(m.pos, to) + 0.5, path) : dist(m.pos, to) + 0.5;
-  const near = !to && o.steps ? m.radius + g.player.radius + A.stepStop(o.steps) : 0;
+  const near = !to && o.steps ? m.radius + foe(g, m).radius + A.stepStop(o.steps) : 0;
   m.move = {
     to: to && { ...to },
     speed: m.moveSpeed(o.bonus ?? 0),
@@ -245,11 +262,11 @@ function go(g: Game, m: Monster, to: P2 | null, o: { bonus?: number; steps?: num
 }
 
 /**
- * Where a move at the hero ends, centre to centre: in its blow's reach once it sees them, else right
+ * Where a move at its target ends, centre to centre: in its blow's reach once it sees them, else right
  * up to them, round what's between (the game's); or where its steps stop it (`near`), if farther
  */
 function heroReach(g: Game, m: Monster, near: number): number {
-  return Math.max(near, m.hasLos ? (meleeReach(m) + g.player.radius) * 0.9 : 0.3);
+  return Math.max(near, m.hasLos ? (meleeReach(m) + foe(g, m).radius) * 0.9 : 0.3);
 }
 
 /** a spot to walk to near `to` the monster can stand on, or null (D2's path to it would fail) */
@@ -266,9 +283,9 @@ function wander(g: Game, m: Monster, n: number, bonus = 0) {
   else stand(m, 10);
 }
 
-/** walk off from the hero (D2GAME_AICORE_Escape, AiTactics.cpp:454-478); whether it could */
+/** walk off from its target (D2GAME_AICORE_Escape, AiTactics.cpp:454-478); whether it could */
 function escape(g: Game, m: Monster, n: number, bonus = 0): boolean {
-  const to = spot(g, m, A.escapePoint(m.pos, g.player.pos, n));
+  const to = spot(g, m, A.escapePoint(m.pos, foe(g, m).pos, n));
   if (!to || dist(to, m.pos) < SUB) return false;
   go(g, m, to, { bonus });
   return true;
@@ -279,7 +296,7 @@ function escape(g: Game, m: Monster, n: number, bonus = 0): boolean {
  * 6, half the time each): D2's two side-stepping paths, here an arc of `n` subtiles round them
  */
 function circle(g: Game, m: Monster, n: number, bonus = 0) {
-  const p = g.player.pos;
+  const p = foe(g, m).pos;
   const r = Math.max(SUB, dist(m.pos, p));
   const a = Math.atan2(m.pos.x - p.x, m.pos.z - p.z) + ((chance(0.5) ? 1 : -1) * A.subtiles(n)) / r;
   const to = spot(g, m, { x: p.x + Math.sin(a) * r, z: p.z + Math.cos(a) * r });
@@ -289,7 +306,7 @@ function circle(g: Game, m: Monster, n: number, bonus = 0) {
 
 /** walk to `desired` subtiles from the hero, `step` at most (AITACTICS_MoveInRadiusToTarget, AiTactics.cpp:722-765) */
 function keepAt(g: Game, m: Monster, step: number, desired: number, bonus = 0) {
-  const p = g.player.pos;
+  const p = foe(g, m).pos;
   const d = dist(m.pos, p) / SUB;
   const k = Math.min(Math.abs(d - desired), step) * Math.sign(d - desired);
   const l = Math.max(1e-6, dist(m.pos, p));
@@ -306,7 +323,7 @@ function begin(g: Game, m: Monster, act: MonsterAct) {
   const cast = act.kind === 'raise' || act.kind === 'cry' || act.kind === 'summon' || act.kind === 'teleport' || (act.kind === 'missile' && m.def.shootIn === 'cast');
   const rate = 1 + auraBuff(g, m).rate / 100;
   m.setState(cast ? 'cast' : 'attack', 1 / (m.attackSpeed * rate * Math.max(0.1, m.slowFactor())));
-  faceNow(m, act.corpse?.pos ?? act.to ?? g.player.pos);
+  faceNow(m, act.corpse?.pos ?? act.to ?? foe(g, m).pos);
 }
 
 /** a blow in a mode */
@@ -519,11 +536,14 @@ function raisable(c: Monster) {
   return { m: c, pos: c.pos, dead: c.dead, deathTime: c.deathTime, rank: c.rank, kind: lookKey(c.def.row), spent: !c.corpseRaisable, owner: c.leader };
 }
 
-/** nothing alive stands on a corpse, so it can get up there (MONSTERSPAWN_CheckSkillPlacement; SkillMonst.cpp:1310-1312) */
+/**
+ * nothing alive stands on a corpse, so it can get up there (MONSTERSPAWN_CheckSkillPlacement;
+ * SkillMonst.cpp:1310-1312): no monster, no friendly (the hero, lying dead or not, as ever)
+ */
 function clearOver(g: Game, c: Monster): boolean {
   for (const o of g.level.monstersNear(c.pos, 1.5)) if (!o.dead && o !== c && dist(o.pos, c.pos) < (o.radius + c.radius) * 0.8) return false;
-  const p = g.player;
-  return dist(p.pos, c.pos) >= (p.radius + c.radius) * 0.8;
+  for (const f of [g.player, ...friendlies(g)]) if (dist(f.pos, c.pos) < (f.radius + c.radius) * 0.8) return false;
+  return true;
 }
 
 /** AITHINK_Fn014_QuillRat (AiThink.cpp:1050-1123): wanders until the hero is near, then shoots its quills (A2) and backs off */
@@ -620,7 +640,7 @@ function skeletonMage(g: Game, m: Monster, t: Target) {
 function fallback(g: Game, m: Monster, t: Target) {
   if (t.combat) return blow(g, m, a1or2(m, 50));
   const ms = m.missile();
-  if (ms && m.hasLos && dist(m.pos, g.player.pos) < A.subtiles(15) && roll(50)) {
+  if (ms && m.hasLos && dist(m.pos, foe(g, m).pos) < A.subtiles(15) && roll(50)) {
     const i = ms.skill ? (m.def.row.skills ?? []).findIndex((s) => s.skill === ms.skill) : -1;
     if (i >= 0 ? castSkill(g, m, i) : shot(g, m, ms.mode)) return;
   }
@@ -662,7 +682,7 @@ function andariel(g: Game, m: Monster, t: Target) {
  * a step aside; up close she backs off
  */
 function bloodRaven(g: Game, m: Monster, t: Target) {
-  const p = g.player.pos;
+  const p = foe(g, m).pos;
   const home = m.homePos;
   if (t.d > 45) return stand(m, 5);
   const heroHome = dist(p, home) / SUB;
@@ -724,14 +744,42 @@ const THINK: Record<string, Think> = {
 
 // ───────────────────────── thinking ─────────────────────────
 
-/** whether it sees the hero, within its notice range (UNITS_TestCollisionWithUnit, COLLIDE_MISSILE_BARRIER): looked at every 0.25 s, and as it thinks */
+/**
+ * whether it sees its target (foe), `dP` off, within its notice range (UNITS_TestCollisionWithUnit,
+ * COLLIDE_MISSILE_BARRIER): looked at every 0.25 s, and as it thinks
+ */
 function sight(g: Game, m: Monster, dP: number) {
   m.losTimer = 0.25;
-  m.hasLos = dP < A.subtiles(A.noticeRange(m.def.row, m.difficulty)) + 1 && g.level.map.los(m.pos, g.player.pos);
+  m.hasLos = dP < A.subtiles(A.noticeRange(m.def.row, m.difficulty)) + 1 && g.level.map.los(m.pos, foe(g, m).pos);
 }
 
-/** the hero is no target: dead, or in a town (AIUTIL_CanSelectHostileTarget: not if DUNGEON_IsRoomInTown) */
-const gone = (g: Game) => g.player.dead || g.level.inTown(g.player.pos);
+/** a friendly that is no target: dead, or in a town (AIUTIL_CanSelectHostileTarget: not if DUNGEON_IsRoomInTown) */
+const gone = (g: Game, f: Friendly) => f.dead || g.level.inTown(f.pos);
+
+/** its target is no target any more (gone) */
+const lost = (g: Game, m: Monster) => gone(g, foe(g, m));
+
+/** none of the hero's side is a target anywhere: all of them dead or in a town */
+const noneLeft = (g: Game) => friendlies(g).every((f) => gone(g, f));
+
+/**
+ * The friendly a monster at `from` goes for (docs/M2A.md 怪物): the nearest of the hero's side that
+ * is alive, not in a town and within 55 subtiles (TARGET_RANGE); null when none is. Its notice
+ * range, sight and blindness then decide whether it finds them (findTarget)
+ */
+export function friendlyTarget(g: Game, m: Monster, from: P2 = m.pos): Friendly | null {
+  let best: Friendly | null = null;
+  let bd = TARGET_RANGE;
+  for (const f of friendlies(g)) {
+    if (gone(g, f)) continue;
+    const d = dist(from, f.pos);
+    if (d < bd || (d === bd && !best)) {
+      best = f;
+      bd = d;
+    }
+  }
+  return best;
+}
 
 /**
  * The hero as its target (AIUTIL_FindAiTarget, AiUtil.cpp:672-879): within its notice range (MonStats
@@ -742,11 +790,12 @@ const gone = (g: Game) => g.player.dead || g.level.inTown(g.player.pos);
  * a maze's preset rooms aren't: out there a monster notices a hero behind a tree or a rock as well.
  */
 function findTarget(g: Game, m: Monster, dP: number): Target | null {
-  const p = g.player;
+  // the friendly it goes for this thought (think: friendlyTarget), `dP` off
+  const p = m.target;
   // after a walk at them it couldn't make, this once by sight, wherever it is (AI flag 0x40, AiUtil.cpp:684-688)
   const mustSee = m.mustSee;
   m.mustSee = false;
-  if (gone(g)) return null;
+  if (!p) return null;
   const d = dP / SUB;
   if (d >= A.noticeRange(m.def.row, m.difficulty)) return null;
   if (!m.hasLos && (mustSee || (!m.awake && g.level.areaAt(m.pos.x, m.pos.z).kind === 'dungeon'))) return null;
@@ -771,9 +820,12 @@ export function notice(g: Game, m: Monster) {
   }
 }
 
-/** with no target: home if it had the hero (the game's: none waits at a camp's gate), wandering if just hit, else it stands */
+/**
+ * with no target: home if it had the hero's side and none of them is a target any more (the game's:
+ * none waits at a camp's gate), wandering if just hit, else it stands; `dP` the hero's distance, or its target's
+ */
 function noTarget(g: Game, m: Monster, dP: number) {
-  if (m.awake && gone(g) && dist(m.pos, m.homePos) > 0.5) return go(g, m, m.homePos, { reach: 0.5 });
+  if (m.awake && noneLeft(g) && dist(m.pos, m.homePos) > 0.5) return go(g, m, m.homePos, { reach: 0.5 });
   // just hit and nothing to fight back: it moves off (AITACTICS_FindTargetOrIdleInNeutralMode, AiTactics.cpp:40-48)
   if (m.wasHit) return wander(g, m, 5);
   stand(m, A.idleWithoutTarget(dP / SUB));
@@ -848,9 +900,14 @@ function leash(g: Game, m: Monster): boolean {
   return true;
 }
 
-/** it thinks (AITHINK_ExecuteMonsterAiTick, AiThink.cpp:17340-17411), its line of sight to the hero looked at afresh */
-function think(g: Game, m: Monster, dP: number) {
+/**
+ * it thinks (AITHINK_ExecuteMonsterAiTick, AiThink.cpp:17340-17411) where it stood as this step began
+ * (`from`): the friendly it goes for chosen (friendlyTarget), its line of sight to them looked at afresh
+ */
+function think(g: Game, m: Monster, from: P2) {
   m.thinkTimer = 0;
+  m.target = friendlyTarget(g, m, from);
+  const dP = dist(from, foe(g, m).pos);
   sight(g, m, dP);
   if (!leash(g, m)) {
     const t = findTarget(g, m, dP);
@@ -874,8 +931,8 @@ function think(g: Game, m: Monster, dP: number) {
  */
 function walk(g: Game, m: Monster, dt: number): boolean {
   const mv = m.move!;
-  const p = g.player;
-  if (!mv.to && gone(g)) {
+  const p = foe(g, m);
+  if (!mv.to && lost(g, m)) {
     m.move = null;
     return false;
   }
@@ -941,10 +998,12 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
     kv.z *= decay;
   }
   const slow = m.slowFactor();
-  const dP = dist(m.pos, p.pos);
+  // where it stands as it starts this step: what it thinks from, after the walk below
+  const from = { x: m.pos.x, z: m.pos.z };
+  const t = foe(g, m);
   m.losTimer -= dt;
-  if (m.losTimer <= 0) sight(g, m, dP);
-  if (m.aura) auraAround(g, m, dt, dP);
+  if (m.losTimer <= 0) sight(g, m, dist(m.pos, t.pos));
+  if (m.aura) auraAround(g, m, dt);
 
   if (m.state === 'hit') {
     m.stateTime += dt;
@@ -965,8 +1024,8 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
   if (m.stunTime > 0) return;
 
   if (m.state === 'attack' || m.state === 'cast') {
-    // the hero stepped into a town (or fell) mid-swing: no target any more, the swing is dropped
-    if (gone(g) && (m.act?.kind === 'blow' || m.act?.kind === 'missile' || m.act?.kind === 'spray')) {
+    // its target stepped into a town (or fell) mid-swing: no target any more, the swing is dropped
+    if (lost(g, m) && (m.act?.kind === 'blow' || m.act?.kind === 'missile' || m.act?.kind === 'spray')) {
       m.act = null;
       stand(m, delay(m));
       return;
@@ -976,7 +1035,7 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
       m.actionFired = true;
       fire(g, m);
     }
-    if (m.stateTime < m.stateDur * 0.5 && m.act?.kind !== 'raise' && m.act?.kind !== 'summon') face(m, p.pos, dt, 8);
+    if (m.stateTime < m.stateDur * 0.5 && m.act?.kind !== 'raise' && m.act?.kind !== 'summon') face(m, t.pos, dt, 8);
     if (m.stateTime >= m.stateDur) {
       m.act = null;
       // an attack's end: it stands its AI delay before it thinks again (MonsterMode.cpp:1080-1115)
@@ -985,7 +1044,7 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
     return;
   }
   if (m.fleeTime > 0) {
-    // the hero's weapon made it flee: away from them
+    // the hero's weapon made it flee: away from them, whomever it was after
     m.fleeTime -= dt;
     const away = { x: m.pos.x + (m.pos.x - p.pos.x) * 2, z: m.pos.z + (m.pos.z - p.pos.z) * 2 };
     stepToward(g, m, away, m.walkSpeed * slow, dt, 0.2, 400);
@@ -998,14 +1057,14 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
     m.thinkTimer -= dt;
     if (m.thinkTimer > 0) return;
   }
-  think(g, m, dP);
+  think(g, m, from);
 }
 
 // ───────────────────────── what goes off ─────────────────────────
 
 /** an attack's or cast's moment: the blow lands, the missile flies, the corpse gets up */
 function fire(g: Game, m: Monster) {
-  const p = g.player;
+  const p = foe(g, m);
   const act = m.act;
   if (!act) return;
   switch (act.kind) {
@@ -1087,34 +1146,37 @@ function summon(g: Game, m: Monster, at: P2) {
 }
 
 /**
- * An aura-enchanted unique's aura on the hero (MonUMod 30): Conviction's resistances and defense
- * and Holy Freeze's slow while they are in it, the holy auras' damage every perdelay
+ * An aura-enchanted unique's aura on the hero's side (MonUMod 30): Holy Freeze's slow on whoever is
+ * in it, Conviction's resistances and defense on the hero (the hireling's come with her), the holy
+ * auras' damage on each of them every perdelay
  */
-function auraAround(g: Game, m: Monster, dt: number, dP: number) {
+function auraAround(g: Game, m: Monster, dt: number) {
   const a = m.aura!;
   const n = a.n;
-  const p = g.player;
-  const inside = !p.dead && dP <= n.radius + p.radius && !g.level.inTown(p.pos);
-  if (inside && n.res !== undefined) {
-    p.convictTime = 0.3;
-    p.convictRes = Math.max(p.convictRes, n.res);
-    p.convictDef = Math.max(p.convictDef, n.def ?? 0);
-  }
-  if (inside && n.slow) {
-    p.chillTime = Math.max(p.chillTime, 0.3);
-    p.chillAmount = Math.max(p.chillTime > 0.3 ? p.chillAmount : 0, n.slow / 100);
+  const inside = friendlies(g).filter((f) => dist(m.pos, f.pos) <= n.radius + f.radius && !g.level.inTown(f.pos));
+  for (const p of inside) {
+    if (n.res !== undefined && p instanceof Player) {
+      p.convictTime = 0.3;
+      p.convictRes = Math.max(p.convictRes, n.res);
+      p.convictDef = Math.max(p.convictDef, n.def ?? 0);
+    }
+    if (n.slow) {
+      p.chillTime = Math.max(p.chillTime, 0.3);
+      p.chillAmount = Math.max(p.chillTime > 0.3 ? p.chillAmount : 0, n.slow / 100);
+    }
   }
   if (!n.pulse) return;
   m.auraPulse -= dt;
   if (m.auraPulse > 0) return;
   m.auraPulse = n.pulse.every;
   g.fx.burst(n.pulse.elem === 'fire' ? 'holyfire' : n.pulse.elem === 'cold' ? 'freeze' : 'lightning', m.pos, { radius: n.radius });
-  if (!inside) return;
-  const pk = emptyPacket();
-  pk[n.pulse.elem] = between(n.pulse.min, n.pulse.max);
-  pk.spell = true;
-  pk.source = m;
-  applyDamage(g, p, pk, m.pos);
+  for (const p of inside) {
+    const pk = emptyPacket();
+    pk[n.pulse.elem] = between(n.pulse.min, n.pulse.max);
+    pk.spell = true;
+    pk.source = m;
+    applyDamage(g, p, pk, m.pos);
+  }
 }
 
 /**
@@ -1167,11 +1229,10 @@ export function corpseGone(g: Game, m: Monster) {
   if (j >= 0) d.splice(j, 1);
 }
 
-/** damage from an exploding corpse etc. */
+/** damage from an exploding corpse etc.: a monster's on each of the hero's side in it */
 export function blastDamage(g: Game, b: DelayedBlast) {
   if (b.faction === 'monster') {
-    const p = g.player;
-    if (!p.dead && dist(p.pos, b.pos) <= b.radius + p.radius) applyDamage(g, p, { ...b.dmg }, b.pos);
+    for (const p of friendlies(g)) if (!p.dead && dist(p.pos, b.pos) <= b.radius + p.radius) applyDamage(g, p, { ...b.dmg }, b.pos);
   } else {
     for (const m of g.level.monstersTouching(b.pos, b.radius)) {
       if (!m.dead && dist(m.pos, b.pos) <= b.radius + m.radius) applyDamage(g, m, { ...b.dmg }, b.pos);

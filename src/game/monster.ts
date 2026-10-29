@@ -5,6 +5,7 @@ import { Actor, type Resists } from './actor';
 import { attackAt, attackElems, monStats, monsterMissile, type AttackMode, type MonAttack, type MonElem, type MonPlus, type MonRank } from './d2/monstats';
 import { auraEnchant, auraNumbers, type AuraNumbers } from './d2/monai';
 import { MPS_PER_VELOCITY } from './d2/stats';
+import type { Friendly } from './merc';
 
 export type MonsterRank = MonRank;
 
@@ -92,6 +93,11 @@ export class Monster extends Actor {
   coldEffect: number;
   /** it has noticed the hero (D2's AI flag 8, AiUtil.cpp:855-861): from then on it needs no line of sight to find them */
   awake = false;
+  /**
+   * the friendly it goes for, as it last thought (src/game/ai.ts friendlyTarget): the nearer of the
+   * hero and the hireling within reach of being a target; null when neither was, when it goes by the hero
+   */
+  target: Friendly | null = null;
   /** the hero's weapon made it flee ("hit causes monster to flee"), seconds */
   fleeTime = 0;
   /** seconds until it next thinks, while it stands (D2's AITHINK event) */

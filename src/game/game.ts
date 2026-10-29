@@ -20,12 +20,13 @@ import { GroundItem, WorldObject } from './objects';
 import { CHARGE_PREFIX, Player } from './player';
 import { startCast, toggleAura, updatePlayer, type PlayerAction } from './playerctl';
 import { celebrateLevelUp, killMonster, killPlayer, onProc, rollLoot, wake } from './kills';
+import type { Friendly, Merc } from './merc';
 import { layOutCorpses, respawn } from './bodies';
 import { interact } from './interact';
 import { npcLeft, npcSpoke, npcTalk, refreshShop, talkTo } from './townsfolk';
 import { castTownPortal, closePortals, enterArea, enterLevel, enterTrial, openTownPortal, readTownPortal, teleportWithin, travel, travelToArea, updateArea, walkExits, type Trip } from './travel';
 import { autoBeltInsert, beltInsert, drink, drinkable, dropBlock, dropFromBag, dropItem, heldGrids, layOutUnplaced, moveStashGold, pickupGround, readHeld, refuseDrop, spawnDrops, stashBlock, useBelt, type Finds } from './items';
-import { ACTIVE_RADIUS, chargedBolts, clearCorpses, separate, updateAuras, updateBlasts, updateHammers, updateProjectiles } from './fight';
+import { chargedBolts, clearCorpses, monstersAround, separate, updateAuras, updateBlasts, updateHammers, updateProjectiles } from './fight';
 import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
 import type { Killer } from './actor';
@@ -126,6 +127,8 @@ export type TouchNear = { ground: GroundItem; obj?: undefined } | { obj: WorldOb
 
 export class Game {
   player: Player;
+  /** the hireling on the map the hero is on, beside them (src/game/merc.ts); none yet */
+  merc: Merc | null = null;
   level!: Level;
   /** the map the far end of the hero's town portal is on (the camp's end leads back to it) */
   portalLevel: Level | null = null;
@@ -147,7 +150,7 @@ export class Game {
   worldSeed = 0;
   /** what the game remembers of the hero's comings and goings (src/game/travel.ts) */
   trip: Trip = { atClosed: null, leftKind: new Map(), wentUnder: false };
-  /** the monsters this sim step runs: those near the hero (Level.monstersNear) */
+  /** the monsters this sim step runs: those near the hero, and near the hireling (fight.ts monstersAround) */
   private stepped: Monster[] = [];
   /**
    * when each corpse last aged (Monster.deathTime), by its map's clock (Level.time): those far off,
@@ -670,13 +673,13 @@ export class Game {
     // self-repairing items mend a point now and then, on the shared pages too while they can change
     p.mendItems(dt, this.shared.readOnly ? [] : this.shared.pages);
     this.quests.update(dt);
-    // only the monsters near the hero act; the rest are out of play until the hero comes back
-    // (MonsterGrid), and so cost nothing. They go in the grid's order, cell by cell, not the list's:
-    // one added to the level during a step would wait for the next (none is: spawn.ts fills a map
-    // as it is made, and a raised corpse is one of those already)
+    // only the monsters near the hero (and the hireling) act; the rest are out of play until one
+    // comes back (MonsterGrid), and so cost nothing. They go in the grid's order, cell by cell, not
+    // the list's: one added to the level during a step would wait for the next (none is: spawn.ts
+    // fills a map as it is made, and a raised corpse is one of those already)
     const stepped = this.stepped;
     stepped.length = 0;
-    L.monstersNear(p.pos, ACTIVE_RADIUS, stepped);
+    monstersAround(this, stepped);
     for (const m of stepped) {
       m.prevPos.x = m.pos.x;
       m.prevPos.z = m.pos.z;
@@ -1015,6 +1018,17 @@ export class Game {
   }
 
   // ───────────────────────── combat helpers (src/game/fight.ts) ─────────────────────────
+
+  /**
+   * The hero's side on this map, alive, what monsters go for (ai.ts friendlyTarget) and their blows,
+   * missiles and blasts land on: the hero, and the hireling with them (docs/M2A-STEP0.md 2.2)
+   */
+  friendlies(): Friendly[] {
+    const out: Friendly[] = [];
+    if (!this.player.dead) out.push(this.player);
+    if (this.merc && !this.merc.dead) out.push(this.merc);
+    return out;
+  }
 
   chargedBolts(m: Monster) {
     chargedBolts(this, m);

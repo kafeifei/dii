@@ -7,7 +7,9 @@
 // the corpse lies dead (no experience the second time) and never one cleared from the map, a lead
 // passes on in D2's order, a hit with no get-hit is one to a quill rat's AI, a multiple-shots unique
 // looses three quills, a cursed unique's landed blow doubles the hero's physical damage taken, a
-// unique's minion walks back to it and no more once it is dead, a struck sleeper wakes its pack; a
+// unique's minion walks back to it and no more once it is dead, a struck sleeper wakes its pack; with
+// a hireling made here, a monster goes for the nearer of the two, neither in the camp nor 55 subtiles
+// off, takes the other once its target is dead, and fights her with the hero in the camp; a
 // sleeping fallen notices the hero behind a tree or a rock out there, in the Den of Evil only in sight.
 import assert from 'node:assert/strict';
 
@@ -504,6 +506,59 @@ export default async (load) => {
     assert.ok(sleepers.every((m) => m.awake), `struck, a sleeper woke ${sleepers.filter((m) => m.awake).length - 1} of its pack of 3`);
     assert.ok(said.some((t) => t.includes('被惊醒了')), 'a boss struck awake said nothing');
 
+    // the hero's side (docs/M2A-STEP0.md 2.2), a hireling made here: a monster goes for the nearer
+    // of the two; one in the camp, or 55 subtiles or more off, isn't a target; its target dead, it
+    // takes the other; the hero in the camp, it fights her out in the field, she being near it
+    let sides = '';
+    {
+      const { Merc } = await load('/src/game/merc.ts');
+      const { friendlyTarget } = await load('/src/game/ai.ts');
+      clear();
+      const merc = new Merc(at(2, 0));
+      merc.life = merc.maxLife = 1e6;
+      merc.level = 5;
+      game.merc = merc;
+      try {
+        const sk = place('skeleton1', at(4, 0));
+        assert.equal(friendlyTarget(game, sk), merc, 'she 2 m off, the hero 4: not her');
+        merc.pos = at(9, 0);
+        assert.equal(friendlyTarget(game, sk), p, 'she 5 m off, the hero 4: not the hero');
+        // 55 subtiles from where it stands, the hero just within, then just past; she past it
+        const R = 55 * M_PER_SUBTILE;
+        merc.pos = at(-0.5, 0);
+        assert.equal(friendlyTarget(game, sk, at(R - 0.2, 0)), p, 'the hero just within 55 subtiles: not the target');
+        assert.equal(friendlyTarget(game, sk, at(R + 0.3, 0)), null, 'both 55 subtiles or more off: a target all the same');
+        // she in the camp, right by it: not her
+        const camp = L.layout.start;
+        assert.ok(L.inTown(camp));
+        merc.pos = { ...camp };
+        assert.notEqual(friendlyTarget(game, sk, camp), merc, 'she in the camp: a target all the same');
+        // the hero in the camp, she out by it: it goes for her and strikes her (it is run though the hero is far off)
+        game.teleportWithin(camp);
+        merc.pos = at(2.2, 0);
+        merc.prevPos = { ...merc.pos };
+        sk.awake = true;
+        assert.equal(friendlyTarget(game, sk), merc);
+        const struck = run(8, () => merc.life < merc.maxLife);
+        assert.ok(struck !== null && sk.target === merc, `the hero in the camp, she ${dist(merc.pos, sk.pos).toFixed(1)} m off: never struck (its target ${sk.target === merc ? 'her' : sk.target === p ? 'the hero' : 'none'}, ${sk.state})`);
+        // back by her, the hero farther: her; she dies: the hero
+        clear();
+        merc.life = merc.maxLife;
+        merc.pos = at(2, 0);
+        merc.prevPos = { ...merc.pos };
+        const sk2 = place('skeleton1', at(3.6, 0));
+        sk2.awake = true;
+        assert.ok(run(3, () => sk2.target === merc) !== null, 'it never went for her, the nearer');
+        merc.dead = true;
+        const switched = run(3, () => sk2.target === p);
+        assert.ok(switched !== null, `she dead, it never took the hero: its target ${sk2.target === merc ? 'her still' : 'none'}`);
+        sides = `the nearer of two, none in the camp or 55 subtiles off, the hireling struck ${struck.toFixed(1)} s in with the hero in the camp, the hero taken ${switched.toFixed(1)} s after she fell`;
+      } finally {
+        game.merc = null;
+        clear();
+      }
+    }
+
     // noticing: a sleeping fallen within its notice range, the hero out of its sight or in it
     /** a spot 3–10.5 m from `h` in area `id`, clear, in the sight of it or out of it */
     const ringSpot = (Lv, id, h, inside) => {
@@ -561,7 +616,7 @@ export default async (load) => {
     run(1.5);
     assert.ok(!denMs[0].awake && denMs[1].awake, `in the den: the one ${denD.toFixed(1)} m off out of sight awake ${denMs[0].awake}, the one in sight ${denMs[1].awake}`);
     const noticing = `a sleeper behind cover ${moorD.toFixed(1)} m off woke in Blood Moor, in the den one ${denD.toFixed(1)} m off slept on`;
-    console.log(`  parameters by difficulty, fright, raises, walks, haste, curse, auras, reach, leash; in play: ${fleeLog}; a fallen raised ${raisedAt.toFixed(1)} s after it fell; the lead passed on in D2's order; a light hit shot back at twice; three quills; cursed ${cursed}/200; ${leashLog}; a struck sleeper woke its pack; ${noticing}`);
+    console.log(`  parameters by difficulty, fright, raises, walks, haste, curse, auras, reach, leash; in play: ${fleeLog}; a fallen raised ${raisedAt.toFixed(1)} s after it fell; the lead passed on in D2's order; a light hit shot back at twice; three quills; cursed ${cursed}/200; ${leashLog}; a struck sleeper woke its pack; ${sides}; ${noticing}`);
   } finally {
     debugOpts.god = god;
     localStorage.clear();

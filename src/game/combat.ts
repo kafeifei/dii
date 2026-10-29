@@ -8,9 +8,9 @@ import { MATH_RAND } from '../items/make';
 import { emptyPacket, type Actor, type DamagePacket, type Killer } from './actor';
 import { blockAnimGap, hitRecoveryOdds } from './d2/frames';
 import { amplifyCurse } from './d2/monai';
-import { RES_FLOOR, absorb, attackRating, charStats, hitChance, mitigate, resistance } from './d2/stats';
+import { RES_FLOOR, absorb, attackRating, charStats, difficulty, hitChance, mitigate, resistance } from './d2/stats';
 import type { Game } from './game';
-import { Merc } from './merc';
+import { Merc, mercDied, mercStruck, type Friendly } from './merc';
 import { Monster } from './monster';
 import { Player } from './player';
 
@@ -103,11 +103,14 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
   const res = target.resists();
   const isPlayer = target instanceof Player;
   const pl = isPlayer ? (target as Player) : null;
+  const mc = target instanceof Merc ? target : null;
   // Diablo II's resistances (game/d2/stats.ts): the hero's already carry the difficulty's penalty
-  // and caps (Player.recalc); a monster's lose the attacker's pierce, unless 100 or more
+  // and caps (Player.recalc); the hireling's take them as the hero's do, the hero's difficulty's
+  // penalty and 75 at most (docs/M2A-STEP0.md 2.2); a monster's lose the attacker's pierce, unless 100 or more
   // a unique's Conviction round the hero takes its share off their resistances, at least −100 (RES_FLOOR)
   const convict = pl && pl.convictTime > 0 ? pl.convictRes : 0;
-  const resOf = (e: 'fire' | 'cold' | 'light' | 'poison') => (pl ? Math.max(RES_FLOOR, res[e] - (e === 'poison' ? 0 : convict)) : resistance(e, res[e], { monster: true, pierce: (pk.pierceRes ?? 0) + (pk.pierce?.[e] ?? 0) }));
+  const resOf = (e: 'fire' | 'cold' | 'light' | 'poison') =>
+    pl ? Math.max(RES_FLOOR, res[e] - (e === 'poison' ? 0 : convict)) : mc ? resistance(e, res[e], { diff: difficulty(g.player.rules) }) : resistance(e, res[e], { monster: true, pierce: (pk.pierceRes ?? 0) + (pk.pierce?.[e] ?? 0) });
   const m0 = target instanceof Monster ? target : null;
   // +X% damage to undead / demons is part of the physical damage bonus
   const vs = m0 ? (m0.def.undead ? (pk.vsUndead ?? 0) : 0) + (m0.def.demon ? (pk.vsDemon ?? 0) : 0) : 0;
@@ -159,9 +162,9 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
   }
   const noFreeze = pl ? !!pl.stats.bag.cantFreeze : false;
   if ((pk.cold > 0 || pk.chill) && !noFreeze) {
-    // the blow's cold length: a monster's its D2 frames (MonStats El, its enchantments); the hero's
-    // skills and gear (not D2's yet) their own, with the old bonus for the cold done
-    const base = pl ? (pk.chill ?? 0) : (pk.chill ?? 1.5) + Math.min(2, pk.cold * 0.02);
+    // the blow's cold length: a monster's its D2 frames (MonStats El, its enchantments), on the hero
+    // or the hireling; the hero's skills and gear (not D2's yet) their own, with the old bonus for the cold done
+    const base = pl || mc ? (pk.chill ?? 0) : (pk.chill ?? 1.5) + Math.min(2, pk.cold * 0.02);
     chill(target, base, resOf('cold'), !!pl?.stats.bag.halfFreeze);
   }
   const dir = from ? { x: target.pos.x - from.x, z: target.pos.z - from.z } : { x: 0, z: 0 };
@@ -246,6 +249,10 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
     if (pk.mana) p.mana = Math.max(0, p.mana - pk.mana);
     if (src instanceof Monster && total > 0 && p.life > 0) g.onProc('procStruck', src);
     if (p.life <= 0) g.killPlayer();
+  } else if (mc) {
+    // the hireling struck: what she does about it is hers (src/game/merc.ts)
+    g.fx.hit(mc, 'red', dir, total > mc.maxLife * 0.1, mainElem(pk));
+    if (mc.life <= 0) mercDied(g, mc);
   }
   return total;
 }
@@ -340,12 +347,15 @@ function itemBroke(g: Game, p: Player, it: Item) {
 }
 
 /**
- * Monster melee/ranged attack on the player, with Diablo II's hit roll (SUNITDMG_IsHitSuccessful,
- * SUnitDmg.cpp:2446-2563: the attack mode's rating, pk.ar, against the hero's defense, with both
- * levels; a unique's Conviction round them takes its share of that defense off) and block; a landed
- * melee blow wears the hero's armor. Whether it landed.
+ * Monster melee/ranged attack on one of the hero's side: the hireling's is hers (merc.ts mercStruck);
+ * the hero's with Diablo II's hit roll (SUNITDMG_IsHitSuccessful, SUnitDmg.cpp:2446-2563: the attack
+ * mode's rating, pk.ar, against the hero's defense, with both levels; a unique's Conviction round
+ * them takes its share of that defense off) and block; a landed melee blow wears the hero's armor.
+ * Whether it landed.
  */
-export function monsterStrike(g: Game, m: Monster, p: Player, pk: DamagePacket, melee = false): boolean {
+export function monsterStrike(g: Game, m: Monster, t: Friendly, pk: DamagePacket, melee = false): boolean {
+  if (t instanceof Merc) return mercStruck(g, m, t, pk, melee);
+  const p = t;
   if (p.dead) return false;
   if (!pk.spell) {
     const d = p.stats;
