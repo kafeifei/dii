@@ -4,7 +4,7 @@
 // walking in without her, its reward collected in a later game; each difficulty's record apart;
 // saves keeping records (unknown quests too) and old saves loading with none; what counts in the
 // den (not neverCount, only hostile); quest drops by the record (Andarielq); the names from the
-// rename table; every line our own, filled, and on the review page.
+// rename table; every line our own, filled, and on the review page, each one spoken with its takes.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -85,7 +85,7 @@ export default async (load) => {
   check(ACT1_QUESTS.length === 6 && new Set(ACT1_QUESTS.map((q) => q.key)).size === 6, 'six quests');
 
   // ── the lines: ours, filled from the rename tables, all on the review page ──
-  const lines = [...Object.values(DLG.DEN_LINES), ...Object.values(DLG.DEN_LOG), ...Object.values(DLG.LOG_LINES), ...Object.values(DLG.GOSSIP).flat()];
+  const lines = [...Object.values(DLG.DEN_LINES), ...Object.values(DLG.DEN_LOG), ...Object.values(DLG.LOG_LINES), ...Object.values(DLG.GOSSIP).flat(), ...Object.values(DLG.GREETINGS).flatMap((g) => [...g.greeting, ...g.farewell])];
   const official = new Set();
   const officialEn = new Set();
   for (const f of ['quests.json', 'npcs.json', 'areas.json']) {
@@ -119,7 +119,16 @@ export default async (load) => {
     check(!l.zh.includes('艾莉娜'), `the merchant's old name: ${l.zh}`);
     check(review.includes(l.zh), `not on the review page: ${l.zh}`);
   }
-  check(review === (await reviewMarkdown(load)), 'the review page is behind the lines: node tools/dialogue-review.mjs');
+  check(review === (await reviewMarkdown(load)), 'the review page is behind the lines or the recordings: node tools/dialogue-review.mjs');
+  // each line spoken aloud on the page with its recording, a take for each way of saying it, beside its words
+  const { npcLine } = await load('/src/audio/sounds.ts');
+  for (const s of DLG.spokenLines()) {
+    s.lines.forEach((l, i) => {
+      const take = `${npcLine(s.npc, s.id, s.quest)}.${i + 1}`;
+      const row = review.split('\n').find((r) => r.includes(`| \`${take}\``));
+      check(row?.includes(`| ${fillLine(l).zh} |`), `the review page doesn't give ${take} beside its words: ${row}`);
+    });
+  }
 
   // ── the Den of Evil, played ──
   localStorage.clear();

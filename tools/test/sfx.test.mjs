@@ -4,7 +4,8 @@
 // loud and where a sound with a place is heard, which voice a new sound takes
 // over when the limits are reached (a critical sound must always get one), when a line may be said
 // (one at a time, not the same one too often) and in which take (at random, never the last one
-// again, only that one decoded), and what's decoded walking into an area.
+// again, only that one decoded), a townsperson's taking the floor and giving it back when cut short,
+// and what's decoded walking into an area.
 // tools/scenarios/sfx.mjs renders the same in a page.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -58,7 +59,8 @@ const results = (s) => literals(s.replace(/[=!]==?\s*('[^'\n]*'|"[^"\n]*")|('[^'
 
 export default async (load) => {
   const { SOUNDS, PRIORITY, HERO_LINES, LINE, ENTER_LINE, AREA_FILES, areaSound, areaKind, soundsNear, heroLine } = await load('/src/audio/sounds.ts');
-  const { Sfx, spatial, earGains, voiceToSteal, PAN_MAX, Lines, LINE_GAP, LINE_AGAIN, LINE_LATE } = await load('/src/audio/sfx.ts');
+  const { Sfx, spatial, earGains, voiceToSteal, PAN_MAX, Lines, LINE_GAP, LINE_AGAIN, LINE_LATE, SPEECH_LATE } = await load('/src/audio/sfx.ts');
+  const { NPC_LINE, npcLine } = await load('/src/audio/sounds.ts');
   const { FILES } = await load('/src/audio/files.ts');
   const { Buffers } = await load('/src/audio/buffers.ts');
   const { THEMES, WILD_MAPS, isWild, dungeonFloor, themeForFloor } = await load('/src/world/levelgen.ts');
@@ -351,6 +353,40 @@ export default async (load) => {
     const one = M.book('voice.paladin.no_gold', 3 * LINE_AGAIN, 1, () => 0.99);
     check(one?.take === 0 && M.start(one, 3 * LINE_AGAIN, 1) && M.book('voice.paladin.no_gold', 4 * LINE_AGAIN, 1, () => 0.99)?.take === 0, 'a line of one take not said in it every time');
   }
+  // a townsperson's line (Sfx.speak) takes the floor whatever holds it: over the hero mid-line, over
+  // a line still decoding (never said after), however lately it was said, as it goes with its text;
+  // to start within SPEECH_LATE, a greeting never in the take heard last. Cut short, the floor is the
+  // hero's again after LINE_GAP, at once if it hadn't started; a cut of a line gone by changes nothing
+  {
+    check(NPC_LINE.prio === 'critical' && NPC_LINE.vary === 0 && NPC_LINE.vol < LINE.vol && Math.abs(NPC_LINE.vol / LINE.vol - 210 / 255) < 0.01, `a townsperson's line plays as ${JSON.stringify(NPC_LINE)}`);
+    check(npcLine('akara', 'remindOut', 'a1q1') === 'voice.akara.a1q1_remind_out' && npcLine('akara', 'gossip2') === 'voice.akara.gossip2', `npcLine: ${npcLine('akara', 'remindOut', 'a1q1')}`);
+    const L = new Lines();
+    const a = L.book('voice.paladin.no_mana', 10);
+    check(a && L.start(a, 10, 3), 'a line with nothing said was not said');
+    const first = () => 0;
+    const g = L.claim('voice.akara.greeting', 10.5, 3, SPEECH_LATE, first);
+    check(g.take === 0 && L.start(g, 10.5 + SPEECH_LATE - 0.01, 2), "a townsperson's line kept from the floor by the hero's, or by decoding within SPEECH_LATE");
+    check(L.book('voice.paladin.bag_full', 11) === null, 'the hero spoke over a townsperson');
+    const g2 = L.claim('voice.akara.greeting', 12.2, 3, SPEECH_LATE, first);
+    check(g2.take === 1, `the same greeting's take twice running: ${g2.take}`);
+    check(!L.start(g2, 12.2 + SPEECH_LATE + 0.01, 2) && L.book('voice.paladin.bag_full', 12.2 + SPEECH_LATE + 0.02) !== null, "a townsperson's line decoded too late was said, or kept the floor");
+    const M = new Lines();
+    const held = M.book('voice.paladin.rune', 20);
+    const f = M.claim('voice.akara.farewell', 20.1);
+    check(!M.start(held, 20.2, 1) && M.start(f, 20.2, 2), "a hero's line still decoding was said after a townsperson took the floor");
+    M.cut(f, 21);
+    check(M.book('voice.paladin.shrine', 21 + LINE_GAP - 0.01) === null && M.book('voice.paladin.shrine', 21 + LINE_GAP) !== null, `cut short, the hero speaks again ${LINE_GAP} s on`);
+    const N = new Lines();
+    const n1 = N.claim('voice.akara.a1q1_intro', 30);
+    N.cut(n1, 30.2);
+    check(N.book('voice.paladin.rune', 30.2) !== null && !N.start(n1, 30.3, 30), 'a line cut before it started kept the floor, or started');
+    const n2 = N.claim('voice.akara.gossip0', 40);
+    const n3 = N.claim('voice.akara.gossip1', 40.1);
+    check(!N.start(n2, 40.2, 5) && N.start(n3, 40.2, 5), 'a townsperson line taken over before it started was said');
+    N.cut(n2, 41);
+    check(N.book('voice.paladin.rune', 41 + LINE_GAP) === null, 'the cut of a line gone by freed the floor from the one being said');
+  }
+
   // and Sfx says the take booked, decoding only it: a pretended context, its decoder only noting the URL
   {
     const sfx = new Sfx();

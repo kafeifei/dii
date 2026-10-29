@@ -3,14 +3,15 @@ import { Buffers, leadIn, pickVariant, toMono } from './buffers';
 import { FILES, type SoundFiles } from './files';
 import { Players, Stream, type Track } from './music';
 import { Score, seedOf } from './score';
-import { areaKey, areaSound, isNight, LINE, PRIORITY, SOUNDS, VARY, type AmbId, type AreaSound, type Bed, type FileId, type Place, type Playing, type SoundId, type Synth, type VoiceId } from './sounds';
+import { areaKey, areaSound, isNight, LINE, NPC_LINE, PRIORITY, SOUNDS, VARY, type AmbId, type AreaSound, type Bed, type FileId, type Place, type Playing, type SoundId, type Synth, type VoiceId } from './sounds';
 
 /**
  * Game code plays sounds by id (src/audio/sounds.ts); one with a place in the world is heard from
  * the listener, the hero. An id with recorded files (src/audio/files.ts) plays one of them, decoded
  * on first use; any other, or one whose files won't load, is synthesized at runtime with WebAudio.
  * A line spoken (voice.<speaker>.<line>) plays one of its recordings or nothing, one line at a time
- * and one of its takes at random, never the last one again (Lines).
+ * and one of its takes at random, never the last one again (Lines); a townsperson's (speak) at once,
+ * over whatever was being said, and for as long as its text scrolls.
  * Each area has its ambience (recorded loops, or a synthesized bed) and its music (a recorded track
  * streamed, or music composed on the spot), both crossfaded as the hero moves between areas (walking
  * over a seam of the overworld, or by a jump), or playing on where the next area's is the same.
@@ -143,13 +144,32 @@ export const LINE_GAP = 1.2;
 export const LINE_AGAIN = 8;
 /** a line still decoding when its moment comes is said once it's in, if that's within this; later it would go with nothing */
 export const LINE_LATE = 0.8;
+/**
+ * a townsperson's line still decoding when it's asked for (Sfx.speak) is said once it's in, if that's
+ * within this: its text waits for it (src/ui/npc.ts), and scrolls on without it after that
+ */
+export const SPEECH_LATE = 1.5;
+/** a line cut short fades out over this, rather than stopping with a click */
+export const SPEECH_CUT = 0.06;
 
-/** a line asked for, and given the floor (Lines.book) */
+/** a line asked for, and given the floor (Lines.book, Lines.claim) */
 export interface Booking {
   id: string;
   at: number;
   /** which of its takes is said (the index of its file) */
   take: number;
+  /** how late it may start and still be said (default LINE_LATE) */
+  late?: number;
+}
+
+/** a townsperson's line being said (Sfx.speak) */
+export interface Speech {
+  /** its take's length in seconds, once it starts; null if it never will (no take that loads, too late, stopped first) */
+  readonly started: Promise<number | null>;
+  /** seconds of it said so far, by the sound's clock: 0 until it starts, and where it was when stopped */
+  elapsed(): number;
+  /** cut it short, a quick fade (its text skipped, its panel shut); the floor is free again */
+  stop(): void;
 }
 
 /**
@@ -157,7 +177,8 @@ export interface Booking {
  * again for a while, however often its moment comes; each time one of its takes at random, never the
  * one heard last while it has another. A line is booked as soon as it's asked for, so nothing else
  * starts while it decodes; then it starts, holding the floor until it's done, or gives the floor up.
- * Kept apart from WebAudio so it runs under Node too; times are the AudioContext's, in seconds.
+ * A townsperson's line takes the floor whatever holds it (claim). Kept apart from WebAudio so it runs
+ * under Node too; times are the AudioContext's, in seconds.
  */
 export class Lines {
   /** till when nothing else is said */
@@ -168,6 +189,8 @@ export class Lines {
   private heard = new Map<string, number>();
   /** the booking holding the floor */
   private held: Booking | null = null;
+  /** the line being said, since it started (until another starts, or it's cut) */
+  private saying: Booking | null = null;
 
   /**
    * May `id` be said at `now`? Its booking if so, with which of its `takes` it's said in (pickVariant:
@@ -184,19 +207,40 @@ export class Lines {
   }
 
   /**
+   * A townsperson's line (Sfx.speak), which takes the floor whatever is said or booked: booked at
+   * once however lately it was said (it goes with its text), in one of its `takes` at random (not
+   * the one heard last), to start within `late`. A line booked and still decoding is never said.
+   */
+  claim(id: string, now: number, takes = 1, late = SPEECH_LATE, rand: () => number = Math.random): Booking {
+    this.said.set(id, now);
+    this.quiet = now + late;
+    const take = pickVariant(Array.from({ length: Math.max(1, takes) }, (_, i) => i), this.heard.get(id), rand);
+    return (this.held = { id, at: now, take, late });
+  }
+
+  /**
    * The booked line is to start at `now` and run `secs`: true if it may, and nothing else is said
    * until it's over and LINE_GAP after. False if it's come too late to go with its moment.
    */
   start(b: Booking, now: number, secs: number): boolean {
     if (b !== this.held) return false;
-    if (now - b.at > LINE_LATE) {
+    if (now - b.at > (b.late ?? LINE_LATE)) {
       this.drop(b, now);
       return false;
     }
     this.quiet = now + secs + LINE_GAP;
     this.heard.set(b.id, b.take);
     this.held = null;
+    this.saying = b;
     return true;
+  }
+
+  /** the line booked or said as `b` was cut short at `now`: the floor is free again after LINE_GAP (at once, if it hadn't started) */
+  cut(b: Booking, now: number) {
+    if (b === this.held) return this.drop(b, now);
+    if (b !== this.saying) return;
+    this.saying = null;
+    this.quiet = Math.min(this.quiet, now + LINE_GAP);
   }
 
   /** the booked line won't be said (it wouldn't load): the floor is free again */
@@ -250,6 +294,8 @@ interface Voice extends VoiceInfo {
   gain: GainNode;
   /** what feeds the sound bus: its two ears merged, or its gain */
   tail: AudioNode;
+  /** the recording playing, if it's one (a recipe has nodes of its own) */
+  src?: AudioBufferSourceNode;
 }
 
 export class Sfx {
@@ -303,6 +349,8 @@ export class Sfx {
   private voices: Voice[] = [];
   /** who may speak when */
   private lines = new Lines();
+  /** the townsperson's line being said, or decoding to be (speak) */
+  private speech: Speech | null = null;
   /** where sounds are heard from: the hero, kept up to date by the game */
   private listener: P2 = { x: 0, z: 0 };
   /** what the camera shows; until the renderer says, nothing is panned */
@@ -458,14 +506,98 @@ export class Sfx {
     });
   }
 
-  /** `take`: the recording to play, already chosen (a line's); otherwise one is picked, or its recipe rendered */
-  private sound(id: OneShot, def: Playing, opts: PlayOpts, take?: Take) {
+  /**
+   * A townsperson's line, as Diablo II says its dialogue (sounds.txt: Stop Inst, Solo): at once,
+   * cutting off any line being said, the hero's or another of theirs, and holding the floor until
+   * it's over or stopped; in one of its takes at random, never the one heard last (a greeting's).
+   * Placed at the speaker (opts.pos), as NPC_LINE. Its handle tells when it starts and how long it
+   * runs, so its text can scroll with it (src/ui/npc.ts), and stops it. Null when there's nothing
+   * to say it with: no sound yet (before the first click), muted, or no recording.
+   */
+  speak(id: VoiceId, opts: PlayOpts = {}): Speech | null {
+    if (!this.ctx || this.muted || !this.recorded(id)) return null;
+    const ctx = this.ctx;
+    const f = this.files[id]!;
+    this.hush();
+    const booked = this.lines.claim(id, ctx.currentTime, f.files.length);
+    let voice: Voice | null = null;
+    /** when it started (the AudioContext's time), and when it was stopped */
+    let at = -1;
+    let ended: number | null = null;
+    let settle!: (secs: number | null) => void;
+    const speech: Speech = {
+      started: new Promise((r) => (settle = r)),
+      elapsed: () => (at < 0 ? 0 : Math.max(0, (ended ?? ctx.currentTime) - at)),
+      stop: () => {
+        if (ended !== null) return;
+        ended = ctx.currentTime;
+        this.lines.cut(booked, ended);
+        if (voice) this.cut(voice, SPEECH_CUT);
+        if (this.speech === speech) this.speech = null;
+        // (nothing, if it has started)
+        settle(null);
+      },
+    };
+    this.speech = speech;
+    const go = (buf: AudioBuffer | null) => {
+      if (ended !== null) return;
+      const take: Take | null = buf && { buf, gain: f.gain ?? 1, lead: this.leads.get(buf) ?? 0 };
+      const secs = take ? (take.buf.duration - take.lead) / (opts.pitch ?? 1) : 0;
+      // it wouldn't load, the sound was turned off meanwhile, or it's come too late to go with its text
+      if (!take || this.muted || !this.lines.start(booked, ctx.currentTime, secs)) return speech.stop();
+      voice = this.sound(id, NPC_LINE, opts, take);
+      if (!voice) return speech.stop();
+      at = voice.start + 0.005;
+      settle(secs);
+    };
+    const url = fileUrl(f.files[booked.take]);
+    const buf = this.buffers.get(url);
+    if (buf) go(buf);
+    else {
+      void this.buffers.load(url, true).then(go, (e: Error) => {
+        this.fail(id, e);
+        go(null);
+      });
+      // a take that takes too long to come isn't waited for: its text goes on without it
+      setTimeout(() => at < 0 && speech.stop(), SPEECH_LATE * 1000);
+    }
+    return speech;
+  }
+
+  /** every line being said stops (a quick fade), the hero's and the townsfolk's, and one decoding isn't said */
+  hush() {
+    if (!this.ctx) return;
+    this.speech?.stop();
+    for (const v of this.voices) if (isLine(v.id)) this.cut(v, SPEECH_CUT);
+  }
+
+  /** a voice faded out over `secs` and stopped, rather than cut with a click */
+  private cut(v: Voice, secs: number) {
+    const now = this.ctx!.currentTime;
+    if (v.end <= now) return;
+    const g = v.gain.gain;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(g.value, now);
+    g.linearRampToValueAtTime(0, now + secs);
+    try {
+      v.src?.stop(now + secs);
+    } catch {
+      /* already stopped */
+    }
+    v.end = now + secs;
+  }
+
+  /**
+   * `take`: the recording to play, already chosen (a line's); otherwise one is picked, or its recipe
+   * rendered. The voice it plays in, or null if it isn't played
+   */
+  private sound(id: OneShot, def: Playing, opts: PlayOpts, take?: Take): Voice | null {
     // a line is only ever played with its take
-    if (!take && !def.synth) return;
+    if (!take && !def.synth) return null;
     const ctx = this.ctx!;
     const prio = PRIORITY[def.prio ?? 'normal'];
     const where = opts.pos ? spatial(this.listener, this.view, opts.pos, prio >= PRIORITY.critical) : null;
-    if (opts.pos && !where) return;
+    if (opts.pos && !where) return null;
     const level = (def.vol ?? 1) * (opts.vol ?? 1) * (where?.gain ?? 1);
     const now = ctx.currentTime;
     // rate-limit identical sounds, unless the new one is louder: a far monster's death mustn't
@@ -473,14 +605,14 @@ export class Sfx {
     // have recordings of their own (a fire's cast and its impact)
     const key = this.recorded(id) || !def.synth ? id : def.synth;
     const last = this.lastPlay.get(key);
-    if (last && now - last.t < REPEAT_GAP && level <= last.level) return;
+    if (last && now - last.t < REPEAT_GAP && level <= last.level) return null;
     this.voices = this.voices.filter((v) => {
       if (v.end > now) return true;
       v.tail.disconnect();
       return false;
     });
     const steal = voiceToSteal(this.voices, id, def);
-    if (steal === null) return;
+    if (steal === null) return null;
     if (steal >= 0) {
       // fade the voice it takes over, rather than cut it with a click
       const v = this.voices.splice(steal, 1)[0];
@@ -505,8 +637,9 @@ export class Sfx {
     }
     tail.connect(this.sfxBus);
     this.end = now;
+    let src: AudioBufferSourceNode | undefined;
     if (rec) {
-      const src = ctx.createBufferSource();
+      src = ctx.createBufferSource();
       src.buffer = rec.buf;
       // variety from one take: a little off its pitch each time
       const vary = def.vary ?? (id.startsWith('ui.') ? 0 : VARY);
@@ -519,7 +652,9 @@ export class Sfx {
       this.pitch = opts.pitch ?? 1;
       this.synth(def.synth, now + 0.005);
     }
-    this.voices.push({ id, prio, start: now, end: this.end, gain, tail });
+    const voice: Voice = { id, prio, start: now, end: this.end, gain, tail, src };
+    this.voices.push(voice);
+    return voice;
   }
 
   /**

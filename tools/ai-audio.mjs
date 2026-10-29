@@ -6,6 +6,8 @@
 //   node tools/ai-audio.mjs --dry [id…]          what would be generated, and the credits it would take
 //   node tools/ai-audio.mjs --budget 6000 [id…]  generate it, stopping before this month's usage passes 6000
 //   node tools/ai-audio.mjs [id…]                only process again what's kept, and rewrite the manifest
+//   node tools/ai-audio.mjs --voices             the voices a speaker may have (GET /v1/voices): each one's
+//                                                labels, description, and the models it's verified to read Mandarin with
 //     id…       just these ids, or those under a prefix ending in '.' (combat. voice.paladin. music.)
 //     --redo    make the chosen ids' takes again, though they're made (needs ids); music is
 //               processed again from its raw take
@@ -90,7 +92,7 @@ const KINDS = {
 };
 
 const args = process.argv.slice(2);
-const FLAGS = ['dry', 'budget', 'redo', 'prune', 'jobs'];
+const FLAGS = ['dry', 'budget', 'redo', 'prune', 'jobs', 'voices'];
 /** the flags followed by a value */
 const VALUED = ['--budget', '--jobs'];
 for (const a of args.filter((a) => a.startsWith('--'))) if (!FLAGS.includes(a.slice(2))) fail(`${a}? The flags are ${FLAGS.map((f) => `--${f}`).join(' ')}`);
@@ -128,7 +130,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---- the list
 
-const { default: LIST_ENTRIES, SPEAKERS = {} } = await import(pathToFileURL(LIST).href);
+const { default: LIST_ENTRIES, SPEAKERS = {}, HEROES = [] } = await import(pathToFileURL(LIST).href);
 /** the game's ids, to check the list against: Node strips the types off sounds.ts itself */
 const sounds = await import(pathToFileURL(path.join(ROOT, 'src/audio/sounds.ts')).href).catch((e) => {
   console.warn(`(the list's ids go unchecked: ${e.message})`);
@@ -537,6 +539,19 @@ ${rows.join('\n')}
 
 // ---- the run
 
+// the voices to give a speaker: no credits, nothing written
+if (flag('voices')) {
+  const { voices } = await (await api('/v1/voices')).json();
+  for (const v of voices) {
+    const zh = (v.verified_languages ?? []).filter((l) => l.language === 'zh').map((l) => [l.model_id, l.accent, l.locale].filter(Boolean).join(' '));
+    const labels = Object.entries(v.labels ?? {}).map(([k, x]) => `${k} ${x}`).join(', ');
+    console.log(`${v.name.split(' - ')[0].padEnd(10)} ${v.voice_id}  ${v.category}  ${labels}`);
+    console.log(`  ${v.name}${v.description ? `: ${v.description}` : ''}`);
+    console.log(`  Mandarin: ${zh.length ? zh.join('; ') : 'not verified'}`);
+  }
+  process.exit(0);
+}
+
 const list = validate(LIST_ENTRIES);
 const made = readJson(MADE, {});
 // a record from before made.json kept what was asked: the list's, where it still asks for that take
@@ -764,4 +779,8 @@ for (const t of list.flatMap((e) => present(e, made)).filter((t) => isStale(t, m
 
 const ids = writeManifest(list, made);
 console.log(`src/audio/files.ts: ${ids} ids with recordings; public/audio/CREDITS.md`);
+// the townsfolk's lines come off the dialogue's review page, which says what each take says
+if ([...toMake, ...toProcess].some((t) => t.e.kind === 'voice' && !HEROES.includes(speakerOf(t.e)) && made[t.name]?.key === t.key)) {
+  console.log("the townsfolk's takes changed: node tools/dialogue-review.mjs marks them on tools/d2-names/DIALOGUE-zh.md");
+}
 process.exit(errors ? 1 : 0);

@@ -147,6 +147,8 @@ export class UI implements GameHooks, UIContext {
   /** a quest moved on: its news waits on the log's button, unless the log is open to show it */
   heroGone() {
     this.goneEl.classList.add('open');
+    // the game here has stopped: so has whoever was speaking
+    this.sfx.hush();
   }
 
   saveState(ok: boolean) {

@@ -323,3 +323,16 @@
 | `voice.sorceress.back_in_town.2.m4a` | 配音 | 「还是这里自在。」 | eleven_v4 | Lily | 2026-10-28 |
 | `voice.sorceress.back_in_town.3.m4a` | 配音 | 「先歇会儿。」 | eleven_v4 | Lily | 2026-10-28 |
 | `voice.sorceress.back_in_town.4.m4a` | 配音 | 「整理一下吧。」 | eleven_v4 | Lily | 2026-10-28 |
+| `voice.akara.a1q1_intro.1.m4a` | 配音 | 「你来得正好，外乡人。昨夜我对着火光占卜，灰烬里浮出血沼荒原深处的一道裂口：一个洞穴，人们管它叫邪秽巢穴。邪气正从里面一缕一缕往外渗，荒原上的野兽因此发了狂，连埋下去的死人也躺不安稳。营寨里的人都得守着木栅，我一个也抽不出来。替我下去，把洞里的东西一个不留地清干净。等你回来，我教你一样新的本事。」 | eleven_v4 | Sarah | 2026-10-29 |
+| `voice.akara.a1q1_remind.1.m4a` | 配音 | 「邪秽巢穴在血沼荒原里头。出了营门一路往荒原深处走，留心地上的洞口。去吧，别让那股气再漫出来。」 | eleven_v4 | Sarah | 2026-10-29 |
+| `voice.akara.a1q1_remind_out.1.m4a` | 配音 | 「我还感觉得到它，那个洞还在喘气。只要里面还剩一只邪物，它就合不上。」 | eleven_v4 | Sarah | 2026-10-29 |
+| `voice.akara.a1q1_reward.1.m4a` | 配音 | 「风里的腐味散了，火光里也再看不见那道裂口。你做到了我们做不到的事。来，闭上眼睛，跟着我的声音……好了。你心里又开了一扇门，往后你自会知道它通向哪里。」 | eleven_v4 | Sarah | 2026-10-29 |
+| `voice.akara.gossip0.1.m4a` | 配音 | 「这道木栅是拿断木和咬紧的牙关撑起来的。多撑一天，就多赢一天。」 | eleven_v4 | Sarah | 2026-10-29 |
+| `voice.akara.gossip1.1.m4a` | 配音 | 「受了伤就回来，别硬撑。草药我这儿有，火也从来没熄过。」 | eleven_v4 | Sarah | 2026-10-29 |
+| `voice.akara.gossip2.1.m4a` | 配音 | 「荒原上的风干净了些。昨夜，我总算睡了个整觉。」 | eleven_v4 | Sarah | 2026-10-29 |
+| `voice.akara.greeting.1.m4a` | 配音 | 「愿火光照着你。」 | eleven_v4 | Sarah | 2026-10-29 |
+| `voice.akara.greeting.2.m4a` | 配音 | 「我正等着你呢。」 | eleven_v4 | Sarah | 2026-10-29 |
+| `voice.akara.greeting.3.m4a` | 配音 | 「坐吧，歇一歇脚。」 | eleven_v4 | Sarah | 2026-10-29 |
+| `voice.akara.farewell.1.m4a` | 配音 | 「去吧，火会一直燃着。」 | eleven_v4 | Sarah | 2026-10-29 |
+| `voice.akara.farewell.2.m4a` | 配音 | 「愿你一路无伤。」 | eleven_v4 | Sarah | 2026-10-29 |
+| `voice.akara.farewell.3.m4a` | 配音 | 「记得活着回来。」 | eleven_v4 | Sarah | 2026-10-29 |

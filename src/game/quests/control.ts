@@ -53,15 +53,17 @@ export class Quests {
     return this.gossip(npc);
   }
 
+  /** their small talk in turn, of what they'd say by now; each line by its place among them all (gossip2), as it's recorded */
   private gossip(npc: string): Topic | null {
     const p = this.host.player;
     const rec = p.quests[p.difficulty];
-    const lines = (GOSSIP[npc] ?? []).filter((g) => !g.after || questState(rec, g.after, QFLAG.REWARDGRANTED));
+    const all = GOSSIP[npc] ?? [];
+    const lines = all.filter((g) => !g.after || questState(rec, g.after, QFLAG.REWARDGRANTED));
     if (!lines.length) return null;
     const i = (this.gossipAt.get(npc) ?? 0) % lines.length;
     this.gossipAt.set(npc, i + 1);
     const l = fillLine(lines[i]);
-    return { npc, id: `gossip${i}`, text: l.zh, en: l.en };
+    return { npc, id: `gossip${all.indexOf(lines[i])}`, text: l.zh, en: l.en };
   }
 
   /** a line heard to the end, or cut short (ScrollMessage) */

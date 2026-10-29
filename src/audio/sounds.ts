@@ -322,6 +322,23 @@ export const heroLine = (cls: PlayerClass, line: HeroLine): HeroVoiceId => `voic
  */
 export const LINE: Playing = { vol: 0.45, max: 1, prio: 'critical', vary: 0 };
 
+/**
+ * How a townsperson's line is played (Sfx.speak): as a hero's (LINE), a little under it, as Diablo
+ * II plays its townsfolk's speech at 210 of 255 and its heroes' at 255 (sounds.txt Volume, of the
+ * channels vo/eax/dialog and vo/eax/player-dialog); placed at the speaker, as D2's (Is2D 0, Tracking 1)
+ */
+export const NPC_LINE: Playing = { ...LINE, vol: +((LINE.vol! * 210) / 255).toFixed(3) };
+
+/**
+ * A townsperson's line, recorded (tools/audio/list.mjs reads them off tools/d2-names/DIALOGUE-zh.md):
+ * voice.<npc>.<key>, a quest's line by its quest and its own key (voice.akara.a1q1_remind_out is
+ * data/dialogue.ts DEN_LINES.remindOut), small talk by its place (voice.akara.gossip2), the
+ * greetings by theirs (voice.akara.greeting, voice.akara.farewell: GREETINGS)
+ */
+export function npcLine(npc: string, id: string, quest?: string): VoiceId {
+  return `voice.${npc}.${quest ? `${quest}_` : ''}${id.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`)}`;
+}
+
 /** what the hero says walking into an area of another kind: out of the camp, underground, back */
 export const ENTER_LINE: Record<AreaKind, HeroLine> = { town: 'back_in_town', outdoor: 'enter_wild', dungeon: 'enter_dungeon' };
 

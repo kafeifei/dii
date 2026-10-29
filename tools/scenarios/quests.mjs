@@ -1,15 +1,22 @@
 // The Den of Evil from Akara's first word to her reward, as Diablo II plays it (src/game/quests,
 // D2MOO A1Q1.cpp), through the real UI (tools/play.mjs scenario):
 //   node tools/play.mjs tools/scenarios/quests.mjs --url "http://localhost:5174/?dev&tod=0.5"
-// Reloads with empty storage. In the camp the merchant (亚喀蕾, Akara's counterpart) has the yellow
-// mark of quest news; spoken to, she gives the quest in a scrolling line (cut short with 跳过), then
-// her menu: 交谈 has her remind the hero (spoken to again mid-line, or Esc, cuts it short), 取消
-// leaves her and the log says to find the den. Out of the camp (the record's LEAVETOWN), into the
+// Reloads with empty storage, and clicks once so the game has sound. In the camp the merchant (亚喀蕾,
+// Akara's counterpart) has the yellow mark of quest news; spoken to, she gives the quest in a scrolling
+// line, said in her voice as it scrolls (the text by the voice's clock, as long as its take runs; no
+// greeting before a quest's word), and 跳过 cuts both short; then her menu: 交谈 has her remind the
+// hero aloud (spoken to again mid-line, or Esc, cuts it short, voice and all), 取消 leaves her with a
+// farewell and the log says to find the den. Clicked again at once she says nothing, nor bids a
+// second farewell; walked off and back, she greets the hero and bids farewell each visit, never in
+// the take heard last; her trade opened from her menu brings no farewell, until it's shut. Each take
+// is listened to where it leaves its voice for the sound bus: as loud as a line is while it plays,
+// and silent a moment after it's cut. Out of the camp (the record's LEAVETOWN), into the
 // den (ENTERAREA, the log's "clear it"), its D2 monsters (Corpsefire and his pack among them) killed
 // through the game until five or fewer are left (the log counts them; kills out on the moor say
 // nothing of it), Corpsefire last, holding it up alone, then him: the quest is done
 // (its message, the record's reward pending) and the den lights up. Back in the camp she is marked
-// again; spoken to, she hands over the reward (+1 skill point) once and never again. The quest log
+// again; spoken to, she hands over the reward (+1 skill point) once and never again, aloud, her
+// small talk too. The quest log
 // shows it done; saved and played again it stays done, and nightmare's record is untouched. Page
 // and console errors fail the run. Shots: the mark, the dialogue, the menu, the log, the log
 // counting, the den dark and lit, the mark for the reward, the reward line, the log done, the
@@ -96,7 +103,76 @@ export default async function (page, shot, log) {
       /** the quest log's HUD button lit with news */
       S.logNews = () => [...document.querySelectorAll('.hbtn.notify')].some((b) => b.textContent.startsWith('任'));
       S.debug.god = true;
+      /** the townsperson's panel (src/ui/npc.ts): game.hooks is the UI */
+      S.npc = game.hooks.npc;
+      /** what she said aloud, as each started: the line, its take's file, its voice and an ear on it */
+      S.spoken = [];
+      /** once the game has sound: each take she says noted, and listened to where it goes into the sound bus */
+      S.listen = () => {
+        const sfx = game.sfx;
+        const fileOf = new WeakMap();
+        const decode = sfx.buffers.decode;
+        sfx.buffers.decode = async (u, mono) => {
+          const b = await decode(u, mono);
+          fileOf.set(b, u.split('/').pop());
+          return b;
+        };
+        const sound = sfx.sound.bind(sfx);
+        sfx.sound = (id, def, opts, take) => {
+          const v = sound(id, def, opts, take);
+          if (v && id.startsWith('voice.akara.')) {
+            const an = sfx.ctx.createAnalyser();
+            an.fftSize = 4096;
+            v.tail.connect(an);
+            S.spoken.push({ id, file: take ? fileOf.get(take.buf) : null, v, an });
+          }
+          return v;
+        };
+      };
+      const d = new Float32Array(4096);
+      /** a take's level as it goes into the sound bus, over its last 4096 samples, dB */
+      S.level = (x) => {
+        x.an.getFloatTimeDomainData(d);
+        let s = 0;
+        for (const y of d) s += y * y;
+        return 10 * Math.log10(s / d.length + 1e-12);
+      };
+      /** the loudest any of `xs` is over `ms`, in 50 ms steps */
+      S.loudest = async (xs, ms = 400) => {
+        let top = -120;
+        for (let t = 0; t < ms; t += 50) {
+          for (const x of xs) top = Math.max(top, S.level(x));
+          await new Promise((r) => setTimeout(r, 50));
+        }
+        return +top.toFixed(1);
+      };
+      /** her lines sounding now */
+      S.saying = () => S.spoken.filter((x) => x.v.end > game.sfx.ctx.currentTime).map((x) => x.id);
+      /** what she has said since the `n`th: the lines, and their takes */
+      S.since = (n) => S.spoken.slice(n).map((x) => `${x.id}:${x.file}`);
     }, F);
+  /** a line of hers sounding, with its voice heard on the sound bus, and how it goes with its text */
+  const hearing = async (id) => {
+    await until((id) => window.__q.saying().includes(id), id, `her voice saying ${id}`, 3000);
+    return ev(async (id) => {
+      const S = window.__q;
+      const x = S.spoken.findLast((x) => x.id === id);
+      const loud = await S.loudest([x], 500);
+      return { loud, file: x.file, secs: +(x.v.end - x.v.start).toFixed(2), dur: +S.npc.dur.toFixed(2), t: +S.npc.t.toFixed(2), said: +(S.npc.speech?.elapsed() ?? -1).toFixed(2) };
+    }, id);
+  };
+  /** none of her lines sounding, all of them silent */
+  const hushed = () =>
+    ev(async () => {
+      const S = window.__q;
+      await new Promise((r) => setTimeout(r, 250));
+      return { saying: S.saying(), loud: await S.loudest(S.spoken, 200) };
+    });
+  /** a line heard is at least this loud going into the sound bus (a take at -18 LUFS, at NPC_LINE), silence under the other */
+  const HEARD_DB = -50;
+  const SILENT_DB = -75;
+  /** the takes of her farewells, in turn */
+  const farewells = [];
   /** the quest log opened with its key, its cells' states and the detail's words */
   const openLog = async () => {
     await page.keyboard.press('l');
@@ -125,6 +201,10 @@ export default async function (page, shot, log) {
       await page.reload({ timeout: 60000 });
       await until(() => window.game?.started && window.game.level, null, 'the game to start', 60000);
       await helpers();
+      // a click lets the game's sound start (the hero walks a step toward it)
+      await page.mouse.click(200, 160);
+      await until(() => window.game.sfx.ctx?.state === 'running', null, 'the sound to start');
+      await ev(() => window.__q.listen());
       const s = await ev(() => {
         const S = window.__q;
         S.west = game.level;
@@ -154,7 +234,12 @@ export default async function (page, shot, log) {
       // spoken to: she gives the quest at once, scrolling up
       await ev(() => game.interact(window.__q.akara()));
       await until(() => !!document.querySelector('.dialogue.open'), null, 'her line');
-      await page.waitForTimeout(2500);
+      // in her voice, the text going by it: as long as the take runs, where it has got to
+      const voice = await hearing('voice.akara.a1q1_intro');
+      expect(voice.loud > HEARD_DB, `her voice isn't heard: ${JSON.stringify(voice)}`);
+      expect(voice.file === 'voice.akara.a1q1_intro.1.m4a' && voice.dur > 20 && Math.abs(voice.secs - voice.dur) < 0.05 && Math.abs(voice.t - voice.said) < 0.15, `her line doesn't go with her voice: ${JSON.stringify(voice)}`);
+      expect(!(await ev(() => window.__q.since(0).some((s) => s.includes('greeting')))), "she greeted the hero before the quest's word");
+      await page.waitForTimeout(2000);
       const said = await ev(() => window.__q.ui());
       expect(said.talking && !said.menu && said.text.includes('邪秽巢穴') && said.text.includes('血沼荒原'), `her first words: ${JSON.stringify(said)}`);
       expect(!said.text.includes('艾莉娜') && !said.text.includes('阿卡拉'), 'an old or official name in her line');
@@ -163,6 +248,9 @@ export default async function (page, shot, log) {
       expect(/translateY\(-?\d+px\)/.test(pos), `the line doesn't scroll (${pos})`);
       await page.locator('.dialogue .dlg-skip').click();
       await until(() => !!document.querySelector('.npc-menu.open'), null, 'her menu after the line');
+      const cut = await hushed();
+      expect(!cut.saying.length && cut.loud < SILENT_DB, `cut short, her voice goes on: ${JSON.stringify(cut)}`);
+      facts.push(`her voice: the intro's take ${voice.dur} s, the text by it (${voice.t} s at ${voice.said}), heard at ${voice.loud} dB, cut to ${cut.loud} dB`);
       const after = await ev(() => {
         const S = window.__q;
         return { ui: S.ui(), started: S.has(S.F.STARTED), state: S.den().state, news: game.quests.hasNews('akara'), mark: !!document.querySelector('.npc-mark') };
@@ -177,21 +265,89 @@ export default async function (page, shot, log) {
       await until(() => !!document.querySelector('.dialogue.open'), null, 'her reminder');
       const remind = await ev(() => window.__q.ui().text);
       expect(remind.includes('营门'), `her reminder: ${remind}`);
-      await page.waitForTimeout(600);
+      const reminded = await hearing('voice.akara.a1q1_remind');
+      expect(reminded.loud > HEARD_DB && Math.abs(reminded.secs - reminded.dur) < 0.05, `her reminder's voice: ${JSON.stringify(reminded)}`);
+      await page.waitForTimeout(300);
       await ev(() => game.interact(window.__q.akara()));
       await until(() => !!document.querySelector('.npc-menu.open'), null, 'her menu, spoken to mid-line');
       const recut = await ev(() => ({ ui: window.__q.ui(), at: document.querySelector('.npc-menu.open').style.transform }));
       expect(!recut.ui.talking && recut.ui.opts.length === 3 && /translate\(\d+px, \d+px\)/.test(recut.at), `spoken to mid-line: ${JSON.stringify(recut)}`);
+      const stopped = await hushed();
+      expect(!stopped.saying.length && stopped.loud < SILENT_DB, `spoken to mid-line, her voice goes on: ${JSON.stringify(stopped)}`);
       // again, and Esc cuts it short
       await pick('交谈');
       await until(() => !!document.querySelector('.dialogue.open'), null, 'her reminder again');
+      await hearing('voice.akara.a1q1_remind');
       await page.keyboard.press('Escape');
       await until(() => !!document.querySelector('.npc-menu.open') && !document.querySelector('.dialogue.open'), null, 'her menu after Esc');
-      // 取消: she's left, and the log says to find the den
+      const escaped = await hushed();
+      expect(!escaped.saying.length && escaped.loud < SILENT_DB, `Esc, and her voice goes on: ${JSON.stringify(escaped)}`);
+      // 取消: she's left, with a farewell, and the log says to find the den
       await pick('取消');
       await until(() => !document.querySelector('.npc-menu.open'), null, 'her menu to close');
+      const bye = await hearing('voice.akara.farewell');
+      expect(bye.loud > HEARD_DB, `her farewell isn't heard: ${JSON.stringify(bye)}`);
+      farewells.push(bye.file);
       const left = await ev(() => window.__q.den().last);
       expect(left === 1, `the log's status after leaving her: ${left}`);
+    },
+
+    async visits() {
+      // clicked again at once, the same visit: no greeting; left again: no second farewell
+      await page.waitForTimeout(2500);
+      const n = await ev(() => window.__q.spoken.length);
+      await ev(() => game.interact(window.__q.akara()));
+      await until(() => !!document.querySelector('.npc-menu.open'), null, 'her menu, at once again');
+      await page.waitForTimeout(700);
+      await pick('取消');
+      await page.waitForTimeout(700);
+      const again = await ev((n) => window.__q.since(n), n);
+      expect(!again.length, `clicked again at once, she said ${again.join(' ')}`);
+      // walked off and back four times: a greeting and a farewell each visit, never the take heard last
+      const greetings = [];
+      for (let k = 0; k < 4; k++) {
+        await ev(() => {
+          const a = window.__q.akara();
+          game.teleportWithin(game.level.map.nearestWalkable(a.pos.x - 9, a.pos.z + 9));
+        });
+        await frames(6);
+        const off = await ev(() => ({ far: window.__q.dist(game.player.pos, window.__q.akara().pos), area: game.area?.id }));
+        await ev(() => window.__q.toAkara());
+        await frames(3);
+        await ev(() => game.interact(window.__q.akara()));
+        const hi = await hearing('voice.akara.greeting');
+        expect(hi.loud > HEARD_DB && off.far > 9 && off.area === CAMP_AREA, `visit ${k + 1} (from ${off.far.toFixed(1)} m off, in area ${off.area}): her greeting ${JSON.stringify(hi)}`);
+        greetings.push(hi.file);
+        await until(() => !window.__q.saying().length, null, 'her greeting to end', 4000);
+        await pick('取消');
+        farewells.push((await hearing('voice.akara.farewell')).file);
+        await until(() => !window.__q.saying().length, null, 'her farewell to end', 4000);
+      }
+      const twice = (xs) => xs.some((x, i) => i > 0 && x === xs[i - 1]);
+      expect(!twice(greetings) && !twice(farewells) && greetings.every(Boolean) && farewells.length === 5 && farewells.every(Boolean), `four visits' greetings ${greetings.join(' ')}, five farewells ${farewells.join(' ')}`);
+      // her trade, opened from her menu: no farewell; shut, she bids one
+      await ev(() => {
+        const a = window.__q.akara();
+        game.teleportWithin(game.level.map.nearestWalkable(a.pos.x - 9, a.pos.z + 9));
+      });
+      await frames(6);
+      await ev(() => window.__q.toAkara());
+      await frames(3);
+      await ev(() => game.interact(window.__q.akara()));
+      await hearing('voice.akara.greeting');
+      await until(() => !window.__q.saying().length, null, 'her greeting to end', 4000);
+      const m = await ev(() => window.__q.spoken.length);
+      await pick('交易／修理');
+      await until(() => game.hooks.left === 'shop', null, 'her trade');
+      await page.waitForTimeout(800);
+      const trading = await ev((m) => window.__q.since(m), m);
+      expect(!trading.length, `her trade opened, she said ${trading.join(' ')}`);
+      await page.keyboard.press('Escape');
+      await until(() => game.hooks.left === null, null, 'her trade to shut');
+      const shut = await hearing('voice.akara.farewell');
+      expect(shut.loud > HEARD_DB, `her trade shut, no farewell: ${JSON.stringify(shut)}`);
+      await until(() => !window.__q.saying().length, null, 'her farewell to end', 4000);
+      facts.push(`visits: greetings ${greetings.map((f) => f.match(/\.(\d)\.m4a/)[1]).join('')}, farewells ${farewells.map((f) => f.match(/\.(\d)\.m4a/)[1]).join('')}, none clicked again at once, one as her trade shut`);
     },
 
     async questLog() {
@@ -289,12 +445,16 @@ export default async function (page, shot, log) {
       await shot('akara-marked-for-the-reward');
       await ev(() => game.interact(window.__q.akara()));
       await until(() => !!document.querySelector('.dialogue.open'), null, 'her reward line');
-      await page.waitForTimeout(1800);
+      const thanks = await hearing('voice.akara.a1q1_reward');
+      expect(thanks.loud > HEARD_DB && Math.abs(thanks.secs - thanks.dur) < 0.05, `her reward's voice: ${JSON.stringify(thanks)}`);
+      await page.waitForTimeout(1300);
       const said = await ev(() => window.__q.ui().text);
       expect(said.includes('门'), `her reward line: ${said}`);
       await shot('akara-rewards');
       await page.locator('.dialogue .dlg-skip').click();
       await until(() => !!document.querySelector('.npc-menu.open'), null, 'her menu after the reward');
+      const thanked = await hushed();
+      expect(!thanked.saying.length && thanked.loud < SILENT_DB, `cut short, her reward's voice goes on: ${JSON.stringify(thanked)}`);
       const after = await ev(() => {
         const S = window.__q;
         return { points: game.player.skillPoints, granted: S.has(S.F.REWARDGRANTED), pending: S.has(S.F.REWARDPENDING), started: S.has(S.F.STARTED), news: game.quests.hasNews('akara'), msgs: S.messages() };
@@ -311,7 +471,12 @@ export default async function (page, shot, log) {
       await pick('交谈');
       await until(() => !!document.querySelector('.dialogue.open'), null, 'her small talk');
       const gossip = await ev(() => window.__q.ui().text);
+      const talkId = await ev(() => `voice.akara.${window.__q.npc.topic.id}`);
+      const talked = await hearing(talkId);
+      expect(talked.loud > HEARD_DB && Math.abs(talked.secs - talked.dur) < 0.05, `her small talk's voice (${talkId}): ${JSON.stringify(talked)}`);
       await page.keyboard.press('Escape');
+      const quiet = await hushed();
+      expect(!quiet.saying.length && quiet.loud < SILENT_DB, `Esc, and her small talk's voice goes on: ${JSON.stringify(quiet)}`);
       await pick('取消');
       const end = await ev(() => game.player.skillPoints);
       expect(end === after.points, `skill points ${after.points} → ${end} speaking to her again`);

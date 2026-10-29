@@ -14,13 +14,15 @@
 // kept to a budget; an ambience loop played round its loop points with no gap, the bed when it's
 // missing; a music track streamed through an <audio> element, faded in to its gain and crossfaded
 // to the next area's composed music, which also stands in for a missing track; a line spoken at its own pitch once
-// it's decoded, never over another, and not at all without a recording. And
+// it's decoded, never over another, and not at all without a recording; a townsperson's line said at
+// once over the hero's (cut off), as loud as NPC_LINE, its length told as it starts, the hero kept
+// from speaking over it, and silent within SPEECH_CUT of being stopped. And
 // the composed music: the same samples for the same area, another piece for another, heard but
 // quiet. Last, the game's own recordings against the synthesized sounds they replace, level for
 // level, its music against the music composed in its place and under the ambience and the fighting
 // it's heard with, every monster's death about as loud as a zombie's and well over the music, and
-// every take of the hero's lines against its loudest cues (shippedLevels). The last line is
-// "SFX OK <summary>" or "SFX FAIL <reasons>".
+// every take of the hero's lines, and of the townsfolk's, against its loudest cues (shippedLevels).
+// The last line is "SFX OK <summary>" or "SFX FAIL <reasons>".
 
 /** a WAV of `secs` seconds, 16-bit, the same in both channels */
 function wav(secs, fn, rate = 44100) {
@@ -59,6 +61,8 @@ const RECORDINGS = {
   // two lines, told apart by their pitch
   'line_a.wav': wav(0.6, tone(440, 0.2)),
   'line_b.wav': wav(0.6, tone(660, 0.2)),
+  // a townsperson's line, told apart from the hero's by its pitch
+  'speech.wav': wav(1.2, tone(330, 0.2)),
 };
 
 export default async function (page, shot, log) {
@@ -252,6 +256,7 @@ export default async function (page, shot, log) {
       'voice.paladin.no_mana': { files: ['__test/line_a.wav'] },
       'voice.paladin.bag_full': { files: ['__test/line_b.wav'] },
       'voice.paladin.unique': { files: ['__test/missing_line.wav'] },
+      'voice.akara.test_line': { files: ['__test/speech.wav'] },
     };
     /** a fresh Sfx on an OfflineAudioContext `secs` long, with the scenario's recordings */
     function offline(secs, files = MANIFEST) {
@@ -395,6 +400,33 @@ export default async function (page, shot, log) {
     const after = s.voices.filter((v) => v.id.startsWith('voice.')).map((v) => v.id);
     check(after.join() === 'voice.paladin.bag_full', `lines with no recording, then one with: ${after.join(' ') || 'none'} said`);
     check(Math.abs(stats(await render(s), 0, Math.round(0.5 * RATE)).hz / 660 - 1) < 0.005, 'the line said after a missing one is not the one asked for');
+    // a townsperson's line (Sfx.speak): at once over the hero's, which is cut off; as loud as
+    // NPC_LINE; its take's length told as it starts; the hero kept from speaking over it; stopped
+    // 0.6 s in, silent within SPEECH_CUT, and its handle saying how far it got
+    const { SPEECH_CUT } = await import('/src/audio/sfx.ts');
+    const NPC_VOL = (await import('/src/audio/sounds.ts')).NPC_LINE.vol;
+    s = offline(1.5);
+    s.play('voice.paladin.no_mana');
+    await wait(150);
+    const sp = s.speak('voice.akara.test_line');
+    const spSecs = await Promise.race([sp.started, wait(1500).then(() => 'never')]);
+    s.play('voice.paladin.bag_full');
+    await wait(150);
+    const over = s.voices.filter((v) => v.id === 'voice.paladin.bag_full').length;
+    void s.ctx.suspend(0.6).then(() => {
+      sp.stop();
+      void s.ctx.resume();
+    });
+    const spoke = await render(s);
+    const during = stats(spoke, Math.round(0.1 * RATE), Math.round(0.55 * RATE));
+    const gone = stats(spoke, Math.round((0.6 + SPEECH_CUT + 0.01) * RATE), Math.round(1.4 * RATE));
+    facts.speech = `${during.hz.toFixed(1)} Hz, peak ${during.peak.toFixed(4)}, ${gone.peak.toExponential(1)} after it's stopped at ${sp.elapsed().toFixed(3)} s`;
+    check(typeof spSecs === 'number' && Math.abs(spSecs - 1.2) < 0.02, `a townsperson's line of 1.2 s told as ${spSecs}`);
+    check(Math.abs(during.hz / 330 - 1) < 0.005, `while she speaks: ${during.hz.toFixed(1)} Hz, not her 330 alone (the hero's 440 cut off)`);
+    check(Math.abs(during.peak - 0.2 * NPC_VOL * 0.7) < 0.006, `a townsperson's line peaks at ${during.peak.toFixed(4)}, not ${(0.2 * NPC_VOL * 0.7).toFixed(4)}`);
+    check(over === 0, 'the hero spoke over a townsperson');
+    check(gone.peak < 1e-4, `stopped, her line still sounds at ${gone.peak.toFixed(5)}`);
+    check(Math.abs(sp.elapsed() - 0.6) < 0.02, `stopped 0.6 s in, her line says ${sp.elapsed().toFixed(3)} s of it went by`);
 
     // a missing loop: the bed
     s = offline(2);
@@ -487,17 +519,25 @@ const LINE_MATCH_DB = 4;
  * DEATH_OVER_MUSIC_DB over each track: a Fallen's death once sat 2 dB over the music, lost in it.
  * The heroes' lines (HERO_LINES) have nothing synthesized to match:
  * each take of each, played as the game says it (LINE), is held to LINE_MATCH_DB of the loudest of the cues they
- * go with (LINE_CUES, synthesized), as the hero's loudest sounds. Any other shipped id the game can't
- * play this way fails: nothing vouches for it.
+ * go with (LINE_CUES, synthesized), as the hero's loudest sounds; so is each take of the townsfolk's
+ * (data/dialogue.ts spokenLines), as Sfx.speak plays it (NPC_LINE), to those cues less the step D2
+ * puts its townsfolk's speech under its heroes' (NPC_LINE.vol against LINE.vol, 210 of 255). Any
+ * other shipped id the game can't play this way fails: nothing vouches for it.
  */
 async function shippedLevels(ev) {
   const { RATE, loudness } = await import('../audio/dsp.mjs');
-  const { SOUNDS, HERO_LINES, LINE, areaSound } = await import('../../src/audio/sounds.ts');
+  const { SOUNDS, HERO_LINES, LINE, NPC_LINE, areaSound } = await import('../../src/audio/sounds.ts');
   const LINE_VOL = LINE.vol;
   // the classes through the page: src/data/classes.ts imports the generated tables without an
   // extension, which only Vite resolves
   const classes = await ev(async () => Object.keys((await import('/src/data/classes.ts')).CLASSES));
   const files = await ev(() => window.game.sfx.files);
+  // what the townsfolk say aloud, by the ids Sfx.speak is given (src/ui/npc.ts)
+  const townIds = await ev(async () => {
+    const { spokenLines } = await import('/src/data/dialogue.ts');
+    const { npcLine } = await import('/src/audio/sounds.ts');
+    return spokenLines().map((s) => npcLine(s.npc, s.id, s.quest));
+  });
   // the areas of normal play (src/world/areas.ts), to find the one a loop is played in
   const AREAS = await ev(async () => (await import('/src/world/areas.ts')).areaList());
   const fails = [];
@@ -505,6 +545,7 @@ async function shippedLevels(ev) {
   const jobs = [];
   const loops = new Map();
   const heroLines = [];
+  const townLines = [];
   /** the music tracks, and the areas that compose their music while they have none */
   const tracks = [];
   /** voice.<class>.<line>, a moment the game has a line for */
@@ -529,10 +570,12 @@ async function shippedLevels(ev) {
       if (!areas.length) fails.push(`shipped ${id}: no area plays it`);
       else tracks.push({ id, areas });
     } else if (heroLine(id)) heroLines.push(id);
+    else if (townIds.includes(id)) townLines.push(id);
     else fails.push(`shipped ${id}: nothing in the game plays it`);
   }
   // every take of a line, each by itself: Sfx says any one of them
   for (const id of heroLines) for (const file of files[id].files) jobs.push({ kind: 'line', id, file, ids: [id] });
+  for (const id of townLines) for (const file of files[id].files) jobs.push({ kind: 'speech', id, file, ids: [id] });
   for (const id of LINE_CUES) jobs.push({ kind: 'cue', id, ids: [] });
   for (const { area, night, ids } of loops.values()) jobs.push({ kind: 'amb', id: ids.join('+'), area, night, ids });
   // the ambience a track is heard over where it plays: the area's loops by day and by night, those
@@ -590,19 +633,20 @@ async function shippedLevels(ev) {
         const failed = job.ids.filter((id) => s.failed.has(id));
         // midnight, for the night's loops
         if (job.night) s.setTime(0);
-        seeded(() => (inArea ? s.enterArea(job.area) : s.play(job.id)));
+        seeded(() => (inArea ? s.enterArea(job.area) : job.kind === 'speech' ? s.speak(job.id) : s.play(job.id)));
         // the loops start once their (preloaded) takes resolve, a line once its take is checked as decoded
         if (!short) await wait(50);
         const buf = await s.ctx.startRendering();
-        if (job.kind === 'line') return { failed, lufs: loudness([buf.getChannelData(0), buf.getChannelData(1)], 'momentary') };
+        if (job.kind === 'line' || job.kind === 'speech') return { failed, lufs: loudness([buf.getChannelData(0), buf.getChannelData(1)], 'momentary') };
         return { failed, chs: [b64(buf.getChannelData(0)), b64(buf.getChannelData(1))] };
       }
       const res = [];
       for (const job of jobs) {
         const one = { ...job, gain: job.ids.map((id) => files[id].gain ?? 1) };
         // a line has nothing synthesized; a cue, a bed and an unrecorded blow are only their synthesized selves
-        if (job.kind === 'sfx' || job.kind === 'amb' || job.kind === 'line') one.rec = await render(job, true);
-        if (job.kind !== 'line') one.synth = await render(job, false);
+        const spoken = job.kind === 'line' || job.kind === 'speech';
+        if (job.kind === 'sfx' || job.kind === 'amb' || spoken) one.rec = await render(job, true);
+        if (!spoken) one.synth = await render(job, false);
         res.push(one);
       }
       return res;
@@ -616,17 +660,24 @@ async function shippedLevels(ev) {
   const momentary = (chs) => loudness(chs.map(pcm), 'momentary');
   const cues = out.filter((r) => r.kind === 'cue').map((r) => ({ id: r.id, lufs: momentary(r.synth.chs) }));
   const cue = cues.reduce((a, b) => (b.lufs > a.lufs ? b : a), cues[0]);
-  const lines = [];
-  for (const r of out) {
-    if (r.kind !== 'line' || r.rec.failed.length) continue;
-    const d = r.rec.lufs - cue.lufs;
-    lines.push(d);
-    if (!(Math.abs(d) <= LINE_MATCH_DB)) fails.push(`shipped ${r.file}: ${d.toFixed(1)} dB ${d > 0 ? 'louder' : 'quieter'} than ${cue.id} (${cue.lufs.toFixed(1)} LUFS momentary): LINE.vol ${+(LINE_VOL * 10 ** (-d / 20)).toPrecision(2)} in src/audio/sounds.ts would match`);
-  }
-  if (lines.length) {
+  // the townsfolk a step under the heroes, as D2 has them
+  const under = 20 * Math.log10(NPC_LINE.vol / LINE_VOL);
+  for (const [kind, vol, what, name, step] of [
+    ['line', LINE_VOL, 'LINE', 'hero lines', 0],
+    ['speech', NPC_LINE.vol, 'NPC_LINE', "townsfolk's lines", under],
+  ]) {
+    const lines = [];
+    for (const r of out) {
+      if (r.kind !== kind || r.rec.failed.length) continue;
+      const d = r.rec.lufs - cue.lufs;
+      lines.push(d);
+      const off = d - step;
+      if (!(Math.abs(off) <= LINE_MATCH_DB)) fails.push(`shipped ${r.file}: ${d.toFixed(1)} dB ${d > 0 ? 'louder' : 'quieter'} than ${cue.id} (${cue.lufs.toFixed(1)} LUFS momentary)${step ? `, ${(-step).toFixed(1)} dB under it as the townsfolk are` : ''}: ${what}.vol ${+(vol * 10 ** (-off / 20)).toPrecision(2)} in src/audio/sounds.ts would match`);
+    }
+    if (!lines.length) continue;
     const mean = lines.reduce((a, b) => a + b, 0) / lines.length;
-    const said = new Set(out.filter((r) => r.kind === 'line').map((r) => r.id)).size;
-    facts['voice.*'] = `${said} hero lines in ${lines.length} takes ${Math.min(...lines).toFixed(1)} to ${Math.max(...lines).toFixed(1)} dB (mean ${mean.toFixed(1)}) against ${cue.id}, ${cue.lufs.toFixed(1)} LUFS momentary`;
+    const said = new Set(out.filter((r) => r.kind === kind).map((r) => r.id)).size;
+    facts[kind === 'line' ? 'voice.*' : 'speech'] = `${said} ${name} in ${lines.length} takes ${Math.min(...lines).toFixed(1)} to ${Math.max(...lines).toFixed(1)} dB (mean ${mean.toFixed(1)}) against ${cue.id}, ${cue.lufs.toFixed(1)} LUFS momentary${step ? `, held ${step.toFixed(1)} dB under it` : ''}`;
   }
   for (const r of out) {
     if (!r.rec) continue;
@@ -638,7 +689,7 @@ async function shippedLevels(ev) {
       const c = chs.map(pcm);
       return r.kind === 'sfx' ? loudness(c, 'momentary') : loudness(c.map((x) => x.subarray(3 * RATE)), 'integrated');
     };
-    if (r.kind === 'line') continue;
+    if (r.kind === 'line' || r.kind === 'speech') continue;
     const rec = level(r.rec.chs);
     const synth = level(r.synth.chs);
     const d = rec - synth;

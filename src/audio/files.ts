@@ -140,4 +140,13 @@ export const FILES: Partial<Record<FileId, SoundFiles>> = {
   'voice.sorceress.shrine': { files: ['voice.sorceress.shrine.1.m4a', 'voice.sorceress.shrine.2.m4a', 'voice.sorceress.shrine.3.m4a', 'voice.sorceress.shrine.4.m4a'] },
   'voice.paladin.back_in_town': { files: ['voice.paladin.back_in_town.1.m4a', 'voice.paladin.back_in_town.2.m4a', 'voice.paladin.back_in_town.3.m4a', 'voice.paladin.back_in_town.4.m4a'] },
   'voice.sorceress.back_in_town': { files: ['voice.sorceress.back_in_town.1.m4a', 'voice.sorceress.back_in_town.2.m4a', 'voice.sorceress.back_in_town.3.m4a', 'voice.sorceress.back_in_town.4.m4a'] },
+  'voice.akara.a1q1_intro': { files: ['voice.akara.a1q1_intro.1.m4a'] },
+  'voice.akara.a1q1_remind': { files: ['voice.akara.a1q1_remind.1.m4a'] },
+  'voice.akara.a1q1_remind_out': { files: ['voice.akara.a1q1_remind_out.1.m4a'] },
+  'voice.akara.a1q1_reward': { files: ['voice.akara.a1q1_reward.1.m4a'] },
+  'voice.akara.gossip0': { files: ['voice.akara.gossip0.1.m4a'] },
+  'voice.akara.gossip1': { files: ['voice.akara.gossip1.1.m4a'] },
+  'voice.akara.gossip2': { files: ['voice.akara.gossip2.1.m4a'] },
+  'voice.akara.greeting': { files: ['voice.akara.greeting.1.m4a', 'voice.akara.greeting.2.m4a', 'voice.akara.greeting.3.m4a'] },
+  'voice.akara.farewell': { files: ['voice.akara.farewell.1.m4a', 'voice.akara.farewell.2.m4a', 'voice.akara.farewell.3.m4a'] },
 };

@@ -186,6 +186,8 @@ export class PauseMenu {
       markInGame(false);
       game.started = false;
       game.paused = false;
+      // a townsperson's line, or the hero's, doesn't follow the hero out to the title
+      this.ui.sfx.hush();
       this.ui.sfx.enterArea('title');
       m.classList.remove('open');
       title.refresh();

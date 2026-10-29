@@ -58,7 +58,17 @@ export const SPEAKERS = {
   paladin: { voice: 'Brian' },
   /** the sorceress: a cool, assured woman */
   sorceress: { voice: 'Lily' },
+  /**
+   * 亚喀蕾 (Akarelle), the camp's healer and seer, Akara's counterpart: an older woman, warm and
+   * grave. Of the premade women verified for Mandarin (Sarah, Laura, Jessica, Lily), Sarah is the
+   * mature, reassuring one (Laura's and Jessica's are young and bright, Lily is the sorceress);
+   * a little slower than she reads, as an elder speaks
+   */
+  akara: { voice: 'Sarah', settings: { speed: 0.92 } },
 };
+
+/** the speakers with a column in the heroes' script (tools/audio/voice-lines.md), in its order */
+export const HEROES = ['paladin', 'sorceress'];
 
 /**
  * The heroes' lines, from their script (tools/audio/voice-lines.md, a table of key, when, and a
@@ -68,20 +78,47 @@ export const SPEAKERS = {
  */
 function heroLines() {
   const md = fs.readFileSync(new URL('./voice-lines.md', import.meta.url), 'utf8');
-  const heroes = Object.keys(SPEAKERS);
   const out = [];
   for (const row of md.split('\n').filter((l) => l.startsWith('| `'))) {
     const key = row.match(/^\| `([a-z0-9_]+)`/)[1];
     // key, when, then a cell per hero
     const cells = row.split('|').slice(1, -1);
-    if (cells.length !== 2 + heroes.length) throw new Error(`voice-lines.md: ${key} has ${cells.length} cells, not key, when and one for each of ${heroes.join(', ')}`);
-    heroes.forEach((hero, i) => {
+    if (cells.length !== 2 + HEROES.length) throw new Error(`voice-lines.md: ${key} has ${cells.length} cells, not key, when and one for each of ${HEROES.join(', ')}`);
+    HEROES.forEach((hero, i) => {
       const texts = [...cells[2 + i].matchAll(/「([^」]+)」/g)].map((m) => m[1]);
       if (!texts.length) throw new Error(`voice-lines.md: ${key} has no line for ${hero}`);
       out.push({ id: `voice.${hero}.${key}`, kind: 'voice', texts });
     });
   }
   return out;
+}
+
+/**
+ * What the townsfolk say, from the dialogue's review page (tools/d2-names/DIALOGUE-zh.md, which
+ * tools/dialogue-review.mjs writes from src/data/dialogue.ts, the names filled in as the game shows
+ * them): each row whose 配音 cell names a take, `voice.<speaker>.<line>.<n>`, is take n of that line,
+ * saying the row's 中文. The page is what's written and reviewed, and tools/test/quests.test.mjs
+ * fails while it's behind the lines; a line changed there is made again.
+ */
+function townLines() {
+  const md = fs.readFileSync(new URL('../d2-names/DIALOGUE-zh.md', import.meta.url), 'utf8');
+  const lines = new Map();
+  for (const row of md.split('\n').filter((l) => l.startsWith('| `'))) {
+    // key, when, 中文, English, 字数, 配音 (a cell's own | is escaped)
+    const cells = row.split(/(?<!\\)\|/).slice(1, -1).map((c) => c.trim().replace(/\\\|/g, '|'));
+    const take = cells.at(-1).match(/^`voice\.([a-z]+)\.([a-z0-9_]+)\.(\d+)`/);
+    if (!take) continue;
+    if (cells.length !== 6) throw new Error(`DIALOGUE-zh.md: ${cells[0]} has ${cells.length} cells, not key, when, 中文, English, 字数 and 配音`);
+    const [, who, line, n] = take;
+    const id = `voice.${who}.${line}`;
+    const texts = lines.get(id) ?? [];
+    texts[n - 1] = cells[2];
+    lines.set(id, texts);
+  }
+  return [...lines].map(([id, texts]) => {
+    if (texts.some((t) => !t) || texts.length !== Object.keys(texts).length) throw new Error(`DIALOGUE-zh.md: ${id} is missing a take among ${texts.length}`);
+    return { id, kind: 'voice', texts };
+  });
 }
 
 // Sound effects are asked for dry and close, without music: Sfx places them and the mix adds the
@@ -248,4 +285,7 @@ export default [
 
   // ---- the heroes' voices
   ...heroLines(),
+
+  // ---- the townsfolk's
+  ...townLines(),
 ];
