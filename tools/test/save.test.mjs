@@ -10,9 +10,12 @@
 // the save, the camp's the only one listed), the save's text backed up first, once. Then: the 32 old
 // armor bases and the rest of the old ids onto their D2 bases, keeping defense and requirements;
 // migration steps and the backups they leave (every one from before version 4 and the hero's first
-// stay), unknown items catching up when they come back, a version 4 round trip, where a version 4
-// save resumes (an area this build has, else the camp), newer and unbacked saves never written, and
-// Game saving the area the hero stands in.
+// stay), unknown items catching up when they come back, a version 4 round trip (the hireling read
+// into the hero and written back the same), the hireling's gear (versions 1–3 with it: each item
+// through each step once, none lost, an unknown one by the stash, as from version 4; one this build
+// can't read kept as it was; a hero without one written back to the byte), where a version 4 save
+// resumes (an area this build has, else the camp), newer and unbacked saves never written (the
+// hireling with them), and Game saving the area the hero stands in.
 const KEY = 'dii-save-v1';
 const LEVEL = 12;
 /** a save's migration counts before any step */
@@ -546,10 +549,14 @@ export default async (load) => {
   const said = later ? tooltip(later).map((l) => l.text) : [];
   check(said.some((t) => t.startsWith('这个版本没有这个符文之语')) && !said.some((t) => t.startsWith('旧版')), `v4: the later runeword's tooltip says ${said.join(' / ')}`);
   for (const [slot, it] of Object.entries(p4.equipment)) check(p4.meetsReq(it), `v4: can't use the ${it.baseId} in ${slot}`);
+  // the hireling read into the hero (Player.merc), her gear with her
+  const m4 = p4.merc;
+  check(m4 && !('raw' in m4) && m4.hire === 3 && m4.name === 7 && m4.level === 9 && m4.xp === 1234 && m4.dead === false && m4.life === undefined && m4.equipment.weapon?.baseId === 'ssd' && Object.keys(m4.equipment).join() === 'weapon', `v4: the hireling read as ${JSON.stringify(m4)}`);
   save.writeSave(p4, floorArea);
   const w4 = JSON.parse(localStorage.getItem(KEY));
   check(w4.worldSeed === 4242 && w4.unlocked === 1 && w4.respec === true && w4.future?.kept === 'as is', `v4: written seed ${w4.worldSeed}, unlocked ${w4.unlocked}, respec ${w4.respec}, future ${JSON.stringify(w4.future)}`);
-  check(w4.merc?.xp === 1234 && w4.merc.equipment.weapon.baseId === 'ssd' && w4.corpse?.equipment.head.baseId === 'cap', `v4: written merc ${JSON.stringify(w4.merc)}, corpse ${JSON.stringify(w4.corpse)}`);
+  // written from the hero as she was read: the same, field for field
+  check(JSON.stringify(w4.merc) === JSON.stringify(v4.merc) && w4.corpse?.equipment.head.baseId === 'cap', `v4: written merc ${JSON.stringify(w4.merc)} (read ${JSON.stringify(v4.merc)}), corpse ${JSON.stringify(w4.corpse)}`);
   // quests this build doesn't know keep their flags, read as D2 reads a record for a new game: a
   // reward left waiting (den: granted and pending) is from an earlier game (src/game/quests/record.ts loadQuestRecord)
   check(w4.progress[0].waypoints.includes(17) && w4.progress[0].quests.den === (3 | 0x8000) && w4.progress[1].quests.andariel === 1, `v4: written progress ${JSON.stringify(w4.progress)}`);
@@ -557,6 +564,111 @@ export default async (load) => {
   const keptRaw = w4.inventory.find((x) => x.x === 5)?.item.raw;
   check(keptRaw?.v === 4 && JSON.stringify(keptRaw.mig) === JSON.stringify(ZERO) && keptRaw.item.baseId === 'zz_still_unknown', `v4: the unknown item was written holding ${JSON.stringify(keptRaw)}`);
   check(save.listSaves()[0]?.area === floorArea, `v4: the title screen lists area ${save.listSaves()[0]?.area}`);
+
+  // ── the hireling's gear (docs/M2A-STEP0.md 2.3): versions 1–3 with her gear, each item through each
+  // conversion once (a test step after this build's marks what it sees), none lost, her unknown one
+  // by the stash; then a version 4 save with an unknown piece on her ──
+  /** her gear in a save, or on the hero's hireling */
+  const mercItems = (m) => Object.values(m?.equipment ?? {});
+  save.MIGRATIONS.items.push((d) =>
+    save.mapItems(d, (it) => {
+      if (it.baseId !== 'unknown') it.stepped = (it.stepped ?? 0) + 1;
+      return it;
+    }),
+  );
+  try {
+    for (const v of [1, '1d', 2, 3]) {
+      reset();
+      const what = `v${v} with a hireling`;
+      const old = oldSave(v, 0);
+      // a long sword with an old rune in it (versions before 2 had the game's own runes), a cap, and a mail this build doesn't know
+      const sword = asOld({ ...createItem('lsd'), sockets: 1, socketed: ['r08'] });
+      if (v === 1) sword.socketed = ['r_ember'];
+      old.merc = { hire: 0, name: 4, level: 6, xp: 3000, equipment: { weapon: sword, head: asOld(createItem('cap')), body: item('zz_mercmail') }, life: 70, dead: false };
+      const before = savedItems(old).length + mercItems(old.merc).length;
+      localStorage.setItem(KEY, JSON.stringify(old));
+      const s = save.loadSave();
+      const p = s.player;
+      const m = p.merc;
+      check(m && m.hire === 0 && m.name === 4 && m.level === 6 && m.xp === 3000 && m.life === 70 && m.dead === false, `${what}: read as ${JSON.stringify(m && { ...m, equipment: Object.keys(m.equipment) })}`);
+      const w = m?.equipment.weapon;
+      check(w?.baseId === 'lsd' && w.socketed.join() === 'r08' && m.equipment.head?.baseId === 'cap' && !m.equipment.body, `${what}: her gear is ${JSON.stringify(Object.entries(m?.equipment ?? {}).map(([k, it]) => `${k} ${it.baseId} ${it.socketed?.join()}`))}`);
+      const all = [...playerItems(p), ...mercItems(m)];
+      check(all.length === before + 1 && giftOf(p), `${what}: ${before} items saved, ${all.length} loaded (want them and the tome)`);
+      check(all.filter((it) => !isUnknown(it)).every((it) => it.stepped === 1), `${what}: steps reached ${all.filter((it) => !isUnknown(it) && it.stepped !== 1).map((it) => `${it.baseId}×${it.stepped ?? 0}`).join(', ')}`);
+      const mail = p.unplaced.find((it) => it.raw?.item?.baseId === 'zz_mercmail');
+      check(mail && isUnknown(mail) && p.unplaced.filter(isUnknown).length === 4, `${what}: her unknown mail by the stash ${!!mail}, ${p.unplaced.filter(isUnknown).length} unknown there`);
+      // written and read again: nothing doubles, nothing steps again
+      save.writeSave(p, s.area);
+      const d = JSON.parse(localStorage.getItem(KEY));
+      check(Object.keys(d.merc?.equipment ?? {}).sort().join() === 'head,weapon' && d.merc.xp === 3000 && savedItems(d).length + mercItems(d.merc).length === before + 1, `${what}: written merc ${JSON.stringify(d.merc && Object.keys(d.merc.equipment))}, ${savedItems(d).length + mercItems(d.merc).length} items`);
+      const again = save.loadSave();
+      const all2 = [...playerItems(again.player), ...mercItems(again.player.merc)];
+      check(all2.length === before + 1 && all2.filter((it) => !isUnknown(it)).every((it) => it.stepped === 1) && all2.filter(isUnknown).length === 4, `${what}, reloaded: ${all2.length} items, stepped ${all2.map((it) => it.stepped ?? '-').join()}`);
+    }
+  } finally {
+    save.MIGRATIONS.items.pop();
+  }
+  {
+    reset();
+    const d = clone(at.get(0).d);
+    d.merc = { hire: 1, name: 0, level: 3, xp: 0, equipment: { weapon: item('zz_mercbow', { rarity: 'unique', name: '后来的弓' }), head: createItem('cap') }, dead: false };
+    const before = savedItems(d).length + mercItems(d.merc).length;
+    localStorage.setItem(KEY, JSON.stringify(d));
+    const s = save.loadSave();
+    const p = s.player;
+    const bow = p.unplaced.find((it) => it.raw?.item?.baseId === 'zz_mercbow');
+    check(bow && isUnknown(bow) && !p.merc.equipment.weapon && p.merc.equipment.head?.baseId === 'cap', `v4, an unknown bow on her: by the stash ${!!bow}, on her ${p.merc?.equipment.weapon?.baseId}`);
+    check(playerItems(p).length + mercItems(p.merc).length === before, `v4, an unknown bow on her: ${before} items saved, ${playerItems(p).length + mercItems(p.merc).length} loaded`);
+    save.writeSave(p, s.area);
+    const w = JSON.parse(localStorage.getItem(KEY));
+    check(Object.keys(w.merc.equipment).join() === 'head' && w.unplaced.some((it) => it.raw?.item?.baseId === 'zz_mercbow') && savedItems(w).length + mercItems(w.merc).length === before, `v4, an unknown bow on her: written ${JSON.stringify(Object.keys(w.merc.equipment))}, ${savedItems(w).length + mercItems(w.merc).length} items`);
+    const p2 = save.loadSave().player;
+    check(playerItems(p2).length + mercItems(p2.merc).length === before && p2.unplaced.filter((it) => it.raw?.item?.baseId === 'zz_mercbow').length === 1, `v4, an unknown bow on her, reloaded: ${playerItems(p2).length + mercItems(p2.merc).length} items`);
+  }
+
+  // ── a hireling this build can't read (a later build's Hireling.txt row) stays as it was; a field it
+  // doesn't know on one it can stays on her; a hero without one writes what this build always wrote ──
+  {
+    reset();
+    const d = clone(at.get(0).d);
+    d.merc = { hire: 77, name: 1, level: 30, xp: 99, equipment: { weapon: item('ssd') }, dead: false, aura: 'Might' };
+    localStorage.setItem(KEY, JSON.stringify(d));
+    const s = save.loadSave();
+    check(s.player.merc?.raw !== undefined && s.player.merc.dead === true, `a later build's hireling: read as ${JSON.stringify(s.player.merc)}`);
+    save.writeSave(s.player, s.area);
+    const w = JSON.parse(localStorage.getItem(KEY));
+    check(JSON.stringify(w.merc) === JSON.stringify(d.merc), `a later build's hireling: written ${JSON.stringify(w.merc)}`);
+    reset();
+    const e = clone(at.get(0).d);
+    e.merc = { hire: 0, name: 2, level: 4, xp: 400, equipment: {}, life: 30, dead: false, aura: 'Might' };
+    localStorage.setItem(KEY, JSON.stringify(e));
+    const s2 = save.loadSave();
+    check(s2.player.merc?.raw === undefined && s2.player.merc?.xp === 400, `a hireling with a later field: read as ${JSON.stringify(s2.player.merc)}`);
+    s2.player.merc.life = undefined;
+    save.writeSave(s2.player, s2.area);
+    const w2 = JSON.parse(localStorage.getItem(KEY));
+    check(JSON.stringify(w2.merc) === JSON.stringify({ hire: 0, name: 2, level: 4, xp: 400, equipment: {}, dead: false, aura: 'Might' }), `a hireling with a later field, at full life: written ${JSON.stringify(w2.merc)}`);
+  }
+  {
+    // the save this build's game wrote, with no hireling: read and written back, the same text (its
+    // write time held), merc null
+    reset();
+    const raw = JSON.stringify(at.get(0).d);
+    localStorage.setItem(KEY, raw);
+    const s = save.loadSave();
+    check(s.player.merc === null, `no hireling: read as ${JSON.stringify(s.player.merc)}`);
+    const now = Date.now;
+    Date.now = () => at.get(0).d.time;
+    try {
+      save.writeSave(s.player, s.area, s.worldSeed);
+    } finally {
+      Date.now = now;
+    }
+    const text = localStorage.getItem(KEY);
+    check(text === raw, `no hireling: written back otherwise (${text.length} characters, ${raw.length} read)${text === raw ? '' : `: first difference at ${[...text].findIndex((c, i) => c !== raw[i])}, ${text.slice([...text].findIndex((c, i) => c !== raw[i]) - 40, [...text].findIndex((c, i) => c !== raw[i]) + 40)}`}`);
+    check(JSON.parse(text).merc === null, 'no hireling: merc written as other than null');
+  }
 
   // ── where a version 4 save resumes on a reload: an area this build has, else the camp ──
   for (const [where, area, want] of [
@@ -592,7 +704,11 @@ export default async (load) => {
     if (!s) continue;
     // its unknown items stay unknown: this build can't give them the newer build's migrations
     check(s.player.inventory.items.filter((x) => isUnknown(x.item)).length === 2, `newer (${label}): ${s.player.inventory.items.filter((x) => isUnknown(x.item)).length} unknown items in the bag, want 2`);
+    // its hireling read to be looked at, never written
+    check(s.player.merc?.xp === 1234 && s.player.merc.equipment.weapon?.baseId === 'ssd', `newer (${label}): the hireling read as ${JSON.stringify(s.player.merc)}`);
     s.player.gold += 1000;
+    s.player.merc.xp += 1000;
+    delete s.player.merc.equipment.weapon;
     save.writeSave(s.player, CAMP_AREA);
     check(localStorage.getItem(KEY) === raw && !backups().length, `newer (${label}): written over, or backed up (${backups().join()})`);
   }
@@ -647,5 +763,5 @@ export default async (load) => {
   check(inWild.area === WILD_AREA && inWild.worldSeed === game.worldSeed, `saved standing out past the camp gate: area ${inWild.area}, seed ${inWild.worldSeed} (the game's ${game.worldSeed})`);
 
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
-  console.log(`  v1 (both), v2, v3 at depths 0, 1, 5 → v4 in the camp on D2 bases with every item kept (3 unknown by the stash) and a tome of town portal once, usable gear, points adding up, backed up once; every old base onto its D2 one with its defense, mods and old requirements; steps see v4 items, keep the first and pre-v4 backups, catch restored items up; v4 round trip, resuming in a built area or the camp; newer and unbacked saves never written`);
+  console.log(`  v1 (both), v2, v3 at depths 0, 1, 5 → v4 in the camp on D2 bases with every item kept (3 unknown by the stash) and a tome of town portal once, usable gear, points adding up, backed up once; every old base onto its D2 one with its defense, mods and old requirements; steps see v4 items, keep the first and pre-v4 backups, catch restored items up; v4 round trip, the hireling read and written back the same; her gear from v1–v3 through each step once, none lost, unknown pieces by the stash; one this build can't read kept; no hireling, the same text; resuming in a built area or the camp; newer and unbacked saves never written`);
 };

@@ -1,4 +1,5 @@
 import { CLASSES, type PlayerClass } from '../data/classes';
+import { D2X_HIRELINGS } from '../data/d2x/hirelings';
 import { randInt, type P2 } from '../core/math';
 import { categoryOf, ITEM_BASES, UNKNOWN_BASE, type Category } from '../data/items';
 import { D2_RUNEWORDS } from '../data/d2/runewords';
@@ -13,6 +14,7 @@ import type { Grid, Placed } from '../items/grid';
 import { changed, layOut, mergeStash, SHARED_PAGES, SharedStash, sameState, stashEntry, stashState, type StashEntry, type StashState } from '../items/stash';
 import { Player, xpForLevel } from './player';
 import { bodyItems, type Corpse } from './corpse';
+import type { MercState } from './merc';
 import { loadQuestRecord, type QuestRecords } from './quests/record';
 import { WILD_MAPS } from '../world/levelgen';
 import { CAMP_AREA, areaForDepth, builtWaypoints, isBuilt } from '../world/areas';
@@ -315,7 +317,10 @@ export interface DifficultySave {
   quests: Record<string, number>;
 }
 
-/** the hired mercenary (Diablo II hireling.txt, its Version 100 rows) */
+/**
+ * the hired mercenary (Diablo II hireling.txt, its Version 100 rows): what the hero keeps of her
+ * (Player.merc, src/game/merc.ts MercState), read and written with the hero (loadMerc, mercSave)
+ */
 export interface MercSave {
   /** the hireling row it was hired from: its kind, act and difficulty */
   hire: number;
@@ -416,19 +421,10 @@ export interface SaveV4 {
  */
 export const MIGRATIONS: Record<keyof MigrationCounts, ((d: SaveV4) => void)[]> = {
   items: [
-    // 1: the Diablo II bases. Every item, the mercenary's and the corpse's too, moves from the game's
-    // own base ids onto D2 codes (src/items/legacy.ts), keeping its mods, name, defense and, where
-    // the D2 base asks more, its old requirements
-    (d) => {
-      mapItems(d, toD2Item);
-      for (const eq of [d.merc?.equipment]) {
-        if (!eq || typeof eq !== 'object') continue;
-        for (const k of Object.keys(eq) as (keyof typeof eq)[]) {
-          const it = eq[k];
-          if (it && typeof it === 'object' && !isUnknown(it as Item)) eq[k] = toD2Item(it as Item) as never;
-        }
-      }
-    },
+    // 1: the Diablo II bases. Every item, the mercenary's and the corpse's too (mapItems has them
+    // all, each once), moves from the game's own base ids onto D2 codes (src/items/legacy.ts),
+    // keeping its mods, name, defense and, where the D2 base asks more, its old requirements
+    (d) => mapItems(d, toD2Item),
     // 2: a town portal takes a scroll of town portal or a charge of its tome now; it was free on its
     // key (P). A hero whose bag holds neither is given a tome of town portal, once, so nobody is left
     // stranded out in the wilds by the change. Nothing is taken from anyone
@@ -508,6 +504,8 @@ interface OldSave {
   waypoints: number[];
   /** floor the player was on (0 = town); dead players resume in town */
   depth?: number;
+  /** no build before version 4 wrote one; one found is kept as version 4 keeps it, its gear migrated with the hero's */
+  merc?: MercSave | null;
   life?: number;
   mana?: number;
   time: number;
@@ -606,7 +604,7 @@ function upgrade(o: OldSave, fresh: Set<Item>): SaveV4 {
     difficulty: 0,
     unlocked: 0,
     progress: [{ waypoints: waypointAreas(o.waypoints ?? [0]), quests: {} }, newProgress(), newProgress()],
-    merc: null,
+    merc: o.merc ?? null,
     corpse: null,
   };
   delete d.depth;
@@ -628,11 +626,15 @@ function runMigrations(d: SaveV4) {
   }
 }
 
-/** each of the hero's items, the body's too, replaced by what `f` makes of it (not the mercenary's: this build doesn't play it) */
-function mapItems(d: SaveV4, f: (it: Item) => Item) {
+/**
+ * each of the hero's items, the body's and the mercenary's too, replaced by what `f` makes of it,
+ * once each: loading's knownItem and every migration step reach them all so (exported for the save test)
+ */
+export function mapItems(d: SaveV4, f: (it: Item) => Item) {
   // a save is read as it is: anything may be in a place an item should be
   const m = (it: Item): Item => (it && typeof it === 'object' ? f(it) : it);
   const body = d.corpse && typeof d.corpse === 'object' ? d.corpse : null;
+  const merc = d.merc && typeof d.merc === 'object' ? d.merc : null;
   for (const eq of [d.equipment ?? {}, body?.equipment ?? {}]) {
     if (eq && typeof eq === 'object') for (const k of Object.keys(eq) as (keyof typeof eq)[]) eq[k] = m(eq[k]!);
   }
@@ -642,6 +644,8 @@ function mapItems(d: SaveV4, f: (it: Item) => Item) {
   }
   if (Array.isArray(d.unplaced)) d.unplaced = d.unplaced.map(m);
   if (Array.isArray(d.belt)) d.belt = d.belt.map((col) => (Array.isArray(col) ? col.map(m) : col));
+  const gear = merc?.equipment;
+  if (gear && typeof gear === 'object' && !Array.isArray(gear)) for (const k of Object.keys(gear) as (keyof typeof gear)[]) gear[k] = m(gear[k]!);
 }
 
 /** what stands in for an item whose base this build doesn't know: the item as saved, and where in the save's history */
@@ -677,7 +681,7 @@ function restored(raw: NonNullable<Item['raw']>, d: SaveV4): Item | null {
   if (isUnknown(it) || !knownBase(it.baseId, from.items)) return null;
   if (LINES.every((k) => from[k] >= d.mig[k])) return it;
   // the steps it missed, on a copy of the save holding only it
-  const shell: SaveV4 = { ...structuredClone({ ...d, equipment: {}, inventory: [], stash: [], cube: [], unplaced: [], belt: [], corpse: null }), unplaced: [it] };
+  const shell: SaveV4 = { ...structuredClone({ ...d, equipment: {}, inventory: [], stash: [], cube: [], unplaced: [], belt: [], corpse: null, merc: null }), unplaced: [it] };
   for (const k of LINES) for (let i = from[k]; i < Math.min(d.mig[k], MIGRATIONS[k].length); i++) MIGRATIONS[k][i](shell);
   // found again by its uid: a step may add items, or remake this one (not found, it stays unknown)
   let out: Item | null = null;
@@ -713,8 +717,8 @@ export function writeSave(p: Player, area: number, worldSeed?: number, cursor?: 
   // a hero no game here claimed (tests) is claimed now; one another tab has claimed since isn't written
   if (held !== KEY) claimHero();
   else if (!(last && mayWriteLast()) && heroTaken(p)) return false;
-  // what this build doesn't play yet (the mercenary, the other difficulties' waypoints) is written
-  // from the save loaded or last written: a line that moves one onto Player or Game must write it from there instead
+  // what this build doesn't play yet (the other difficulties' waypoints, a field of a later build's) is
+  // written from the save loaded or last written: a line that moves one onto Player or Game must write it from there instead
   const prev = loaded.get(p);
   const difficulty = p.difficulty;
   // the quests from the hero, every difficulty's (the records keep the quests this build doesn't know)
@@ -755,7 +759,7 @@ export function writeSave(p: Player, area: number, worldSeed?: number, cursor?: 
     // the one played is open, if only through the debug panel
     unlocked: Math.max(prev?.unlocked ?? 0, difficulty) as Difficulty,
     progress,
-    merc: prev?.merc ?? null,
+    merc: mercSave(p.merc),
     corpse: corpseSave(p),
     life: p.dead ? undefined : p.life,
     mana: p.dead ? undefined : p.mana,
@@ -772,6 +776,64 @@ export function writeSave(p: Player, area: number, worldSeed?: number, cursor?: 
     // storage unavailable, or full
     return false;
   }
+}
+
+/**
+ * The hireling as the save keeps her (MercSave), from what the hero keeps of her (Player.merc): one
+ * this build couldn't read written back as it was (MercState.raw); what else the save had on her (a
+ * later build's field) kept, in its place; none, null
+ */
+function mercSave(m: MercState | null): MercSave | null {
+  if (!m) return null;
+  if (m.raw !== undefined) return m.raw as MercSave;
+  return { ...mercLoaded.get(m), hire: m.hire, name: m.name, level: m.level, xp: m.xp, equipment: m.equipment, life: m.life, dead: m.dead };
+}
+
+/** what each hireling was read from (loadMerc): its fields this build doesn't know go back with it */
+const mercLoaded = new WeakMap<MercState, object>();
+
+/** the slots a hireling wears in (hireling.ts MercSlot) */
+const MERC_SLOTS = ['head', 'body', 'weapon'];
+
+/** a save's hireling this build can read and play: a Hireling.txt Id it has, its numbers numbers, its gear in her slots */
+function readableMerc(m: unknown): m is MercSave {
+  if (!m || typeof m !== 'object' || Array.isArray(m)) return false;
+  const h = m as Partial<Record<keyof MercSave, unknown>>;
+  const whole = (v: unknown, min: number) => typeof v === 'number' && Number.isInteger(v) && v >= min;
+  const eq = h.equipment;
+  return (
+    typeof h.hire === 'number' &&
+    D2X_HIRELINGS.some((r) => r.id === h.hire) &&
+    whole(h.name, 0) &&
+    whole(h.level, 1) &&
+    typeof h.xp === 'number' &&
+    h.xp >= 0 &&
+    typeof h.dead === 'boolean' &&
+    (h.life === undefined || typeof h.life === 'number') &&
+    !!eq &&
+    typeof eq === 'object' &&
+    !Array.isArray(eq) &&
+    Object.keys(eq).every((k) => MERC_SLOTS.includes(k))
+  );
+}
+
+/**
+ * The save's hireling, as the hero keeps her (Player.merc), her gear already through knownItem and
+ * the migrations with the hero's (mapItems): what `keep` turns away (an item just found unknown) goes
+ * by the camp stash with the hero's, out of her slot. One this build can't read stays as it was
+ * (MercState.raw), gear and all, to be written back so; none, null
+ */
+function loadMerc(m: unknown, keep: (it: Item | null | undefined) => Item | null): MercState | null {
+  if (m === null || m === undefined) return null;
+  if (!readableMerc(m)) return { hire: -1, name: -1, level: 0, xp: 0, equipment: {}, dead: true, raw: m };
+  const out: MercState = { hire: m.hire, name: m.name, level: m.level, xp: m.xp, equipment: {}, dead: m.dead };
+  if (m.life !== undefined) out.life = m.life;
+  for (const [slot, it] of Object.entries(m.equipment)) {
+    const k = keep(it);
+    if (k) out.equipment[slot as keyof MercSave['equipment']] = k;
+  }
+  mercLoaded.set(out, m);
+  return out;
 }
 
 /** the body the save keeps: the first that holds items, as Diablo II keeps one (PlrSave2.cpp:404-450) */
@@ -1064,6 +1126,8 @@ export function loadSave(): Loaded | null {
     }
     if (bodyItems(c).length) p.corpses.push(c);
   }
+  // the hireling, read in with the hero (src/game/merc.ts): her gear an item just found unknown leaves, by the stash
+  p.merc = loadMerc(d.merc, keep);
   // what follows from the level and attributes is worked out anew (Diablo II's CharStats: Player.recalc)
   p.markDirty();
   p.recalc();

@@ -16,6 +16,7 @@ import { baseOf, classCode, globalItemStats, isIdentified, itemCategory, itemDef
 import { CAMP_AREA } from '../world/areas';
 import { Actor, type ActorState, type Resists } from './actor';
 import type { Corpse } from './corpse';
+import type { MercState } from './merc';
 import { attackAnim, blockFrames, castAnim, FRAMES_PER_SEC, hitRecoveryFrames, toSeconds, weaponClass, type AnimFrames, type AttackSpeed, type WeaponClass } from './d2/frames';
 import { MPS_PER_VELOCITY, attackRating, baseLife, baseMana, baseStamina, blockChance, charStats, defense, difficulty, levelUpPoints, moveVelocity, resistance } from './d2/stats';
 import { addXp, MAX_LEVEL, xpForLevel } from './d2/xp';
@@ -165,6 +166,8 @@ export class Player extends Actor {
   lastBlockTime = -Infinity;
   /** the bodies left on dying, with the gear on them (src/game/corpse.ts) */
   corpses: Corpse[] = [];
+  /** the hireling the hero has, on the map or not, dead or alive (src/game/merc.ts; saved with the hero); none until one is hired */
+  merc: MercState | null = null;
   activeAura: string | null = null;
   holyShield = 0;
   /** seconds left on the sorceress's Frozen Armor */

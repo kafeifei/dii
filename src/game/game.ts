@@ -20,7 +20,7 @@ import { GroundItem, WorldObject } from './objects';
 import { CHARGE_PREFIX, Player } from './player';
 import { startCast, toggleAura, updatePlayer, type PlayerAction } from './playerctl';
 import { celebrateLevelUp, killMonster, killPlayer, onProc, rollLoot, wake } from './kills';
-import type { Friendly, Merc } from './merc';
+import { updateMerc, type Friendly, type Merc } from './merc';
 import { layOutCorpses, respawn } from './bodies';
 import { interact } from './interact';
 import { npcLeft, npcSpoke, npcTalk, refreshShop, talkTo } from './townsfolk';
@@ -670,6 +670,7 @@ export class Game {
       this.hooks.message('神殿的祝福消失了', '#9a9080', 2);
     }
     updatePlayer(this, p, dt);
+    if (this.merc) updateMerc(this, this.merc, dt);
     // self-repairing items mend a point now and then, on the shared pages too while they can change
     p.mendItems(dt, this.shared.readOnly ? [] : this.shared.pages);
     this.quests.update(dt);
