@@ -186,8 +186,11 @@ export class PauseMenu {
       // left under the title for the next hero's game to hear of
       leave();
       game.save();
-      // nor is the quest log's news (UI.questsChanged): it was this hero's, and the next game starts without it
+      // nor is the quest log's news (UI.questsChanged), nor what the messages say (her reward just
+      // handed over, a save that didn't go in: its badge stays up, UI.saveState): they were this
+      // hero's, and would hang over the title and into the next game, their clock stopped with this one
       this.ui.questNews = false;
+      this.ui.clearMessages();
       // the hero let go: another tab may open it without waiting for this one
       releaseHero();
       markInGame(false);

@@ -125,6 +125,11 @@ export class UI implements GameHooks, UIContext {
     this.hud.message(text, color, dur);
   }
 
+  /** (UIContext's, not a hook: the pause menu's quit to the title) */
+  clearMessages() {
+    this.hud.clearMessages();
+  }
+
   openPanel(kind: 'shop' | 'stash' | 'waypoint') {
     this.left = kind;
     if (kind !== 'waypoint') this.right = 'inv';

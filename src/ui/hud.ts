@@ -106,6 +106,12 @@ export class Hud {
     }
   }
 
+  /** every message taken down at once (a hero quit to the title: what was said was said to them) */
+  clearMessages() {
+    for (const msg of this.msgs) msg.el.remove();
+    this.msgs = [];
+  }
+
   private onBeltDown(col: number, e: PointerEvent) {
     e.preventDefault();
     const ui = this.ui;

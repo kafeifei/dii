@@ -33,6 +33,8 @@ export interface UIContext {
   /** the items on show by uid, for their tooltips (refilled on every redraw) */
   readonly itemByUid: Map<string, Item>;
   message(text: string, color?: string, dur?: number): void;
+  /** the messages on screen taken down at once (Hud.clearMessages) */
+  clearMessages(): void;
 }
 
 export function h<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, html?: string): HTMLElementTagNameMap[K] {
