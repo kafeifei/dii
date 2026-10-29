@@ -25,8 +25,10 @@ const SEED = 0x5eed2a;
  * differently; the quests' digests and the first save's are as they were. With positions taken from
  * the camp's corner, Math.random held while a map is built and seeded afresh each part, the camp's,
  * Blood Moor's and the Den's parts came out the same in the two builds (only Cold Plains' waypoint
- * checkpoint moved, its own map being new). The D line's Den, D2's maze from its level's seed, had
- * den.monsters recorded again the same day on its own branch
+ * checkpoint moved, its own map being new). Recorded again the same day with the D line merged too:
+ * den.monsters alone moved from the W line's, the Den now D2's maze from its level's seed (on the D
+ * line's own branch that part alone moved as well), its monsters faring as the W line's world has
+ * them; joining the west block's ways down to the dungeons moved nothing
  */
 const RECORDED = {
   camp: { hero: '2f784f045fdad8f1', monsters: 'c1fac9e418bbd686', ground: 'bb5bb1b3a77487ee', quests: '82e81eff8fdb5188', save: '6d3a476ce8832805' },
@@ -34,7 +36,7 @@ const RECORDED = {
   portal: { hero: 'f4afbb53e4f18e00', monsters: 'a34bbbd46e8f066d', ground: '27320c6976c20edc', quests: '82e81eff8fdb5188', save: '11990c59506a060e' },
   body: { hero: 'dcc554dfaccbe19f', monsters: 'd7386d580dbd6fcb', ground: '27320c6976c20edc', quests: '82e81eff8fdb5188', save: '40ba71b7b31ea877' },
   waypoint: { hero: '7993689fed0ab9c0', monsters: 'c3b5c88d0a10076d', ground: '27320c6976c20edc', quests: '82e81eff8fdb5188', save: 'a1798f886bafb558' },
-  den: { hero: 'cf9ddbc064c7f47e', monsters: '016ae8baac9d916d', ground: 'fc0525fb880342a0', quests: 'a7ce0e07f8306b66', save: '3836de8bf3771e6e' },
+  den: { hero: 'cf9ddbc064c7f47e', monsters: 'f6fcdc002d4610d0', ground: 'fc0525fb880342a0', quests: 'a7ce0e07f8306b66', save: '3836de8bf3771e6e' },
   nightmare: { hero: '2e6ff5fc8b404c96', monsters: '78e9cca0986189fd', ground: 'bb5bb1b3a77487ee', quests: 'a7ce0e07f8306b66', save: '0f14b251711d4205' },
 };
 
