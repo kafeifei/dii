@@ -1702,3 +1702,56 @@
 | uniques.json | Halaberd's Reign | 死亡女神的统治 → 死亡女神的王权（不变） | Halabreth's Reign（原 Grave Queen's Reign） | 抽查发现：英文跟着官方中文的「死亡女神」走，英文老玩家认的是 Halaberd；留它的音（差 3 个字母）和 Reign |
 | runewords.json | Honor | 荣耀 → 尊荣（不变） | Exalted Honor（原 Laurels） | 抽查发现：Laurels 换了意象、丢了 Honor；留 Honor 加 Exalted（尊），和荣耀锁链的 Fetters of Honor 同用 Honor |
 | suffixes.json | of Power | 权能之 → 权柄之 → 权势之 | of Dread Power（不变） | 权柄是符文之语 Authority 的名字（官方权威，另一个词）；后缀换作权势，仍留「权」 |
+
+## 导入复核：审查查出的问题
+
+导入一节提交以后又做了一遍独立审查，照审查意见改了下面 36 行（名字表 31 行、术语表 5 条），各行的 `note` 也记了曾用名。
+
+- 硬性规则 1 没过的 4 条：前缀碾轧（官方碾压）、后缀术师之（官方术士之）都只换了一个只差声调的字，改作碾磨、术宗之。前缀精良是 D2 精良品质（Superior）的字串，白色的精良长剑和只带这个前缀的蓝色长剑都叫「精良长剑」，改作良锻。前缀锈蚀是暗金怪名前缀 Rust 的官方名，改作赤锈 / Rust-Red。
+- 撞了别的游戏的 2 条：暗金 Ethereal Edge 的英文 Ethereal Blade 是 Dota 2 的物品，改作 Ethereal Keen-Edge；中文无形之刃不变，没用「无形锐锋」，因为锐锋是符文之语 Edge 的官方名。前缀辉耀是 Dota 2 物品 Radiance 的中文名，改作恒辉。
+- 术语表里离原名只差两个字母、念起来几乎一样的 4 条：Ghiyed、Durayel、Angdarael、Khorast 改作 Ghiedan、Durrahel、Andaryth、Korastel。每个都多了一个音节或换了尾音，和原名差 3 个字母，又留住老玩家听得出的那部分（Ghee-、Dur-…-el、Andar-、-rast-）。Athena 的 Asseni 听不出 Athena，改作 Athaenis。用到这几个写法的 7 行跟着改。娅甸妮的震怒的英文 Asseni's Fury 两个词都认不出，Fury 又是符文之语的词，改作 Athaenis' Thunderous Wrath。改完以后，`d2-validate.mjs` 里「术语表英文离原名不超过 2 个字母」的警告从 19 条降到 15 条，剩下的术语表一组都看过，理由写在 note 里。
+- 一个中文词对一个英文词：钢铁面罩的 Veil of Iron 改作 Faceplate of Steel（钢是 Steel；面罩同希贡的面罩 Shigund's Faceplate）。水妖渔叉的 Kelpie Noose 改作 Kelpie Fishfork（Noose 留给薇朵菈的伏阱）。精钢榔头的 Steelrammer 改作 Truesteel Driver（精钢＝Truesteel）。幽影陷阱改作阴影罗网：幽影是 Umbra，这件的英文是 Gloom；罗网＝Snare，同暗金怪名后缀 Web。
+- 前缀光环改作光晕：游戏里圣骑士的技能就叫「光环」，《光环》（Halo）的中文名也是它。
+- 英文是电影片名的 3 条：Pitch Black 改作 Black as Pitch，One-Eyed Jack's 改作 Gamester Jack's，Limitless 改作 Ad Infinitum（这样也留住了 Infinity）。`d2-validate.mjs` 的 Title Case 检查把 as 加进小词，在名字中间和 of、the 一样小写。
+- 导入一节留下的 6 条勉强，加上审查点名的 2 条，都改了：Morgenu's Sharkhide 改作 Magnarius' Sharkhide，Regicide 改作 Crownslayer，前缀皎洁改作圣净（留「圣」），Hellborn 改作 Netherdemon，三种弓女的 Bowmaiden 改作 Archeress（留 Archer），Garrison Quarters 改作 Garrison Barracks，游魂的 Driftsoul 改作 Driftghost。
+- 没改的：辉煌（Glorious）、壮硕（Stout）、焚化之（of Incineration）、印记（稀有名 Mark）和 D2 字串表里的 Brilliant、Muscular、of Cremation、Sign 同名，但这四个字串游戏里没有对应的行，玩家见不到，不改。雷暴 / 雷暴之这类只差「之」的几对，分属暗金怪名和魔法后缀，是同一个官方词，照「一个官方词一个写法」不改。女猎 Huntmaiden、矛女 Spearmaiden 留着 Hunt、Spear，不改。
+- 重新导入后，`node tools/d2-validate.mjs` 67 项全过；中文同音字、别行官方名用审查用的脚本重查过，这几行都不再报。抽查的 150 条重新生成，改过的 13 条都标了出来，没有勉强的了。
+
+| 文件 | 原版 | 官方 → 旧名 → 新名 | 新英文名 | 为什么 |
+| --- | --- | --- | --- | --- |
+| prefixes.json | Fine | 优良 → 精良 → 良锻 | Fine-Wrought（不变） | 曾用名「精良」（英文不变）：精良是 D2 精良品质（Hiquality）的字串，白色精良长剑和带这个前缀的蓝色长剑都会叫「精良长剑」；换作良锻，留「良」，锻对 Wrought |
+| prefixes.json | Glowing | 辉光 → 辉耀 → 恒辉 | Ever-Glowing（不变） | 曾用名「辉耀」（英文不变）：辉耀是 Dota 2 物品 Radiance 的中文名；留「辉」，光换恒（恒＝Ever，对 Ever-Glowing） |
+| prefixes.json | Rusty | 红锈 → 锈蚀 → 赤锈 | Rust-Red（原 Rust-Eaten） | 曾用名「锈蚀」Rust-Eaten：锈蚀是暗金怪名前缀 Rust 的官方名；留「锈」，红换同义的赤（赤＝Red，同赤焰 Redblaze），英文跟着改作 Rust-Red |
+| prefixes.json | Aureolic | 光轮 → 光环 → 光晕 | Aureole-Crowned（不变） | 曾用名「光环」（英文不变）：光环是 D2 技能页「光环」（Auras）的叫法，也是游戏《光环》（Halo）的中文名；留「光」，轮换晕（光晕即 aureole） |
+| prefixes.json | Jack's | 赌徒的 → 赌鬼的（不变） | Gamester Jack's（原 One-Eyed Jack's） | 曾用英文名 One-Eyed Jack's：是电影 One-Eyed Jacks 的片名；留 Jack's，加 Gamester（赌鬼）；中文不变 |
+| prefixes.json | Grinding | 碾压 → 碾轧 → 碾磨 | Stone-Grinding（不变） | 曾用名「碾轧」（英文不变）：轧（yà）和官方碾压的压（yā）只差声调，算同音字；换作碾磨，留「碾」，磨对 Grinding |
+| prefixes.json | Sacred | 圣洁 → 皎洁 → 圣净 | Sacred-Vowed（不变） | 曾用名「皎洁」（英文不变）：皎洁留的是「洁」，老玩家认圣洁靠「圣」；留「圣」，洁换同义的净 |
+| suffixes.json | of the Magus | 术士之 → 术师之 → 术宗之 | of the Elder Magus（不变） | 曾用名「术师之」（英文不变）：师（shī）和官方术士之的士（shì）只差声调，算同音字；留「术」，士换宗（宗＝Elder，对 of the Elder Magus） |
+| uniques.json | Steeldriver | 钢榔头 → 精钢榔头（不变） | Truesteel Driver（原 Steelrammer） | 曾用英文名 Steelrammer：精钢在魔法前缀和暗金怪名前缀里都是 Truesteel，这里也用它；留 Driver；中文不变 |
+| uniques.json | Kelpie Snare | 水妖捕叉 → 水妖渔叉（不变） | Kelpie Fishfork（原 Kelpie Noose） | 曾用英文名 Kelpie Noose：Noose 已是薇朵菈的伏阱（Veydola's Noose）的词；渔叉用 Fishfork（叉＝fork，同 Razorfork），留 Kelpie；中文不变 |
+| uniques.json | Athena's Wrath | 雅典娜之怒 → 娅甸妮的震怒（不变） | Athaenis' Thunderous Wrath（原 Asseni's Fury） | 曾用英文名 Asseni's Fury：Asseni 听不出 Athena，Fury 是符文之语的词，两个词都认不出；术语表 Athena 的英文改作 Athaenis；留 Wrath，加 Thunderous（震怒的震）；中文不变 |
+| uniques.json | Duriel's Shell | 督瑞尔之壳 → 杜里埃的甲壳（不变） | Durrahel's Carapace（原 Durayel's Carapace） | 曾用英文名 Durayel's Carapace：术语表 Duriel 的英文由 Durayel 改作 Durrahel |
+| uniques.json | Gloom's Trap | 阴影陷阱 → 幽影陷阱 → 阴影罗网 | Gloom's Snare（不变） | 曾用名 幽影陷阱（英文不变）：幽影在暗金怪名、稀有名里是 Umbra（Shadow），这件的英文是 Gloom，对不上；留官方的「阴影」（Gloom），陷阱换罗网（罗网＝Snare，同暗金怪名后缀 Web） |
+| uniques.json | Veil of Steel | 钢铁面纱 → 钢铁面罩（不变） | Faceplate of Steel（原 Veil of Iron） | 曾用英文名 Veil of Iron：钢不写 Iron，也丢了原词 Steel；留 of Steel，面罩用 Faceplate（同希贡的面罩 Shigund's Faceplate）；中文不变 |
+| uniques.json | Ethereal Edge | 无形之锋 → 无形之刃（不变） | Ethereal Keen-Edge（原 Ethereal Blade） | 曾用英文名 Ethereal Blade：和 Dota 2 的物品同名（它的中文名正是更早的虚灵之刃）；英文留 Ethereal 和 Edge，加 Keen；中文无形之刃不变（无形锐锋的「锐锋」是符文之语 Edge 的官方名，不用） |
+| uniques.json | Andariel's Visage | 安达莉尔的仪容 → 昂妲蕾的魔颜（不变） | Andaryth's Fell Countenance（原 Angdarael's Fell Countenance） | 曾用英文名 Angdarael's Fell Countenance：术语表 Andariel 的英文由 Angdarael 改作 Andaryth |
+| uniques.json | Gheed's Fortune | 基德的好运 → 吉伊得的横财（不变） | Ghiedan's Windfall（原 Ghiyed's Windfall） | 曾用英文名 Ghiyed's Windfall：术语表 Gheed 的英文由 Ghiyed 改作 Ghiedan |
+| uniques.json | Gheed's Wager | （无官方中文） → 吉伊得的豪赌（不变） | Ghiedan's Great Gamble（原 Ghiyed's Great Gamble） | 曾用英文名 Ghiyed's Great Gamble：术语表 Gheed 的英文由 Ghiyed 改作 Ghiedan |
+| sets.json | Magnus' Skin | 雄主的皮手套 → 雄君的鲛皮手套（不变） | Magnarius' Sharkhide（原 Morgenu's Sharkhide） | 曾用英文名 Morgenu's Sharkhide：Morgenu 听不出 Magnus；Magnarius 留 Magn-，多一个音节，差 3 个字母，不是 Magnus 换拼写；中文不变 |
+| runewords.json | Black | 黑色 → 漆黑（不变） | Black as Pitch（原 Pitch Black） | 曾用英文名 Pitch Black：是一部电影的片名；留 Black，说成 Black as Pitch；中文不变 |
+| runewords.json | Infinity | 无限 → 无穷（不变） | Ad Infinitum（原 Limitless） | 曾用英文名 Limitless：是电影和电视剧的片名，也没留 Infinity；Ad Infinitum（无穷无尽）留 Infinity 的词根；中文不变 |
+| runewords.json | Kingslayer | 弑君者 → 弑王者（不变） | Crownslayer（原 Regicide） | 曾用英文名 Regicide：没留 Kingslayer 的词；留 slayer，King 换 Crown，和中文君换王一样换的是称呼；中文不变 |
+| rare-prefixes.json | Demon | 恶魔 → 狱魔（不变） | Netherdemon（原 Hellborn） | 曾用英文名 Hellborn：没留 Demon；留 Demon，加 Nether（狱＝Nether，同冥狱、狱炉 Netherforge）；中文不变 |
+| monsters.json | Vile Archer | 邪恶弓手 → 秽血弓女（不变） | Foulblood Archeress（原 Foulblood Bowmaiden） | 曾用英文名 Foulblood Bowmaiden：Bowmaiden 丢了 Archer，加上修饰词两个词都换了；弓女用 Archeress，留 Archer（同族的女猎 Huntmaiden、矛女 Spearmaiden 留着 Hunt、Spear）；中文不变 |
+| monsters.json | Dark Archer | 黑暗弓手 → 晦影弓女（不变） | Gloomshade Archeress（原 Gloomshade Bowmaiden） | 曾用英文名 Gloomshade Bowmaiden：Bowmaiden 丢了 Archer，加上修饰词两个词都换了；弓女用 Archeress，留 Archer（同族的女猎 Huntmaiden、矛女 Spearmaiden 留着 Hunt、Spear）；中文不变 |
+| monsters.json | Ghost | 幽灵 → 游魂（不变） | Driftghost（原 Driftsoul） | 曾用英文名 Driftsoul：没留 Ghost；游魂的游＝Drift，魂换回 Ghost；中文不变 |
+| monsters.json | Black Archer | 黑化弓手 → 墨心弓女（不变） | Sootheart Archeress（原 Sootheart Bowmaiden） | 曾用英文名 Sootheart Bowmaiden：Bowmaiden 丢了 Archer，加上修饰词两个词都换了；弓女用 Archeress，留 Archer（同族的女猎 Huntmaiden、矛女 Spearmaiden 留着 Hunt、Spear）；中文不变 |
+| monsters.json | Andariel | 安达莉尔 → 昂妲蕾（不变） | Andaryth（原 Angdarael） | 曾用英文名 Angdarael：术语表 Andariel 的英文由 Angdarael 改作 Andaryth |
+| areas.json | Barracks | 营房 → 戍卒营舍（不变） | Garrison Barracks（原 Garrison Quarters） | 曾用英文名 Garrison Quarters：没留 Barracks；留 Barracks，加 Garrison（戍卒）；中文不变 |
+| npcs.json | Gheed | 基德 → 吉伊得（不变） | Ghiedan（原 Ghiyed） | 曾用英文名 Ghiyed：术语表 Gheed 的英文由 Ghiyed 改作 Ghiedan |
+| bases.json | Kurast Shield | 库拉斯特盾 → 柯剌斯盾（不变） | Korastel Shield（原 Khorast Shield） | 曾用英文名 Khorast Shield：术语表 Kurast 的英文由 Khorast 改作 Korastel |
+| glossary-en.json | Gheed | 基德 → 吉伊得（不变） | Ghiedan（原 Ghiyed） | 曾用英文名 Ghiyed、Jiyed：中文吉伊得认得出，不改；Jiyed 把硬音 G 念成了 J；Ghiyed 只差两个字母，念起来几乎就是 Gheed；Ghiedan 留 Ghee- 的音，多一个音节 -dan，差 3 个字母 |
+| glossary-en.json | Duriel | 督瑞尔 → 杜里埃（不变） | Durrahel（原 Durayel） | 曾用英文名 Durayel、Dulyai：中文杜里埃认得出，不改；Dulyai 丢了 r；Durayel 没多出音节，念起来几乎就是 Duriel；Durrahel 留 Dur- 和 -el，中间换成 -rah-，差 3 个字母 |
+| glossary-en.json | Andariel | 安达莉尔 → 昂妲蕾（不变） | Andaryth（原 Angdarael） | 曾用英文名 Angdarael、Angdalae：中文昂妲蕾认得出，不改；Angdalae 丢了 dar；Angdarael 只差两个字母，念起来几乎就是 Andariel；Andaryth 留 Andar-，尾音 -iel 换作 -yth，差 3 个字母 |
+| glossary-en.json | Athena | 雅典娜 → 娅甸妮（不变） | Athaenis（原 Asseni） | 曾用名 阿瑟妮 / Asseni：阿瑟妮跟英文走，丢了「雅典」的典，老玩家熟的是雅典娜；娅甸＝雅典的音，只改娜→妮；英文 Asseni 听不出 Athena，改作 Athaenis：留 Athen- 的音，多一个音节，差 3 个字母 |
+| glossary-en.json | Kurast | 库拉斯特 → 柯剌斯（不变） | Korastel（原 Khorast） | 曾用英文名 Khorast、Kolass：中文柯剌斯认得出，不改；Kolass 丢了 r；Khorast 只换了重读的元音，没多出音节，念起来几乎就是 Kurast；Korastel 留 -rast-，多一个音节 -tel，差 3 个字母 |

@@ -23,7 +23,7 @@ export const D2X_RARE_PREFIXES: D2xRareWord[] = [
   {"id":17,"name":"怨灵","nameEn":"Wraithling","en":"Wraith","itypes":["armo","weap","misc"]},
   {"id":18,"name":"精魄","nameEn":"Essence","en":"Spirit","itypes":["armo","rod"]},
   {"id":19,"name":"雷暴","nameEn":"Thunderstorm","en":"Storm","itypes":["armo","weap"]},
-  {"id":20,"name":"狱魔","nameEn":"Hellborn","en":"Demon","itypes":["armo","weap"]},
+  {"id":20,"name":"狱魔","nameEn":"Netherdemon","en":"Demon","itypes":["armo","weap"]},
   {"id":21,"name":"嗜虐","nameEn":"Ruthless","en":"Cruel","itypes":["armo","weap"]},
   {"id":22,"name":"穹霄","nameEn":"Firmament","en":"Empyrian","itypes":["rod"]},
   {"id":23,"name":"棘丛","nameEn":"Briar","en":"Bramble","itypes":["armo","weap"]},

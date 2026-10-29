@@ -619,10 +619,10 @@ section('English names');
   check('a whole name is no official English name of a unique, set, runeword, monster, area or NPC', named.filter((r) => !WORDS.has(r.group) && officialEn.has(norm(r.nameEn))).map((r) => `${r.where} ${r.nameEn} = ${officialEn.get(norm(r.nameEn))}`));
   check('nameEn is plain ASCII', named.filter((r) => !/^[\x20-\x7E]+$/.test(r.nameEn)).map((r) => `${r.where} ${r.nameEn}`));
   // Title Case: every word, and every part of a hyphenated one ("Death's-Head"), capitalised but the
-  // small ones inside a name ("of", "the", "Man-at-Arms"); a name starts lowercase only where its slot
+  // small ones inside a name ("of", "the", "Man-at-Arms", "Black as Pitch"); a name starts lowercase only where its slot
   // reads on from the base or monster name: a magic suffix with "of" (an automagic row as the
   // suffix its English is), a monster title with "the"
-  const SMALL = new Set(['of', 'the', 'a', 'an', 'and', 'or', 'nor', 'in', 'on', 'at', 'to', 'for', 'from', 'with', 'by']);
+  const SMALL = new Set(['of', 'the', 'a', 'an', 'and', 'or', 'nor', 'in', 'on', 'at', 'to', 'for', 'from', 'with', 'by', 'as']);
   const leading = (r) => (r.group === 'suffixes' || (r.group === 'automagic' && /^of /.test(r.en)) ? 'of' : r.group === 'unique monster titles' ? 'the' : undefined);
   const titleCase = (r) =>
     r.nameEn.split(' ').every((w, i) => w.split('-').every((p, j) => /^[A-Z0-9]/.test(p) || (SMALL.has(p) && (i > 0 || j > 0 || p === leading(r)))));
@@ -692,7 +692,7 @@ section('English names');
   // magicprefix, magicsuffix and automagic Name, rareprefix and raresuffix name, monstats NameStr,
   // superuniques Name, levels LevelName, uniqueprefix, uniquesuffix and uniqueappellation Name,
   // hireling NameFirst..NameLast), in D2CE's string tables. The glossary's transliterations are taken
-  // out of both first (ours from ours, D2's from D2's: "Ghiyed" for Gheed is looked at there), and
+  // out of both first (ours from ours, D2's from D2's: "Aledor" for Aldur is looked at there), and
   // what is left is compared, so a name whose person is all that changed is compared too ("Weirtel's
   // Leg" for Wirt's Leg).
   const editDistance = (a, b) => {

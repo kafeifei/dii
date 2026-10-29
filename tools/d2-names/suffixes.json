@@ -19,7 +19,7 @@
   "of Blocking": {"name":"遮挡之","nameEn":"of Shield Blocking","en":"of Blocking","official":"格挡之","note":"曾用名「擎盾之」of the Upheld Shield；留「挡」；擎盾认不出"},
   "of Deflecting": {"name":"偏转之","nameEn":"of Edge-Deflecting","en":"of Deflecting","official":"偏斜之","note":"曾用名「拨锋之」of the Turned Edge；留「偏」；拨锋认不出"},
   "of the Apprentice": {"name":"习术者之","nameEn":"of the Young Apprentice","en":"of the Apprentice","official":"习法者之","note":"曾用名「法徒之」of the Hermetic Disciple；留「习」「者」；法徒认不出"},
-  "of the Magus": {"name":"术师之","nameEn":"of the Elder Magus","en":"of the Magus","official":"术士之","note":"曾用名「法贤之」of the Hermetic Sage；留「术」；法贤认不出"},
+  "of the Magus": {"name":"术宗之","nameEn":"of the Elder Magus","en":"of the Magus","official":"术士之","note":"曾用名「术师之」（英文不变）：师（shī）和官方术士之的士（shì）只差声调，算同音字；留「术」，士换宗（宗＝Elder，对 of the Elder Magus）。曾用名「法贤之」of the Hermetic Sage；留「术」；法贤认不出"},
   "of Frost": {"name":"霜降之","nameEn":"of Falling Frost","en":"of Frost","official":"冰霜之","note":"曾用英文名 of the Rimefall；中文不变（留霜）；英文留 Frost"},
   "of the Glacier": {"name":"冰岳之","nameEn":"of the Glacier Peak","en":"of the Glacier","official":"冰川之","note":"曾用英文名 of the Icebound Crag；中文不变（留冰）；英文留 Glacier"},
   "of Warmth": {"name":"解冰之","nameEn":"of Thawing Ice","en":"of Thawing","official":"解冻之","note":"曾用名「冰释之」of Ice Undone；留「解」；冰释认不出"},

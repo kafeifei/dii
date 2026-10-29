@@ -18,7 +18,7 @@
   "Stone": {"name":"玄岩","nameEn":"Basalt","en":"Stone","official":"岩石","note":"原「磐石」是原版符文之语 Stone 和稀有词 Rock 的官方译名"},
   "Wraithra": {"name":"怨灵","nameEn":"Wraithling","en":"Wraith","official":"怨魂","note":"曾用名 鬼魅（Phantasm）；鬼魅与「怨魂」无一字相同；留「怨」；英文 Phantasm 是电影名；与称号 the Wraith 同"},
   "Spirit": {"name":"精魄","nameEn":"Essence","en":"Spirit","official":"精神","note":"曾用名 灵焰（Foxfire）；灵焰/Foxfire 是鬼火，另一个意象；留「精」（精魂已是符文之语 Spirit 的名字）"},
-  "Demon": {"name":"狱魔","nameEn":"Hellborn","en":"Demon","official":"恶魔","note":"原「邪魔」只换一字同义，且有日语「お邪魔」的梗"},
+  "Demon": {"name":"狱魔","nameEn":"Netherdemon","en":"Demon","official":"恶魔","note":"曾用英文名 Hellborn：没留 Demon；留 Demon，加 Nether（狱＝Nether，同冥狱、狱炉 Netherforge）；中文不变。原「邪魔」只换一字同义，且有日语「お邪魔」的梗"},
   "Cruel": {"name":"嗜虐","nameEn":"Ruthless","en":"Cruel","official":"暴虐","note":"曾用英文名 Fell；英文 Fell 作「凶残」是古义；Ruthless 一看就是 Cruel（Merciless、Vicious 是魔法前缀名）"},
   "Empyrion": {"name":"穹霄","nameEn":"Firmament","en":"Empyrian","official":"穹天","note":"曾用名 霄汉（Zenith）；霄汉不留「穹」；苍穹已是前缀 Azure；Zenith 是天顶，Firmament 天穹"},
   "Bramble": {"name":"棘丛","nameEn":"Briar","en":"Bramble","official":"刺棘","note":"曾用名 蒺藜（Caltrop）；蒺藜/Caltrop 是铁蒺藜，另一个意象；留「棘」，棘＝Briar，与「棘棒」一致"},

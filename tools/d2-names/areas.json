@@ -26,7 +26,7 @@
   "25": {"name":"古塔暗窖五层","nameEn":"Spire Cellar Level 5","en":"Tower Cellar Level 5","official":"高塔地窖五层","note":"同古塔暗窖一层；英文曾用名 Spire Undercroft Level 5"},
   "26": {"name":"隐修院城门","nameEn":"Monastery Barbican","en":"Monastery Gate","official":"修道院大门","note":"英文曾用名 Hermitage Barbican：留 Monastery"},
   "27": {"name":"外环廊院","nameEn":"Outer Pillared Court","en":"Outer Cloister","official":"外侧回廊"},
-  "28": {"name":"戍卒营舍","nameEn":"Garrison Quarters","en":"Barracks","official":"营房"},
+  "28": {"name":"戍卒营舍","nameEn":"Garrison Barracks","en":"Barracks","official":"营房","note":"曾用英文名 Garrison Quarters：没留 Barracks；留 Barracks，加 Garrison（戍卒）；中文不变"},
   "29": {"name":"囚狱一层","nameEn":"Captives' Hold Level 1","en":"Jail Level 1","official":"监牢一层"},
   "30": {"name":"囚狱二层","nameEn":"Captives' Hold Level 2","en":"Jail Level 2","official":"监牢二层"},
   "31": {"name":"囚狱三层","nameEn":"Captives' Hold Level 3","en":"Jail Level 3","official":"监牢三层"},
