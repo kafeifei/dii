@@ -200,6 +200,11 @@ export interface DropSpec extends QualityRoll {
    * cube outputs without the sock flag (PlrTrade.cpp:779-786)
    */
   noSockets?: boolean;
+  /**
+   * The debug panel's, not a D2 flag: ethereal whenever it can be (canBeEthereal), the 5% roll
+   * skipped. What being ethereal does to the item is D2's all the same.
+   */
+  ethereal?: boolean;
 }
 
 export interface QualityDrop {
@@ -337,17 +342,8 @@ export function dropQuality(spec: DropSpec, rng: Rand): QualityDrop {
   // magic, rare, set and unique are made unidentified (ItemMode.cpp:6651, ItemsMagic.cpp:537, 889, Items.cpp:161)
   out.identified = out.quality === 'low' || out.quality === 'normal' || out.quality === 'superior';
 
-  // 5% ethereal: weapons and armor with durability, not low quality, set or quest (Items.cpp:228-260):
-  // half the most durability plus one, and full
-  if (
-    !spec.noEth &&
-    durable &&
-    (isWeapon(b) || isArmor(b)) &&
-    out.quality !== 'low' &&
-    out.quality !== 'set' &&
-    !b.quest &&
-    roll(rng, 100) < 5
-  ) {
+  // 5% ethereal (Items.cpp:228-260): half the most durability plus one, and full
+  if (!spec.noEth && canBeEthereal(b, out.quality) && (spec.ethereal || roll(rng, 100) < 5)) {
     out.eth = true;
     out.maxDur = Math.floor(out.maxDur! / 2) + 1;
     out.dur = out.maxDur;
@@ -355,6 +351,11 @@ export function dropQuality(spec: DropSpec, rng: Rand): QualityDrop {
 
   if ((out.quality === 'normal' || out.quality === 'superior') && !spec.noSockets) out.sockets = rollSockets(b, spec.ilvl, spec.difficulty, rng);
   return out;
+}
+
+/** what ethereal can come up on (Items.cpp:228-260): weapons and armor with durability, not low quality, set or quest */
+export function canBeEthereal(b: D2Base, quality: D2Quality): boolean {
+  return hasDurability(b) && (isWeapon(b) || isArmor(b)) && quality !== 'low' && quality !== 'set' && !b.quest;
 }
 
 /**

@@ -48,17 +48,14 @@ export function onKey(ui: UI, e: KeyboardEvent) {
     ui.settingsPanel.close();
     return;
   }
-  // the ` key by where it sits, so a Chinese input method (which turns it into ·) doesn't hide it
-  if (ui.debugPanel?.isOpen && (e.key === 'Escape' || e.code === 'Backquote')) {
-    ui.debugPanel.close();
-    return;
-  }
   if (!ui.game.started) return;
   const tag = (e.target as HTMLElement)?.tagName;
   if (tag === 'INPUT') return;
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-  if (e.code === 'Backquote' && ui.debugPanel && !ui.game.player.dead) {
-    ui.openDebug();
+  // the debug panel opened or folded, the game playing on: the ` key by where it sits, so a Chinese
+  // input method (which turns it into ·) doesn't hide it
+  if (e.code === 'Backquote' && ui.debugPanel) {
+    ui.debugPanel.toggle();
     return;
   }
   // a townsperson's line is cut short, then their menu left (D2: Esc)

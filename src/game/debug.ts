@@ -6,8 +6,22 @@
  * The panel is there on the dev server; on the built game, open it once with ?debug to turn it on
  * for that browser (?debug=0 turns it off again).
  */
+import type { LootKind, LootQuality } from '../items/debugloot';
+
 const KEY = 'dii-debug';
 const ENABLE_KEY = 'dii-debug-on';
+
+/** what the panel's loot button drops (src/items/debugloot.ts LootSpec), and how many */
+export interface DropOpts {
+  lo: number;
+  hi: number;
+  kinds: LootKind[];
+  qualities: LootQuality[];
+  ethereal: boolean;
+  sockets: number;
+  identified: boolean;
+  count: number;
+}
 
 export interface DebugOpts {
   /** experience from kills is multiplied by this */
@@ -16,13 +30,35 @@ export interface DebugOpts {
   loot: number;
   /** the player can't die */
   god: boolean;
-  /** the item level the panel's loot buttons roll at; 0 goes by the hero and the area */
-  ilvl: number;
+  /** the panel open on the left of the screen, not folded to its tab */
+  shown: boolean;
+  /** the panel's groups folded shut, by title */
+  folded: string[];
+  drop: DropOpts;
 }
 
-export const debugOpts: DebugOpts = { xp: 1, loot: 1, god: false, ilvl: 0 };
+const DROP: DropOpts = {
+  lo: 1,
+  hi: 99,
+  kinds: ['weapon', 'helm', 'body', 'shield', 'gloves', 'boots', 'belt', 'ring', 'amulet'],
+  qualities: [],
+  ethereal: false,
+  sockets: 0,
+  identified: true,
+  count: 5,
+};
+
+/**
+ * Open from the start, but folded under ?dev, whose scenarios click and take pictures where it would
+ * be, and on a touch screen, where the stick starts on the left (src/ui/touch.ts STICK_ZONE)
+ */
+const SHOWN = !location.search.includes('dev') && !(typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
+export const debugOpts: DebugOpts = { xp: 1, loot: 1, god: false, shown: SHOWN, folded: [], drop: { ...DROP } };
 try {
-  Object.assign(debugOpts, JSON.parse(localStorage.getItem(KEY) ?? '{}'));
+  // ilvl: the one item level the loot buttons had before the range
+  const { ilvl: _ilvl, drop, ...rest } = JSON.parse(localStorage.getItem(KEY) ?? '{}');
+  Object.assign(debugOpts, rest);
+  debugOpts.drop = { ...DROP, ...drop };
 } catch {
   /* storage unavailable or garbled: defaults */
 }

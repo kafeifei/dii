@@ -53,7 +53,7 @@ export interface RollOpts {
  * boss's (Act 1 Super A); a normal monster's have none
  */
 const TC_BY_RANK = ['', 'Act 1 Citem A', 'Act 1 Uitem A', 'Act 1 Super A'];
-function tcQuality(rank: number): TcQuality | undefined {
+export function tcQuality(rank: number): TcQuality | undefined {
   const tc = D2X_TREASURE_CLASSES[TC_BY_RANK[rank] ?? ''];
   return tc ? { unique: tc.unique, set: tc.set, rare: tc.rare, magic: tc.magic } : undefined;
 }

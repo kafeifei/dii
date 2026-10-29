@@ -16,6 +16,8 @@
 
 `?dev` 是测试模式：跳过标题页直接开测试角色，用单独的存档位（`dii-save-dev`），页面不可见时模拟也照跑。自动化测试都用它；你实际玩的地址不要带 `?dev`。
 
+**调试面板**（`src/ui/debug.ts`；开发服务器上都有，构建好的游戏要打开一次 `?debug` 才有，`?debug=0` 关掉）：停在屏幕左边，游戏照常跑，`` ` `` 键或暂停菜单的「调试」打开、收起；角色面板这类左边的面板打开时盖在它上面。动的是真角色，照常存档。「掉落」一组按物品等级范围、类型、品质（多选，都不选就照原版掉率掷）、无形、打孔、数量掉在脚下（`src/items/debugloot.ts`），每件按原版的规则做；挑哪个底材、无形不掷那 5%、孔打到底材在这个物品等级的上限，是面板自己的，不是原版掉落。符文和宝石按它们自己的等级（符文的 Misc.txt 等级、宝石的需求等级）挑。面板的选项和开合存在这个浏览器里（`dii-debug`），不进存档；`?dev` 和触屏上默认收起，免得挡住场景的点击和摇杆。
+
 **什么时候下什么**（大小是 2026-10-29 这次构建的，`dist/` 一共 399 个文件、41.75 MB，见「发布」）：
 - 打开页面：`index.html`、代码和样式（`assets/` 两个文件 2.67 MB，gzip 后约 0.6 MB）。
 - 标题页：等核心模型（`needs.ts` 的 `CORE`，11 个文件 8.03 MB）下完，「新的冒险」「继续」才能按（`main.ts`）；其余 20 个模型文件（10.98 MB）接着在后台下。见下面「模型按需加载」。
@@ -46,7 +48,7 @@
 | `src/game/` | 模拟：主角、怪物、战斗、AI、物件、掉落、尸体、存档 | `game.ts`（总控）、`save.ts`（存档）、`player.ts`、`monster.ts`、`ai.ts`、`combat.ts`、`spawn.ts`、`loot.ts`、`corpse.ts`、`level.ts` |
 | `src/game/d2/` | 照 D2MOO 写的公式：属性、经验、死亡惩罚、速度档位、怪物数值、刷怪、怪物 AI | `stats.ts`、`xp.ts`、`death.ts`、`frames.ts`、`monstats.ts`、`population.ts`、`monai.ts` |
 | `src/game/quests/` | 任务框架（原版 16 个任务标志位）和「涤荡邪巢」 | `record.ts`、`denofevil.ts` |
-| `src/items/` | 物品：生成、词缀、品质、孔、耐久、价格、商店、卷轴书、储物箱页 | `item.ts`、`gen.ts`、`vendor.ts`、`tomes.ts`、`stash.ts`、`d2/*` |
+| `src/items/` | 物品：生成、词缀、品质、孔、耐久、价格、商店、卷轴书、储物箱页，调试面板的掉落 | `item.ts`、`gen.ts`、`vendor.ts`、`tomes.ts`、`stash.ts`、`debugloot.ts`、`d2/*` |
 | `src/world/` | 区域、大地图生成（营地 + 血沼荒原 + 凛寒原野无缝相连）、邪秽巢穴、试炼场 | `areas.ts`、`overworld.ts`、`zone.ts`、`presets.ts`、`levelgen.ts` |
 | `src/data/d2x/` | 原版数据表，由 `tools/d2-import.mjs` 生成，**不要手改** | `monsters.ts`、`treasure.ts`、`affixes.ts`、`uniques.ts`、`areas.ts`… |
 | `src/render/` | 模型（角色各一个文件，道具按用处合成几个包，按需加载）、动画、地面分块、灯光、昼夜、特效 | `renderer.ts`、`assets.ts`（按需加载模型和道具包）、`needs.ts`（什么要哪些模型）、`models.ts`、`specs.ts`、`chunks.ts` |

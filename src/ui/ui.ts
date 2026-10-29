@@ -284,12 +284,9 @@ export class UI implements GameHooks, UIContext {
     );
     this.root.appendChild(this.settingsPanel.el);
     if (debugEnabled) {
-      this.debugPanel = new DebugPanel(
-        this.game,
-        () => (this.dirty = true),
-        () => this.menu.toggle(false),
-      );
-      this.root.appendChild(this.debugPanel.el);
+      this.debugPanel = new DebugPanel(this.game, () => (this.dirty = true));
+      // under the character sheet and the other left-hand panels, which cover it while they're open
+      this.root.insertBefore(this.debugPanel.el, this.leftEl);
     }
   }
 
@@ -303,12 +300,11 @@ export class UI implements GameHooks, UIContext {
     this.settingsPanel.open();
   }
 
-  /** over the pause menu, so closing it leaves the game paused there */
+  /** the pause menu's 调试: back into the game with the debug panel open beside it */
   openDebug() {
     if (!this.debugPanel) return;
-    this.sfx.play('ui.click');
-    this.menu.toggle(true);
-    this.debugPanel.open();
+    this.menu.toggle(false);
+    this.debugPanel.toggle(true);
   }
 
   loadProgress(done: number, total: number) {
@@ -430,6 +426,7 @@ export class UI implements GameHooks, UIContext {
         this.fpsTime = 0;
       }
     }
+    this.debugPanel?.update(dt);
     const veiled = g.started && this.renderer.veiled;
     if (veiled !== this.veilEl.classList.contains('open')) this.veilEl.classList.toggle('open', veiled);
     if (!g.started) {

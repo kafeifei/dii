@@ -66,12 +66,25 @@ export default async function (page, shot, log) {
     await page.keyboard.press(k);
     await until(cond, null, what);
   };
-  /** a button in one row of the open debug panel */
-  const debugButton = (row, name) =>
-    page
-      .locator('.overlay.settings.open .setting')
-      .filter({ has: page.locator('.label > span', { hasText: new RegExp(`^${row}$`) }) })
-      .getByRole('button', { name, exact: true });
+  /** one row of the debug panel on the left */
+  const debugRow = (row) => page.locator('.debug-dock .dbg-row').filter({ has: page.locator('.dbg-label > span', { hasText: new RegExp(`^${row}$`) }) });
+  /** a button in one row of the debug panel, and one of the small ones by its name */
+  const debugButton = (row, name) => debugRow(row).locator('.dbg-ctl').getByRole('button', { name, exact: true });
+  const debugSide = (row, name) => debugRow(row).locator('.dbg-label').getByRole('button', { name, exact: true });
+  /** a slider of the debug panel moved to a value, as dragging it there does */
+  const debugSlide = (sel, v) =>
+    ev(
+      ([sel, v]) => {
+        const s = document.querySelector(`.debug-dock ${sel}`);
+        s.value = String(v);
+        s.dispatchEvent(new Event('input'));
+        s.dispatchEvent(new Event('change'));
+      },
+      [sel, v],
+    );
+  /** the debug panel open beside the game, which plays on (` opens and folds it) */
+  const DEBUG_OPEN = () => !game.paused && !!document.querySelector('.debug-dock.live:not(.folded) .dbg-go')?.getClientRects().length;
+  const DEBUG_FOLDED = () => !game.paused && !!document.querySelector('.debug-dock.live.folded .dbg-tab')?.getClientRects().length;
   /** a couple of frames, so what changed is drawn before a screenshot */
   const frames = () => ev(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 
@@ -167,13 +180,19 @@ export default async function (page, shot, log) {
       await key('Tab', () => !document.querySelector('#automap.open'), 'the automap to close');
       await key('Escape', () => game.paused && !!document.querySelector('.overlay.open .btn.resume'), 'the pause menu to open');
       await key('Escape', () => !game.paused && !document.querySelector('.overlay.open'), 'the pause menu to close');
-      await key('Backquote', () => game.paused && !!document.querySelector('.overlay.settings.open .debug-note'), 'the debug panel to open');
-      await key('Backquote', () => !document.querySelector('.overlay.settings.open'), 'the debug panel to close');
-      await key('Escape', () => !game.paused && !document.querySelector('.overlay.open'), 'the pause menu under it to close');
+      // ?dev starts it folded; open, the game isn't paused
+      expect(await ev(DEBUG_FOLDED), 'the debug panel is not folded to its tab under ?dev');
+      await key('Backquote', DEBUG_OPEN, 'the debug panel to open beside the game');
+      await key('Backquote', DEBUG_FOLDED, 'the debug panel to fold');
+      // the pause menu's 调试 opens it too, and goes back into the game
+      await key('Escape', () => game.paused && !!document.querySelector('.overlay.open .btn.open-debug'), 'the pause menu to open');
+      await page.locator('.overlay.open .btn.open-debug').click();
+      await until(DEBUG_OPEN, null, 'the pause menu to give way to the debug panel');
+      await key('Backquote', DEBUG_FOLDED, 'the debug panel to fold again');
     },
 
     async debug() {
-      await key('Backquote', () => !!document.querySelector('.overlay.settings.open .debug-note'), 'the debug panel to open');
+      await key('Backquote', DEBUG_OPEN, 'the debug panel to open');
       const state = () =>
         ev(() => {
           const p = game.player;
@@ -187,35 +206,65 @@ export default async function (page, shot, log) {
       expect(s1.statPoints === s0.statPoints + 50 && s1.skillPoints === s0.skillPoints + 10, `+10 levels gave ${s1.statPoints - s0.statPoints} stat and ${s1.skillPoints - s0.skillPoints} skill points`);
       // god mode, so the fights below can't end the run
       await debugButton('无敌', '开').click();
-      // the item level: set for the loot buttons, then by the hero again (the camp's area level is 0)
-      const ilvls = () => ev((n) => game.level.ground.slice(-n).map((g) => g.item?.ilvl), 1);
-      await debugButton('物品等级', '99').click();
-      await debugButton('随机装备', '1 件').click();
-      const set = await ilvls();
-      await debugButton('物品等级', '自动').click();
+      // the loot: the item levels' two handles at 99, one random piece of gear
+      const dropped = (n) =>
+        ev(async (n) => {
+          const { ITEM_BASES } = await import('/src/data/items.ts');
+          return game.level.ground.slice(-n).map((g) => ({ ilvl: g.item?.ilvl, rarity: g.item?.rarity, type: ITEM_BASES[g.item?.baseId]?.type, eth: !!g.item?.eth, sockets: g.item?.sockets }));
+        }, n);
+      const go = () => page.locator('.debug-dock .dbg-go').click();
+      await debugSlide('.dbg-range .hi', 99);
+      await debugSlide('.dbg-range .lo', 99);
+      await debugSlide('.dbg-count', 1);
+      await go();
+      const set = await dropped(1);
+      expect(set[0]?.ilvl === 99, `with the item levels at 99 the gear dropped at ${set[0]?.ilvl}`);
+      // the hero's own level (the camp's area level is 0), five of them
+      await debugSide('物品等级', '按角色').click();
       const s1b = await state();
-      await debugButton('随机装备', '5 件').click();
+      await debugSlide('.dbg-count', 5);
+      await go();
       const s2 = await state();
-      expect(set[0] === 99, `with the item level at 99 the gear dropped at ${set[0]}`);
       expect(s2.ground === s1b.ground + 5, `5 random gear dropped ${s2.ground - s1b.ground}`);
-      const auto = await ev(() => game.level.ground.slice(-5).map((g) => g.item?.ilvl));
-      expect(auto.every((l) => l === s2.level), `back on auto, gear dropped at item levels ${auto.join(', ')}, the hero is level ${s2.level}`);
-      await debugButton('指定品质', '暗金').click();
+      const auto = await dropped(5);
+      expect(auto.every((d) => d.ilvl === s2.level), `by the hero, gear dropped at item levels ${auto.map((d) => d.ilvl).join(', ')}, the hero is level ${s2.level}`);
+      // one unique
+      await debugButton('品质', '传奇').click();
+      await debugSlide('.dbg-count', 1);
+      await go();
       const s3 = await state();
       expect(s3.ground === s2.ground + 1 && s3.uniques === s2.uniques + 1, `the unique button dropped ${s3.ground - s2.ground} item(s), ${s3.uniques - s2.uniques} unique`);
+      // body armor only, ethereal, punched to 4: three of them, the summary says what came
+      await debugSide('类型', '清空').click();
+      await debugButton('类型', '盔甲').click();
+      await debugButton('品质', '传奇').click();
+      await debugButton('其他', '无形').click();
+      await debugButton('打孔', '4').click();
+      await debugSide('物品等级', '不限').click();
+      await debugSlide('.dbg-count', 3);
+      await go();
+      const armor = await dropped(3);
+      expect(armor.every((d) => d.type === 'armor' && d.eth && d.sockets >= 1 && d.sockets <= 4), `ethereal punched body armor: ${JSON.stringify(armor)}`);
+      const note = await ev(() => document.querySelector('.debug-dock .dbg-note')?.textContent ?? '');
+      expect(note.includes('3 件') && note.includes('1\u2060–\u206099'), `the drop's note: ${note}`);
+      // everything on the ground is still there to pick up: the game played on through it all
+      expect(await ev(() => !game.paused), 'the game paused while the debug panel was used');
+      await debugButton('其他', '无形').click();
+      await debugButton('打孔', '不打').click();
+      await debugSide('类型', '装备').click();
       await debugButton('经验', '×10').click();
       // five loot rolls a kill, so the den's kills can't all come up empty (KILLS)
       await debugButton('掉落', '×5').click();
       const opts = await ev(() => {
-        const on = (row) => [...document.querySelectorAll('.overlay.settings.open .setting')].find((r) => r.querySelector('.label > span')?.textContent === row)?.querySelector('button.on')?.textContent;
+        const on = (row) => [...document.querySelectorAll('.debug-dock .dbg-row')].find((r) => r.querySelector('.dbg-label > span')?.textContent === row)?.querySelector('.dbg-ctl button.on')?.textContent;
         return { stored: JSON.parse(localStorage.getItem('dii-debug') ?? '{}'), xp: on('经验') };
       });
       expect(opts.stored.xp === 10 && opts.xp === '×10', `xp ×10 shows ${opts.xp}, stored ${opts.stored.xp}`);
-      expect(opts.stored.loot === 5 && opts.stored.god === true && opts.stored.ilvl === 0, `stored debug settings ${JSON.stringify(opts.stored)}`);
-      await key('Backquote', () => !document.querySelector('.overlay.settings.open'), 'the debug panel to close');
-      await key('Escape', () => !game.paused && !document.querySelector('.overlay.open'), 'the pause menu to close');
+      const d = opts.stored.drop ?? {};
+      expect(opts.stored.loot === 5 && opts.stored.god === true && opts.stored.shown === true && d.lo === 1 && d.hi === 99 && d.count === 3 && d.kinds?.length === 9 && !d.qualities?.length && !d.ethereal && !d.sockets, `stored debug settings ${JSON.stringify(opts.stored)}`);
       await frames();
       await shot('camp-loot');
+      await key('Backquote', DEBUG_FOLDED, 'the debug panel to fold');
       facts.push(`lvl ${s3.level}`);
     },
 
@@ -489,10 +538,9 @@ export default async function (page, shot, log) {
           return { xp: p.xp - xp0, levelled: p.level !== lvl0 };
         });
       const setRate = async (name) => {
-        await key('Backquote', () => !!document.querySelector('.overlay.settings.open .debug-note'), 'the debug panel to open');
+        await key('Backquote', DEBUG_OPEN, 'the debug panel to open');
         await debugButton('经验', name).click();
-        await key('Backquote', () => !document.querySelector('.overlay.settings.open'), 'the debug panel to close');
-        await key('Escape', () => !game.paused && !document.querySelector('.overlay.open'), 'the pause menu to close');
+        await key('Backquote', DEBUG_FOLDED, 'the debug panel to fold');
       };
       const ten = await twin();
       if (!expect(ten, 'no normal monster to copy')) return;
@@ -600,62 +648,58 @@ export default async function (page, shot, log) {
     },
 
     async jump() {
-      // the debug panel's area list: normal play's areas in order, the hero's picked; its trial ground
-      const open = () => key('Backquote', () => !!document.querySelector('.overlay.settings.open .debug-note'), 'the debug panel to open');
-      const left = (what) => until(() => !game.paused && !document.querySelector('.overlay.open'), null, `the panel to shut after ${what}`);
-      const row = (name) => page.locator('.overlay.settings.open .setting').filter({ has: page.locator('.label > span', { hasText: new RegExp(`^${name}$`) }) });
-      await open();
+      // the debug panel's area list: normal play's areas in order, the hero's picked; its trial
+      // ground. It stays open through the jumps, the game playing on
+      await key('Backquote', DEBUG_OPEN, 'the debug panel to open');
       const list = await ev(() => {
-        const r = [...document.querySelectorAll('.overlay.settings.open .setting')].find((x) => x.querySelector('.label > span')?.textContent === '前往');
+        const r = [...document.querySelectorAll('.debug-dock .dbg-row')].find((x) => x.querySelector('.dbg-label > span')?.textContent === '前往');
         const s = r?.querySelector('select');
         const opts = [...(s?.options ?? [])];
         return { values: opts.map((o) => o.value), value: s?.value, here: String(game.area.id) };
       });
       expect(list.values.join() === [CAMP, MOOR, DEN, PLAINS].join() && list.value === list.here, `the area list is ${list.values.join()}, ${list.value} picked (the hero is in ${list.here})`);
-      await row('前往').locator('select').selectOption(String(DEN));
+      await debugRow('前往').locator('select').selectOption(String(DEN));
       await debugButton('前往', '去').click();
-      await left('going to the den');
+      await frames();
       expect((await ev(() => game.area.id)) === DEN, 'the list did not lead to the den');
       // the next one on
-      await open();
       await debugButton('前往', '下一个').click();
-      await left('going on');
+      await frames();
       const b = await ev(() => ({ id: game.area.id, west: game.level === window.__smoke.west }));
       expect(b.id === PLAINS && b.west, `next from the den went to area ${b.id}, on the overworld ${b.west}`);
       // the trial ground: a floor and a difficulty picked, then the next floor down
-      await open();
-      await row('试炼场').locator('select').first().selectOption('3');
+      await debugRow('试炼场').locator('select').first().selectOption('3');
       await debugButton('试炼场', '进入').click();
-      await left('going to the trial ground');
+      await frames();
       const t = await ev(() => ({ key: game.area.key, depth: game.level.depth, wps: [...game.player.waypoints] }));
       expect(t.key === 'floor3' && t.wps.join() === `${CAMP},${PLAINS}`, `the trial ground's floor 3 is ${t.key}, waypoints ${t.wps.join()}`);
-      await open();
       await debugButton('前往', '下一个').click();
-      await left('going on down');
+      await frames();
       const t2 = await ev(() => ({ key: game.area.key, depth: game.level.depth }));
       expect(t2.key === 'floor4' && t2.depth === t.depth + 1, `next from floor 3 went to ${t2.key} at depth ${t2.depth}`);
       // and home
-      await open();
-      await row('前往').locator('select').selectOption(String(CAMP));
+      await debugRow('前往').locator('select').selectOption(String(CAMP));
       await debugButton('前往', '去').click();
-      await left('going home');
+      await frames();
       expect((await ev(() => game.area.id)) === CAMP, 'the camp in the list did not lead to the camp');
+      expect(await ev(DEBUG_OPEN), 'the debug panel did not stay open through the jumps, or the game paused');
+      await key('Backquote', DEBUG_FOLDED, 'the debug panel to fold');
       facts.push('area jumps and the trial ground');
     },
 
     async difficulty() {
-      await key('Backquote', () => !!document.querySelector('.overlay.settings.open .debug-note'), 'the debug panel to open');
+      await key('Backquote', DEBUG_OPEN, 'the debug panel to open');
       const read = () =>
         ev((slot) => {
           const d = JSON.parse(localStorage.getItem(slot) ?? 'null');
-          const row = [...document.querySelectorAll('.overlay.settings.open .setting')].find((r) => r.querySelector('.label > span')?.textContent === '难度');
+          const row = [...document.querySelectorAll('.debug-dock .dbg-row')].find((r) => r.querySelector('.dbg-label > span')?.textContent === '难度');
           return {
             diff: game.player.difficulty,
             wps: [...game.player.waypoints],
             camp: game.area.id,
             saved: d && { difficulty: d.difficulty, unlocked: d.unlocked, normal: d.progress?.[0]?.waypoints, nightmare: d.progress?.[1]?.waypoints },
-            shown: row?.querySelector('button.on')?.textContent,
-            note: document.querySelector('.overlay.settings.open .debug-note')?.textContent ?? '',
+            shown: row?.querySelector('.dbg-ctl button.on')?.textContent,
+            note: document.querySelector('.debug-dock .dbg-note')?.textContent ?? '',
           };
         }, DEV_SLOT);
       const s0 = await read();
@@ -670,8 +714,7 @@ export default async function (page, shot, log) {
       await debugButton('难度', '普通').click();
       const s2 = await read();
       expect(s2.diff === 0 && s2.saved?.difficulty === 0 && JSON.stringify(s2.wps) === JSON.stringify(s0.wps), `back to normal: difficulty ${s2.diff}, saved ${s2.saved?.difficulty}, waypoints ${s2.wps.join(' ')}`);
-      await key('Backquote', () => !document.querySelector('.overlay.settings.open'), 'the debug panel to close');
-      await key('Escape', () => !game.paused && !document.querySelector('.overlay.open'), 'the pause menu to close');
+      await key('Backquote', DEBUG_FOLDED, 'the debug panel to fold');
       facts.push('difficulty saved');
     },
 
