@@ -383,12 +383,20 @@ function wav(secs, silence, clicks = false) {
 
 /**
  * The tool on a list of its own, in a scratch checkout of it: what it writes, what it reports, and
- * that music never asks ElevenLabs (no key here: it would fail to reach it)
+ * that music never asks ElevenLabs (no key here: it would fail to reach it). Skipped without ffmpeg,
+ * and without Apple's AAC encoder in it (aac_at, macOS only; Linux CI has neither): the tool encodes
+ * with it where there is one, every shipped take was made with it, and the run's numbers are its own.
+ * ffmpeg's own encoder rings on the clicks below near 0 dBFS however far they are limited, so the
+ * tool refuses that take there.
  */
 function musicRun(check) {
   const has = (cmd) => spawnSync(cmd, ['-version'], { stdio: 'ignore' }).status === 0;
   if (!has('ffmpeg') || !has('ffprobe')) {
     console.log('     (ai-audio: no ffmpeg, so the music run is skipped)');
+    return;
+  }
+  if (!/\baac_at\b/.test(spawnSync('ffmpeg', ['-hide_banner', '-encoders'], { encoding: 'utf8' }).stdout ?? '')) {
+    console.log('     (ai-audio: ffmpeg has no Apple AAC encoder (aac_at, macOS), so the music run is skipped)');
     return;
   }
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dii-ai-audio-'));

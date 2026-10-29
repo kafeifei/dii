@@ -1,0 +1,23 @@
+# Type check and unit tests on every push and pull request (docs/PROJECT-MAP.md「测试」).
+# The scenarios (a browser and a dev server), the bot and the build stay on the release checklist.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
