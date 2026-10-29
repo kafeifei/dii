@@ -54,6 +54,11 @@ export const STONY_FIELD = 4;
 export const DEN_OF_EVIL = 8;
 /** Cold Plains' Cave, its two levels; the Burial Grounds' Crypt and Mausoleum (M2a's dungeons, src/world/dungeons.ts) */
 export const CAVE_1 = 9;
+/**
+ * the Underground Passage's first level, behind Stony Field's cliff (levels.txt 10, Act 1 - Cave 3):
+ * defined so its closed mouth names it, not built in M2a
+ */
+export const UNDERGROUND_PASSAGE = 10;
 export const CAVE_2 = 13;
 export const BURIAL_GROUNDS = 17;
 export const CRYPT = 18;
@@ -115,11 +120,13 @@ define(d2Dungeon(CAVE_1, 'cave1'));
 define(d2Dungeon(CAVE_2, 'cave2'));
 define(d2Dungeon(CRYPT, 'crypt'));
 define(d2Dungeon(MAUSOLEUM, 'mausoleum'));
+// not built (isBuilt): only named, where Stony Field's mouth into it says it isn't open yet (travel.ts tellClosed)
+define(d2Dungeon(UNDERGROUND_PASSAGE, 'passage1'));
 
 /**
  * The areas of normal play this build has a map of, by levels.txt Id: the West overworld's
  * (built-west.ts, the W line's) and the dungeons' (built-dungeons.ts, the D line's) together, the
- * camp, Blood Moor, Cold Plains and the Den of Evil so far. Read afresh each time, the two lists being theirs
+ * west block's ten so far. Read afresh each time, the two lists being theirs
  */
 function built(): number[] {
   return [...BUILT_WEST, ...BUILT_DUNGEONS].sort((a, b) => a - b);

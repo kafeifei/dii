@@ -7,9 +7,10 @@
 // by using it, in the difficulty played, and listed; another difficulty is another game, the
 // overworld made anew in the same world, its monsters of that difficulty. Stony Field and the Burial
 // Grounds are on the same map, gone to by waypoint as a jump: Stony Field's waypoint is activated by
-// using it and saved, listed after Cold Plains'; the ways under the west block that have no map yet
-// (Cold Plains' Cave, the Underground Passage in Stony Field's cliff, the Crypt and the Mausoleum in
-// the Burial Grounds) are closed, and using one says so once and goes nowhere. Chests and barrels roll
+// using it and saved, listed after Cold Plains'; of the ways under the west block, Cold Plains' Cave
+// and the Burial Grounds' Crypt and Mausoleum are open (tools/test/entrances.test.mjs walks them),
+// the one with no map yet, the Underground Passage in Stony Field's cliff, is closed, and using it
+// says so once, naming it, and goes nowhere. Chests and barrels roll
 // at their area's level. The trial ground's floors are the debug panel's alone. A new game, or one
 // continued, makes a new world; a reload plays on in the saved one, in the area it was saved in
 // (Stony Field too). A built dungeon's map is made once by its maker (Maps DUNGEON_MAKERS) from the
@@ -18,10 +19,8 @@ const KEY = 'dii-save-v1';
 const DT = 1 / 60;
 
 export default async (load) => {
-  const { CAMP_AREA, WILD_AREA, COLD_PLAINS, STONY_FIELD, BURIAL_GROUNDS, DEN_OF_EVIL, CAVE_1, CRYPT, MAUSOLEUM, areaDef, dungeonArea, isBuilt } = await load('/src/world/areas.ts');
+  const { CAMP_AREA, WILD_AREA, COLD_PLAINS, STONY_FIELD, BURIAL_GROUNDS, DEN_OF_EVIL, CAVE_1, CRYPT, MAUSOLEUM, UNDERGROUND_PASSAGE: PASSAGE, areaDef, dungeonArea, isBuilt } = await load('/src/world/areas.ts');
   const { D2X_AREAS } = await load('/src/data/d2x/areas.ts');
-  /** the Underground Passage's first level (levels.txt 10), behind Stony Field's cliff */
-  const PASSAGE = 10;
   const { BUILT } = await load('/src/world/overworld.ts');
   const { Game } = await load('/src/game/game.ts');
   const { Sfx } = await load('/src/audio/sfx.ts');
@@ -106,9 +105,9 @@ export default async (load) => {
   const mouth = west.objects.find((o) => o.kind === 'stairs' && o.dest === DEN_OF_EVIL);
   const cave = ow.entrances.find((e) => e.kind === 'cave');
   check(mouth && cave && dist(mouth.pos, cave) < 1e-6 && west.areaAt(mouth.pos.x, mouth.pos.z).id === WILD_AREA && !mouth.closed, 'no open way down at the Den of Evil in Blood Moor');
-  // the other ways down are the ones without maps yet, closed
+  // the other ways down: the Cave's and the crypts' open, their maps built; the Underground Passage's, with none, closed
   const others = west.objects.filter((o) => o.kind === 'stairs' && o.dest !== DEN_OF_EVIL);
-  check(others.map((o) => o.dest).sort((a, b) => a - b).join() === [CAVE_1, PASSAGE, CRYPT, MAUSOLEUM].join() && others.every((o) => o.closed), `the overworld's other stairs: ${others.map((o) => `${o.dest}${o.closed ? ' closed' : ''}`).join(', ')}`);
+  check(others.map((o) => o.dest).sort((a, b) => a - b).join() === [CAVE_1, PASSAGE, CRYPT, MAUSOLEUM].join() && others.every((o) => !!o.closed === (o.dest === PASSAGE)), `the overworld's other stairs: ${others.map((o) => `${o.dest}${o.closed ? ' closed' : ''}`).join(', ')}`);
   // one of Blood Moor's monsters killed before going down stays dead
   const victim = west.monsters.find((m) => !m.dead && west.areaAt(m.pos.x, m.pos.z).id === WILD_AREA);
   game.killMonster(victim, 'phys');
@@ -164,7 +163,7 @@ export default async (load) => {
   // ── Cold Plains' waypoint: used, it is activated and listed; travel by it is a jump ──
   const wp = west.objects.find((o) => o.kind === 'waypoint' && west.areaAt(o.pos.x, o.pos.z).id === COLD_PLAINS);
   if (!wp) throw new Error("no waypoint in Cold Plains");
-  check(!game.travel(CAVE_1) && !game.travel(CRYPT) && !game.travel(PASSAGE), 'travel to an area with no map went somewhere');
+  check(!game.travel(PASSAGE) && !game.travel(5), 'travel to an area with no map went somewhere');
   const jumps = notes.jumps;
   check(game.travel(COLD_PLAINS) && game.area.id === COLD_PLAINS && dist(p.pos, wp.pos) < 2.5 && notes.jumps === jumps + 1, `the tools' way to Cold Plains: ${game.area.key}, ${dist(p.pos, wp.pos).toFixed(1)} from its waypoint`);
   check(p.waypoints.join() === String(CAMP_AREA), `going there touched its waypoint: ${p.waypoints.join()}`);
@@ -205,23 +204,27 @@ export default async (load) => {
   game.interact(stonyWp);
   check(p.waypoints.join() === `${CAMP_AREA},${COLD_PLAINS},${STONY_FIELD}` && notes.messages.includes('传送点已激活') && saved().progress[0].waypoints.includes(STONY_FIELD), `using Stony Field's waypoint: waypoints ${p.waypoints.join()}, saved ${JSON.stringify(saved().progress[0].waypoints)}`);
 
-  // ── the ways under the west block with no map yet: closed, used they say so once and go nowhere ──
+  // ── the ways under the west block: each in its area, named for where it goes (the rename table's
+  // names, the Underground Passage's too: areas.ts defines it); the built ones' the tools' way there,
+  // the one with no map yet closed, used it says so once, naming it, and goes nowhere ──
   for (const dest of [CAVE_1, PASSAGE, CRYPT, MAUSOLEUM]) {
     const o = west.objects.find((x) => x.kind === 'stairs' && x.dest === dest);
-    const name = areaDef(dest)?.name ?? D2X_AREAS.find((a) => a.id === dest).name;
+    const name = areaDef(dest)?.name;
     if (!o) {
       problems.push(`no way to area ${dest}`);
       continue;
     }
     const area = west.areaAt(o.pos.x, o.pos.z).id;
-    check(o.closed && o.name === `通往${name}` && area === (dest === CAVE_1 ? COLD_PLAINS : dest === PASSAGE ? STONY_FIELD : BURIAL_GROUNDS), `the way to area ${dest}: ${o.name}, closed ${o.closed}, in area ${area}`);
-    check(west.wayTo(dest, p.pos) === null, `a way leads to area ${dest}`);
+    const shut = !isBuilt(dest);
+    check(name === D2X_AREAS.find((a) => a.id === dest).name && !!o.closed === shut && o.name === `通往${name}` && area === (dest === CAVE_1 ? COLD_PLAINS : dest === PASSAGE ? STONY_FIELD : BURIAL_GROUNDS), `the way to area ${dest}: ${o.name}, closed ${o.closed}, in area ${area}`);
+    check(shut ? west.wayTo(dest, p.pos) === null : west.wayTo(dest, p.pos)?.obj === o, `the way the tools find to area ${dest}: ${JSON.stringify(west.wayTo(dest, p.pos)?.pos)}`);
+    if (!shut) continue;
     game.teleportWithin(west.layout.map.nearestWalkable(o.pos.x + o.inward.x * 1.5, o.pos.z + o.inward.z * 1.5));
     notes.messages = [];
     const built = notes.levels;
     game.interact(o);
     game.interact(o);
-    check(game.level === west && game.area.id === area && notes.levels === built && notes.messages.length === 1 && notes.messages[0].includes('还没有开通'), `using the closed way to area ${dest}: said ${notes.messages.join(' / ') || 'nothing'}, in ${game.area.key}, ${notes.levels - built} level(s) built`);
+    check(game.level === west && game.area.id === area && notes.levels === built && notes.messages.join() === `通往${name}的路还没有开通`, `using the closed way to area ${dest}: said ${notes.messages.join(' / ') || 'nothing'}, in ${game.area.key}, ${notes.levels - built} level(s) built`);
   }
   game.travel(COLD_PLAINS);
 
@@ -324,5 +327,5 @@ export default async (load) => {
   }
 
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
-  console.log(`  camp → Blood Moor → the Den and back, portals both ways, a respawn and waypoints on one map (${notes.levels} levels built in all); Cold Plains' and Stony Field's waypoints activated by use; the four ways with no map refused; a world a game, kept on a reload (Stony Field and the Burial Grounds too); a built dungeon made once from levelSeed by its maker`);
+  console.log(`  camp → Blood Moor → the Den and back, portals both ways, a respawn and waypoints on one map (${notes.levels} levels built in all); Cold Plains' and Stony Field's waypoints activated by use; the ways down open where built, the Underground Passage's refused by name; a world a game, kept on a reload (Stony Field and the Burial Grounds too); a built dungeon made once from levelSeed by its maker`);
 };

@@ -130,9 +130,11 @@ export default async (load) => {
   const wayOut = west.wayTo(WILD_AREA, home);
   check(wayOut && !wayOut.obj && west.areaAt(wayOut.pos.x, wayOut.pos.z).id === WILD_AREA && map.walkableAt(wayOut.pos.x, wayOut.pos.z), `on the overworld the way from the camp into Blood Moor is ${JSON.stringify(wayOut)}`);
   check(west.wayTo(CAMP_AREA, home)?.pos && near(west.wayTo(CAMP_AREA, home).pos, home), 'the way into the area the hero is in is not where they stand');
-  // the Den by its mouth; Stony Field and the Burial Grounds are on the overworld, walked into; the Crypt's way closed while it has no map
+  // the Den and the Crypt by their ways down; Stony Field and the Burial Grounds are on the overworld,
+  // walked into; the Underground Passage's way closed while it has no map
   const toStony = west.wayTo(STONY_FIELD, home);
-  check(west.wayTo(DEN_OF_EVIL, home)?.obj?.kind === 'stairs' && toStony && !toStony.obj && west.areaAt(toStony.pos.x, toStony.pos.z).id === STONY_FIELD && west.wayTo(BURIAL_GROUNDS, home)?.obj === undefined && west.wayTo(A0.CRYPT, home) === null, `the overworld's way into the den is ${west.wayTo(DEN_OF_EVIL, home)?.obj?.kind}, into Stony Field ${JSON.stringify(toStony)}, into the Crypt ${JSON.stringify(west.wayTo(A0.CRYPT, home))}`);
+  const toCrypt = west.wayTo(A0.CRYPT, home);
+  check(west.wayTo(DEN_OF_EVIL, home)?.obj?.kind === 'stairs' && toStony && !toStony.obj && west.areaAt(toStony.pos.x, toStony.pos.z).id === STONY_FIELD && west.wayTo(BURIAL_GROUNDS, home)?.obj === undefined && toCrypt?.obj?.kind === 'stairs' && west.areaAt(toCrypt.pos.x, toCrypt.pos.z).id === BURIAL_GROUNDS && west.wayTo(A0.UNDERGROUND_PASSAGE, home) === null, `the overworld's way into the den is ${west.wayTo(DEN_OF_EVIL, home)?.obj?.kind}, into Stony Field ${JSON.stringify(toStony)}, into the Crypt ${toCrypt?.obj?.kind}, into the Underground Passage ${JSON.stringify(west.wayTo(A0.UNDERGROUND_PASSAGE, home))}`);
   // the old separate camp, its east half made wilderness for the test
   const camp = new Level(0, SEED);
   const cm = camp.layout.map;
@@ -171,6 +173,12 @@ export default async (load) => {
       const a = areaDef(id);
       const row = D2X_AREAS.find((r) => r.id === id);
       check(a?.key === key && areaByKey(key) === a && a.kind === 'dungeon' && !a.waypoint && a.name === row.name && a.en === row.nameEn && a.alvl.join() === row.lvl.join() && isBuilt(id), `area ${id}: ${JSON.stringify(a)}`);
+    }
+    // the Underground Passage, defined from its row so its closed mouth names it, not built
+    {
+      const a = areaDef(A.UNDERGROUND_PASSAGE);
+      const row = D2X_AREAS.find((r) => r.id === 10);
+      check(A.UNDERGROUND_PASSAGE === 10 && a?.key === 'passage1' && areaByKey('passage1') === a && a.kind === 'dungeon' && !a.waypoint && a.name === row.name && a.en === row.nameEn && !isBuilt(10) && !list.includes(a), `area 10: ${JSON.stringify(a)}`);
     }
     // the W line's overworld and the D line's dungeons (src/game/maps.ts DUNGEON_MAKERS), all of the west block built
     check(BUILT_WEST.join() === '1,2,3,4,17' && BUILT_DUNGEONS.join() === '8,9,13,18,19', `the BUILT lists: west ${BUILT_WEST}, dungeons ${BUILT_DUNGEONS}`);

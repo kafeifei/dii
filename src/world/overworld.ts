@@ -1,6 +1,6 @@
 import { RNG, type P2 } from '../core/math';
 import { D2X_SUPERUNIQUES } from '../data/d2x/superuniques';
-import { BURIAL_GROUNDS, CAMP_AREA, CAVE_1, COLD_PLAINS, CRYPT, DEN_OF_EVIL, MAUSOLEUM, STONY_FIELD, WILD_AREA } from './areas';
+import { BURIAL_GROUNDS, CAMP_AREA, CAVE_1, COLD_PLAINS, CRYPT, DEN_OF_EVIL, MAUSOLEUM, STONY_FIELD, UNDERGROUND_PASSAGE, WILD_AREA } from './areas';
 import { BUILT_WEST } from './built-west';
 import type { Prop } from './furnish';
 import { THEMES, type Decor, type House, type Layout, type Npc, type PresetMonster, type PresetSpot, type Room, type Service, type SuperUnique, type Waypoint } from './levelgen';
@@ -20,7 +20,7 @@ import { CELL, OUT_SCALE, cellsOf, flood, generateZone, type Entrance, type Side
  * again with its seed + 1 if not. The west block's five areas are all on it (M2a): the camp, Blood
  * Moor, Cold Plains, Stony Field and the Burial Grounds; what's under them (the Den, Cold Plains'
  * Cave, the Crypt, the Mausoleum) and the Underground Passage behind Stony Field's cliff are entered
- * by their mouths, closed while their maps aren't built.
+ * by their mouths, each closed while its map isn't built (the passage's, in M2a).
  *
  * The game is played on it (Game.enterArea): Level takes it as it is, area by area, but the
  * renderer still dresses the map as one area. Still to do:
@@ -39,8 +39,6 @@ import { CELL, OUT_SCALE, cellsOf, flood, generateZone, type Entrance, type Side
 const MARGIN = 2 * CELL;
 /** trees grow in the gaps between areas only this near one (docs/M2A.md 地图): the rest is never seen */
 const WOODS_REACH = 32;
-/** the Underground Passage's first level (Levels.txt 10, Act 1 - Cave 3): Stony Field's cliff opens on it, not built in M2a */
-const UNDERGROUND_PASSAGE = 10;
 /** Rakanishu, Stony Field's superunique (superuniques.json, its names the rename table's) */
 const RAKANISHU = D2X_SUPERUNIQUES.find((s) => s.key === 'Rakanishu')!;
 /** times an area is made again before its world is given up on */
@@ -70,6 +68,16 @@ const WEST: Link[] = [
 
 /** the areas made (built-west.ts, by levels.txt Id): all of WEST */
 export const BUILT = BUILT_WEST;
+
+/**
+ * The monsters area `id`'s presets set down that aren't its levels.txt kinds nor its superuniques
+ * (Layout.presetMonsters: the Burial Grounds' Blood Raven), by D2X_MONSTERS id: what its prefetch
+ * (src/render/needs.ts areaNeeds) brings besides
+ */
+export function presetMonstersOf(id: number): string[] {
+  const g = DRESS[id]?.graveyard;
+  return g ? [g.boss.monster] : [];
+}
 
 interface Dressing {
   /** a waypoint: with `by`, inside the port to that area, else in a free cell */

@@ -4,7 +4,8 @@
 // ground and a corpse; the builders' own keys (props.ts: torches, chests, barrels, the way down,
 // waypoints, decor, items lying about), asked for with nothing in (each a miss, assets.watch), come
 // from the files the needs ask for; a level's needs are the union of its areas'; and where the hero
-// can go next (areaNeeds) brings the files the Den and the moor turn out to need.
+// can go next (areaNeeds) brings the files each area of the west block turns out to need: the
+// overworld's (the Burial Grounds' Blood Raven, set down by its preset, among them) and the dungeons'.
 const SEEDS = [1, 7, 0x5eed, 20261026];
 
 /** a 2D context that takes whatever is drawn and draws nothing: the builders' glows are canvas textures */
@@ -38,7 +39,8 @@ async function run(load) {
   const { WILD_MAPS } = await load('/src/world/levelgen.ts');
   const { generateOverworld } = await load('/src/world/overworld.ts');
   const { generateDen } = await load('/src/world/den.ts');
-  const { CAMP_AREA, DEN_OF_EVIL, WILD_AREA, COLD_PLAINS, dungeonArea } = await load('/src/world/areas.ts');
+  const { CAMP_AREA, DEN_OF_EVIL, WILD_AREA, COLD_PLAINS, STONY_FIELD, BURIAL_GROUNDS, CAVE_1, CAVE_2, CRYPT, MAUSOLEUM, dungeonArea } = await load('/src/world/areas.ts');
+  const { DUNGEON_MAKERS, levelSeed } = await load('/src/game/maps.ts');
   const problems = [];
   const check = (ok, what) => ok || problems.push(what);
   const packOf = new Map(Object.entries(MODEL_PACKS).flatMap(([p, ks]) => ks.map((k) => [k, `packs/${p}`])));
@@ -57,8 +59,8 @@ async function run(load) {
     const all = N.levelNeeds(level);
     const parts = new Set([...new Set(level.areas)].flatMap((a) => [...N.levelNeeds(level, a)]));
     check(outside(all, parts).length === 0 && outside(parts, all).length === 0, `seed ${seed}: the overworld's needs aren't its areas' (${outside(all, parts).join(' ')} | ${outside(parts, all).join(' ')})`);
-    // what the moor and the plains turn out to need comes with what's asked for before the map is made
-    for (const a of [WILD_AREA, COLD_PLAINS]) {
+    // what each area past the camp turns out to need comes with what's asked for before the map is made
+    for (const a of [WILD_AREA, COLD_PLAINS, STONY_FIELD, BURIAL_GROUNDS]) {
       const ahead = files(N.areaNeeds(a));
       const real = [...files(N.levelNeeds(level, a))].filter((f) => !ahead.has(f) && !files(core).has(f));
       check(!real.length, `seed ${seed}: area ${a} needs ${real.join(' ')}, which areaNeeds doesn't bring`);
@@ -67,6 +69,14 @@ async function run(load) {
     const ahead = files(N.areaNeeds(DEN_OF_EVIL));
     const real = [...files(N.levelNeeds(den))].filter((f) => !ahead.has(f) && !files(core).has(f));
     check(!real.length, `seed ${seed}: the Den needs ${real.join(' ')}, which areaNeeds doesn't bring`);
+    // and the dungeons under the west block, each from its maker as the game makes it
+    for (const id of [CAVE_1, CAVE_2, CRYPT, MAUSOLEUM]) {
+      const s = levelSeed(seed, id);
+      const L = new Level(WILD_MAPS, s, DUNGEON_MAKERS[id](s, 0), 0);
+      const wanted = files(N.areaNeeds(id));
+      const missed = [...files(N.levelNeeds(L))].filter((f) => !wanted.has(f) && !files(core).has(f));
+      check(!missed.length, `seed ${seed}: area ${id} needs ${missed.join(' ')}, which areaNeeds doesn't bring`);
+    }
   }
   // a trial floor's monsters are any with a look: areaNeeds brings every body file
   const floor = new Level(WILD_MAPS + 3, 99, undefined, 0);

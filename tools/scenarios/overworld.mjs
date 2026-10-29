@@ -11,14 +11,15 @@
 // through their seams (each announced, the minimap naming it the next frame): Stony Field's cliffs
 // along its north and west, the Underground Passage's mouth at the cliff's foot (used, it says it isn't
 // open yet and goes nowhere), the Cairn Stones with Rakanishu in them, its waypoint lit and listed
-// after Cold Plains'; the Burial Grounds' graveyard gate, the Mausoleum, the Crypt's way (closed, the
-// same), Blood Raven the one monster with a quest; back to Cold Plains by waypoint. Then 30 s of sim
+// after Cold Plains'; the Burial Grounds' graveyard gate, the Mausoleum's and the Crypt's stairways
+// (each taken down into its own map, the hero beside its way up, and back up beside the stairway it
+// went down), Blood Raven the one monster with a quest; back to Cold Plains by waypoint. Then 30 s of sim
 // by the camp's edge, a pack of Blood Moor's monsters woken just outside it: 10 s with the hero out
 // there, 20 s with them just inside; no monster may ever stand on a camp tile. Page and console
 // errors fail the run. Shots: the camp's palisade gate, the camp's seam, Blood Moor's seam with Cold
 // Plains, Cold Plains' waypoint, Stony Field's seam, its cliff, the passage's mouth, the cairn, the
-// graveyard's gate, the Mausoleum, the Crypt's way, and the camp's edge after the sim. The last line
-// is "OVERWORLD OK …" or "OVERWORLD FAIL …".
+// graveyard's gate, inside the Mausoleum and the Crypt and back up at each one's stairway, and the
+// camp's edge after the sim. The last line is "OVERWORLD OK …" or "OVERWORLD FAIL …".
 
 /** the areas walked through, in order (src/world/areas.ts CAMP_AREA, WILD_AREA, COLD_PLAINS) */
 const ROUTE = [1, 2, 3];
@@ -351,7 +352,8 @@ export default async function (page, shot, log) {
           h.message = msg;
           return { said, closed: !!o.closed, name: o.name, stayed: game.level === window.__ow.west && game.area.id === area };
         }, dest);
-      const closedOk = (u, what) => expect(u.closed && u.stayed && u.said.length === 1 && u.said[0].includes('还没有开通'), `${what} (${u.name}): closed ${u.closed}, said ${u.said.join(' / ') || 'nothing'}, stayed ${u.stayed}`);
+      // the message names where it goes, as the way's own name does (areas.ts defines the Underground Passage for it)
+      const closedOk = (u, what) => expect(u.closed && u.stayed && u.said.length === 1 && u.said[0] === `${u.name}的路还没有开通`, `${what} (${u.name}): closed ${u.closed}, said ${u.said.join(' / ') || 'nothing'}, stayed ${u.stayed}`);
 
       // Stony Field: in through its seam, the minimap naming it the next frame
       const s = await ev(() => window.__ow.stonySeam);
@@ -433,12 +435,31 @@ export default async function (page, shot, log) {
       await go(gate, "to the graveyard's gate");
       await frames();
       await shot('barrow-gate');
-      // the Mausoleum and the Crypt: closed while their maps aren't built
+      // the Mausoleum and the Crypt: down each stairway into its own map, the hero beside its way up;
+      // up again, beside the stairway they went down (not the other), on the overworld as it was
       for (const [dest, name] of [[19, 'barrow-mausoleum'], [18, 'barrow-crypt']]) {
         const to = await before(dest);
         if (!expect(to, `no way into area ${dest}`)) continue;
         await go(to, `to the way into area ${dest}`);
-        closedOk(await useClosed(dest), `the way into area ${dest}`);
+        const down = await ev((dest) => {
+          const S = window.__ow;
+          const o = game.level.objects.find((x) => x.kind === 'stairs' && x.dest === dest);
+          game.interact(o);
+          const up = game.level.objects.find((x) => x.kind === 'stairs' && x.dest === 17);
+          return { area: game.area.id, own: game.level !== S.west, open: !o.closed, d: up ? S.dist(game.player.pos, up.pos) : null };
+        }, dest);
+        expect(down.open && down.area === dest && down.own && down.d !== null && down.d < 3.5, `down the way into area ${dest}: in area ${down.area}, its own map ${down.own}, ${down.d?.toFixed(1)} from its way up`);
+        await frames();
+        await shot(`${name}-under`);
+        const back = await ev((dest) => {
+          const S = window.__ow;
+          game.interact(game.level.objects.find((x) => x.kind === 'stairs' && x.dest === 17));
+          const ways = game.level.objects.filter((x) => x.kind === 'stairs' && (x.dest === 18 || x.dest === 19));
+          const d = (x) => S.dist(game.player.pos, x.pos);
+          const mine = ways.find((x) => x.dest === dest);
+          return { area: game.area.id, same: game.level === S.west, d: mine ? d(mine) : null, nearest: !!mine && ways.every((x) => x === mine || d(x) > d(mine)) };
+        }, dest);
+        expect(back.area === 17 && back.same && back.d !== null && back.d < 3.5 && back.nearest, `back up from area ${dest}: in area ${back.area}, the overworld ${back.same}, ${back.d?.toFixed(1)} from its stairway, nearer it than the other ${back.nearest}`);
         await frames();
         await shot(name);
       }
@@ -448,10 +469,14 @@ export default async function (page, shot, log) {
       });
       expect(quested.length === 1 && quested[0].id === 'bloodraven' && quested[0].quest === 'a1q2' && quested[0].area === 17, `the monsters with a quest: ${JSON.stringify(quested)}`);
       const r = await ev(() => ({ areas: window.__ow.areas.slice(), levels: window.__ow.levels }));
-      expect(r.areas.join(' ') === '3>4 4>3 3>17' && r.levels === 0, `areaChanged fired ${r.areas.join(' ')}, ${r.levels} levelChanged`);
+      // over the seams, then down and up each stairway, a map each way
+      expect(r.areas.join(' ') === '3>4 4>3 3>17 17>19 19>17 17>18 18>17' && r.levels === 4, `areaChanged fired ${r.areas.join(' ')}, ${r.levels} levelChanged`);
       facts.push(`west block: ${plan.cliffs} cliff tiles, ${cairn?.name} at the cairn, areas ${r.areas.join(' ')}`);
-      // back to Cold Plains' waypoint, where the sim's walk out starts
-      await ev(() => game.travel(3));
+      // back to Cold Plains' waypoint, where the sim's walk out starts; the sim counts its own levelChanged
+      await ev(() => {
+        game.travel(3);
+        window.__ow.levels = 0;
+      });
     },
 
     async sim() {

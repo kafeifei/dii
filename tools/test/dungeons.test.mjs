@@ -3,10 +3,11 @@
 // from its level's seed (levelSeed: the world's + its Id), the same map for the same world and again
 // on a reload, the Crypt's never the Mausoleum's; their stairs both ways where levels.json's warps
 // go (the Den to Blood Moor, Cave Level 1 to Cold Plains and down to Cave Level 2 and back, the crypts
-// up to the Burial Grounds, closed while it isn't built); the crypts 12, 24 and 36 rooms (and their
-// specials) by difficulty, the Den D2's three-room L; caves lit by the hero alone (no torches, no lit
-// props or wall pieces), crypts with torches; the spark chests by 580 and 397; D2's objects carried
-// through the Layout into the Level; each map, monsters and all, made within 200 ms.
+// up to the Burial Grounds; tools/test/entrances.test.mjs walks them all from the camp); the crypts
+// 12, 24 and 36 rooms (and their specials) by difficulty, the Den D2's three-room L; caves lit by the
+// hero alone (no torches, no lit props or wall pieces), crypts with torches; the spark chests by 580
+// and 397; D2's objects carried through the Layout into the Level; each map, monsters and all, made
+// within 200 ms.
 const SLOW_MS = 200;
 const WORLDS = [1, 77, 4242, 0x5eed2a, 2026];
 
@@ -172,16 +173,15 @@ export default async (load) => {
   game.interact(denUp);
   const mouth = game.level.objects.find((o) => o.kind === 'stairs' && o.dest === DEN_OF_EVIL);
   check(game.area.id === WILD_AREA && mouth && dist(p.pos, mouth.pos) < 3.5, `up out of the Den: area ${game.area.id}, ${mouth ? dist(p.pos, mouth.pos).toFixed(1) : '-'} from its mouth`);
-  // the crypts' ways up lead to the Burial Grounds, closed while it isn't built
+  // the crypts' ways up lead to the Burial Grounds, onto the overworld at the stairway down
   for (const id of [CRYPT, MAUSOLEUM]) {
     game.travelToArea(id);
-    const L = game.level;
-    const up = L.objects.find((o) => o.kind === 'stairs' && o.dest === BURIAL_GROUNDS);
-    check(game.area.id === id && up && !!up.closed === !isBuilt(BURIAL_GROUNDS) && dist(p.pos, up.pos) < 3.5, `area ${id}: its way up ${up ? `to ${up.dest}, closed ${!!up.closed}` : 'missing'}, the hero ${up ? dist(p.pos, up.pos).toFixed(1) : '-'} from it`);
-    if (up?.closed) {
-      game.interact(up);
-      check(game.level === L && messages.at(-1)?.includes('还没有开通'), `area ${id}: the closed way up went somewhere, or said ${messages.at(-1)}`);
-    }
+    const up = game.level.objects.find((o) => o.kind === 'stairs' && o.dest === BURIAL_GROUNDS);
+    check(isBuilt(BURIAL_GROUNDS) && game.area.id === id && up && !up.closed && dist(p.pos, up.pos) < 3.5, `area ${id}: its way up ${up ? `to ${up.dest}, closed ${!!up.closed}` : 'missing'}, the hero ${up ? dist(p.pos, up.pos).toFixed(1) : '-'} from it`);
+    if (!up) continue;
+    game.interact(up);
+    const down = game.level.objects.find((o) => o.kind === 'stairs' && o.dest === id);
+    check(game.area.id === BURIAL_GROUNDS && game.level === game.mapOf(CAMP_AREA) && down && dist(p.pos, down.pos) < 3.5, `up out of area ${id}: area ${game.area.id}, ${down ? dist(p.pos, down.pos).toFixed(1) : '-'} from its stairway`);
   }
 
   // ── saved in the Crypt, reloaded: the same Crypt, the hero in it ──
@@ -192,5 +192,5 @@ export default async (load) => {
   game.enterArea(CAMP_AREA, 'waypoint');
 
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.slice(0, 40).join('\n  ')}`);
-  console.log(`  ${DUNGEONS.length} dungeons in ${WORLDS.length} worlds from their levels' seeds; ${notes.join('; ')}; stairs both ways, the crypts' closed to the unbuilt Burial Grounds; a reload in the Crypt finds it again`);
+  console.log(`  ${DUNGEONS.length} dungeons in ${WORLDS.length} worlds from their levels' seeds; ${notes.join('; ')}; stairs both ways, the crypts' up to the Burial Grounds; a reload in the Crypt finds it again`);
 };

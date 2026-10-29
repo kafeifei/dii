@@ -136,7 +136,7 @@ const GRAVE_CLEAR = 6;
 const PRESET_DEF: Partial<Record<CellPreset, number>> = { cairn: 160 };
 
 const clampI = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
-/** what an area a way leads into is called: its AreaDef's, else its row's in the rename table (D2X_AREAS: an area this build has no def of, the Underground Passage) */
+/** what an area a way leads into is called: its AreaDef's, else its row's in the rename table (D2X_AREAS, for an area areas.ts doesn't define) */
 const nameOf = (id: number) => areaDef(id)?.name ?? D2X_AREAS.find((a) => a.id === id)?.name ?? '';
 const ahead = (w: Way, d: number): P2 => ({ x: w.x + w.nx * d, z: w.z + w.nz * d });
 

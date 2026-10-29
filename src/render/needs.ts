@@ -8,6 +8,7 @@ import type { Monster } from '../game/monster';
 import type { WorldObject } from '../game/objects';
 import type { Player } from '../game/player';
 import { CAMP_AREA, areaDef, areaList, routeTo, trialFloor } from '../world/areas';
+import { presetMonstersOf } from '../world/overworld';
 import type { ModelKey } from './assets';
 import { DEV_MODELS } from './dev-models';
 import { MODEL_PACKS } from './model-list';
@@ -124,7 +125,8 @@ export function levelNeeds(level: Level, area?: number): Set<string> {
 
 /**
  * The monsters an area of Diablo II's can bring this difficulty (src/game/spawn.ts): its levels.txt
- * kinds, its superuniques and the minions of either; a trial floor any Act 1 monster with a look
+ * kinds, its superuniques, what its presets set down besides (the Burial Grounds' Blood Raven:
+ * overworld.ts presetMonstersOf) and the minions of any; a trial floor any Act 1 monster with a look
  */
 function areaMonsters(id: number, difficulty: Difficulty): string[] {
   if (trialFloor(id) !== undefined) return lookedMonsters().filter((d) => d.row.spawns && !d.boss && d.row.align === 0).map((d) => d.id);
@@ -139,13 +141,19 @@ function areaMonsters(id: number, difficulty: Difficulty): string[] {
     const su = D2X_SUPERUNIQUES.find((s) => s.key === key);
     if (su) ids.add(su.mon);
   }
+  for (const m of presetMonstersOf(src)) ids.add(m);
   for (const id of [...ids]) for (const m of D2X_MONSTERS[id]?.minions ?? []) ids.add(m);
   return [...ids];
 }
 
+/** the monster ids areaNeeds draws each kind with: specs.ts picks by id mod 3 and mod 4 (a rogue's gear by a hash of it, all in the core's weapons) */
+const SPEC_IDS = 12;
+
 /**
  * What area `id` would need before its map is made (prefetching where the hero can go next): the
- * packs its kind of map is furnished from past the camp's, and the bodies of the monsters it can bring
+ * packs its kind of map is furnished from past the camp's, and the bodies of the monsters it can bring,
+ * each as any of them may be drawn (specs.ts: a champion's or unique's, and every third skeleton, the
+ * elite's body; what one carries by its id)
  */
 export function areaNeeds(id: number, difficulty: Difficulty = 0): Set<string> {
   const out = new Set<string>();
@@ -155,7 +163,8 @@ export function areaNeeds(id: number, difficulty: Difficulty = 0): Set<string> {
   if (a.kind === 'dungeon') for (const k of pack('dungeon')) out.add(k);
   for (const mid of areaMonsters(id, difficulty)) {
     const def = monsterDef(mid);
-    if (def) for (const k of specNeeds(monsterSpec({ def, rank: 'normal', id: 1 } as Monster))) out.add(k);
+    if (!def) continue;
+    for (const rank of ['normal', 'champion'] as const) for (let k = 0; k < SPEC_IDS; k++) for (const key of specNeeds(monsterSpec({ def, rank, id: k } as Monster))) out.add(key);
   }
   return out;
 }
