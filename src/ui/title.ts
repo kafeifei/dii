@@ -206,10 +206,17 @@ export class PauseMenu {
     this.el = m;
   }
 
-  /** open or shut it (flip it with no argument); the game is paused while it's open */
+  /**
+   * Open or shut it (flip it with no argument); the game is paused while it's open. Opening it saves
+   * the hero, so what was played up to the menu is kept however long it stays up, even if the page
+   * goes meanwhile. Shut, the game plays on, but not once another tab has the hero (Game.elsewhere)
+   */
   toggle(open?: boolean) {
-    const o = open ?? !this.el.classList.contains('open');
+    const game = this.ui.game;
+    const was = this.el.classList.contains('open');
+    const o = open ?? !was;
+    if (o && !was) game.save();
     this.el.classList.toggle('open', o);
-    this.ui.game.paused = o;
+    game.paused = o || game.elsewhere;
   }
 }

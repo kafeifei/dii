@@ -16,7 +16,13 @@
 // next, whose quest is untouched and whose quest log has no news; the first hero continued has the
 // quest given. Then her reward cut off the same way (the den taken as cleared): its skill point is
 // that hero's, once, saved, and its word on screen goes with them: none over the title, none in the
-// next hero's game, whose points and quest are untouched. Page errors fail the run.
+// next hero's game, whose points and quest are untouched. Then a window left in its menu: the copy,
+// just after an autosave, picks up an item and a pile of gold and opens the menu at once (which saves
+// them), and stays there, visible all along, for longer than save.ts's GONE_MS. Its claim on the hero
+// is kept fresh meanwhile, so the first tab's title, opened only now, lists the hero as played in
+// another window; picked there, the copy saves, hands it over and stops behind its notice, which is
+// over its menu, and stays stopped when Esc shuts the menu under it. The first tab has the item and
+// the gold, and keeps them in its own save. Page errors fail the run.
 // The last line is "PERSIST OK …" or "PERSIST FAIL …".
 
 export default async function (page, shot, log) {
@@ -246,6 +252,114 @@ export default async function (page, shot, log) {
     expect(after.played === 0 && after.points === 0 && after.saved === 0 && after.savedPoints === 0 && !after.messages.length && !after.dialogue && !after.logNews, `${hero}'s reward in ${next}'s game: ${JSON.stringify(after)}`);
     await shot('next-hero-after-reward', page2);
     facts.push(`her reward cut off the same way is ${hero}'s (saved: +1 point, once), its word gone with them: none over the title, none in ${next}'s game`);
+
+    step = 'a menu left open';
+    // A (the copy, playing the hero made last) picks something up after its last save and opens the
+    // menu at once, then stays there longer than save.ts's GONE_MS (10 s), as a window left beside
+    // another would. B (the first tab, at the title) opens the title only then, and picks the hero
+    const A = page2;
+    const B = page;
+    const heroA = await A.evaluate(() => game.player.name);
+    /** the hero's save as storage has it: its key, when it was written, its gold, whether item `uid` is in it */
+    const saveOf = (pg, uid = '') =>
+      pg.evaluate(
+        ({ name, uid }) => {
+          for (let n = 0; n < 8; n++) {
+            const key = n ? `dii-save-v1-${n}` : 'dii-save-v1';
+            const raw = localStorage.getItem(key) ?? 'null';
+            const d = JSON.parse(raw);
+            if (d?.name === name) return { key, time: d.time, gold: d.gold, has: !!uid && raw.includes(`"${uid}"`) };
+          }
+          return null;
+        },
+        { name: heroA, uid },
+      );
+    // A watched from here on: whether its page ever stops being visible (a hidden page saves, which
+    // would hide what this checks), and how many frames it runs
+    await A.evaluate(async () => {
+      const w = (window.__menuTest = {
+        seen: [document.visibilityState],
+        frames: 0,
+        GroundItem: (await import('/src/game/objects.ts')).GroundItem,
+        createItem: (await import('/src/items/gen.ts')).createItem,
+      });
+      document.addEventListener('visibilitychange', () => w.seen.push(document.visibilityState));
+      setInterval(() => w.seen.push(document.visibilityState), 250);
+      const tick = () => {
+        w.frames++;
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    // right after an autosave (every 8 s, Game.update), so none comes between the pickup and the menu;
+    // nor does anything else that saves at once (a new area, a waypoint, a boss)
+    const lastSave = await saveOf(A);
+    await A.waitForFunction(({ key, time }) => JSON.parse(localStorage.getItem(key) ?? 'null')?.time !== time, lastSave, { timeout: 15000 });
+    // an item and a pile of gold picked up, as clicking them would (Game.pickupGround), then Esc at once
+    const picked = await A.evaluate((key) => {
+      const w = window.__menuTest;
+      const p = game.player;
+      const it = w.createItem('cap');
+      const gi = new w.GroundItem({ ...p.pos }, it, 0, p.pos);
+      game.level.ground.push(gi);
+      game.pickupGround(gi);
+      const pile = new w.GroundItem({ ...p.pos }, null, 777, p.pos);
+      game.level.ground.push(pile);
+      game.pickupGround(pile);
+      const raw = localStorage.getItem(key) ?? 'null';
+      return { uid: it.uid, gold: p.gold, inBag: p.inventory.items.some((x) => x.item === it), saved: raw.includes(`"${it.uid}"`), savedGold: JSON.parse(raw)?.gold };
+    }, lastSave.key);
+    await A.keyboard.press('Escape');
+    const menu = await A.evaluate(() => ({ paused: game.paused, open: game.hooks.menu.el.classList.contains('open'), at: Date.now() }));
+    expect(picked.uid && picked.inBag && !picked.saved && picked.savedGold === picked.gold - 777, `A's pickup isn't new since its last save: ${JSON.stringify(picked)}`);
+    expect(menu.paused && menu.open, `A's menu didn't open: ${JSON.stringify(menu)}`);
+    const atMenu = await saveOf(A, picked.uid);
+    expect(atMenu?.has && atMenu.gold === picked.gold, `opening the menu didn't save what A picked up: ${JSON.stringify(atMenu)}`);
+    await shot('menu-left-open', A);
+    await A.waitForTimeout(11000);
+    // B's title, opened only now: the hero still played in A, whose menu has been up past GONE_MS
+    await B.reload();
+    await B.waitForSelector('.overlay.open .saves .btn.pick', { timeout: 60000 });
+    const row = B.locator('.overlay.open .saves .btn.pick').filter({ has: B.locator('b', { hasText: new RegExp(`^${heroA}$`) }) });
+    const listed = await row.locator('span').textContent();
+    await shot('title-while-menu-open', B);
+    // picked well past GONE_MS after A's menu opened: A's claim, unrefreshed since, would count as gone
+    const pick = await B.evaluate((key) => ({ at: Date.now(), claim: JSON.parse(localStorage.getItem(`dii-tab:${key}`) ?? 'null') }), lastSave.key);
+    const upFor = pick.at - menu.at;
+    expect(upFor > 10000, `B picks the hero only ${upFor} ms after A's menu opened`);
+    expect(listed?.includes('正在另一个窗口里'), `B's title doesn't say ${heroA} is played elsewhere, A's menu up ${upFor} ms: ${listed}`);
+    expect(pick.claim?.time > menu.at, `A's claim on ${heroA} wasn't kept fresh while its menu was up: ${JSON.stringify(pick.claim)}, menu opened at ${menu.at}`);
+    await row.click();
+    await started(B);
+    await B.waitForTimeout(500);
+    const got = await B.evaluate((uid) => ({ gold: game.player.gold, item: game.player.inventory.items.some((x) => x.item.uid === uid) }), picked.uid);
+    expect(got.item && got.gold === picked.gold, `B has ${JSON.stringify(got)}, not the item and ${picked.gold} gold A had: what A did before its menu was lost`);
+    const gone = await A.evaluate(() => {
+      const w = window.__menuTest;
+      const top = document.elementFromPoint(innerWidth / 2, innerHeight / 2);
+      return { paused: game.paused, notice: !!document.querySelector('.hero-gone.open'), onTop: !!top?.closest('.hero-gone'), menu: game.hooks.menu.el.classList.contains('open'), seen: [...new Set(w.seen)], frames: w.frames };
+    });
+    expect(gone.seen.length === 1 && gone.seen[0] === 'visible', `A's page wasn't visible all along: ${gone.seen.join(', ')}`);
+    expect(gone.frames > 100, `A ran only ${gone.frames} frames while its menu was up`);
+    expect(gone.paused && gone.notice && gone.onTop, `A plays on, or its notice isn't over its menu: ${JSON.stringify(gone)}`);
+    await shot('menu-tab-stopped', A);
+    // Esc in A, as one would to shut the menu under the notice: the game there stays stopped and writes nothing
+    await A.keyboard.press('Escape');
+    await A.waitForTimeout(300);
+    const still = await A.evaluate(() => {
+      const paused = game.paused;
+      game.player.gold = 1;
+      game.save();
+      return paused;
+    });
+    expect(still, 'A plays on once Esc shuts its menu under the notice');
+    expect((await saveOf(B))?.gold !== 1, 'A still writes the hero');
+    // B's own save keeps all of it
+    await B.evaluate(() => game.save());
+    const kept = await saveOf(B, picked.uid);
+    expect(kept?.has && kept.gold === picked.gold, `B's save lost what A did: ${JSON.stringify(kept)}`);
+    await shot('took-over-from-menu', B);
+    facts.push(`a window left in its menu ${(upFor / 1000).toFixed(1)} s, visible, still holds ${heroA}: the other's title says so, and picking it there hands over the item and gold picked up just before the menu; that window stops behind its notice, over the menu`);
   } catch (e) {
     fails.push(`${step}: ${e.message}`);
   }

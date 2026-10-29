@@ -43,10 +43,12 @@ function frame(now: number) {
   let steps = 0;
   // the world waits behind a level's loading veil (Renderer.veiled): nothing steps, nothing piles up for after
   const held = renderer.veiled;
+  // a game in play says its hero is still this tab's on every frame the page runs, paused in the menu
+  // or held behind a veil as much as playing: either can outlast save.ts's GONE_MS, and a tab silent
+  // that long counts as gone, its hero read elsewhere without waiting for its last save (save.ts heartbeat)
+  if (game.started) heartbeat();
   if (game.started && !game.paused && !game.headless) {
     acc = held ? 0 : acc + dt;
-    // the world held, the hero still this tab's: it keeps saying so (a veil can outlast save.ts's GONE_MS)
-    if (held) heartbeat();
     while (acc >= STEP && steps < 6) {
       game.update(STEP);
       acc -= STEP;
