@@ -182,11 +182,13 @@ export default async (load) => {
   game.newGame('任务测试', 'paladin');
   game.npcSpoke(stale);
   check(stale?.id === 'intro' && word() === 0 && den().state === 1 && game.quests.hasNews('akara'), `the last game's line heard in this one: word ${word()}, state ${den().state}`);
+  // the rest in a game of its own: were that line counted, the check above says so, not a failure further on
+  game.newGame('任务测试', 'paladin');
   toAkara();
   const intro = game.talkTo(akara());
   check(intro?.id === 'intro' && intro.text.includes('邪秽巢穴'), `Akara's first words: ${intro?.id}`);
   check(game.npcTalk(akara())?.id?.startsWith('gossip'), 'before the quest is given, 交谈 is small talk');
-  game.npcSpoke(intro);
+  if (intro) game.npcSpoke(intro);
   check(has(F.STARTED) && den().state === 2 && !game.quests.hasNews('akara'), `given: word ${word()}, state ${den().state}`);
   check(game.talkTo(akara()) === null && game.npcTalk(akara())?.id === 'remind', 'given, she reminds under 交谈');
   game.npcLeft(akara());
