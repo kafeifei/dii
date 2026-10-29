@@ -41,6 +41,7 @@ const GONE_NOTE: Record<HandOver, string> = {
   saved: '这个角色在另一个窗口里打开了。这里的进度已经保存，交给了那个窗口；为了不丢东西，这里的游戏已经停下。',
   unsaved: '这个角色在另一个窗口里打开了。这里最后的进度没能保存，那个窗口接着的是上一次存下的进度；这里再玩也存不下来，游戏已经停下。',
   unplayed: '这个角色在另一个窗口里打开了。这里刷新后还没开始玩，就把它交给了那个窗口；这个窗口不会再接着玩。',
+  stale: '这个窗口离开时，这个角色在另一个窗口里玩过并存了档。这里的进度已经过时，为了不覆盖那边的进度，这里不再保存，游戏已经停下。回到标题再选这个角色，就是那边存下的进度。',
 };
 
 /**
@@ -169,6 +170,7 @@ export class UI implements GameHooks, UIContext {
 
   /** another tab has the hero: the notice, saying what became of the play here, over everything but the unsaved badge */
   heroGone(how: HandOver) {
+    this.goneEl.querySelector('.gone-title')!.textContent = how === 'stale' ? '已在别处玩过' : '已在别处打开';
     this.goneEl.querySelector('.note')!.textContent = GONE_NOTE[how];
     this.goneEl.classList.add('open');
     // the game here has stopped: so has whoever was speaking
@@ -264,7 +266,8 @@ export class UI implements GameHooks, UIContext {
     this.root.appendChild(this.title.el);
     this.death = new DeathScreen(this.game);
     this.root.appendChild(this.death.el);
-    // another tab took the hero: this one has saved and handed it over, and plays no more (Game.heroElsewhere)
+    // another tab took the hero (this one has saved and handed it over), or played it while this page was
+    // away (the hero here out of date): this one plays no more (Game.heroElsewhere)
     this.goneEl = h('div', 'overlay ui-block hero-gone');
     this.goneEl.innerHTML = `<div class="death-title gone-title">已在别处打开</div><div class="note"></div><div class="menu"><button class="btn">回到标题</button></div>`;
     (this.goneEl.querySelector('.btn') as HTMLButtonElement).onclick = () => {

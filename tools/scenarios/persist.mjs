@@ -35,7 +35,10 @@
 // the reloading tab hands it over at once, says so, and never starts, its models in or not. A tab
 // reloaded with another window's fresh claim got into storage unheard of (written from its own page,
 // which has no storage event for it) waits, once its models are in, for that window to hand the hero
-// over, and reads what it wrote last. Page errors fail the run.
+// over, and reads what it wrote last. Last, a tab back from the back-forward cache: with nothing written
+// meanwhile it claims its hero again and plays on; once another window has opened the hero there, played
+// it and closed, its hero is out of date, so it stops behind its notice and writes nothing, and the hero
+// continued there has that window's progress. Page errors fail the run.
 // The last line is "PERSIST OK …" or "PERSIST FAIL …".
 
 export default async function (page, shot, log) {
@@ -629,6 +632,109 @@ export default async function (page, shot, log) {
       expect(got === last, `R has ${got} gold, not the ${last} the other window wrote last before handing ${heroA} over`);
       await shot('reload-waited-for-hand-over', R);
       facts.push(`a reload finding another window's claim as it starts waits for its hand-over and reads what it wrote last (${got} gold)`);
+    }
+
+    step = 'back from the cache, played elsewhere meanwhile';
+    // C, playing heroA, goes into the back-forward cache (a synthetic pagehide: it saves and lets the hero
+    // go) and is held there as the cache holds a page: its loop stopped, the storage events it would hear
+    // held back where the page hands them to the game. Back (pageshow, persisted) with nothing written
+    // meanwhile, it claims heroA again and plays on, writing it. Then D, its title opened while C is away,
+    // picks heroA there (nobody holds it: no wait), picks up gold, saves and lets the hero go as a window closing
+    // does (保存并返回标题: the save, the claim let go, its game over). C back: its heroA is out of date, so it
+    // stops behind its notice and writes nothing, its saves and its page going away included; the save
+    // keeps D's gold, and heroA continued at C's title has it
+    {
+      const [C, D] = await roles();
+      /** the tab into the back-forward cache: its pagehide, then nothing of it runs until pageshow */
+      const away = (pg) =>
+        pg.evaluate(() => {
+          window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true }));
+          if (!window.__cacheHeld) {
+            window.__cacheHeld = true;
+            const claimed = game.heroClaimed.bind(game);
+            const sync = game.syncShared.bind(game);
+            const held = () => window.__cached && window.event?.type === 'storage';
+            game.heroClaimed = () => void (held() || claimed());
+            game.syncShared = () => !held() && sync();
+          }
+          window.__cached = true;
+          game.headless = true;
+        });
+      const back = (pg) =>
+        pg.evaluate(() => {
+          window.__cached = false;
+          game.headless = false;
+          window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+        });
+      const titleOf = (pg) => pg.evaluate(() => document.querySelector('.hero-gone .gone-title')?.textContent ?? '');
+
+      // nothing written while it was away: claimed again, played on
+      const mine = (await claimOf(C))?.tab;
+      await away(C);
+      const let1 = await claimOf(C);
+      await C.waitForTimeout(500);
+      await back(C);
+      await C.waitForTimeout(300);
+      const c1 = { ...(await noticeOf(C)), claim: (await claimOf(C))?.tab };
+      const wrote = await C.evaluate(() => {
+        game.player.gold += 11;
+        game.save();
+        return game.player.gold;
+      });
+      expect(let1 === null, `C's pagehide didn't let heroA go: ${JSON.stringify(let1)}`);
+      expect(!c1.open && !c1.paused && c1.claim === mine, `C, back with nothing written meanwhile, doesn't play on with heroA: ${JSON.stringify(c1)}, its tab ${mine}`);
+      expect((await saveOf(C))?.gold === wrote, `C, back with nothing written meanwhile, doesn't write heroA: ${JSON.stringify(await saveOf(C))}, ${wrote} gold`);
+
+      // D, its title opened while C is away, plays heroA, and closes
+      await away(C);
+      const left = await saveOf(C);
+      await backToTitle(D);
+      const listed = await rowOf(D).locator('span').textContent();
+      await rowOf(D).click();
+      await started(D);
+      await D.waitForTimeout(300);
+      const read = await D.evaluate(() => game.player.gold);
+      const dGold = await D.evaluate(() => {
+        game.player.gold += 2468;
+        game.save();
+        return game.player.gold;
+      });
+      await D.keyboard.press('Escape');
+      await D.click('.overlay.open .btn.quit');
+      await D.waitForSelector('.overlay.open .saves .btn.pick');
+      const dSave = await saveOf(D);
+      const dLet = await claimOf(D);
+      expect(!listed?.includes('正在另一个窗口里') && read === left.gold, `D's title, C away: ${listed}; D read ${read} gold, C left ${left.gold}`);
+      expect(dSave?.gold === dGold && dSave.time > left.time && dLet === null, `D's save and claim as it closed: ${JSON.stringify(dSave)}, ${dGold} gold, claim ${JSON.stringify(dLet)}`);
+
+      // C back: out of date, stopped, writing nothing
+      await back(C);
+      await C.waitForTimeout(500);
+      const c2 = { ...(await noticeOf(C)), title: await titleOf(C), elsewhere: await C.evaluate(() => game.elsewhere), claim: await claimOf(C), save: await saveOf(C) };
+      expect(c2.open && c2.paused && c2.elsewhere, `C back from the cache, heroA played elsewhere meanwhile, plays on: ${JSON.stringify(c2)}`);
+      expect(c2.note.includes('过时') && c2.title.includes('玩过'), `C's notice: ${c2.title} / ${c2.note}`);
+      expect(c2.claim === null, `C claimed heroA back, out of date: ${JSON.stringify(c2.claim)}`);
+      expect(c2.save?.time === dSave.time && c2.save.gold === dGold, `C's return wrote over D's play: ${JSON.stringify(c2.save)}, D's ${JSON.stringify(dSave)}`);
+      await shot('back-from-cache-out-of-date', C);
+      await C.evaluate(() => {
+        game.player.gold = 1;
+        game.save();
+        window.dispatchEvent(new Event('beforeunload'));
+        window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: false }));
+      });
+      const c3 = await saveOf(C);
+      expect(c3?.time === dSave.time && c3.gold === dGold, `C still writes heroA, out of date: ${JSON.stringify(c3)}, D's ${JSON.stringify(dSave)}`);
+      // C's notice to its title (the reload saves on the way out): heroA continued there has D's gold
+      await backToTitle(C);
+      const c4 = await saveOf(C);
+      expect(c4?.time === dSave.time && c4.gold === dGold, `C's reload wrote heroA, out of date: ${JSON.stringify(c4)}, D's ${JSON.stringify(dSave)}`);
+      await rowOf(C).click();
+      await started(C);
+      await C.waitForTimeout(300);
+      const c5 = await C.evaluate(() => ({ gold: game.player.gold, paused: game.paused }));
+      expect(c5.gold === dGold && !c5.paused, `heroA continued in C has ${c5.gold} gold, not the ${dGold} D played to`);
+      await shot('continued-after-out-of-date', C);
+      facts.push(`a tab back from the back-forward cache claims its hero again if nothing was written meanwhile; once another window played it (${dGold} gold) and closed, it stops behind its notice, writes nothing, and continued there has that window's gold`);
     }
   } catch (e) {
     fails.push(`${step}: ${e.message}`);

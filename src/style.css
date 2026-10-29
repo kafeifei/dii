@@ -1182,6 +1182,11 @@ body {
   z-index: 46;
   background: radial-gradient(ellipse at center, rgb(20, 8, 4), rgb(0, 0, 0));
 }
+/* the longer words (the hero played elsewhere while this page was away) kept off the edges; the others fit on one line */
+.overlay.hero-gone .note {
+  max-width: min(1000px, calc(100vw - 32px));
+  text-align: center;
+}
 .title-settings {
   margin-top: 22px;
   min-width: 140px;

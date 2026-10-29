@@ -7,8 +7,11 @@
 // first over play here, or the save is a newer build's. A reload still loading its hero keeps the claim
 // fresh, gives the hero up at once to a tab that opens it meanwhile and never starts; finding another
 // tab's fresh claim as it starts, it waits for that tab to hand the hero over and reads what it wrote
-// last, unless yet another tab opens the hero meanwhile. The other tabs are claims written into storage
-// as their claimHero would write them: this run is one page, with one tab id.
+// last, unless yet another tab opens the hero meanwhile. Back from the back-forward cache, a tab claims
+// its hero again when nothing was written meanwhile; once another tab played it and let it go, the hero
+// here is out of date: stopped, never written, the save keeping that tab's play (a page frozen past its
+// claim finds the same at its next save). The other tabs are claims and saves written into storage as
+// their claimHero and writeSave would write them: this run is one page, with one tab id.
 const KEY = 'dii-save-v1';
 const CLAIM = `dii-tab:${KEY}`;
 
@@ -211,6 +214,68 @@ export default async (load) => {
     check(!gone && !Q.started && Q.ui.gone.join() === 'unplayed' && claim()?.tab === 'tab-later' && claim()?.handedTo === 'tab-later', `opened elsewhere during the wait: ${gone}, started ${Q.started}, notices ${Q.ui.gone}, claim ${JSON.stringify(claim())}`);
   }
   facts.push('a reload finding another tab\'s claim waits for its hand-over and reads what it wrote last, or gives the hero up to a later claim');
+
+  // ── back from the back-forward cache (main.ts pageshow → Game.backFromCache) ──
+  {
+    /** the page into the cache (main.ts pagehide): saved, the hero let go */
+    const away = (g) => {
+      g.save();
+      save.releaseHero();
+    };
+    /** another tab opens the hero while this page is away (nobody holds it: no wait), plays, saves and closes, letting it go */
+    const playedAndGone = (gold) => {
+      claimElsewhere();
+      localStorage.setItem(KEY, JSON.stringify({ ...heroSave(), gold, time: heroSave().time + 1 }));
+      localStorage.removeItem(CLAIM);
+    };
+    // nothing written meanwhile: claimed again, played on, written
+    reset();
+    const A = started('往返');
+    away(A);
+    A.backFromCache();
+    const mine = claim();
+    A.player.gold = 150;
+    A.save();
+    check(mine && mine.tab !== 'tab-other' && !A.elsewhere && !A.paused && !A.ui.gone.length && heroSave().gold === 150, `back with nothing written meanwhile: claim ${JSON.stringify(mine)}, elsewhere ${A.elsewhere}, notices ${A.ui.gone}, saved gold ${heroSave().gold}`);
+    // into the cache again: another tab plays the hero and closes; back, the hero here is out of date
+    away(A);
+    playedAndGone(2468);
+    const theirs = localStorage.getItem(KEY);
+    A.backFromCache();
+    check(A.elsewhere && A.paused && !!A.shared.readOnly && A.ui.gone.join() === 'stale' && claim() === null, `back after another tab played and closed: elsewhere ${A.elsewhere}, paused ${A.paused}, notices ${A.ui.gone}, claim ${JSON.stringify(claim())}`);
+    // nothing written from here: its saves, its page going away (beforeunload, pagehide), pageshow again
+    A.player.gold = 1;
+    A.save();
+    A.syncShared();
+    away(A);
+    A.backFromCache();
+    check(localStorage.getItem(KEY) === theirs && A.ui.gone.length === 1 && claim() === null, `the out-of-date hero: written ${localStorage.getItem(KEY) !== theirs}, notices ${A.ui.gone}, claim ${JSON.stringify(claim())}`);
+    // picked again (the title's continue): the other tab's play
+    const B = makeGame();
+    B.continueGame(0);
+    check(B.player.gold === 2468 && !B.elsewhere, `the hero picked again has ${B.player.gold} gold, not the other tab's 2468`);
+    // another tab still playing it: the take-over's hand-over, nothing played here since the pagehide's save
+    reset();
+    const T = started('还在玩');
+    away(T);
+    claimElsewhere();
+    localStorage.setItem(KEY, JSON.stringify({ ...heroSave(), gold: 77 }));
+    T.backFromCache();
+    check(claim()?.handedTo === 'tab-other' && heroSave().gold === 77 && T.ui.gone.join() === 'saved', `back with another tab playing: claim ${JSON.stringify(claim())}, gold ${heroSave().gold}, notices ${T.ui.gone}`);
+    // a page frozen past its claim, no pagehide: the other tab's claim came and went while it was frozen,
+    // its storage event finding nothing on the way in; the next save finds the hero out of date
+    reset();
+    const Z = started('冻结');
+    Z.save();
+    playedAndGone(3579);
+    const frozen = localStorage.getItem(KEY);
+    Z.heroClaimed();
+    const playing = !Z.elsewhere && !Z.paused;
+    Z.player.gold = 1;
+    Z.save();
+    check(playing && localStorage.getItem(KEY) === frozen && Z.elsewhere && Z.ui.gone.join() === 'stale', `a frozen page's next save after another tab played and closed: written ${localStorage.getItem(KEY) !== frozen}, stopped before it ${!playing}, notices ${Z.ui.gone}`);
+  }
+  facts.push('back from the back-forward cache: the hero claimed again if nothing was written meanwhile, out of date and never written once another tab played it and closed (a frozen page finds that at its next save)');
 
   reset();
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);

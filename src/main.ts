@@ -3,7 +3,7 @@ import { Sfx } from './audio/sfx';
 import { Input } from './core/input';
 import { Game } from './game/game';
 import { GALLERY } from './game/level';
-import { claimHero, heartbeat, markInGame, playedElsewhere, releaseHero, slotNow, useDevSlot, wasInGame } from './game/save';
+import { heartbeat, markInGame, playedElsewhere, releaseHero, slotNow, useDevSlot, wasInGame } from './game/save';
 import { assets, NOW } from './render/assets';
 import { CORE, streamOrder } from './render/needs';
 import { Renderer } from './render/renderer';
@@ -97,12 +97,10 @@ window.addEventListener('pagehide', () => {
   releaseHero();
 });
 // back from the back-forward cache: the hero again this tab's (played, or a reload's still loading),
-// unless another tab has opened it since, or this tab handed it over before it went (Game.elsewhere:
-// claimed again, it would stop the tab playing it now, and beat on so that it never handed over again)
+// unless another tab has it now, or opened it meanwhile and let it go again, leaving the hero here out
+// of date, or this tab handed it over before it went (Game.backFromCache)
 window.addEventListener('pageshow', (e) => {
-  if (!e.persisted || !(game.started || game.resumeClaimed) || game.elsewhere) return;
-  if (playedElsewhere(slotNow())) game.heroClaimed();
-  else claimHero();
+  if (e.persisted) game.backFromCache();
 });
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') game.save();
