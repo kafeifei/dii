@@ -27,7 +27,7 @@
 | `src/render/` | 模型、动画、地面分块、灯光、昼夜、特效 | `renderer.ts`、`models.ts`、`specs.ts`、`chunks.ts` |
 | `src/ui/` | 面板、HUD、标题页、物品图标（画好的图加原版换色） | `ui.ts`、`inventory.ts`、`title.ts`、`icons.ts`、`itempics.ts` |
 | `src/audio/` | 音效、语音、音乐（录好的文件；缺失时退回代码合成） | `sfx.ts`、`music.ts`、`sounds.ts`、`files.ts`（生成的） |
-| `tools/` | 导入原版数据、生成美术和声音、无头测试、bot | `d2-import.mjs`、`ai-icons.mjs`、`ai-audio.mjs`、`play.mjs`、`bot.mjs` |
+| `tools/` | 导入原版数据、生成美术和声音、无头测试、bot、构建后的体积检查 | `d2-import.mjs`、`ai-icons.mjs`、`ai-audio.mjs`、`play.mjs`、`bot.mjs`、`check-dist.mjs` |
 
 ## 存档：存什么、什么时候存、谁能写
 
@@ -78,13 +78,14 @@
 
 ## 测试
 
-**单元测试** `npm test`（34 个文件，约 12 秒）：
+**单元测试** `npm test`（35 个文件，约 12 秒）：
 - 原版公式和数据：`d2-*.test.mjs`、`d2treasure`、`d2affixes`、`d2quality`、`d2legendary`；
 - 物品和交易：`items`、`tomes`、`stash`、`ctrlclick`、`services`；
 - 存档迁移：`save`；
 - 地图：`areas`、`levelgen`、`overworld`、`west`、`seamless`、`seams`；
 - 怪物：`spawn`、`d2-population`、`d2-monsters`、`d2-ai`；
-- 任务、图标、声音：`quests`、`icons`、`itempics`、`audio`、`sfx`、`ai-audio`。
+- 任务、图标、声音：`quests`、`icons`、`itempics`、`audio`、`sfx`、`ai-audio`；
+- 构建：`check-dist`（`dist/` 怎么清点，体积上限卡在哪，`npm run build` 接着 `vite build` 跑它）。
 
 **场景测试**（无头浏览器，`node tools/play.mjs tools/scenarios/<名>.mjs --url <地址> --out <目录>`）：
 
@@ -108,6 +109,8 @@
 - **Vercel**：在没有未提交改动的检出里运行 `vercel build --prod`，再运行 `vercel deploy --prebuilt --prod`，地址是 dii-abyss.vercel.app。工作树里要有 `.vercel/project.json`，没有就从主检出复制。
 - **内部站点**：发布方法、地址和登录都不在仓库里，用本机的内部站点 skill 发布，记下它报的版本。
   - 平台限制：最多 5000 个文件、总共 50 MB。2026-10-28 我们是 1117 个文件、43.2 MB，资源压缩要先做。
+- **体积上限**：`npm run build` 在 `vite build` 之后跑 `tools/check-dist.mjs`，按顶层目录列出 `dist/` 的文件数和大小；超过 2000 个文件、总共 40 MB，或者有一个文件超过 25 MB，就说出超在哪（最大的几个目录，或那个文件）并让构建失败。`vercel build` 跑的也是 `npm run build`，两边发布都要过这一关。内部站点的上限是 5000 个文件、50 MB，单个文件 25 MB（Cloudflare 的限制）；我们留出余量，新加的大资源在还来得及压缩、打包时就会被发现。MB 都按 1024×1024 字节算。
+  - 2026-10-29：物品图拼成图集后是 336 个文件、42.2 MB，`npm run build` 因此失败；模型那条线的第一步（调试模型不进 `dist/`、5 个用不到的不构建）合进来后算下来是 328 个、38.6 MB，能过。
 
 ## 并行开发怎么做
 
