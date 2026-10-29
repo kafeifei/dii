@@ -3,14 +3,20 @@
 // points to, a link back up the tree not walked forever, Finder's .DS_Store not at all) and the bytes
 // add up exactly; the budget stays under what the internal host takes; at a limit passes and a file or a byte
 // over fails, naming where the bulk is (the biggest folders for bytes, the fullest for files, the file
-// itself); npm run build runs it right after vite build; and the command prints its table and exits
-// 0 within the budget, 1 over it or with no folder to count.
+// itself), and a byte over never reads as the limit itself; a link to nothing (its target gone, or a
+// loop of links) is named with where it points, not left to throw ENOENT; npm run build runs it right
+// after vite build; and the command prints its table and exits 0 within the budget, 1 over it, with
+// a link to nothing or with no folder to count.
+//
+// The budget is 44 MiB since 2026-10-29: the voices (each hero line in four takes, and Akarelle's
+// lines) took the release line to 41.75 MiB, over the 40 MiB it had been; the internal host stops at 50 MiB,
+// and compressing the pictures in the models and the ground textures comes before M2a adds its art.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { BUDGET, MiB, TOP, HOST_LIMIT, listFiles, overBudget, table, tally } from '../check-dist.mjs';
+import { BUDGET, BrokenLinks, MiB, TOP, HOST_LIMIT, listFiles, overBudget, pastLimit, table, tally } from '../check-dist.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const tool = path.join(root, 'tools/check-dist.mjs');
@@ -55,10 +61,45 @@ export default async () => {
     check(/models\/\s+3\s+190,003\s+0\.18\n/.test(printed) && /\(top level\)\s+2\s+2,226\s+0\.00\n/.test(printed) && /all\s+8\s+199,029\s+0\.19$/.test(printed), `the table:\n${printed}`);
     check(same(tally([]), { files: 0, bytes: 0, folders: [] }) && overBudget([]).length === 0, 'nothing counts as nothing and is within the budget');
 
-    // ── the budget: room under what the internal host takes ──
-    check(BUDGET.files === 2000 && BUDGET.bytes === 40 * 1024 * 1024 && BUDGET.fileBytes === 25 * 1024 * 1024, `the budget: ${JSON.stringify(BUDGET)}`);
+    // ── a link to nothing: named, where it points and why, once every folder is walked ──
+    const gone = path.join(tmp, 'gone');
+    const lost = path.join(gone, 'audio/lost.m4a');
+    fs.mkdirSync(path.join(gone, 'audio'), { recursive: true });
+    fs.mkdirSync(path.join(gone, 'models'), { recursive: true });
+    fs.writeFileSync(path.join(gone, 'index.html'), '<!doctype html>');
+    fs.writeFileSync(path.join(gone, 'audio/here.m4a'), 'abc');
+    fs.symlinkSync(path.join(gone, 'audio/was-here.m4a'), lost);
+    fs.symlinkSync('ring-b.glb', path.join(gone, 'models/ring-a.glb'));
+    fs.symlinkSync('ring-a.glb', path.join(gone, 'models/ring-b.glb'));
+    let thrown = null;
+    try {
+      listFiles(gone);
+    } catch (e) {
+      thrown = e;
+    }
+    const wantLinks = [
+      { path: 'audio/lost.m4a', to: path.join(gone, 'audio/was-here.m4a'), why: 'nothing is there' },
+      { path: 'models/ring-a.glb', to: 'ring-b.glb', why: 'a loop of links' },
+      { path: 'models/ring-b.glb', to: 'ring-a.glb', why: 'a loop of links' },
+    ];
+    check(thrown instanceof BrokenLinks && same(thrown.links, wantLinks), `links to nothing: ${thrown instanceof BrokenLinks ? JSON.stringify(thrown.links) : thrown}`);
+
+    // ── the budget: room under what the internal host takes (44 MiB since the voices, 2026-10-29: see above) ──
+    check(BUDGET.files === 2000 && BUDGET.bytes === 44 * 1024 * 1024 && BUDGET.fileBytes === 25 * 1024 * 1024, `the budget: ${JSON.stringify(BUDGET)}`);
     check(HOST_LIMIT.files === 5000 && HOST_LIMIT.bytes === 50 * 1024 * 1024 && HOST_LIMIT.fileBytes === 25 * 1024 * 1024, `the internal host: ${JSON.stringify(HOST_LIMIT)}`);
     check(BUDGET.files < HOST_LIMIT.files && BUDGET.bytes < HOST_LIMIT.bytes && BUDGET.fileBytes <= HOST_LIMIT.fileBytes, 'the budget is no looser than the internal host');
+
+    // a size past a limit never reads as the limit: places are added until it reads as more (a byte
+    // past a whole MiB takes six, past any limit seven at most), the limit to as many where it isn't whole
+    check(same(pastLimit(44 * MiB + 1, 44 * MiB), { size: '44.000001', limit: '44' }) && same(pastLimit(43779623, 40 * MiB), { size: '41.75', limit: '40' }) && same(pastLimit(199030, 199029), { size: '0.189810', limit: '0.189809' }), 'a size past a limit reads as more than it');
+    let blurred = 0;
+    for (let i = 0; i < 2000; i++) {
+      // limits spread over 0–60 MiB (Knuth's multiplicative hash), each passed by 1, 524 or 1047 bytes
+      const limit = (i * 2654435761) % (60 * MiB);
+      const over = pastLimit(limit + 1 + (i % 3) * 523, limit);
+      if (!(Number(over.size) > Number(over.limit)) || over.size.split('.')[1].length > 7) blurred++;
+    }
+    check(blurred === 0, `${blurred} of 2000 sizes just past a limit read as no more than it, or took over seven places`);
 
     // files: at the limit passes, one more fails and names the fullest folders, most first (by count,
     // not by bytes: models/ here is the biggest)
@@ -67,19 +108,23 @@ export default async () => {
     const byCount = overBudget([...many(3, 'audio', 500), ...many(1990, 'icons'), ...many(7, 'models', 1000), ...many(1, 'textures'), { path: 'index.html', bytes: 1 }]);
     check(byCount.length === 1 && byCount[0].startsWith('2,002 files, over the budget of 2,000') && byCount[0].endsWith('the most are in icons/ (1,990), models/ (7), audio/ (3)'), `2002 files: ${byCount.join(' | ')}`);
 
-    // bytes: 40 MiB in all passes, a byte more fails and names the three biggest folders
-    const heavy = [{ path: 'audio/m.m4a', bytes: 12 * MiB }, { path: 'icons/i.webp', bytes: 3 * MiB }, { path: 'models/a.glb', bytes: 20 * MiB }, { path: 'textures/t.webp', bytes: 5 * MiB }];
-    check(overBudget(heavy).length === 0, '40 MiB in all is within the budget');
+    // bytes: 44 MiB in all passes, a byte more fails, reads as more than 44 and names the three biggest folders
+    const heavy = [{ path: 'audio/m.m4a', bytes: 15 * MiB }, { path: 'icons/i.webp', bytes: 2 * MiB }, { path: 'models/a.glb', bytes: 20 * MiB }, { path: 'textures/t.webp', bytes: 7 * MiB }];
+    check(overBudget(heavy).length === 0, '44 MiB in all is within the budget');
     const byBytes = overBudget([...heavy, { path: 'index.html', bytes: 1 }]);
-    check(byBytes.length === 1 && byBytes[0].startsWith('40.00 MiB in all, over the budget of 40 MiB') && byBytes[0].endsWith('the biggest folders are models/ (20.00 MiB), audio/ (12.00 MiB), textures/ (5.00 MiB)'), `40 MiB and a byte: ${byBytes.join(' | ')}`);
+    check(byBytes.length === 1 && byBytes[0].startsWith('44.000001 MiB in all, over the budget of 44 MiB (the internal host takes 50 MiB)') && byBytes[0].endsWith('the biggest folders are models/ (20.00 MiB), audio/ (15.00 MiB), textures/ (7.00 MiB)'), `44 MiB and a byte: ${byBytes.join(' | ')}`);
+    const release = overBudget([{ path: 'models/m.glb', bytes: 43779623 }], { files: 2000, bytes: 40 * MiB, fileBytes: 50 * MiB });
+    check(release.length === 1 && release[0].startsWith('41.75 MiB in all, over the budget of 40 MiB'), `the release line against the 40 MiB it outgrew: ${release.join(' | ')}`);
 
     // one file: 25 MiB passes, a byte more fails and names it, however small the rest
     check(overBudget([{ path: 'audio/long.m4a', bytes: 25 * MiB }]).length === 0, 'a 25 MiB file is within the budget');
     const byFile = overBudget([{ path: 'audio/long.m4a', bytes: 25 * MiB + 1 }, { path: 'index.html', bytes: 10 }]);
-    check(byFile.length === 1 && byFile[0].startsWith('audio/long.m4a is 25.00 MiB, over the 25 MiB one file may be'), `a file of 25 MiB and a byte: ${byFile.join(' | ')}`);
-    // all three at once, and a budget of the caller's own
-    check(overBudget([...many(2001, 'icons'), { path: 'audio/long.m4a', bytes: 41 * MiB }]).length === 3, 'files, bytes and a file over at once are three findings');
+    check(byFile.length === 1 && byFile[0].startsWith('audio/long.m4a is 25.000001 MiB, over the 25 MiB one file may be'), `a file of 25 MiB and a byte: ${byFile.join(' | ')}`);
+    // all three at once, and a budget of the caller's own (its bytes no whole MiB: they read to as many places as the total)
+    check(overBudget([...many(2001, 'icons'), { path: 'audio/long.m4a', bytes: 45 * MiB }]).length === 3, 'files, bytes and a file over at once are three findings');
     check(overBudget(files, { files: 7, bytes: 199029, fileBytes: 120000 }).length === 1, 'a budget passed in is the one checked');
+    const own = overBudget(files, { files: 8, bytes: 199028, fileBytes: 120000 });
+    check(own.length === 1 && own[0].startsWith('0.189809 MiB in all, over the budget of 0.189808 MiB'), `a byte over a budget of 199028 bytes: ${own.join(' | ')}`);
 
     // ── wired into the build: right after vite build, so a dist over the budget fails it ──
     const build = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).scripts.build;
@@ -89,7 +134,7 @@ export default async () => {
     const run = (...args) => spawnSync(process.execPath, [tool, ...args], { cwd: tmp, encoding: 'utf8' });
     const ok = run('dist');
     check(ok.status === 0, `within the budget it exits ${ok.status}: ${ok.stderr}`);
-    check(ok.stdout.startsWith('dist/ by top-level folder:') && /all\s+8\s+199,029/.test(ok.stdout) && /within the budget: 8 of 2,000 files, 0\.19 of 40 MiB, the biggest file 0\.11 of 25 MiB \(models\/packs\/camp\.glb\)/.test(ok.stdout), `within the budget it prints:\n${ok.stdout}`);
+    check(ok.stdout.startsWith('dist/ by top-level folder:') && /all\s+8\s+199,029/.test(ok.stdout) && /within the budget: 8 of 2,000 files, 0\.19 of 44 MiB, the biggest file 0\.11 of 25 MiB \(models\/packs\/camp\.glb\)/.test(ok.stdout), `within the budget it prints:\n${ok.stdout}`);
     // over it: sparse files, so a big one costs no disk
     const big = path.join(tmp, 'big');
     fs.mkdirSync(path.join(big, 'audio'), { recursive: true });
@@ -100,11 +145,15 @@ export default async () => {
       fs.truncateSync(path.join(big, rel), bytes);
     };
     sparse('audio/long.m4a', 25 * MiB + 1);
-    sparse('models/a.glb', 16 * MiB);
+    sparse('models/a.glb', 20 * MiB);
     const over = run('big');
     check(over.status === 1, `over the budget it exits ${over.status}`);
-    check(/models\/\s+1\s+16,777,216\s+16\.00/.test(over.stdout), `over the budget it still prints the table:\n${over.stdout}`);
-    check(/big\/ is over its budget/.test(over.stderr) && /- 41\.00 MiB in all, over the budget of 40 MiB \(the internal host takes 50 MiB\): the biggest folders are audio\/ \(25\.00 MiB\), models\/ \(16\.00 MiB\), \(top level\) \(0\.00 MiB\)/.test(over.stderr) && /- audio\/long\.m4a is 25\.00 MiB, over the 25 MiB/.test(over.stderr), `over the budget it says:\n${over.stderr}`);
+    check(/models\/\s+1\s+20,971,520\s+20\.00/.test(over.stdout), `over the budget it still prints the table:\n${over.stdout}`);
+    check(/big\/ is over its budget/.test(over.stderr) && /- 45\.00 MiB in all, over the budget of 44 MiB \(the internal host takes 50 MiB\): the biggest folders are audio\/ \(25\.00 MiB\), models\/ \(20\.00 MiB\), \(top level\) \(0\.00 MiB\)/.test(over.stderr) && /- audio\/long\.m4a is 25\.000001 MiB, over the 25 MiB/.test(over.stderr), `over the budget it says:\n${over.stderr}`);
+    // a link to nothing: said in so many words, each one with where it points, and no stack
+    const linked = run('gone');
+    check(linked.status === 1, `with links to nothing it exits ${linked.status}`);
+    check(/^check-dist: gone\/ has 3 links to nothing, which no upload can read/.test(linked.stderr) && linked.stderr.includes(`- audio/lost.m4a links to ${path.join(gone, 'audio/was-here.m4a')}: nothing is there`) && linked.stderr.includes('- models/ring-a.glb links to ring-b.glb: a loop of links') && !/ENOENT|ELOOP|\n\s+at /.test(linked.stderr), `with links to nothing it says:\n${linked.stderr}`);
     const none = run('nothing');
     check(none.status === 1 && /there is no nothing\/ to count/.test(none.stderr), `with no folder it exits ${none.status}: ${none.stderr}`);
   } finally {
@@ -112,5 +161,5 @@ export default async () => {
   }
 
   if (problems.length) throw new Error(problems.join('\n'));
-  console.log(`  8 files in 4 top-level rows, links followed and a loop cut; ${BUDGET.files} files, ${BUDGET.bytes / MiB} MiB and a ${BUDGET.fileBytes / MiB} MiB file pass, one more fails naming where; npm run build runs it; the command exits 0 within, 1 over or without a folder`);
+  console.log(`  8 files in 4 top-level rows, links followed, a loop cut and links to nothing named; ${BUDGET.files} files, ${BUDGET.bytes / MiB} MiB and a ${BUDGET.fileBytes / MiB} MiB file pass, a byte more fails naming where and reads as more; npm run build runs it; the command exits 0 within, 1 over, with links to nothing or without a folder`);
 };
