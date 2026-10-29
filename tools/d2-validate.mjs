@@ -23,7 +23,9 @@
 // - the drops: Andariel's and the Countess' items per kill against d2data's tcprecalc, worked out
 //   and simulated;
 // - the properties: every code is one src/items/props.ts reads or KNOWN_UNMAPPED lists;
-// - the skills: all 30 Paladin and 30 Sorceress skills.
+// - the skills: all 30 Paladin and 30 Sorceress skills;
+// - the dungeons: the west block's maze rows, the object groups and objects that furnish them and its
+//   monsters' sequences, each as 2.7 has it, worked out again from the tables.
 //
 // D2MOO references are to github.com/ThePhrozenKeep/D2MOO at commit d9d394f, by file and line.
 import fs from 'node:fs';
@@ -926,6 +928,182 @@ section('Skills: the two trees, HitShift, manashift, frames');
   check(`Fire Bolt level 1: ${fb.elem.min[0]}–${fb.elem.max[0]} fire damage for ${fb.mana.base} mana (D2: 3–6 for 2.5)`, fb.elem.min[0] === 3 && fb.elem.max[0] === 6 && fb.mana.base === 2.5 ? [] : 'differs');
   const nova = X.D2X_SKILLS['Frost Nova'];
   check(`Frost Nova level 1 chills for ${nova.elem.len[0]} s (200 frames)`, nova.elem.len[0] === 8 ? [] : 'differs');
+}
+
+// ───────────────────────── dungeons ─────────────────────────
+// The west block's dungeons (tools/d2/maze.mjs), worked out again from the 2.7 tables: LvlMaze's
+// first row of each level (D2MOO LevelsTbls.cpp:791-806), Levels' object rolls, ObjGroup's members up
+// to the first empty one (Objects.cpp:2123), Objects' rows by class, MonSeq's rows in file order.
+section('Dungeons: maze rows, object groups, objects and monster sequences, as 2.7 has them');
+{
+  const [maze27, group27, obj27, seq27, mode27] = await Promise.all(['lvlmaze', 'objgroup', 'objects', 'monseq', 'monmode'].map((n) => load(REF27, n)));
+  const MZ = X.D2X_MAZES;
+  const OG = X.D2X_OBJGROUPS;
+  const OB = X.D2X_OBJECTS;
+  const SQ = X.D2X_MONSEQ;
+  const LV27 = by(R27.levels, 'Id');
+  const O27 = by(obj27, '*ID');
+  const G27 = by(group27, '*ID');
+  count('dungeon levels', Object.keys(MZ).join(' '));
+  count('object groups / objects', `${Object.keys(OG).length} / ${Object.keys(OB).length}`);
+  count('monster sequences', Object.keys(SQ).join(' '));
+  const LEVELS = [8, 9, 13, 18, 19];
+  check('the dungeons are the Den of Evil, Cave Levels 1 and 2, the Crypt and the Mausoleum (8, 9, 13, 18, 19)', same(Object.keys(MZ).map(Number).sort((a, b) => a - b), LEVELS) ? [] : Object.keys(MZ).join(' '));
+  const bad = [];
+  for (const id of LEVELS) {
+    const m = MZ[id];
+    if (!m) continue;
+    const r = rows(maze27).filter((x) => x.Level === id).sort((a, b) => a.lineNumber - b.lineNumber)[0];
+    const lv = LV27.get(id);
+    mismatch(bad, `maze ${id}`, 'rooms', [r.Rooms, r['Rooms(N)'], r['Rooms(H)']], m.rooms);
+    mismatch(bad, `maze ${id}`, 'size', [r.SizeX, r.SizeY], m.size);
+    mismatch(bad, `maze ${id}`, 'merge', r.Merge ?? 0, m.merge);
+    mismatch(bad, `maze ${id}`, 'drlg', lv.DrlgType, m.drlg);
+    mismatch(bad, `maze ${id}`, 'themes', lv.Themes ?? 0, m.themes);
+    const rolls = [];
+    for (let i = 0; i < 8; i++) if (lv[`ObjGrp${i}`]) rolls.push([lv[`ObjGrp${i}`], lv[`ObjPrb${i}`] ?? 0]);
+    mismatch(bad, `maze ${id}`, 'objGroups', rolls, m.objGroups.map((g) => [g.group, g.prob]));
+    // the roll D2MOO makes 100 goes by the object row numbered like the group (Objects.cpp:2108-2111)
+    mismatch(bad, `maze ${id}`, 'healSkip', rolls.map(([g]) => !!O27.get(g)?.SubClass), m.objGroups.map((g) => !!g.healSkip));
+    // InitFn 2/3/57 by the classic normal MonLvl, integer division (Objects.cpp:613-668)
+    mismatch(bad, `maze ${id}`, 'trap', Math.trunc((lv.MonLvl ?? 0) / 8) + 5, m.trap);
+    mismatch(bad, `maze ${id}`, 'lock', Math.trunc((lv.MonLvl ?? 0) / 2) + 8, m.lock);
+  }
+  check('each dungeon: LvlMaze rooms, size and merge, Levels object groups, themes, trap and lock chances', bad);
+  // what the research measured them by (dungeons.md 1.2): the crypts grow with the difficulty
+  check(
+    'the Den of Evil 1 room and Cave Level 1 4 rooms of 24×24 tiles; the Crypt and the Mausoleum 12 / 24 / 36 rooms of 8×8; merge 500 (Cave Level 2, a preset, 0)',
+    [
+      ...[8, 9].filter((i) => !same(MZ[i].size, [24, 24]) || MZ[i].merge !== 500).map((i) => `maze ${i}`),
+      ...(same(MZ[8].rooms, [1, 1, 1]) && same(MZ[9].rooms, [4, 4, 4]) ? [] : ['the caves']),
+      ...[18, 19].filter((i) => !same(MZ[i].rooms, [12, 24, 36]) || !same(MZ[i].size, [8, 8]) || MZ[i].merge !== 500).map((i) => `maze ${i}`),
+      ...(MZ[13].drlg === 2 && MZ[13].merge === 0 ? [] : ['maze 13']),
+      ...(MZ[18].trap === 5 && MZ[18].lock === 9 ? [] : ['the Crypt: not 5 % trapped and 9 % locked (MonLvl 3)']),
+    ],
+  );
+
+  const gbad = [];
+  const groupsUsed = [...new Set(Object.values(MZ).flatMap((m) => m.objGroups.map((g) => g.group)))].sort((a, b) => a - b);
+  mismatch(gbad, 'D2X_OBJGROUPS', 'groups', groupsUsed, Object.keys(OG).map(Number).sort((a, b) => a - b));
+  for (const g of groupsUsed) {
+    const r = G27.get(g);
+    // *ID is D2's index only while no row is missing before it (d2data leaves out the Expansion divider)
+    for (let i = 0; i <= g; i++) if (!G27.has(i)) gbad.push(`objgroup ${g}: row ${i} is missing before it`);
+    const want = [];
+    for (let i = 0; i < 8 && r[`ID${i}`]; i++) want.push({ id: r[`ID${i}`], density: r[`DENSITY${i}`] ?? 0, prob: r[`PROB${i}`] ?? 0 });
+    mismatch(gbad, `objgroup ${g}`, 'objects', want, OG[g]?.objects);
+    for (const o of want) if (!OB[o.id]) gbad.push(`objgroup ${g}: object ${o.id} is not in D2X_OBJECTS`);
+  }
+  check('every group a dungeon rolls, its members up to the first empty one with their density and PROB, each in D2X_OBJECTS', gbad);
+  // density × (40 × 40 subtiles >> 7) >> 8 in a room of 8×8 tiles (Objects.cpp:1071, 1314, 1661)
+  const perRoom = (d) => (d * ((40 * 40) >> 7)) >> 8;
+  const dens = (g, id) => OG[g].objects.find((o) => o.id === id).density;
+  check(
+    `a room of 8×8 tiles gets ${perRoom(dens(7, 3))} casket clusters, ${perRoom(dens(9, 5))} large chests, ${perRoom(dens(9, 240))} other chest, ${perRoom(dens(10, 7))} barrel clusters, ${perRoom(dens(4, 54))} rogue corpse (dungeons.md 1.6: 5, 2, 1, 3, 1)`,
+    same([perRoom(dens(7, 3)), perRoom(dens(9, 5)), perRoom(dens(9, 240)), perRoom(dens(10, 7)), perRoom(dens(4, 54))], [5, 2, 1, 3, 1]) ? [] : 'differs',
+  );
+
+  const obad = [];
+  const want = new Set([...Object.values(OG).flatMap((g) => g.objects.map((o) => o.id)), 580, 581, 397, 17, 18, 19, 20, 21, 22, 8]);
+  for (const o of Object.values(OB)) for (const c of [...(o.cluster ?? []), ...(o.becomes ?? []), ...(o.healAs ? [o.healAs] : [])]) want.add(c);
+  if (Object.values(OB).some((o) => o.flies)) want.add(103);
+  mismatch(obad, 'D2X_OBJECTS', 'classes', [...want].sort((a, b) => a - b), Object.keys(OB).map(Number).sort((a, b) => a - b));
+  for (const o of Object.values(OB)) {
+    const r = O27.get(o.id);
+    const w = `object ${o.id}`;
+    if (!r) {
+      obad.push(`${w}: no 2.7 row`);
+      continue;
+    }
+    mismatch(obad, w, 'key', r.Class, o.key);
+    mismatch(obad, w, 'size', [r.SizeX ?? 0, r.SizeY ?? 0], o.size);
+    mismatch(obad, w, 'populate init operate', [r.PopulateFn ?? 0, r.InitFn ?? 0, r.OperateFn ?? 0], [o.populate, o.init, o.operate]);
+    const parm = [0, 1, 2, 3, 4].map((i) => r[`Parm${i}`] ?? 0);
+    while (parm.length && !parm[parm.length - 1]) parm.pop();
+    mismatch(obad, w, 'parm', parm.length ? parm : undefined, o.parm);
+    mismatch(obad, w, 'lockable', opt(r.Lockable) && true, o.lockable);
+    mismatch(obad, w, 'subclass', opt(r.SubClass), o.subclass);
+    mismatch(obad, w, 'orientation', r.Orientation ?? 0, o.orientation);
+    if (o.kind !== 'placeholder') {
+      mismatch(obad, w, 'flags', [r.Selectable0, r.HasCollision0, r.HasCollision1, r.IsAttackable0, r.PreOperate].map((v) => !!v), [o.selectable, o.blocks, o.blocksOpen, o.attackable, o.preOperate].map((v) => !!v));
+    }
+    // OperateFn's kind and its drop (ObjMode.cpp:79-157; 2450, 2596, 1296, 2568, 2816)
+    const kind = { 0: 'none', 1: 'casket', 2: 'shrine', 3: 'urn', 4: 'chest', 5: 'barrel', 6: 'tome', 7: 'explodingBarrel', 9: 'stone', 14: 'corpse', 22: 'well' }[r.OperateFn ?? 0];
+    mismatch(obad, w, 'kind', o.id >= 573 ? 'placeholder' : kind, o.kind);
+    const drop = { casket: 100, corpse: 100, chest: o.sparkly ? 100 : 75, urn: 21, barrel: 21 }[o.kind];
+    mismatch(obad, w, 'drop', drop, o.drop);
+    mismatch(obad, w, 'trap', [2, 3, 57].includes(r.InitFn) ? 'rolled' : [1, 5].includes(r.OperateFn) ? 'monster' : undefined, o.trap);
+    mismatch(obad, w, 'sparkly', r.InitFn === 57 || o.id === 580 || undefined, o.sparkly);
+    if (o.kind === 'shrine') mismatch(obad, w, 'shrine', ['any', 'health', 'mana'][r.Parm0 ?? 0] ?? 'magic', o.shrine);
+    if (o.kind === 'well') {
+      const [p0, p1, p2, p3] = [0, 1, 2, 3].map((i) => r[`Parm${i}`] ?? 0);
+      mismatch(obad, w, 'well', { uses: 2 * p2, regen: (p0 + 1) / 25, restore: p1 / 256, life: !!(p3 & 2), mana: !!(p3 & 1) }, o.well);
+    }
+  }
+  check('every object the groups and the presets (580, 581, 397, the Cairn Stones, the Tower Tome) place, with what they bring, as Objects.txt has it: size, functions, Parm, lock, kind, drop, trap', obad);
+  const chests = [5, 6, 139, 140, 141, 144, 176, 177, 198, 240, 241, 242, 243];
+  check(
+    "580 and 581 become one of Act 1's 13 chests (Objects.cpp:146-155), 580 a sparkly one; 397 is sparkly by its InitFn 57 with its own rules",
+    [
+      ...[580, 581].filter((i) => !same(OB[i]?.becomes, chests) || OB[i].kind !== 'placeholder').map((i) => `object ${i}`),
+      ...chests.filter((i) => OB[i]?.kind !== 'chest' || !OB[i].lockable || OB[i].trap !== 'rolled').map((i) => `chest ${i}`),
+      ...(OB[580]?.sparkly && !OB[581]?.sparkly ? [] : ['580 / 581 sparkly']),
+      ...(OB[397]?.sparkly && OB[397].consolation && OB[397].drop === 100 ? [] : ['397']),
+    ],
+  );
+  check(
+    "the cave well: 2 uses, each back in 30.04 s, half of life, mana and stamina (Parm 750, 128, 1, 3); the crypts' caskets come in clusters with holes, barrels with exploding barrels",
+    [
+      ...(same(OB[138]?.well, { uses: 2, regen: 30.04, restore: 0.5, life: true, mana: true }) ? [] : ['well 138']),
+      ...(same(OB[3]?.cluster, [3, 28]) && OB[28]?.populate === 0 ? [] : ['casket 3']),
+      ...(same(OB[7]?.cluster, [7, 11]) && OB[11]?.kind === 'explodingBarrel' ? [] : ['barrel 7']),
+    ],
+  );
+
+  // the west block's monsters, worked out again: from the camp short of the Underground Passage (10),
+  // what its areas list, its superuniques, Blood Raven (placed in Burial Grounds), the hireling, and
+  // what they bring; a Sk mode that is no monster mode names a sequence (MonsterTbls.cpp:94-150)
+  const AREA = new Map(X.D2X_AREAS.map((a) => [a.id, a]));
+  const west = new Set([1]);
+  for (const q = [1]; q.length; ) {
+    const a = AREA.get(q.shift());
+    for (const t of [...(a.walk ?? []), ...(a.warps ?? []).map((x) => x.to)]) {
+      if (t === 10 || west.has(t)) continue;
+      west.add(t);
+      q.push(t);
+    }
+  }
+  const mons = new Set(['bloodraven', 'roguehire']);
+  for (const id of west) {
+    const a = AREA.get(id);
+    for (const m of [...a.mon, ...a.nmon, ...a.umon, ...(a.critters ?? []).map((c) => c.mon)]) mons.add(m);
+  }
+  for (const s of X.D2X_SUPERUNIQUES) if (west.has(s.area)) mons.add(s.mon);
+  for (let n = 0; n !== mons.size; ) {
+    n = mons.size;
+    for (const id of [...mons]) for (const m of [...(X.D2X_MONSTERS[id]?.minions ?? []), X.D2X_MONSTERS[id]?.spawn?.mon].filter(Boolean)) mons.add(m);
+  }
+  const MODES = new Set(rows(mode27).map((r) => r.code));
+  const seqs = new Set([...mons].flatMap((id) => (X.D2X_MONSTERS[id]?.skills ?? []).map((s) => s.mode).filter((md) => md && !(md.length <= 3 && MODES.has(md)))));
+  const sbad = [];
+  mismatch(sbad, 'D2X_MONSEQ', 'sequences', [...seqs].sort(), Object.keys(SQ).sort());
+  for (const name of Object.keys(SQ)) {
+    const rs = rows(seq27).filter((r) => r.sequence === name);
+    mismatch(sbad, name, 'frames', rs.map((r) => [r.mode, r.frame ?? 0]), SQ[name].frames);
+    mismatch(sbad, name, 'events', rs.flatMap((r, i) => (r.event ? [{ at: i, type: ['', 'melee', 'missile', 'sound', 'skill'][r.event] }] : [])), SQ[name].events);
+  }
+  check(`the sequences of the west block's ${mons.size} monsters (${west.size} areas), each row as MonSeq.txt has it`, sbad);
+  const qs = SQ.seq_brquickstrike;
+  const cast = SQ.seq_bloodravencast;
+  check(
+    "Blood Raven's Quick Strike is one arrow: A1 frames 0–6, one missile event, on the last; her summoning fires on row 15 of S1 0–19; a nest lays on row 25 of S1 0–30",
+    [
+      ...(qs && same(qs.frames, [0, 1, 2, 3, 4, 5, 6].map((f) => ['A1', f])) && same(qs.events, [{ at: 6, type: 'missile' }]) ? [] : ['seq_brquickstrike']),
+      ...(cast && cast.frames.length === 20 && cast.frames.every(([md, f], i) => md === 'S1' && f === i) && same(cast.events, [{ at: 15, type: 'skill' }]) ? [] : ['seq_bloodravencast']),
+      ...(SQ.seq_nestlay?.frames.length === 31 && same(SQ.seq_nestlay.events, [{ at: 25, type: 'skill' }]) ? [] : ['seq_nestlay']),
+      ...X.D2X_MONSTERS.bloodraven.skills.filter((s) => !SQ[s.mode]).map((s) => `bloodraven ${s.skill}: ${s.mode}`),
+    ],
+  );
 }
 
 console.log(`\n${passed} checks passed, ${failed} failed${warned ? `, ${warned} name${warned > 1 ? 's' : ''} to look at` : ''}`);

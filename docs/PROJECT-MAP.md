@@ -56,8 +56,8 @@
 | `src/game/d2/` | 照 D2MOO 写的公式：属性、经验、死亡惩罚、速度档位、怪物数值、刷怪、怪物 AI；技能表达式求值器（照 Fog 的 Calc.cpp 算 Skills.txt、Missiles.txt 的 calc 列）和佣兵的规则（雇佣名单、等级、价钱、属性、技能、经验、装备、复活费），这两个还没接进游戏 | `stats.ts`、`xp.ts`、`death.ts`、`frames.ts`、`monstats.ts`、`population.ts`、`monai.ts`、`skillcalc.ts`、`hireling.ts` |
 | `src/game/quests/` | 任务框架（原版 16 个任务标志位）和「涤荡邪巢」 | `record.ts`、`denofevil.ts` |
 | `src/items/` | 物品：生成、词缀、品质、孔、耐久、价格、商店、卷轴书、储物箱页，调试面板的掉落 | `item.ts`、`gen.ts`、`vendor.ts`、`tomes.ts`、`stash.ts`、`debugloot.ts`、`d2/*` |
-| `src/world/` | 区域、大地图生成（营地 + 血沼荒原 + 凛寒原野无缝相连）、邪秽巢穴、试炼场、秘境的层和小层 | `areas.ts`、`overworld.ts`、`zone.ts`、`presets.ts`、`levelgen.ts`、`rift.ts` |
-| `src/data/d2x/` | 原版数据表，由 `tools/d2-import.mjs` 生成，**不要手改** | `monsters.ts`、`treasure.ts`、`affixes.ts`、`uniques.ts`、`areas.ts`… |
+| `src/world/` | 区域、大地图生成（营地 + 血沼荒原 + 凛寒原野无缝相连）、邪秽巢穴、试炼场、秘境的层和小层；照 D2MOO 的 DrlgMaze 长的迷宫（房间图、预设房间、主题房间）、物件摆放（照 Objects.cpp 按物件组掷）和西块的五个地下城（8、9、13、18、19 层），这三个还没接进游戏 | `areas.ts`、`overworld.ts`、`zone.ts`、`presets.ts`、`levelgen.ts`、`rift.ts`、`maze.ts`、`objgroups.ts`、`dungeons.ts` |
+| `src/data/d2x/` | 原版数据表，由 `tools/d2-import.mjs` 生成，**不要手改** | `monsters.ts`、`treasure.ts`、`affixes.ts`、`uniques.ts`、`areas.ts`、`maze.ts`、`objects.ts`、`monseq.ts`… |
 | `src/render/` | 模型（角色各一个文件，道具按用处合成几个包，按需加载）、动画、地面分块、灯光、昼夜、特效 | `renderer.ts`、`assets.ts`（按需加载模型和道具包）、`needs.ts`（什么要哪些模型）、`models.ts`、`specs.ts`、`chunks.ts` |
 | `src/ui/` | 面板、HUD、标题页、物品图标（画好的图加原版换色）、秘境面板和进度条 | `ui.ts`、`inventory.ts`、`title.ts`、`icons.ts`、`itempics.ts`、`rift.ts` |
 | `src/audio/` | 音效、语音、音乐（录好的文件；缺失时退回代码合成） | `sfx.ts`、`music.ts`、`sounds.ts`、`files.ts`（生成的） |
@@ -118,13 +118,13 @@
 
 ## 测试
 
-**单元测试** `npm test`（43 个文件，约 18 秒）：
+**单元测试** `npm test`（45 个文件，约 18 秒）：
 - 原版公式和数据：`d2-*.test.mjs`、`d2treasure`、`d2affixes`、`d2quality`、`d2legendary`；
 - 技能表达式和佣兵（M2a 的地基，还没接进游戏）：`skillcalc`（Fog 的求值规则、佣兵的五个技能 1–60 级、主角十个技能对照原版说明）、`hireling`（雇佣名单、等级和价钱、属性、技能、经验、8 级门槛、能穿什么、复活费）；
 - 物品和交易：`items`、`tomes`、`stash`、`ctrlclick`、`services`，调试面板的掉落 `debugloot`；
 - 存档迁移：`save`；
 - 一个角色只在一个窗口里玩：`handover`（storage 事件到之前的存档、共享储物箱同步也最后存一次、交接、停下，只一次；提示说的存没存上是真的：存储拒绝、另一个窗口先写过而这里之后又玩过、更新版本的存档都说没能保存，另一个窗口先写过但这里没再玩过就说保存了；刷新中的窗口刷新记录，被打开就马上交接、不开始；开始时遇到另一个窗口的新记录，等它交接、读它最后写的，等的时候又被打开就交出去；从往返缓存回来，没人写过就重新认领、接着玩，别的窗口玩过并关掉了就停下、不再写，存档留着那个窗口的进度，冻住的页面下一次存档时也一样），`stash` 里还有两个窗口和共享储物箱的；
-- 地图：`areas`、`levelgen`、`overworld`、`west`、`seamless`、`seams`；
+- 地图：`areas`、`levelgen`、`overworld`、`west`、`seamless`、`seams`；西块的地下城（还没接进游戏）：`d2-maze-data`（LvlMaze、ObjGroup、Objects、MonSeq 导入的行对照手算的值）、`maze`（D2Seed、各难度的房间数、特殊房间是死胡同、主题房间，整层都走得到、首领在自己的房间、同一种子同一张图、每层不超过 200 毫秒）；
 - 怪物：`spawn`、`d2-population`、`d2-monsters`、`d2-ai`；
 - 模型：`models`（清单和 `public/models` 的角色文件、`packs/` 下的道具包一一对上，包里每张图只存一份，地图摆的、手里拿的都在清单里）、`monster-models`、`needs`（标题页等的核心模型包括营地的一切、主角能拿的每件武器、每种掉落和尸体；各个造东西的函数要的模型都在需求里；去下一个地方前预取的就是那里要的）、`assets`（假网络上：`NOW` 插在后台前面、它在下时别的不开始，失败再试一次后放手、不让人一直等，放手后后台的再试也用完了的，关卡再要它时马上再试、不等它，网络回来就下好，贴图先下时后台让路：还差一半以上的停下、不算失败、放开后从头下，快下完的接着下；跟着后台让路的（`Sfx` 先取的台词）让路时一起让，放开后才告诉它接着取；测试结束前停掉各个库后台的再试，不让它们在别的测试里用真的或别人替换的 `fetch`）；
 - 秘境：`rift`（33 层、开放规则、`dii-rift` 两个窗口合并、每一层的小层和镇守者、整个打一遍，见 `docs/RIFT.md`）；

@@ -18,7 +18,9 @@
 // - src/data/d2x/*.ts, the full tables in the content scope (tools/d2/scope.mjs), one stage per
 //   module in tools/d2/: items, then characters (classes, difficulties, experience, quality
 //   ratios, NPC prices, gambling, hirelings), then world (Act 1's areas, monsters, the classes'
-//   pets, superuniques) and treasure (every treasure class Act 1 drops from), checked against
+//   pets, superuniques), the west block's dungeons (tools/d2/maze.mjs: their maze rows, the object
+//   groups and objects that furnish them, and the west block's monster sequences) and treasure
+//   (every treasure class Act 1 drops from), checked against
 //   d2data's precalculated drop rates in tools/d2/validation.md, then skills (the two classes'
 //   trees, Act 1's monster, modifier and hireling skills, the names of every other skill items
 //   carry or roll, their missiles and states, the calc tables), then the item tooltips' stat
@@ -28,6 +30,7 @@ import path from 'node:path';
 import { buildCharacters } from './d2/characters.mjs';
 import { buildItems } from './d2/items.mjs';
 import { DATA, ROOT, STR, load, rows } from './d2/load.mjs';
+import { buildMaze } from './d2/maze.mjs';
 import { writeReport } from './d2/names.mjs';
 import { buildSkills } from './d2/skills.mjs';
 import { buildStatDesc } from './d2/statdesc.mjs';
@@ -342,6 +345,7 @@ console.log(`${weapons.length} weapons, ${prefixes.length}+${suffixes.length} af
 const { bases, baseNames, skills: itemSkills, staffMods } = await buildItems();
 const { hirelingSkills } = await buildCharacters({ bases });
 const world = await buildWorld({ bases });
+await buildMaze(world);
 const treasure = await buildTreasure({ bases, ...world });
 await buildSkills({ itemSkills, staffMods, hirelingSkills, ...world, bases });
 await buildStatDesc();
