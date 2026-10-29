@@ -325,7 +325,9 @@ export class Game {
     this.newWorld(reload && s.worldSeed !== undefined ? s.worldSeed : newSeed());
     this.toldUnknown = false;
     markInGame(true);
-    this.enterArea(reload ? s.area : CAMP_AREA, 'start');
+    // a save's area this build has no map of is the camp already (loadSave: isBuilt); one it has, but
+    // can't make a map of now, is too, rather than a game on no map (docs/M2A.md 回滚兜底)
+    if (!this.enterArea(reload ? s.area : CAMP_AREA, 'start')) this.enterArea(CAMP_AREA, 'start');
     // said once: the save won't be written this time
     if (s.readOnly) this.hooks.message(s.readOnly, '#ff8060', 10);
     this.tellShared();
