@@ -53,7 +53,7 @@
 | 目录 | 管什么 | 关键文件 |
 | --- | --- | --- |
 | `src/game/` | 模拟：主角、怪物、战斗、AI、物件、掉落、尸体、存档、秘境 | `game.ts`（总控）、`save.ts`（存档）、`player.ts`、`monster.ts`、`ai.ts`、`combat.ts`、`spawn.ts`、`loot.ts`、`corpse.ts`、`level.ts`、`rift.ts`（秘境）、`riftsave.ts` |
-| `src/game/d2/` | 照 D2MOO 写的公式：属性、经验、死亡惩罚、速度档位、怪物数值、刷怪、怪物 AI | `stats.ts`、`xp.ts`、`death.ts`、`frames.ts`、`monstats.ts`、`population.ts`、`monai.ts` |
+| `src/game/d2/` | 照 D2MOO 写的公式：属性、经验、死亡惩罚、速度档位、怪物数值、刷怪、怪物 AI；技能表达式求值器（照 Fog 的 Calc.cpp 算 Skills.txt、Missiles.txt 的 calc 列）和佣兵的规则（雇佣名单、等级、价钱、属性、技能、经验、装备、复活费），这两个还没接进游戏 | `stats.ts`、`xp.ts`、`death.ts`、`frames.ts`、`monstats.ts`、`population.ts`、`monai.ts`、`skillcalc.ts`、`hireling.ts` |
 | `src/game/quests/` | 任务框架（原版 16 个任务标志位）和「涤荡邪巢」 | `record.ts`、`denofevil.ts` |
 | `src/items/` | 物品：生成、词缀、品质、孔、耐久、价格、商店、卷轴书、储物箱页，调试面板的掉落 | `item.ts`、`gen.ts`、`vendor.ts`、`tomes.ts`、`stash.ts`、`debugloot.ts`、`d2/*` |
 | `src/world/` | 区域、大地图生成（营地 + 血沼荒原 + 凛寒原野无缝相连）、邪秽巢穴、试炼场、秘境的层和小层 | `areas.ts`、`overworld.ts`、`zone.ts`、`presets.ts`、`levelgen.ts`、`rift.ts` |
@@ -118,8 +118,9 @@
 
 ## 测试
 
-**单元测试** `npm test`（41 个文件，约 18 秒）：
+**单元测试** `npm test`（43 个文件，约 18 秒）：
 - 原版公式和数据：`d2-*.test.mjs`、`d2treasure`、`d2affixes`、`d2quality`、`d2legendary`；
+- 技能表达式和佣兵（M2a 的地基，还没接进游戏）：`skillcalc`（Fog 的求值规则、佣兵的五个技能 1–60 级、主角十个技能对照原版说明）、`hireling`（雇佣名单、等级和价钱、属性、技能、经验、8 级门槛、能穿什么、复活费）；
 - 物品和交易：`items`、`tomes`、`stash`、`ctrlclick`、`services`，调试面板的掉落 `debugloot`；
 - 存档迁移：`save`；
 - 一个角色只在一个窗口里玩：`handover`（storage 事件到之前的存档、共享储物箱同步也最后存一次、交接、停下，只一次；提示说的存没存上是真的：存储拒绝、另一个窗口先写过而这里之后又玩过、更新版本的存档都说没能保存，另一个窗口先写过但这里没再玩过就说保存了；刷新中的窗口刷新记录，被打开就马上交接、不开始；开始时遇到另一个窗口的新记录，等它交接、读它最后写的，等的时候又被打开就交出去；从往返缓存回来，没人写过就重新认领、接着玩，别的窗口玩过并关掉了就停下、不再写，存档留着那个窗口的进度，冻住的页面下一次存档时也一样），`stash` 里还有两个窗口和共享储物箱的；
