@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { wellCharges } from '../game/containers';
 import type { WorldObject } from '../game/objects';
 import type { Player } from '../game/player';
 import { SHRINE_BY_ID } from '../data/shrines';
@@ -6,7 +7,7 @@ import { CAMP_AREA } from '../world/areas';
 import { assets } from './assets';
 import { playerLook, vendorLook } from './looks';
 import { ModelRig, type ModelSpec } from './models';
-import { specNeeds } from './needs';
+import { OBJECT_MODELS, specNeeds } from './needs';
 import { assetProp, glowSprite, makeBarrel, makeBrazier, makeChest, makePortal, makeStairs, makeWaypoint, MODELS, sharedResource, stdMat } from './props';
 import type { Renderer } from './renderer';
 import { Rig, type AnimInput, type RigLook } from './rig';
@@ -64,7 +65,13 @@ export function makeObjectView(r: Renderer, o: WorldObject): ObjView {
       return {
         group: g,
         update: (dt, ob) => {
-          if (!ob.used) return;
+          if (!ob.used) {
+            // a spark chest (580's or 397, WorldObject.sparkly) glitters until it's opened, as D2's does (bSparkChest)
+            if (ob.sparkly && Math.random() < dt * 9) {
+              r.fx.add.spawn({ x: o.pos.x + (Math.random() - 0.5) * 0.8, y: 0.25 + Math.random() * 0.6, z: o.pos.z + (Math.random() - 0.5) * 0.8, vy: 0.4, color: Math.random() < 0.5 ? '#fff2b0' : '#ffd060', size: 0.07, life: 0.7 });
+            }
+            return;
+          }
           lid.rotation.x = Math.max(-1.9, lid.rotation.x - dt * 6);
           looted();
         },
@@ -263,9 +270,11 @@ export function makeObjectView(r: Renderer, o: WorldObject): ObjView {
       };
     }
     case 'casket':
+      return o.hole ? makeGrave(o, g) : makeCasket(o, g);
     case 'remains':
+      return makeRemains(r, o, g);
     case 'well':
-      return makePendingView(o, g);
+      return makeWell(r, o, g);
     case 'corpse': {
       // the hero's body as it fell, in the gear left on it (game/corpse.ts)
       const c = o.corpse;
@@ -284,50 +293,163 @@ export function makeObjectView(r: Renderer, o: WorldObject): ObjView {
   return { group: g };
 }
 
-/**
- * A maze's casket (or its hole), rogue corpse or well, drawn in code until they have models (the O
- * line's, with objectNeeds): a stone coffin whose lid slides off once opened, a body under a cloak
- * with bones by it, a stone ring round dark water
- */
-function makePendingView(o: WorldObject, g: THREE.Group): ObjView {
-  // stdMat's, shared and so never disposed with a view let go (disposeView); the geometries are the view's own
-  const m = { stone: stdMat('#6c665c', 0.95), lid: stdMat('#5a554c', 0.95), dark: stdMat('#141210', 1), cloth: stdMat('#5a3a30', 1), bone: stdMat('#c8bca0', 0.9), water: stdMat('#203848', 0.2, 0.1) };
+// ── a maze's objects (their models: needs.ts OBJECT_MODELS; drawn in code while one isn't in, or where there is none) ──
+
+/** stdMat's, shared and so never disposed with a view let go (disposeView); the geometries are the view's own */
+const mazeMats = () => ({
+  stone: stdMat('#6c665c', 0.95),
+  lid: stdMat('#5a554c', 0.95),
+  dark: stdMat('#141210', 1),
+  earth: stdMat('#3e3326', 1),
+  cloth: stdMat('#5a3a30', 1),
+  rag: stdMat('#3c2c26', 1),
+  leather: stdMat('#3a2a20', 0.9),
+  bone: stdMat('#c8bca0', 0.9),
+  water: stdMat('#203848', 0.2, 0.1),
+  fly: stdMat('#101010', 1),
+});
+
+/** turned to face the camera, each a little its own way, so a cluster doesn't look stamped */
+function siteOf(o: WorldObject, g: THREE.Group): THREE.Group {
   const site = new THREE.Group();
   site.rotation.y = CAM_YAW + ((o.id * 1.618) % 1) * 0.6 - 0.3;
   g.add(site);
-  if (o.kind === 'casket' && o.hole) {
-    const pit = new THREE.Mesh(new THREE.CircleGeometry(0.45, 14).rotateX(-Math.PI / 2), m.dark);
-    pit.position.y = 0.02;
-    site.add(pit);
-    return { group: g };
-  }
-  if (o.kind === 'casket') {
-    const box = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.38, 1.1), m.stone);
-    box.position.y = 0.19;
-    const lid = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.08, 1.15), m.lid);
-    lid.position.y = 0.42;
-    site.add(box, lid);
+  return site;
+}
+
+/** a casket: the dungeon pack's coffin, its lid pushed askew and darkened once opened; till it's in, a stone coffin whose lid slides off */
+function makeCasket(o: WorldObject, g: THREE.Group): ObjView {
+  const site = siteOf(o, g);
+  const model = assetProp(OBJECT_MODELS.casket, 0.55);
+  if (model) {
+    site.add(model);
+    let opened = false;
     const open = () => {
-      lid.position.set(0.32, 0.3, 0.1);
-      lid.rotation.z = -0.35;
+      if (opened) return;
+      opened = true;
+      model.rotation.z = 0.06;
+      model.position.y = 0.02;
+      tintOwn(model, sharedResource, (m) => m.color.multiplyScalar(0.6));
     };
     if (o.used) open();
     return { group: g, update: (_dt, ob) => void (ob.used && open()) };
   }
-  if (o.kind === 'remains') {
-    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.7, 4, 8).rotateX(Math.PI / 2), m.cloth);
-    body.position.y = 0.14;
-    const skull = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), m.bone);
-    skull.position.set(0, 0.12, 0.55);
-    site.add(body, skull);
-    return { group: g };
+  const m = mazeMats();
+  const box = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.38, 1.1), m.stone);
+  box.position.y = 0.19;
+  const lid = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.08, 1.15), m.lid);
+  lid.position.y = 0.42;
+  site.add(box, lid);
+  const open = () => {
+    lid.position.set(0.32, 0.3, 0.1);
+    lid.rotation.z = -0.35;
+  };
+  if (o.used) open();
+  return { group: g, update: (_dt, ob) => void (ob.used && open()) };
+}
+
+/** the grave among a crypt's caskets (Objects.txt 28): the graveyard pack's grave, its broken one once dug open; till they're in, a mound and the pit it leaves */
+function makeGrave(o: WorldObject, g: THREE.Group): ObjView {
+  const site = siteOf(o, g);
+  const whole = assetProp(OBJECT_MODELS.grave, 0.5);
+  const broken = assetProp(OBJECT_MODELS.graveOpened, 0.5);
+  const m = mazeMats();
+  const mound = whole ?? new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2).scale(0.8, 0.35, 1.2), m.earth);
+  const pit = broken ?? new THREE.Mesh(new THREE.CircleGeometry(0.45, 14).rotateX(-Math.PI / 2).scale(0.8, 1, 1.2), m.dark);
+  if (!broken) pit.position.y = 0.02;
+  site.add(mound, pit);
+  const show = (dug: boolean) => {
+    mound.visible = !dug;
+    pit.visible = dug;
+  };
+  show(o.used);
+  return { group: g, update: (_dt, ob) => show(ob.used) };
+}
+
+/** a rogue's corpse (Objects.txt 54–56): a body under a cloak, her bow and quiver by her, flies over 29 % of them; no model has one, so in code */
+function makeRemains(r: Renderer, o: WorldObject, g: THREE.Group): ObjView {
+  const site = siteOf(o, g);
+  // lying across the view, not end on to it
+  site.rotation.y += Math.PI / 2;
+  const m = mazeMats();
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.42, 4, 8).rotateX(Math.PI / 2), m.cloth);
+  body.position.set(0, 0.15, 0.05);
+  const legs = [-0.08, 0.08].map((x) => {
+    const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.42, 3, 6).rotateX(Math.PI / 2), m.leather);
+    leg.position.set(x * 1.4, 0.08, -0.45);
+    leg.rotation.y = x * 1.5;
+    return leg;
+  });
+  const hood = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 6), m.cloth);
+  hood.position.set(0, 0.14, 0.45);
+  const skull = new THREE.Mesh(new THREE.SphereGeometry(0.095, 8, 6), m.bone);
+  skull.position.set(0.03, 0.12, 0.55);
+  const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.05, 0.36, 3, 6).rotateZ(Math.PI / 2), m.cloth);
+  arm.position.set(0.3, 0.07, 0.22);
+  arm.rotation.y = -0.5;
+  const bow = new THREE.Mesh(new THREE.TorusGeometry(0.48, 0.025, 4, 14, Math.PI * 0.75).rotateX(Math.PI / 2), m.leather);
+  bow.position.set(0.18, 0.04, -0.05);
+  bow.rotation.y = 2.2;
+  const quiver = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.42, 6).rotateZ(Math.PI / 2), m.leather);
+  quiver.position.set(-0.3, 0.07, 0.15);
+  quiver.rotation.y = 0.6;
+  site.add(body, ...legs, hood, skull, arm, bow, quiver);
+  // searched, her cloak turned back
+  const searched = (used: boolean) => void (body.material = hood.material = arm.material = used ? m.rag : m.cloth);
+  searched(o.used);
+  if (!o.flies) return { group: g, update: (_dt, ob) => searched(ob.used) };
+  const flies = Array.from({ length: 5 }, () => {
+    const f = new THREE.Mesh(new THREE.SphereGeometry(0.02, 4, 3), m.fly);
+    site.add(f);
+    return f;
+  });
+  return {
+    group: g,
+    update: (_dt, ob) => {
+      searched(ob.used);
+      flies.forEach((f, i) => {
+        const t = r.time * (2.1 + i * 0.37) + i * 1.9;
+        f.position.set(Math.sin(t) * 0.35, 0.35 + Math.sin(t * 1.7) * 0.12, Math.cos(t * 1.3) * 0.45);
+      });
+    },
+  };
+}
+
+/**
+ * A cave's well (Objects.txt 138): the camp's well, smaller; till it's in, a stone ring round dark
+ * water. A cool glint over it while it has a drink left (containers.ts wellCharges), none while it's
+ * dry: a cave is lit only by the hero, and the glint says which wells are worth the walk
+ */
+function makeWell(r: Renderer, o: WorldObject, g: THREE.Group): ObjView {
+  const site = siteOf(o, g);
+  const model = assetProp(OBJECT_MODELS.well, 1.9);
+  let water: THREE.Mesh | null = null;
+  if (model) site.add(model);
+  else {
+    const m = mazeMats();
+    const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.68, 0.55, 16, 1, true), m.stone);
+    ring.position.y = 0.27;
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.64, 0.07, 6, 16).rotateX(Math.PI / 2), m.stone);
+    rim.position.y = 0.55;
+    water = new THREE.Mesh(new THREE.CircleGeometry(0.6, 16).rotateX(-Math.PI / 2), m.water);
+    water.position.y = 0.32;
+    site.add(ring, rim, water);
   }
-  const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.68, 0.55, 16, 1, true), m.stone);
-  ring.position.y = 0.27;
-  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.64, 0.07, 6, 16).rotateX(Math.PI / 2), m.stone);
-  rim.position.y = 0.55;
-  const water = new THREE.Mesh(new THREE.CircleGeometry(0.6, 16).rotateX(-Math.PI / 2), m.water);
-  water.position.y = 0.32;
-  site.add(ring, rim, water);
-  return { group: g };
+  const glint = glowSprite('#7ab8ff', 1.3, 0.5);
+  glint.position.y = 0.8;
+  g.add(glint);
+  const view: ObjView = {
+    group: g,
+    lightColor: '#6aa8ff',
+    lightIntensity: 3,
+    update: (dt, ob) => {
+      const wet = wellCharges(ob, r.game.time) > 0;
+      glint.visible = wet;
+      view.lightColor = wet ? '#6aa8ff' : undefined;
+      if (water) water.visible = wet;
+      (glint.material as THREE.SpriteMaterial).opacity = 0.35 + Math.sin(r.time * 1.9) * 0.1;
+      if (wet && Math.random() < dt * 2) r.fx.add.spawn({ x: o.pos.x + (Math.random() - 0.5) * 0.6, y: 0.5, z: o.pos.z + (Math.random() - 0.5) * 0.6, vy: 0.3, color: '#a0d8ff', size: 0.06, life: 1 });
+    },
+  };
+  return view;
 }

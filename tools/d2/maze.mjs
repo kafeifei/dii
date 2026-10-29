@@ -17,6 +17,7 @@
 //
 // D2MOO references are to github.com/ThePhrozenKeep/D2MOO at commit d9d394f, by file and line.
 import { REF27, load, record, rows, writeD2x } from './load.mjs';
+import { names } from './names.mjs';
 
 /** the dungeons M2a builds, by Levels.txt id: the Den of Evil, Cave Levels 1 and 2, the Crypt, the Mausoleum */
 const MAZE_LEVELS = [8, 9, 13, 18, 19];
@@ -115,6 +116,17 @@ const SPARKLY_INIT = 57;
 const CONSOLATION = 397;
 /** the population handler skips objects whose Gore is above the setting, 2 (Objects.cpp:2128) */
 const GORE_MAX = 2;
+
+/**
+ * The kinds of object the game sets down and shows a hover name for (src/game/level.ts): their
+ * Objects.txt Name string keys get our names from tools/d2-names/objects.json (rule 5), and so does
+ * lockedchest, the string a locked chest hovers with. D2CE has no object strings: the official
+ * English and Chinese they were written against are the names file's (D2R 2.7's objects.json).
+ * Shrines keep the names of the shrines they are (src/data/shrines.ts); the Cairn Stones and the
+ * Tower Tome are named with their quests (M2b).
+ */
+const NAMED_KINDS = new Set(['chest', 'barrel', 'explodingBarrel', 'casket', 'corpse', 'well']);
+const LOCKED_CHEST = 'lockedchest';
 
 /** MonSeq.txt's events (SequenceTbls.h:8-15) */
 const SEQ_EVENT = { 1: 'melee', 2: 'missile', 3: 'sound', 4: 'skill' };
@@ -318,6 +330,20 @@ export async function buildMaze({ areas, monsters, superuniques }) {
     if (kind === 'explodingBarrel') o.damage = r.Damage ?? 0;
     objects[id] = o;
   }
+  // their hover names, by string key: every kind the game shows, a locked chest's own (NAMED_KINDS)
+  const objNames = names('objects');
+  const objectNames = {};
+  const nameOf = (key, where) => {
+    if (objectNames[key]) return;
+    const n = objNames.named(key, objNames.en(key));
+    if (!n) throw new Error(`${where}: no names for its string ${key} in tools/d2-names/objects.json`);
+    objectNames[key] = { ...n, en: objNames.en(key) };
+  };
+  for (const o of Object.values(objects)) {
+    if (!NAMED_KINDS.has(o.kind)) continue;
+    nameOf(o.nameKey, `objects ${o.id}`);
+    if (o.lockable) nameOf(LOCKED_CHEST, `objects ${o.id} locked`);
+  }
   // a group's member with no PopulateFn places nothing (Objects.cpp:2132-2148): only clusters bring it
   for (const g of Object.values(groups)) {
     for (const m of g.objects) if (!objects[m.id].populate && !Object.values(objects).some((o) => o.cluster?.includes(m.id))) throw new Error(`objgroup ${g.id}: object ${m.id} is never placed`);
@@ -398,14 +424,15 @@ export async function buildMaze({ areas, monsters, superuniques }) {
   writeD2x(
     'objects.ts',
     `${OBJECT_TYPES}\n/** the object groups the west block's dungeons roll (ObjGroup.txt), by row */\nexport const D2X_OBJGROUPS: Record<number, D2xObjGroup> = ${record(groups)};\n\n` +
-      `/**\n * The objects those groups place, with what their populate functions bring along, and the ones the\n * west block's map presets place (Objects.txt), by class: ${PRESET_OBJECTS.join(', ')} for the presets.\n */\nexport const D2X_OBJECTS: Record<number, D2xObject> = ${record(objects)};\n`,
+      `/**\n * The objects those groups place, with what their populate functions bring along, and the ones the\n * west block's map presets place (Objects.txt), by class: ${PRESET_OBJECTS.join(', ')} for the presets.\n */\nexport const D2X_OBJECTS: Record<number, D2xObject> = ${record(objects)};\n\n` +
+      `/**\n * The hover names of the objects the game shows (chests, barrels, caskets and their graves, rogue corpses,\n * wells), ours (tools/d2-names/objects.json), by their Objects.txt Name string key (D2xObject.nameKey),\n * and ${LOCKED_CHEST}, a locked chest's\n */\nexport const D2X_OBJECT_NAMES: Record<string, D2xObjectName> = ${record(objectNames)};\n`,
   );
   writeD2x('monseq.ts', `${SEQ_TYPES}\n/** the sequences the west block's monsters play for their skills, by name (D2xMonster skills' mode) */\nexport const D2X_MONSEQ: Record<string, D2xMonSeq> = ${record(monseq)};\n`);
   console.log(
-    `maze: ${Object.keys(mazes).length} dungeon levels, ${Object.keys(groups).length} object groups, ${Object.keys(objects).length} objects, ` +
+    `maze: ${Object.keys(mazes).length} dungeon levels, ${Object.keys(groups).length} object groups, ${Object.keys(objects).length} objects (${Object.keys(objectNames).length} hover names), ` +
       `${Object.keys(monseq).length} sequences of the west block's ${mons.size} monsters (${west.size} areas)`,
   );
-  return { mazes, groups, objects, monseq };
+  return { mazes, groups, objects, objectNames, monseq };
 }
 
 /** the shrine a shrine object becomes when it must be the level's healing one (Objects.cpp:1594-1606) */
@@ -568,6 +595,13 @@ export interface D2xObject {
   becomes?: number[];
   /** an exploding barrel's Damage: % of the 1/32–1/8 of a target's life it rolls (ObjEval.cpp:16-90) */
   damage?: number;
+}
+
+/** an object's hover name: ours in Chinese and English, and the official English it was written against */
+export interface D2xObjectName {
+  name: string;
+  nameEn: string;
+  en: string;
 }
 `;
 

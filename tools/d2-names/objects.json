@@ -1,0 +1,9 @@
+{
+  "chest": {"name":"宝箱","nameEn":"Coffer","en":"Chest","official":"箱子","note":"Objects.txt Name 的字串键（宝箱、超级宝箱都用它）；官方简中、英文照 D2R 2.7 的 data/local/lng/strings/objects.json（D2CE 没有这一份）。留「箱」，子换宝；英文 Coffer 是装财物的箱子"},
+  "lockedchest": {"name":"上锁的宝箱","nameEn":"Locked Coffer","en":"Locked Chest","official":"锁住的箱子","note":"上锁的箱子悬停时用这个字串（繁中官方 上鎖的箱子）；和「宝箱」一致，只加「上锁的」"},
+  "Barrel": {"name":"橡木桶","nameEn":"Oaken Barrel","en":"Barrel","official":"桶","note":"爆炸桶（BarrelExploding）的 Name 也是这个键。原来游戏里叫「木桶」，那是繁中官方名（木桶），改成橡木桶；英文加 Oaken"},
+  "Casket": {"name":"棺椁","nameEn":"Burial Casket","en":"Casket","official":"棺木","note":"不用「石棺」：那是官方的 Sarcophagus；「棺材」是官方的 Coffin。另一版 D2R 字串作 石匣，繁中 石柩，都不重。留「棺」"},
+  "HoleAnim": {"name":"未遭亵渎的坟冢","nameEn":"Unprofaned Grave","en":"Undefiled Grave","official":"未被亵渎的坟墓","note":"墓窖棺材堆里混着的坟（Objects.txt 28 HoleInGround）；被换遭、坟墓换坟冢，亵渎留下；英文 Undefiled 换同义的 Unprofaned"},
+  "RogueCorpse": {"name":"战死的流离者","nameEn":"Slain Rogue","en":"Dead Rogue","official":"死去的流亡者","note":"洞穴里的游侠尸体（Objects.txt 54–56）；流亡者是营地那一族，照「流离者营寨」「流离者斥候」叫流离者，死去换战死；英文留 Rogue（和 Rogues' Stockade、Rogue Wayfinder 一致），Dead 换 Slain"},
+  "Well": {"name":"古井","nameEn":"Old Well","en":"Well","official":"井","note":"洞穴里的井（Objects.txt 138 Fountain8）；单字的官方名，加一个字"}
+}
