@@ -1,5 +1,6 @@
 // Quests (src/game/quests, D2MOO D2QuestRecord.cpp and QUESTS/ACT1/A1Q1.cpp at d9d394f): the
-// record's flags and D2's reading of it for a new game; the Den of Evil played through Game from
+// record's flags and D2's reading of it for a new game; a line of one game's heard in the next
+// counting for nothing there; the Den of Evil played through Game from
 // Akara's first word to her reward (once), the count said only for the den's own kills, started by
 // walking in without her, its reward collected in a later game; each difficulty's record apart;
 // saves keeping records (unknown quests too) and old saves loading with none; what counts in the
@@ -175,6 +176,12 @@ export default async (load) => {
 
   check(akara()?.npc === '亚喀蕾' && game.quests.hasNews('akara') && word() === 0, `a new game: ${akara()?.npc}, news ${game.quests.hasNews('akara')}, word ${word()}`);
   check(game.quests.log('a1q1').state === 'none' && ACT1_QUESTS.filter((q) => q.key !== 'a1q1').every((q) => game.quests.log(q.key).state === 'off'), 'the log of a new hero');
+  // a line of one game's heard only once the next has begun (left up as its hero was quit, a difficulty left): nothing to the new game
+  toAkara();
+  const stale = game.talkTo(akara());
+  game.newGame('任务测试', 'paladin');
+  game.npcSpoke(stale);
+  check(stale?.id === 'intro' && word() === 0 && den().state === 1 && game.quests.hasNews('akara'), `the last game's line heard in this one: word ${word()}, state ${den().state}`);
   toAkara();
   const intro = game.talkTo(akara());
   check(intro?.id === 'intro' && intro.text.includes('邪秽巢穴'), `Akara's first words: ${intro?.id}`);

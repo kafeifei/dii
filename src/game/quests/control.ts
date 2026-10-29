@@ -21,6 +21,11 @@ export class Quests {
   private clock = 0;
   /** each townsperson's next line of small talk */
   private gossipAt = new Map<string, number>();
+  /**
+   * the lines this game's townsfolk have been given to say (opening, talk): only those count when
+   * heard (spoke), never one said in another game, its hero quit to the title or its difficulty left
+   */
+  private given = new WeakSet<Topic>();
 
   constructor(private host: QuestHost) {
     this.scripts = [new DenOfEvil(host)];
@@ -39,7 +44,7 @@ export class Quests {
   opening(npc: string): Topic | null {
     for (const s of this.scripts) {
       const t = s.opening(npc);
-      if (t) return t;
+      if (t) return this.give(t);
     }
     return null;
   }
@@ -57,9 +62,16 @@ export class Quests {
   private word(npc: string, said: boolean): Topic | null {
     for (const s of this.scripts) {
       const t = s.talk(npc);
-      if (t) return t;
+      if (t) return this.give(t);
     }
-    return this.gossip(npc, said);
+    const g = this.gossip(npc, said);
+    return g && this.give(g);
+  }
+
+  /** `t`, a line of this game's to say */
+  private give(t: Topic): Topic {
+    this.given.add(t);
+    return t;
   }
 
   /**
@@ -78,8 +90,9 @@ export class Quests {
     return { npc, id: `gossip${all.indexOf(lines[i])}`, text: l.zh, en: l.en };
   }
 
-  /** a line heard to the end, or cut short (ScrollMessage) */
+  /** a line heard to the end, or cut short (ScrollMessage): one this game gave (given), never another game's */
   spoke(t: Topic) {
+    if (!this.given.has(t)) return;
     for (const s of this.scripts) s.spoke(t);
   }
 

@@ -254,6 +254,7 @@ export class UI implements GameHooks, UIContext {
       this.title,
       () => this.openSettings(),
       () => this.openDebug(),
+      () => this.npc.quit(),
     );
     this.root.appendChild(this.menu.el);
     this.settingsPanel = new SettingsPanel(

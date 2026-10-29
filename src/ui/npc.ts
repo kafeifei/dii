@@ -215,7 +215,8 @@ export class NpcPanel {
 
   /**
    * the townsperson left (取消, Esc, walking off, their trade opened): the game hears of it; a line
-   * still going counts as heard. `quiet`: not the hero leaving them (their trade opened, another level)
+   * still going counts as heard. `quiet`: not the hero leaving them (their trade opened, another
+   * level, the game quit)
    */
   close(quiet = false) {
     const obj = this.obj;
@@ -230,6 +231,19 @@ export class NpcPanel {
     }
     this.ui.game.npcLeft(obj);
     this.ui.dirty = true;
+  }
+
+  /**
+   * the game quit to the title (保存并返回标题), before it's saved: the townsperson left at once,
+   * quietly, a line of theirs still going counted as heard for the hero playing, as it is however
+   * else they're left (and as Diablo II's Esc cuts it short on the way to the game's menu). So it's
+   * saved with that hero, and nothing of it waits under the title to be heard of in the next game; the
+   * visit's over
+   */
+  quit() {
+    this.close(true);
+    this.visit = null;
+    this.trading = null;
   }
 
   /** the menu over the townsperson's head, kept on screen */

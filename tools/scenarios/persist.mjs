@@ -7,8 +7,13 @@
 // does) starts at the title, not in the game, and lists the hero as played in another window. Gold
 // picked up in the first tab and not yet autosaved is then in the copy once it takes the hero over:
 // the first tab saves it, hands it over and stops behind its notice, writing nothing more. Back in
-// the first tab, its notice's button leads to the title. Last, storage that refuses the write: the
-// game says so and keeps saying it until a write goes in. Page errors fail the run.
+// the first tab, its notice's button leads to the title. Then storage that refuses the write: the
+// game says so and keeps saying it until a write goes in. Last, a townsperson's line cut off by
+// quitting: the hero (now the copy's) is given the Den of Evil by Akara in a scrolling line, and
+// mid-line ≡ → 保存并返回标题. The line counts as heard for that hero, saved before the quit (as Esc
+// would cut it short in Diablo II on the way to its menu), and none of it is left behind: no dialogue
+// under the title, nor in the game of a hero made next, whose quest is untouched and whose quest log
+// has no news; the first hero continued has the quest given. Page errors fail the run.
 // The last line is "PERSIST OK …" or "PERSIST FAIL …".
 
 export default async function (page, shot, log) {
@@ -124,6 +129,77 @@ export default async function (page, shot, log) {
     });
     expect(badge.shown && badge.gone, `the unsaved warning: ${JSON.stringify(badge)}`);
     facts.push('a refused write is shown until one goes in');
+
+    step = 'a line cut off by quitting';
+    // the Den of Evil's word in normal (src/game/quests/record.ts QFLAG), saved for the hero named and
+    // as played if it's the one in the game, and whether any of a townsperson's dialogue is up
+    const STARTED = 2;
+    const words = (pg, name) =>
+      pg.evaluate((name) => {
+        let saved = null;
+        for (let n = 0; n < 8; n++) {
+          const d = JSON.parse(localStorage.getItem(n ? `dii-save-v1-${n}` : 'dii-save-v1') || 'null');
+          if (d?.name === name) saved = d.progress?.[0]?.quests?.a1q1 ?? 0;
+        }
+        const g = window.game;
+        const here = g.started && g.player.name === name;
+        return {
+          saved,
+          played: here ? (g.player.quests[0].a1q1 ?? 0) : null,
+          state: here ? g.quests.script('a1q1').state : null,
+          news: here ? g.quests.hasNews('akara') : null,
+          dialogue: !!document.querySelector('.dialogue.open'),
+          menu: !!document.querySelector('.npc-menu.open'),
+          open: g.hooks.npc.isOpen,
+          // the quest log's HUD button lit with news
+          logNews: [...document.querySelectorAll('.hbtn.notify')].some((b) => b.textContent.startsWith('任')),
+        };
+      }, name);
+    const hero = await page2.evaluate(() => game.player.name);
+    const was = await words(page2, hero);
+    expect(was.played === 0 && was.news, `${hero} has had the Den of Evil already: ${JSON.stringify(was)}`);
+    // spoken to, Akara gives the quest in a scrolling line; a moment in, the HUD's ≡ and 保存并返回标题
+    await page2.evaluate(() => {
+      const L = game.level;
+      const a = L.objects.find((o) => o.npcId === 'akara');
+      game.teleportWithin(L.map.nearestWalkable(a.pos.x + 1.6, a.pos.z + 1.6));
+      game.interact(a);
+    });
+    await page2.waitForSelector('.dialogue.open');
+    await page2.waitForTimeout(1500);
+    const mid = await page2.evaluate(() => ({ talking: game.hooks.npc.talking, t: +game.hooks.npc.t.toFixed(2), dur: +game.hooks.npc.dur.toFixed(2), text: document.querySelector('.dialogue.open .dlg-text')?.textContent ?? '' }));
+    expect(mid.talking && mid.t > 0 && mid.t < mid.dur && mid.text.includes('邪秽巢穴'), `not mid-line as the game is quit: ${JSON.stringify(mid)}`);
+    await shot('akara-mid-line', page2);
+    await page2.click('#hud .hbtn[title^="菜单"]');
+    await page2.click('.overlay.open .btn.quit');
+    await page2.waitForSelector('.overlay.open .saves .btn.pick');
+    await page2.waitForTimeout(500);
+    const quit = await words(page2, hero);
+    expect(!quit.dialogue && !quit.menu && !quit.open, `her line is left under the title: ${JSON.stringify(quit)}`);
+    expect(((quit.saved >> STARTED) & 1) === 1, `the line cut off by quitting isn't saved as heard for ${hero}: ${JSON.stringify(quit)}`);
+    await shot('title-after-quitting-mid-line', page2);
+    // a hero made next: nothing of her line in their game, their quest untouched
+    const next = '后来者';
+    await page2.fill('.overlay.open .name', next);
+    await page2.click('.overlay.open .btn.new');
+    await started(page2);
+    await page2.waitForTimeout(800);
+    const made = await words(page2, next);
+    expect(made.played === 0 && made.saved === 0 && made.state === 1 && made.news && !made.logNews, `${hero}'s line counted for ${next}: ${JSON.stringify(made)}`);
+    expect(!made.dialogue && !made.menu && !made.open, `${hero}'s line shown in ${next}'s game: ${JSON.stringify(made)}`);
+    await shot('next-hero', page2);
+    // the first hero continued: the quest given, by the line heard as the game was quit
+    await page2.keyboard.press('Escape');
+    await page2.click('.overlay.open .btn.quit');
+    await page2.waitForSelector('.overlay.open .saves .btn.pick');
+    await page2.locator('.overlay.open .saves .btn.pick').filter({ has: page2.locator('b', { hasText: new RegExp(`^${hero}$`) }) }).click();
+    await started(page2);
+    await page2.waitForTimeout(500);
+    const back = await words(page2, hero);
+    const logState = await page2.evaluate(() => game.quests.log('a1q1').state);
+    expect(((back.played >> STARTED) & 1) === 1 && back.state === 2 && !back.news && logState === 'active' && !back.dialogue, `${hero} continued: ${JSON.stringify({ ...back, log: logState })}`);
+    expect((await words(page2, next)).saved === 0, `${next}'s save has the quest`);
+    facts.push(`a line cut off by quitting to the title counts for ${hero} (saved: the quest given), nothing for ${next}, no dialogue left behind`);
   } catch (e) {
     fails.push(`${step}: ${e.message}`);
   }
