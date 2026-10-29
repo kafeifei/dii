@@ -9,7 +9,7 @@
   "Dread": {"name":"惊怖","nameEn":"Fright","en":"Dread","official":"惊悚","note":"曾用名 战栗（Tremor）；战栗/Tremor 换了意象；留「惊」，悚换怖；Fright 与怪物前缀同（惊惧是符文之语 Dread，Terror 是符文之语名）"},
   "Doom": {"name":"厄难","nameEn":"Downfall","en":"Doom","official":"厄运","note":"曾用名 凶兆（Omen）；凶兆/Omen 是征兆，另一个意象；留「厄」，运换难；与怪物前缀同"},
   "Grim": {"name":"阴毒","nameEn":"Sinister","en":"Grim","official":"恶毒","note":"曾用名 阴森；阴森与「恶毒」无一字相同；留「毒」"},
-  "Bone": {"name":"枯骨","nameEn":"Marrowless","en":"Bone","official":"白骨","note":"曾用名 朽骨（Charnel）；与怪物前缀 Bone 同用枯骨＝Marrowless（后缀「枯骨铠之」也是）；Charnel 在别处是「骸」"},
+  "Bone": {"name":"苍骨","nameEn":"Palebone","en":"Bone","official":"白骨","note":"曾用名 枯骨（Marrowless）：Marrowless 是形容词（稀有名第一个词库要名词），也丢了 Bone；白骨在怪物苍骨战卒、苍骨弓卒、苍骨咒师里是苍骨 / Palebone，一个官方词一个写法，这里跟着用；留「骨」，白换苍。曾用名 朽骨（Charnel）；与怪物前缀 Bone 同用枯骨＝Marrowless（后缀「枯骨铠之」也是）；Charnel 在别处是「骸」"},
   "Death": {"name":"死灭","nameEn":"Demise","en":"Death","official":"死亡","note":"曾用名 殒灭（Quietus）；殒灭不留「死」；Quietus 是只有词典才知道的词"},
   "Shadow": {"name":"幽影","nameEn":"Umbra","en":"Shadow","official":"暗影","note":"曾用名 阴翳（Pall）；阴翳/Pall 认不出暗影；留「影」，幽影＝Umbra，与套装「纳妲丽娅的幽影」一致；与怪物前缀同"},
   "Storm": {"name":"雷暴","nameEn":"Thunderstorm","en":"Storm","official":"风暴","note":"曾用英文名 Thunderhead；中文留「暴」不变；英文 Thunderhead 是雷雨云，Thunderstorm 留着 Storm；与怪物前缀同（Tempest 是符文之语名）"},

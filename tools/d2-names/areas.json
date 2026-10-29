@@ -1,5 +1,5 @@
 {
-  "1": {"name":"放逐者营寨","nameEn":"Rogues' Stockade","en":"Rogue Encampment","official":"流亡者营地","note":"英文曾用名 Exiles' Stockade：Exile 是官方中文「流亡者」的意思，英文老玩家记的是 Rogue，留下"},
+  "1": {"name":"流离者营寨","nameEn":"Rogues' Stockade","en":"Rogue Encampment","official":"流亡者营地","note":"曾用名 放逐者营寨（英文不变）：放逐者就是怪物 The Banished 的官方名「被放逐者」去掉一个「被」（style.md 规则 4）；官方的流亡者留「流」「者」，亡换离（流离＝离乡漂泊，她们被赶出了修道院）。英文曾用名 Exiles' Stockade：Exile 是官方中文「流亡者」的意思，英文老玩家记的是 Rogue，留下"},
   "2": {"name":"血沼荒原","nameEn":"Bloodmire Heath","en":"Blood Moor","official":"鲜血荒地"},
   "3": {"name":"凛寒原野","nameEn":"Bitterfrost Plains","en":"Cold Plains","official":"冰冷之原","note":"英文曾用名 Bitterfrost Wilds：留 Plains"},
   "4": {"name":"列石荒野","nameEn":"Stony Wastes","en":"Stony Field","official":"石块旷野","note":"原「碎石荒野」两词都是近义替换；列石点出凯恩之石；英文曾用名 Menhir Wastes：留 Stony"},

@@ -37,7 +37,7 @@
   "BloodClan": {"name":"血角部族","nameEn":"Gorehorn Tribe","en":"Blood Clan","official":"鲜血氏族","note":"原「沥血部族」只是「鲜血氏族」换字（鲜→沥、氏→部），英文 Goredrip Tribe 也只有 drip 是自己的；改为血角部族，羊人染血的角；Blood 在原名里，血用 Gore，与「血潮」Goretide 同；角＝Horn，与「狄雅孛洛的角」同；部族＝Tribe，与望月、长夜、殒命部族一致"},
   "Disfigured": {"name":"残躯魔","nameEn":"Disfigured Imp","en":"Disfigured","official":"残身魔","note":"曾用名 裂面魔（Splitface Imp）：裂面是另一个意象（脸），留「残」，身换躯；英文留 Disfigured"},
   "Yeti": {"name":"雪岭魈","nameEn":"Snowcrag Ape","en":"Yeti","official":"雪人怪"},
-  "BlackRogue": {"name":"墨心放逐者","nameEn":"Sootheart Rogue","en":"Black Rogue","official":"黑化流亡者","note":"曾用名 墨心逆女（Sootheart Apostate）：逆女、Apostate 都丢了流亡者 / Rogue；流亡者统一作「放逐者」（放逐者营寨），英文留 Rogue"},
+  "BlackRogue": {"name":"墨心流离者","nameEn":"Sootheart Rogue","en":"Black Rogue","official":"黑化流亡者","note":"曾用名 墨心放逐者（英文不变）：放逐者就是怪物 The Banished 的官方名「被放逐者」去掉一个「被」（style.md 规则 4）；官方的流亡者留「流」「者」，亡换离（流离＝离乡漂泊，她们被赶出了修道院）。曾用名 墨心逆女（Sootheart Apostate）：逆女、Apostate 都丢了流亡者 / Rogue；流亡者统一作「放逐者」（放逐者营寨），英文留 Rogue"},
   "DevilkinShaman": {"name":"小恶鬼巫祝","nameEn":"Devilspawn Augur","en":"Devilkin Shaman","official":"小恶魔萨满","note":"曾用名 魔裔巫祝（Hellscion Augur）：随小恶鬼"},
   "RazorSpine": {"name":"剃刀刺妖","nameEn":"Razorridge Horror","en":"Razor Spine","official":"剃刀刺魔","note":"曾用名 锋脊妖（Bladeridge Horror）：老玩家记的是「剃刀」，留下，魔换妖；英文留 Razor（Razorspike 只差 Razor Spine 一个字母）"},
   "DeathClan": {"name":"殒命部族","nameEn":"Lastbreath Tribe","en":"Death Clan","official":"死亡氏族"},
@@ -70,7 +70,7 @@
   "The Smith": {"name":"炉匠","nameEn":"The Forgesmith","en":"The Smith","official":"铁匠","note":"英文曾用名 The Forgewright：留 Smith"},
   "Treehead WoodFist": {"name":"树颅橡拳","nameEn":"Treeskull Oakfist","en":"Treehead WoodFist","official":"树头木拳","note":"曾用名 朽颅橡拳（Rotskull Oakfist）：留「树」和「拳」，头换颅、木换橡；英文留 Tree 和 Fist"},
   "BurningDeadMage": {"name":"烈焰亡骨咒师","nameEn":"Burning Dead Incanter","en":"Burning Dead Mage","official":"烈焰亡骨法师","note":"曾用名 焚骸咒师 / Pyrebone Incanter：中英文每个词都换了，只剩结构，老玩家认不出；整个留下，只把法师换成骷髅法师一族统一的「咒师」/ Incanter；只作骨烬的本体出现"},
-  "Rogue": {"name":"放逐者","nameEn":"Rogue Sister","en":"Rogue","official":"流亡者","note":"佣兵的单位名，流亡者统一作「放逐者」；英文曾用名 Exiled One：Exile 是官方中文「流亡者」的意思，不是 Rogue，英文留 Rogue（她们是盲眼姊妹会的修女）"},
+  "Rogue": {"name":"流离者","nameEn":"Rogue Sister","en":"Rogue","official":"流亡者","note":"曾用名 放逐者（英文不变）：放逐者就是怪物 The Banished 的官方名「被放逐者」去掉一个「被」（style.md 规则 4）；官方的流亡者留「流」「者」，亡换离（流离＝离乡漂泊，她们被赶出了修道院）。佣兵的单位名，流亡者统一作「放逐者」；英文曾用名 Exiled One：Exile 是官方中文「流亡者」的意思，不是 Rogue，英文留 Rogue（她们是盲眼姊妹会的修女）"},
   "GargoyleTrap": {"name":"石魔机关","nameEn":"Gargoyle Engine","en":"Gargoyle Trap","official":"石像鬼陷阱","note":"墙上会喷射的兽首机关；英文曾用名 Stonefiend Engine：留 Gargoyle"},
   "Flamespike the Crawler": {"name":"烈焰脊刺","nameEn":"Flamequill the Crawler","en":"Flamespike the Crawler","official":"火焰脊刺","note":"锋脊妖一族；原版放在第一幕的预设里但没有区域会刷出它；曾用名 燧背灰腹（Flintback Ashbelly）、焰棘匍行者：燧背灰腹是新意象，认不出；留「焰」和「脊刺」，火换烈；英文留 Flame 和 the Crawler，spike 换 quill（刺鼠一族）"}
 }

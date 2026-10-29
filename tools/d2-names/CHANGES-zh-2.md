@@ -1755,3 +1755,69 @@
 | glossary-en.json | Andariel | 安达莉尔 → 昂妲蕾（不变） | Andaryth（原 Angdarael） | 曾用英文名 Angdarael、Angdalae：中文昂妲蕾认得出，不改；Angdalae 丢了 dar；Angdarael 只差两个字母，念起来几乎就是 Andariel；Andaryth 留 Andar-，尾音 -iel 换作 -yth，差 3 个字母 |
 | glossary-en.json | Athena | 雅典娜 → 娅甸妮（不变） | Athaenis（原 Asseni） | 曾用名 阿瑟妮 / Asseni：阿瑟妮跟英文走，丢了「雅典」的典，老玩家熟的是雅典娜；娅甸＝雅典的音，只改娜→妮；英文 Asseni 听不出 Athena，改作 Athaenis：留 Athen- 的音，多一个音节，差 3 个字母 |
 | glossary-en.json | Kurast | 库拉斯特 → 柯剌斯（不变） | Korastel（原 Khorast） | 曾用英文名 Khorast、Kolass：中文柯剌斯认得出，不改；Kolass 丢了 r；Khorast 只换了重读的元音，没多出音节，念起来几乎就是 Kurast；Korastel 留 -rast-，多一个音节 -tel，差 3 个字母 |
+
+## 导入复核（二）：审查又查出的问题
+
+导入复核一节提交以后又做了一遍独立审查，照审查意见改了下面 49 行（名字表 40 行，术语表改写 5 条、新加 4 条），各行的 `note` 也记了曾用名。
+
+- 阻塞的 2 条，音译念出来几乎就是原名（style-en 硬性规则 1）：Ormus 的 Aurmos（Aur- 念作 Or-，只把不重读的 u 换成 o）改作 Ormasius，Cathan 的 Khathen（Kh 就是 C 的音，只把不重读的 a 换成 e）改作 Kathenor。这两个拼法和原名都差 3 个字母，`d2-validate.mjs` 只查 2 个字母以内，所以没报。新写法多出音节，念出来是另一个名字，又留住老玩家听得出的 Orm-、Kath-。用到它们的欧牧司的秘袍和喀森的 6 件套装跟着改。
+- 审查建议再看的 3 个音译也改了，各多一个音节：Horazon 的 Haurezan（辅音、音节数都和原名一样，只换了元音）改作 Haurezander，Taebaek 的 Taibeck 改作 Taibekor，Skullder 的 Skuldra（只把 r 挪了位置）改作 Skulderin。浩瑞赞的 6 件是术士资料片的套装件，不收录，表里也跟着改。
+- 跟着官方中文丢了人名的英文：狼王之鬣的 Packlord's Mane 跟的是官方中文的「狼王」，丢了 Jalal，只剩 Mane 一个词让人认（style-en 规则 2、5），改作 Jalamar's Wolf Mane。同样照官方意译丢了人名的还有行刑者的绞索（Hangman's Hearty Cord，丢了 Verdungo）和婴灵悲歌（Lament of the Unborn，丢了 Ume），一并改作 Verdangoth's Hearty Gallows-Cord、Umeria's Lament for the Unborn。这三个人名官方中文都没有音译，术语表新加 Jalal、Verdungo、Ume 三条，中文音译暂时用不上；中文名照旧跟着官方中文（狼王、行刑者、婴灵），和 Buriza-Do 一样。导入一轮给死亡女神的王权起的 Halabreth 当时没进术语表，这次补上。四件的英文除了人名都还换了或加了一个词（Wolf、Gallows、for the Unborn、of Death），因为中文也换了一个字（鬃→鬣、绞首绳→绞索、的哀歌→悲歌、统治→王权），英文只换人名就成了只改音译。
+- 「放逐者」就是怪物 The Banished 的官方名「被放逐者」去掉一个「被」（style.md 规则 4）。Rogue 的四行（营地、佣兵、怪物、黑化的那一种）改作「流离者」：官方的流亡者留「流」「者」，亡换离（她们被赶出了修道院）。营地现在叫流离者营寨，英文不变（Rogues' Stockade）。
+- 抽查里认不出的词：暗金怪名前缀 Blade 的 Sliver（碎片，读着像 Silver）改作 Thinblade；后缀 venom 的 Spittle（口水）改作 Venomspit；稀有名和暗金怪名前缀 Bone 的 Marrowless（形容词，也丢了 Bone）改作苍骨 / Palebone，和怪物苍骨战卒、苍骨弓卒、苍骨咒师同一个写法，魔法前缀 Bone 的素骨也改作苍骨（Pale Bone 原来对着苍骨、素骨两个中文词）。稀有名 Splitter 的裂颅者 / Skullrender 让人先想到暗金 Skull Splitter（凿颅镐），改作劈盔者 / Helmsplitter；Bolt 的 Bodkin 是冷僻词，又已是暗金锦迈勒之锥 Kinmael's Bodkin 的词，改作铁矢 / Ironbolt。坚盾的 Escutcheon（稀有名和暗金怪名后缀 Shield）没改：style-en.md 拿它当「一个中文词一个英文词」的例子，它就是盾（纹章上的盾），不是别的意象，审查也说拿不准。
+- 用了别的行的词：狱火射手的 Hellshot 改作 Nethercast（狱＝Nether，同 Netherplague、Nethermouth、Netherslayer）；暗金怪名后缀 Kill 的 Carnage 是魔法后缀 of Carnage 的词，改作 Killstroke；符文之语 Plague 的 Creeping Pestilence 用了魔法后缀 of Pestilence 的词，改作 Black Plague（瘟疫在暗金里是 Plague）；凶戾橡木的 Grimoak 留着术语表人名 Grim，凶戾又是魔法前缀 Fanatic 的名字，改作凶悍橡木 / Fell Oakwood；暗金怪名后缀 Heart 的 Blackheart 是漫威的反派，照稀有名里同一个官方词「之心」的写法改作心血 / Heartblood。
+- 符文之语只换近义词、丢了 Blizzard 原词的英文，审查点名最弱的 5 条都改成留原词再加一个词：Dread Duress、Austere Principle、Ardent Passion、Sacred Cure、Rime Ice。Cure 的中文灵药也是魔法后缀 of Remedy 的名字（灵药之 / of Sovereign Remedy），改作圣药（圣＝Sacred，同圣霆 Sacred Thunder）。其余二十来条（Riches、Stillness、Lingering Sorrow、Betrayal……）是老玩家对得上的近义词，不改。
+- 手抄的名字：`README.md`、`src/world/levelgen.ts`、`tools/test/west.test.mjs` 里的放逐者营寨改作流离者营寨，`DIALOGUE-zh.md` 重新生成；`tools/icons/desc/` 的三处 `note`（Taibekor's Shining Glory、Fell Oakwood、Nethercast）跟着改。
+- 重新导入后，`node tools/d2-validate.mjs` 67 项全过，要看的名字还是原来那 23 个，这一轮改的行一个也不在里面；审查用的同音字、别行官方名、重名、其他作品名和辅音骨架的脚本重查过，这几行都不再报。
+
+| 文件 | 原版 | 官方 → 旧名 → 新名 | 新英文名 | 为什么 |
+| --- | --- | --- | --- | --- |
+| glossary-en.json | Horazon | 霍拉宗 → 浩瑞赞（不变） | Haurezander（原 Haurezan） | 曾用英文名 Haurezan：中文浩瑞赞认得出，不改；Haurezan 和 Horazon 辅音一样、音节一样多，只换了元音，念出来差不多（HOR-a-zon / HOR-e-zan）；Haurezander 留 Haurez- 的音，多一个音节 -der |
+| glossary-en.json | Cathan | 卡珊 → 喀森（不变） | Kathenor（原 Khathen） | 曾用名 伽森 / Ghasen，曾用英文名 Khathen：伽森的伽念 jiā，对不上「卡」；喀森 ka-sen；Ghasen 把 C 念成了 G；Khathen 的 Kh 就是 C 的音，只把不重读的 a 换成 e，念出来就是 Cathan；Kathenor 留 Kath- 的音，多一个音节 -nor |
+| glossary-en.json | Taebaek | 泰白 → 太魄（不变） | Taibekor（原 Taibeck） | 曾用英文名 Taibeck、Taipor：中文太魄认得出，不改；Taipor 丢了 -baek；Taibeck 只换了拼法，念出来就是 Taebaek；Taibekor 留 Tai-bek 的音，多一个音节 -or |
+| glossary-en.json | Skullder | 诗寇蒂 → 施蔻黛（不变） | Skulderin（原 Skuldra） | 曾用名 丝珂黛 / Sikedai，曾用英文名 Skuldra：丝珂黛三个音都挪了；施蔻＝诗寇的音，只改蒂→黛；Sikedai 是拼音；Skuldra 只把 -der 的 r 挪了位置，念出来几乎就是 Skullder；Skulderin 留 Skulder- 的音，多一个音节 -in |
+| glossary-en.json | Ormus | 奥玛斯 → 欧牧司（不变） | Ormasius（原 Aurmos） | 曾用英文名 Aurmos、Oumusi：中文欧牧司认得出，不改；Oumusi 是拼音；Aurmos 的 Aur- 念作 Or-，只把不重读的 u 换成 o，念出来几乎就是 Ormus；Ormasius 留 Orm- 和尾音 -s，多两个音节，念出来是另一个名字 |
+| glossary-en.json | Jalal | （无官方音译） → 贾拉玛（新加） | Jalamar（新加） | 新加（复核二轮）：暗金 Jalal's Mane 的人名。官方中文没有这个音译（这件叫狼王之鬃），我们的中文跟着留「狼王」（狼王之鬣），这个音译暂时只用在英文；Jalamar 留 Jala- 的音，多一个音节 -mar |
+| glossary-en.json | Verdungo | （无官方音译） → 韦丹戈思（新加） | Verdangoth（新加） | 新加（复核二轮）：暗金 Verdungo's Hearty Cord 的人名。官方中文没有这个音译（这件叫行刑者的绞首绳），我们的中文跟着留「行刑者」，这个音译暂时只用在英文；Verdangoth 留 Verd-…-ngo 的音，多一个尾音 -th，差 3 个字母 |
+| glossary-en.json | Ume | （无官方音译） → 乌梅莉娅（新加） | Umeria（新加） | 新加（复核二轮）：暗金 Ume's Lament 的人名。官方中文没有这个音译（这件叫婴灵的哀歌），我们的中文跟着留「婴灵」，这个音译暂时只用在英文；Umeria 留 Ume 的音，多两个音节，差 3 个字母 |
+| glossary-en.json | Halaberd | （无官方音译） → 哈拉蓓瑟（新加） | Halabreth（新加） | 补进术语表（复核二轮）：导入一轮给暗金 Halaberd's Reign 起的英文音译，当时没加进来。官方中文没有这个音译（这件叫死亡女神的统治），我们的中文跟着留「死亡女神」，这个音译暂时只用在英文；Halabreth 留 Halab- 的音，尾音 -erd 换作 -reth，差 3 个字母 |
+| uniques.json | Ume's Lament | 婴灵的哀歌 → 婴灵悲歌（不变） | Umeria's Lament for the Unborn（原 Lament of the Unborn） | 曾用英文名 Lament of the Unborn：跟着官方中文的「婴灵」走，丢了 Blizzard 的人名 Ume，只剩 Lament 一个词让人认（同狼王之鬣，style-en 规则 2、5）；人名用术语表新加的 Ume → Umeria，留 Lament，Unborn（婴灵）也留下；中文不变 |
+| uniques.json | Felloak | 凶猛橡木 → 凶戾橡木 → 凶悍橡木 | Fell Oakwood（原 Grimoak） | 曾用名 凶戾橡木（Grimoak）：Grim 是术语表的人名（戈临 / Gherim），The Grim Reaper、稀有名 Grim 都已因此改掉；凶戾又是魔法前缀 Fanatic 的名字（Fanatic-Eyed），一个中文词对了两个英文词；英文留 Blizzard 的 Fell 和 oak，橡木对 Oakwood；中文留「凶」「橡木」，猛换悍 |
+| uniques.json | Hellcast | 狱火投手 → 狱火射手（不变） | Nethercast（原 Hellshot） | 曾用英文名 Hellshot：别的「地狱」行都是 Nether（Netherplague、Nethermouth、Netherslayer、Netherforge），狱＝Nether；留 Blizzard 的 cast，Hell 换 Nether；中文不变 |
+| uniques.json | Skullder's Ire | 诗寇蒂的愤怒 → 施蔻黛的怨怒（不变） | Skulderin's Rage（原 Skuldra's Rage） | 曾用英文名 Skuldra's Rage：术语表 Skullder 的英文由 Skuldra 改作 Skulderin（Skuldra 念出来几乎就是 Skullder） |
+| uniques.json | Jalal's Mane | 狼王之鬃 → 狼王之鬣（不变） | Jalamar's Wolf Mane（原 Packlord's Mane） | 曾用英文名 Packlord's Mane：跟着官方中文的「狼王」走，丢了 Blizzard 的人名 Jalal，只剩 Mane 一个词让人认（style-en 规则 2、5）；照 Buriza-Do 的做法，中文留官方中文的狼王，英文留 Blizzard 的人名，用术语表新加的 Jalal → Jalamar；留 Mane，加 Wolf（狼，中文里的狼王）；中文不变 |
+| uniques.json | Ormus' Robes | 奥玛斯的法袍 → 欧牧司的秘袍（不变） | Ormasius' Arcane Raiment（原 Aurmos' Arcane Raiment） | 曾用英文名 Aurmos' Arcane Raiment：术语表 Ormus 的英文由 Aurmos 改作 Ormasius（Aurmos 念出来几乎就是 Ormus） |
+| uniques.json | Halaberd's Reign | 死亡女神的统治 → 死亡女神的王权（不变） | Halabreth's Reign of Death（原 Halabreth's Reign） | 曾用英文名 Halabreth's Reign：导入一轮起的音译 Halabreth 没进术语表，这次补上（style-en 规则 5）；补上以后英文只换了人名，而中文换了一个词（统治→王权），按规则还要再换一个词；留 Reign，加 of Death（死亡女神的死亡）；中文不变 |
+| uniques.json | Verdungo's Hearty Cord | 行刑者的绞首绳 → 行刑者的绞索（不变） | Verdangoth's Hearty Gallows-Cord（原 Hangman's Hearty Cord） | 曾用英文名 Hangman's Hearty Cord：跟着官方中文的「行刑者」走，丢了 Blizzard 的人名 Verdungo（同狼王之鬣，style-en 规则 2、5）；人名用术语表新加的 Verdungo → Verdangoth，留 Hearty 和 Cord，加 Gallows（绞索，中文里的行刑者）；中文不变 |
+| sets.json | Cathan's Traps | 卡珊的计谋 → 喀森的计策（不变） | Kathenor's Pitfalls（原 Khathen's Pitfalls） | 曾用英文名 Khathen's Pitfalls：术语表 Cathan 的英文由 Khathen 改作 Kathenor（Khathen 念出来几乎就是 Cathan） |
+| sets.json | Cathan's Mesh | 卡珊的札甲 → 喀森的札铠（不变） | Kathenor's Mesh Coat（原 Khathen's Mesh Coat） | 曾用英文名 Khathen's Mesh Coat：术语表 Cathan 的英文由 Khathen 改作 Kathenor（Khathen 念出来几乎就是 Cathan） |
+| sets.json | Cathan's Rule | 卡珊的统治 → 喀森的统御（不变） | Kathenor's Reign（原 Khathen's Reign） | 曾用英文名 Khathen's Reign：术语表 Cathan 的英文由 Khathen 改作 Kathenor（Khathen 念出来几乎就是 Cathan） |
+| sets.json | Cathan's Seal | 卡珊的印章 → 喀森的印信（不变） | Kathenor's Signet（原 Khathen's Signet） | 曾用英文名 Khathen's Signet：术语表 Cathan 的英文由 Khathen 改作 Kathenor（Khathen 念出来几乎就是 Cathan） |
+| sets.json | Cathan's Sigil | 卡珊的符徽 → 喀森的灵符（不变） | Kathenor's Spirit Glyph（原 Khathen's Spirit Glyph） | 曾用英文名 Khathen's Spirit Glyph：术语表 Cathan 的英文由 Khathen 改作 Kathenor（Khathen 念出来几乎就是 Cathan） |
+| sets.json | Cathan's Visage | 卡珊的面甲 → 喀森的面具（不变） | Kathenor's Masked Visage（原 Khathen's Masked Visage） | 曾用英文名 Khathen's Masked Visage：术语表 Cathan 的英文由 Khathen 改作 Kathenor（Khathen 念出来几乎就是 Cathan） |
+| sets.json | Taebaek's Glory | 泰白的荣耀 → 太魄的荣华（不变） | Taibekor's Shining Glory（原 Taibeck's Shining Glory） | 曾用英文名 Taibeck's Shining Glory：术语表 Taebaek 的英文由 Taibeck 改作 Taibekor（Taibeck 念出来几乎就是 Taebaek） |
+| sets.json | Horazon's Splendor | （无官方中文） → 浩瑞赞的辉华（不变） | Haurezander's Grandeur（原 Haurezan's Grandeur） | 曾用英文名 Haurezan's Grandeur：术语表 Horazon 的英文由 Haurezan 改作 Haurezander（Haurezan 念出来几乎就是 Horazon） |
+| sets.json | Horazon's Countenance | （无官方中文） → 浩瑞赞的眉宇（不变） | Haurezander's Grave Countenance（原 Haurezan's Grave Countenance） | 曾用英文名 Haurezan's Grave Countenance：术语表 Horazon 的英文由 Haurezan 改作 Haurezander（Haurezan 念出来几乎就是 Horazon） |
+| sets.json | Horazon's Dominion | （无官方中文） → 浩瑞赞的御境（不变） | Haurezander's Realm（原 Haurezan's Realm） | 曾用英文名 Haurezan's Realm：术语表 Horazon 的英文由 Haurezan 改作 Haurezander（Haurezan 念出来几乎就是 Horazon） |
+| sets.json | Horazon's Hold | （无官方中文） → 浩瑞赞的执掌（不变） | Haurezander's Grip（原 Haurezan's Grip） | 曾用英文名 Haurezan's Grip：术语表 Horazon 的英文由 Haurezan 改作 Haurezander（Haurezan 念出来几乎就是 Horazon） |
+| sets.json | Horazon's Legacy | （无官方中文） → 浩瑞赞的余荫（不变） | Haurezander's Bequest（原 Haurezan's Bequest） | 曾用英文名 Haurezan's Bequest：术语表 Horazon 的英文由 Haurezan 改作 Haurezander（Haurezan 念出来几乎就是 Horazon） |
+| sets.json | Horazon's Secrets | （无官方中文） → 浩瑞赞的隐典（不变） | Haurezander's Secret Tome（原 Haurezan's Secret Tome） | 曾用英文名 Haurezan's Secret Tome：术语表 Horazon 的英文由 Haurezan 改作 Haurezander（Haurezan 念出来几乎就是 Horazon） |
+| runewords.json | Cure | 解药 → 灵药 → 圣药 | Sacred Cure（原 Panacea） | 曾用名 灵药 / Panacea：Panacea 丢了 Blizzard 的 Cure；灵药又是魔法后缀 of Remedy 的名字（灵药之 / of Sovereign Remedy），一个中文词对了两个英文词；留 Cure，加 Sacred；中文留「药」，解换圣（圣＝Sacred，同圣霆 Sacred Thunder） |
+| runewords.json | Duress | 强压 → 威压（不变） | Dread Duress（原 Coercion） | 曾用英文名 Coercion：近义词，丢了 Blizzard 的 Duress；留 Duress，加 Dread（威，同寰涅的威仪 Hwaneth's Dread Majesty）；中文不变 |
+| runewords.json | Ice | 寒冰 → 玄冰（不变） | Rime Ice（原 Umbral Rime） | 曾用英文名 Umbral Rime：丢了 Blizzard 的 Ice，Umbral 又是幽影（Umbra）的词；留 Ice，加 Rime（玄冰在暗金怪名前缀里是 Rime，同一个官方词寒冰）；中文不变 |
+| runewords.json | Passion | 热情 → 炽情（不变） | Ardent Passion（原 Ardor） | 曾用英文名 Ardor：近义词，丢了 Blizzard 的 Passion；留 Passion，加 Ardent（炽，同魔法后缀炽忱之 of Ardent Zeal）；中文不变 |
+| runewords.json | Plague | 瘟疫 → 黑瘟（不变） | Black Plague（原 Creeping Pestilence） | 曾用英文名 Creeping Pestilence：丢了 Plague，Pestilence 又是魔法后缀 of Pestilence 的词；瘟疫在暗金里是 Plague（Plague Carrier、Netherplague），留 Plague，加 Black（黑瘟的黑）；中文不变 |
+| runewords.json | Principle | 信条 → 戒条（不变） | Austere Principle（原 Axiom） | 曾用英文名 Axiom：近义词，丢了 Blizzard 的 Principle；留 Principle，加 Austere（戒）；中文不变 |
+| prefixes.json | Bone | 白骨 → 素骨 → 苍骨 | Pale Bone（不变） | 曾用名「素骨」（英文不变）：Pale Bone 在怪物苍骨战卒、苍骨弓卒、苍骨咒师和稀有名、暗金怪名前缀里都是苍骨，一个英文词只对一个中文词；留「骨」，白换苍 |
+| rare-prefixes.json | Bone | 白骨 → 枯骨 → 苍骨 | Palebone（原 Marrowless） | 曾用名 枯骨（Marrowless）：Marrowless 是形容词（稀有名第一个词库要名词），也丢了 Bone；白骨在怪物苍骨战卒、苍骨弓卒、苍骨咒师里是苍骨 / Palebone，一个官方词一个写法，这里跟着用；留「骨」，白换苍 |
+| rare-suffixes.json | Splitter | 劈裂者 → 裂颅者 → 劈盔者 | Helmsplitter（原 Skullrender） | 曾用名 裂颅者（Skullrender）：Skullrender 让人先想到暗金 Skull Splitter（凿颅镐），不是 Splitter；英文留 Blizzard 的 Splitter，加 Helm；中文留「劈」「者」，裂换盔 |
+| rare-suffixes.json | Bolt | 飞矢 → 破甲矢 → 铁矢 | Ironbolt（原 Bodkin） | 曾用名 破甲矢（Bodkin）：Bodkin 是冷僻词，又已是暗金锦迈勒之锥 Kinmael's Bodkin（锥）的词；英文留 Blizzard 的 Bolt，加 Iron（铁＝Iron，同铁握 Ironhold、铁条 Ironbar、铁面 Ironface）；中文留「矢」，飞换铁 |
+| monster-prefixes.json | Blade | 利刃 → 薄刃（不变） | Thinblade（原 Sliver） | 曾用英文名 Sliver：Sliver 是碎片，不是刃，读着还像 Silver；留 Blizzard 的 Blade，加 Thin（薄刃的薄）；中文不变 |
+| monster-prefixes.json | Bone | 白骨 → 枯骨 → 苍骨 | Palebone（原 Marrowless） | 曾用名 枯骨（Marrowless）：Marrowless 是形容词（稀有名第一个词库要名词），也丢了 Bone；白骨在怪物苍骨战卒、苍骨弓卒、苍骨咒师里是苍骨 / Palebone，一个官方词一个写法，这里跟着用；留「骨」，白换苍 |
+| monster-suffixes.json | Kill | 杀戮 → 杀伐（不变） | Killstroke（原 Carnage） | 曾用英文名 Carnage：Carnage 是魔法后缀 of Carnage 的词（我们的残屠之 of Red Carnage），一个英文词对了两个中文词；留 Blizzard 的 Kill，加 stroke（杀伐的伐）；中文不变 |
+| monster-suffixes.json | Heart | 之心 → 黑心 → 心血 | Heartblood（原 Blackheart） | 曾用名 黑心（Blackheart）：Blackheart 是漫威的反派；官方「之心」在稀有名里是之心血 / Heartblood，一个官方词一个写法，这里跟着用；中文留「心」 |
+| monster-suffixes.json | Venom | 剧毒 → 毒涎（不变） | Venomspit（原 Spittle） | 曾用英文名 Spittle：Spittle 是口水，不是毒；留 Blizzard 的 Venom，加 spit（毒涎的涎）；中文不变 |
+| monsters.json | Black Rogue | 黑化流亡者 → 墨心放逐者 → 墨心流离者 | Sootheart Rogue（不变） | 曾用名 墨心放逐者（英文不变）：放逐者就是怪物 The Banished 的官方名「被放逐者」去掉一个「被」（style.md 规则 4）；官方的流亡者留「流」「者」，亡换离（流离＝离乡漂泊，她们被赶出了修道院） |
+| monsters.json | Rogue | 流亡者 → 放逐者 → 流离者 | Rogue Sister（不变） | 曾用名 放逐者（英文不变）：放逐者就是怪物 The Banished 的官方名「被放逐者」去掉一个「被」（style.md 规则 4）；官方的流亡者留「流」「者」，亡换离（流离＝离乡漂泊，她们被赶出了修道院） |
+| areas.json | Rogue Encampment | 流亡者营地 → 放逐者营寨 → 流离者营寨 | Rogues' Stockade（不变） | 曾用名 放逐者营寨（英文不变）：放逐者就是怪物 The Banished 的官方名「被放逐者」去掉一个「被」（style.md 规则 4）；官方的流亡者留「流」「者」，亡换离（流离＝离乡漂泊，她们被赶出了修道院） |
+| mercenaries.json | Rogue Scout | 流亡者斥候 → 放逐者斥候 → 流离者斥候 | Rogue Wayfinder（不变） | 曾用名 放逐者斥候（英文不变）：放逐者就是怪物 The Banished 的官方名「被放逐者」去掉一个「被」（style.md 规则 4）；官方的流亡者留「流」「者」，亡换离（流离＝离乡漂泊，她们被赶出了修道院） |

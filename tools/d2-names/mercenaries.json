@@ -1,5 +1,5 @@
 {
-  "RogueScout": {"name":"放逐者斥候","nameEn":"Rogue Wayfinder","en":"Rogue Scout","official":"流亡者斥候","note":"Rogue＝放逐者，与「放逐者营寨」一致；英文曾用名 Exile Wayfinder：英文留 Rogue"},
+  "RogueScout": {"name":"流离者斥候","nameEn":"Rogue Wayfinder","en":"Rogue Scout","official":"流亡者斥候","note":"曾用名 放逐者斥候（英文不变）：放逐者就是怪物 The Banished 的官方名「被放逐者」去掉一个「被」（style.md 规则 4）；官方的流亡者留「流」「者」，亡换离（流离＝离乡漂泊，她们被赶出了修道院）。Rogue＝放逐者，与「放逐者营寨」一致；英文曾用名 Exile Wayfinder：英文留 Rogue"},
   "merc01": {"name":"艾黎札","nameEn":"Aelizeth","en":"Aliza","official":"阿丽萨","note":"新音译"},
   "merc02": {"name":"昂珀莉莎","nameEn":"Ambrelys","en":"Amplisa","official":"安普丽萨","note":"新音译；珀取琥珀 amber"},
   "merc03": {"name":"安娜珥","nameEn":"Annaris","en":"Annor","official":"安诺儿","note":"新音译"},

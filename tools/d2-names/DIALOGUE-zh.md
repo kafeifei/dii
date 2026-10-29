@@ -21,7 +21,7 @@
 | 键 | 什么时候 | 中文 | English | 字数 |
 | --- | --- | --- | --- | --- |
 | `cleared` | 巢穴里最后一只怪物死的时候 | 邪秽巢穴里的邪物已被肃清 | The Den of Iniquity is cleansed of its foul things | 12 |
-| `back` | 紧接着上一条 | 回放逐者营寨去找亚喀蕾 | Return to Akarelle at the Rogues' Stockade | 11 |
+| `back` | 紧接着上一条 | 回流离者营寨去找亚喀蕾 | Return to Akarelle at the Rogues' Stockade | 11 |
 | `few` | 巢穴里只剩 5 只或更少时，每杀一只 | 邪秽巢穴里还剩 3 只邪物 | 3 foul things remain in the Den of Iniquity | 11 |
 | `got` | 领到奖励时 | 亚喀蕾传授了你一项本事：技能点 +1 | Akarelle taught you a new craft: +1 skill point | 17 |
 
@@ -42,7 +42,7 @@
 | `den.given` | 「涤荡邪巢」：接了任务，离开亚喀蕾之后 | 亚喀蕾在血沼荒原深处感应到一个邪秽的洞穴：邪秽巢穴。找到它。 | Akarelle has sensed a foul cave deep in Bloodmire Heath: the Den of Iniquity. Find it. | 30 |
 | `den.clear` | 「涤荡邪巢」：进了巢穴 | 肃清邪秽巢穴里的所有邪物。 | Rid the Den of Iniquity of every foul thing in it. | 13 |
 | `den.few` | 「涤荡邪巢」：只剩 5 只或更少 | 肃清邪秽巢穴里的所有邪物。还剩 3 只。 | Rid the Den of Iniquity of every foul thing in it. 3 remain. | 18 |
-| `den.back` | 「涤荡邪巢」：清空了，回去领赏 | 邪秽巢穴已被肃清。回放逐者营寨找亚喀蕾领取报酬。 | The Den of Iniquity is cleansed. Return to Akarelle at the Rogues' Stockade for your reward. | 24 |
+| `den.back` | 「涤荡邪巢」：清空了，回去领赏 | 邪秽巢穴已被肃清。回流离者营寨找亚喀蕾领取报酬。 | The Den of Iniquity is cleansed. Return to Akarelle at the Rogues' Stockade for your reward. | 24 |
 | `den.done` | 「涤荡邪巢」：领过奖励 | 任务完成。亚喀蕾传授了你一个技能点。 | Quest complete. Akarelle taught you a skill point. | 18 |
 
 共 556 字。

@@ -110,7 +110,7 @@ export const D2X_PREFIXES: D2xAffix[] = [
   {"id":138,"name":"笃实","nameEn":"Ever-Stalwart","en":"Stalwart","level":48,"reqLvl":40,"group":101,"freq":4,"spawnable":true,"itypes":["scha"],"props":[{"c":"ac","min":20,"max":30}]},
   {"id":139,"name":"惨白","nameEn":"Sun-Blanched","en":"Blanched","level":1,"reqLvl":1,"group":101,"freq":4,"spawnable":true,"rare":true,"itypes":["jewl"],"props":[{"c":"ac","min":5,"max":8}],"color":"whit"},
   {"id":140,"name":"灰垩","nameEn":"Grey Eburine","en":"Eburine","level":16,"reqLvl":12,"group":101,"freq":4,"spawnable":true,"rare":true,"itypes":["jewl"],"props":[{"c":"ac","min":9,"max":20}],"color":"whit"},
-  {"id":141,"name":"素骨","nameEn":"Pale Bone","en":"Bone","level":32,"reqLvl":24,"group":101,"freq":4,"spawnable":true,"rare":true,"itypes":["jewl"],"props":[{"c":"ac","min":21,"max":40}],"color":"whit"},
+  {"id":141,"name":"苍骨","nameEn":"Pale Bone","en":"Bone","level":32,"reqLvl":24,"group":101,"freq":4,"spawnable":true,"rare":true,"itypes":["jewl"],"props":[{"c":"ac","min":21,"max":40}],"color":"whit"},
   {"id":142,"name":"牙白","nameEn":"Ivory-White","en":"Ivory","level":64,"reqLvl":56,"group":101,"freq":4,"spawnable":true,"itypes":["jewl"],"props":[{"c":"ac","min":41,"max":64}],"color":"whit"},
   {"id":143,"name":"坚实","nameEn":"Sturdy-Built","en":"Sturdy","level":1,"reqLvl":1,"group":101,"freq":9,"spawnable":true,"rare":true,"itypes":["armo"],"props":[{"c":"ac%","min":10,"max":20}]},
   {"id":144,"name":"坚实","nameEn":"Sturdy-Built","en":"Sturdy","level":4,"reqLvl":3,"group":101,"freq":9,"spawnable":true,"rare":true,"itypes":["armo"],"props":[{"c":"ac%","min":21,"max":30}]},

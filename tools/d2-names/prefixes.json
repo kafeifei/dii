@@ -74,7 +74,7 @@
   "Stalwart": {"name":"笃实","nameEn":"Ever-Stalwart","en":"Stalwart","official":"敦实","note":"曾用名「砥柱」Floodpillar；留「实」，敦换同义的笃；砥柱要绕成语"},
   "Blanched": {"name":"惨白","nameEn":"Sun-Blanched","en":"Blanched","official":"白化","note":"曾用英文名 Deathpale；中文不变（留白）；英文 Deathpale 认不出"},
   "Eburin": {"name":"灰垩","nameEn":"Grey Eburine","en":"Eburine","official":"白垩","note":"曾用英文名 Limewashed；中文不变（留垩）；英文 Limewashed 认不出"},
-  "Bone": {"name":"素骨","nameEn":"Pale Bone","en":"Bone","official":"白骨","note":"曾用名「枯骨」Marrowless；留「骨」；枯骨是 Marrowless，英文要留 Bone，中文换成素骨"},
+  "Bone": {"name":"苍骨","nameEn":"Pale Bone","en":"Bone","official":"白骨","note":"曾用名「素骨」（英文不变）：Pale Bone 在怪物苍骨战卒、苍骨弓卒、苍骨咒师和稀有名、暗金怪名前缀里都是苍骨，一个英文词只对一个中文词；留「骨」，白换苍。曾用名「枯骨」Marrowless；留「骨」；枯骨是 Marrowless，英文要留 Bone，中文换成素骨"},
   "Ivory": {"name":"牙白","nameEn":"Ivory-White","en":"Ivory","official":"象牙","note":"曾用英文名 Tusk-White；中文不变；英文留 Ivory"},
   "Godly": {"name":"神眷","nameEn":"God-Favored","en":"Godly","official":"神佑","note":"曾用名「神临」Theophanic；留「神」；神临认不出"},
   "Blank": {"name":"虚无","nameEn":"Void-Bound","en":"Void","official":"空无","note":"曾用名「太虚」Boundless；留「无」；太虚认不出"},
