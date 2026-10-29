@@ -29,7 +29,7 @@ import { CHARGE_PREFIX, Player } from './player';
 import { castItemSkill, startCast, toggleAura, updatePlayer, type PlayerAction } from './playerctl';
 import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
-import { claimedElsewhere, claimHero, heroTaken, isReadOnly, loadSave, loadShared, markInGame, mayWriteLast, savedWaypoints, setSlot, syncShared, writeSave, type Difficulty } from './save';
+import { claimedElsewhere, claimHero, handOver, heartbeat, heroTaken, isReadOnly, loadSave, loadShared, markInGame, mayWriteLast, savedWaypoints, setSlot, syncShared, waitHandOver, writeSave, type Difficulty } from './save';
 import { debugOpts } from './debug';
 import { WILD_MAPS } from '../world/levelgen';
 import { CAMP_AREA, DEN_OF_EVIL, areaDef, areaForDepth, areaLevel, builtWaypoints, depthForArea, dungeonArea, isBuilt, trialFloor, type AreaDef, type AreaKind } from '../world/areas';
@@ -60,6 +60,10 @@ export interface GameHooks {
   npcMenu?(obj: WorldObject, opening: Topic | null): void;
   /** a quest moved on: the quest log has news */
   questsChanged?(): void;
+  /** another tab has this hero now: this one has handed it over and stops (Game.heroElsewhere) */
+  heroGone?(): void;
+  /** whether the last save went into storage (false: it couldn't, and the player should know until one does) */
+  saveState?(ok: boolean): void;
   /** a scroll of identify read from the belt: the next item clicked is identified with it (the bag's identify cursor) */
   identifyWith?(scroll: Item): void;
 }
@@ -264,6 +268,16 @@ export class Game {
    * starts in the camp, its maps made anew, the waypoints as they were; a `reload` mid-game plays on
    * in the same world, in the area it was saved in (the camp, if this build has no map of that)
    */
+  /**
+   * Before continuing a hero another tab is playing (save.ts playedElsewhere): claimed, and that tab
+   * given time to save it a last time and hand it over, so nothing done there is lost. True when it did
+   */
+  takeOver(slot: number): Promise<boolean> {
+    setSlot(slot);
+    claimHero();
+    return waitHandOver();
+  }
+
   continueGame(slot?: number, reload = false): boolean {
     if (slot !== undefined) setSlot(slot);
     // claimed before it is read: a tab playing it writes it a last time, then no more (save.ts claimHero)
@@ -377,12 +391,15 @@ export class Game {
       const ok = writeSave(p, this.level.areaAt(p.pos.x, p.pos.z).id, this.worldSeed, this.hooks.getCursorItem(), last);
       if (!ok && r.wrote) r.undo();
       if (!ok && !isReadOnly(p)) this.tellUnsaved();
+      else if (ok) this.hooks.saveState?.(true);
     }
     if (r.adopted) this.hooks.inventoryChanged();
     return r.adopted;
   }
 
   private tellUnsaved() {
+    // shown until a save goes in again: progress made meanwhile isn't kept
+    this.hooks.saveState?.(false);
     if (this.toldUnsaved) return;
     this.toldUnsaved = true;
     this.hooks.message('存储空间不够，这次没能保存', '#ff6060', 6);
@@ -398,6 +415,8 @@ export class Game {
     if (!this.started || isReadOnly(this.player) || !claimedElsewhere()) return;
     if (mayWriteLast()) this.persist(true, true);
     heroTaken(this.player);
+    // the other tab reads the hero only now, with what was done here in it (save.ts waitHandOver)
+    handOver();
     this.heroElsewhere();
   }
 
@@ -410,9 +429,15 @@ export class Game {
       this.shared.readOnly = '这个角色已在另一个窗口打开：这里只能查看';
       this.hooks.inventoryChanged();
     }
+    // nothing done here would be kept from now on, so the game here stops rather than play on unsaved
+    this.paused = true;
+    if (this.hooks.heroGone) {
+      this.hooks.heroGone();
+      return;
+    }
     if (Date.now() - this.toldTaken < 10000) return;
     this.toldTaken = Date.now();
-    this.hooks.message('这个角色已在另一个窗口打开：这里不再保存，刷新可接着玩', '#ff8060', 10);
+    this.hooks.message('这个角色已在另一个窗口打开：这里不再保存', '#ff8060', 10);
   }
 
   /** the grids the hero's items lie in, the shared pages too while they can change, for reading a scroll or tome from */
@@ -864,6 +889,8 @@ export class Game {
         L.monsters = kept;
       }
     }
+    // the tab playing the hero says it is still here, so another tab opening it waits for it (save.ts heartbeat)
+    heartbeat();
     this.saveTimer += dt;
     if (this.saveTimer > 8) {
       this.saveTimer = 0;

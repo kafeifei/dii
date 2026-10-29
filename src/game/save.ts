@@ -69,6 +69,11 @@ export function useDevSlot(n = 0) {
   slot = Number.isInteger(n) && n >= 0 && n < MAX_SLOTS ? n : 0;
 }
 
+/** the character slot the running game reads and writes */
+export function slotNow(): number {
+  return slot;
+}
+
 export function setSlot(n: number) {
   slot = n;
   try {
@@ -114,15 +119,96 @@ function claimKey(key: string): string {
   return `dii-tab:${key}`;
 }
 
+/**
+ * who plays a hero: the tab, when it last said it was there (heartbeat), and once it has given the
+ * hero up, the tab it gave it to (handOver)
+ */
+interface Claim {
+  tab: string;
+  time: number;
+  handedTo?: string;
+}
+
+/** how often a tab playing a hero says it is still there, and how long until a silent one counts as gone */
+const BEAT_MS = 3000;
+const GONE_MS = 10000;
+
+function readClaim(key: string): Claim | null {
+  try {
+    const c = JSON.parse(localStorage.getItem(claimKey(key)) ?? 'null');
+    return c && typeof c === 'object' && typeof c.tab === 'string' ? (c as Claim) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeClaim(key: string, c: Claim) {
+  try {
+    localStorage.setItem(claimKey(key), JSON.stringify(c));
+  } catch {
+    /* storage unavailable: nothing is written either */
+  }
+}
+
 /** The current slot's hero is this tab's from now on: a tab that had it stops writing it */
 export function claimHero() {
   held = keyFor(slot);
   lastText = null;
-  try {
-    localStorage.setItem(claimKey(held), JSON.stringify({ tab: TAB, time: Date.now() }));
-  } catch {
-    /* storage unavailable: nothing is written either */
+  lastBeat = Date.now();
+  writeClaim(held, { tab: TAB, time: lastBeat });
+}
+
+let lastBeat = 0;
+
+/** While playing: the claim kept fresh, so a tab opening this hero knows this one is still here */
+export function heartbeat() {
+  if (!held || Date.now() - lastBeat < BEAT_MS) return;
+  lastBeat = Date.now();
+  const c = readClaim(held);
+  if (c?.tab === TAB) writeClaim(held, { tab: TAB, time: lastBeat });
+}
+
+/** The page going away (after its last save): the claim let go, so its own reload needn't wait for it */
+export function releaseHero() {
+  if (!held) return;
+  const c = readClaim(held);
+  if (c?.tab === TAB) {
+    try {
+      localStorage.removeItem(claimKey(held));
+    } catch {
+      /* ignore */
+    }
   }
+}
+
+/** whether slot n's hero is being played in another tab that is still there */
+export function playedElsewhere(n: number): boolean {
+  const c = readClaim(keyFor(n));
+  return !!c && c.tab !== TAB && !c.handedTo && Date.now() - c.time < GONE_MS;
+}
+
+/**
+ * The tab that had the hero, after its last write: it tells the tab that claimed it that it may read
+ * the save now (waitHandOver)
+ */
+export function handOver() {
+  if (!held) return;
+  const c = readClaim(held);
+  if (c && c.tab !== TAB) writeClaim(held, { ...c, handedTo: c.tab });
+}
+
+/**
+ * After claiming a hero another tab was playing: until that tab has written it a last time and handed
+ * it over, or `ms` went by (a tab frozen in the background, or closed without letting go). True when
+ * it was handed over
+ */
+export async function waitHandOver(ms = 3000): Promise<boolean> {
+  const until = Date.now() + ms;
+  while (Date.now() < until) {
+    if (held && readClaim(held)?.handedTo === TAB) return true;
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  return false;
 }
 
 /** the key of the claim on the hero this tab plays, for its storage events; null before one is claimed */

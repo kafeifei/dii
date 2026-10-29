@@ -50,9 +50,10 @@ await page.goto(url);
 if (url.includes('dev')) await page.waitForFunction(() => window.game?.started, null, { timeout: 30000 });
 await page.waitForTimeout(1200);
 let n = 0;
-const shot = async (name) => {
+/** a screenshot of the page, or of another tab the scenario opened (`pg`) */
+const shot = async (name, pg = page) => {
   const file = path.join(out, `${String(++n).padStart(2, '0')}-${name}.png`);
-  await page.screenshot({ path: file });
+  await pg.screenshot({ path: file });
   console.log('shot', file);
 };
 /** a scenario's result line, failed: its name in capitals, then FAIL */

@@ -3,7 +3,7 @@ import { debugEnabled } from '../game/debug';
 import type { Game, GameHooks } from '../game/game';
 import type { Level } from '../game/level';
 import type { ObjKind, WorldObject } from '../game/objects';
-import { heroClaimKey, sharedKey } from '../game/save';
+import { heroClaimKey, markInGame, sharedKey } from '../game/save';
 import type { Topic } from '../game/quests/quest';
 import { baseOf, displayName, itemColor, type Item } from '../items/item';
 import type { Renderer } from '../render/renderer';
@@ -66,6 +66,9 @@ export class UI implements GameHooks, UIContext {
   private skillTree: SkillTree;
   private title!: TitleScreen;
   private death!: DeathScreen;
+  /** another tab took the hero (heroGone), and a save that didn't go in (saveState) */
+  private goneEl!: HTMLElement;
+  private unsavedEl!: HTMLElement;
 
   // elements
   private root: HTMLElement;
@@ -142,6 +145,14 @@ export class UI implements GameHooks, UIContext {
   }
 
   /** a quest moved on: its news waits on the log's button, unless the log is open to show it */
+  heroGone() {
+    this.goneEl.classList.add('open');
+  }
+
+  saveState(ok: boolean) {
+    this.unsavedEl.hidden = ok;
+  }
+
   questsChanged() {
     if (this.left !== 'quests') this.questNews = true;
     this.dirty = true;
@@ -223,6 +234,19 @@ export class UI implements GameHooks, UIContext {
     this.root.appendChild(this.title.el);
     this.death = new DeathScreen(this.game);
     this.root.appendChild(this.death.el);
+    // another tab took the hero: this one has saved and handed it over, and plays no more (Game.heroElsewhere)
+    this.goneEl = h('div', 'overlay ui-block hero-gone');
+    this.goneEl.innerHTML = `<div class="death-title gone-title">已在别处打开</div><div class="note">这个角色在另一个窗口里打开了。这里的进度已经保存，交给了那个窗口；为了不丢东西，这里的游戏已经停下。</div><div class="menu"><button class="btn">回到标题</button></div>`;
+    (this.goneEl.querySelector('.btn') as HTMLButtonElement).onclick = () => {
+      // to the title, not back into the game: the hero is the other tab's
+      markInGame(false);
+      location.reload();
+    };
+    this.root.appendChild(this.goneEl);
+    // a save that didn't go into storage: shown until one does, since nothing done meanwhile is kept
+    this.unsavedEl = h('div', 'unsaved-badge', '⚠ 未能保存：浏览器存储写入失败，此后的进度暂时不会保留');
+    this.unsavedEl.hidden = true;
+    this.root.appendChild(this.unsavedEl);
     this.menu = new PauseMenu(
       this,
       this.title,

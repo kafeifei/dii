@@ -1,7 +1,7 @@
 import { CLASSES, CLASS_IDS, type PlayerClass } from '../data/classes';
 import { debugEnabled } from '../game/debug';
 import type { Game } from '../game/game';
-import { deleteSave, freeSlot, listSaves, markInGame, MAX_SLOTS, setSlot } from '../game/save';
+import { deleteSave, freeSlot, listSaves, markInGame, MAX_SLOTS, playedElsewhere, releaseHero, setSlot } from '../game/save';
 import { areaDef } from '../world/areas';
 import { h, type UIContext } from './common';
 import { isTouchDevice } from './touch';
@@ -74,9 +74,18 @@ export class TitleScreen {
       for (const sv of saves) {
         const row = h('div', 'save');
         const pick = h('button', 'btn pick');
-        pick.innerHTML = `<b></b><span>${CLASSES[sv.cls].name} · ${sv.level} 级 · ${areaDef(sv.area)?.label ?? areaDef(sv.area)?.name ?? '营地'}</span>`;
+        const elsewhere = playedElsewhere(sv.slot);
+        pick.innerHTML = `<b></b><span>${CLASSES[sv.cls].name} · ${sv.level} 级 · ${areaDef(sv.area)?.label ?? areaDef(sv.area)?.name ?? '营地'}${elsewhere ? ' · 正在另一个窗口里' : ''}</span>`;
         pick.querySelector('b')!.textContent = sv.name;
-        pick.onclick = () => start(() => ui.game.continueGame(sv.slot));
+        pick.onclick = async () => {
+          // a hero another tab plays: that tab saves it a last time and stops before it is read here
+          if (playedElsewhere(sv.slot)) {
+            pick.disabled = true;
+            pick.querySelector('span')!.textContent = '正在从另一个窗口接过这个角色…';
+            await ui.game.takeOver(sv.slot);
+          }
+          start(() => ui.game.continueGame(sv.slot));
+        };
         const del = h('button', 'btn del', '✕');
         del.title = '删除角色';
         del.onclick = () => {
@@ -172,6 +181,8 @@ export class PauseMenu {
     (m.querySelector('.quit') as HTMLButtonElement).onclick = () => {
       const game = this.ui.game;
       game.save();
+      // the hero let go: another tab may open it without waiting for this one
+      releaseHero();
       markInGame(false);
       game.started = false;
       game.paused = false;

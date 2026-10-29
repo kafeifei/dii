@@ -1104,6 +1104,24 @@ body {
   color: #c8b890;
   font-weight: 600;
 }
+.death-title.gone-title {
+  font-size: 40px;
+  letter-spacing: 12px;
+  color: #c8a86a;
+}
+.unsaved-badge {
+  position: absolute;
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  padding: 6px 14px;
+  background: rgba(60, 8, 8, 0.92);
+  border: 1px solid #a03020;
+  color: #ffb0a0;
+  font-size: 13px;
+  pointer-events: none;
+}
 .death-title {
   font-size: 64px;
   color: #a01010;

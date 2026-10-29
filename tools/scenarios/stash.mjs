@@ -11,11 +11,11 @@
 // hero of its own (?dev&slot=1) puts an amulet on 共享 2 and gold on 共享 4: the first sees them come
 // in, takes the amulet to its bag, and the second sees it gone; the amulet is then in one place of
 // all the saves, the first hero's. Then the second tab opens the first tab's hero (as the title's
-// list would): the first is told and writes nothing from then on, its shared pages only looked at;
+// list would): the first saves it a last time, hands it over and stops behind its notice, writing nothing more;
 // the second takes the long sword from 共享 1 and, shut, saves the hero with it: the sword and the
 // amulet each in one place, the hero's save. Then at a phone's size with the touch controls: a new
 // hero again, the shared pages there, a tap switching tabs. Page and console errors fail the run.
-// Shots: the tabs, 共享 1 with its items, the new hero's 共享 1, the two tabs, the first tab told its
+// Shots: the tabs, 共享 1 with its items, the new hero's 共享 1, the two tabs, the first tab stopped as its
 // hero is elsewhere, the phone's personal page and 共享 3. The last line is "STASH OK …" or "STASH FAIL …".
 
 const CELL = 34;
@@ -281,16 +281,13 @@ export default async function (page, shot, log) {
         return game.continueGame(0);
       });
       expect(at && (await page2.evaluate(() => game.player.name)) === names.one, `the second tab's hero now: ${await page2.evaluate(() => game.player.name)}`);
-      await until(() => window.__s.said.some((t) => t.includes('另一个窗口')) && !!game.shared.readOnly, null, 'the first tab to be told', 5000);
+      // the first tab saved, handed the hero over and stopped behind its notice (Game.heroElsewhere)
+      await until(() => !!document.querySelector('.hero-gone.open') && game.paused && !!game.shared.readOnly, null, 'the first tab to stop', 5000);
       const savedBefore = await ev(() => localStorage.getItem('dii-save-dev'));
       expect((await page2.evaluate((u) => window.__s.bag().some((it) => it.uid === u), amu)), 'the second tab\'s hero has not the amulet the first took');
-      // the first tab: 共享 1's sword ctrl+clicked, refused; its gold buttons off
-      await tab(page, 1).click();
-      await frames();
-      await page.locator(`.panel.left.open .gitem[data-uid="${ids.sword}"]`).click({ modifiers: ['Control'] });
-      await frames();
-      const t1 = await ev((u) => ({ where: window.__s.where()[u], bag: window.__s.bag().some((it) => it.uid === u), note: document.querySelector('.panel.left.open .stash-note')?.textContent, off: [...document.querySelectorAll('.panel.left.open .goldline button')].every((b) => b.disabled) }), ids.sword);
-      expect(t1.where === '1 0,0' && !t1.bag && t1.note?.includes('另一个窗口') && t1.off, `the first tab, its hero elsewhere: ${JSON.stringify(t1)}`);
+      // the first tab can't move anything now: its notice covers the panels, and its stash is only looked at
+      const t1 = await ev((u) => ({ where: window.__s.where()[u], blocked: getComputedStyle(document.querySelector('.hero-gone')).display !== 'none', readOnly: !!game.shared.readOnly }), ids.sword);
+      expect(t1.where === '1 0,0' && t1.blocked && t1.readOnly, `the first tab, its hero elsewhere: ${JSON.stringify(t1)}`);
       await shot('two-tabs-first-elsewhere');
       // the second takes the sword to its bag; shut, it saves the hero with it
       await openStash(page2);
@@ -307,7 +304,7 @@ export default async function (page, shot, log) {
       const amuEnd = await everywhere(page, amu);
       const wrote = (await ev(() => localStorage.getItem('dii-save-dev'))) !== savedBefore;
       expect(swordAt.join() === `dii-save-dev (${names.one})` && amuEnd.join() === `dii-save-dev (${names.one})` && wrote, `after the second tab shut: the sword ${swordAt.join(' / ') || 'nowhere'}, the amulet ${amuEnd.join(' / ') || 'nowhere'}, the second tab saved ${wrote}`);
-      facts.push('the same hero opened in the second tab: the first told and only looking, the sword taken there saved with the hero, nothing lost');
+      facts.push('the same hero opened in the second tab: the first saved, handed it over and stopped, the sword taken there saved with the hero, nothing lost');
     },
 
     async phone() {

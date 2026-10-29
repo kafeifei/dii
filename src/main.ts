@@ -2,7 +2,7 @@ import './data/legendary';
 import { Sfx } from './audio/sfx';
 import { Input } from './core/input';
 import { Game } from './game/game';
-import { claimHero, useDevSlot, wasInGame } from './game/save';
+import { claimHero, markInGame, playedElsewhere, releaseHero, slotNow, useDevSlot, wasInGame } from './game/save';
 import { assets } from './render/assets';
 import { Renderer } from './render/renderer';
 import { loadSettings } from './ui/settings';
@@ -11,9 +11,13 @@ import { UI } from './ui/ui';
 const DEV = location.search.includes('dev');
 // ?dev&slot=1: a dev hero of its own, for two tabs with two heroes
 if (DEV) useDevSlot(Number(new URLSearchParams(location.search).get('slot')) || 0);
-// a reload, or a duplicated tab, goes back to the hero it had: claimed now, while the models load, so a
-// tab still playing it writes it a last time before it is read here (save.ts claimHero)
-else if (wasInGame()) claimHero();
+// A reload of this tab goes back to the hero it had: claimed now, while the models load (save.ts
+// claimHero). A copy of this tab (duplicated, or opened from it) carries the in-game mark along in its
+// sessionStorage, but must not take the hero from the tab still playing it: it starts at the title
+const nav = (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type;
+const resuming = !DEV && wasInGame() && (nav === 'reload' || nav === 'back_forward') && !playedElsewhere(slotNow());
+if (resuming) claimHero();
+else if (!DEV && wasInGame()) markInGame(false);
 
 const canvas = document.getElementById('world') as HTMLCanvasElement;
 const sfx = new Sfx();
@@ -71,7 +75,17 @@ if (DEV) {
 
 // save whenever the page may go away (beforeunload alone is unreliable in embedded browsers)
 window.addEventListener('beforeunload', () => game.save());
-window.addEventListener('pagehide', () => game.save());
+window.addEventListener('pagehide', () => {
+  game.save();
+  // gone for good, or into the back-forward cache: let the hero go either way (pageshow takes it back)
+  releaseHero();
+});
+// back from the back-forward cache: the hero again this tab's, unless another tab has opened it since
+window.addEventListener('pageshow', (e) => {
+  if (!e.persisted || !game.started) return;
+  if (playedElsewhere(slotNow())) game.heroClaimed();
+  else claimHero();
+});
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') game.save();
 });
@@ -93,7 +107,7 @@ assets
       }
     }
     // a reload mid-run goes straight back into the game
-    else if (wasInGame()) ui.resume();
+    else if (resuming) ui.resume();
   });
 
 // debug handle
