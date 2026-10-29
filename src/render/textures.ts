@@ -20,19 +20,33 @@ function mulberry(seed: number) {
 
 const cache = new Map<string, THREE.Texture>();
 const loader = new THREE.TextureLoader();
+/** the tile textures still loading (tilesLoaded) */
+const loading = new Set<Promise<void>>();
 
 /** AI-painted tiling texture from public/textures (tools/ai-textures.mjs); draws once it has loaded */
 export function tileTexture(name: string): THREE.Texture {
   const key = `t-${name}`;
   let t = cache.get(key);
   if (!t) {
-    t = loader.load(`${import.meta.env.BASE_URL}textures/${name}.webp`);
+    let done = () => {};
+    const coming = new Promise<void>((r) => (done = r));
+    loading.add(coming);
+    const settle = () => {
+      loading.delete(coming);
+      done();
+    };
+    t = loader.load(`${import.meta.env.BASE_URL}textures/${name}.webp`, settle, undefined, settle);
     t.colorSpace = THREE.SRGBColorSpace;
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
     t.anisotropy = 8;
     cache.set(key, t);
   }
   return t;
+}
+
+/** resolves once every tile texture asked for so far has loaded or failed (the model stream lets them go first) */
+export function tilesLoaded(): Promise<void> {
+  return Promise.all([...loading]).then(() => {});
 }
 
 export function glowTexture(): THREE.Texture {

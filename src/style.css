@@ -1156,6 +1156,11 @@ body {
   opacity: 0.35;
   pointer-events: none;
 }
+/* a level's models still coming: the world hidden and held, under the menus */
+.overlay.veil {
+  z-index: 38;
+  background: #000;
+}
 
 /* settings: over the title and the pause menu, hiding them */
 .overlay.settings {

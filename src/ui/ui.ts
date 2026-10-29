@@ -69,6 +69,8 @@ export class UI implements GameHooks, UIContext {
   /** another tab took the hero (heroGone), and a save that didn't go in (saveState) */
   private goneEl!: HTMLElement;
   private unsavedEl!: HTMLElement;
+  /** over a level whose models are still coming (Renderer.veiled) */
+  private veilEl!: HTMLElement;
 
   // elements
   private root: HTMLElement;
@@ -247,6 +249,9 @@ export class UI implements GameHooks, UIContext {
     this.unsavedEl = h('div', 'unsaved-badge', '⚠ 未能保存：浏览器存储写入失败，此后的进度暂时不会保留');
     this.unsavedEl.hidden = true;
     this.root.appendChild(this.unsavedEl);
+    // as Diablo II's between areas: the level's models still coming, the world held behind it
+    this.veilEl = h('div', 'overlay veil', '<div class="loading">载入中…</div>');
+    this.root.appendChild(this.veilEl);
     this.menu = new PauseMenu(
       this,
       this.title,
@@ -394,6 +399,8 @@ export class UI implements GameHooks, UIContext {
         this.fpsTime = 0;
       }
     }
+    const veiled = g.started && this.renderer.veiled;
+    if (veiled !== this.veilEl.classList.contains('open')) this.veilEl.classList.toggle('open', veiled);
     if (!g.started) {
       this.vignette.style.background = '';
       return;

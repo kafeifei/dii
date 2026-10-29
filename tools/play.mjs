@@ -1,7 +1,9 @@
 // Headless test runner: node tools/play.mjs <scenario.mjs> [--url http://localhost:5174/?dev] [--out dir] [--w 1280] [--h 800]
 // A scenario exports `default async function (page, shot, log)`. The run exits 1 when the scenario
 // throws or logs a result line of FAIL ("SMOKE FAIL …": a word in capitals, then FAIL), 2 when the
-// page crashes or the browser goes away, else 0.
+// page crashes or the browser goes away, else 0. With ?dev the game starts once the title's models
+// are in and the rest stream in behind (src/render/assets.ts): a scenario starts once every model is
+// in and swapped in for what stood in for it, as the game had them all before.
 import { chromium } from 'playwright-core';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -47,8 +49,21 @@ page.on('console', (m) => {
 });
 page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`));
 await page.goto(url);
-if (url.includes('dev')) await page.waitForFunction(() => window.game?.started, null, { timeout: 30000 });
+if (url.includes('dev')) {
+  await page.waitForFunction(() => window.game?.started, null, { timeout: 30000 });
+  await settle(page);
+}
 await page.waitForTimeout(1200);
+
+/** every model in (assets.ensureAll) and what stood in for them swapped (Renderer.standInCount); one that won't load is said, not waited on */
+async function settle(pg) {
+  await pg.evaluate(() => window.assets?.ensureAll());
+  const ok = await pg.waitForFunction(() => !window.renderer?.standInCount?.(), null, { timeout: 30000, polling: 100 }).then(
+    () => true,
+    () => false,
+  );
+  if (!ok) console.log(`[models] still standing in after 30 s: ${await pg.evaluate(() => `${window.renderer.standInCount()}; files failed: ${window.assets.stats().failed.join(' ') || 'none'}`)}`);
+}
 let n = 0;
 /** a screenshot of the page, or of another tab the scenario opened (`pg`) */
 const shot = async (name, pg = page) => {

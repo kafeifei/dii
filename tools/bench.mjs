@@ -42,7 +42,11 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, dev
 const t0 = Date.now();
 await page.goto(opt('url', 'http://localhost:5174/?dev'));
 await page.waitForFunction(() => window.game?.started && window.renderer, null, { timeout: 60000 });
-console.log(`loaded in ${Date.now() - t0} ms`);
+console.log(`started in ${Date.now() - t0} ms`);
+// the models stream in after the start (src/render/assets.ts): benched with them all in and swapped in, as before
+await page.evaluate(() => window.assets?.ensureAll());
+await page.waitForFunction(() => !window.renderer.standInCount?.(), null, { timeout: 60000, polling: 100 });
+console.log(`every model in by ${Date.now() - t0} ms`);
 await page.waitForTimeout(1500);
 const gpu = await page.evaluate(() => {
   const gl = renderer.webgl.getContext();

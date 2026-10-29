@@ -14,6 +14,13 @@
 
 `?dev` 是测试模式：跳过标题页直接开测试角色，用单独的存档位（`dii-save-dev`），页面不可见时模拟也照跑。自动化测试都用它；你实际玩的地址不要带 `?dev`。
 
+**模型按需加载**（`src/render/assets.ts`、`needs.ts`，2026-10-29）：
+- 标题页只等 `needs.ts` 的 `CORE`：两个主角和武器包、掉落物包、营地和它的人（营地、墓园、草木三个包，四个 NPC），11 个文件约 8 MB。「新的冒险」「继续」能按以后，其余的在后台按顺序下（`assets.stream`）：大地图上营地以外的区域，再是地牢。`?gallery` 等全部模型。
+- `Renderer.buildLevel` 先要这张地图用到的模型（`levelNeeds`）：主角所在区域的最先（`NOW`），其余的次之（`HERE`），再预取从这里能去的地方（`areaNeeds`，`NEXT`）。这张地图的地面和墙面贴图先下，后台的模型等它们下完再接着下。
+- 还没到的模型照「模型缺失」那样先用替身：角色和怪物是代码画的骨架，道具不画，火把、装饰、柱子、房子、物件、地上的物品是代码画的样子。模型到了就换上，每样只换一次；换之前先把它的贴图一帧一张传上显卡，每帧换的时间不超过 4 毫秒。主角所在区域的模型 1.5 秒还没齐，就盖上「载入中…」并暂停世界，齐了再揭开。
+- 下载失败（或 15 秒没有数据）隔一会儿再试一次，还不行就放手：替身留着，不再让任何东西等它，之后在后台越隔越久地再试，下好了照样换上。
+- 新代码凡是用 `assets.get` 造东西，都要放在 `assets.watch` 里造（它记下缺了哪些模型，替身才会被换掉），并在 `needs.ts` 里写明它要哪些模型；`tools/test/needs.test.mjs` 核对这两边对得上。
+
 ## 模块
 
 | 目录 | 管什么 | 关键文件 |
@@ -24,7 +31,7 @@
 | `src/items/` | 物品：生成、词缀、品质、孔、耐久、价格、商店、卷轴书、储物箱页 | `item.ts`、`gen.ts`、`vendor.ts`、`tomes.ts`、`stash.ts`、`d2/*` |
 | `src/world/` | 区域、大地图生成（营地 + 血沼荒原 + 凛寒原野无缝相连）、邪秽巢穴、试炼场 | `areas.ts`、`overworld.ts`、`zone.ts`、`presets.ts`、`levelgen.ts` |
 | `src/data/d2x/` | 原版数据表，由 `tools/d2-import.mjs` 生成，**不要手改** | `monsters.ts`、`treasure.ts`、`affixes.ts`、`uniques.ts`、`areas.ts`… |
-| `src/render/` | 模型（角色各一个文件，道具按用处合成几个包）、动画、地面分块、灯光、昼夜、特效 | `renderer.ts`、`assets.ts`（加载模型和道具包）、`models.ts`、`specs.ts`、`chunks.ts` |
+| `src/render/` | 模型（角色各一个文件，道具按用处合成几个包，按需加载）、动画、地面分块、灯光、昼夜、特效 | `renderer.ts`、`assets.ts`（按需加载模型和道具包）、`needs.ts`（什么要哪些模型）、`models.ts`、`specs.ts`、`chunks.ts` |
 | `src/ui/` | 面板、HUD、标题页、物品图标（画好的图加原版换色） | `ui.ts`、`inventory.ts`、`title.ts`、`icons.ts`、`itempics.ts` |
 | `src/audio/` | 音效、语音、音乐（录好的文件；缺失时退回代码合成） | `sfx.ts`、`music.ts`、`sounds.ts`、`files.ts`（生成的） |
 | `tools/` | 导入原版数据、生成美术和声音、无头测试、bot | `d2-import.mjs`、`ai-icons.mjs`、`ai-audio.mjs`、`play.mjs`、`bot.mjs` |
@@ -75,19 +82,20 @@
 6. **美术和声音不侵权**：原版图片只用来看清物品是什么，不喂给模型、不描、不进仓库；成品都要过相似度查重。
 7. **模型只在 box 上跑**，不在 Mac 上跑。
 8. **后台代理不用 `rm`**，也不以 `cd` 开头写组合命令（会弹审批框，卡住代理）。
+9. **模型没到时不能有东西静默缺失**：用 `assets.watch` 造、在 `needs.ts` 写明要什么，替身才会在模型到了以后换掉；没有替身的（道具）也要在模型到了以后补上。
 
 ## 测试
 
-**单元测试** `npm test`（35 个文件，约 13 秒）：
+**单元测试** `npm test`（37 个文件，约 13 秒）：
 - 原版公式和数据：`d2-*.test.mjs`、`d2treasure`、`d2affixes`、`d2quality`、`d2legendary`；
 - 物品和交易：`items`、`tomes`、`stash`、`ctrlclick`、`services`；
 - 存档迁移：`save`；
 - 地图：`areas`、`levelgen`、`overworld`、`west`、`seamless`、`seams`；
 - 怪物：`spawn`、`d2-population`、`d2-monsters`、`d2-ai`；
-- 模型：`models`（清单和 `public/models` 的角色文件、`packs/` 下的道具包一一对上，包里每张图只存一份，地图摆的、手里拿的都在清单里）、`monster-models`；
+- 模型：`models`（清单和 `public/models` 的角色文件、`packs/` 下的道具包一一对上，包里每张图只存一份，地图摆的、手里拿的都在清单里）、`monster-models`、`needs`（标题页等的核心模型包括营地的一切、主角能拿的每件武器、每种掉落和尸体；各个造东西的函数要的模型都在需求里；去下一个地方前预取的就是那里要的）、`assets`（假网络上：`NOW` 插在后台前面，失败再试一次后放手、不让人一直等，贴图先下时后台让路）；
 - 任务、图标、声音：`quests`、`icons`、`itempics`、`audio`、`sfx`、`ai-audio`。
 
-**场景测试**（无头浏览器，`node tools/play.mjs tools/scenarios/<名>.mjs --url <地址> --out <目录>`）：
+**场景测试**（无头浏览器，`node tools/play.mjs tools/scenarios/<名>.mjs --url <地址> --out <目录>`）。带 `?dev` 时 `play.mjs` 先等全部模型下完、替身全部换掉（`assets.ensureAll()`、`renderer.standInCount()`）再开始，和以前模型一次全部加载时一样；`bench.mjs` 也这样等。
 
 | 场景 | 查什么 | 地址 |
 | --- | --- | --- |
@@ -101,6 +109,7 @@
 | `tomes`、`ctrlclick` | 卷轴书和商店点击、Ctrl+点击 | `?dev` |
 | `icons` | 图标选图和换色、各面板、手机性能 | `?dev` |
 | `sfx`、`audio`、`music` | 音量层级、文件缺失时退回合成 | `?dev` |
+| `stream` | 模型按需加载：拦住荒野包、地牢包和怪物时先用替身，放行后全部换上；进洞穴时盖「载入中…」、世界暂停，到了揭开；文件失败时先用替身、不盖住，恢复后在后台补上 | `?dev` |
 
 **发布前必跑**：`npx tsc --noEmit`、`npm test`、上表全部场景（`persist` 不带 `?dev`），外加 bot 两个职业各跑一局到凛寒原野（`tools/bot.mjs`）。
 
@@ -124,4 +133,5 @@
 
 - 只建了营地、血沼荒原、邪秽巢穴、凛寒原野；从石块旷野往后（计划里的 M2a、M2b、M3）都还没做。
 - 技能数值还是原型版，要等计划里的 A5 阶段补全成原版；佣兵、赌博、赋予、各 NPC 分店还没做。
+- 地面和墙面贴图（`public/textures` 的 1024² WebP）用 `TextureLoader` 加载，第一次画时在主线程上解码：CPU 降速 4 倍时每张 60–90 毫秒，开局头几秒和进洞穴时各有几次长任务，模型按需加载以前就这样（2026-10-29 量过新旧一样）。换成 `ImageBitmapLoader` 能在别的线程解码，但解码好的图会一直留在内存里（9 张约 36 MB），留到处理贴图那一步一起定。
 - 单元测试偶尔会有一次失败：是 `nearby`（2026-10-29 单跑十几次出一回），报「the path buffers hold 0 tiles on a 328×160 map」，像是那一局随机开出的大地图上还没有怪寻过路、缓冲区没分配，和模型无关，还要修。`icons` 场景会测手机上的性能，机器忙时偶尔超时失败（2026-10-28 一次用了 47 秒，平时约 18 秒），重跑通过。
