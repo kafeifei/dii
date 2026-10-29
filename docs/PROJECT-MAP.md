@@ -52,13 +52,13 @@
 
 | 目录 | 管什么 | 关键文件 |
 | --- | --- | --- |
-| `src/game/` | 模拟：主角、怪物、战斗、AI、物件、掉落、尸体、存档、秘境 | `game.ts`（总控）、`save.ts`（存档）、`player.ts`、`monster.ts`、`ai.ts`、`combat.ts`、`spawn.ts`、`loot.ts`、`corpse.ts`、`level.ts`、`rift.ts`（秘境）、`riftsave.ts` |
+| `src/game/` | 模拟：主角、怪物、战斗、AI、物件、掉落、尸体、存档、秘境。`Game`（`game.ts`）自己只管开局、存档和交接、每帧调度，别的方法都是一行转发，代码按职责在下面这些模块里：写成 `function xxx(g: Game, …)`，只 `import type { Game }`；各模块的状态挂在 `Game` 上的小对象里（`maps`、`trip`、`finds`）；工具在实例上换掉的 `killMonster`、`rollLoot`、`heroClaimed`、`syncShared`，模块之间也经过 `g.` 调用（M2a 第 0 步，`docs/M2A-STEP0.md` 1.2） | `game.ts`（总控和对外的方法）、`maps.ts`（这局留着的地图）、`travel.ts`（进区域、传送点、回城门、出口）、`kills.ts`（击杀、主角死亡）、`fight.ts`（光环、互相推开、飞行物、锤子、爆炸、尸体清理）、`bodies.ts`（主角的尸体、复活）、`items.ts`（地上、腰带、储物箱里的物品）、`interact.ts`（按物件种类分派的 `USE` 表）、`containers.ts`（宝箱、木桶、神龛）、`townsfolk.ts`（商人、对话）、`playerctl.ts`（主角的动作）、`save.ts`（存档）、`player.ts`、`monster.ts`、`ai.ts`、`combat.ts`、`spawn.ts`、`loot.ts`、`corpse.ts`、`level.ts`、`rift.ts`（秘境）、`riftsave.ts` |
 | `src/game/d2/` | 照 D2MOO 写的公式：属性、经验、死亡惩罚、速度档位、怪物数值、刷怪、怪物 AI；技能表达式求值器（照 Fog 的 Calc.cpp 算 Skills.txt、Missiles.txt 的 calc 列）和佣兵的规则（雇佣名单、等级、价钱、属性、技能、经验、装备、复活费），这两个还没接进游戏 | `stats.ts`、`xp.ts`、`death.ts`、`frames.ts`、`monstats.ts`、`population.ts`、`monai.ts`、`skillcalc.ts`、`hireling.ts` |
 | `src/game/quests/` | 任务框架（原版 16 个任务标志位）和「涤荡邪巢」 | `record.ts`、`denofevil.ts` |
 | `src/items/` | 物品：生成、词缀、品质、孔、耐久、价格、商店、卷轴书、储物箱页，调试面板的掉落 | `item.ts`、`gen.ts`、`vendor.ts`、`tomes.ts`、`stash.ts`、`debugloot.ts`、`d2/*` |
 | `src/world/` | 区域、大地图生成（营地 + 血沼荒原 + 凛寒原野无缝相连）、邪秽巢穴、试炼场、秘境的层和小层；照 D2MOO 的 DrlgMaze 长的迷宫（房间图、预设房间、主题房间）、物件摆放（照 Objects.cpp 按物件组掷）和西块的五个地下城（8、9、13、18、19 层），这三个还没接进游戏 | `areas.ts`、`overworld.ts`、`zone.ts`、`presets.ts`、`levelgen.ts`、`rift.ts`、`maze.ts`、`objgroups.ts`、`dungeons.ts` |
 | `src/data/d2x/` | 原版数据表，由 `tools/d2-import.mjs` 生成，**不要手改** | `monsters.ts`、`treasure.ts`、`affixes.ts`、`uniques.ts`、`areas.ts`、`maze.ts`、`objects.ts`、`monseq.ts`… |
-| `src/render/` | 模型（角色各一个文件，道具按用处合成几个包，按需加载）、动画、地面分块、灯光、昼夜、特效 | `renderer.ts`、`assets.ts`（按需加载模型和道具包）、`needs.ts`（什么要哪些模型）、`models.ts`、`specs.ts`、`chunks.ts` |
+| `src/render/` | 模型（角色各一个文件，道具按用处合成几个包，按需加载）、动画、地面分块、灯光、昼夜、特效 | `renderer.ts`、`objviews.ts`（物件的样子、角色的骨架 `makeCharRig`）、`walls.ts`（墙的高度和材质，挡住主角时的淡出、按世界坐标贴图）、`friends.ts`（友方视图的挂点，给佣兵用，现在三个函数都是空的）、`assets.ts`（按需加载模型和道具包）、`needs.ts`（什么要哪些模型）、`models.ts`、`specs.ts`、`chunks.ts` |
 | `src/ui/` | 面板、HUD、标题页、物品图标（画好的图加原版换色）、秘境面板和进度条 | `ui.ts`、`inventory.ts`、`title.ts`、`icons.ts`、`itempics.ts`、`rift.ts` |
 | `src/audio/` | 音效、语音、音乐（录好的文件；缺失时退回代码合成） | `sfx.ts`、`music.ts`、`sounds.ts`、`files.ts`（生成的） |
 | `tools/` | 导入原版数据、生成美术和声音、模型构建和图的大小、无头测试、bot、构建后的体积检查 | `d2-import.mjs`、`ai-icons.mjs`、`ai-audio.mjs`、`build-models.mjs`、`texel-density.mjs`、`ai-textures.mjs`、`play.mjs`、`bot.mjs`、`check-dist.mjs` |

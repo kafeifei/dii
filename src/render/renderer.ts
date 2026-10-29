@@ -20,6 +20,7 @@ import { ownDepth, PropBatches, Scenery, sphereInFrustum, sphereInShadows, type 
 import { CAM_YAW, disposeView, NearViews, Pool, VIEW_FAR, VIEW_NEAR } from './views';
 import { makeCharRig, makeObjectView, type CharRig, type ObjView } from './objviews';
 import { applyOcclusionFade, applyWorldUv, WALL_HEIGHT, wallMaterials, type OccUniforms } from './walls';
+import { clearFriends, friendStandIns, syncFriends } from './friends';
 import { GRADES, Post, type Grade } from './post';
 import { ambientMotes, applyLavaGlow, Mist } from './atmosphere';
 import { blendAtmos, GROUND_LOOKS, lookOf, newAtmos, shiftGrade, type AreaLook, type WallKind } from './arealooks';
@@ -578,6 +579,7 @@ export class Renderer implements Picker {
       n.shadow.removeFromParent();
     }
     this.npcViews = [];
+    clearFriends(this);
     this.levelGroup.clear();
     this.dynGroup.clear();
     this.fx.clearLevel();
@@ -1252,6 +1254,7 @@ export class Renderer implements Picker {
     for (const v of this.monsterViews.views.values()) if (v.body?.waits) n++;
     for (const v of this.npcViews) if (v.waits) n++;
     if (this.playerView?.waits) n++;
+    n += friendStandIns(this);
     for (const v of this.objViews.views.values()) if (v.waits) n++;
     for (const v of this.groundViews.views.values()) if (this.groundWaits.has(v)) n++;
     return n;
@@ -1524,6 +1527,8 @@ export class Renderer implements Picker {
       n.rig.root.visible = n.shadow.visible = near;
       if (near) n.rig.update(dt, IDLE_ANIM);
     }
+    // the hero's friends (src/render/friends.ts)
+    syncFriends(this, dt);
 
     // aura decal
     if (p.activeAura && !p.dead && p.skillLevel(p.activeAura) > 0) {
