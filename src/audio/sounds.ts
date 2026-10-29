@@ -108,8 +108,11 @@ const GROUPS = {
      */
     die: { synth: 'die', vol: 0.9, max: 4 },
     die_bone: { synth: 'diebone', vol: 0.8, max: 4 },
-    /** imps and shamans */
-    die_imp: { synth: 'impdie', vol: 0.8, max: 4 },
+    /**
+     * imps and shamans: as loud as die, though theirs is a small shriek. At 0.8 a Fallen's death sat
+     * 5 dB under a zombie's and 2 dB over the music (tools/scenarios/sfx.mjs holds every death to die)
+     */
+    die_imp: { synth: 'impdie', vol: 1.35, max: 4 },
     /** a big one (LARGE_MONSTER) or a boss: a step over die */
     die_large: { synth: 'die', vol: 1, max: 2, prio: 'high' },
     /** a boss notices the hero */
@@ -265,8 +268,10 @@ export const LARGE_MONSTER = 1.3;
 
 /**
  * What the hero says, by the moment, as Diablo II's heroes do: each class has its own words for
- * every one (tools/audio/voice-lines.md), recorded as voice.<class>.<line> (heroLine) and said by
- * Game.say. Those whose moment the game doesn't have yet (a quest, an area cleared) wait for it.
+ * every one, in a few ways of saying it (tools/audio/voice-lines.md), recorded as voice.<class>.<line>
+ * (heroLine), a take for each, and said by Game.say: one of them at random, not the last one again,
+ * and not again within a few seconds (Lines in src/audio/sfx.ts). Those whose moment the game
+ * doesn't have yet (a quest, an area cleared) wait for it.
  */
 export const HERO_LINES = [
   // what the hero can't do

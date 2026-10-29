@@ -167,18 +167,22 @@ export default async (load) => {
   }
 
   // the heroes' script names the moments the game has lines for, and the list asks for each hero's
-  // words there as they're written
+  // words there as they're written, a take for each way of saying it (HERO_TAKES of them), in order
   const { HERO_LINES } = await load('/src/audio/sounds.ts');
   const script = fs.readFileSync(path.join(root, 'tools/audio/voice-lines.md'), 'utf8');
   const keys = [...script.matchAll(/^\| `([a-z0-9_]+)` \|/gm)].map((m) => m[1]);
   check(keys.join() === HERO_LINES.join(), `tools/audio/voice-lines.md has ${keys.join(' ')}, src/audio/sounds.ts HERO_LINES ${HERO_LINES.join(' ')}`);
   const { default: list, SPEAKERS } = await import(`${path.join(root, 'tools/audio/list.mjs')}?t=${Date.now()}`);
+  /** the ways each hero has of saying each line: Sfx says one at random, not the last again */
+  const HERO_TAKES = 4;
   for (const row of script.split('\n').filter((l) => l.startsWith('| `'))) {
     const key = row.match(/`([a-z0-9_]+)`/)[1];
-    const words = [...row.matchAll(/「([^」]+)」/g)].map((m) => m[1]);
+    const cells = row.split('|').slice(1, -1);
     Object.keys(SPEAKERS).forEach((who, i) => {
+      const words = [...(cells[2 + i] ?? '').matchAll(/「([^」]+)」/g)].map((m) => m[1]);
       const e = list.find((e) => e.id === `voice.${who}.${key}`);
-      check(e?.text === words[i], `tools/audio/list.mjs: voice.${who}.${key} says ${e?.text}, the script ${words[i]}`);
+      check(JSON.stringify(e?.texts) === JSON.stringify(words), `tools/audio/list.mjs: voice.${who}.${key} says ${JSON.stringify(e?.texts)}, the script ${JSON.stringify(words)}`);
+      check(words.length === HERO_TAKES && new Set(words).size === words.length, `tools/audio/voice-lines.md: ${who} says ${key} ${words.length} ways (${words.join(' ')}), not ${HERO_TAKES} different ones`);
     });
   }
 

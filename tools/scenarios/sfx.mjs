@@ -18,7 +18,8 @@
 // the composed music: the same samples for the same area, another piece for another, heard but
 // quiet. Last, the game's own recordings against the synthesized sounds they replace, level for
 // level, its music against the music composed in its place and under the ambience and the fighting
-// it's heard with, and the hero's lines against its loudest cues (shippedLevels). The last line is
+// it's heard with, every monster's death about as loud as a zombie's and well over the music, and
+// every take of the hero's lines against its loudest cues (shippedLevels). The last line is
 // "SFX OK <summary>" or "SFX FAIL <reasons>".
 
 /** a WAV of `secs` seconds, 16-bit, the same in both channels */
@@ -481,8 +482,11 @@ const LINE_MATCH_DB = 4;
  * composed in its place (musicLevels), which plays wherever it won't: it's heard for minutes on end.
  * And it's heard as MUSIC_LEVEL in src/audio/sfx.ts has it: under the ambience of each area it plays
  * in, well under the fighting (FIGHT), its loudest swells under it still (UNDER_FIGHT_DB).
+ * The monsters' deaths (DEATHS), as played (recorded, or synthesized where they aren't), are each
+ * no more than DEATH_UNDER_DB under a flesh-and-blood one's (monster.die), and every one of them
+ * DEATH_OVER_MUSIC_DB over each track: a Fallen's death once sat 2 dB over the music, lost in it.
  * The heroes' lines (HERO_LINES) have nothing synthesized to match:
- * each, played as the game says it (LINE), is held to LINE_MATCH_DB of the loudest of the cues they
+ * each take of each, played as the game says it (LINE), is held to LINE_MATCH_DB of the loudest of the cues they
  * go with (LINE_CUES, synthesized), as the hero's loudest sounds. Any other shipped id the game can't
  * play this way fails: nothing vouches for it.
  */
@@ -527,7 +531,8 @@ async function shippedLevels(ev) {
     } else if (heroLine(id)) heroLines.push(id);
     else fails.push(`shipped ${id}: nothing in the game plays it`);
   }
-  for (const id of heroLines) jobs.push({ kind: 'line', id, ids: [id] });
+  // every take of a line, each by itself: Sfx says any one of them
+  for (const id of heroLines) for (const file of files[id].files) jobs.push({ kind: 'line', id, file, ids: [id] });
   for (const id of LINE_CUES) jobs.push({ kind: 'cue', id, ids: [] });
   for (const { area, night, ids } of loops.values()) jobs.push({ kind: 'amb', id: ids.join('+'), area, night, ids });
   // the ambience a track is heard over where it plays: the area's loops by day and by night, those
@@ -538,6 +543,8 @@ async function shippedLevels(ev) {
   for (const id of FIGHT) if (!files[id]) jobs.push({ kind: 'blow', id, ids: [] });
   const out = await ev(
     async ({ jobs, RATE }) => {
+      // a line's takes measured here: all of them as PCM would be more than the page can hand back
+      const { loudness } = await import('/tools/audio/dsp.mjs');
       const Sfx = window.game.sfx.constructor;
       const files = window.game.sfx.files;
       const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -570,7 +577,8 @@ async function shippedLevels(ev) {
         try {
           s = seeded(() => {
             const s = new Sfx();
-            s.files = recorded ? Object.fromEntries(job.ids.map((id) => [id, files[id]])) : {};
+            // a line's take alone, where the job is one take
+            s.files = recorded ? Object.fromEntries(job.ids.map((id) => [id, job.file ? { ...files[id], files: [job.file] } : files[id]])) : {};
             s.ensure();
             return s;
           });
@@ -586,6 +594,7 @@ async function shippedLevels(ev) {
         // the loops start once their (preloaded) takes resolve, a line once its take is checked as decoded
         if (!short) await wait(50);
         const buf = await s.ctx.startRendering();
+        if (job.kind === 'line') return { failed, lufs: loudness([buf.getChannelData(0), buf.getChannelData(1)], 'momentary') };
         return { failed, chs: [b64(buf.getChannelData(0)), b64(buf.getChannelData(1))] };
       }
       const res = [];
@@ -610,13 +619,14 @@ async function shippedLevels(ev) {
   const lines = [];
   for (const r of out) {
     if (r.kind !== 'line' || r.rec.failed.length) continue;
-    const d = momentary(r.rec.chs) - cue.lufs;
+    const d = r.rec.lufs - cue.lufs;
     lines.push(d);
-    if (!(Math.abs(d) <= LINE_MATCH_DB)) fails.push(`shipped ${r.id}: ${d.toFixed(1)} dB ${d > 0 ? 'louder' : 'quieter'} than ${cue.id} (${cue.lufs.toFixed(1)} LUFS momentary): LINE.vol ${+(LINE_VOL * 10 ** (-d / 20)).toPrecision(2)} in src/audio/sounds.ts would match`);
+    if (!(Math.abs(d) <= LINE_MATCH_DB)) fails.push(`shipped ${r.file}: ${d.toFixed(1)} dB ${d > 0 ? 'louder' : 'quieter'} than ${cue.id} (${cue.lufs.toFixed(1)} LUFS momentary): LINE.vol ${+(LINE_VOL * 10 ** (-d / 20)).toPrecision(2)} in src/audio/sounds.ts would match`);
   }
   if (lines.length) {
     const mean = lines.reduce((a, b) => a + b, 0) / lines.length;
-    facts['voice.*'] = `${lines.length} hero lines ${Math.min(...lines).toFixed(1)} to ${Math.max(...lines).toFixed(1)} dB (mean ${mean.toFixed(1)}) against ${cue.id}, ${cue.lufs.toFixed(1)} LUFS momentary`;
+    const said = new Set(out.filter((r) => r.kind === 'line').map((r) => r.id)).size;
+    facts['voice.*'] = `${said} hero lines in ${lines.length} takes ${Math.min(...lines).toFixed(1)} to ${Math.max(...lines).toFixed(1)} dB (mean ${mean.toFixed(1)}) against ${cue.id}, ${cue.lufs.toFixed(1)} LUFS momentary`;
   }
   for (const r of out) {
     if (!r.rec) continue;
@@ -656,6 +666,15 @@ async function shippedLevels(ev) {
   }).sort((a, b) => a.lufs - b.lufs);
   const fight = (blows[(blows.length - 1) >> 1].lufs + blows[blows.length >> 1].lufs) / 2;
   facts.fighting = `${fight.toFixed(1)} LUFS momentary (${blows.map((b) => `${b.id} ${b.lufs.toFixed(1)}`).join(', ')})`;
+  // every monster's death as loud as a flesh-and-blood one's, near enough: as played, recorded or
+  // synthesized, the vol that would bring it there (it sets both)
+  const levelOf = (id) => blows.find((b) => b.id === id).lufs;
+  const die = levelOf('monster.die');
+  for (const id of DEATHS) {
+    const d = levelOf(id) - die;
+    facts[`${id} as heard`] = `${d >= 0 ? '+' : ''}${d.toFixed(1)} dB on monster.die`;
+    if (!(d >= -DEATH_UNDER_DB)) fails.push(`${id}: ${(-d).toFixed(1)} dB under monster.die (${levelOf(id).toFixed(1)} vs ${die.toFixed(1)} LUFS momentary), past ${DEATH_UNDER_DB}: vol ${+((SOUNDS[id].vol ?? 1) * 10 ** (-d / 20)).toPrecision(2)} in src/audio/sounds.ts would match`);
+  }
   for (const r of await musicLevels(ev, tracks, RATE)) {
     if (r.failed) {
       fails.push(`shipped ${r.id}: ${r.failed}`);
@@ -666,6 +685,11 @@ async function shippedLevels(ev) {
     // and its loudest 3 s under it still
     const ambs = r.areas.flatMap(ambOf);
     const level = r.recorded.reduce((a, b) => (b.lufs > a.lufs ? b : a));
+    // and every death well over it, each by itself: a death the music covers is lost
+    for (const id of ['monster.die', ...DEATHS]) {
+      const over = levelOf(id) - level.lufs;
+      if (!(over >= DEATH_OVER_MUSIC_DB)) fails.push(`${id}: ${over.toFixed(1)} dB over ${r.id} (${levelOf(id).toFixed(1)} LUFS momentary, the music ${level.lufs.toFixed(1)} integrated), not ${DEATH_OVER_MUSIC_DB}`);
+    }
     const loudest = r.recorded.reduce((a, b) => (b.short > a.short ? b : a));
     const quietest = ambs.reduce((a, b) => (b.lufs < a.lufs ? b : a), ambs[0]);
     const room = [
@@ -696,6 +720,13 @@ async function shippedLevels(ev) {
   }
   return { fails, facts };
 }
+
+/** the monsters' deaths other than a flesh-and-blood one's (monster.die), by kind (src/game/game.ts) */
+const DEATHS = ['monster.die_imp', 'monster.die_large', 'monster.die_bone'];
+/** how far under monster.die one may be, in dB: a Fallen's sat 5 dB under, all but lost in the music */
+const DEATH_UNDER_DB = 1.5;
+/** how far over the music each death is at least, in dB (tools/scenarios/music.mjs LIVE_FIGHT_DB, live) */
+const DEATH_OVER_MUSIC_DB = 6;
 
 /** how far a shipped track may be from the music composed in its place, in dB */
 const MUSIC_MATCH_DB = 1.5;

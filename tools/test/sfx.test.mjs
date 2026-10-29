@@ -3,7 +3,8 @@
 // has, the area beds and when they change (walking to and fro over a seam, not at every step), how
 // loud and where a sound with a place is heard, which voice a new sound takes
 // over when the limits are reached (a critical sound must always get one), when a line may be said
-// (one at a time, not the same one too often), and what's decoded walking into an area.
+// (one at a time, not the same one too often) and in which take (at random, never the last one
+// again, only that one decoded), and what's decoded walking into an area.
 // tools/scenarios/sfx.mjs renders the same in a page.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -59,6 +60,7 @@ export default async (load) => {
   const { SOUNDS, PRIORITY, HERO_LINES, LINE, ENTER_LINE, AREA_FILES, areaSound, areaKind, soundsNear, heroLine } = await load('/src/audio/sounds.ts');
   const { Sfx, spatial, earGains, voiceToSteal, PAN_MAX, Lines, LINE_GAP, LINE_AGAIN, LINE_LATE } = await load('/src/audio/sfx.ts');
   const { FILES } = await load('/src/audio/files.ts');
+  const { Buffers } = await load('/src/audio/buffers.ts');
   const { THEMES, WILD_MAPS, isWild, dungeonFloor, themeForFloor } = await load('/src/world/levelgen.ts');
   const { areaDef, areaForDepth, dungeonArea, CAMP_AREA, WILD_AREA, COLD_PLAINS, DEN_OF_EVIL } = await load('/src/world/areas.ts');
   const camp = areaDef(CAMP_AREA);
@@ -306,6 +308,77 @@ export default async (load) => {
     // one never heard from again: once LINE_LATE is past, the next may book, and the old one can't start
     const f = L.book('voice.paladin.shrine', t + 2 * LINE_LATE + 0.3);
     check(f !== null && !L.start(e, t + 2 * LINE_LATE + 0.3, 1), 'a line left booked kept the floor, or started after it was taken');
+  }
+
+  // a line in several takes: each time one at random, never the one heard last, every one in turn;
+  // the same line not again within LINE_AGAIN whatever take it's in. A take booked and never heard
+  // (decoded too late, or not at all) doesn't count as the last one
+  {
+    let seed = 7;
+    const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const L = new Lines();
+    const id = 'voice.sorceress.rune';
+    const seen = new Set();
+    let prev;
+    for (let k = 0; k < 200; k++) {
+      const t = 100 + k * (LINE_AGAIN + 0.5);
+      const b = L.book(id, t, 4, rand);
+      const why = !b || !L.start(b, t, 1.5)
+        ? `a line in four takes not said ${LINE_AGAIN + 0.5} s after the last time`
+        : !(Number.isInteger(b.take) && b.take >= 0 && b.take < 4 && b.take !== prev)
+          ? `take ${b.take} of four said after take ${prev}`
+          : L.book(id, t + 1.5 + LINE_GAP, 4, rand) !== null
+            ? `a line said again ${1.5 + LINE_GAP} s on, in another take`
+            : null;
+      // the first failure alone, not two hundred of it
+      if (why) {
+        problems.push(why);
+        break;
+      }
+      seen.add(b.take);
+      prev = b.take;
+    }
+    check(seen.size === 4, `a line's four takes: only ${[...seen].join(', ')} ever said`);
+    const M = new Lines();
+    const first = () => 0;
+    const a = M.book(id, 0, 4, first);
+    check(a?.take === 0 && M.start(a, 0, 1), `the first take of a line not said first with rand 0: ${a?.take}`);
+    const b = M.book(id, LINE_AGAIN, 4, first);
+    check(b?.take === 1, `after take 0, take ${b?.take} with rand 0, not 1`);
+    M.drop(b, LINE_AGAIN);
+    const c = M.book(id, 2 * LINE_AGAIN, 4, first);
+    check(c?.take === 1, `a take dropped unheard counted as the last one: take ${c?.take} next, not 1`);
+    const one = M.book('voice.paladin.no_gold', 3 * LINE_AGAIN, 1, () => 0.99);
+    check(one?.take === 0 && M.start(one, 3 * LINE_AGAIN, 1) && M.book('voice.paladin.no_gold', 4 * LINE_AGAIN, 1, () => 0.99)?.take === 0, 'a line of one take not said in it every time');
+  }
+  // and Sfx says the take booked, decoding only it: a pretended context, its decoder only noting the URL
+  {
+    const sfx = new Sfx();
+    const id = 'voice.paladin.rune';
+    const files = [1, 2, 3, 4].map((n) => `${id}.${n}.m4a`);
+    sfx.files = { [id]: { files, gain: 0.5 } };
+    sfx.ctx = { currentTime: 0 };
+    const decoded = [];
+    sfx.buffers = new Buffers((url) => (decoded.push(url), Promise.resolve({ length: 48000, numberOfChannels: 1, duration: 1, url })));
+    const said = [];
+    sfx.sound = (sid, def, opts, take) => said.push({ sid, def, url: take?.buf.url, gain: take?.gain });
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    for (let k = 0; k < 40; k++) {
+      sfx.ctx.currentTime = k * (LINE_AGAIN + 1);
+      sfx.play(id);
+      await tick();
+      // asked again a moment later: not said
+      sfx.ctx.currentTime += 3;
+      sfx.play(id);
+      await tick();
+    }
+    const urls = said.map((x) => x.url);
+    const turns = urls.filter((u, i) => i > 0 && u === urls[i - 1]).length;
+    check(said.length === 40 && said.every((x) => x.sid === id && x.def === LINE && x.gain === 0.5), `40 times asked, ${LINE_AGAIN + 1} s apart, a line of four takes said ${said.length} times (each asked again 3 s on)`);
+    check(turns === 0, `a take said twice running ${turns} times: ${urls.map((u) => u?.match(/\.(\d)\.m4a$/)?.[1]).join('')}`);
+    check(files.every((f) => urls.some((u) => u?.endsWith(f))), `of four takes only ${new Set(urls).size} ever said`);
+    check(new Set(decoded).size === decoded.length && decoded.length === 4 && decoded.every((u) => urls.includes(u)), `decoded ${decoded.length} files for a line of four takes, said in ${new Set(urls).size}: each once, as it's first said`);
+    check(!decoded.length || decoded[0] === urls[0], `the line's first time decoded ${decoded[0]}, said ${urls[0]}`);
   }
 
   // walking in: the camp warms no fighting, the wilderness does; the next areas' ambience (across a

@@ -7,10 +7,13 @@
 //             on a GPU machine (tools/audio/acestep.py), not by ElevenLabs: it costs no credits
 //   prompt    what the effect or ambience sounds like (sfx, loop), in English: ElevenLabs follows that best
 //   text      the line, as spoken (voice); every character counts a credit
+//   texts     several ways of saying it instead (voice), each its own take: take n says the nth, so
+//             one added at the end is made alone, and one changed makes only its own take again
 //   duration  seconds asked for (sfx, loop; 0.5 to 30, default 1 and 20), 'auto' to let the model pick:
 //             it costs about 10 credits a second either way
 //   variants  how many takes (default 1). Variety comes from Sfx picking a take and nudging its pitch,
-//             so a second take is for sounds heard over and over, not the rule
+//             so a second take is for sounds heard over and over, not the rule; a voice line's takes
+//             are its texts
 //   influence how closely it follows the prompt, 0 to 1 (sfx 0.5, loop 0.3 by default)
 //   voice     the speaker (voice; default: the id's second part)
 //   gain      times its level in the game (src/audio/files.ts): every take is normalized alike, and
@@ -58,9 +61,10 @@ export const SPEAKERS = {
 };
 
 /**
- * The heroes' lines, from their script (tools/audio/voice-lines.md, a table of key, when, and each
- * hero's words in 「」): one entry per hero and line, voice.<hero>.<key>. The script is what's
- * written and approved; this only reads it, so a line changed there is made again.
+ * The heroes' lines, from their script (tools/audio/voice-lines.md, a table of key, when, and a
+ * column per hero, each cell the ways that hero says it, in 「」): one entry per hero and line,
+ * voice.<hero>.<key>, its texts in the cell's order, take n the nth (Sfx says one of them at random).
+ * The script is what's written and approved; this only reads it, so a line changed there is made again.
  */
 function heroLines() {
   const md = fs.readFileSync(new URL('./voice-lines.md', import.meta.url), 'utf8');
@@ -68,9 +72,14 @@ function heroLines() {
   const out = [];
   for (const row of md.split('\n').filter((l) => l.startsWith('| `'))) {
     const key = row.match(/^\| `([a-z0-9_]+)`/)[1];
-    const words = [...row.matchAll(/「([^」]+)」/g)].map((m) => m[1]);
-    if (words.length !== heroes.length) throw new Error(`voice-lines.md: ${key} has ${words.length} lines, not one for each of ${heroes.join(', ')}`);
-    heroes.forEach((hero, i) => out.push({ id: `voice.${hero}.${key}`, kind: 'voice', text: words[i] }));
+    // key, when, then a cell per hero
+    const cells = row.split('|').slice(1, -1);
+    if (cells.length !== 2 + heroes.length) throw new Error(`voice-lines.md: ${key} has ${cells.length} cells, not key, when and one for each of ${heroes.join(', ')}`);
+    heroes.forEach((hero, i) => {
+      const texts = [...cells[2 + i].matchAll(/「([^」]+)」/g)].map((m) => m[1]);
+      if (!texts.length) throw new Error(`voice-lines.md: ${key} has no line for ${hero}`);
+      out.push({ id: `voice.${hero}.${key}`, kind: 'voice', texts });
+    });
   }
   return out;
 }
