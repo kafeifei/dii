@@ -21,4 +21,4 @@
 - 密钥（ElevenLabs、Tripo、Meshy）都在钥匙串里，由工具自己读；不要打印，不要写进文件或命令输出。
 
 ## 发布
-照 PROJECT-MAP「发布」一节：清单全部通过后发 Vercel 和内部站点，再在主检出把 `main` 快进到发布的提交，打本地 tag。
+照 PROJECT-MAP「发布」一节：清单全部通过后发 Vercel 和内部站点，再把 `main` 快进到发布的提交（`git fetch . <提交>:main`，`main` 不在任何工作树里检出），打本地 tag，推送 `main`。只有负责集成的会话做这一步。

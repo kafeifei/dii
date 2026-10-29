@@ -173,7 +173,7 @@
 1. **Vercel**：在没有未提交改动的检出里运行 `vercel build --prod`，再运行 `vercel deploy --prebuilt --prod`，地址是 dii-abyss.vercel.app。工作树里要有 `.vercel/project.json`，没有就从主检出复制。记下这次部署的地址或 id（第 3 步写进 tag）。
 2. **内部站点**：发布方法、地址和登录都不在仓库里，用本机的内部站点 skill 发布，记下它报的版本。
    - 平台限制：一次最多 5000 个文件、总共 50 MB（52,428,800 字节），单个文件不超过 25 MB（Cloudflare 的限制）。
-3. **快进 `main`，打本地 tag**（用户 2026-10-29 同意的）：两边都发好以后，在主检出把 `main` 快进到发布的那个提交：`git -C ~/Codes/Games/dii merge --ff-only <提交>`。主检出里有用户自己没提交的文件，快进的范围碰到它们时 git 会拒绝：这时停下来问用户，不碰他的文件，也不用 `git update-ref` 绕过去（那样 `main` 动了，主检出里的文件却还是旧的）。再打一个带说明的本地 tag，说明里写这次 Vercel 的部署和内部站点的版本，比如 `git -C ~/Codes/Games/dii tag -a release-2026-10-29 -m "Vercel <部署>；内部站点 <版本>" <提交>`。分支和 tag 都不推送。
+3. **推进 `main`，打本地 tag，推送 `main`**（用户 2026-10-29 定的）：`main` 是主干，只在发布时前进，不在任何工作树里检出（主检出用的是用户自己的分支 `kafeifei/local`）。两边都发好以后，在集成线的工作树里把 `main` 快进到发布的那个提交：`git fetch . <提交>:main`（不是快进就会被拒，这时停下来查）。再打一个带说明的本地 tag，说明里写这次 Vercel 的部署和内部站点的版本，比如 `git tag -a release-2026-10-29 -m "Vercel <部署>；内部站点 <版本>" <提交>`，同一天第二次发布用 `.2`。最后 `git push origin main`，GitHub 上的 CI 会跑一遍。tag 和其他分支不推送。
 
 `vercel deploy` 上传文件时偶尔报一次「Not authorized」（2026-10-29 遇到过），`vercel whoami` 正常的话重试一次就好。
 
