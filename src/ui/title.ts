@@ -121,6 +121,12 @@ export class TitleScreen {
       el.textContent = '';
     } else el.textContent = `载入模型 ${Math.round((done / total) * 100)}%`;
   }
+
+  /** the buttons held as while the models load, `why` in the loading line (UI.resume, waiting for a hand-over); loadProgress(1, 1) lets them go */
+  hold(why: string) {
+    this.el.classList.add('is-loading');
+    (this.el.querySelector('.loading') as HTMLElement).textContent = why;
+  }
 }
 
 export class DeathScreen {

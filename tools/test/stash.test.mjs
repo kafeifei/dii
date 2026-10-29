@@ -488,15 +488,19 @@ export default async (load) => {
     localStorage.setItem(KEY, theirs);
     C.heroClaimed();
     check(localStorage.getItem(KEY) === theirs && !!C.shared.readOnly, `a last write over the other tab's save: gold ${heroSave().gold}`);
-    // the storage event missed (a frozen tab): its next save finds the claim, writes nothing, says why
+    // the storage event not in yet (or missed, a frozen tab): its next save finds the claim and does as
+    // the event would, a last write as nothing was written over the hero since, then the hand-over and
+    // nothing more (tools/test/handover.test.mjs has the rest)
     reset();
     const D = started('冻');
     D.save();
-    const before = localStorage.getItem(KEY);
     claimElsewhere();
     D.player.gold = 7;
     D.save();
-    check(localStorage.getItem(KEY) === before && !!D.shared.readOnly && D.ui.said.some((t) => t.includes('另一个窗口')), 'a tab that missed the claim wrote the hero');
+    const handed = localStorage.getItem(KEY);
+    D.player.gold = 8;
+    D.save();
+    check(JSON.parse(handed).gold === 7 && localStorage.getItem(KEY) === handed && JSON.parse(localStorage.getItem(CLAIM))?.handedTo === 'tab-other' && !!D.shared.readOnly && D.ui.said.some((t) => t.includes('另一个窗口')), `a save that found the claim first: gold ${JSON.parse(handed).gold} written last, then ${heroSave().gold}; claim ${localStorage.getItem(CLAIM)}`);
     // a hero of its own in the next tab: claimed apart, never in the way
     reset();
     const E = started('一');
