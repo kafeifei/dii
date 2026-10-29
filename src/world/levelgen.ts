@@ -64,7 +64,7 @@ export interface Theme {
 
 export const THEMES: Record<string, Theme> = {
   town: {
-    key: 'town', name: '放逐者营寨', en: "Exiles' Stockade", wall: '#5a4630', wallDark: '#33281b',
+    key: 'town', name: '放逐者营寨', en: "Rogues' Stockade", wall: '#5a4630', wallDark: '#33281b',
     ambient: '#6f7aa8', ambientIntensity: 0.55, torch: '#ffa040', bg: '#07080c', outdoor: true,
   },
   wild: {

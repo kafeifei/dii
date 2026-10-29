@@ -56,7 +56,7 @@ export default async (load) => {
   check(saved()?.worldSeed === game.worldSeed && saved()?.area === CAMP_AREA, `saved world seed ${saved()?.worldSeed} (the game's ${game.worldSeed}) in area ${saved()?.area}`);
   // the overworld's areas are areas of normal play: the waypoint list and a save's resume go by isBuilt
   check(BUILT.every(isBuilt), `the overworld builds ${BUILT.join()}, not all of normal play's`);
-  check(areaDef(CAMP_AREA).name === '放逐者营寨' && areaDef(WILD_AREA).en === 'Bloodmire Heath' && areaDef(COLD_PLAINS).en === 'Bitterfrost Wilds' && areaDef(DEN_OF_EVIL).en === 'Festering Lair', 'the areas are not named as the rename table has them');
+  check(areaDef(CAMP_AREA).name === '放逐者营寨' && areaDef(WILD_AREA).en === 'Bloodmire Heath' && areaDef(COLD_PLAINS).en === 'Bitterfrost Plains' && areaDef(DEN_OF_EVIL).en === 'Den of Iniquity', 'the areas are not named as the rename table has them');
 
   // out past the gate into Blood Moor
   const gate = ow.seams.find((s) => s.a === CAMP_AREA);

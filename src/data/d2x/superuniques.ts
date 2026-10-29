@@ -4,18 +4,18 @@ import type { D2xMonUMod, D2xSuperUnique, D2xUniqueNameWord } from './types';
 /** the superuniques Act 1's presets place (SuperUniques.txt) */
 export const D2X_SUPERUNIQUES: D2xSuperUnique[] = [
   {"key":"Bishibosh","name":"必希鲍什","nameEn":"Pishibaush","en":"Bishibosh","hcIdx":0,"mon":"fallenshaman1","mods":[8,9],"group":[2,2],"autoPos":true,"tc":["Act 1 Super A","Act 1 (N) Super A","Act 1 (H) Super A"],"area":3},
-  {"key":"Bonebreak","name":"碾骨魁","nameEn":"Bonemill Chieftain","en":"Bonebreaker","hcIdx":1,"mon":"skeleton1","mods":[5,8],"group":[5,5],"autoPos":true,"tc":["Act 1 Super A","Act 1 (N) Super A","Act 1 (H) Super A"],"area":18},
-  {"key":"Coldcrow","name":"霜鸦","nameEn":"Rimewing","en":"Coldcrow","hcIdx":2,"mon":"cr_archer1","mods":[18],"group":[4,4],"autoPos":true,"tc":["Act 1 Super A","Act 1 (N) Super A","Act 1 (H) Super A"],"area":9},
+  {"key":"Bonebreak","name":"摧骨者","nameEn":"Bonesmasher","en":"Bonebreaker","hcIdx":1,"mon":"skeleton1","mods":[5,8],"group":[5,5],"autoPos":true,"tc":["Act 1 Super A","Act 1 (N) Super A","Act 1 (H) Super A"],"area":18},
+  {"key":"Coldcrow","name":"霜鸦","nameEn":"Rimecrow","en":"Coldcrow","hcIdx":2,"mon":"cr_archer1","mods":[18],"group":[4,4],"autoPos":true,"tc":["Act 1 Super A","Act 1 (N) Super A","Act 1 (H) Super A"],"area":9},
   {"key":"Rakanishu","name":"罗迦倪秀","nameEn":"Lojanishiu","en":"Rakanishu","hcIdx":3,"mon":"fallen2","mods":[17,6],"group":[8,8],"replaceable":true,"tc":["Act 1 Super B","Act 1 (N) Super B","Act 1 (H) Super B"],"area":4},
-  {"key":"Treehead WoodFist","name":"朽颅橡拳","nameEn":"Rotskull Oakfist","en":"Treehead WoodFist","hcIdx":4,"mon":"brute2","mods":[5,6],"group":[2,2],"autoPos":true,"replaceable":true,"tc":["Act 1 Super B","Act 1 (N) Super B","Act 1 (H) Super B"],"area":5},
+  {"key":"Treehead WoodFist","name":"树颅橡拳","nameEn":"Treeskull Oakfist","en":"Treehead WoodFist","hcIdx":4,"mon":"brute2","mods":[5,6],"group":[2,2],"autoPos":true,"replaceable":true,"tc":["Act 1 Super B","Act 1 (N) Super B","Act 1 (H) Super B"],"area":5},
   {"key":"Griswold","name":"葛雷兹渥","nameEn":"Gerezwor","en":"Griswold","hcIdx":5,"mon":"griswold","mods":[7],"group":[0,0],"autoPos":true,"replaceable":true,"tc":["Griswold","Griswold (N)","Griswold (H)"],"area":38},
-  {"key":"The Countess","name":"浴血女爵","nameEn":"The Bloodbathed Baroness","en":"The Countess","hcIdx":6,"mon":"corruptrogue3","mods":[9],"group":[6,6],"autoPos":true,"tc":["Countess","Countess (N)","Countess (H)"],"area":25,"sound":"countess"},
-  {"key":"Pitspawn Fouldog","name":"窟孽秽獒","nameEn":"Grottobrood Grimehound","en":"Pitspawn Fouldog","hcIdx":7,"mon":"bighead2","mods":[7,18],"group":[4,4],"autoPos":true,"tc":["Act 1 Super B","Act 1 (N) Super B","Act 1 (H) Super B"],"area":30},
-  {"key":"Flamespike the Crawler","name":"燧背灰腹","nameEn":"Flintback Ashbelly","en":"Flamespike the Crawler","hcIdx":8,"mon":"quillrat4","mods":[9,7],"group":[6,6],"autoPos":true,"tc":["Act 1 Unique C","Act 1 (N) Unique C","Act 1 (H) Unique C"]},
-  {"key":"Boneash","name":"骸烬","nameEn":"Cinderwight","en":"Bone Ash","hcIdx":9,"mon":"skmage_pois3","mods":[8,5,18],"group":[0,0],"autoPos":true,"tc":["Act 1 Super C","Act 1 (N) Super C","Act 1 (H) Super C"],"area":33},
-  {"key":"The Smith","name":"炉匠","nameEn":"The Forgewright","en":"The Smith","hcIdx":20,"mon":"smith","mods":[5],"group":[0,0],"autoPos":true,"tc":["Smith","Smith (N)","Smith (H)"],"area":28,"sound":"smith"},
+  {"key":"The Countess","name":"浴血女爵","nameEn":"The Bloodbathed Countess","en":"The Countess","hcIdx":6,"mon":"corruptrogue3","mods":[9],"group":[6,6],"autoPos":true,"tc":["Countess","Countess (N)","Countess (H)"],"area":25,"sound":"countess"},
+  {"key":"Pitspawn Fouldog","name":"渊生秽犬","nameEn":"Pitspawn Grimehound","en":"Pitspawn Fouldog","hcIdx":7,"mon":"bighead2","mods":[7,18],"group":[4,4],"autoPos":true,"tc":["Act 1 Super B","Act 1 (N) Super B","Act 1 (H) Super B"],"area":30},
+  {"key":"Flamespike the Crawler","name":"烈焰脊刺","nameEn":"Flamequill the Crawler","en":"Flamespike the Crawler","hcIdx":8,"mon":"quillrat4","mods":[9,7],"group":[6,6],"autoPos":true,"tc":["Act 1 Unique C","Act 1 (N) Unique C","Act 1 (H) Unique C"]},
+  {"key":"Boneash","name":"骨烬","nameEn":"Bonecinder","en":"Bone Ash","hcIdx":9,"mon":"skmage_pois3","mods":[8,5,18],"group":[0,0],"autoPos":true,"tc":["Act 1 Super C","Act 1 (N) Super C","Act 1 (H) Super C"],"area":33},
+  {"key":"The Smith","name":"炉匠","nameEn":"The Forgesmith","en":"The Smith","hcIdx":20,"mon":"smith","mods":[5],"group":[0,0],"autoPos":true,"tc":["Smith","Smith (N)","Smith (H)"],"area":28,"sound":"smith"},
   {"key":"The Cow King","name":"牛首王","nameEn":"The Oxhead King","en":"The Cow King","hcIdx":39,"mon":"cowking","mods":[8,17],"group":[6,6],"autoPos":true,"tc":["Cow King","Cow King (N)","Cow King (H)"],"area":39},
-  {"key":"Corpsefire","name":"尸焰","nameEn":"Charnelblaze","en":"Corpsefire","hcIdx":40,"mon":"zombie1","mods":[27],"group":[5,5],"autoPos":true,"tc":["Act 1 Super A","Act 1 (N) Super A","Act 1 (H) Super A"],"area":8},
+  {"key":"Corpsefire","name":"尸焰","nameEn":"Corpseblaze","en":"Corpsefire","hcIdx":40,"mon":"zombie1","mods":[27],"group":[5,5],"autoPos":true,"tc":["Act 1 Super A","Act 1 (N) Super A","Act 1 (H) Super A"],"area":8},
 ];
 
 /** champion and unique modifiers (MonUMod.txt) */
