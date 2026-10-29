@@ -185,7 +185,7 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
     // difficulty's LifeStealDivisor and ManaStealDivisor in 64ths (SUnitDmg.cpp:1154-1228)
     const src = pk.source;
     if (src instanceof Player && !src.dead) {
-      const levels = D2X_DIFFICULTIES[src.difficulty];
+      const levels = D2X_DIFFICULTIES[src.rules];
       const physDone = (physTaken * m.drain) / 100;
       const steal = (pct: number, div: number) => (physDone * Math.trunc((pct * 64) / (div || 1))) / 64 / 100;
       if (pk.lifeSteal) src.life = Math.min(src.stats.maxLife, src.life + steal(pk.lifeSteal, levels.lifeStealDivisor));

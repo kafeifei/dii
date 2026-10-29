@@ -851,6 +851,86 @@ body {
   color: var(--gold);
 }
 
+/* rift: the obelisk's panel (src/ui/rift.ts) */
+.rift-note {
+  font-size: 13px;
+  color: #c8b890;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+.rift-list {
+  max-height: 52vh;
+}
+.rift-tier .rt-head {
+  font-size: 14px;
+}
+.rift-tier .rt-sub {
+  font-size: 12px;
+  color: #a89878;
+  margin-top: 2px;
+}
+.rift-tier.cur {
+  border-color: #8a6ac8;
+  background: rgba(60, 30, 90, 0.45);
+}
+.rift-tier.locked {
+  opacity: 0.4;
+  cursor: default;
+}
+.rift-tier.locked:hover {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: #3a2e20;
+  color: inherit;
+}
+.rift-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* rift: the open rift's progress, top left on its floors */
+#rift-bar {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 230px;
+  display: none;
+  pointer-events: none;
+  text-shadow: 0 1px 2px #000;
+}
+#rift-bar.open {
+  display: block;
+}
+#rift-bar .rb-title {
+  font-size: 13px;
+  color: #d8c0ff;
+}
+#rift-bar .rb-bar {
+  height: 8px;
+  margin-top: 4px;
+  background: #140a1e;
+  border: 1px solid #4a3a6a;
+}
+#rift-bar .rb-bar > div {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(180deg, #a070e8, #4a2a8a);
+  transition: width 0.3s;
+}
+#rift-bar .rb-bar > div.full {
+  background: linear-gradient(180deg, #ffd070, #c07020);
+}
+#rift-bar .rb-note {
+  font-size: 12px;
+  color: #c8b890;
+  margin-top: 3px;
+}
+.touch #rift-bar {
+  top: calc(8px + var(--sat));
+  left: calc(8px + var(--sal, 0px));
+  width: 180px;
+}
+
 /* tooltip */
 #tooltip {
   position: fixed;

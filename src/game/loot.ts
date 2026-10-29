@@ -25,12 +25,16 @@ export interface Dropper {
   difficulty?: Difficulty;
 }
 
-/** who the drop is for: the killer's magic find and gold find, the difficulty played and their quest record in it */
+/**
+ * who the drop is for: the killer's magic find and gold find, the difficulty played and their quest
+ * record in it; 'done' where no kill is a quest's (a rift's floors: src/game/rift.ts), every quest
+ * class dropping its regular one
+ */
 export interface Finder {
   mf: number;
   gf: number;
   difficulty: Difficulty;
-  quests?: QuestRecord;
+  quests?: QuestRecord | 'done';
 }
 
 /**
@@ -49,10 +53,10 @@ const SUPERUNIQUES = new Map(D2X_SUPERUNIQUES.map((s) => [s.key, s]));
  * (Andariel's Andarielq) drops that until the killer has done its quest (MonsterMode.cpp:536-568,
  * record.ts questTcDone): with no record, every kill is the first.
  */
-export function monsterLootTc(m: Dropper, difficulty: Difficulty = m.difficulty ?? 0, quests?: QuestRecord): string | undefined {
+export function monsterLootTc(m: Dropper, difficulty: Difficulty = m.difficulty ?? 0, quests?: QuestRecord | 'done'): string | undefined {
   const su = m.superUnique ? SUPERUNIQUES.get(m.superUnique) : undefined;
   const mon = su ? D2X_MONSTERS[su.mon] : m.def.row;
-  const questDone = mon?.questTc ? questTcDone(quests, mon.questTc) : undefined;
+  const questDone = mon?.questTc ? quests === 'done' || questTcDone(quests, mon.questTc) : undefined;
   return mon && monsterTc(mon, { difficulty, rank: TC_RANK[m.rank], mlvl: m.level, su, questDone });
 }
 

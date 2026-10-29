@@ -50,14 +50,14 @@
 
 | 目录 | 管什么 | 关键文件 |
 | --- | --- | --- |
-| `src/game/` | 模拟：主角、怪物、战斗、AI、物件、掉落、尸体、存档 | `game.ts`（总控）、`save.ts`（存档）、`player.ts`、`monster.ts`、`ai.ts`、`combat.ts`、`spawn.ts`、`loot.ts`、`corpse.ts`、`level.ts` |
+| `src/game/` | 模拟：主角、怪物、战斗、AI、物件、掉落、尸体、存档、秘境 | `game.ts`（总控）、`save.ts`（存档）、`player.ts`、`monster.ts`、`ai.ts`、`combat.ts`、`spawn.ts`、`loot.ts`、`corpse.ts`、`level.ts`、`rift.ts`（秘境）、`riftsave.ts` |
 | `src/game/d2/` | 照 D2MOO 写的公式：属性、经验、死亡惩罚、速度档位、怪物数值、刷怪、怪物 AI | `stats.ts`、`xp.ts`、`death.ts`、`frames.ts`、`monstats.ts`、`population.ts`、`monai.ts` |
 | `src/game/quests/` | 任务框架（原版 16 个任务标志位）和「涤荡邪巢」 | `record.ts`、`denofevil.ts` |
 | `src/items/` | 物品：生成、词缀、品质、孔、耐久、价格、商店、卷轴书、储物箱页 | `item.ts`、`gen.ts`、`vendor.ts`、`tomes.ts`、`stash.ts`、`d2/*` |
-| `src/world/` | 区域、大地图生成（营地 + 血沼荒原 + 凛寒原野无缝相连）、邪秽巢穴、试炼场 | `areas.ts`、`overworld.ts`、`zone.ts`、`presets.ts`、`levelgen.ts` |
+| `src/world/` | 区域、大地图生成（营地 + 血沼荒原 + 凛寒原野无缝相连）、邪秽巢穴、试炼场、秘境的层和小层 | `areas.ts`、`overworld.ts`、`zone.ts`、`presets.ts`、`levelgen.ts`、`rift.ts` |
 | `src/data/d2x/` | 原版数据表，由 `tools/d2-import.mjs` 生成，**不要手改** | `monsters.ts`、`treasure.ts`、`affixes.ts`、`uniques.ts`、`areas.ts`… |
 | `src/render/` | 模型（角色各一个文件，道具按用处合成几个包，按需加载）、动画、地面分块、灯光、昼夜、特效 | `renderer.ts`、`assets.ts`（按需加载模型和道具包）、`needs.ts`（什么要哪些模型）、`models.ts`、`specs.ts`、`chunks.ts` |
-| `src/ui/` | 面板、HUD、标题页、物品图标（画好的图加原版换色） | `ui.ts`、`inventory.ts`、`title.ts`、`icons.ts`、`itempics.ts` |
+| `src/ui/` | 面板、HUD、标题页、物品图标（画好的图加原版换色）、秘境面板和进度条 | `ui.ts`、`inventory.ts`、`title.ts`、`icons.ts`、`itempics.ts`、`rift.ts` |
 | `src/audio/` | 音效、语音、音乐（录好的文件；缺失时退回代码合成） | `sfx.ts`、`music.ts`、`sounds.ts`、`files.ts`（生成的） |
 | `tools/` | 导入原版数据、生成美术和声音、模型构建和图的大小、无头测试、bot、构建后的体积检查 | `d2-import.mjs`、`ai-icons.mjs`、`ai-audio.mjs`、`build-models.mjs`、`texel-density.mjs`、`ai-textures.mjs`、`play.mjs`、`bot.mjs`、`check-dist.mjs` |
 
@@ -70,6 +70,7 @@
 | `dii-save-v1`、`dii-save-v1-1`…`-7` | 8 个角色位，每位一个角色（`SaveV4`，在 `src/game/save.ts`） |
 | `dii-save-v1-backup-…` | 每次迁移前的备份：v4 以前的全留着，v4 的只留最早和最新两份 |
 | `dii-shared` | 共享储物箱的 5 页，归玩家而不是角色 |
+| `dii-rift` | 打过的秘境层（段的键，如 `n:moor`），归玩家；只增不减，写前读一遍取并集，比当前新的只读（`src/game/riftsave.ts`，见 `docs/RIFT.md`）。开着的秘境本身不存：刷新回营地 |
 | `dii-tab:<存档键>` | 哪个窗口正在玩这个角色（见下文「一个角色只在一个窗口里玩」） |
 | `dii-settings` | 设置 |
 | sessionStorage `dii-in-game`、`dii-slot` | 本页正在玩哪个角色位。刷新本页时靠它直接接着玩 |
@@ -114,7 +115,7 @@
 
 ## 测试
 
-**单元测试** `npm test`（39 个文件，约 15 秒）：
+**单元测试** `npm test`（40 个文件，约 15 秒）：
 - 原版公式和数据：`d2-*.test.mjs`、`d2treasure`、`d2affixes`、`d2quality`、`d2legendary`；
 - 物品和交易：`items`、`tomes`、`stash`、`ctrlclick`、`services`；
 - 存档迁移：`save`；
@@ -122,6 +123,7 @@
 - 地图：`areas`、`levelgen`、`overworld`、`west`、`seamless`、`seams`；
 - 怪物：`spawn`、`d2-population`、`d2-monsters`、`d2-ai`；
 - 模型：`models`（清单和 `public/models` 的角色文件、`packs/` 下的道具包一一对上，包里每张图只存一份，地图摆的、手里拿的都在清单里）、`monster-models`、`needs`（标题页等的核心模型包括营地的一切、主角能拿的每件武器、每种掉落和尸体；各个造东西的函数要的模型都在需求里；去下一个地方前预取的就是那里要的）、`assets`（假网络上：`NOW` 插在后台前面、它在下时别的不开始，失败再试一次后放手、不让人一直等，放手后后台的再试也用完了的，关卡再要它时马上再试、不等它，网络回来就下好，贴图先下时后台让路：还差一半以上的停下、不算失败、放开后从头下，快下完的接着下；跟着后台让路的（`Sfx` 先取的台词）让路时一起让，放开后才告诉它接着取；测试结束前停掉各个库后台的再试，不让它们在别的测试里用真的或别人替换的 `fetch`）；
+- 秘境：`rift`（33 层、开放规则、`dii-rift` 两个窗口合并、每一层的小层和镇守者、整个打一遍，见 `docs/RIFT.md`）；
 - 任务、图标、声音：`quests`、`icons`、`itempics`（每张图都画了、在图集里；图集解码后，游戏图表 `src/data/itempics.ts` 里每张图的位置显示的正是 `tools/icons/made` 给它记的像素（`atlas.pixels`，`tools/ai-icons.mjs` 拼图集时记下），图表和记录说的位置一致，每张图集是图表版本号指的那个文件；把 inv2ax 挪到 invgax 的上半截、或换成 invaxe 的位置都会失败）、`audio`、`sfx`、`ai-audio`；
 - 构建：`check-dist`（`dist/` 怎么清点，体积上限卡在哪（44 MB，为什么见「发布」），超一个字节也不会写成正好等于上限，指向不存在的东西的链接一个个说出来、不抛 ENOENT，`npm run build` 接着 `vite build` 跑它）。
 
@@ -139,6 +141,7 @@
 | `tomes`、`ctrlclick` | 卷轴书和商店点击、Ctrl+点击 | `?dev` |
 | `icons` | 图标选图和换色、各面板、手机性能；开局后先取图集，每张只走一次网络，背包的图集从缓存读；切好的图存成 WebP；图集坏一次再取能显示，之后再坏还有一次再取（这一步 `&noahead`，不先取） | `?dev` |
 | `sfx`、`audio`、`music` | 音量层级（主角和镇民台词的每条录音都量）、文件缺失时退回合成；镇民晚到的录音接在台词时钟走到的地方，问候和主角的话一起出声 | `?dev` |
+| `rift` | 秘境：方碑面板、开门、每个小层、进度条、镇守者、离开秘境的门、回到方碑旁边、秘境关闭、第 2 层开放 | `?dev` |
 | `stream` | 模型按需加载：营地的贴图拦着时一个模型都不开始下，放行后接着下；拦住荒野包、地牢包和怪物时先用替身，放行后全部换上；进洞穴时盖「载入中…」、世界暂停，到了揭开；从营地用传送点去凛寒原野（同一张图）时，它要的文件提到 `NOW`、1.5 秒后盖住、世界暂停，到了揭开；文件失败时先用替身、不盖住，恢复后在后台补上；后台的再试用完了的，网络回来后不会自己补上，下一层建图时再要、补上；`?gallery` 起来后没有替身 | `?dev` |
 
 **发布前必跑**：`npx tsc --noEmit`、`npm test`、上表全部场景（`persist` 不带 `?dev`），外加 bot 两个职业各跑一局到凛寒原野（`tools/bot.mjs`）。

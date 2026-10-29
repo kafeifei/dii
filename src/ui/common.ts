@@ -7,7 +7,7 @@ import type { SkillPicker } from './hud';
 import type { Tooltip } from './tooltip';
 import type { TouchControls } from './touch';
 
-export type LeftPanel = 'char' | 'stash' | 'shop' | 'waypoint' | 'cube' | 'quests' | null;
+export type LeftPanel = 'char' | 'stash' | 'shop' | 'waypoint' | 'cube' | 'quests' | 'rift' | null;
 export type RightPanel = 'inv' | 'skills' | null;
 
 /**

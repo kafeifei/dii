@@ -1299,6 +1299,28 @@ export class Renderer implements Picker {
           },
         };
       }
+      case 'obelisk': {
+        // the rifts' obelisk in the camp (src/game/rift.ts): a tall stone, a violet glow at its head
+        const model = assetProp(MODELS.obelisk, [1.5, 2.6, 1.5]);
+        if (model) {
+          model.rotation.y = CAM_YAW;
+          g.add(model);
+        }
+        const glow = glowSprite('#b070ff', 1.7, 0.7);
+        glow.position.y = 2.7;
+        g.add(glow);
+        return {
+          group: g,
+          lightColor: '#a060ff',
+          lightIntensity: 10,
+          update: (dt) => {
+            (glow.material as THREE.SpriteMaterial).opacity = 0.55 + Math.sin(this.time * 1.7) * 0.15;
+            if (Math.random() < dt * 4) {
+              this.fx.add.spawn({ x: o.pos.x + (Math.random() - 0.5) * 0.9, y: 0.2 + Math.random() * 2.2, z: o.pos.z + (Math.random() - 0.5) * 0.9, vy: 0.5, color: '#b070ff', size: 0.1, life: 1.4 });
+            }
+          },
+        };
+      }
       case 'corpse': {
         // the hero's body as it fell, in the gear left on it (game/corpse.ts)
         const c = o.corpse;

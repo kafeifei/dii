@@ -54,6 +54,8 @@ export const MODELS = {
   coins: 'd_coin_stack_small',
   /** the dungeons' pillars (Renderer.buildLevel) */
   pillar: 'd_pillar_decorated',
+  /** the rifts' obelisk in the camp (a graveyard pack's stone post, which the title waits for with the camp) */
+  obelisk: 'h_fence_pillar',
 } as const satisfies Record<string, ModelKey>;
 
 /**

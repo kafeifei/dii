@@ -26,6 +26,20 @@ export interface AreaDef {
   kind: AreaKind;
   /** it has a waypoint */
   waypoint: boolean;
+  /** a floor of a rift (src/world/rift.ts): the Act 1 area it replays, whose monsters it spawns */
+  rift?: RiftSource;
+}
+
+/** what a rift floor replays (src/game/spawn.ts spawnArea reads it) */
+export interface RiftSource {
+  /** the levels.txt id of the Act 1 area: its monsters, superuniques and densities */
+  source: number;
+  /** its MonDen and MonUMin/MonUMax scaled by this */
+  more: number;
+  /** superuniques it holds back: the guardian's, which comes when the rift's progress is full */
+  withhold: string[];
+  /** the guardian's MonStats id, which may come on any floor (src/render/needs.ts fetches its look ahead) */
+  guardian: string;
 }
 
 /** the camp */
@@ -99,6 +113,11 @@ export function trialFloor(id: number): number | undefined {
  */
 export function areaLevel(a: AreaDef, difficulty: Difficulty = 0): number {
   return a.alvl[difficulty];
+}
+
+/** a rift's floor as a rift opens (src/world/rift.ts), in place of the last rift's of that id */
+export function defineRiftFloor(a: AreaDef & { rift: RiftSource }): AreaDef {
+  return define(a);
 }
 
 /** an area by id; the dungeon's floors are made as they are first asked for, since it has no bottom */
