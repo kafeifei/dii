@@ -118,7 +118,7 @@
 
 ## 测试
 
-**单元测试** `npm test`（45 个文件，约 18 秒）：
+**单元测试** `npm test`（47 个文件，约 18 秒）：
 - 原版公式和数据：`d2-*.test.mjs`、`d2treasure`、`d2affixes`、`d2quality`、`d2legendary`；
 - 技能表达式和佣兵（M2a 的地基，还没接进游戏）：`skillcalc`（Fog 的求值规则、佣兵的五个技能 1–60 级、主角十个技能对照原版说明）、`hireling`（雇佣名单、等级和价钱、属性、技能、经验、8 级门槛、能穿什么、复活费）；
 - 物品和交易：`items`、`tomes`、`stash`、`ctrlclick`、`services`，调试面板的掉落 `debugloot`；
@@ -129,6 +129,7 @@
 - 模型：`models`（清单和 `public/models` 的角色文件、`packs/` 下的道具包一一对上，包里每张图只存一份，地图摆的、手里拿的都在清单里）、`monster-models`、`needs`（标题页等的核心模型包括营地的一切、主角能拿的每件武器、每种掉落和尸体；各个造东西的函数要的模型都在需求里；去下一个地方前预取的就是那里要的）、`assets`（假网络上：`NOW` 插在后台前面、它在下时别的不开始，失败再试一次后放手、不让人一直等，放手后后台的再试也用完了的，关卡再要它时马上再试、不等它，网络回来就下好，贴图先下时后台让路：还差一半以上的停下、不算失败、放开后从头下，快下完的接着下；跟着后台让路的（`Sfx` 先取的台词）让路时一起让，放开后才告诉它接着取；测试结束前停掉各个库后台的再试，不让它们在别的测试里用真的或别人替换的 `fetch`）；
 - 秘境：`rift`（33 层、开放规则、`dii-rift` 两个窗口合并、每一层的小层和镇守者、整个打一遍，见 `docs/RIFT.md`）；
 - 任务、图标、声音：`quests`、`icons`、`itempics`（每张图都画了、在图集里；图集解码后，游戏图表 `src/data/itempics.ts` 里每张图的位置显示的正是 `tools/icons/made` 给它记的像素（`atlas.pixels`，`tools/ai-icons.mjs` 拼图集时记下），图表和记录说的位置一致，每张图集是图表版本号指的那个文件；把 inv2ax 挪到 invgax 的上半截、或换成 invaxe 的位置都会失败）、`audio`、`sfx`、`ai-audio`；
+- 拆 `game.ts` 的护栏（M2a 第 0 步，`docs/M2A-STEP0.md` 1.4）：`replay`（`Math.random` 换成固定种子的生成器、跑完还原，世界种子因此固定；新角色出营地、打怪击杀、捡东西、开宝箱、喝药、回城门来回、死、复活、捡回尸体、用传送点、进出邪秽巢穴、换难度，在 7 个检查点上把主角、这局留着的地图上的怪、地上的物品、任务记录、写出的存档各算一个摘要，和记下的值比；物品 uid 按第一次见到的顺序编号，存档的写入时间不算。只搬代码的提交不许改变摘要，失败时说出哪个检查点的哪一块变了，并打印整张表，有意改变时贴回去）、`facade`（1.2 列的 `Game` 方法都还在，`lastDungeon` 能读能写，在实例上换掉的 `killMonster`、`rollLoot` 仍是游戏调用的那个）；
 - 构建：`check-dist`（`dist/` 怎么清点，体积上限卡在哪（44 MB，为什么见「发布」），超一个字节也不会写成正好等于上限，指向不存在的东西的链接一个个说出来、不抛 ENOENT，`npm run build` 接着 `vite build` 跑它）。
 
 **CI**（`.github/workflows/ci.yml`，2026-10-29 加）：GitHub 上每次推送和 PR，在 ubuntu-latest 上用 Node 22（和本机一样）跑 `npm ci`、`npx tsc --noEmit`、`npm test`。场景、bot 和构建不在 CI 里跑（要浏览器和开发服务器），照旧在发布前跑。单元测试只用仓库里的东西：`git archive HEAD` 解到一个新目录（没有 `node_modules`、`models-src` 的链接、`audio-src`、avatar 目录、钥匙串、box），只给 node（PATH 里没有 ffmpeg 这些、HOME 是空目录、UTC），`npm ci` 后 41 个全过；文件名大小写和目录列出的顺序也都不依赖 macOS。`ai-audio` 的音乐那段要 ffmpeg 和苹果的 AAC 编码器（`aac_at`，只有 macOS 的 ffmpeg 有），缺了就跳过并说一句：工具有它就用它编码，发布的音乐都是它编的；换成 ffmpeg 自己的编码器（Linux 上只有它），那段的咔嗒声限幅到 -6 dBFS，编码后的真峰值还在 0 dBFS 附近，工具拒绝那条，测试就失败。
