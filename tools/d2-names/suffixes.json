@@ -161,7 +161,7 @@
   "of the Kraken": {"name":"人马之","nameEn":"of the Wild Centaur","en":"of the Centaur","official":"半人马之","note":"曾用名「马躯之」of the Horse-Bodied；留「人马」；马躯认不出"},
   "of Memory": {"name":"追忆之","nameEn":"of Long Memory","en":"of Memory","official":"回忆之","note":"曾用名「铭记之」of the Unforgetting；留「忆」；铭记认不出"},
   "of the Elephant": {"name":"象王之","nameEn":"of the Elephant King","en":"of the Elephant","official":"大象之","note":"曾用英文名 of the Tusked King；中文不变（留象）；英文留 Elephant"},
-  "of Power": {"name":"权柄之","nameEn":"of Dread Power","en":"of Power","official":"权能之","note":"曾用名「威势之」of Awe and Sway；留「权」；威势认不出"},
+  "of Power": {"name":"权势之","nameEn":"of Dread Power","en":"of Power","official":"权能之","note":"曾用名「权柄之」（英文不变），更早「威势之」of Awe and Sway：权柄是符文之语 Authority 的名字（官方权威，另一个词），魔法后缀不和它同名，换作权势；留「权」，能换势；威势认不出"},
   "of Grace": {"name":"天恩之","nameEn":"of Bestowed Grace","en":"of Grace","official":"神恩之","note":"曾用名「垂怜之」of Mercy Bestowed；留「恩」；垂怜认不出"},
   "of Grace and Power": {"name":"圣威之","nameEn":"of Grace and Might","en":"of Grace and Power","official":"恩威之","note":"曾用英文名 of Sacred Awe；中文不变（留威）；英文留 Grace"},
   "of the Yeti": {"name":"雪魈之","nameEn":"of the Mountain Yeti","en":"of the Yeti","official":"雪人之","note":"曾用英文名 of the Snow Fiend；中文不变（留雪）；英文留 Yeti"},

@@ -1,7 +1,7 @@
 // Balance bot scenario for tools/play.mjs: fast-forwards the sim with an automated player.
 // node tools/play.mjs tools/bot.mjs --url "http://localhost:PORT/?dev" [--class sorceress] [--start-area camp] [--to coldplains] [--level 1] [--minutes 40]
 // The hero plays Act 1's opening as a player does (src/world/areas.ts, the areas in the order a hero
-// comes to them): in the camp it speaks to the merchant (亚珈萝, Akara's counterpart) first, so the
+// comes to them): in the camp it speaks to the merchant (亚喀蕾, Akara's counterpart) first, so the
 // Den of Evil is given (src/game/quests), out over Blood Moor into the Den, every monster there killed
 // so the quest is done, back to her for the reward (a skill point, spent by its build), then on to
 // Cold Plains, its waypoint touched and Bishibosh killed, and on until past --to. It fights what is

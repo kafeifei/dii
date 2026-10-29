@@ -164,7 +164,7 @@ export default async (load) => {
   };
   const ticks = (n) => game.quests.update(QUEST_TICK * n + 1e-6);
 
-  check(akara()?.npc === '亚珈萝' && game.quests.hasNews('akara') && word() === 0, `a new game: ${akara()?.npc}, news ${game.quests.hasNews('akara')}, word ${word()}`);
+  check(akara()?.npc === '亚喀蕾' && game.quests.hasNews('akara') && word() === 0, `a new game: ${akara()?.npc}, news ${game.quests.hasNews('akara')}, word ${word()}`);
   check(game.quests.log('a1q1').state === 'none' && ACT1_QUESTS.filter((q) => q.key !== 'a1q1').every((q) => game.quests.log(q.key).state === 'off'), 'the log of a new hero');
   toAkara();
   const intro = game.talkTo(akara());

@@ -677,7 +677,7 @@ section('English names');
     named.flatMap((r) => forms.filter((g) => r.zh.includes(g.new) && !r.nameEn.includes(g.newEn)).map((g) => `${r.where} ${r.zh} ${r.nameEn}: ${g.new} is ${g.newEn}`)),
   );
   // and no English name keeps one of D2's (its people, places and powers: Horadric, Akara, Zakarum, …)
-  // ("tarn" is also English, a mountain lake: Beryl's Tarn-Green is its colour; Tarnhelm is still D2's)
+  // ("tarn" is also English, a mountain lake, free for a name of ours; Tarnhelm is still D2's)
   const blizzard = glossaryEn.flatMap((g) => g.en.split(/ \/ | \(|\)/).map((t) => t.trim()).filter((t) => t && t !== 'Tarn').map((t) => ({ t, g })));
   check(
     "no English name keeps a name of D2's the glossary replaces",
@@ -692,8 +692,8 @@ section('English names');
   // magicprefix, magicsuffix and automagic Name, rareprefix and raresuffix name, monstats NameStr,
   // superuniques Name, levels LevelName, uniqueprefix, uniquesuffix and uniqueappellation Name,
   // hireling NameFirst..NameLast), in D2CE's string tables. The glossary's transliterations are taken
-  // out of both first (ours from ours, D2's from D2's: "Chashi" for Charsi was looked at there), and
-  // what is left is compared, so a name whose person is all that changed is compared too ("Weirte's
+  // out of both first (ours from ours, D2's from D2's: "Ghiyed" for Gheed is looked at there), and
+  // what is left is compared, so a name whose person is all that changed is compared too ("Weirtel's
   // Leg" for Wirt's Leg).
   const editDistance = (a, b) => {
     let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
@@ -706,7 +706,7 @@ section('English names');
   };
   const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   // one RegExp per term, longest first ("Daikor Kahin" before "Kahin"), with its "of" or "'s" ("Lance
-  // of Yaggai" and "Yagayi's Lance" are both the person's lance)
+  // of Yaggai" and "Yagorai's Tilting Spear" are both the person's lance)
   const terms = (list) =>
     [...new Set(list)].sort((a, b) => b.length - a.length).map((t) => new RegExp(`(^|[^A-Za-z])(?:of (?:the )?)?${esc(t)}(?:['’]s)?(?![a-z])`, 'g'));
   const ourTerms = terms(forms.map((g) => g.newEn));

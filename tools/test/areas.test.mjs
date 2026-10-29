@@ -71,7 +71,7 @@ export default async (load) => {
     }
     // Akara's counterpart, by her row's name (tools/d2-names/npcs.json), and her id, which her quests go by
     const merchant = level.objects.find((o) => o.kind === 'vendor');
-    if (depth === 0) check(merchant?.name === '商人 · 亚珈萝' && merchant.npcId === 'akara', `${what}: the merchant is ${merchant?.name} (${merchant?.npcId})`);
+    if (depth === 0) check(merchant?.name === '商人 · 亚喀蕾' && merchant.npcId === 'akara', `${what}: the merchant is ${merchant?.name} (${merchant?.npcId})`);
   }
 
   // ── Game.teleportWithin, with hooks that only take notes ──

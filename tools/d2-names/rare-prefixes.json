@@ -5,7 +5,7 @@
   "Viper": {"name":"毒蝰","nameEn":"Asp","en":"Viper","official":"蝮蛇"},
   "GhoulRI": {"name":"啖尸鬼","nameEn":"Graveghoul","en":"Ghoul","official":"食尸鬼","note":"曾用名 腐鬼（Rotwight）；腐鬼只剩一个鬼；留住「尸鬼」，食换啖；英文留着 Ghoul"},
   "Skull": {"name":"髑髅","nameEn":"Death's-Head","en":"Skull","official":"颅骨","note":"髑髅＝Death's-Head，与套装「炼狱髑髅」一致"},
-  "Blood": {"name":"血潮","nameEn":"Goretide","en":"Blood","official":"鲜血","note":"血潮；Blood 在原名里，血用 Gore，与前缀「浴血」Gore-Bathed 同"},
+  "Blood": {"name":"血潮","nameEn":"Goretide","en":"Blood","official":"鲜血","note":"血潮；Blood 在原名里，血用 Gore（同暗金踏血 Goretread、喋血骑士 Gore Cavalier）"},
   "Dread": {"name":"惊怖","nameEn":"Fright","en":"Dread","official":"惊悚","note":"曾用名 战栗（Tremor）；战栗/Tremor 换了意象；留「惊」，悚换怖；Fright 与怪物前缀同（惊惧是符文之语 Dread，Terror 是符文之语名）"},
   "Doom": {"name":"厄难","nameEn":"Downfall","en":"Doom","official":"厄运","note":"曾用名 凶兆（Omen）；凶兆/Omen 是征兆，另一个意象；留「厄」，运换难；与怪物前缀同"},
   "Grim": {"name":"阴毒","nameEn":"Sinister","en":"Grim","official":"恶毒","note":"曾用名 阴森；阴森与「恶毒」无一字相同；留「毒」"},

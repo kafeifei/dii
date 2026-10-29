@@ -39,7 +39,7 @@
   "Runeword51": {"name":"古橡之心","nameEn":"Heart of the Elder Oak","en":"Heart of the Oak","official":"橡树之心","note":"橡树之心→古橡之心，留橡、之心，古橡同技能「古橡贤灵」；Heart of the Oak 留下，加 Elder（古）；曾用名 古橡心髓 / Elder Oak Marrow"},
   "Runeword177": {"name":"炉火","nameEn":"Hearthflame","en":"Hearth","official":"壁炉","note":"炉火已留炉；Hearth 留下，加 flame（火）；英文曾用名 Banked Embers"},
   "Runeword54": {"name":"圣霆","nameEn":"Sacred Thunder","en":"Holy Thunder","official":"圣雷","note":"圣雷→圣霆，留圣；Holy→Sacred（圣＝Sacred），留 Thunder；曾用名 神霆 / Godsbolt"},
-  "Runeword55": {"name":"尊荣","nameEn":"Laurels","en":"Honor","official":"荣耀","note":"与「荣耀之链」→「尊荣枷锁」对应；尊荣＝Laurel"},
+  "Runeword55": {"name":"尊荣","nameEn":"Exalted Honor","en":"Honor","official":"荣耀","note":"尊荣留「荣」；曾用英文名 Laurels：月桂是另一个意象，丢了 Honor；留 Honor，加 Exalted（尊），和荣耀锁链 Fetters of Honor 同用 Honor"},
   "Runeword171": {"name":"喧腾","nameEn":"Headlong Hustle","en":"Hustle","official":"喧嚣","note":"官方「喧嚣」是误译，但老玩家认的是它：喧嚣→喧腾，留喧，喧腾也有奔涌之意；Hustle 留下，加 Headlong；与 Runeword172 是同一个符文之语，同名；曾用名 疾驰 / Headlong Gallop"},
   "Runeword172": {"name":"喧腾","nameEn":"Headlong Hustle","en":"Hustle","official":"喧嚣","note":"官方「喧嚣」是误译，但老玩家认的是它：喧嚣→喧腾，留喧，喧腾也有奔涌之意；Hustle 留下，加 Headlong；与 Runeword171 是同一个符文之语，同名；曾用名 疾行 / Swift Stride"},
   "Runeword59": {"name":"玄冰","nameEn":"Umbral Rime","en":"Ice","official":"寒冰"},

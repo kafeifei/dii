@@ -1,7 +1,7 @@
 // The Den of Evil from Akara's first word to her reward, as Diablo II plays it (src/game/quests,
 // D2MOO A1Q1.cpp), through the real UI (tools/play.mjs scenario):
 //   node tools/play.mjs tools/scenarios/quests.mjs --url "http://localhost:5174/?dev&tod=0.5"
-// Reloads with empty storage. In the camp the merchant (亚珈萝, Akara's counterpart) has the yellow
+// Reloads with empty storage. In the camp the merchant (亚喀蕾, Akara's counterpart) has the yellow
 // mark of quest news; spoken to, she gives the quest in a scrolling line (cut short with 跳过), then
 // her menu: 交谈 has her remind the hero (spoken to again mid-line, or Esc, cuts it short), 取消
 // leaves her and the log says to find the den. Out of the camp (the record's LEAVETOWN), into the
@@ -132,7 +132,7 @@ export default async function (page, shot, log) {
         return { name: a?.name, npc: a?.npc, news: game.quests.hasNews('akara'), word: S.word(), log: game.quests.log('a1q1').state, area: game.area?.id };
       });
       expect(s.area === CAMP_AREA, `started in area ${s.area}`);
-      expect(s.npc === '亚珈萝' && s.name === '商人 · 亚珈萝', `the merchant is ${s.npc} (${s.name})`);
+      expect(s.npc === '亚喀蕾' && s.name === '商人 · 亚喀蕾', `the merchant is ${s.npc} (${s.name})`);
       expect(s.news && s.word === 0 && s.log === 'none', `a new hero: news ${s.news}, word ${s.word}, log ${s.log}`);
     },
 
@@ -198,7 +198,7 @@ export default async function (page, shot, log) {
       const l = await openLog();
       expect(l.cells.length === 6, `the log shows ${l.cells.length} quests`);
       expect(l.cells[0] === 'a1q1:active.on' && l.cells.slice(1).every((c) => /:off$/.test(c)), `the log's quests: ${l.cells.join(' ')}`);
-      expect(l.state === '进行中' && l.text.includes('邪秽巢穴') && l.text.includes('亚珈萝'), `the log says ${l.state}: ${l.text}`);
+      expect(l.state === '进行中' && l.text.includes('邪秽巢穴') && l.text.includes('亚喀蕾'), `the log says ${l.state}: ${l.text}`);
       await shot('quest-log');
       await closeLog();
     },
@@ -267,7 +267,7 @@ export default async function (page, shot, log) {
       });
       expect(done.pending && done.goal && !done.granted, `cleared: pending ${done.pending}, goal ${done.goal}, granted ${done.granted}`);
       expect(done.lit, 'the den is not lit');
-      expect(done.msgs.includes('邪秽巢穴里的邪物已被肃清') && done.msgs.includes('亚珈萝'), `the messages: ${done.msgs}`);
+      expect(done.msgs.includes('邪秽巢穴里的邪物已被肃清') && done.msgs.includes('亚喀蕾'), `the messages: ${done.msgs}`);
       expect(done.log.state === 'reward', `the log: ${JSON.stringify(done.log)}`);
       await page.waitForTimeout(3500);
       const hemi = await ev(() => window.renderer.hemi.intensity);

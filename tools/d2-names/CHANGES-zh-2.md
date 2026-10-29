@@ -1656,3 +1656,49 @@
 | suffixes.json | of Lethargy | （无官方中文） → 倦魄之（不变） | of Leaden Lethargy（原 of Weary Souls） | 中文不变；英文 Weary Souls 认不出 |
 | suffixes.json | of Rancor | （无官方中文） → 怨毒之（不变） | of Old Rancor（原 of Venomous Spite） | 中文不变；英文 Venomous Spite 认不出 |
 | suffixes.json | of Apocalypse | （无官方中文） → 天倾之（不变） | of the Last Apocalypse（原 of the Toppled Heavens） | 中文不变；英文 Toppled Heavens 认不出 |
+
+## 导入：各表对齐、手抄的名字、抽查
+
+几组改完以后，把各张表对齐、重新导入，再改掉别处手抄的名字。改了下面 33 行，各行的 `note` 里也记了曾用名。
+
+- 术语表：`bases.json` 18 行、`npcs.json` 5 行、`monsters.json` 3 行、`areas.json` 1 行还用着旧写法，照术语表换成新的（亚喀蕾 Akarelle、柯霞 Khassia、札喀仑 Zakhalun、喀廉 Khalyan、迷斐思陀 Mefistor、罗喀倪秀 Lokhanishu、翠思忒琅 Trystrang，以及只改英文的 Charessa、Ghiyed、Felovie、Angdarael、Bishibaushi、Jarredor、Khorast、Weirtel、Lan Ershen、Ennifoss、Netherforge）。任务物品和同名暗金照旧同名（狱炉锻锤 Sledge of the Netherforge、喀廉的链锤、喀廉的遗志）。改完 `node tools/d2-validate.mjs` 67 项全过，各表再没有术语表换掉的旧写法。
+- 一个词一个写法：喋血骑士（Gore Rider，原浴血骑士 / Gore Cavalier）——「浴血」在浴血女爵、前缀浴血里是 Bloodbathed，这里英文要留 Blizzard 的 Gore，所以中文换成同义的「喋血」。食尸鬼（Ghoul）跟随机暗金怪名字里的同一个词改作啖尸鬼 / Graveghoul（原噬腐鬼 / Gorging Rotwight，跟的是那边已经改掉的「腐鬼」）。
+- 重名：同一类里没有重名，暗金、套装、符文之语之间也没有（`d2-validate.mjs` 只查英文，中文另用脚本查过）。跨类还有 15 处中文同名，多是同一个官方词在两张表里（追忆 / 追忆之都是「回忆」，崩碎是「碎击」的 Break 和 Sunder），照「一个官方词一个写法」不改；只有魔法后缀 of Power 的「权柄之」和符文之语 Authority 的「权柄」是两个不同的官方词撞上的，后缀改作权势之。符文之语 Venom（毒液）和后缀 of Venom（剧毒之）都叫「蛇毒」，两边官方词不同但意思相同，没有改。
+- 抽查：从全部名字表里随机抽 150 条（每类至少 3 条），遮住官方名逐条看过，140 条一眼认得出；3 条不合规则，这次改了：烈焰亡骨咒师（Burning Dead Mage，原焚骸咒师 / Pyrebone Incanter，中英文每个词都换了）、符文之语 Honor 的英文 Exalted Honor（原 Laurels，换了意象；荣耀锁链 Fetters of Honor 也用 Honor）、死亡女神的王权的英文 Halabreth's Reign（原 Grave Queen's Reign，跟着官方中文的「死亡女神」走，英文老玩家认的是 Halaberd）。另有 6 条勉强，没有改：雄君的鲛皮手套 Morgenu's Sharkhide（Morgenu 离 Magnus 的音偏远）、弑王者 Regicide（没留 Kingslayer）、前缀皎洁（Sacred，留的是「洁」不是「圣」）、稀有名狱魔 Hellborn（没留 Demon）、秽血弓女 Foulblood Bowmaiden（全族的写法，英文两个词都换了）、戍卒营舍 Garrison Quarters（没留 Barracks）。
+- 手抄的名字：`README.md`、`tools/bot.mjs`、`tools/scenarios/quests.mjs`、`tools/test/areas.test.mjs`、`tools/test/quests.test.mjs` 里的「亚珈萝」改作亚喀蕾；`README.md` 怪物一段的堕渊魔、堕渊魔巫祝、箭猪改作沉沦鬼、沉沦鬼巫祝、针鬃鼠；`style-en.md` 的三个例子（Weirtel's Leg、亚珈萝 / Yajalo 注明是旧名、京子改作喜代美 / Kiyomi）；`d2-validate.mjs` 注释里的旧名例子；`tools/icons/desc/` 的 `note` 里 92 处旧英文名（只是注释，不进生图的提示词）。`DIALOGUE-zh.md` 重新生成。台词（`src/data/dialogue.ts`）只用占位符，主角配音（`tools/audio/voice-lines.md`）不带专有名词，都不用改。
+
+| 文件 | 原版 | 官方 → 旧名 → 新名 | 新英文名 | 为什么 |
+| --- | --- | --- | --- | --- |
+| bases.json | Jared's Stone | 杰瑞德之石 → 贾睿铎之石（不变） | Jarredor's Stone（原 Jaruidor's Stone） | 跟上术语表的新写法 |
+| bases.json | Aerin Shield | 艾琳盾 → 埃芮恩盾 → 埃莲盾 | Aerlien Shield（原 Airuen Shield） | 跟上术语表的新写法 |
+| bases.json | Akaran Targe | 阿卡兰小盾 → 亚珈萝小盾 → 亚喀蕾小盾 | Akarelle Targe（原 Yajalo Targe） | 跟上术语表的新写法 |
+| bases.json | Akaran Rondache | 阿卡兰轻圆盾 → 亚珈萝轻圆盾 → 亚喀蕾轻圆盾 | Akarelle Rondache（原 Yajalo Rondache） | 跟上术语表的新写法 |
+| bases.json | Kurast Shield | 库拉斯特盾 → 柯剌斯盾（不变） | Khorast Shield（原 Kolass Shield） | 跟上术语表的新写法 |
+| bases.json | Zakarum Shield | 萨卡兰姆盾 → 札迦仑盾 → 札喀仑盾 | Zakhalun Shield（原 Zajalun Shield） | 跟上术语表的新写法 |
+| bases.json | Hellforge Plate | 地狱铸甲 → 狱炉铸甲（不变） | Netherforge Plate（原 Nether Furnace Plate） | 跟上术语表的新写法 |
+| bases.json | Wirt's Leg | 怀特的腿 → 韦尔特的腿（不变） | Weirtel's Leg（原 Weirte's Leg） | 跟上术语表的新写法 |
+| bases.json | Hell Forge Hammer | 地狱熔炉之锤 → 狱炉锻锤（不变） | Sledge of the Netherforge（原 Sledge of the Nether Furnace） | 跟上术语表的新写法 |
+| bases.json | Khalim's Flail | 卡林姆的连枷 → 哈廉的链锤 → 喀廉的链锤 | Khalyan's Chain Mace（原 Halyan's Chain Mace） | 跟上术语表的新写法 |
+| bases.json | Khalim's Will | 卡林姆的意志 → 哈廉的遗志 → 喀廉的遗志 | Khalyan's Testament（原 Halyan's Testament） | 跟上术语表的新写法 |
+| bases.json | Khalim's Eye | 卡林姆的眼球 → 哈廉的眼球 → 喀廉的眼球 | Khalyan's Eye（原 Halyan's Eye） | 跟上术语表的新写法 |
+| bases.json | Khalim's Heart | 卡林姆的心脏 → 哈廉的心脏 → 喀廉的心脏 | Khalyan's Heart（原 Halyan's Heart） | 跟上术语表的新写法 |
+| bases.json | Khalim's Brain | 卡林姆的大脑 → 哈廉的大脑 → 喀廉的大脑 | Khalyan's Brain（原 Halyan's Brain） | 跟上术语表的新写法 |
+| bases.json | Lam Esen's Tome | 兰姆·艾森之书 → 岚·厄森之书（不变） | Lan Ershen's Tome（原 Lan Ersen's Tome） | 跟上术语表的新写法 |
+| bases.json | Scroll of Inifuss | 艾尼弗斯卷轴 → 伊妮孚斯卷轴（不变） | Scroll of Ennifoss（原 Scroll of Yinifus） | 跟上术语表的新写法 |
+| bases.json | Mephisto's Soulstone | 墨菲斯托的灵魂石 → 迷弗忒的魂石 → 迷斐思陀的魂石 | Mefistor's Spiritstone（原 Miphoth's Spiritstone） | 跟上术语表的新写法 |
+| bases.json | Mephisto's Brain | 墨菲斯托的大脑 → 迷弗忒的大脑 → 迷斐思陀的大脑 | Mefistor's Brain（原 Miphoth's Brain） | 跟上术语表的新写法 |
+| monsters.json | Ghoul | 食尸鬼 → 噬腐鬼 → 啖尸鬼 | Graveghoul（原 Gorging Rotwight） | 随机暗金怪名字的同一个词已从「腐鬼」/ Rotwight 改作啖尸鬼 / Graveghoul，怪物跟着改，一个官方词一个写法；Gorging Rotwight 也丢了 Ghoul |
+| monsters.json | Andariel | 安达莉尔 → 昂妲蕾（不变） | Angdarael（原 Angdalae） | 跟上术语表的新写法 |
+| monsters.json | Bishibosh | 毕须博须 → 必希鲍什（不变） | Bishibaushi（原 Pishibaush） | 跟上术语表的新写法 |
+| monsters.json | Rakanishu | 拉卡尼休 → 罗迦倪秀 → 罗喀倪秀 | Lokhanishu（原 Lojanishiu） | 跟上术语表的新写法 |
+| monsters.json | Burning Dead Mage | 烈焰亡骨法师 → 焚骸咒师 → 烈焰亡骨咒师 | Burning Dead Incanter（原 Pyrebone Incanter） | 抽查发现：中英文每个词都换了，只剩结构；整个留下，法师换全族统一的「咒师」/ Incanter |
+| npcs.json | Akara | 阿卡拉 → 亚珈萝 → 亚喀蕾 | Akarelle（原 Yajalo） | 跟上术语表的新写法 |
+| npcs.json | Charsi | 恰西 → 查茜（不变） | Charessa（原 Chashi） | 跟上术语表的新写法 |
+| npcs.json | Gheed | 基德 → 吉伊得（不变） | Ghiyed（原 Jiyed） | 跟上术语表的新写法 |
+| npcs.json | Kashya | 卡夏 → 迦霞 → 柯霞 | Khassia（原 Jiasha） | 跟上术语表的新写法 |
+| npcs.json | Flavie | 弗拉维 → 菲萝薇（不变） | Felovie（原 Feilowei） | 跟上术语表的新写法 |
+| areas.json | Tristram | 崔斯特姆 → 楚丝琅 → 翠思忒琅 | Trystrang（原 Chuslang） | 跟上术语表的新写法 |
+| uniques.json | Gore Rider | 血骑士 → 浴血骑士 → 喋血骑士 | Gore Cavalier（不变） | 「浴血」在别处是 Bloodbathed（浴血女爵、前缀浴血），这里英文留 Blizzard 的 Gore，中文换同义的「喋血」，「血骑士」整个留下 |
+| uniques.json | Halaberd's Reign | 死亡女神的统治 → 死亡女神的王权（不变） | Halabreth's Reign（原 Grave Queen's Reign） | 抽查发现：英文跟着官方中文的「死亡女神」走，英文老玩家认的是 Halaberd；留它的音（差 3 个字母）和 Reign |
+| runewords.json | Honor | 荣耀 → 尊荣（不变） | Exalted Honor（原 Laurels） | 抽查发现：Laurels 换了意象、丢了 Honor；留 Honor 加 Exalted（尊），和荣耀锁链的 Fetters of Honor 同用 Honor |
+| suffixes.json | of Power | 权能之 → 权柄之 → 权势之 | of Dread Power（不变） | 权柄是符文之语 Authority 的名字（官方权威，另一个词）；后缀换作权势，仍留「权」 |

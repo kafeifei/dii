@@ -3,10 +3,10 @@ import type { D2xMonUMod, D2xSuperUnique, D2xUniqueNameWord } from './types';
 
 /** the superuniques Act 1's presets place (SuperUniques.txt) */
 export const D2X_SUPERUNIQUES: D2xSuperUnique[] = [
-  {"key":"Bishibosh","name":"必希鲍什","nameEn":"Pishibaush","en":"Bishibosh","hcIdx":0,"mon":"fallenshaman1","mods":[8,9],"group":[2,2],"autoPos":true,"tc":["Act 1 Super A","Act 1 (N) Super A","Act 1 (H) Super A"],"area":3},
+  {"key":"Bishibosh","name":"必希鲍什","nameEn":"Bishibaushi","en":"Bishibosh","hcIdx":0,"mon":"fallenshaman1","mods":[8,9],"group":[2,2],"autoPos":true,"tc":["Act 1 Super A","Act 1 (N) Super A","Act 1 (H) Super A"],"area":3},
   {"key":"Bonebreak","name":"摧骨者","nameEn":"Bonesmasher","en":"Bonebreaker","hcIdx":1,"mon":"skeleton1","mods":[5,8],"group":[5,5],"autoPos":true,"tc":["Act 1 Super A","Act 1 (N) Super A","Act 1 (H) Super A"],"area":18},
   {"key":"Coldcrow","name":"霜鸦","nameEn":"Rimecrow","en":"Coldcrow","hcIdx":2,"mon":"cr_archer1","mods":[18],"group":[4,4],"autoPos":true,"tc":["Act 1 Super A","Act 1 (N) Super A","Act 1 (H) Super A"],"area":9},
-  {"key":"Rakanishu","name":"罗迦倪秀","nameEn":"Lojanishiu","en":"Rakanishu","hcIdx":3,"mon":"fallen2","mods":[17,6],"group":[8,8],"replaceable":true,"tc":["Act 1 Super B","Act 1 (N) Super B","Act 1 (H) Super B"],"area":4},
+  {"key":"Rakanishu","name":"罗喀倪秀","nameEn":"Lokhanishu","en":"Rakanishu","hcIdx":3,"mon":"fallen2","mods":[17,6],"group":[8,8],"replaceable":true,"tc":["Act 1 Super B","Act 1 (N) Super B","Act 1 (H) Super B"],"area":4},
   {"key":"Treehead WoodFist","name":"树颅橡拳","nameEn":"Treeskull Oakfist","en":"Treehead WoodFist","hcIdx":4,"mon":"brute2","mods":[5,6],"group":[2,2],"autoPos":true,"replaceable":true,"tc":["Act 1 Super B","Act 1 (N) Super B","Act 1 (H) Super B"],"area":5},
   {"key":"Griswold","name":"葛雷兹渥","nameEn":"Gerezwor","en":"Griswold","hcIdx":5,"mon":"griswold","mods":[7],"group":[0,0],"autoPos":true,"replaceable":true,"tc":["Griswold","Griswold (N)","Griswold (H)"],"area":38},
   {"key":"The Countess","name":"浴血女爵","nameEn":"The Bloodbathed Countess","en":"The Countess","hcIdx":6,"mon":"corruptrogue3","mods":[9],"group":[6,6],"autoPos":true,"tc":["Countess","Countess (N)","Countess (H)"],"area":25,"sound":"countess"},
