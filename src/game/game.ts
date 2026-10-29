@@ -1,5 +1,5 @@
 import type { Input } from '../core/input';
-import { dist, rand, randInt, type P2 } from '../core/math';
+import { dist, type P2 } from '../core/math';
 import type { Sfx } from '../audio/sfx';
 import { DROP_SOUND, ENTER_LINE, heroLine, isNight, npcLine, soundsNear, type HeroLine, type VoiceId } from '../audio/sounds';
 import { CLASSES, type PlayerClass } from '../data/classes';
@@ -8,7 +8,6 @@ import { createItem, isGold, newGameDrops, starterKit, type Drop } from '../item
 import { CAMP_VENDORS, fillStore, Store } from '../items/vendor';
 import { baseOf, displayName, isUnknown, type Item } from '../items/item';
 import { fillableTome, isBookScroll, isTome, isTownPortal, mergeTome, readable, readFrom, scrollIntoTome, tomeCharges, tomeMax, townPortalFrom } from '../items/tomes';
-import { lightEnchantBolts } from './d2/monstats';
 import { autoBeltable, freeBeltColumn } from '../items/belt';
 import { depositable, SharedStash, sharedBlock, withdrawable } from '../items/stash';
 import type { Grid } from '../items/grid';
@@ -16,17 +15,16 @@ import { charStats, potionHeal } from './d2/stats';
 import type { DeathPenalty } from './d2/death';
 import { containerLoot, type Finder } from './loot';
 import { bodyItems, leaveBody, takeBody } from './corpse';
-import { emptyPacket } from './actor';
-import { blastDamage, corpseGone, updateMonster } from './ai';
-import { applyDamage, monsterStrike } from './combat';
+import { updateMonster } from './ai';
 import { nullFx, type Fx } from './fx';
 import type { Level } from './level';
 import { Maps, newSeed } from './maps';
 import type { Monster } from './monster';
-import { GroundItem, Projectile, WorldObject } from './objects';
+import { GroundItem, WorldObject } from './objects';
 import { CHARGE_PREFIX, Player } from './player';
 import { startCast, toggleAura, updatePlayer, type PlayerAction } from './playerctl';
 import { celebrateLevelUp, killMonster, killPlayer, onProc, rollLoot, wake } from './kills';
+import { ACTIVE_RADIUS, chargedBolts, clearCorpses, separate, updateAuras, updateBlasts, updateHammers, updateProjectiles } from './fight';
 import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
 import { claimedElsewhere, claimHero, handOver, heroTaken, isReadOnly, loadSave, loadShared, markInGame, mayWriteLast, neverWrite, playedElsewhere, reclaimHero, savedWaypoints, setSlot, slotNow, syncShared, waitHandOver, writeSave, writtenElsewhere, type Difficulty } from './save';
@@ -79,14 +77,6 @@ export interface Picker {
   pickMonster(x: number, y: number, list: Monster[]): Monster | null;
   pickObject(x: number, y: number, list: WorldObject[]): WorldObject | null;
 }
-
-const ACTIVE_RADIUS = 30;
-
-/**
- * How fast a monster that isn't walking is pushed aside, m/s (Game.separate): a shuffle, as it has
- * no walk to it. D2's units don't push one another at all; they go round, or stop at, what stands.
- */
-const STILL_PUSH = 0.3;
 
 /** how the hero comes to where they arrive (Game.enterArea) */
 export type Arrival = 'start' | 'stairs' | 'waypoint' | 'portal' | 'respawn' | 'exit';
@@ -960,21 +950,13 @@ export class Game {
     }
     p.hitFlash = Math.max(0, p.hitFlash - dt * 6);
     this.watchLife();
-    this.updateAuras(dt);
-    this.separate(dt);
+    updateAuras(this, dt);
+    separate(this, dt);
     // the ones that walked, were knocked back or pushed apart: into the cells they're in now
     L.monstersMoved(stepped);
-    this.updateProjectiles(dt);
-    this.updateHammers(dt);
-    for (const b of L.blasts) {
-      b.delay -= dt;
-      if (b.delay <= 0 && !b.done) {
-        b.done = true;
-        if (b.fx) this.fx.burst(b.fx, b.pos, { radius: b.radius });
-        blastDamage(this, b);
-      }
-    }
-    L.blasts = L.blasts.filter((b) => !b.done);
+    updateProjectiles(this, dt);
+    updateHammers(this, dt);
+    updateBlasts(this, L, dt);
     // ground items: animate & auto-pickup gold
     for (const gi of L.ground) {
       gi.age += dt;
@@ -992,23 +974,7 @@ export class Game {
     }
     this.updateArea(false, 'walk');
     this.layOutCorpses();
-    // corpse cleanup; the corpses far off, which no step aged, catch up first, on the time spent on
-    // this map: those on a map the hero is away from keep, as when every corpse was stepped (D2
-    // instead keeps 1 in 3 ordinary corpses of a room it untiles, none of uniques or minions: D2Game
-    // UNIT/SUnitInactive.cpp SUNITINACTIVE_CompressUnitIfNeeded)
-    if (L.monsters.length > 0 && Math.random() < 0.02) {
-      for (const m of L.monsters) {
-        if (!m.dead) continue;
-        m.deathTime += L.time - (this.aged.get(m) ?? L.time);
-        this.aged.set(m, L.time);
-      }
-      const kept = L.monsters.filter((m) => !m.dead || m.deathTime < 40);
-      // a new list is bucketed anew (Level.monstersNear): only when one went; the gone leave their packs' lists too
-      if (kept.length < L.monsters.length) {
-        for (const m of L.monsters) if (m.dead && m.deathTime >= 40) corpseGone(this, m);
-        L.monsters = kept;
-      }
-    }
+    clearCorpses(this, L);
     this.saveTimer += dt;
     if (this.saveTimer > 8) {
       this.saveTimer = 0;
@@ -1318,201 +1284,10 @@ export class Game {
     }
   }
 
-  // ───────────────────────── combat helpers ─────────────────────────
+  // ───────────────────────── combat helpers (src/game/fight.ts) ─────────────────────────
 
-  private updateAuras(dt: number) {
-    const p = this.player;
-    if (p.dead) return;
-    // the aura switched on, and any from items (Insight's Meditation, Infinity's Conviction…)
-    const auras: { id: string; lvl: number }[] = [];
-    if (p.activeAura && p.skillLevel(p.activeAura) > 0) auras.push({ id: p.activeAura, lvl: p.skillLevel(p.activeAura) });
-    for (const a of p.stats.itemAuras) if (!auras.some((x) => x.id === a.id)) auras.push(a);
-    this.auraPulse -= dt;
-    const pulse = this.auraPulse <= 0;
-    if (pulse) this.auraPulse = 1;
-    for (const a of auras) this.updateAura(a.id, a.lvl, pulse);
-  }
-
-  private updateAura(aura: string, lvl: number, pulse: boolean) {
-    const p = this.player;
-    const sp = p.skillParams(aura, lvl);
-    const radius = sp.radius ?? 5;
-    const inRange = this.level.monstersTouching(p.pos, radius).filter((m) => !m.dead && dist(m.pos, p.pos) <= radius + m.radius);
-    if (aura === 'holy_freeze') {
-      for (const m of inRange) {
-        m.chillTime = Math.max(m.chillTime, 0.3);
-        m.chillAmount = sp.slow / 100;
-      }
-    }
-    if (aura === 'conviction') {
-      for (const m of inRange) {
-        m.convictRes = sp.res;
-        m.convictDef = sp.def;
-      }
-    }
-    if (!pulse) return;
-    if (aura === 'prayer') {
-      if (p.life < p.stats.maxLife) p.life = Math.min(p.stats.maxLife, p.life + sp.heal);
-    } else if (aura === 'holy_fire' || aura === 'holy_freeze') {
-      this.fx.burst(aura === 'holy_fire' ? 'holyfire' : 'freeze', p.pos, { radius });
-      for (const m of inRange) {
-        const pk = emptyPacket();
-        if (aura === 'holy_fire') pk.fire = randInt(sp.min, sp.max);
-        else {
-          pk.cold = randInt(sp.min, sp.max);
-          pk.chill = 1;
-        }
-        pk.source = p;
-        pk.spell = true;
-        pk.pierceRes = p.stats.pierceRes;
-        applyDamage(this, m, pk, p.pos);
-      }
-    }
-  }
-
-  /**
-   * Bodies that overlap pushed apart, by their weights; a monster that isn't walking no faster than
-   * STILL_PUSH, the rest of it on the hero or the monster walking into it, which so goes round it.
-   * The hero charging shoves what stands aside.
-   */
-  private separate(dt: number) {
-    const p = this.player;
-    const list = this.level.monstersNear(p.pos, ACTIVE_RADIUS).filter((m) => !m.dead && dist(m.pos, p.pos) < ACTIVE_RADIUS);
-    const actors: { pos: P2; radius: number; w: number; still: boolean }[] = [];
-    const charging = !p.dead && p.state === 'charge';
-    if (!p.dead) actors.push({ pos: p.pos, radius: p.radius, w: charging ? 0.05 : 0.2, still: false });
-    for (const m of list) actors.push({ pos: m.pos, radius: m.radius, w: m.rank === 'boss' ? 0.25 : 1, still: m.state !== 'move' && m.fleeTime <= 0 });
-    const cap = STILL_PUSH * dt;
-    const n = actors.length;
-    for (let i = 0; i < n; i++) {
-      const a = actors[i];
-      for (let j = i + 1; j < n; j++) {
-        const b = actors[j];
-        const dx = b.pos.x - a.pos.x;
-        const dz = b.pos.z - a.pos.z;
-        const r = a.radius + b.radius;
-        const d2 = dx * dx + dz * dz;
-        if (d2 >= r * r) continue;
-        const d = Math.sqrt(d2) || 0.001;
-        const push = r - d;
-        const nx = d2 > 1e-6 ? dx / d : Math.random() - 0.5;
-        const nz = d2 > 1e-6 ? dz / d : Math.random() - 0.5;
-        let sa = (push * a.w) / (a.w + b.w);
-        let sb = push - sa;
-        if (!(charging && i === 0)) {
-          if (a.still && sa > cap) {
-            if (!b.still) sb += sa - cap;
-            sa = cap;
-          }
-          if (b.still && sb > cap) {
-            if (!a.still) sa += sb - cap;
-            sb = cap;
-          }
-        }
-        a.pos.x -= nx * sa;
-        a.pos.z -= nz * sa;
-        b.pos.x += nx * sb;
-        b.pos.z += nz * sb;
-      }
-    }
-    if (!p.dead) p.pos = this.level.map.resolveCircle(p.pos, p.radius);
-    // pushed about, monsters still keep out of a town (Level.monsterMap)
-    for (const m of list) m.pos = this.level.monsterMap.resolveCircle(m.pos, m.radius);
-  }
-
-  private updateProjectiles(dt: number) {
-    const L = this.level;
-    const p = this.player;
-    for (const pr of L.projectiles) {
-      pr.age += dt;
-      pr.life -= dt;
-      if (pr.kind === 'chargedbolt') {
-        const a = (Math.random() - 0.5) * 6 * dt;
-        const c = Math.cos(a);
-        const s = Math.sin(a);
-        pr.vel = { x: pr.vel.x * c - pr.vel.z * s, z: pr.vel.x * s + pr.vel.z * c };
-      }
-      pr.pos.x += pr.vel.x * dt;
-      pr.pos.z += pr.vel.z * dt;
-      if (!L.map.walkableAt(pr.pos.x, pr.pos.z)) {
-        this.projectileImpact(pr);
-        continue;
-      }
-      if (pr.faction === 'monster') {
-        if (!p.dead && dist(pr.pos, p.pos) < pr.radius + p.radius) {
-          if (pr.owner && (pr.owner as Monster).def) monsterStrike(this, pr.owner as Monster, p, { ...pr.dmg });
-          else applyDamage(this, p, { ...pr.dmg }, pr.pos);
-          this.projectileImpact(pr);
-        }
-      } else {
-        for (const m of L.monstersTouching(pr.pos, pr.radius)) {
-          if (m.dead || pr.hit.has(m.id)) continue;
-          if (dist(pr.pos, m.pos) < pr.radius + m.radius) {
-            pr.hit.add(m.id);
-            applyDamage(this, m, { ...pr.dmg }, pr.pos);
-            if (!pr.pierce) {
-              this.projectileImpact(pr);
-              break;
-            }
-          }
-        }
-      }
-      if (pr.life <= 0) pr.dead = true;
-    }
-    L.projectiles = L.projectiles.filter((x) => !x.dead);
-  }
-
-  private projectileImpact(pr: Projectile) {
-    pr.dead = true;
-    if (pr.splash > 0) {
-      const cold = pr.splashKind === 'cold';
-      this.fx.burst(cold ? 'ice_shatter' : 'fireblast', pr.pos, { radius: pr.splash });
-      this.sfx.play(cold ? 'skill.cold_impact' : 'skill.fire_impact', { pos: pr.pos, vol: 0.6 });
-      const p = this.player;
-      if (pr.faction === 'monster' && !p.dead && dist(pr.pos, p.pos) < pr.splash + p.radius && !pr.hit.has(p.id)) {
-        applyDamage(this, p, { ...pr.dmg, spell: true }, pr.pos);
-      } else if (pr.faction === 'player') {
-        // the monster hit head-on already took the full packet
-        for (const m of this.level.monstersTouching(pr.pos, pr.splash)) {
-          if (!m.dead && !pr.hit.has(m.id) && dist(pr.pos, m.pos) < pr.splash + m.radius) applyDamage(this, m, { ...pr.dmg, spell: true }, pr.pos);
-        }
-      }
-    }
-  }
-
-  private updateHammers(dt: number) {
-    const L = this.level;
-    for (const h of L.hammers) {
-      h.update(dt);
-      for (const m of L.monstersTouching(h.pos, 0.55)) {
-        if (m.dead) continue;
-        if (dist(h.pos, m.pos) > 0.55 + m.radius) continue;
-        const last = h.lastHit.get(m.id);
-        if (last !== undefined && h.t - last < 0.5) continue;
-        h.lastHit.set(m.id, h.t);
-        applyDamage(this, m, { ...h.dmg }, h.center);
-      }
-    }
-    L.hammers = L.hammers.filter((h) => !h.dead);
-  }
-
-  /**
-   * A lightning-enchanted monster's charged bolts (MONSTERUNIQUE_CastLightUniqueMissile, MonsterUnique.cpp:1139-1191):
-   * two toward each of the four ways round it, lightunique missiles at half its level with their own
-   * lightning, at their velocity (75 %, the hero's scale) for their Range, wandering as charged bolts do
-   */
   chargedBolts(m: Monster) {
-    const b = lightEnchantBolts(m.level);
-    for (let i = 0; i < 8; i++) {
-      const a = (Math.floor(i / 2) * Math.PI) / 2 + rand(-0.5, 0.5);
-      const pk = emptyPacket();
-      pk.light = randInt(b.light[0], b.light[1]);
-      pk.source = m;
-      pk.spell = true;
-      const pr = new Projectile('chargedbolt', m.pos, { x: Math.sin(a) * b.speed, z: Math.cos(a) * b.speed }, null, 'monster', pk, b.life, 0.2);
-      this.level.projectiles.push(pr);
-    }
-    this.sfx.play('skill.lightning_cast', { pos: m.pos, vol: 0.25 });
+    chargedBolts(this, m);
   }
 
   // ───────────────────────── kills (src/game/kills.ts) ─────────────────────────
