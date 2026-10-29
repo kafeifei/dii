@@ -1082,3 +1082,577 @@
 | monster-titles.json | the Tainted | 污堕者· → 染秽者· → 秽堕者· | the Befouled（不变） | 染秽者与「污堕者」不留「堕」 |
 | monster-titles.json | the Unclean | 不洁者· → 污秽者· → 不净者· | the Filth-Ridden（不变） | 污秽者与「不洁者」不留「不」 |
 | monster-titles.json | the Cold | 冷冰者· → 霜寒者· → 冰霜者· | the Frostbitten（不变） | 霜寒者与「冷冰者」不留「冰」 |
+
+## 魔法词缀：prefixes.json、suffixes.json
+
+`prefixes.json` 268 条、`suffixes.json` 299 条（含 automagic 的行）逐条对照官方中文和 Blizzard 英文重审。前缀改了中文 194 条、英文 261 条，后缀改了中文 247 条、英文 298 条；其余照旧。各行的 `note` 里记了曾用名（「曾用名「旧名」旧英文名」或「曾用英文名 …」），后面接这一轮的理由。
+
+- 中文：上一版多半两个字全换（坚牢、刚猛、煌赫、蒙恩、健魄之、辟邪之），或者绕典故（穿杨者的、猿臂之、枕戈之、拔山之、夸父之）。照 style.md「魔法前缀」「魔法后缀」一条往回拉：词缀只有两三个实字，留老玩家认它的那一个，另一个换近义字：结实 → 坚实、强壮 → 强劲、弓手的 → 射手的、保护之 → 保佑之、荆棘之 → 荆刺之。一族官方名共用一个字的（一串「X红」、「X毒」、「X龙的」、「X目」），留各自不同的那个字（猩红 → 猩赤、脓毒 → 脓疽、游龙的 → 游蛟的、隼目 → 隼眸）。技能后缀留技能名的主干，只换一个字（火球术之 → 炎球之、冰封甲之 → 冰封铠之、骨墙之 → 骨垣之），两版同名技能后缀（suffixes-2、suffixes-3）各换不同的字，仍不重名。
+- 英文：照 Blizzard 英文重审。上一版英文多是另起的词（Unbreached、Puissant、of the Patron Saint、of Averting Evil），改成留 Blizzard 的词、加一个词或换一个词：Sturdy-Built、Strong-Armed、of Good Health、of Steadfast Protection。同一个中文字对同一个英文词：矢＝Shaft、铠＝Mail、牌＝Targe、盾＝Buckler、垣＝Rampart、新星＝Nova、傀儡＝Golem、寒铁＝Frostiron、浴血＝Bloodbathed。Grim 是术语表里 D2 的人名（Gherim），Slayer's、Grim Ward 改用 Fell、Grisly。
+- 避开官方名和别处的名字：不用别的行的官方中文（鸿运、奇遇、荣耀、毒液、瘟疫、风暴、欢欣、学识是符文之语的，虔诚者、击晕是怪物和技能的，腐蚀、恐怖、狂啸是稀有名词的，微光是前缀 Glimmering 的、冰殛是暗金 Coldkill 的），也不用「暴雪」（公司名）、「九头蛇」（漫威）、「雷霆之怒」（魔兽世界）、「凛冬」（凛冬将至）。
+- CHANGES-zh.md 里在这两个文件的 2 条都改了：of Thunder Storm 雷幄之 → 唤雷暴之（留雷暴；「雷暴之」是 of Storms 的官方名，加一个唤字），of Freezing Arrows 霜花矢之 → 冻结矢之（见下表）。
+- 没动的：前缀 狐祟（Fox-Haunted）、龙祖的（Dragonsire's，不音译 Bahamut）、狮徽、鹰徽（Lion-Sigil、Hawk-Sigil）、腾烟（Smokewreathed）、跃弧（Arc-Leaping）、焚巫者的（Witchburner's）；后缀 剑林之（of the Sword Thicket）。
+- 术语表：该娅、堤丹之已照术语表一组的新写法换成噶娅（Ghayah's）、太丹之（of the Taedan）。
+- 跟着要看的别处：`monsters.json` 浴血骑士作 Gore Cavalier，和浴血女爵、前缀浴血的 Bloodbathed 不是一个词。
+
+| 文件 | 原版 | 官方 → 旧名 → 新名 | 新英文名 | 为什么 |
+| --- | --- | --- | --- | --- |
+| prefixes.json | Sturdy | 结实 → 坚牢 → 坚实 | Sturdy-Built（原 Unbreached） | 留「实」；坚牢和结实没有一个字相同 |
+| prefixes.json | Strong | 强壮 → 刚猛 → 强劲 | Strong-Armed（原 Puissant） | 留「强」；刚猛认不出 |
+| prefixes.json | Glorious | 光辉 → 煌赫 → 辉煌 | Glory-Crowned（原 Emblazoned） | 留「辉」；煌赫认不出 |
+| prefixes.json | Blessed | 祝福 → 蒙恩 → 赐福 | Heaven-Blessed（原 Grace-Touched） | 留「福」；蒙恩认不出 |
+| prefixes.json | Saintly | 圣者 → 封圣（不变） | Saint-Crowned（原 Canonized） | 中文不变；英文 Canonized 认不出，留 Saint |
+| prefixes.json | Holy | 圣佑 → 圣咏 → 圣护 | Holy-Warded（原 Hymned） | 留「圣」，佑换近义的护；圣咏换了意象 |
+| prefixes.json | Devious | 卑劣 → 诡诈 → 卑诈 | Devious-Minded（原 Guileful） | 留「卑」；诡诈认不出 |
+| prefixes.json | Fortified | 强固 → 重垒 → 坚固 | Fortress-Built（原 Bastioned） | 留「固」；重垒认不出 |
+| prefixes.json | Jagged | 参差 → 嶙峋 → 参错 | Jag-Toothed（原 Crag-Edged） | 留「参」，差换近义的错；嶙峋认不出 |
+| prefixes.json | Deadly | 致命 → 断魄 → 夺命 | Death-Dealing（原 Spirit-Severing） | 留「命」；断魄认不出 |
+| prefixes.json | Vicious | 凶恶 → 狠戾 → 险恶 | Vicious-Clawed（原 Truculent） | 留「恶」；狠戾认不出 |
+| prefixes.json | Brutal | 残忍 → 酷烈 → 残酷 | Brute-Handed（原 Flaying） | 留「残」；酷烈认不出 |
+| prefixes.json | Massive | 蛮横 → 千钧 → 蛮霸 | Massive-Hafted（原 Thousandweight） | 留「蛮」，横换近义的霸；千钧换了意象 |
+| prefixes.json | Savage | 野蛮 → 犷悍 → 野悍 | Savage-Born（原 Hard-Bitten） | 留「野」；犷悍认不出 |
+| prefixes.json | Merciless | 无情 → 不赦 → 绝情 | Mercy-Spurning（原 Unshriven） | 留「情」；不赦认不出 |
+| prefixes.json | Tireless | 不疲 → 行健 → 不倦 | Never-Tiring（原 Ever-Striding） | 留「不」，疲换近义的倦；行健要绕典故 |
+| prefixes.json | Rugged | 耐磨 → 粗粝 → 耐砺 | Rugged-Hewn（原 Gritstone） | 留「耐」，磨换近义的砺；粗粝认不出 |
+| prefixes.json | Bronze | 青铜 → 古铜（不变） | Bronze-Cast（原 Patina） | 中文不变；英文 Patina 认不出，留 Bronze |
+| prefixes.json | Iron | 黑铁 → 寒铁（不变） | Frostiron（原 Cold-Forged） | 中文不变（留铁）；英文 Cold-Forged 认不出，寒铁作 Frostiron，留 Iron |
+| prefixes.json | Steel | 钢铁 → 百炼 → 精钢 | Truesteel（原 Hundred-Folded） | 留「钢」；百炼认不出，英文留 Steel |
+| prefixes.json | Silver | 白银 → 纹银（不变） | Sterling Silver（原 Sterling） | 中文不变；英文留 Silver |
+| prefixes.json | Gold | 金色 → 赤金（不变） | Red-Gold（原 Fire-Gilt） | 中文不变；英文留 Gold |
+| prefixes.json | Platinum | 白金 → 皎铂 → 皓金 | Gleaming Platinum（原 Moonsheen） | 留「金」，白换近义的皓；皎铂认不出 |
+| prefixes.json | Meteoric | 陨铁 → 天铁（不变） | Meteor-Iron（原 Skyiron） | 中文不变；英文 Skyiron 认不出，留 Meteor |
+| prefixes.json | Sharp | 锋利 → 吹毛 → 锐利 | Sharp-Honed（原 Gossamer-Keen） | 留「利」；吹毛要绕成语 |
+| prefixes.json | Fine | 优良 → 上乘 → 精良 | Fine-Wrought（原 High-Wrought） | 留「良」；上乘认不出 |
+| prefixes.json | Warrior's | 战士的 → 武夫的 → 武士的 | Bold Warrior's（原 Armsman's） | 留「士」；武夫认不出 |
+| prefixes.json | Soldier's | 士兵的 → 戍卒的 → 甲士的 | Foot-Soldier's（原 Garrison） | 留「士」；戍卒认不出 |
+| prefixes.json | Knight's | 骑士的 → 铁骑的（不变） | Iron Knight's（原 Destrier's） | 中文不变（留骑）；英文 Destrier's 认不出，铁＝Iron |
+| prefixes.json | Lord's | 勋爵的 → 城主的 → 勋贵的 | Liege Lord's（原 Castellan's） | 留「勋」；城主认不出 |
+| prefixes.json | King's | 国王的 → 王座的 → 君王的 | High King's（原 Enthroned） | 留「王」；王座的是「王座」不是国王 |
+| prefixes.json | Howling | 嗥叫 → 啸月 → 嗥月 | Moon-Howling（原 Moon-Baying） | 留「嗥」；啸月认不出 |
+| prefixes.json | Fortuitous | 巧遇 → 机缘 → 巧合 | Fortune-Kissed（原 Providential） | 留「巧」；机缘认不出 |
+| prefixes.json | Glimmering | 微光 → 幽芒 → 微芒 | Glimmer-Lit（原 Ghostlit） | 留「微」；幽芒认不出 |
+| prefixes.json | Glowing | 辉光 → 烛照 → 辉耀 | Ever-Glowing（原 Candlelit） | 留「辉」；烛照认不出 |
+| prefixes.json | Lizard's | 蜥蜴 → 守宫 → 沙蜥 | Sand Lizard's（原 Wallclinger's） | 留「蜥」；守宫是壁虎的古名，认不出 |
+| prefixes.json | Snake's | 毒蛇的 → 虺蛇的（不变） | Venom-Snake's（原 Asp's） | 中文不变（留蛇）；英文 Asp's 认不出 |
+| prefixes.json | Serpent's | 巨蛇的 → 巴蛇的 → 巨蟒的 | Elder Serpent's（原 Tuskswallower's） | 留「巨」；巴蛇要绕山海经 |
+| prefixes.json | Drake's | 幼龙的 → 蛟龙的 → 稚龙的 | Young Drake's（原 Flood-Dragon's） | 留「龙」，幼换近义的稚；蛟龙认不出是幼龙 |
+| prefixes.json | Dragon's | 翼龙的 → 应龙的 → 飞龙的 | Winged Dragon's（原 Wyvern's） | 留「龙」，翼换近义的飞；应龙要绕神话 |
+| prefixes.json | Wyrm's | 游龙的 → 虬龙的 → 游蛟的 | Coiled Wyrm's（原 Coil-Dragon's） | 留「游」；虬龙认不出是游龙 |
+| prefixes.json | Prismatic | 棱彩 → 晶虹 → 棱光 | Prism-Hued（原 Crystal-Hued） | 留「棱」；晶虹认不出 |
+| prefixes.json | Azure | 碧空 → 苍穹 → 碧穹 | Sky-Azure（原 Welkin） | 留「碧」；苍穹认不出 |
+| prefixes.json | Lapis | 琉璃 → 绀青 → 青琉璃 | Lapis-Blue（原 Indigo） | 留「琉璃」加一字；绀青认不出 |
+| prefixes.json | Cobalt | 钴蓝 → 霁蓝 → 钴青 | Cobalt-Glazed（原 Sky-Glazed） | 留「钴」；霁蓝只剩一个蓝，四种蓝分不出 |
+| prefixes.json | Sapphire | 蓝宝石 → 鸦青 → 蓝宝玉 | Star Sapphire（原 Crowfeather） | 留「蓝宝」；鸦青认不出 |
+| prefixes.json | Crimson | 猩红 → 朱殷 → 猩赤 | Crimson-Dyed（原 Blood-Dark） | 留「猩」；朱殷认不出 |
+| prefixes.json | Burgundy | 紫红 → 紫棠（不变） | Purple Burgundy（原 Mulberry） | 中文不变（留紫）；英文 Mulberry 认不出 |
+| prefixes.json | Garnet | 石榴 → 榴火（不变） | Garnet-Fire（原 Pomegranate） | 中文不变（留榴）；英文 Pomegranate 认不出 |
+| prefixes.json | Ruby | 红宝石 → 鸽血 → 红宝玉 | Blood Ruby（原 Pigeonblood） | 留「红宝」；鸽血认不出 |
+| prefixes.json | Ocher | 赭石 → 赭黄（不变） | Yellow Ocher（原 Tawny） | 中文不变；英文 Tawny 认不出 |
+| prefixes.json | Tangerine | 黄橘 → 橘焰（不变） | Tangerine-Flame（原 Orange-Flame） | 中文不变；英文留 Tangerine |
+| prefixes.json | Coral | 珊瑚 → 赤珊（不变） | Red Coral（原 Reef-Red） | 中文不变；英文留 Coral |
+| prefixes.json | Amber | 琥珀 → 蜜蜡 → 蜜珀 | Honey Amber（原 Honeystone） | 留「珀」；蜜蜡认不出 |
+| prefixes.json | Beryl | 绿柱石 → 水苍 → 碧柱石 | Green Beryl（原 Tarn-Green） | 留「柱石」；水苍认不出 |
+| prefixes.json | Jade | 碧玉 → 琅玕 → 苍玉 | Jadestone（原 Greenstone） | 留「玉」；琅玕认不出 |
+| prefixes.json | Viridian | 青玉 → 黛绿 → 青琼 | Viridian-Hued（原 Kohl-Green） | 留「青」；黛绿认不出 |
+| prefixes.json | Emerald | 翡翠 → 翠瑛（不变） | Emerald-Green（原 Kingfisher） | 中文不变（留翠）；英文 Kingfisher 认不出 |
+| prefixes.json | Fletcher's | 制箭师的 → 翎匠的 → 箭匠的 | Fletchwright's（原 Featherwright's） | 留「箭」；翎匠认不出 |
+| prefixes.json | Archer's | 弓手的 → 穿杨者的 → 射手的 | Keen Archer's（原 Willow-Piercer's） | style.md 的例子；穿杨者要绕成语 |
+| prefixes.json | Monk's | 修士的 → 苦修者的 → 苦修士的 | Ascetic Monk's（原 Ascetic's） | 留「修士」；英文留 Monk |
+| prefixes.json | Priest's | 牧师的 → 圣职者的 → 牧首的 | High Priest's（原 Celebrant's） | 留「牧」；圣职者认不出 |
+| prefixes.json | Summoner's | 召唤师的 → 唤灵者的 → 召灵师的 | Spirit-Summoner's（原 Spiritcaller's） | 留「召」「师」；唤灵者认不出 |
+| prefixes.json | Necromancer's | 死灵法师的 → 冥术师的 → 死灵术士的 | Necromage's（原 Nethercaster's） | 留「死灵」；冥术师认不出 |
+| prefixes.json | Angel's | 天使的 → 圣翼者的 → 神使的 | Herald Angel's（原 Whitewing's） | 留「使」；圣翼者认不出 |
+| prefixes.json | Arch-Angel's | 大天使的 → 炽翼者的 → 大神使的 | Arch-Seraph's（原 Seraph's） | 随神使；炽翼者认不出 |
+| prefixes.json | Slayer's | 屠杀者的 → 猎首者的 → 屠灭者的 | Fell Slayer's（原 Headtaker's） | 留「屠」「者」；猎首者认不出 |
+| prefixes.json | Berserker's | 狂战士的 → 嗜战者的 → 狂战者的 | Wild Berserker's（原 Warcraver's） | 留「狂战」；嗜战者认不出 |
+| prefixes.json | Triumphant | 胜机 → 奏凯 → 制胜 | Triumph-Crowned（原 Paean-Sung） | 留「胜」；奏凯认不出 |
+| prefixes.json | Stout | 壮实 → 雄健 → 壮硕 | Stout-Hearted（原 Hale） | 留「壮」；雄健认不出 |
+| prefixes.json | Burly | 厚实 → 伟岸 → 厚重 | Burly-Framed（原 Lofty） | 留「厚」；伟岸认不出 |
+| prefixes.json | Stalwart | 敦实 → 砥柱 → 笃实 | Ever-Stalwart（原 Floodpillar） | 留「实」，敦换同义的笃；砥柱要绕成语 |
+| prefixes.json | Blanched | 白化 → 惨白（不变） | Sun-Blanched（原 Deathpale） | 中文不变（留白）；英文 Deathpale 认不出 |
+| prefixes.json | Eburine | 白垩 → 灰垩（不变） | Grey Eburine（原 Limewashed） | 中文不变（留垩）；英文 Limewashed 认不出 |
+| prefixes.json | Bone | 白骨 → 枯骨 → 素骨 | Pale Bone（原 Marrowless） | 留「骨」；枯骨是 Marrowless，英文要留 Bone，中文换成素骨 |
+| prefixes.json | Ivory | 象牙 → 牙白（不变） | Ivory-White（原 Tusk-White） | 中文不变；英文留 Ivory |
+| prefixes.json | Godly | 神佑 → 神临 → 神眷 | God-Favored（原 Theophanic） | 留「神」；神临认不出 |
+| prefixes.json | Void | 空无 → 太虚 → 虚无 | Void-Bound（原 Boundless） | 留「无」；太虚认不出 |
+| prefixes.json | Antimagic | 抗魔 → 禁法 → 抗法 | Magic-Shunning（原 Spellbane） | 留「抗」；禁法认不出 |
+| prefixes.json | Red | 丹红 → 赤霞 → 丹霞 | Red-Clouded（原 Afterglow） | 留「丹」；赤霞认不出是丹红 |
+| prefixes.json | Sanguinary | 彤红 → 舐血 → 彤血 | Sanguine-Red（原 Blood-Lapping） | 留「彤」；舐血认不出 |
+| prefixes.json | Bloody | 血红 → 浴血（不变） | Bloodbathed（原 Gore-Bathed） | 中文不变；浴血＝Bloodbathed（浴血女爵），英文留 Blood |
+| prefixes.json | Scarlet | 绯红 → 茜赤 → 绯朱 | Scarlet-Hued（原 Madder-Dyed） | 留「绯」；茜赤认不出 |
+| prefixes.json | Forked | 开叉 → 燕尾 → 分叉 | Twin-Forked（原 Swallowtail） | 留「叉」；燕尾换了意象 |
+| prefixes.json | Serrated | 锯齿 → 狼牙 → 锯牙 | Saw-Toothed（原 Wolf-Toothed） | 留「锯」；狼牙换了意象 |
+| prefixes.json | Carbuncle | 刺红 → 火玉 → 刺丹 | Red Carbuncle（原 Emberstone） | 留「刺」；火玉认不出 |
+| prefixes.json | Carmine | 深红 → 胭脂 → 深绛 | Deep Carmine（原 Cochineal） | 留「深」；胭脂认不出 |
+| prefixes.json | Vermilion | 朱红 → 丹朱（不变） | Vermilion Lacquer（原 Lacquer-Red） | 中文不变（留朱）；英文 Lacquer-Red 认不出 |
+| prefixes.json | Ferocious | 残暴 → 狰狞 → 暴烈 | Ferocious-Maned（原 Snarling） | 留「暴」；狰狞认不出 |
+| prefixes.json | Cruel | 暴虐 → 凌虐（不变） | Cruel-Hearted（原 Tormenting） | 中文是 style.md 的例子；英文 Tormenting 认不出 |
+| prefixes.json | Cinnabar | 朱砂 → 辰砂（不变） | Cinnabar-Dusted（原 Minium） | 中文不变（留砂）；英文 Minium 认不出 |
+| prefixes.json | Rusty | 红锈 → 锈蚀（不变） | Rust-Eaten（原 Ferruginous） | 中文不变（留锈）；英文 Ferruginous 认不出 |
+| prefixes.json | Realgar | 雄黄 → 石黄 → 雄精 | Red Realgar（原 Sandarac） | 留「雄」；石黄认不出 |
+| prefixes.json | Dun | 索债 → 讨命 → 讨债 | Dun-Hued（原 Wergild） | 留「债」；讨命认不出 |
+| prefixes.json | Brown | 棕色 → 茶褐 → 棕褐 | Umber-Brown（原 Umber） | 留「棕」；茶褐认不出 |
+| prefixes.json | Vigorous | 健壮 → 精悍 → 健旺 | Vigor-Filled（原 Sinewy） | 留「健」；精悍认不出 |
+| prefixes.json | Chestnut | 栗色 → 栗壳（不变） | Chestnut-Husk（原 Auburn） | 中文不变（留栗）；英文 Auburn 认不出 |
+| prefixes.json | Maroon | 褐红 → 檀红 → 檀褐 | Dark Maroon（原 Sandalwood） | 留「褐」；檀红只剩一个红 |
+| prefixes.json | Strange | 奇异 → 怪诞 → 奇谲 | Strange-Wrought（原 Eerie） | 留「奇」；怪诞认不出 |
+| prefixes.json | Weird | 诡异 → 诡秘（不变） | Weirdling（原 Cryptic） | 中文不变（留诡）；英文 Cryptic 认不出 |
+| prefixes.json | Nickel | 镍金 → 白铜 → 镍银 | Nickel-Silver（原 White-Copper） | 留「镍」；白铜认不出 |
+| prefixes.json | Tin | 锡金 → 锡镴（不变） | Tin-Pewter（原 Pewter） | 中文不变（留锡）；英文留 Tin |
+| prefixes.json | Argent | 亮银 → 霜银（不变） | Frost-Argent（原 Frostsilver） | 中文不变（留银）；英文留 Argent |
+| prefixes.json | Master's | 大师的 → 名家的 → 名师的 | Old Master's（原 Virtuoso's） | 留「师」；名家认不出 |
+| prefixes.json | Grandmaster's | 宗师的 → 巨擘的 → 宗匠的 | High Master's（原 Luminary's） | 留「宗」；巨擘认不出 |
+| prefixes.json | Bright | 明亮 → 澄明（不变） | Bright-Burnished（原 Limpid） | 中文不变（留明）；英文 Limpid 认不出 |
+| prefixes.json | Screaming | 尖啸 → 凄厉 → 尖鸣 | Shrieking（原 Shrill） | 留「尖」；凄厉认不出 |
+| prefixes.json | Wailing | 哀嚎 → 恸哭 → 哀泣 | Long-Wailing（原 Grieving） | 留「哀」；恸哭认不出 |
+| prefixes.json | Lucky | 幸运 → 吉兆 → 福运 | Lucky-Starred（原 Auspicious） | 留「运」；吉兆认不出 |
+| prefixes.json | Felicitous | 偶遇 → 奇逢 → 偶逢 | Felicity-Touched（原 Chance-Met） | 留「偶」，遇换同义的逢；奇逢认不出是偶遇 |
+| prefixes.json | Great Wyrm's | 巨龙的 → 虬王的 → 巨蛟的 | Grand Wyrm's（原 Coil-King's） | 留「巨」，随游蛟；虬王认不出 |
+| prefixes.json | Zircon | 锆石 → 锆英（不变） | Zircon-Clear（原 Jargoon） | 中文不变；英文 Jargoon 认不出 |
+| prefixes.json | Jacinth | 赤锆 → 赤瑛 → 丹锆 | Jacinth-Red（原 Sardius） | 留「锆」；赤瑛认不出 |
+| prefixes.json | Turquoise | 绿松石 → 碧甸 → 碧松石 | Sky Turquoise（原 Callais） | 留「松石」；碧甸认不出 |
+| prefixes.json | Shimmering | 光彩 → 浮光（不变） | Shimmer-Veiled（原 Lambent） | 中文不变（留光）；英文 Lambent 认不出 |
+| prefixes.json | Rainbow | 彩虹 → 虹霓（不变） | Rainbow-Hued（原 Iridescent） | 中文不变；英文 Iridescent 认不出 |
+| prefixes.json | Scintillating | 五彩 → 斑斓 → 五光 | Scintilla-Bright（原 Many-Hued） | 留「五」；斑斓认不出 |
+| prefixes.json | Chromatic | 万华 → 绚华（不变） | Chroma-Woven（原 Resplendent） | 中文不变（留华）；英文 Resplendent 认不出 |
+| prefixes.json | Lapis Lazuli | 青金石 → 群青 → 青金玉 | Starry Lazuli（原 Ultramarine） | 留「青金」；群青认不出 |
+| prefixes.json | Russet | 赤红 → 枣红 → 赤褐 | Russet-Brown（原 Sorrel） | 留「赤」；枣红认不出 |
+| prefixes.json | Camphor | 樟木 → 古樟（不变） | Old Camphor（原 Elderbalm） | 中文不变；英文 Elderbalm 认不出 |
+| prefixes.json | Ambergris | 龙涎香 → 鲸涎（不变） | Grey Ambergris（原 Whale-Musk） | 中文不变（留涎）；英文 Whale-Musk 认不出 |
+| prefixes.json | Victorious | 胜利 → 常胜（不变） | Ever-Victorious（原 Unvanquished） | 中文不变；英文 Unvanquished 认不出 |
+| prefixes.json | Aureolic | 光轮 → 圣环 → 光环 | Aureole-Crowned（原 Haloed） | 留「光」；圣环认不出 |
+| prefixes.json | Mechanic's | 技工的 → 机关师的 → 技匠的 | Gear-Mechanic's（原 Gearwright's） | 留「技」；机关师认不出 |
+| prefixes.json | Artisan's | 巧匠的 → 良工的 → 巧工的 | Deft Artisan's（原 Craftmaster's） | 留「巧」；良工认不出 |
+| prefixes.json | Jeweler's | 珠宝匠的 → 琢玉匠的 → 珠玉匠的 | Jewelsmith's（原 Jadecarver's） | 留「珠」「匠」；琢玉匠认不出 |
+| prefixes.json | Lunar | 月佑 → 太阴 → 月华 | Lunar-Blessed（原 Moonshade） | 留「月」；太阴要绕古称 |
+| prefixes.json | Arcadian | 幻界 → 蜃境 → 幻境 | Arcady-Born（原 Mirage） | 留「幻」；蜃境认不出 |
+| prefixes.json | Unearthly | 异界 → 域外 → 异域 | Unworldly（原 Outermarch） | 留「异」；域外认不出 |
+| prefixes.json | Astral | 星界 → 星垣（不变） | Astral-Woven（原 Starhold） | 中文不变（留星）；英文 Starhold 认不出 |
+| prefixes.json | Elysian | 天界 → 福地 → 天庭 | Elysium-Blessed（原 Hallowglen） | 留「天」；福地认不出 |
+| prefixes.json | Celestial | 神界 → 九霄 → 神霄 | High Celestial（原 Nine Heavens） | 留「神」；九霄认不出 |
+| prefixes.json | Diamond | 钻石 → 金刚 → 金刚石 | Diamond-Hard（原 Adamant） | 留「石」，金刚石是钻石的本名 |
+| prefixes.json | Acrobatic | 机敏 → 腾挪 → 机警 | Acrobat-Nimble（原 Vaulting） | 留「机」；腾挪认不出 |
+| prefixes.json | Harpoonist's | 投叉手的 → 鲸叉手的（不变） | Harpoon-Hand's（原 Whaler's） | 中文不变（留叉手）；英文 Whaler's 认不出 |
+| prefixes.json | Bowyer's | 制弓师的 → 弓匠的（不变） | Bowmaker's（原 Yewshaper's） | 中文不变（留弓）；英文 Yewshaper's 认不出 |
+| prefixes.json | Gymnastic | 灵巧 → 轻灵（不变） | Gymnast-Lithe（原 Lithe） | 中文不变（留灵）；英文留 Gymnast |
+| prefixes.json | Athletic | 矫健 → 骁捷 → 矫捷 | Athlete-Swift（原 Fleet-Footed） | 留「矫」；骁捷认不出 |
+| prefixes.json | Spearmaiden's | 女矛手的 → 执戈女的 → 女矛士的 | Spear-Sister's（原 Glaive-Sister's） | 留「女矛」；执戈女认不出 |
+| prefixes.json | Lancer's | 长枪手的 → 持槊者的 → 长枪客的 | Lance-Rider's（原 Cataphract's） | 留「长枪」；持槊者认不出 |
+| prefixes.json | Burning | 燃烧 → 焚灼 → 燃灼 | Pyre-Burning（原 Searing） | 留「燃」；焚灼认不出 |
+| prefixes.json | Sparking | 电花 → 掣电（不变） | Spark-Flung（原 Fulgurant） | 中文不变（留电）；英文 Fulgurant 认不出 |
+| prefixes.json | Chilling | 寒冷 → 森寒（不变） | Chill-Bitten（原 Grave-Cold） | 中文不变（留寒）；英文 Grave-Cold 认不出 |
+| prefixes.json | Blazing | 炽燃 → 燎原 → 炽焰 | Blaze-Wreathed（原 Wildfire） | 留「炽」；燎原认不出 |
+| prefixes.json | Volcanic | 火山 → 地火 → 炎山 | Volcano-Born（原 Earthfire） | 留「山」；地火认不出 |
+| prefixes.json | Charged | 电荷 → 惊雷 → 荷雷 | Bolt-Charged（原 Thunderclap） | 留「荷」；惊雷认不出 |
+| prefixes.json | Powered | 蕴雷 → 雷殛 → 蕴电 | Storm-Powered（原 Thunder-Smitten） | 留「蕴」；雷殛认不出 |
+| prefixes.json | Freezing | 冷冽 → 凝霜 → 冰冽 | Rime-Freezing（原 Hoarfrost） | 留「冽」；凝霜认不出 |
+| prefixes.json | Glacial | 冰川 → 坚冰 → 冰河 | Glacier-Born（原 Icebound） | 留「冰」；坚冰认不出 |
+| prefixes.json | Hexing | 咒术 → 魇镇 → 咒法 | Hex-Weaving（原 Hagridden） | 留「咒」；魇镇要绕古俗 |
+| prefixes.json | Fungal | 菌毒 → 腐蕈 → 蕈毒 | Fungus-Ridden（原 Toadstool） | 留「毒」；腐蕈认不出 |
+| prefixes.json | Graverobber's | 盗墓者的 → 掘冢人的 → 盗冢者的 | Grave-Thief's（原 Barrowdigger's） | 留「盗」「者」；掘冢人认不出 |
+| prefixes.json | Blighting | 咒怨 → 枯咒（不变） | Blight-Cursed（原 Wither-Cursed） | 中文不变（留咒）；英文留 Blight |
+| prefixes.json | Cursing | 诅咒 → 不祥 → 恶咒 | Curse-Laden（原 Ill-Omened） | 留「咒」；不祥认不出 |
+| prefixes.json | Noxious | 厉毒 → 瘴疠 → 厉瘴 | Noxious-Breathed（原 Miasmal） | 留「厉」；瘴疠认不出 |
+| prefixes.json | Venomous | 强毒 → 鸩毒 → 烈毒 | Venom-Fanged（原 Hemlock） | 留「毒」；鸩毒认不出 |
+| prefixes.json | Mojo | 魔精 → 巫蛊 → 魔蛊 | Mojo-Bound（原 Effigy） | 留「魔」；巫蛊认不出 |
+| prefixes.json | Golemlord's | 傀儡领主的 → 驭傀者的 → 傀儡王的 | Golem-King's（原 Puppeteer's） | 留「傀儡」；驭傀者认不出 |
+| prefixes.json | Captain's | 队长的 → 校尉的 → 队首的 | Guard-Captain's（原 Centurion's） | 留「队」；校尉认不出 |
+| prefixes.json | Preserver's | 保护者的 → 卫道者的 → 护持者的 | Faith-Preserver's（原 Creedguard's） | 留「护」「者」；卫道者认不出 |
+| prefixes.json | Rose Branded | 玫瑰骑士 → 蔷薇徽（不变） | Rose-Sigil（原 Briar-Sigil） | 中文不变；英文 Briar 不是玫瑰，留 Rose |
+| prefixes.json | Commander's | 指挥官的 → 统领的 → 指挥使的 | Knight-Commander's（原 Legate's） | 留「指挥」；统领认不出 |
+| prefixes.json | Marshal's | 元帅的 → 大将军的 → 大帅的 | Field Marshal's（原 Grand General's） | 留「帅」；大将军认不出 |
+| prefixes.json | Warden's | 守备者的 → 戍边者的 → 守备官的 | March-Warden's（原 Borderer's） | 留「守备」；戍边者认不出 |
+| prefixes.json | Guardian's | 防御者的 → 镇守者的 → 防卫者的 | Gate-Guardian's（原 Wallholder's） | 留「防」「者」；镇守者认不出 |
+| prefixes.json | Expert's | 老手的 → 行家的 → 熟手的 | Seasoned Expert's（原 Adept's） | 留「手」；行家认不出 |
+| prefixes.json | Fanatic | 凶怒 → 狂悖 → 凶戾 | Fanatic-Eyed（原 Mutinous） | 留「凶」；狂悖认不出 |
+| prefixes.json | Sounding | 嘹亮 → 激越 → 嘹唳 | Far-Sounding（原 Rousing） | 留「嘹」；激越认不出 |
+| prefixes.json | Veteran's | 老兵的 → 百战者的 → 老卒的 | Grey Veteran's（原 Hundred-Fought） | 留「老」；百战者认不出 |
+| prefixes.json | Raging | 狂怒 → 癫狂（不变） | Rage-Frenzied（原 Frenzied） | 中文不变（留狂）；癫狂＝Frenzied，英文留 Rage |
+| prefixes.json | Furious | 暴怒 → 震怒（不变） | Fury-Driven（原 Seething） | 中文不变（留怒）；震怒＝Fury，英文 Seething 认不出 |
+| prefixes.json | Resonant | 洪亮 → 黄钟 → 洪钟 | Resounding（原 Tolling） | 留「洪」；黄钟认不出 |
+| prefixes.json | Echoing | 回响 → 余音 → 回音 | Echo-Ringing（原 Lingering） | 留「回」；余音认不出 |
+| prefixes.json | Trainer's | 训练师的 → 教头的 → 训兽师的 | Beast-Trainer's（原 Drillmaster's） | 留「训」「师」；教头认不出 |
+| prefixes.json | Spiritual | 灵性 → 通灵（不变） | Spirit-Speaking（原 Ghost-Speaking） | 中文不变（留灵）；英文留 Spirit |
+| prefixes.json | Natural | 自然 → 造化 → 天然 | Nature-Born（原 Wildwrought） | 留「然」；造化认不出 |
+| prefixes.json | Caretaker's | 护林人的 → 荫护者的 → 护林者的 | Grove-Caretaker's（原 Bowerwarden's） | 留「护林」；荫护者认不出 |
+| prefixes.json | Keeper's | 守林人的 → 镇林者的 → 守林者的 | Forest-Keeper's（原 Forestbinder's） | 留「守林」；镇林者认不出 |
+| prefixes.json | Feral | 野性 → 未驯 → 兽性 | Feral-Blooded（原 Unbridled） | 留「性」；未驯认不出 |
+| prefixes.json | Communal | 灵语 → 灵契 → 灵言 | Commune-Bound（原 Spiritsworn） | 留「灵」，语换同义的言；灵契认不出 |
+| prefixes.json | Terrene | 大地 → 地脉（不变） | Terra-Veined（原 Earthvein） | 中文不变（留地）；英文留 Terra |
+| prefixes.json | Gaean | 盖亚 → 该娅 → 噶娅 | Ghayah's（原 Ghaiyah's） | 盖亚按术语表译作噶娅（Ghayah），随术语表 |
+| prefixes.json | Entrapping | 布陷 → 设伏 → 设陷 | Trap-Setting（原 Waylaying） | 留「陷」；设伏认不出 |
+| prefixes.json | Mentalist's | 心灵师的 → 御心者的 → 心法师的 | Mentalist-Sage's（原 Mindswayer's） | 留「心」「师」；御心者认不出 |
+| prefixes.json | Shogukusha's | 兵器师的 → 兵道者的 → 兵器匠的 | Shogukenja's（原 Steelwalker's） | 留「兵器」；兵道者认不出；英文留 Shoguk- 的读音 |
+| prefixes.json | Trickster's | 骗术师的 → 千面客的 → 诈术师的 | Mask-Trickster's（原 Thousandmask's） | 留「术师」；千面客认不出 |
+| prefixes.json | Cunning | 陷阱大师的 → 机巧者的 → 陷阱大匠的 | Cunning-Handed（原 Contriver's） | 留「陷阱」；机巧者认不出 |
+| prefixes.json | Psychic | 会心 → 灵识 → 会神 | Psyche-Sighted（原 Soulsighted） | 留「会」；灵识认不出 |
+| prefixes.json | Shadow | 暗影 → 影遁（不变） | Shadow-Slipping（原 Shadeslip） | 中文不变（留影）；英文留 Shadow |
+| prefixes.json | Sensei's | 导师的 → 授艺者的 → 授业师的 | Old Sensei's（原 Preceptor's） | 留「师」；授艺者认不出 |
+| prefixes.json | Kenshi's | 剑士的 → 仗剑者的 → 剑客的 | Blade-Kenshi's（原 Swordbearer's） | 留「剑」；仗剑者认不出 |
+| prefixes.json | Enlightened | 启迪 → 开悟 → 启智 | Self-Enlightened（原 Awakened） | 留「启」；开悟认不出 |
+| prefixes.json | Honorable | 光荣 → 盛誉 → 殊荣 | Honor-Bound（原 Renowned） | 留「荣」；盛誉认不出 |
+| prefixes.json | Righteous | 正义 → 秉正 → 正道 | Righteous-Armed（原 Unswerving） | 留「正」；秉正认不出 |
+| prefixes.json | Faithful | 虔信者 → 皈依者 → 笃信者 | Ever-Faithful（原 Proselyte） | 留「信者」；皈依者认不出 |
+| prefixes.json | Knave's | 无赖的 → 泼皮的 → 泼赖的 | Base Knave's（原 Ruffian's） | 留「赖」；泼皮认不出 |
+| prefixes.json | Jack's | 赌徒的 → 掷骰人的 → 赌鬼的 | One-Eyed Jack's（原 Dicecaster's） | 留「赌」；掷骰人认不出 |
+| prefixes.json | Jester's | 弄臣的 → 俳优的 → 戏臣的 | Court Jester's（原 Mummer's） | 留「臣」；俳优认不出 |
+| prefixes.json | Joker's | 丑角的 → 狂伶的 → 丑伶的 | Motley Joker's（原 Madcap's） | 留「丑」；狂伶认不出 |
+| prefixes.json | Fool's | 愚者的 → 痴人的 → 愚人的 | Witless Fool's（原 Simpleton's） | 留「愚」；痴人认不出 |
+| prefixes.json | Alarming | 大吼 → 惊喝 → 大喝 | Alarm-Raising（原 Bellowing） | 留「大」；惊喝认不出 |
+| prefixes.json | Calling | 呼喊 → 号令 → 呼喝 | Clarion-Calling（原 Clarion） | 留「呼」；号令认不出 |
+| prefixes.json | Yelling | 呐喊 → 叱咤 → 嘶喊 | War-Yelling（原 Roaring） | 留「喊」；叱咤认不出 |
+| prefixes.json | Howling | 嗥叫 → 长啸 → 长嗥 | Long-Howling（原 Ululating） | 留「嗥」；长啸认不出 |
+| prefixes.json | Grinding | 碾压 → 铁碾 → 碾轧 | Stone-Grinding（原 Ironmill） | 留「碾」；铁碾英文 Ironmill 认不出 |
+| prefixes.json | Paradox | 反背 → 逆理 → 背理 | Paradox-Woven（原 Contrary） | 留「背」；逆理认不出 |
+| prefixes.json | Robineye | 鸲目 → 知更眸 → 鸲眸 | Robingaze（原 Redbreast Gaze） | 留「鸲」；知更眸认不出 |
+| prefixes.json | Sparroweye | 雀目 → 檐雀眸 → 雀眸 | Sparrowgaze（原 Eave-Sparrow Gaze） | 留「雀」，目换同义的眸 |
+| prefixes.json | Falconeye | 隼目 → 游隼眸 → 隼眸 | Falcongaze（原 Peregrine Gaze） | 留「隼」，目换同义的眸 |
+| prefixes.json | Hawkeye | 鹰眼 → 苍鹰眸 → 鹰瞳 | Hawkgaze（原 Goshawk Gaze） | 留「鹰」，眼换同义的瞳；苍鹰眸认不出是哪一个 |
+| prefixes.json | Eagleeye | 鹰目 → 金雕眸 → 鹰眸 | Eaglegaze（原 Golden-Eagle Gaze） | 留「鹰」，目换同义的眸；金雕眸认不出 |
+| prefixes.json | Visionary | 预见 → 远瞻 → 先见 | Far-Visioned（原 Farseeing） | 留「见」；远瞻认不出 |
+| prefixes.json | Mnemonic | 记忆 → 溯忆（不变） | Mnemonic-Etched（原 Recollecting） | 中文不变（留忆）；英文 Recollecting 认不出 |
+| prefixes.json | Snowy | 冰雪 → 飞霰 → 飞雪 | Snow-Driven（原 Sleetdriven） | 留「雪」；飞霰认不出 |
+| prefixes.json | Shivering | 寒栗 → 彻骨 → 寒颤 | Shiver-Wracked（原 Marrowchill） | 留「寒」；彻骨认不出 |
+| prefixes.json | Boreal | 极寒 → 朔风 → 酷寒 | Boreal-Blown（原 Northgale） | 留「寒」；朔风认不出 |
+| prefixes.json | Hibernal | 凛冬 → 玄冬（不变） | Hibernal-Cold（原 Deepwinter） | 中文不变（留冬，避开「凛冬将至」）；英文 Deepwinter 认不出 |
+| prefixes.json | Fiery | 余烬 → 炽炭 → 余火 | Fiery-Bright（原 Livecoal） | 留「余」；炽炭认不出 |
+| prefixes.json | Smoldering | 闷燃 → 暗火 → 闷烧 | Smolder-Glowing（原 Gloomfire） | 留「闷」；暗火认不出 |
+| prefixes.json | Flaming | 烈焰 → 焰浪 → 烈火 | Flame-Tongued（原 Firetide） | 留「烈」；焰浪认不出 |
+| prefixes.json | Condensing | 爆燃 → 迸焰 → 爆焰 | Fire-Condensing（原 Flareburst） | 留「爆」；迸焰认不出 |
+| prefixes.json | Static | 静电 → 伏雷 → 静雷 | Static-Crackling（原 Stormbrooding） | 留「静」；伏雷认不出 |
+| prefixes.json | Buzzing | 电光 → 疾闪 → 电芒 | Buzzing-Lit（原 Swiftflash） | 留「电」；疾闪认不出 |
+| prefixes.json | Shocking | 雷光 → 怒霆 → 雷闪 | Shock-Struck（原 Thunderwrath） | 留「雷」；怒霆认不出 |
+| prefixes.json | Septic | 脓毒 → 溃疽 → 脓疽 | Sepsis-Ridden（原 Gangrenous） | 留「脓」；溃疽认不出 |
+| prefixes.json | Foul | 污毒 → 秽浊 → 秽毒 | Foul-Reeking（原 Miremurk） | 留「毒」，污换同义的秽；秽浊认不出 |
+| prefixes.json | Corrosive | 腐毒 → 蚀骨 → 腐朽 | Corrosion-Pitted（原 Bonegnawing） | 留「腐」；蚀骨认不出 |
+| prefixes.json | Toxic | 毒素 → 鸩羽 → 毒雾 | Toxin-Laden（原 Banefeather） | 留「毒」；鸩羽认不出 |
+| prefixes.json | Pestilent | 疫毒 → 瘟瘴 → 疫气 | Pestiferous（原 Plaguemist） | 留「疫」；瘟瘴认不出 |
+| prefixes.json | Maiden's | 女战士的 → 巾帼的 → 女斗士的 | Shield-Maiden's（原 Heroine's） | 留「女」「士」；巾帼认不出 |
+| prefixes.json | Valkyrie's | 女武神的 → 择亡者的 → 女战神的 | Battle-Valkyrie's（原 Slainchooser's） | 留「女」「神」；择亡者要绕神话 |
+| prefixes.json | Shaman's | 萨满的 → 巫祝的 → 萨满巫的 | Elder Shaman's（原 Augur's） | 留「萨满」加一字；巫祝认不出 |
+| prefixes.json | Hierophant's | 圣师的 → 秘仪祭司的 → 圣贤的 | High Hierophant's（原 Mystagogue's） | 留「圣」；秘仪祭司认不出 |
+| prefixes.json | Magekiller's | 法师杀手的 → 弑法者的 → 法师猎手的 | Mage-Slayer's（原 Spellslayer's） | 留「法师」「手」；弑法者认不出 |
+| prefixes.json | Compact | 紧凑 → 凝实 → 紧实 | Compact-Forged（原 Hardset） | 留「紧」；凝实认不出 |
+| prefixes.json | Thin | 密集 → 纤密（不变） | Thin-Woven（原 Finewoven） | 中文不变（留密）；英文留 Thin |
+| prefixes.json | Dense | 稠密 → 厚重 → 稠叠 | Dense-Packed（原 Thickset） | 留「稠」；厚重认不出 |
+| prefixes.json | Consecrated | 圣化 → 受膏 → 祝圣 | Thrice-Consecrated（原 Anointed） | 留「圣」，祝圣即 consecrate；受膏认不出 |
+| prefixes.json | Pure | 纯洁 → 无垢 → 纯净 | Pure-Souled（原 Immaculate） | 留「纯」；无垢认不出 |
+| prefixes.json | Sacred | 圣洁 → 崇圣 → 皎洁 | Sacred-Vowed（原 Reverent） | 留「洁」；崇圣只剩一个圣 |
+| prefixes.json | Hallowed | 神圣 → 圣恩 → 崇圣 | Hallow-Kept（原 Gracegiven） | 留「圣」；圣恩认不出 |
+| prefixes.json | Divine | 至圣 → 天威 → 极圣 | Divine-Crowned（原 Heavenmight） | 留「圣」；天威认不出 |
+| prefixes.json | Pearl | 珍珠 → 鲛珠（不变） | Merrow-Pearl（原 Merrowtear） | 中文不变（留珠）；英文留 Pearl |
+| prefixes.json | Virulent | （无官方中文） → 恶疠（不变） | Virulence-Laden（原 Pox-Ridden） | 中文不变；英文 Pox-Ridden 认不出 |
+| prefixes.json | Incendiary | （无官方中文） → 焚燹（不变） | Incendium（原 Warfire） | 中文不变；英文 Warfire 认不出 |
+| prefixes.json | Gelid | （无官方中文） → 冰魄（不变） | Gelid-Cold（原 Rimesoul） | 中文不变；英文 Rimesoul 认不出 |
+| prefixes.json | Magnetic | （无官方中文） → 磁石（不变） | Magnet-Bound（原 Lodestone） | 中文不变；英文 Lodestone 认不出 |
+| prefixes.json | Mystical | （无官方中文） → 玄秘（不变） | Mystic-Veiled（原 Occult） | 中文不变；英文 Occult 认不出 |
+| prefixes.json | Breaching | （无官方中文） → 破障（不变） | Wall-Breaching（原 Wardrending） | 中文不变；英文 Wardrending 认不出 |
+| prefixes.json | Chaotic | 混乱 → 浑沌 → 纷乱 | Chaos-Touched（原 Formless） | 留「乱」；浑沌认不出 |
+| prefixes.json | Sullied | （无官方中文） → 蒙垢（不变） | Soot-Sullied（原 Begrimed） | 中文不变；英文 Begrimed 认不出 |
+| prefixes.json | Fiendish | （无官方中文） → 妖邪（不变） | Fiend-Marked（原 Ungodly） | 中文不变；英文 Ungodly 认不出 |
+| prefixes.json | Erratic | （无官方中文） → 无常（不变） | Errant（原 Inconstant） | 中文不变；英文 Inconstant 认不出 |
+| prefixes.json | Torrid | （无官方中文） → 炙烈（不变） | Sun-Torrid（原 Blistering） | 中文不变；英文 Blistering 认不出 |
+| prefixes.json | TaintedAffix | （无官方中文） → 玷染（不变） | Taint-Blackened（原 Besmirched） | 中文不变；英文 Besmirched 认不出 |
+| prefixes.json | Forbidden | （无官方中文） → 犯忌（不变） | Forbid-Bound（原 Sacrilegious） | 中文不变；英文 Sacrilegious 认不出 |
+| prefixes.json | Dreadful | （无官方中文） → 森怖（不变） | Dread-Laden（原 Ghastly） | 中文不变；英文 Ghastly 认不出 |
+| prefixes.json | Malevolent | （无官方中文） → 阴鸷（不变） | Malevolence-Bred（原 Blackhearted） | 中文不变；英文 Blackhearted 认不出 |
+| prefixes.json | Devil's | （无官方中文） → 孽魔的（不变） | Pit Devil's（原 Sinfiend's） | 中文不变；英文 Sinfiend's 认不出 |
+| prefixes.json | Arch-Devil's | （无官方中文） → 魔魁的（不变） | Arch-Fiend's（原 Hellprince's） | 中文不变；英文留 Arch |
+| suffixes.json | of Health | 保护之 → 健魄之 → 保佑之 | of Good Health（原 of Hardihood） | 留「保」；健魄认不出 |
+| suffixes.json | of Protection | 防护之 → 护佑之（不变） | of Steadfast Protection（原 of the Patron Saint） | 中文是 style.md 的例子；英文 Patron Saint 认不出 |
+| suffixes.json | of Absorption | 吸收之 → 卸力之 → 吸纳之 | of Deep Absorption（原 of Blunted Blows） | 留「吸」；卸力认不出 |
+| suffixes.json | of Life | 生命之 → 命脉之（不变） | of Lifeblood（原 of the Vital Vein） | 中文不变（留命）；英文留 Life |
+| suffixes.json | of Warding | 结界之 → 辟邪之 → 护界之 | of the Warding Sign（原 of Averting Evil） | 留「界」；辟邪认不出 |
+| suffixes.json | of the Sentinel | 哨兵之 → 巡哨之（不变） | of the Night Sentinel（原 of the Roving Watch） | 中文不变（留哨）；英文留 Sentinel |
+| suffixes.json | of Guarding | 御魔之 → 镇煞之 → 镇魔之 | of Watchful Guarding（原 of Quelling Fiends） | 留「魔」；镇煞认不出 |
+| suffixes.json | of Negation | 消魔之 → 断咒之 → 消咒之 | of Hex Negation（原 of the Broken Hex） | 留「消」；断咒认不出 |
+| suffixes.json | of Piercing | 刺穿之 → 贯甲之 → 刺透之 | of Mail-Piercing（原 of Riven Mail） | 留「刺」；贯甲认不出 |
+| suffixes.json | of Bashing | 猛击之 → 槌击之（不变） | of Maul-Bashing（原 of the Falling Maul） | 中文不变（留击）；英文留 Bash |
+| suffixes.json | of Puncturing | 穿刺之 → 洞穿之（不变） | of Gaping Punctures（原 of the Gaping Breach） | 中文不变（留穿）；英文留 Puncture |
+| suffixes.json | of Thorns | 荆棘之 → 刺藤之 → 荆刺之 | of Briar Thorns（原 of the Briar Vine） | 留「荆」；刺藤认不出 |
+| suffixes.json | of Spikes | 尖刺之 → 铁棘之 → 尖棘之 | of Barbed Spikes（原 of Iron Barbs） | 留「尖」；铁棘认不出 |
+| suffixes.json | of Readiness | 快速之 → 枕戈之 → 轻快之 | of Battle Readiness（原 of the Spearside Vigil） | 留「快」；枕戈要绕成语 |
+| suffixes.json | of Alacrity | 迅速之 → 疾刃之 → 神速之 | of Keen Alacrity（原 of the Fleet Blade） | 留「速」；疾刃认不出 |
+| suffixes.json | of Swiftness | 迅捷之 → 掠影之 → 迅疾之 | of the Swift Wind（原 of the Flitting Shade） | 留「迅」；掠影认不出 |
+| suffixes.json | of Quickness | 极速之 → 瞬息之 → 极快之 | of Blinding Quickness（原 of the Eyeblink） | 留「极」；瞬息认不出 |
+| suffixes.json | of Blocking | 格挡之 → 擎盾之 → 遮挡之 | of Shield Blocking（原 of the Upheld Shield） | 留「挡」；擎盾认不出 |
+| suffixes.json | of Deflecting | 偏斜之 → 拨锋之 → 偏转之 | of Edge-Deflecting（原 of the Turned Edge） | 留「偏」；拨锋认不出 |
+| suffixes.json | of the Apprentice | 习法者之 → 法徒之 → 习术者之 | of the Young Apprentice（原 of the Hermetic Disciple） | 留「习」「者」；法徒认不出 |
+| suffixes.json | of the Magus | 术士之 → 法贤之 → 术师之 | of the Elder Magus（原 of the Hermetic Sage） | 留「术」；法贤认不出 |
+| suffixes.json | of Frost | 冰霜之 → 霜降之（不变） | of Falling Frost（原 of the Rimefall） | 中文不变（留霜）；英文留 Frost |
+| suffixes.json | of the Glacier | 冰川之 → 冰岳之（不变） | of the Glacier Peak（原 of the Icebound Crag） | 中文不变（留冰）；英文留 Glacier |
+| suffixes.json | of Thawing | 解冻之 → 冰释之 → 解冰之 | of Thawing Ice（原 of Ice Undone） | 留「解」；冰释认不出 |
+| suffixes.json | of Flame | 烈焰之 → 火舌之 → 狂焰之 | of Leaping Flame（原 of Fire's Tongue） | 留「焰」；火舌认不出 |
+| suffixes.json | of Fire | 火焰之 → 业火之（不变） | of Sinfire（原 of Sinflame） | 中文不变（留火）；英文留 Fire |
+| suffixes.json | of Burning | 燃烧之 → 焚身之 → 燃身之 | of Burning Flesh（原 of the Flesh Pyre） | 留「燃」；焚身认不出 |
+| suffixes.json | of Shock | 震击之 → 电蛇之 → 震雷之 | of Jolting Shock（原 of the Spark Serpent） | 留「震」；电蛇认不出 |
+| suffixes.json | of Lightning | 闪电之 → 惊电之（不变） | of Sudden Lightning（原 of Sudden Levin） | 中文不变（留电）；英文留 Lightning |
+| suffixes.json | of Thunder | 雷霆之 → 天雷之（不变） | of Heaven's Thunder（原 of Heaven's Smiting） | 中文不变（留雷）；英文留 Thunder |
+| suffixes.json | of Craftmanship | 工匠之 → 精铸之 → 良匠之 | of True Craftsmanship（原 of the Exacting Forge） | 留「匠」；精铸认不出 |
+| suffixes.json | of Quality | 品质之 → 上品之（不变） | of High Quality（原 of Noble Make） | 中文不变（留品）；英文留 Quality |
+| suffixes.json | of Maiming | 毁伤之 → 断肢之 → 残伤之 | of Maiming Blows（原 of Lopped Limbs） | 留「伤」；断肢认不出 |
+| suffixes.json | of Slaying | 杀戮之 → 斩首之 → 杀伐之 | of Swift Slaying（原 of Beheading） | 留「杀」；斩首认不出 |
+| suffixes.json | of Gore | 角刺之 → 兕角之（不变） | of Horned Gore（原 of the Aurochs Horn） | 中文不变（留角）；英文留 Gore |
+| suffixes.json | of Carnage | 残杀之 → 尸山之 → 残屠之 | of Red Carnage（原 of the Corpse Mound） | 留「残」；尸山认不出 |
+| suffixes.json | of Slaughter | 屠戮之 → 血海之 → 屠斩之 | of Wild Slaughter（原 of the Blood Sea） | 留「屠」；血海认不出 |
+| suffixes.json | of Worth | 优异之 → 出众之 → 优等之 | of True Worth（原 of Distinction） | 留「优」；出众认不出 |
+| suffixes.json | of Measure | 杰出之 → 翘楚之 → 俊杰之 | of Full Measure（原 of the Paragon） | 留「杰」；翘楚认不出 |
+| suffixes.json | of Excellence | 卓越之 → 冠绝之 → 卓绝之 | of High Excellence（原 of the Unsurpassed） | 留「卓」；冠绝认不出 |
+| suffixes.json | of Performance | 超卓之 → 绝伦之 → 超群之 | of Peerless Performance（原 of the Peerless） | 留「超」；绝伦认不出 |
+| suffixes.json | of Blight | 凋零之 → 腐萎之 → 凋萎之 | of Withering Blight（原 of the Cankered Bough） | 留「凋」；腐萎认不出 |
+| suffixes.json | of Venom | 剧毒之 → 蛇涎之 → 蛇毒之 | of Adder Venom（原 of Adder Spittle） | 留「毒」；蛇涎认不出 |
+| suffixes.json | of Pestilence | 疾疫之 → 疠气之 → 恶疫之 | of Black Pestilence（原 of Plague Breath） | 留「疫」；疠气认不出 |
+| suffixes.json | of Dexterity | 敏捷之 → 猿臂之 → 巧捷之 | of Nimble Dexterity（原 of the Gibbon's Reach） | 留「捷」；猿臂要绕典故 |
+| suffixes.json | of Skill | 技艺之 → 纯熟之 → 绝艺之 | of Practiced Skill（原 of the Practiced Hand） | 留「艺」；纯熟认不出 |
+| suffixes.json | of Accuracy | 精确之 → 无虚之 → 精微之 | of True Accuracy（原 of the Unwasted Arrow） | 留「精」；无虚要绕成语 |
+| suffixes.json | of Precision | 精准之 → 秋毫之 → 准绳之 | of Fine Precision（原 of a Hair's Breadth） | 留「准」；秋毫要绕成语 |
+| suffixes.json | of Perfection | 完美之 → 无瑕之 → 完璧之 | of Flawless Perfection（原 of the Unblemished） | 留「完」；无瑕认不出 |
+| suffixes.json | of Balance | 平衡之 → 不倾之 → 均衡之 | of Even Balance（原 of the Untoppled） | 留「衡」；不倾认不出 |
+| suffixes.json | of Stability | 稳定之 → 岿然之 → 安定之 | of Firm Stability（原 of the Unshaken Peak） | 留「定」；岿然要绕成语 |
+| suffixes.json | of Regeneration | 再生之 → 愈创之 → 重生之 | of Swift Regeneration（原 of Knitting Wounds） | 留「生」；愈创认不出 |
+| suffixes.json | of Regrowth | 回春之 → 枯荣之 → 逢春之 | of Spring Regrowth（原 of Wither and Bloom） | 留「春」；枯荣认不出 |
+| suffixes.json | of Vileness | 卑鄙之 → 秽恶之 → 卑污之 | of Foul Vileness（原 of Defilement） | 留「卑」；秽恶认不出 |
+| suffixes.json | of Greed | 贪婪之 → 饕餮之 → 贪欲之 | of Gnawing Greed（原 of the Devouring Maw） | 留「贪」；饕餮要绕典故 |
+| suffixes.json | of Wealth | 富贵之 → 金玉之 → 富足之 | of Great Wealth（原 of Gold and Jade） | 留「富」；金玉认不出 |
+| suffixes.json | of Chance | 机遇之 → 偶得之 → 机运之 | of Blind Chance（原 of the Windfall） | 留「机」；偶得认不出 |
+| suffixes.json | of Fortune | 财富之 → 福缘之 → 财宝之 | of Good Fortune（原 of Blessed Fate） | 留「财」；福缘认不出 |
+| suffixes.json | of Energy | 能量之 → 灵泉之 → 神能之 | of Welling Energy（原 of the Spirit Spring） | 留「能」；灵泉认不出 |
+| suffixes.json | of the Mind | 意念之 → 冥思之 → 心念之 | of the Keen Mind（原 of Deep Musing） | 留「念」；冥思认不出 |
+| suffixes.json | of Brilliance | 光辉之 → 慧光之（不变） | of Wise Brilliance（原 of Wisdom's Gleam） | 中文不变（留光）；英文留 Brilliance |
+| suffixes.json | of Sorcery | 巫师之 → 妖术之 → 巫术之 | of Black Sorcery（原 of the Black Arts） | 留「巫」；妖术认不出 |
+| suffixes.json | of Wizardry | 秘法之 → 咒典之 → 玄法之 | of High Wizardry（原 of the Grimoire） | 留「法」；咒典认不出 |
+| suffixes.json | of the Bear | 巨熊之 → 熊罴之（不变） | of the Cave Bear（原 of the Ursine Host） | 中文不变（留熊）；英文留 Bear |
+| suffixes.json | of Light | 光明之 → 照夜之 → 光亮之 | of Lantern Light（原 of Night's Lantern） | 留「光」；照夜认不出 |
+| suffixes.json | of Radiance | 光华之 → 煌耀之 → 光芒之 | of Blinding Radiance（原 of Blinding Splendor） | 留「光」；煌耀认不出 |
+| suffixes.json | of the Sun | 太阳之 → 烈日之 → 骄阳之 | of the Blazing Sun（原 of the Dayblaze） | 留「阳」，太换骄；烈日没有阳字，英文 Dayblaze 也丢了 Sun |
+| suffixes.json | of the Jackal | 豺狼之 → 饥豺之（不变） | of the Gaunt Jackal（原 of the Gaunt Dhole） | 中文不变（留豺）；英文留 Jackal |
+| suffixes.json | of the Fox | 狡狐之 → 赤狐之（不变） | of the Red Fox（原 of the Red Vixen） | 中文不变（留狐）；英文留 Fox |
+| suffixes.json | of the Wolf | 孤狼之 → 苍狼之 → 独狼之 | of the Lone Wolf（原 of the Ashen Pack） | 留「狼」，孤换同义的独；英文 Ashen Pack 丢了 Wolf |
+| suffixes.json | of the Tiger | 猛虎之 → 啸虎之（不变） | of the Roaring Tiger（原 of the Striped Roar） | 中文不变（留虎）；英文留 Tiger |
+| suffixes.json | of the Mammoth | 巨象之 → 古象之（不变） | of the Ancient Mammoth（原 of the Ancient Tusker） | 中文不变（留象）；英文留 Mammoth |
+| suffixes.json | of the Colossus | 巨神之 → 巍峨之 → 巨灵之 | of the Towering Colossus（原 of the Towering Frame） | 留「巨」；巍峨认不出 |
+| suffixes.json | of the Gargantuan | 僵尸巨兽之 → 巨魈之 → 巨兽之 | of the Gargantuan Brute（原 of the Colossal Ape） | 留「巨兽」；巨魈认不出 |
+| suffixes.json | of the Leech | 水蛭之 → 血蛭之（不变） | of the Blood Leech（原 of the Bloodsucker） | 中文不变（留蛭）；英文留 Leech |
+| suffixes.json | of the Locust | 血蝗之 → 飞蝗之（不变） | of the Locust Swarm（原 of the Devouring Swarm） | 中文不变（留蝗）；英文留 Locust |
+| suffixes.json | of the Bat | 恶蝠之 → 夜蝠之（不变） | of the Night Bat（原 of the Gloamwing） | 中文不变（留蝠）；英文留 Bat |
+| suffixes.json | of the Vampire | 吸魂鬼之 → 摄魂之 → 吸魂魔之 | of the Elder Vampire（原 of the Soul Seizer） | 留「吸魂」；摄魂认不出 |
+| suffixes.json | of Defiance | 反抗之 → 桀骜之 → 反叛之 | of Bold Defiance（原 of the Stiff-Necked） | 留「反」；桀骜认不出 |
+| suffixes.json | of Amelioration | 清毒之 → 化瘴之 → 拔毒之 | of Sweet Amelioration（原 of Dispelled Miasma） | 留「毒」；化瘴认不出 |
+| suffixes.json | of Remedy | 解药之 → 良方之 → 灵药之 | of Sovereign Remedy（原 of the Sovereign Physic） | 留「药」；良方认不出 |
+| suffixes.json | of Simplicity | 至简之 → 返璞之 → 至朴之 | of Plain Simplicity（原 of the Uncarved Block） | 留「至」；返璞要绕成语 |
+| suffixes.json | of Ease | 自在之 → 从容之 → 自如之 | of Unhurried Ease（原 of the Unhurried Mien） | 留「自」；从容认不出 |
+| suffixes.json | of Strength | 力量之 → 膂力之（不变） | of Knotted Strength（原 of Knotted Thews） | 中文不变（留力）；英文留 Strength |
+| suffixes.json | of Might | 勇力之 → 拔山之 → 勇武之 | of Mountain Might（原 of Uprooting Mountains） | 留「勇」；拔山要绕典故 |
+| suffixes.json | of the Ox | 公牛之 → 蛮牛之（不变） | of the Wild Ox（原 of the Wild Bull） | 中文不变（留牛）；英文留 Ox |
+| suffixes.json | of the Giant | 巨人之 → 夸父之 → 巨族之 | of the Elder Giant（原 of the Sun-Chaser） | 留「巨」；夸父要绕神话 |
+| suffixes.json | of the Titan | 泰坦之 → 堤丹之 → 太丹之 | of the Taedan（原 of the Dydan） | Titan 按术语表译作太丹（Taedan），随术语表 |
+| suffixes.json | of Pacing | 快步之 → 踏尘之 → 轻步之 | of Steady Pacing（原 of Trodden Dust） | 留「步」；踏尘认不出 |
+| suffixes.json | of Haste | 疾步之 → 追风之 → 疾奔之 | of Headlong Haste（原 of the Wind Chaser） | 留「疾」；追风认不出 |
+| suffixes.json | of Speed | 疾行之 → 绝尘之 → 速行之 | of Galloping Speed（原 of the Dustless Stride） | 留「行」；绝尘认不出 |
+| suffixes.json | of Life Everlasting | 永生之 → 不息之 → 长生之 | of Life Unending（原 of Ceaseless Renewal） | 留「生」；不息认不出 |
+| suffixes.json | of Amicae | 护命之 → 守魂之 → 守命之 | of Sworn Amicae（原 of Soul's Keeping） | 留「命」；守魂认不出 |
+| suffixes.json | of Coolness | 降温之 → 寒潭之 → 降霜之 | of Cool Shade（原 of the Cold Mere） | 留「降」；寒潭认不出 |
+| suffixes.json | of Inflammability | 阻燃之 → 不焚之 → 阻火之 | of the Unburnable（原 of the Unscorched） | 留「阻」；不焚认不出 |
+| suffixes.json | of Amianthus | 石绒之 → 火浣之 → 石絮之 | of Amianthus Weave（原 of the Fire-Washed Weave） | 留「石」；火浣要绕古称 |
+| suffixes.json | of Quenching | 熄火之 → 甘霖之 → 熄焰之 | of Rain-Quenching（原 of Merciful Rain） | 留「熄」；甘霖认不出 |
+| suffixes.json | of Faith | 信念之 → 虔心之 → 坚信之 | of Firm Faith（原 of the Devout Heart） | 留「信」；虔心认不出 |
+| suffixes.json | of Resistance | 抗性之 → 拒斥之 → 抗御之 | of Stern Resistance（原 of Stern Rebuff） | 留「抗」；拒斥认不出 |
+| suffixes.json | of Insulation | 绝缘之 → 隔霆之 → 绝雷之 | of Thunder Insulation（原 of the Thunder Ward） | 留「绝」；隔霆认不出 |
+| suffixes.json | of Grounding | 接地之 → 泄雷之 → 落地之 | of Earth Grounding（原 of the Spent Bolt） | 留「地」；泄雷认不出 |
+| suffixes.json | of the Dynamo | 生电之 → 雷轮之 → 生雷之 | of the Storm Dynamo（原 of the Thunderwheel） | 留「生」；雷轮认不出 |
+| suffixes.json | of Stoicism | 坚忍之 → 泰然之 → 隐忍之 | of Silent Stoicism（原 of Serene Bearing） | 留「忍」；泰然认不出 |
+| suffixes.json | of Warming | 温暖之 → 煦火之 → 温煦之 | of Gentle Warming（原 of the Gentle Hearth） | 留「温」；煦火认不出 |
+| suffixes.json | of Thawing | 解冻之 → 融霜之 → 消冻之 | of Thawing Rime（原 of the Melting Rime） | 留「冻」；融霜认不出 |
+| suffixes.json | of the Dunes | 沙丘之 → 瀚海之 → 沙岭之 | of the Shifting Dunes（原 of the Sand Sea） | 留「沙」；瀚海认不出 |
+| suffixes.json | of the Scirocco | 热风之 → 焚风之（不变） | of the Hot Scirocco（原 of the Scorchwind） | 中文不变（留风）；英文留 Scirocco |
+| suffixes.json | of Desire | 欲望之 → 渴欲之（不变） | of Parched Desire（原 of Parched Longing） | 中文不变（留欲）；英文留 Desire |
+| suffixes.json | of Razors | 剃刀之 → 削铁之 → 剃锋之 | of Keen Razors（原 of Shorn Iron） | 留「剃」；削铁认不出 |
+| suffixes.json | of Malice | 恶意之 → 祸心之 → 恶念之 | of Cold Malice（原 of the Baleful Heart） | 留「恶」；祸心认不出 |
+| suffixes.json | of Fervor | 狂热之 → 沸血之 → 炽热之 | of Boiling Fervor（原 of Boiling Blood） | 留「热」；沸血认不出 |
+| suffixes.json | of the Icicle | 冰凌之 → 檐冰之（不变） | of the Eave Icicle（原 of Eaves-Hung Ice） | 中文不变（留冰）；英文留 Icicle |
+| suffixes.json | of Winter | 寒冬之 → 岁寒之 → 隆冬之 | of Deep Winter（原 of the Dying Year） | 留「冬」；岁寒要绕成语 |
+| suffixes.json | of Frigidity | 僵冻之 → 冻髓之（不变） | of Bitter Frigidity（原 of Frozen Marrow） | 中文不变（留冻）；英文 Frozen Marrow 认不出，留 Frigidity |
+| suffixes.json | of Incineration | 焚烧之 → 化烬之 → 焚化之 | of Utter Incineration（原 of Dust and Cinder） | 留「焚」；化烬认不出 |
+| suffixes.json | of Passion | 热情之 → 激昂之 → 烈情之 | of Fierce Passion（原 of the Quickened Pulse） | 留「情」；激昂认不出 |
+| suffixes.json | of Storms | 雷暴之 → 风雷之 → 雷飙之 | of Gathering Storms（原 of Wind and Thunder） | 留「雷」；风雷认不出（风暴是符文之语的官方名） |
+| suffixes.json | of Ennui | 霹雳之 → 轰雷之 → 霹雷之 | of Deep Ennui（原 of Rumbling Thunder） | 留「霹」；轰雷认不出；英文留 Ennui |
+| suffixes.json | of Butchery | 屠夫之 → 刀俎之 → 屠户之 | of Cleaver Butchery（原 of Cleaver and Block） | 留「屠」；刀俎要绕成语 |
+| suffixes.json | of Evisceration | 开膛之 → 裂腹之 → 开腹之 | of Swift Evisceration（原 of the Riven Belly） | 留「开」；裂腹认不出 |
+| suffixes.json | of Ire | 愤怒之 → 怒目之（不变） | of Glowering Ire（原 of the Glowering Eye） | 中文不变（留怒）；英文留 Ire |
+| suffixes.json | of Wrath | 怒火之 → 冲冠之 → 怒焰之 | of Kindled Wrath（原 of Raised Hackles） | 留「怒」；冲冠要绕成语 |
+| suffixes.json | of Transcendence | 超凡之 → 入圣之 → 超脱之 | of High Transcendence（原 of Hallowed Ascent） | 留「超」；入圣认不出 |
+| suffixes.json | of Joyfulness | 喜悦之 → 欢颜之 → 喜乐之 | of Heart's Joy（原 of the Glad Countenance） | 留「喜」；欢颜认不出 |
+| suffixes.json | of Bliss | 欣喜之 → 至福之 → 欣然之 | of Sweet Bliss（原 of the Thrice-Blessed） | 留「欣」；至福认不出 |
+| suffixes.json | of Anthrax | 炭疽之 → 黑疽之（不变） | of Black Anthrax（原 of the Black Carbuncle） | 中文不变（留疽）；英文留 Anthrax |
+| suffixes.json | of Envy | 嫉妒之 → 妒火之（不变） | of Green Envy（原 of Jealous Fire） | 中文不变（留妒）；英文留 Envy |
+| suffixes.json | of Nirvana | 涅盘之 → 彼岸之 → 涅境之 | of Nirvana's Shore（原 of the Yonder Shore） | 留「涅」；彼岸要绕佛典 |
+| suffixes.json | of Daring | 胆识之 → 虎胆之（不变） | of Reckless Daring（原 of the Tiger's Gall） | 中文不变（留胆）；英文留 Daring |
+| suffixes.json | of Equilibrium | 协调之 → 执中之 → 调和之 | of True Equilibrium（原 of the Golden Mean） | 留「调」；执中认不出 |
+| suffixes.json | of Truth | 真理之 → 真言之（不变） | of Plain Truth（原 of the Unfeigned Word） | 中文不变（留真）；英文留 Truth |
+| suffixes.json | of Revivification | 复苏之 → 回生之 → 复生之 | of Second Revival（原 of Life Returned） | 留「复」；回生认不出 |
+| suffixes.json | of Honor | 荣誉之 → 名节之 → 荣名之 | of Unstained Honor（原 of the Unstained Name） | 留「荣」；名节认不出 |
+| suffixes.json | of Avarice | 贪财之 → 嗜金之 → 贪金之 | of Golden Avarice（原 of Gold Hunger） | 留「贪」；嗜金认不出 |
+| suffixes.json | of Luck | 幸运之 → 天幸之（不变） | of Fickle Luck（原 of Heaven's Boon） | 中文不变（留幸）；英文留 Luck |
+| suffixes.json | of Good Luck | 好运之 → 吉星之 → 佳运之 | of Fair Luck（原 of the Auspicious Star） | 留「运」；吉星认不出 |
+| suffixes.json | of Prosperity | 发达之 → 昌隆之 → 发迹之 | of Rising Prosperity（原 of the Flourishing House） | 留「发」；昌隆认不出 |
+| suffixes.json | of Enlightenment | 启迪之 → 明心之 → 启明之 | of Dawning Enlightenment（原 of the Unclouded Mind） | 留「启」；明心认不出 |
+| suffixes.json | of Knowledge | 知识之 → 博闻之 → 见识之 | of Deep Knowledge（原 of Wide Lore） | 留「识」；博闻认不出 |
+| suffixes.json | of the Squid | 乌贼之 → 渊鱿之 → 墨贼之 | of the Abyssal Squid（原 of the Abyssal Inkfish） | 留「贼」；渊鱿认不出 |
+| suffixes.json | of the Whale | 巨鲸之 → 沧鲸之（不变） | of the Grey Whale（原 of the Sea-Colossus） | 中文是 style.md 的例子；英文留 Whale |
+| suffixes.json | of Sustenance | 续命之 → 延寿之 → 延命之 | of Lasting Sustenance（原 of Lengthened Days） | 留「命」；延寿认不出 |
+| suffixes.json | of Vita | 生机之 → 命火之 → 生息之 | of Bright Vita（原 of the Lifefire） | 留「生」；命火认不出 |
+| suffixes.json | of Spirit | 精神之 → 神魄之 → 精魄之 | of Undimmed Spirit（原 of the Undimmed Soul） | 留「精」；神魄认不出 |
+| suffixes.json | of Hope | 希望之 → 微光之 → 希冀之 | of Faint Hope（原 of the Faint Glimmer） | 留「希」；微光是前缀 Glimmering 的官方名 |
+| suffixes.json | of the Lamprey | 血鳗之 → 吮鳗之（不变） | of the Bloodsucking Lamprey（原 of the Bloodsucking Eel） | 中文不变（留鳗）；英文留 Lamprey |
+| suffixes.json | of the Wraith | 怨魂之 → 厉鬼之 → 怨灵之 | of the Grave Wraith（原 of the Ghast） | 留「怨」；厉鬼认不出 |
+| suffixes.json | of Freedom | 自由之 → 无羁之 → 自得之 | of Unbridled Freedom（原 of the Slipped Bridle） | 留「自」；无羁认不出 |
+| suffixes.json | of Atlas | 擎天神之 → 负穹之 → 擎天者之 | of Atlas Unbowed（原 of the Skybearer） | 留「擎天」；负穹认不出 |
+| suffixes.json | of Virility | 刚勇之 → 血气之 → 刚猛之 | of Full Virility（原 of the Full-Blooded） | 留「刚」；血气认不出 |
+| suffixes.json | of Transportation | 疾驰之 → 长驱之 → 飞驰之 | of Transport Afar（原 of the Long Ride） | 留「驰」；长驱认不出 |
+| suffixes.json | of Acceleration | 疾速之 → 加鞭之 → 疾驱之 | of Spurred Acceleration（原 of the Spurring Lash） | 留「疾」；加鞭认不出 |
+| suffixes.json | of Inertia | 惯性之 → 顺势之 → 惰性之 | of Rolling Inertia（原 of the Following Wind） | 留「性」；顺势认不出 |
+| suffixes.json | of Self-Repair | 自我修复之 → 自缮之 → 自修之 | of Self-Mending（原 of Unbidden Mending） | 留「自」「修」；自缮认不出 |
+| suffixes.json | of Restoration | 复原之 → 重铸之 → 还原之 | of Swift Restoration（原 of the Second Forging） | 留「原」；重铸认不出 |
+| suffixes.json | of Ages | 岁月之 → 千秋之 → 岁华之 | of Countless Ages（原 of a Thousand Autumns） | 留「岁」；千秋认不出 |
+| suffixes.json | of Replenishing | 补充之 → 复盈之 → 补益之 | of Endless Replenishing（原 of Brimming Anew） | 留「补」；复盈认不出 |
+| suffixes.json | of Propogation | 增补之 → 滋生之 → 增殖之 | of Teeming Propagation（原 of the Teeming Brood） | 留「增」；滋生认不出 |
+| suffixes.json | of the Centaur | 半人马之 → 马躯之 → 人马之 | of the Wild Centaur（原 of the Horse-Bodied） | 留「人马」；马躯认不出 |
+| suffixes.json | of Memory | 回忆之 → 铭记之 → 追忆之 | of Long Memory（原 of the Unforgetting） | 留「忆」；铭记认不出 |
+| suffixes.json | of the Elephant | 大象之 → 象王之（不变） | of the Elephant King（原 of the Tusked King） | 中文不变（留象）；英文留 Elephant |
+| suffixes.json | of Power | 权能之 → 威势之 → 权柄之 | of Dread Power（原 of Awe and Sway） | 留「权」；威势认不出 |
+| suffixes.json | of Grace | 神恩之 → 垂怜之 → 天恩之 | of Bestowed Grace（原 of Mercy Bestowed） | 留「恩」；垂怜认不出 |
+| suffixes.json | of Grace and Power | 恩威之 → 圣威之（不变） | of Grace and Might（原 of Sacred Awe） | 中文不变（留威）；英文留 Grace |
+| suffixes.json | of the Yeti | 雪人之 → 雪魈之（不变） | of the Mountain Yeti（原 of the Snow Fiend） | 中文不变（留雪）；英文留 Yeti |
+| suffixes.json | of the Phoenix | 凤凰之 → 火凤之（不变） | of the Fire Phoenix（原 of the Pyre-Bird） | 中文不变（留凤）；英文留 Phoenix |
+| suffixes.json | of the Efreeti | 火灵之 → 炎魃之 → 炎灵之 | of the Fire Efreeti（原 of the Drought Demon） | 留「灵」；炎魃认不出 |
+| suffixes.json | of the Cobra | 眼镜蛇之 → 王蛇之 → 眼镜王蛇之 | of the King Cobra（原 of the Serpent King） | 留「眼镜蛇」加一字；王蛇认不出 |
+| suffixes.json | of the Elements | 元素之 → 诸元之（不变） | of the Four Elements（原 of the Four Roots） | 中文不变（留元）；英文留 Elements |
+| suffixes.json | of Firebolts | 火焰弹之 → 飞焰之 → 炎弹之 | of Flying Firebolts（原 of Flying Flame） | 留「弹」；飞焰认不出是火焰弹 |
+| suffixes.json | of Charged Bolt | 电荷弹之 → 游雷之 → 游电弹之 | of Wandering Charged Bolts（原 of Wandering Thunder） | 留「电」「弹」；游雷认不出是电荷弹 |
+| suffixes.json | of Icebolt | 冰霜弹之 → 飞霜之 → 寒霜弹之 | of Flying Icebolts（原 of Flying Frost） | 留「霜弹」；飞霜认不出是冰霜弹 |
+| suffixes.json | of Frozen Armor | 冰封甲之 → 霜铠之 → 冰封铠之 | of Frozen Mail（原 of the Hoarfrost Hauberk） | 留「冰封」；霜铠认不出 |
+| suffixes.json | of Static Field | 静电场之 → 静雷之 → 静电域之 | of the Static Expanse（原 of Still Thunder） | 留「静电」；静雷认不出是静电场 |
+| suffixes.json | of Telekinesis | 心灵传动之 → 摄物之 → 心灵摄动之 | of Unseen Telekinesis（原 of the Unseen Grasp） | 留「心灵」「动」；摄物认不出 |
+| suffixes.json | of Frost Shield | 冰封盾之 → 霜屏之 → 冰封牌之 | of the Frost Targe（原 of the Rime Curtain） | 留「冰封」；霜屏认不出 |
+| suffixes.json | of Ice Blast | 冰球爆之 → 冰殛之 → 冰球裂之 | of Rending Ice Blasts（原 of Frozen Doom） | 留「冰球」；冰殛是暗金 Coldkill 的官方名 |
+| suffixes.json | of Blaze | 足跟火之 → 踏焰之 → 足底火之 | of Trailing Blaze（原 of the Flametread） | 留「足」「火」；踏焰认不出是足跟火 |
+| suffixes.json | of Fire Ball | 火球术之 → 炎珠之 → 炎球之 | of the Hurled Fire Ball（原 of the Flame Pearl） | 留「球」；炎珠认不出是火球术 |
+| suffixes.json | of Nova | 闪电新星之 → 雷澜之 → 雷电新星之 | of the Thunder Nova（原 of the Thunder Tide） | 留「新星」；雷澜认不出 |
+| suffixes.json | of Nova Shield | 新星护盾之 → 星辉盾之 → 新星护壁之 | of the Nova Aegis（原 of the Starlight Aegis） | 留「新星护」；星辉盾认不出 |
+| suffixes.json | of Shiver Armor | 碎冰甲之 → 凛铠之 → 碎冰铠之 | of Shiver Mail（原 of the Wintry Cuirass） | 留「碎冰」；凛铠认不出 |
+| suffixes.json | of Fire Wall | 火焰墙之 → 焰垣之 → 火焰垣之 | of the Fire Rampart（原 of the Flame Rampart） | 留「火焰」；焰垣只剩一个焰；垣＝Rampart |
+| suffixes.json | of Enchant | 附魔火焰之 → 淬焰之 → 附魔烈焰之 | of Fiery Enchant（原 of the Fire-Tempered Edge） | 留「附魔」「焰」；淬焰认不出 |
+| suffixes.json | of Chain Lightning | 连锁闪电之 → 贯雷之 → 连环闪电之 | of Linked Lightning（原 of Threaded Thunder） | 留「闪电」；贯雷认不出 |
+| suffixes.json | of Teleport Shield | 传送盾之 → 瞬遁盾之 → 瞬送盾之 | of the Teleport Buckler（原 of the Vanishing Targe） | 留「送盾」；瞬遁盾认不出 |
+| suffixes.json | of Glacial Spike | 冰尖柱之 → 寒棘之 → 冰尖锥之 | of the Glacial Thorn（原 of the Cold Thorn） | 留「冰尖」；寒棘认不出 |
+| suffixes.json | of Meteor | 陨石之 → 坠星之 → 陨星之 | of the Falling Meteor（原 of the Plunging Star） | 留「陨」；坠星认不出 |
+| suffixes.json | of Thunder Storm | 雷暴术之 → 雷幄之 → 唤雷暴之 | of the Thunder Tempest（原 of the Levin Canopy） | 留「雷暴」，加一字（雷暴之是 of Storms 的官方名）；雷幄认不出 |
+| suffixes.json | of Energy Shield | 能量盾之 → 灵障之 → 能量壁之 | of the Energy Barrier（原 of the Spirit Barrier） | 留「能量」；灵障认不出 |
+| suffixes.json | of Blizzard | 暴风雪之 → 寒霰之 → 狂风雪之 | of Bitter Blizzard（原 of Bitter Sleet） | 留「风雪」；寒霰认不出 |
+| suffixes.json | of Chilling Armor | 冰棱甲之 → 寒芒铠之 → 冰棱铠之 | of Chilling Mail（原 of the Coldgleam Plate） | 留「冰棱」；寒芒铠认不出 |
+| suffixes.json | of Hydra Shield | 多头蛇护盾之 → 焰虺盾之 → 多首蛇盾之 | of the Hydra Buckler（原 of the Flame-Viper Buckler） | 留「多」「蛇盾」；焰虺盾认不出 |
+| suffixes.json | of Frozen Orb | 冰封球之 → 霜魄之 → 冰封珠之 | of the Frozen Sphere（原 of the Frost Moon） | 留「冰封」；霜魄认不出 |
+| suffixes.json | of Dawn | 黎明之 → 破晓之 → 天明之 | of Grey Dawn（原 of the Sundered Night） | 留「明」；破晓认不出 |
+| suffixes.json | of Sunlight | 阳光之 → 日辉之 → 阳辉之 | of Noon Sunlight（原 of the Noonday Glow） | 留「阳」；日辉认不出 |
+| suffixes.json | of Magic Arrow | 魔法箭之 → 秘矢之 → 魔法矢之 | of Magic Shafts（原 of the Veiled Arrow） | 留「魔法」；秘矢认不出；矢＝Shaft |
+| suffixes.json | of Fire Arrow | 火焰箭之 → 炎镞之 → 火焰矢之 | of Fire Shafts（原 of the Burning Barb） | 留「火焰」；炎镞认不出 |
+| suffixes.json | of Inner Sight | 心眼之 → 洞幽之 → 心目之 | of the Inner Eye（原 of Pierced Shadows） | 留「心」；洞幽认不出 |
+| suffixes.json | of Jab | 戳刺之 → 连刺之 → 戳击之 | of Quick Jabs（原 of Unceasing Thrusts） | 留「戳」；连刺认不出 |
+| suffixes.json | of Cold Arrow | 冰霜箭之 → 凛矢之 → 冰霜矢之 | of Cold Shafts（原 of Rimed Shafts） | 留「冰霜」；凛矢认不出 |
+| suffixes.json | of Multiple Shot | 多重箭之 → 连珠矢之 → 多重矢之 | of Multiple Shafts（原 of Pearl-Strung Shafts） | 留「多重」；连珠矢要绕成语 |
+| suffixes.json | of Power Strike | 电荷攻击之 → 雷劲刺之 → 电荷突击之 | of Power Thrusts（原 of Thunder-Driven Thrusts） | 留「电荷」「击」；雷劲刺认不出 |
+| suffixes.json | of Poison Jab | 剧毒戳刺之 → 蛇毒刺之 → 剧毒点刺之 | of Poison Thrusts（原 of Viper Thrusts） | 留「剧毒」「刺」；蛇毒刺认不出 |
+| suffixes.json | of Exploding Arrow | 爆裂箭之 → 迸火矢之 → 爆裂矢之 | of Exploding Shafts（原 of Ember-Spitting Shafts） | 留「爆裂」；迸火矢认不出 |
+| suffixes.json | of Slow Missile | 缓速箭之 → 滞矢之 → 缓速矢之 | of Slow Shafts（原 of Stalled Flight） | 留「缓速」；滞矢认不出 |
+| suffixes.json | of Impaling Strike | 刺击之 → 透骨之 → 突刺之 | of Impaling Thrusts（原 of Marrowpiercing） | 留「刺」；透骨认不出 |
+| suffixes.json | of Lightning Javelin | 闪电标枪之 → 掷雷之 → 闪电投枪之 | of Lightning Spears（原 of Hurled Thunder） | 留「闪电」「枪」；掷雷认不出 |
+| suffixes.json | of Ice Arrow | 急冻箭之 → 冻镞之 → 急冻矢之 | of Ice Shafts（原 of Frozen Barbs） | 留「急冻」；冻镞认不出 |
+| suffixes.json | of Guided Arrow | 导引箭之 → 追魂矢之 → 导引矢之 | of Guided Shafts（原 of Soulchasing Shafts） | 留「导引」；追魂矢认不出 |
+| suffixes.json | of Charged Strike | 充能一击之 → 蓄雷击之 → 蓄能一击之 | of Charged Thrusts（原 of Gathered Thunder） | 留「能一击」；蓄雷击认不出 |
+| suffixes.json | of Plague Jab | 瘟疫戳刺之 → 疫矛之 → 瘟疫点刺之 | of Plague Thrusts（原 of Fever-Tipped Spears） | 留「瘟疫」「刺」；疫矛认不出 |
+| suffixes.json | of Immolating Arrow | 献祭箭之 → 燔祭矢之 → 献祭矢之 | of Immolating Shafts（原 of Altarfire Shafts） | 留「献祭」；燔祭矢要绕古礼 |
+| suffixes.json | of Fending | 猛刺之 → 八方刺之 → 猛戳之 | of Fending Spears（原 of Eightfold Thrusts） | 留「猛」；八方刺认不出 |
+| suffixes.json | of Freezing Arrow | 冻结箭之 → 霜花矢之 → 冻结矢之 | of Freezing Shafts（原 of Frostflower Shafts） | 留「冻结」；霜花矢认不出 |
+| suffixes.json | of Lightning Strike | 闪电攻击之 → 链雷刺之 → 闪电突击之 | of Lightning Thrusts（原 of Chainbolt Thrusts） | 留「闪电」「击」；链雷刺认不出 |
+| suffixes.json | of Lightning Fury | 雷霆之怒之 → 狂雷之 → 狂雷怒之 | of Lightning Wrath（原 of Wild Thunder） | 留「雷」「怒」，避开「雷霆之怒」；狂雷认不出 |
+| suffixes.json | of Fire Bolt | 火焰弹之 → 焰梭之 → 焰弹之 | of Darting Fire Bolts（原 of Darting Flame） | 留「焰弹」；焰梭认不出 |
+| suffixes.json | of Charged Bolt | 电荷弹之 → 散雷之 → 散电弹之 | of Scattering Charged Bolts（原 of Scattering Sparks） | 留「电」「弹」；散雷认不出 |
+| suffixes.json | of Ice Bolt | 冰霜弹之 → 霜梭之 → 冰凌弹之 | of Darting Ice Bolts（原 of Darting Frost） | 留「冰」「弹」；霜梭认不出 |
+| suffixes.json | of Frost Nova | 冰霜新星之 → 霜澜之 → 寒霜新星之 | of Rime Novas（原 of Hoarfrost Billows） | 留「霜新星」；霜澜认不出 |
+| suffixes.json | of Ice Blast | 冰球爆之 → 碎凌之 → 冰球迸之 | of Shattering Ice Blasts（原 of Shattering Ice） | 留「冰球」；碎凌认不出 |
+| suffixes.json | of Blazing | 足跟火之 → 燎踵之 → 足踵火之 | of Blazing Heels（原 of Scorched Heels） | 留「足」「火」；燎踵认不出 |
+| suffixes.json | of Fire Ball | 火球术之 → 焚珠之 → 火珠之 | of Roaring Fire Balls（原 of Burning Pearls） | 留「火」；焚珠认不出 |
+| suffixes.json | of Nova | 闪电新星之 → 霆澜之 → 闪光新星之 | of the Storm Nova（原 of Levin Billows） | 留「新星」；霆澜认不出 |
+| suffixes.json | of Fire Wall | 火焰墙之 → 炎墉之 → 烈焰墙之 | of Rising Fire Walls（原 of Burning Battlements） | 留「焰墙」；炎墉认不出 |
+| suffixes.json | of Enchantment | 附魔火焰之 → 焰锋之 → 附灵火焰之 | of Burning Enchantment（原 of Flame-Wreathed Steel） | 留「附」「火焰」；焰锋认不出 |
+| suffixes.json | of Teleportation | 传送术之 → 缩地之 → 传移术之 | of Far Teleportation（原 of Folded Leagues） | 留「传」「术」；缩地要绕典故 |
+| suffixes.json | of Glacial Spike | 冰尖柱之 → 冰棱之 → 冰锐柱之 | of Glacial Shards（原 of Knife-Edged Ice） | 留「冰」「柱」；冰棱认不出 |
+| suffixes.json | of Meteor | 陨石之 → 落星之 → 陨火之 | of Raining Meteors（原 of Raining Stars） | 留「陨」；落星认不出 |
+| suffixes.json | of Blizzard | 暴风雪之 → 朔雪之 → 暴风霰之 | of Howling Blizzards（原 of Boreal Snows） | 留「暴风」；朔雪认不出（不用「暴雪」，那是公司名） |
+| suffixes.json | of Hydra | 多头蛇之 → 焰虺之 → 多首蛇之 | of Fire Hydras（原 of Flame-Vipers） | 留「多」「蛇」；焰虺认不出（不用「九头蛇」） |
+| suffixes.json | of Frozen Orb | 冰封球之 → 霜轮之 → 霜封球之 | of Whirling Frozen Orbs（原 of the Frost Wheel） | 留「封球」；霜轮认不出 |
+| suffixes.json | of Amplify Damage | 伤害加深之 → 深创之 → 伤害加剧之 | of Amplified Wounds（原 of Deep Gashes） | 留「伤害加」；深创认不出 |
+| suffixes.json | of Teeth | 骨牙之 → 骸齿之 → 骨齿之 | of Bared Teeth（原 of Charnel Fangs） | 留「骨」；骸齿认不出 |
+| suffixes.json | of Bone Armor | 骨甲之 → 枯骨铠之 → 骨铠之 | of Bone Mail（原 of Marrowless Mail） | 留「骨」；枯骨铠是 Marrowless，英文要留 Bone |
+| suffixes.json | of Raise Skeleton | 复生骷髅之 → 唤骸之 → 唤起骷髅之 | of Risen Skeletons（原 of Bonecalling） | 留「骷髅」；唤骸认不出 |
+| suffixes.json | of Dim Vision | 微暗灵视之 → 蔽目之 → 昏暗灵视之 | of Dim Sight（原 of Veiled Eyes） | 留「暗灵视」；蔽目认不出 |
+| suffixes.json | of Weaken | 削弱之 → 蚀力之 → 衰弱之 | of Weakened Foes（原 of Gnawed Vigor） | 留「弱」；蚀力认不出 |
+| suffixes.json | of Poison Dagger | 毒匕之 → 鸩刃之 → 毒刃之 | of Poison Blades（原 of Venomwing Blades） | 留「毒」；鸩刃认不出 |
+| suffixes.json | of Corpse Explosion | 邪爆之 → 尸崩之 → 尸爆之 | of Bursting Corpses（原 of the Sundered Dead） | 留「爆」；尸崩认不出 |
+| suffixes.json | of Clay Golem | 黏土傀儡之 → 陶俑之 → 陶土傀儡之 | of the Earthen Golem（原 of Earthen Effigies） | 留「土傀儡」；陶俑认不出 |
+| suffixes.json | of Iron Maiden | 铁处女之 → 棘棺之 → 铁处子之 | of the Iron Virgin（原 of the Thorned Coffin） | 留「铁处」；棘棺认不出 |
+| suffixes.json | of Terror | 恐惧之 → 丧胆之 → 惊恐之 | of Night Terror（原 of Quailing Hearts） | 留「恐」；丧胆认不出 |
+| suffixes.json | of Bone Wall | 骨墙之 → 白骨垒之 → 骨垣之 | of Bone Ramparts（原 of Bleached Bulwarks） | 留「骨」；白骨垒认不出；垣＝Rampart |
+| suffixes.json | of Skeletal Mages | 骷髅法师之 → 骨巫之 → 骷髅术士之 | of Risen Skeletal Magi（原 of the Ossuary Coven） | 留「骷髅」；骨巫认不出 |
+| suffixes.json | of Confusion | 迷惑之 → 乱神之 → 迷乱之 | of Wild Confusion（原 of Addled Wits） | 留「迷」；乱神认不出 |
+| suffixes.json | of Life Tap | 生命吸取之 → 汲命之 → 生命汲取之 | of Life Drain（原 of the Blood Well） | 留「生命」「取」；汲命认不出 |
+| suffixes.json | of Poison Explosion | 毒爆之 → 瘴裂之 → 毒裂之 | of Poison Bursts（原 of Fetid Bursts） | 留「毒」；瘴裂认不出 |
+| suffixes.json | of Bone Spear | 骨矛之 → 骸枪之 → 骨枪之 | of Bone Lances（原 of Charnel Lances） | 留「骨」；骸枪认不出 |
+| suffixes.json | of Blood Golem | 鲜血傀儡之 → 血俑之 → 赤血傀儡之 | of the Gore Golem（原 of Sanguine Effigies） | 留「血傀儡」；血俑认不出 |
+| suffixes.json | of Attract | 吸引之 → 招仇之 → 引诱之 | of Baleful Attraction（原 of Enmity's Lure） | 留「引」；招仇认不出 |
+| suffixes.json | of Decrepify | 衰老之 → 迟暮之 → 衰朽之 | of Decrepit Age（原 of Waning Years） | 留「衰」；迟暮认不出 |
+| suffixes.json | of Bone Prison | 骨牢之 → 骸笼之 → 骨笼之 | of the Bone Cage（原 of the Charnel Cage） | 留「骨」；骸笼认不出 |
+| suffixes.json | of Iron Golem | 钢铁傀儡之 → 铁俑之 → 铸铁傀儡之 | of the Cast-Iron Golem（原 of Ironcast Effigies） | 留「铁傀儡」；铁俑认不出 |
+| suffixes.json | of Lower Resistance | 降低抗性之 → 破御之 → 削减抗性之 | of Lessened Resistance（原 of Broken Wards） | 留「抗性」；破御认不出 |
+| suffixes.json | of Poison Nova | 剧毒新星之 → 毒澜之 → 烈毒新星之 | of Venom Novas（原 of Venom Billows） | 留「毒新星」；毒澜认不出 |
+| suffixes.json | of Bone Spirit | 骨灵之 → 骸魂之 → 骨魂之 | of Bone Shades（原 of Charnel Shades） | 留「骨」；骸魂认不出 |
+| suffixes.json | of Fire Golem | 火焰傀儡之 → 焰俑之 → 烈焰傀儡之 | of the Flame Golem（原 of Ember Effigies） | 留「焰傀儡」；焰俑认不出 |
+| suffixes.json | of Sacrifice | 牺牲之 → 舍身之 → 牲祭之 | of Blood Sacrifice（原 of Forsaken Flesh） | 留「牲」；舍身认不出 |
+| suffixes.json | of Holy Bolt | 圣光弹之 → 圣芒之 → 圣光矢之 | of Holy Darts（原 of Sanctified Gleams） | 留「圣光」；圣芒认不出 |
+| suffixes.json | of Zeal | 热忱之 → 炽信之 → 炽忱之 | of Ardent Zeal（原 of Ardent Creed） | 留「忱」；炽信认不出 |
+| suffixes.json | of Vengeance | 复仇之 → 雪恨之 → 报仇之 | of Bitter Vengeance（原 of Requited Wrongs） | 留「仇」；雪恨认不出 |
+| suffixes.json | of Blessed Hammer | 祝福之锤之 → 祷锤之 → 赐福之锤之 | of Blessed Mauls（原 of Prayer Mauls） | 留「福之锤」；祷锤认不出 |
+| suffixes.json | of Conversion | 圣光转化之 → 皈依之 → 圣光感化之 | of Holy Conversion（原 of the Proselyte） | 留「圣光」「化」；皈依认不出 |
+| suffixes.json | of Fist of the Heavens | 天堂之拳之 → 九霄拳之 → 天国之拳之 | of the Fist of Paradise（原 of the Ninth-Sky Fist） | 留「天」「之拳」；九霄拳认不出 |
+| suffixes.json | of Howl | 狂嗥之 → 骇啸之 → 狂吼之 | of the Harrowing Howl（原 of the Harrowing Wail） | 留「狂」；骇啸认不出 |
+| suffixes.json | of Find Potion | 寻药之 → 觅剂之 → 觅药之 | of Potion Gleaning（原 of Gleaned Draughts） | 留「药」；觅剂认不出 |
+| suffixes.json | of Taunt | 嘲讽之 → 叫阵之 → 讥讽之 | of the Bitter Taunt（原 of the Thrown Gauntlet） | 留「讽」；叫阵认不出 |
+| suffixes.json | of Shout | 大吼之 → 厉喝之 → 厉吼之 | of the Stern Shout（原 of the Stern Bellow） | 留「吼」；厉喝认不出 |
+| suffixes.json | of Stun | 击昏之 → 震眩之 → 击眩之 | of Stunning Blows（原 of Ringing Skulls） | 留「击」；震眩认不出 |
+| suffixes.json | of Find Item | 寻物之 → 搜尸之 → 搜物之 | of Rifled Items（原 of Rifled Corpses） | 留「物」；搜尸认不出 |
+| suffixes.json | of Concentration | 专注之 → 凝神之 → 专心之 | of Still Concentration（原 of the Stilled Spirit） | 留「专」；凝神认不出 |
+| suffixes.json | of Battle Cry | 战嗥之 → 夺气吼之 → 战吼之 | of the Battle Roar（原 of Dispiriting Clamor） | 留「战」；夺气吼认不出 |
+| suffixes.json | of Battle Orders | 战斗号令之 → 阵令之 → 战阵号令之 | of Battle Edicts（原 of the Marshal's Edict） | 留「战」「号令」；阵令认不出 |
+| suffixes.json | of Grim Ward | 骇物阻吓之 → 尸桩之 → 骇物震慑之 | of the Grisly Totem（原 of the Gibbet） | 留「骇物」；尸桩认不出 |
+| suffixes.json | of War Cry | 怒嗥之 → 破阵吼之 → 怒吼之 | of the War Bellow（原 of the Rankbreaker's Roar） | 留「怒」；破阵吼认不出 |
+| suffixes.json | of Battle Command | 战斗指挥之 → 统军之 → 战斗统御之 | of Battle Muster（原 of Mustered Hosts） | 留「战斗」；统军认不出 |
+| suffixes.json | of Firestorms | 火焰风暴之 → 焚野之 → 烈焰风暴之 | of Fire Tempests（原 of Fields Aflame） | 留「焰风暴」；焚野认不出 |
+| suffixes.json | of Molten Boulder | 熔岩巨石之 → 熔磐之 → 熔岩滚石之 | of Molten Rocks（原 of Searing Megaliths） | 留「熔岩」「石」；熔磐认不出 |
+| suffixes.json | of Fissure | 熔岩裂地之 → 炎罅之 → 熔岩裂谷之 | of the Molten Fissure（原 of Cinder Clefts） | 留「熔岩裂」；炎罅认不出 |
+| suffixes.json | of Cyclone Armor | 气旋护甲之 → 风幕之 → 气旋护铠之 | of Cyclone Mail（原 of the Gale Shroud） | 留「气旋护」；风幕认不出 |
+| suffixes.json | of Twister | 小旋风之 → 旋飙之 → 小旋飙之 | of the Wild Twister（原 of Whirling Squalls） | 留「小旋」；旋飙只剩一个旋 |
+| suffixes.json | of Volcano | 火山爆之 → 炎岳之 → 火山喷之 | of the Roaring Volcano（原 of the Flame-Crowned Peak） | 留「火山」；炎岳认不出 |
+| suffixes.json | of Tornado | 龙卷风之 → 卷天之 → 龙卷飙之 | of the Sky Tornado（原 of Skyfurling Winds） | 留「龙卷」；卷天认不出 |
+| suffixes.json | of Armageddon | 毁天灭地之 → 劫火之 → 毁天焚地之 | of Armageddon's Fire（原 of the World Pyre） | 留「毁天」「地」；劫火认不出 |
+| suffixes.json | of Hurricane | 飓风之 → 寒飓之（不变） | of the Winter Hurricane（原 of the Winter Tempest） | 中文不变（留飓）；英文留 Hurricane |
+| suffixes.json | of Amplify Damage | 伤害加深之 → 剧创之 → 创伤加深之 | of Damage Deepened（原 of Grave Wounds） | 留「伤」「加深」；剧创认不出 |
+| suffixes.json | of Acidity | （无官方中文） → 腐液之（不变） | of Acid Ichor（原 of Corroding Ichor） | 中文不变；英文 Corroding Ichor 认不出，留 Acid |
+| suffixes.json | of Kindling | （无官方中文） → 燧薪之（不变） | of Kindling Flint（原 of Flint and Tinder） | 中文不变；英文留 Kindling |
+| suffixes.json | of Numbing | （无官方中文） → 痹骨之（不变） | of Numbing Frost（原 of Deadened Bones） | 中文不变；英文留 Numbing |
+| suffixes.json | of Conductivity | （无官方中文） → 引雷之（不变） | of Conductive Bolts（原 of Beckoned Lightning） | 中文不变；英文 Beckoned Lightning 认不出 |
+| suffixes.json | of Thaumaturgy | （无官方中文） → 玄术之（不变） | of High Thaumaturgy（原 of Profound Mysteries） | 中文不变；英文 Profound Mysteries 认不出 |
+| suffixes.json | of Force | （无官方中文） → 罡气之（不变） | of Sheer Force（原 of Star-Drawn Breath） | 中文不变；英文 Star-Drawn Breath 认不出 |
+| suffixes.json | of Miasma Bolt | （无官方中文） → 飞瘴之（不变） | of Miasma Darts（原 of Winged Fumes） | 中文不变；英文 Winged Fumes 认不出 |
+| suffixes.json | of Lethargy | （无官方中文） → 倦魄之（不变） | of Leaden Lethargy（原 of Weary Souls） | 中文不变；英文 Weary Souls 认不出 |
+| suffixes.json | of Rancor | （无官方中文） → 怨毒之（不变） | of Old Rancor（原 of Venomous Spite） | 中文不变；英文 Venomous Spite 认不出 |
+| suffixes.json | of Apocalypse | （无官方中文） → 天倾之（不变） | of the Last Apocalypse（原 of the Toppled Heavens） | 中文不变；英文 Toppled Heavens 认不出 |
