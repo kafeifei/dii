@@ -120,22 +120,37 @@ function trialRegion(alvl: number): P.Region {
   return { numMon: t.numMon, mon: pool, nmon: pool, umon: [], den: t.den, packs: t.packs };
 }
 
+/**
+ * A rift floor's region (src/world/rift.ts): its area's, with MonDen and MonUMin/MonUMax `more` times
+ * as many, and at least one to two champion or unique packs, as a rift is dense with elites (Diablo
+ * III's are; the factor and the floor are ours, approximate)
+ */
+function riftRegion(row: D2xArea, more: number): P.Region {
+  const den = row.den.map((n) => Math.round(n * more)) as P.Region['den'];
+  const packs = row.packs.map(([lo, hi]) => [Math.max(1, Math.round(lo * more)), Math.max(2, Math.round(hi * more))]) as P.Region['packs'];
+  return { ...row, den, packs };
+}
+
 /** fills one area of a level with its monsters (Level.monsters, and Level.boss when the boss room is in it); what it did */
 export function spawnArea(level: Level, area: AreaDef, rng: RNG, opts: SpawnOpts): SpawnReport {
   const report: SpawnReport = { kinds: [], rolls: 0, packs: 0, bossPacks: 0, bossAt: [], count: 0, superUniques: [], rooms: 0, superUniqueRooms: [] };
   const d = level.difficulty;
   const floor = trialFloor(area.id);
-  const row: D2xArea | undefined = AREAS.get(area.id);
+  // a rift's floor spawns the Act 1 area it replays, more of it (riftRegion)
+  const row: D2xArea | undefined = AREAS.get(area.rift?.source ?? area.id);
   if (floor === undefined && !row) return report;
   const alvl = areaLevel(area, d);
-  const region: P.Region = row ?? trialRegion(alvl);
+  const region: P.Region = row ? (area.rift ? riftRegion(row, area.rift.more) : row) : trialRegion(alvl);
   const kinds = P.pickKinds(region, d, rng);
   if (floor !== undefined) region.umon = kinds.map((k) => k.id);
   // a trial floor's monsters are all at its level, whatever the difficulty; an area's by D2's rule
   const lvl = (id: string) => (floor !== undefined ? alvl : spawnLevel(D2X_MONSTERS[id], d, alvl));
   report.kinds = kinds.map((k) => k.id);
   const s: Spawn = { level, rng, difficulty: d, region, kinds, lvl, at: placement(level, area, rng, opts, floor !== undefined), count: 0, report };
-  const sus = (row?.superuniques ?? []).map((key) => SUPERUNIQUES.get(key)).filter((su): su is D2xSuperUnique => !!su);
+  const sus = (row?.superuniques ?? [])
+    .filter((key) => !area.rift?.withhold.includes(key))
+    .map((key) => SUPERUNIQUES.get(key))
+    .filter((su): su is D2xSuperUnique => !!su);
   fill(s, sus);
   if (floor !== undefined && s.at.boss) floorBoss(s, floor, s.at.boss);
   report.count = s.count;
@@ -391,6 +406,42 @@ function superUnique(s: Spawn, su: D2xSuperUnique, p: P2, room: number) {
   s.report.superUniqueRooms.push(room);
   boss.displayName = su.name;
   minions(s, boss, P.uniqueMinions(row, s.rng, su, s.difficulty), mods);
+}
+
+/**
+ * A rift's guardian (src/game/rift.ts) at p, on a level made already, in area `area`: the superunique
+ * `su` (SuperUniques.txt key) with its own modifiers and minions, or the boss `mon` (Blood Raven,
+ * Andariel) with the party its row brings, at its D2 numbers in the level's difficulty, as they come
+ * in the act. Null when it has no look
+ */
+export function spawnGuardian(level: Level, area: AreaDef, who: { su?: string; mon?: string }, p: P2, rng: RNG): Monster | null {
+  const d = level.difficulty;
+  const alvl = areaLevel(area, d);
+  const map = level.monsterMap;
+  const at: Placement = {
+    rooms: [],
+    camps: [],
+    uniques: [],
+    walk: () => 0,
+    area: 0,
+    randomIn: () => null,
+    near(c, r) {
+      for (let k = 0; k < 16; k++) {
+        const q = { x: c.x + rng.range(-r, r), z: c.z + rng.range(-r, r) };
+        if (map.walkableAt(q.x, q.z) && map.circleClear(q.x, q.z, 0.3) && map.los(c, q)) return q;
+      }
+      return { ...c };
+    },
+    roomOf: () => 0,
+  };
+  const report: SpawnReport = { kinds: [], rolls: 0, packs: 0, bossPacks: 0, bossAt: [], count: 0, superUniques: [], rooms: 0, superUniqueRooms: [] };
+  const s: Spawn = { level, rng, difficulty: d, region: trialRegion(alvl), kinds: [], lvl: (id) => spawnLevel(D2X_MONSTERS[id], d, alvl), at, count: 0, report };
+  const before = level.monsters.length;
+  if (who.su) {
+    const su = SUPERUNIQUES.get(who.su);
+    if (su) superUnique(s, su, p, 0);
+  } else if (who.mon) withParty(s, who.mon, 'boss', p, []);
+  return level.monsters[before] ?? null;
 }
 
 /**

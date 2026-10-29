@@ -38,10 +38,11 @@ import { generateDen } from '../world/den';
 import { SHRINE_BY_ID } from '../data/shrines';
 import { Quests } from './quests/control';
 import type { Topic } from './quests/quest';
+import { Rifts } from './rift';
 
 export interface GameHooks {
   message(text: string, color?: string, dur?: number): void;
-  openPanel(kind: 'shop' | 'stash' | 'waypoint'): void;
+  openPanel(kind: 'shop' | 'stash' | 'waypoint' | 'rift'): void;
   levelChanged(level: Level): void;
   /** the hero came into an area: on entering a level (prev is the last level's), or walking or teleporting into another */
   areaChanged(area: AreaDef, prev: AreaDef | null): void;
@@ -248,6 +249,8 @@ export class Game {
   private wentUnder = false;
   /** the quests of this game, made with it from the hero's record in the difficulty played (src/game/quests) */
   quests = new Quests(this);
+  /** the rifts: the camp's obelisk, the one open now, the tiers cleared (src/game/rift.ts) */
+  readonly rift = new Rifts(this);
 
   constructor(
     public input: Input,
@@ -326,7 +329,9 @@ export class Game {
     this.newWorld(reload && s.worldSeed !== undefined ? s.worldSeed : newSeed());
     this.toldUnknown = false;
     markInGame(true);
-    this.enterArea(reload ? s.area : CAMP_AREA, 'start');
+    // a save's area this build has no map of is the camp already (loadSave: isBuilt); one it has, but
+    // can't make a map of now, is too, rather than a game on no map (docs/M2A.md 回滚兜底)
+    if (!this.enterArea(reload ? s.area : CAMP_AREA, 'start')) this.enterArea(CAMP_AREA, 'start');
     // said once: the save won't be written this time
     if (s.readOnly) this.hooks.message(s.readOnly, '#ff8060', 10);
     this.tellShared();
@@ -405,6 +410,8 @@ export class Game {
   private newWorld(seed: number) {
     this.worldSeed = seed;
     this.west = this.den = this.gallery = this.lastDungeon = this.portalLevel = null;
+    // a rift is a game's: the next game opens its own
+    this.rift.forget();
     this.area = null;
     this.atClosed = null;
     this.leftKind.clear();
@@ -482,7 +489,11 @@ export class Game {
       // the area the hero stands in, not the map's: one map may hold several
       saved = writeSave(p, this.level.areaAt(p.pos.x, p.pos.z).id, this.worldSeed, this.hooks.getCursorItem(), last);
       if (!saved && r.wrote) r.undo();
+      // the rift tiers cleared here, the player's (src/game/riftsave.ts): when they can't be kept, the
+      // unsaved badge stays up as for the hero, until they are
+      const kept = this.rift.flush();
       if (!saved && !isReadOnly(p)) this.tellUnsaved();
+      else if (saved && !kept) this.tellUnsaved();
       else if (saved) this.hooks.saveState?.(true);
       if (saved) this.savedAt = this.time;
     }
@@ -601,7 +612,7 @@ export class Game {
 
   /** whether this build has a map of area `id`: the areas of normal play (isBuilt) and the trial ground's floors */
   hasMap(id: number): boolean {
-    return isBuilt(id) || trialFloor(id) !== undefined;
+    return isBuilt(id) || trialFloor(id) !== undefined || this.rift.levelFor(id) !== null;
   }
 
   /**
@@ -611,11 +622,14 @@ export class Game {
    */
   private levelFor(id: number, fresh = false): Level | null {
     if (id === CAMP_AREA && GALLERY) return (this.gallery ??= new Level(0, this.worldSeed));
+    const rift = this.rift.levelFor(id);
+    if (rift) return rift;
     if (WEST_AREAS.includes(id)) {
       if (!this.west) {
         const ow = generateOverworld(this.worldSeed);
         // its monsters in the difficulty played (a new difficulty is a new game: setDifficulty)
         this.west = new Level(WILD_MAPS, ow.seed, ow, this.player.difficulty);
+        this.rift.furnishCamp(this.west);
       }
       return this.west;
     }
@@ -671,6 +685,12 @@ export class Game {
     else {
       if (reenter) level.reenter();
       this.level = level;
+      // on a rift's floor its tier's difficulty's rules hold for the hero, the one played's anywhere else
+      const ruled = this.rift.difficultyOf(level);
+      if (ruled !== p.ruled) {
+        p.ruled = ruled;
+        p.markDirty();
+      }
       this.placePlayer(at);
       this.hooks.levelChanged(level);
       // a new level is always announced, even in the same area as the last
@@ -684,6 +704,9 @@ export class Game {
 
   /** where on `level` the hero comes to area `id` by `how`, coming from area `from` */
   private arrival(level: Level, id: number, how: Arrival, from?: number): { pos: P2; facing?: number } {
+    // out of a rift, by its obelisk
+    const out = this.rift.arrival(id, how, from);
+    if (out) return out;
     // by the way back to where they came from, a step in from it, facing in
     if ((how === 'stairs' || how === 'exit') && from !== undefined) {
       const back = level.objects.find((o) => (o.kind === 'stairs' || o.kind === 'exit') && o.dest === from && level.areaAt(o.pos.x, o.pos.z).id === id);
@@ -751,8 +774,9 @@ export class Game {
   }
 
   /** the hero's town portal gone, both its ends, wherever they are */
-  private closePortals() {
-    for (const L of [this.west, this.den, this.gallery, this.lastDungeon, this.portalLevel]) if (L) L.objects = L.objects.filter((o) => o.kind !== 'portal');
+  closePortals() {
+    // a rift's own ways (src/game/rift.ts) aren't the hero's portal
+    for (const L of [this.west, this.den, this.gallery, this.lastDungeon, this.portalLevel, ...this.rift.levels()]) if (L) L.objects = L.objects.filter((o) => o.kind !== 'portal' || o.rift);
     this.portalLevel = null;
   }
 
@@ -1568,6 +1592,8 @@ export class Game {
     if (!m.noXp) this.spawnDrops(m.pos, this.rollLoot((hero) => monsterLoot(m, hero)));
     // the quests count it (MonsterKilled): the Den of Evil's last one done
     this.quests.monsterKilled(m);
+    // and the rift's progress
+    this.rift.killed(m);
     // fx
     this.fx.death(m, m.def.blood, elem);
     // its look's death cry (src/data/monsters.ts voice), a big one's or a boss's the large one
@@ -1624,7 +1650,8 @@ export class Game {
   private rollLoot(roll: (hero: Finder) => Item[]): Drop[] {
     const s = this.player.stats;
     const p = this.player;
-    const hero: Finder = { mf: s.mf, gf: s.gf, difficulty: p.difficulty, quests: p.quests[p.difficulty] };
+    // a rift's floors drop in its tier's difficulty, never a quest's class: its kills are no quest's
+    const hero: Finder = { mf: s.mf, gf: s.gf, difficulty: p.rules, quests: p.ruled === null ? p.quests[p.difficulty] : 'done' };
     const drops: Drop[] = [];
     for (let i = 0; i < debugOpts.loot; i++) for (const item of roll(hero)) drops.push({ kind: 'item', item });
     return drops;
@@ -1654,7 +1681,7 @@ export class Game {
     // min(level, 20) % of all the gold, the inventory's first, and in nightmare and hell some of
     // the level's experience; the gold left in the inventory drops by the body (leaveCorpse). The
     // shared pages' gold is out of reach of it, as in D2R
-    const pen = deathPenalty({ level: p.level, xp: p.xp, gold: p.gold, stashGold: p.stashGold, diff: p.difficulty });
+    const pen = deathPenalty({ level: p.level, xp: p.xp, gold: p.gold, stashGold: p.stashGold, diff: p.rules });
     p.gold = pen.goldDropped;
     p.stashGold = pen.stashGold;
     p.xp = pen.xp;
@@ -1697,7 +1724,7 @@ export class Game {
     const L = this.level;
     // the maps this game keeps (levelFor), and the one the hero is on
     const live = new Set<object>([L]);
-    for (const l of [this.west, this.den, this.gallery, this.lastDungeon, this.portalLevel]) if (l) live.add(l);
+    for (const l of [this.west, this.den, this.gallery, this.lastDungeon, this.portalLevel, ...this.rift.levels()]) if (l) live.add(l);
     // the map holding the camp: the overworld, or ?gallery's showroom (its start is the camp's)
     const camp = L.inTown(L.layout.start);
     p.corpses.forEach((c, i) => {
@@ -1970,6 +1997,7 @@ export class Game {
 
   interact(obj: WorldObject) {
     const p = this.player;
+    if (this.rift.use(obj)) return;
     switch (obj.kind) {
       case 'chest': {
         if (obj.used) return;

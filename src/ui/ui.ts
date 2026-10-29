@@ -25,13 +25,14 @@ import { NpcMarks, NpcPanel } from './npc';
 import { renderQuestLog } from './questlog';
 import { applySettings, SettingsPanel, type Settings } from './settings';
 import { renderShop, renderStash, renderWaypoints } from './shop';
+import { renderRift, RiftBar } from './rift';
 import { SkillTree } from './skilltree';
 import { DeathScreen, PauseMenu, TitleScreen } from './title';
 import { Tooltip } from './tooltip';
 import { isTouchDevice, TouchControls } from './touch';
 
 /** what the touch interact button says it does to each kind of thing */
-const USE_VERB: Record<ObjKind, string> = { chest: '打开', barrel: '打碎', stairs: '进入', waypoint: '使用', vendor: '交谈', stash: '打开', portal: '进入', exit: '前往', shrine: '触摸', corpse: '拾取' };
+const USE_VERB: Record<ObjKind, string> = { chest: '打开', barrel: '打碎', stairs: '进入', waypoint: '使用', vendor: '交谈', stash: '打开', portal: '进入', exit: '前往', shrine: '触摸', corpse: '拾取', obelisk: '使用' };
 
 /**
  * the hand-over notice's word on what became of the play here (GameHooks.heroGone): only what is
@@ -68,6 +69,7 @@ export class UI implements GameHooks, UIContext {
   tooltip!: Tooltip;
   automap!: Automap;
   banner!: AreaBanner;
+  riftBar!: RiftBar;
   menu!: PauseMenu;
   settingsPanel!: SettingsPanel;
   debugPanel: DebugPanel | null = null;
@@ -149,9 +151,9 @@ export class UI implements GameHooks, UIContext {
     this.hud.clearMessages();
   }
 
-  openPanel(kind: 'shop' | 'stash' | 'waypoint') {
+  openPanel(kind: 'shop' | 'stash' | 'waypoint' | 'rift') {
     this.left = kind;
-    if (kind !== 'waypoint') this.right = 'inv';
+    if (kind !== 'waypoint' && kind !== 'rift') this.right = 'inv';
     this.dirty = true;
     this.sfx.play('ui.open');
   }
@@ -193,7 +195,7 @@ export class UI implements GameHooks, UIContext {
     this.labels.clear();
     this.marks.clear();
     this.npc.close(true);
-    if (this.left === 'shop' || this.left === 'stash' || this.left === 'waypoint') this.left = null;
+    if (this.left === 'shop' || this.left === 'stash' || this.left === 'waypoint' || this.left === 'rift') this.left = null;
     this.dirty = true;
   }
 
@@ -241,6 +243,7 @@ export class UI implements GameHooks, UIContext {
     this.hud = new Hud(this, r, (k) => pressButton(this, k));
     this.automap = new Automap(this.game, r);
     this.banner = new AreaBanner(r);
+    this.riftBar = new RiftBar(this.game, r);
     this.npc = new NpcPanel(this, this.renderer);
     r.appendChild(this.npc.el);
 
@@ -415,6 +418,9 @@ export class UI implements GameHooks, UIContext {
       case 'waypoint':
         renderWaypoints(this, this.leftEl);
         break;
+      case 'rift':
+        renderRift(this, this.leftEl);
+        break;
       case 'cube':
         renderCube(this, this.leftEl);
         break;
@@ -467,8 +473,8 @@ export class UI implements GameHooks, UIContext {
     this.npc.update(dt);
     if (this.touch) this.updateInteract();
     // close shop/stash when walking away
-    if ((this.left === 'shop' || this.left === 'stash' || this.left === 'waypoint') && g.level) {
-      const kind = this.left === 'shop' ? 'vendor' : this.left;
+    if ((this.left === 'shop' || this.left === 'stash' || this.left === 'waypoint' || this.left === 'rift') && g.level) {
+      const kind = this.left === 'shop' ? 'vendor' : this.left === 'rift' ? 'obelisk' : this.left;
       // the nearest: the overworld has a waypoint in more than one area
       const near = Math.min(...g.level.objects.filter((x) => x.kind === kind).map((o) => Math.hypot(o.pos.x - p.pos.x, o.pos.z - p.pos.z)));
       if (!(near <= 4)) {
@@ -501,6 +507,7 @@ export class UI implements GameHooks, UIContext {
     this.marks.update();
     this.automap.update(dt);
     this.banner.update();
+    this.riftBar.update();
   }
 }
 

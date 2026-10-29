@@ -57,7 +57,7 @@ export interface MonsterLook {
  * their own: ghosts as wraiths, the Arach as the spider, goatmen as demons, the Afflicted (Bighead) as
  * ghouls, the foul crows as bats, the Banished (Vampire) as the lich, the rat men (Fetish) as small
  * imps. Act 1's bosses take the floor bosses' bodies: the Smith the butcher's, Blood Raven the lich's,
- * Andariel the overlord's. Sizes are the game's: D2 gives sprites' heights (MonStats2 pixHeight), not models'.
+ * Andariel the overlord's, Griswold a big zombie's. Sizes are the game's: D2 gives sprites' heights (MonStats2 pixHeight), not models'.
  */
 export const LOOKS: Record<string, MonsterLook> = {
   zombie: { key: 'zombie', model: 'zombie', scale: 1, radius: 0.42, blood: 'red', color: '#5d6b4a', color2: '#3a3326', voice: 'flesh', range: 1.1, attackSpeed: 0.8, attack: ['Attack'] },
@@ -98,6 +98,8 @@ export const LOOKS: Record<string, MonsterLook> = {
     attack: ['Attack'], cast: ['Cast'], tint: '#a03040',
   },
   fetish: { key: 'fetish', model: 'imp', scale: 0.6, radius: 0.3, blood: 'red', color: '#6a5a3a', color2: '#2a2010', voice: 'imp', range: 1.0, attackSpeed: 1.3, attack: ['Attack', 'Attack2'], tint: '#a08a50' },
+  // Tristram's Griswold (M2b), on the zombie's body made big and iron-grey until he has his own: the rifts' sixth stretch's guardian (src/world/rift.ts)
+  griswold: { key: 'griswold', model: 'zombie', scale: 1.5, radius: 0.6, blood: 'red', color: '#6a6a60', color2: '#3a2a20', voice: 'flesh', range: 1.4, attackSpeed: 0.8, attack: ['Attack'], tint: '#8a8a80' },
   smith: { key: 'smith', model: 'butcher', scale: 1.6, radius: 0.75, blood: 'red', color: '#7a5a4a', color2: '#5a0a0a', voice: 'flesh', range: 1.7, attackSpeed: 1.0, attack: ['Attack', 'Attack2', 'Attack3'] },
   bloodraven: {
     key: 'bloodraven', model: 'lich', scale: 1.4, radius: 0.6, blood: 'red', color: '#6a8aaa', color2: '#c0e8ff', missile: 'arrow', voice: 'flesh', range: 1.2, attackSpeed: 0.8,

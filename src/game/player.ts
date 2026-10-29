@@ -192,6 +192,12 @@ export class Player extends Actor {
   waypoints: number[] = [CAMP_AREA];
   /** the difficulty being played (Game.setDifficulty): its monsters by D2's tables and its area levels; it is saved and shown, keeps its own waypoints, drops from its own treasure classes and its chests at its area levels */
   difficulty: Difficulty = 0;
+  /**
+   * the difficulty whose rules hold for the hero on the map they're on, when not the one played: a
+   * rift floor's tier's (Game.arrive; src/game/rift.ts). Its resistance penalty, death penalty, leech
+   * divisors and drops go by it (rules); the quests, waypoints and saves still by `difficulty`. Never saved
+   */
+  ruled: Difficulty | null = null;
   /** the quest record of each difficulty, normal, nightmare and hell (src/game/quests/record.ts), as D2 keeps one each (pQuestData[3]) */
   quests: QuestRecords = newQuestRecords();
   /** a shrine's blessing (one at a time) and its seconds left */
@@ -328,6 +334,11 @@ export class Player extends Actor {
 
   private mendClock = 0;
   private mending = new WeakMap<Item, number>();
+
+  /** the difficulty whose rules hold for the hero now (ruled) */
+  get rules(): Difficulty {
+    return this.ruled ?? this.difficulty;
+  }
 
   /** what the hero's prices go by: the difficulty and "reduces all vendor prices" (D2's item_reducedprices) */
   tradeCtx(): TradeCtx {
@@ -623,7 +634,7 @@ export class Player extends Actor {
 
     // resistances with the difficulty's penalty, capped at 75 + "+X% maximum resistance" (95 at most)
     const resAll = bag.resAll ?? 0;
-    const diff = difficulty(this.difficulty);
+    const diff = difficulty(this.rules);
     const resOf = (k: 'fire' | 'cold' | 'light' | 'poison', raw: number, max: StatKey) => resistance(k, raw + resAll, { maxBonus: bag[max] ?? 0, diff });
     const res: Resists = {
       fire: resOf('fire', bag.resFire ?? 0, 'maxResFire'),

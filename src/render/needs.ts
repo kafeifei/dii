@@ -66,6 +66,8 @@ export function objectNeeds(o: WorldObject, outdoor: boolean): ModelKey[] {
       return [MODELS.waypoint];
     case 'shrine':
       return [MODELS.shrine];
+    case 'obelisk':
+      return [MODELS.obelisk];
     case 'vendor':
       return specNeeds(vendorSpec());
     case 'corpse':
@@ -106,9 +108,13 @@ export function levelNeeds(level: Level, area?: number): Set<string> {
  */
 function areaMonsters(id: number, difficulty: Difficulty): string[] {
   if (trialFloor(id) !== undefined) return lookedMonsters().filter((d) => d.row.spawns && !d.boss && d.row.align === 0).map((d) => d.id);
-  const row = D2X_AREAS.find((a) => a.id === id);
+  // a rift's floor: the area it replays (src/world/rift.ts)
+  const src = areaDef(id)?.rift?.source ?? id;
+  const row = D2X_AREAS.find((a) => a.id === src);
   if (!row) return [];
   const ids = new Set([...(difficulty ? row.nmon : row.mon), ...row.umon]);
+  const guardian = areaDef(id)?.rift?.guardian;
+  if (guardian) ids.add(guardian);
   for (const key of row.superuniques ?? []) {
     const su = D2X_SUPERUNIQUES.find((s) => s.key === key);
     if (su) ids.add(su.mon);

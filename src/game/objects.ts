@@ -23,7 +23,7 @@ export class GroundItem {
   }
 }
 
-export type ObjKind = 'chest' | 'barrel' | 'stairs' | 'waypoint' | 'vendor' | 'stash' | 'portal' | 'exit' | 'shrine' | 'corpse';
+export type ObjKind = 'chest' | 'barrel' | 'stairs' | 'waypoint' | 'vendor' | 'stash' | 'portal' | 'exit' | 'shrine' | 'corpse' | 'obelisk';
 
 export class WorldObject {
   readonly id = ++objIds;
@@ -47,6 +47,11 @@ export class WorldObject {
   npcId?: string;
   /** the hero's body (src/game/corpse.ts), for 'corpse' */
   corpse?: Corpse;
+  /**
+   * a rift's (src/game/rift.ts), used by it: the camp's obelisk, the way in beside it, the way back to
+   * the camp from the first floor, the way out its guardian leaves
+   */
+  rift?: 'obelisk' | 'in' | 'home' | 'out';
   constructor(kind: ObjKind, pos: P2, name: string, radius = 0.5) {
     this.kind = kind;
     this.pos = { ...pos };
