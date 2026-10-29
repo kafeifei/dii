@@ -98,13 +98,16 @@ export default async (load) => {
   assert.ok(picks.every((a) => a.lvl === 1));
   assert.equal(A.auraEnchant(67, (n) => n - 1).skill, 'Holy Shock');
   assert.equal(A.auraEnchant(67, (n) => n - 1).lvl, 8);
-  // Might 1: 16 subtiles, +40 % damage; Conviction 1: −30 % resistances, −(110 × 60 / 700 + 40) = −49 % defense
+  // Might 1: 16 subtiles, +40 % damage; Conviction 1: −30 % resistances, dm56 −(40 + 60 × (110 / 7 = 15) / 100) = −49 %
+  // defense. dmXY is D2Common_11033 (monai.ts dm, the one skillcalc reads too): the inner quotient truncated first
   const might = A.auraNumbers('Might', 1);
   near(might.radius, 16 * M_PER_SUBTILE, 'Might reach');
   assert.equal(might.dmgPct, 40);
   const conv = A.auraNumbers('Conviction', 1);
   assert.deepEqual([conv.res, conv.def], [30, 49]);
-  assert.deepEqual(A.auraNumbers('Holy Freeze', 1).slow, 25 + Math.trunc((110 * 35) / 700));
+  assert.deepEqual(A.auraNumbers('Holy Freeze', 1).slow, 25 + Math.trunc((35 * Math.trunc(110 / 7)) / 100));
+  // Fanaticism 3, dm34 10 → 40: 10 + 30 × (330 / 9 = 36) / 100 = 20 attack rate %; SkillCalc.txt's description, truncated once, reads 21
+  assert.equal(A.auraNumbers('Fanaticism', 3).ratePct, 20);
 
   // ── reach: the spearmaiden's MeleeRng 2 is two of D2's unit distance, a subtile past the huntmaiden's ──
   const lancer = new Monster('cr_lancer1', 2, 'normal', { x: 0, z: 0 });

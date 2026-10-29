@@ -537,7 +537,10 @@ export async function buildSkills({ itemSkills, staffMods, hirelingSkills, monst
     }
     // aura (and the buffs and debuffs that work like one): the state it gives, its length calc
     // (frames) and radius calc (sub-tiles, D2's distance unit: a tooltip shows × 2/3 of it as yards),
-    // the stats it sets, the events it reacts to
+    // the stats it sets, the events it reacts to. Each stat keeps its column (col): astN and pstN read
+    // aurastatcalcN and passivecalcN by column (D2Skills.cpp:371-402), and a row may skip one. A calc
+    // with no stat beside it is not kept (Holy Shield's aurastatcalc2, the same as its calc1, which
+    // its tooltip reads instead): no calc of the scope reads its astN.
     const aura = {};
     if (r.aurafilter) aura.filter = r.aurafilter;
     if (r.aurastate) aura.state = state(r.aurastate, where);
@@ -546,7 +549,7 @@ export async function buildSkills({ itemSkills, staffMods, hirelingSkills, monst
     if (len !== undefined) aura.len = len;
     const rng = skillCalc(r.aurarangecalc, `${where} aurarangecalc`);
     if (rng !== undefined) aura.range = rng;
-    const as = pairs(r, 6, (i) => `aurastat${i}`, (i) => `aurastatcalc${i}`).map(([i, s, c]) => ({ stat: stat(s, where), calc: skillCalc(c, `${where} aurastatcalc${i}`) ?? 0 }));
+    const as = pairs(r, 6, (i) => `aurastat${i}`, (i) => `aurastatcalc${i}`).map(([i, s, c]) => ({ col: i, stat: stat(s, where), calc: skillCalc(c, `${where} aurastatcalc${i}`) ?? 0 }));
     if (as.length) aura.stats = as;
     const ev = pairs(r, 4, (i) => `auraevent${i}`, (i) => `auraeventfunc${i}`).map(([, e, f]) => ({ event: e, func: f ?? 0 }));
     if (ev.length) aura.events = ev;
@@ -555,7 +558,7 @@ export async function buildSkills({ itemSkills, staffMods, hirelingSkills, monst
     if (per !== undefined) o.perDelay = per;
     const passive = {};
     if (r.passivestate) passive.state = state(r.passivestate, where);
-    const ps = pairs(r, 14, (i) => `passivestat${i}`, (i) => `passivecalc${i}`).map(([i, s, c]) => ({ stat: stat(s, where), calc: skillCalc(c, `${where} passivecalc${i}`) ?? 0 }));
+    const ps = pairs(r, 14, (i) => `passivestat${i}`, (i) => `passivecalc${i}`).map(([i, s, c]) => ({ col: i, stat: stat(s, where), calc: skillCalc(c, `${where} passivecalc${i}`) ?? 0 }));
     if (ps.length) passive.stats = ps;
     if (r.passiveitype) passive.itype = r.passiveitype;
     if (r.passivereqweaponcount) passive.weapons = r.passivereqweaponcount;

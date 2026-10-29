@@ -57,7 +57,7 @@ export default async (load) => {
     'Inner Sight': {
       HitShift: 8, EMin: 40, EMinLev: [25, 45, 60, 80, 100], EMax: 0, mana: 10, manashift: 7, minmana: 1,
       Param: { 1: 40, 2: 25, 3: 200, 4: 100, 5: 27, 6: 0 },
-      aura: { len: 'ln34', range: 'ln56', stats: [{ stat: 'armorclass', calc: '-edmn' }] },
+      aura: { len: 'ln34', range: 'ln56', stats: [{ col: 1, stat: 'armorclass', calc: '-edmn' }] },
     },
     'Fire Arrow': {
       HitShift: 8, EType: 'fire', EMin: 1, EMinLev: [2, 3, 6, 12, 24], EMax: 4, EMaxLev: [2, 3, 7, 14, 27],
@@ -104,16 +104,16 @@ export default async (load) => {
       Param: { 1: 1, 2: 2, 3: 6, 4: 4, 7: 20, 8: 50 },
       calc: { 1: "ln12 * (100 + skill('Prayer'.blvl) * par7) / 100", 2: "ln34 * (100 + skill('Prayer'.blvl) * par7) / 100" },
     },
-    Might: { HitShift: 8, Param: { 1: 16, 2: 2, 3: 40, 4: 10 }, aura: { len: undefined, range: 'ln12', stats: [{ stat: 'damagepercent', calc: 'ln34' }] } },
+    Might: { HitShift: 8, Param: { 1: 16, 2: 2, 3: 40, 4: 10 }, aura: { len: undefined, range: 'ln12', stats: [{ col: 1, stat: 'damagepercent', calc: 'ln34' }] } },
     Prayer: {
       HitShift: 8, EMin: 2, EMinLev: [1, 1, 2, 2, 3], EMax: 0, mana: 16, lvlmana: 3, manashift: 4, minmana: 1, Param: { 1: 16, 2: 2 },
-      aura: { len: undefined, range: 'ln12', stats: [{ stat: 'hitpoints', calc: 'edns' }] },
+      aura: { len: undefined, range: 'ln12', stats: [{ col: 1, stat: 'hitpoints', calc: 'edns' }] },
     },
     'Holy Fire': {
       HitShift: 7, EType: 'fire', EMin: 2, EMinLev: [1, 4, 6, 7, 8], EMax: 6, EMaxLev: [2, 5, 7, 8, 9],
       EDmgSymPerCalc: "skill('Resist Fire'.blvl)*par8+skill('Salvation'.blvl)*par7", Param: { 1: 6, 2: 1, 5: 6, 6: 100, 7: 10, 8: 21 },
       aura: { len: undefined, range: 'ln12', stats: undefined },
-      passive: [{ stat: 'firemindam', calc: 'enms*par5/256' }, { stat: 'firemaxdam', calc: 'exms*par5/256' }],
+      passive: [{ col: 1, stat: 'firemindam', calc: 'enms*par5/256' }, { col: 2, stat: 'firemaxdam', calc: 'exms*par5/256' }],
     },
     'Fist of the Heavens': {
       HitShift: 8, EType: 'ltng', EMin: 150, EMinLev: [15, 30, 45, 55, 65], EMax: 200, EMaxLev: [15, 30, 45, 55, 65],
@@ -124,7 +124,7 @@ export default async (load) => {
       HitShift: 8, EType: 'ltng', EMin: 1, EMax: 10, EMaxLev: [6, 8, 10, 12, 15], EDmgSymPerCalc: "skill('Resist Lightning'.blvl)*par8+skill('Salvation'.blvl)*par7",
       Param: { 1: 6, 2: 1, 5: 6, 6: 100, 7: 4, 8: 12 },
       aura: { len: undefined, range: 'ln12', stats: undefined },
-      passive: [{ stat: 'lightmindam', calc: 1 }, { stat: 'lightmaxdam', calc: 'exms*par5/256' }],
+      passive: [{ col: 1, stat: 'lightmindam', calc: 1 }, { col: 2, stat: 'lightmaxdam', calc: 'exms*par5/256' }],
     },
     'Holy Shield': {
       HitShift: 8, MinDam: 3, MinLevDam: [2, 3, 4, 4, 4], MaxDam: 6, MaxLevDam: [2, 3, 4, 4, 4], mana: 35, manashift: 8, minmana: 1,
@@ -518,4 +518,19 @@ export default async (load) => {
   assert.throws(() => sc.skillCalc('Hydra', S.Hydra.passive.stats[0].calc, { lvl: 1 }), /CalcCtx.stat/);
   assert.equal(sc.skillCalc('Hydra', S.Hydra.passive.stats[0].calc, { lvl: 1, stat: (s, k) => (s === 'passive_fire_mastery' && k === 'accr' ? 35 : 0) }), 35);
   assert.throws(() => sc.skillValue('Fire Arrow', 'nope', { lvl: 1 }), /no SkillCalc code/);
+
+  // astN and pstN read their column (D2Skills.cpp:371-402: dwAuraStatCalc[N − 1], dwPassiveCalc[N − 1]), not
+  // a place in the list. No row in scope skips a column today, so a made-up one that does, taken out after;
+  // the weapon masteries look in passivestat1–5 only (D2Common_11032, D2Skills.cpp:3152-3190)
+  S['skipped columns'] = {
+    ...S.Might,
+    aura: { stats: [{ col: 2, stat: 'damagepercent', calc: 7 }] },
+    passive: { stats: [{ col: 1, stat: 'firemindam', calc: 3 }, { col: 3, stat: 'passive_mastery_melee_th', calc: 5 }, { col: 6, stat: 'passive_mastery_melee_dmg', calc: 9 }] },
+  };
+  try {
+    assert.deepEqual(['ast1', 'ast2', 'pst1', 'pst2', 'pst3', 'pst6'].map((c) => sc.skillValue('skipped columns', c, { lvl: 1 })), [0, 7, 3, 0, 5, 9]);
+    assert.deepEqual(['math', 'madm'].map((c) => sc.skillValue('skipped columns', c, { lvl: 1 })), [5, 0]);
+  } finally {
+    delete S['skipped columns'];
+  }
 };

@@ -1020,6 +1020,8 @@ export interface D2xSkillDesc {
 
 /** the stat a skill, aura or passive sets (ItemStatCost name, see D2X_SKILL_STATS), and its calc */
 export interface D2xSkillStat {
+  /** its column, the N of aurastatN / passivestatN: what astN and pstN read (a row may skip one) */
+  col: number;
   stat: string;
   calc: D2xCalc;
 }

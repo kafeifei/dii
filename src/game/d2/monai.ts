@@ -247,11 +247,21 @@ function ln(s: string, a: number, b: number, lvl: number): number {
   const p = D2X_SKILLS[s]?.params ?? {};
   return (p[a] ?? 0) + (lvl - 1) * (p[b] ?? 0);
 }
-/** D2's diminishing calc dmXY, ((110 × lvl) × (par Y − par X)) / (100 × (lvl + 6)) + par X, in whole steps (SkillCalc.txt) */
-function dm(s: string, a: number, b: number, lvl: number): number {
+/**
+ * dm, diminishing returns (D2Common_11033, D2Skills.cpp:3242-3252): par X + (par Y − par X) ×
+ * (110 × lvl / (lvl + 6)) / 100, the inner quotient truncated first, kept to par Y. SkillCalc.txt's
+ * own description of dmXY truncates once at the end and has no cap, so it can read one more
+ * (Fanaticism's dm34 at level 3: 20 here, 21 by the description). The one dmXY: skillcalc.ts's
+ * codes and the auras below both read it.
+ */
+export function dm(L: number, x: number, y: number): number {
+  const v = x + Math.trunc(((y - x) * Math.trunc((110 * L) / (L + 6))) / 100);
+  return v > y ? y : v;
+}
+/** a skill's dmXY at a level: dm over its params X and Y */
+function dmPar(s: string, a: number, b: number, lvl: number): number {
   const p = D2X_SKILLS[s]?.params ?? {};
-  const lo = p[a] ?? 0;
-  return Math.trunc((110 * lvl * ((p[b] ?? 0) - lo)) / (100 * (lvl + 6))) + lo;
+  return dm(lvl, p[a] ?? 0, p[b] ?? 0);
 }
 /**
  * The auras an aura-enchanted unique may get (MONSTERUNIQUE_UMod30_AuraEnchanted, MonsterUnique.cpp:604-656):
@@ -312,12 +322,12 @@ export function auraNumbers(skill: string, lvl: number): AuraNumbers {
     case 'Fanaticism': {
       // its to-hit is the skill's ToHit by level, the damage its ln56 (half of it for the rest of the party)
       const th = s?.toHit && 'base' in s.toHit ? s.toHit.base + (lvl - 1) * s.toHit.perLvl : 0;
-      return { radius, ratePct: dm(skill, 3, 4, lvl), arPct: th, dmgPct: ln(skill, 5, 6, lvl) };
+      return { radius, ratePct: dmPar(skill, 3, 4, lvl), arPct: th, dmgPct: ln(skill, 5, 6, lvl) };
     }
     case 'Conviction':
-      return { radius, res: Math.min(150, ln(skill, 3, 4, lvl)), def: dm(skill, 5, 6, lvl) };
+      return { radius, res: Math.min(150, ln(skill, 3, 4, lvl)), def: dmPar(skill, 5, 6, lvl) };
     case 'Holy Freeze':
-      return { radius, slow: dm(skill, 3, 4, lvl), pulse: pulse('cold') };
+      return { radius, slow: dmPar(skill, 3, 4, lvl), pulse: pulse('cold') };
     case 'Holy Fire':
       return { radius, pulse: pulse('fire') };
     case 'Holy Shock':

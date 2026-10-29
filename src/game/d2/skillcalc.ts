@@ -15,7 +15,7 @@ import { D2X_FPS, D2X_MISSILE_CALC, D2X_SKILL_CALC } from '../../data/d2x/calc';
 import { D2X_MISSILES } from '../../data/d2x/missiles';
 import { D2X_SKILLS, D2X_SKILL_REFS, D2X_SKILL_STATS } from '../../data/d2x/skills';
 import type { D2xCalc, D2xLenBands, D2xMissile, D2xSkill } from '../../data/d2x/types';
-import { frames, subtiles } from './monai';
+import { dm, frames, subtiles } from './monai';
 import { bandsAt } from './monstats';
 import { percentOf } from './xp';
 
@@ -483,16 +483,16 @@ function skillFn(e: SkillEval, f: string, a: (number | string)[]): number {
   throw new Error(`skillcalc: no function ${f}()`);
 }
 
-/** lnXY and dmXY: the params they read (D2Skills.cpp:77-127; D2R's Param9–20 pairs in the same pattern) */
+/** lnXY and dmXY (monai.ts dm): the params they read (D2Skills.cpp:77-127; D2R's Param9–20 pairs in the same pattern) */
 const LN: Record<string, [number, number]> = { ln12: [1, 2], ln34: [3, 4], ln56: [5, 6], ln78: [7, 8], ln91: [9, 10], ln21: [11, 12], ln43: [13, 14], ln65: [15, 16], ln87: [17, 18], ln92: [19, 20] };
 const DM: Record<string, [number, number]> = { dm12: [1, 2], dm34: [3, 4], dm56: [5, 6], dm78: [7, 8], dm91: [9, 10], dm21: [11, 12], dm43: [13, 14], dm65: [15, 16], dm87: [17, 18], dm92: [19, 20] };
 /** parN: ParamN (D2Skills.cpp:129-151 for 1–8; D2R's par9, pa10…pa20) */
 const PAR: Record<string, number> = { par1: 1, par2: 2, par3: 3, par4: 4, par5: 5, par6: 6, par7: 7, par8: 8, par9: 9, pa10: 10, pa11: 11, pa12: 12, pa13: 13, pa14: 14, pa15: 15, pa16: 16, pa17: 17, pa18: 18, pa19: 19, pa20: 20 };
 /** clcN: calcN (D2Skills.cpp:356-366 for 1–4; D2R's clc5…clc9, and clc0 for calc10) */
 const CLC: Record<string, number> = { clc1: 1, clc2: 2, clc3: 3, clc4: 4, clc5: 5, clc6: 6, clc7: 7, clc8: 8, clc9: 9, clc0: 10 };
-/** pstN: passivecalcN, the Nth passive stat (D2Skills.cpp:389-402 for 1–5; D2R's pst6…ps14) */
+/** pstN: passivecalcN, the passive stat in column N (D2Skills.cpp:389-402 for 1–5; D2R's pst6…ps14) */
 const PST: Record<string, number> = { pst1: 1, pst2: 2, pst3: 3, pst4: 4, pst5: 5, pst6: 6, pst7: 7, pst8: 8, pst9: 9, ps10: 10, ps11: 11, ps12: 12, ps13: 13, ps14: 14 };
-/** astN: aurastatcalcN, the Nth aura stat (D2Skills.cpp:371-386) */
+/** astN: aurastatcalcN, the aura stat in column N (D2Skills.cpp:371-386) */
 const AST: Record<string, number> = { ast1: 1, ast2: 2, ast3: 3, ast4: 4, ast5: 5, ast6: 6 };
 type DescRead = 'min' | 'max' | 'len' | 'range' | 'min256' | 'max256' | 'minMastery' | 'maxMastery';
 /**
@@ -507,7 +507,7 @@ const DESC_MISSILE: Record<string, [number, DescRead]> = {
   // D2R's, "with Elemental Mastery": the caster's mastery of the missile's element on it
   m1nm: [0, 'minMastery'], m1xm: [0, 'maxMastery'], m2nm: [1, 'minMastery'], m2xm: [1, 'maxMastery'], m3nm: [2, 'minMastery'], m3xm: [2, 'maxMastery'],
 };
-/** math, madm, macr: the passive stat whose calc they read, among the first five (D2Common_11032, D2Skills.cpp:3152-3190) */
+/** math, madm, macr: the passive stat whose calc they read, in the first five columns (D2Common_11032, D2Skills.cpp:3152-3190) */
 const WEAPON_MASTERY: Record<string, string[]> = {
   math: ['passive_mastery_melee_th', 'passive_mastery_throw_th'],
   madm: ['passive_mastery_melee_dmg', 'passive_mastery_throw_dmg'],
@@ -533,17 +533,6 @@ export const UNSUPPORTED_MISSILE_CODES: Record<string, string> = Object.fromEntr
 
 /** ln: par X + (lvl − 1) × par Y */
 const ln = (L: number, x: number, y: number) => (x + Math.imul(L - 1, y)) | 0;
-/**
- * dm, diminishing returns (D2Common_11033, D2Skills.cpp:3242-3252): par X + (par Y − par X) ×
- * (110 × lvl / (lvl + 6)) / 100, the inner quotient truncated first, kept to par Y. SkillCalc.txt's
- * own description of dmXY truncates once at the end and has no cap, so it can read one more
- * (Fanaticism's dm34 at level 3: 20 here, 21 by the description).
- */
-function dm(L: number, x: number, y: number): number {
-  const v = x + Math.trunc(((y - x) * Math.trunc((110 * L) / (L + 6))) / 100);
-  return v > y ? y : v;
-}
-
 /** a skill's code at its level (SKILLS_GetSpecialParamValue, D2Skills.cpp:64-416, and D2R's additions) */
 function skillCode(e: SkillEval, code: string): number {
   const L = e.L;
@@ -565,10 +554,11 @@ function skillCode(e: SkillEval, code: string): number {
   if (has(LN, code)) return ln(L, par(LN[code][0]), par(LN[code][1]));
   if (has(DM, code)) return dm(L, par(DM[code][0]), par(DM[code][1]));
   if (has(CLC, code)) return skillCalcIn(e, s.calcs?.[CLC[code]]);
-  if (has(PST, code)) return skillCalcIn(e, s.passive?.stats?.[PST[code] - 1]?.calc);
-  if (has(AST, code)) return skillCalcIn(e, s.aura?.stats?.[AST[code] - 1]?.calc);
+  // by column, not by place in the list: a row may skip a column
+  if (has(PST, code)) return skillCalcIn(e, s.passive?.stats?.find((p) => p.col === PST[code])?.calc);
+  if (has(AST, code)) return skillCalcIn(e, s.aura?.stats?.find((p) => p.col === AST[code])?.calc);
   if (has(WEAPON_MASTERY, code)) {
-    const st = (s.passive?.stats ?? []).slice(0, 5).find((p) => WEAPON_MASTERY[code].includes(p.stat));
+    const st = (s.passive?.stats ?? []).find((p) => p.col <= 5 && WEAPON_MASTERY[code].includes(p.stat));
     return st ? skillCalcIn(e, st.calc) : 0;
   }
   if (has(DESC_MISSILE, code)) {
