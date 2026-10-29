@@ -1,34 +1,56 @@
-// The painted item pictures in the UI (public/icons/items, src/data/itempics.ts), chosen and coloured
-// by D2's rules (src/items/picture.ts). An item's <img> shows the code-drawn icon (icons.ts) until its
-// picture is in, then the picture: no blank cell, nothing moving (every cell sizes its <img> itself).
-// A picture is asked for only when a panel draws an item that shows it, so opening the stash loads
-// that page's and no more; each is decoded off the main thread (img.decode) before it is swapped in,
-// and the work done here (a recolour, a rune's number) runs a few milliseconds a frame.
+// The painted item pictures in the UI, chosen and coloured by D2's rules (src/items/picture.ts). They
+// ship packed in atlases, one kind of thing each (public/icons/items/<atlas>.webp; where each picture
+// is: src/data/itempics.ts; tools/ai-icons.mjs writes both, tools/icons/atlas.mjs says what goes
+// where). An item's <img> shows the code-drawn icon (icons.ts) until its picture is in, then the
+// picture: no blank cell, nothing moving (every cell sizes its <img> itself).
 //
-// A coloured picture is the painting shifted by src/ui/recolour.ts (our approximation of D2's
-// palette shifts) and a rune's has its number drawn on the stone; each is made once per (picture,
-// colour, InvTrans ranges) and kept as a blob URL. A picture that doesn't load keeps the drawn icon.
+// An atlas is fetched the first time a panel draws an item whose picture is in it, so opening the stash
+// loads that page's atlases and no more. It is decoded off the main thread (createImageBitmap) and
+// each picture is cut out of it once, in a canvas: the 2x picture as it is, or on a screen of one
+// device pixel per CSS pixel drawn down to 1x and lightly sharpened as the exported 1x files were
+// (src/ui/sharpen.ts). The cut is kept as a lossless blob URL; a decoded atlas is let go once no cut
+// waits on it, and no more than two are decoded at once. An atlas that doesn't come or doesn't decode
+// is asked for once more, then its pictures keep the drawn icon.
+//
+// A coloured picture is the cut shifted by src/ui/recolour.ts (our approximation of D2's palette
+// shifts) and a rune's has its number drawn on the stone; each is made once per (picture, colour,
+// InvTrans ranges) and kept as a blob URL. The work done here (a cut, a recolour, a rune's number)
+// runs a few milliseconds a frame.
 import { RUNE_BY_ID } from '../data/legendary';
-import { ITEM_PICTURES } from '../data/itempics';
+import { ITEM_ATLASES, ITEM_PICTURES } from '../data/itempics';
 import type { Item } from '../items/item';
 import { itemPicture, type ItemPicture } from '../items/picture';
 import { itemIcon } from './icons';
 import { rangesOf, recolourPixels } from './recolour';
+import { sharpen } from './sharpen';
 
-/** what the pictures cost, for tools/scenarios/icons.mjs: counts, and the longest piece of work in a frame */
-export const PIC_STATS = { files: 0, loaded: 0, failed: 0, made: 0, makeMs: 0, longestMs: 0, longest: '', swapped: 0, scale: '' };
+/**
+ * what the pictures cost, for tools/scenarios/icons.mjs: atlases fetched (their KB), decoded and
+ * given up on; pictures cut (the ms it took) and failed; looks made; the longest piece of work in a frame
+ */
+export const PIC_STATS = {
+  atlases: 0,
+  atlasKB: 0,
+  decoded: 0,
+  atlasesFailed: 0,
+  cut: 0,
+  cutMs: 0,
+  failed: 0,
+  made: 0,
+  makeMs: 0,
+  longestMs: 0,
+  longest: '',
+  swapped: 0,
+  scale: '',
+};
 
-/** 1x (a cell 34 px, sharpened) on a screen of a pixel per CSS pixel, else 2x (68 px a cell) */
+/** 1x (a cell 34 px, drawn down and sharpened) on a screen of a pixel per CSS pixel, else 2x (68 px a cell) */
 function scale(): '1x' | '2x' {
   if (!PIC_STATS.scale) PIC_STATS.scale = (globalThis.devicePixelRatio ?? 1) > 1.25 ? '2x' : '1x';
   return PIC_STATS.scale as '1x' | '2x';
 }
 
-function fileUrl(file: string): string {
-  return `${import.meta.env.BASE_URL}icons/items/${file}${scale() === '1x' ? '.1x' : ''}.webp?v=${ITEM_PICTURES[file]}`;
-}
-
-/** what an item's <img> shows once ready: its key, the file, the colour, a rune's number */
+/** what an item's <img> shows once ready: its key, the picture, the colour, a rune's number */
 interface Look {
   key: string;
   pic: ItemPicture;
@@ -49,28 +71,8 @@ function lookFor(item: Item): Look | null {
 const ready = new Map<string, string>();
 const making = new Set<string>();
 const failed = new Set<string>();
-/** the decoded paintings, by file */
+/** each picture cut out of its atlas, decoded, by file */
 const images = new Map<string, Promise<HTMLImageElement>>();
-
-function image(file: string): Promise<HTMLImageElement> {
-  let p = images.get(file);
-  if (!p) {
-    PIC_STATS.files++;
-    p = new Promise<HTMLImageElement>((resolve, reject) => {
-      const img = new Image();
-      img.decoding = 'async';
-      img.onload = () => img.decode().then(() => resolve(img), () => resolve(img));
-      img.onerror = () => reject(new Error(`no picture ${file}`));
-      img.src = fileUrl(file);
-    });
-    p.then(
-      () => PIC_STATS.loaded++,
-      () => PIC_STATS.failed++,
-    );
-    images.set(file, p);
-  }
-  return p;
-}
 
 // ── the work done on the main thread: a few milliseconds a frame ──
 const BUDGET_MS = 6;
@@ -98,6 +100,274 @@ function runJobs() {
   if (jobsQueued) requestAnimationFrame(runJobs);
 }
 
+// ── the atlases ──
+/** an atlas asked for once more after this long, when it didn't come or didn't decode */
+const RETRY_MS = 1500;
+/** a request given up after this long: nothing waits forever */
+const TIMEOUT_MS = 30000;
+/** a decoded atlas kept this long after its last cut, for the next page's pictures */
+const KEEP_MS = 3000;
+/** atlases decoded at once (one is 1–3 MB decoded): the others wait their turn, downloaded */
+const MAX_DECODED = 2;
+
+type Source = ImageBitmap | HTMLImageElement;
+interface Atlas {
+  name: string;
+  /** its file while it is fetched and decoded (not kept after: the HTTP cache keeps it) */
+  file: Promise<Blob> | null;
+  /** decoded, while cuts need it */
+  decoded: Promise<Source> | null;
+  /** holds one of the MAX_DECODED */
+  slot: boolean;
+  /** cuts waiting for it or drawing from it */
+  users: number;
+  /** letting the decoded atlas go */
+  timer: ReturnType<typeof setTimeout> | undefined;
+  /** the once-more is spent */
+  retried: boolean;
+  /** given up on: its pictures keep the drawn icon */
+  failed: boolean;
+  /** the blob URL of an <img> it was decoded in, where createImageBitmap couldn't */
+  url: string;
+}
+const atlases = new Map<string, Atlas>();
+let decodedNow = 0;
+const slotWaiters: { atlas: Atlas; go: () => void }[] = [];
+
+function atlasUrl(name: string): string {
+  return `${import.meta.env.BASE_URL}icons/items/${name}.webp?v=${ITEM_ATLASES[name]}`;
+}
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/**
+ * the atlas's file, given up on after TIMEOUT_MS. Its URL carries its version, so any copy in the HTTP
+ * cache is the right one (force-cache: no revalidating); reload goes past it, a broken copy may be there
+ */
+async function fetchAtlas(name: string, reload: boolean): Promise<Blob> {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
+  try {
+    const res = await fetch(atlasUrl(name), { signal: ctl.signal, cache: reload ? 'reload' : 'force-cache' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const file = await res.blob();
+    PIC_STATS.atlases++;
+    PIC_STATS.atlasKB += file.size / 1024;
+    return file;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** a file decoded off the main thread: an ImageBitmap, or an <img> where the engine can't make one of a WebP */
+async function decode(a: Atlas, file: Blob): Promise<Source> {
+  if (typeof createImageBitmap === 'function') {
+    try {
+      return await createImageBitmap(file);
+    } catch {
+      // an older engine decodes some formats only in an <img>
+    }
+  }
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.src = url;
+  try {
+    await img.decode();
+  } catch (e) {
+    URL.revokeObjectURL(url);
+    throw e;
+  }
+  a.url = url;
+  return img;
+}
+
+/** a decoding slot for this atlas: one of the MAX_DECODED, or an idle atlas's */
+function takeSlot(a: Atlas): Promise<void> {
+  return new Promise((go) => {
+    slotWaiters.push({ atlas: a, go });
+    passSlots();
+  });
+}
+function passSlots() {
+  while (slotWaiters.length) {
+    if (decodedNow < MAX_DECODED) {
+      decodedNow++;
+      const w = slotWaiters.shift()!;
+      w.atlas.slot = true;
+      w.go();
+      continue;
+    }
+    // one decoded with nothing left to cut gives its slot up at once
+    const idle = [...atlases.values()].find((x) => x.slot && x.users === 0);
+    if (!idle) return;
+    close(idle);
+  }
+}
+/** the decoded atlas let go (a later picture fetches it again, from the HTTP cache) */
+function close(a: Atlas) {
+  clearTimeout(a.timer);
+  a.timer = undefined;
+  if (!a.slot) return;
+  a.slot = false;
+  decodedNow--;
+  const d = a.decoded;
+  const url = a.url;
+  a.decoded = null;
+  a.url = '';
+  d?.then(
+    (s) => {
+      if ('close' in s) s.close();
+      if (url) URL.revokeObjectURL(url);
+    },
+    () => undefined,
+  );
+}
+
+/** decoded for the cuts waiting: its file (fetched at once, whatever the slots), then a slot; tried once more after RETRY_MS, then given up on */
+function decoded(a: Atlas): Promise<Source> {
+  if (a.decoded) return a.decoded;
+  const file = () => (a.file ??= fetchAtlas(a.name, a.retried));
+  file().catch(() => undefined);
+  const d = (async () => {
+    for (;;) {
+      try {
+        const f = await file();
+        await takeSlot(a);
+        try {
+          const src = await decode(a, f);
+          PIC_STATS.decoded++;
+          // the decoded atlas is what the cuts need: the file isn't held on to as well
+          a.file = null;
+          return src;
+        } catch (e) {
+          a.slot = false;
+          decodedNow--;
+          passSlots();
+          throw e;
+        }
+      } catch (e) {
+        // a file that came but wouldn't decode is fetched again too: the copy may be broken
+        a.file = null;
+        if (a.retried) {
+          a.failed = true;
+          PIC_STATS.atlasesFailed++;
+          console.warn(`item pictures: atlas ${a.name} didn't load (${e instanceof Error ? e.message : String(e)}); its items keep their drawn icons`);
+          throw e;
+        }
+        a.retried = true;
+        await sleep(RETRY_MS);
+      }
+    }
+  })();
+  a.decoded = d;
+  d.catch(() => {
+    if (a.decoded === d) a.decoded = null;
+  });
+  return d;
+}
+
+/** a cut done with the atlas: when none is left, it is let go now if another waits to decode, else after KEEP_MS */
+function release(a: Atlas) {
+  if (--a.users > 0 || !a.slot) return;
+  if (slotWaiters.length) {
+    close(a);
+    passSlots();
+    return;
+  }
+  clearTimeout(a.timer);
+  a.timer = setTimeout(() => {
+    if (a.users === 0) close(a);
+    passSlots();
+  }, KEEP_MS);
+}
+
+let canvas: HTMLCanvasElement | null = null;
+/** the scratch canvas at this size, clear (toBlob takes its copy at once, so the next job may reuse it) */
+function scratch(w: number, h: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
+  canvas ??= document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  return [canvas, canvas.getContext('2d', { willReadFrequently: true })!];
+}
+
+/** a picture out of its atlas at this screen's scale: the 2x as it is, or drawn down to 1x and sharpened */
+function drawCut(src: Source, x: number, y: number, w: number, h: number): HTMLCanvasElement {
+  const t = performance.now();
+  const one = scale() === '1x';
+  const cw = one ? w / 2 : w;
+  const ch = one ? h / 2 : h;
+  const [c, ctx] = scratch(cw, ch);
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(src, x, y, w, h, 0, 0, cw, ch);
+  if (one) {
+    const d = ctx.getImageData(0, 0, cw, ch);
+    sharpen(d.data, cw, ch);
+    ctx.putImageData(d, 0, 0);
+  }
+  PIC_STATS.cut++;
+  PIC_STATS.cutMs += performance.now() - t;
+  return c;
+}
+
+/** the canvas as a lossless PNG blob, decoded: an <img> of it */
+function blobImage(c: HTMLCanvasElement): Promise<HTMLImageElement> {
+  return new Promise<HTMLImageElement>((resolve, reject) =>
+    c.toBlob((blob) => {
+      if (!blob) return reject(new Error('no blob'));
+      const img = new Image();
+      img.src = URL.createObjectURL(blob);
+      img.decode().then(
+        () => resolve(img),
+        () => resolve(img),
+      );
+    }, 'image/png'),
+  );
+}
+
+/** a picture cut out of its atlas, once its atlas is decoded: an <img> of the cut */
+function cutPicture(file: string): Promise<HTMLImageElement> {
+  const [name, x, y, w, h] = ITEM_PICTURES[file];
+  let a = atlases.get(name);
+  if (!a) {
+    a = { name, file: null, decoded: null, slot: false, users: 0, timer: undefined, retried: false, failed: false, url: '' };
+    atlases.set(name, a);
+  }
+  if (a.failed) return Promise.reject(new Error(`atlas ${name} didn't load`));
+  const at = a;
+  at.users++;
+  clearTimeout(at.timer);
+  return decoded(at).then(
+    (src) =>
+      new Promise<HTMLImageElement>((resolve, reject) =>
+        queue('cut', () => {
+          let c: HTMLCanvasElement;
+          try {
+            c = drawCut(src, x, y, w, h);
+          } catch (e) {
+            release(at);
+            return reject(e);
+          }
+          release(at);
+          blobImage(c).then(resolve, reject);
+        }),
+      ),
+    (e) => {
+      release(at);
+      throw e;
+    },
+  );
+}
+
+function image(file: string): Promise<HTMLImageElement> {
+  let p = images.get(file);
+  if (!p) {
+    p = cutPicture(file);
+    p.catch(() => PIC_STATS.failed++);
+    images.set(file, p);
+  }
+  return p;
+}
+
 /** the <img>s waiting for a look swap to it, a frame's worth at once */
 const swaps = new Set<string>();
 function swapIn(key: string) {
@@ -116,17 +386,15 @@ function swapNow() {
   }
   swaps.clear();
 }
+/** the <img>s of a look that failed keep the drawn icon and wait no more */
+function unwait(key: string) {
+  for (const img of document.querySelectorAll<HTMLImageElement>(`img[data-pic="${CSS.escape(key)}"]`)) img.removeAttribute('data-pic');
+}
 
-let canvas: HTMLCanvasElement | null = null;
-/** the painting drawn, recoloured and numbered as the look says, as a blob URL decoded and ready */
+/** the cut, recoloured and numbered as the look says, as a blob URL decoded and ready */
 function make(look: Look, img: HTMLImageElement): Promise<string> {
   const t = performance.now();
-  canvas ??= document.createElement('canvas');
-  const c = canvas;
-  c.width = img.naturalWidth;
-  c.height = img.naturalHeight;
-  const ctx = c.getContext('2d', { willReadFrequently: true })!;
-  ctx.clearRect(0, 0, c.width, c.height);
+  const [c, ctx] = scratch(img.naturalWidth, img.naturalHeight);
   ctx.drawImage(img, 0, 0);
   if (look.pic.colour) {
     const data = ctx.getImageData(0, 0, c.width, c.height);
@@ -136,18 +404,7 @@ function make(look: Look, img: HTMLImageElement): Promise<string> {
   if (look.rune) drawRuneNumber(ctx, c.width, c.height, look.rune);
   PIC_STATS.made++;
   PIC_STATS.makeMs += performance.now() - t;
-  return new Promise<string>((resolve, reject) =>
-    c.toBlob((blob) => {
-      if (!blob) return reject(new Error('no blob'));
-      const url = URL.createObjectURL(blob);
-      const pre = new Image();
-      pre.src = url;
-      pre.decode().then(
-        () => resolve(url),
-        () => resolve(url),
-      );
-    }, 'image/png'),
-  );
+  return blobImage(c).then((i) => i.src);
 }
 
 /** a rune's number on its blank stone, carved and lit like the socket's numbers (RUNE_COLOR) */
@@ -183,7 +440,10 @@ function request(look: Look) {
         ready.set(look.key, url);
         swapIn(look.key);
       },
-      () => failed.add(look.key),
+      () => {
+        failed.add(look.key);
+        unwait(look.key);
+      },
     )
     .finally(() => making.delete(look.key));
 }
@@ -217,4 +477,4 @@ export function picturesPending(): number {
 }
 
 // the scenarios read the game's own copy of this module (a dynamic import of it can be another copy after an edit)
-if (import.meta.env.DEV) Object.assign(globalThis, { __itempics: { PIC_STATS, picturesPending, itemLookKey } });
+if (import.meta.env.DEV) Object.assign(globalThis, { __itempics: { PIC_STATS, picturesPending, itemLookKey, ITEM_PICTURES } });

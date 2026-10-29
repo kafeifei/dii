@@ -129,7 +129,7 @@ export async function buildItems() {
     if (r.type2) o.type2 = r.type2;
     o.w = r.invwidth;
     o.h = r.invheight;
-    // its picture (public/icons/items, by file name in lower case), the one a unique or set item of
+    // its picture (src/data/itempics.ts, by file name in lower case), the one a unique or set item of
     // it shows when it names none, and which palette ranges a colour shifts (0 none: left out)
     o.inv = r.invfile.toLowerCase();
     if (r.uniqueinvfile) o.invUnique = r.uniqueinvfile.toLowerCase();

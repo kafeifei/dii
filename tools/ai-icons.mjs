@@ -2,16 +2,18 @@
 // tools/ai-audio.mjs makes the sounds. The list is tools/icons/pictures.mjs (one picture per D2
 // picture file, not per base), each picture's words are tools/icons/desc/*.json, the style and
 // settings tools/icons/style.mjs; the box side is tools/icons/box/ (its README says what each step
-// does). Writes public/icons/items/<picture>.webp (2x: w×68 by h×68 px) and <picture>.1x.webp (1x,
-// sharpened), records what made each in tools/icons/made/<list>.json (a group's, or uniques/sets), and
-// writes public/icons/CREDITS.md from those records and src/data/itempics.ts, the list the game
-// loads pictures by (src/ui/itempics.ts).
+// does). Packs every pick's 2x picture (w×68 by h×68 px) into the atlas of its kind of thing,
+// public/icons/items/<atlas>.webp (tools/icons/atlas.mjs), records what made each picture and where it
+// is in tools/icons/made/<list>.json (a group's, or uniques/sets) and the atlases in
+// made/atlases.json, and writes public/icons/CREDITS.md from those records and src/data/itempics.ts,
+// the map the game cuts the pictures out by (src/ui/itempics.ts). The 1x candidates are for the review
+// sheets only: on a 1x screen the game draws the 2x down and sharpens it as the export did.
 //
 //   node tools/ai-icons.mjs --dry [sel] [--prompts]   the jobs a run would send, and the picks it would apply
 //   node tools/ai-icons.mjs --gen [sel]               paint the selection's candidates on box (a new run)
 //   node tools/ai-icons.mjs --gen --run 3 [sel]       … adding them to run-03 (or attach to it while it runs)
 //   node tools/ai-icons.mjs --pull --run 3            fetch run-03's candidates and sheets again
-//   node tools/ai-icons.mjs                           apply the picks: write public/icons/items/ from them
+//   node tools/ai-icons.mjs                           apply the picks: pack public/icons/items/ from them
 //     sel       --group blades,long  --kind base,variant,unique,set  --only invssd,invcap
 //     --seeds   101,202 (default style.mjs SEEDS); --round n takes the n-th next four (seedsFor)
 //     --desc f  descriptions from another file too (a trial: they override desc/*.json)
@@ -41,6 +43,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { atlasOf, pack } from './icons/atlas.mjs';
 import { GROUPS, KINDS, LISTS, buildPictures, listOf } from './icons/pictures.mjs';
 import { EXPORT, GRADE, MATTE, MODEL, NEGATIVE, SEEDS, STYLE, canvasFor, promptFor, seedsFor } from './icons/style.mjs';
 
@@ -390,30 +393,43 @@ async function gen() {
 
 // ---- applying the picks
 
-function apply() {
+/** the atlases' records: their files, sizes, what they were drawn from and how close they came out */
+const ATLASES = path.join(MADE, 'atlases.json');
+/** an atlas's WebP: the export's own (style.mjs EXPORT: lossy colour at its quality, lossless alpha, libwebp's slowest method) */
+const ATLAS_WEBP = { quality: EXPORT.webpQuality, alphaQuality: 100, effort: 6 };
+/** a picture drawn again in its atlas is at least this close to its 2x file (PSNR, dB; the worst of the first encode was 44) */
+const MIN_PSNR = 40;
+
+/**
+ * The picks applied: every pick's 2x picture (its candidate, fetched from box when not here) packed
+ * into the atlas of its kind of thing (tools/icons/atlas.mjs), public/icons/items/<atlas>.webp, an
+ * atlas written only when what it is drawn from changed; the records (made/<list>.json: what made each
+ * picture and where it is; made/atlases.json), the credits and src/data/itempics.ts written from them.
+ */
+async function apply() {
   const made = {};
   for (const g of LISTS) made[g] = readJson(path.join(MADE, `${g}.json`), {});
   const want = (id) => {
     const p = PICKED[id];
     const base = path.join(SRC, runName(p.run), 'cand', `${id}_s${p.seed}`);
-    return { p, base, files: { '2x': `${base}.webp`, '1x': `${base}.1x.webp` }, side: `${base}.json` };
+    return { p, src: `${base}.webp`, side: `${base}.json` };
   };
   // what isn't here yet comes from box, a run at a time
-  const missing = Object.keys(PICKED).filter((id) => !fs.existsSync(want(id).side));
+  const missing = Object.keys(PICKED).filter((id) => !fs.existsSync(want(id).side) || !fs.existsSync(want(id).src));
   for (const run of new Set(missing.map((id) => PICKED[id].run))) {
     const ids = missing.filter((id) => PICKED[id].run === run);
     const dst = path.join(SRC, runName(run), 'cand');
     fs.mkdirSync(dst, { recursive: true });
-    const list = ids.flatMap((id) => ['.webp', '.1x.webp', '.json'].map((x) => `${id}_s${PICKED[id].seed}${x}`)).join('\n') + '\n';
+    const list = ids.flatMap((id) => ['.webp', '.json'].map((x) => `${id}_s${PICKED[id].seed}${x}`)).join('\n') + '\n';
     const r = sh('rsync', ['-a', '--files-from=-', `${BOX}:${BOX_ROOT}/${runName(run)}/cand/`, dst], { quiet: true, input: list });
     if (r.status !== 0) fail(`the picks of ${runName(run)} aren't on box either: ${r.stderr.trim()}`);
   }
-  let wrote = 0;
-  let same = 0;
   const stale = [];
+  /** each pick: its picture, its 2x file and that file's hash, its record */
+  const picks = {};
   for (const id of Object.keys(PICKED).sort()) {
     const pic = byId.get(id);
-    const { p, files, side } = want(id);
+    const { p, src, side } = want(id);
     const st = readJson(side);
     if (st.job.picture !== id || st.job.seed !== p.seed) fail(`${side}: not ${id} s${p.seed}`);
     const d = DESCS[id];
@@ -432,22 +448,36 @@ function apply() {
       matte: st.cut.matte,
       matteLicense: st.cut.matte_license,
       flags: { touchesEdge: st.cut.touches_edge, parts: st.cut.parts, shadow: st.cut.shadow },
-      files: {},
     };
-    for (const [scale, src] of Object.entries(files)) {
-      const name = scale === '2x' ? `${id}.webp` : `${id}.${scale}.webp`;
-      const dst = path.join(OUT, name);
-      const h = sha(src);
-      if (fs.existsSync(dst) && sha(dst) === h) same++;
+    picks[id] = { pic, src, sha1: sha(src), entry };
+  }
+
+  // the atlases, a kind of thing each
+  const byAtlas = new Map();
+  for (const [id, k] of Object.entries(picks)) {
+    const a = atlasOf(k.pic);
+    byAtlas.set(a, [...(byAtlas.get(a) ?? []), id]);
+  }
+  const was = readJson(ATLASES, {});
+  const atlases = {};
+  let wrote = 0;
+  for (const [name, ids] of [...byAtlas].sort(([a], [b]) => a.localeCompare(b))) {
+    for (const atlas of pack(name, ids.map((id) => ({ id, w: picks[id].pic.w, h: picks[id].pic.h })))) {
+      const file = path.join(OUT, `${atlas.name}.webp`);
+      // what it is drawn from: the pictures at their rects, the size and the encoding
+      const rects = Object.entries(atlas.rects).sort(([a], [b]) => a.localeCompare(b));
+      const inputs = crypto.createHash('sha1').update(JSON.stringify([atlas.w, atlas.h, ATLAS_WEBP, rects.map(([id, r]) => [id, r, picks[id].sha1])])).digest('hex').slice(0, 12);
+      const old = was[atlas.name];
+      if (old && old.inputs === inputs && fs.existsSync(file) && sha(file) === old.sha1) atlases[atlas.name] = old;
       else {
-        fs.mkdirSync(OUT, { recursive: true });
-        fs.copyFileSync(src, dst);
+        atlases[atlas.name] = await drawAtlas(atlas, file, picks, inputs);
         wrote++;
       }
-      entry.files[scale] = { file: `public/icons/items/${name}`, sha1: h };
+      for (const [id, rect] of rects) picks[id].entry.atlas = { file: `public/icons/items/${atlas.name}.webp`, rect, sha1: picks[id].sha1 };
     }
-    made[listOf(pic)][id] = entry;
   }
+
+  for (const [id, k] of Object.entries(picks)) made[listOf(k.pic)][id] = k.entry;
   for (const [g, m] of Object.entries(made)) {
     const file = path.join(MADE, `${g}.json`);
     const sorted = Object.fromEntries(Object.entries(m).filter(([id]) => PICKED[id]).sort(([a], [b]) => a.localeCompare(b)));
@@ -455,29 +485,96 @@ function apply() {
     const text = json(sorted);
     if (!fs.existsSync(file) || fs.readFileSync(file, 'utf8') !== text) writeAtomic(file, text);
   }
-  writeCredits(Object.assign({}, ...Object.values(made)));
-  writeManifest(Object.assign({}, ...Object.values(made)));
-  const picked = new Set(Object.keys(PICKED).flatMap((id) => [`${id}.webp`, `${id}.1x.webp`]));
-  const extra = fs.existsSync(OUT) ? fs.readdirSync(OUT).filter((f) => f.endsWith('.webp') && !picked.has(f)) : [];
-  console.log(`picks: ${Object.keys(PICKED).length} pictures of ${pictures.length}, ${wrote} files written, ${same} already so`);
+  const atlasText = json(Object.fromEntries(Object.entries(atlases).sort(([a], [b]) => a.localeCompare(b))));
+  if (!fs.existsSync(ATLASES) || fs.readFileSync(ATLASES, 'utf8') !== atlasText) writeAtomic(ATLASES, atlasText);
+  const all = Object.assign({}, ...Object.values(made));
+  writeCredits(all);
+  writeManifest(all, atlases);
+  // public/icons/items holds the atlases and nothing else: another .webp there is this tool's older output (a picture a file)
+  const keep = new Set(Object.keys(atlases).map((n) => `${n}.webp`));
+  const gone = fs.existsSync(OUT) ? fs.readdirSync(OUT).filter((f) => /\.webp(\.tmp)?$/.test(f) && !keep.has(f)) : [];
+  for (const f of gone) fs.unlinkSync(path.join(OUT, f));
+  const kb = Object.values(atlases).reduce((s, a) => s + a.bytes, 0) / 1024;
+  const worst = Object.values(atlases).reduce((w, a) => (a.worstPsnr < w.worstPsnr ? a : w));
+  console.log(`picks: ${Object.keys(PICKED).length} pictures of ${pictures.length} in ${keep.size} atlases (${kb.toFixed(0)} KB), ${wrote} written, ${keep.size - wrote} already so; closest to its 2x file at worst ${worst.worstPsnr} dB (${worst.worstPicture})`);
+  if (gone.length) console.log(`  removed from public/icons/items/, not atlases: ${gone.length} files`);
   if (stale.length) console.log(`  painted from older words than desc/ has now (paint them again?): ${stale.join(' ')}`);
-  if (extra.length) console.log(`  in public/icons/items/ with no pick (left there): ${extra.join(' ')}`);
 }
 
 /**
- * src/data/itempics.ts: the pictures the game has, by file name, each with a version from its two
- * files' hashes; the game asks for <name>.webp?v=<version>, so a picture painted again is never
- * shown from an old cache, and a picture not listed keeps the code-drawn icon without a request
+ * An atlas drawn: each picture's 2x file copied to its rect (no blending: they never overlap),
+ * encoded, decoded again and checked (every picture where its rect says and close to its file,
+ * nothing outside the rects), then written whole; its record
  */
-function writeManifest(made) {
+async function drawAtlas(atlas, file, picks, inputs) {
+  const sharp = (await import('sharp')).default;
+  const px = Buffer.alloc(atlas.w * atlas.h * 4);
+  const srcs = {};
+  for (const [id, [x, y, w, h]] of Object.entries(atlas.rects)) {
+    const { data, info } = await sharp(picks[id].src).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    if (info.width !== w || info.height !== h) fail(`${picks[id].src}: ${info.width}x${info.height} px, not ${w}x${h}`);
+    for (let row = 0; row < h; row++) data.copy(px, ((y + row) * atlas.w + x) * 4, row * w * 4, (row + 1) * w * 4);
+    srcs[id] = data;
+  }
+  const buf = await sharp(px, { raw: { width: atlas.w, height: atlas.h, channels: 4 } }).webp(ATLAS_WEBP).toBuffer();
+  const back = await sharp(buf).ensureAlpha().raw().toBuffer();
+  const covered = new Uint8Array(atlas.w * atlas.h);
+  let worst = { psnr: Infinity, id: '' };
+  for (const [id, [x, y, w, h]] of Object.entries(atlas.rects)) {
+    const s = srcs[id];
+    let se = 0;
+    for (let row = 0; row < h; row++) {
+      for (let col = 0; col < w; col++) {
+        const i = (row * w + col) * 4;
+        const k = (y + row) * atlas.w + x + col;
+        covered[k] = 1;
+        // premultiplied colour and alpha: what shows over the cell
+        for (let c = 0; c < 3; c++) {
+          const d = (s[i + c] * s[i + 3] - back[k * 4 + c] * back[k * 4 + 3]) / 255;
+          se += d * d;
+        }
+        se += (s[i + 3] - back[k * 4 + 3]) ** 2;
+      }
+    }
+    const psnr = 10 * Math.log10((255 * 255 * w * h * 4) / Math.max(se, 1e-9));
+    if (psnr < worst.psnr) worst = { psnr, id };
+  }
+  for (let k = 0; k < covered.length; k++) if (!covered[k] && back[k * 4 + 3]) fail(`atlas ${atlas.name}: a pixel shows outside its pictures, at ${k % atlas.w},${Math.floor(k / atlas.w)}`);
+  if (worst.psnr < MIN_PSNR) fail(`atlas ${atlas.name}: ${worst.id} comes out ${worst.psnr.toFixed(1)} dB from its 2x file (under ${MIN_PSNR})`);
+  writeAtomic(file, buf);
+  return {
+    file: `public/icons/items/${atlas.name}.webp`,
+    w: atlas.w,
+    h: atlas.h,
+    pictures: Object.keys(atlas.rects).length,
+    bytes: buf.length,
+    sha1: sha(file),
+    webp: ATLAS_WEBP,
+    worstPsnr: Math.round(worst.psnr * 10) / 10,
+    worstPicture: worst.id,
+    inputs,
+  };
+}
+
+/**
+ * src/data/itempics.ts: the atlases with a version from each file's hash (the game asks for
+ * <atlas>.webp?v=<version>, so an atlas made again is never shown from an old cache), and every
+ * picture the game has, by file name, with its atlas and rect; a picture not listed keeps the
+ * code-drawn icon without a request
+ */
+function writeManifest(made, atlases) {
   const ids = Object.keys(made).filter((id) => PICKED[id]).sort();
-  const ver = (m) => crypto.createHash('sha1').update(`${m.files['2x'].sha1} ${m.files['1x'].sha1}`).digest('hex').slice(0, 8);
-  const body = ids.map((id) => `  ${JSON.stringify(id)}: ${JSON.stringify(ver(made[id]))},`).join('\n');
+  const names = Object.keys(atlases).sort();
   const text = `// Generated by tools/ai-icons.mjs from the picks (tools/icons/made). Do not edit.
 
-/** the painted pictures in public/icons/items, by file name: a version of their two files (2x and 1x) */
-export const ITEM_PICTURES: Record<string, string> = {
-${body}
+/** the atlases in public/icons/items, by name: a version of each file, for its URL */
+export const ITEM_ATLASES: Record<string, string> = {
+${names.map((n) => `  ${JSON.stringify(n)}: ${JSON.stringify(atlases[n].sha1.slice(0, 8))},`).join('\n')}
+};
+
+/** the painted pictures, by file name: the atlas each is in and its rect there, in px (68 a cell: the 2x picture) */
+export const ITEM_PICTURES: Record<string, readonly [atlas: string, x: number, y: number, w: number, h: number]> = {
+${ids.map((id) => `  ${JSON.stringify(id)}: [${JSON.stringify(path.basename(made[id].atlas.file, '.webp'))}, ${made[id].atlas.rect.join(', ')}],`).join('\n')}
 };
 `;
   if (!fs.existsSync(MANIFEST) || fs.readFileSync(MANIFEST, 'utf8') !== text) writeAtomic(MANIFEST, text);
@@ -521,7 +618,7 @@ ${rows.join('\n')}
 ${Object.entries(kinds).map(([k, zh]) => `| ${zh} | ${by(k)} |`).join('\n')}
 | 合计 | ${entries.length} |
 
-每张图两个文件：\`<图名>.webp\`（2×，一格 68 px，给高分屏）和 \`<图名>.1x.webp\`（1×，一格 34 px，略锐化）；图名是 D2 的 invfile 名，小写。每张图的提示词、种子、批次、形状参考和模型记在 \`tools/icons/made/<列表>.json\`。
+游戏里的图按种类拼成图集（\`<图集>.webp\`，如 \`swords.webp\`、\`potions.webp\`，分法见 \`tools/icons/atlas.mjs\`），图集里每张图是它的 2×（一格 68 px），一个面板只取它用到的那几张图集；每张图在哪张图集、哪个位置写在 \`src/data/itempics.ts\`。一个 CSS 像素对一个设备像素的屏幕上，游戏把 2× 缩成 1×，再做一次和导出 1× 时一样的轻微锐化。图名是 D2 的 invfile 名，小写。每张图的提示词、种子、批次、形状参考、模型和它在图集里的位置记在 \`tools/icons/made/<列表>.json\`，图集记在 \`tools/icons/made/atlases.json\`。
 
 本文件由 \`tools/ai-icons.mjs\` 生成，不要手改。
 `;
@@ -545,8 +642,15 @@ if (DRY) {
   if (undescribed.length) console.log(`${undescribed.length} with no description yet: ${undescribed.slice(0, 16).join(' ')}${undescribed.length > 16 ? ' …' : ''}`);
   console.log(`${pics.size} pictures, ${jobs.length} jobs, ${estimate(jobs)}; ${skipped.length} of the ${selected.length} selected left out`);
   console.log(`picks: ${Object.keys(PICKED).length} pictures (${Object.keys(DESCS).length} described of ${pictures.length})`);
+  const plan = new Map();
+  for (const id of Object.keys(PICKED)) {
+    const p = byId.get(id);
+    plan.set(atlasOf(p), [...(plan.get(atlasOf(p)) ?? []), { id, w: p.w, h: p.h }]);
+  }
+  const packed = [...plan].sort(([a], [b]) => a.localeCompare(b)).flatMap(([k, items]) => pack(k, items));
+  console.log(`atlases: ${packed.map((a) => `${a.name} ${Object.keys(a.rects).length} (${a.w}x${a.h})`).join(', ')}`);
 } else {
   if (PULL) pull(RUN);
   if (GEN) await gen();
-  apply();
+  await apply();
 }

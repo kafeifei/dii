@@ -9,7 +9,7 @@ a sheet for every group of 12 or more, but 21-23). A row is one picture: its id,
 its cells and kind, and its reference image under them (the shape guide, or a unique's base picture);
 then each seed: the seed and the cut's flags (red when one is up: EDGE touches the canvas border,
 P<n> separate pieces, SH<f> a cast shadow's share), and under them the candidate at 4x (export.py's
-preview, 136 px a cell), 2x and 1x (the game's two files), each on the game's inventory grid
+preview, 136 px a cell), 2x (the game's picture) and 1x (near what a 1x screen shows), each on the game's inventory grid
 (src/style.css .grid: #070605, 1 px lines of rgba(90,74,52,.35) every cell, a #4a3c2a border).
 
 build() takes two hooks, for a sheet made elsewhere from the same run's files: beside(pid, job) gives

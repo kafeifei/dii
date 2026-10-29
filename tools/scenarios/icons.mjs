@@ -6,16 +6,20 @@
 // numbers, rings, amulets, charms and jewels in their looks, a shako too high for the hero in a red
 // cell). Every item's <img> shows the drawn icon at once and its painted picture once it is in (never
 // blank, the same box before and after), the look D2's rule gives (checked by key for a dozen items),
-// a coloured or numbered one from a blob URL and a plain one from public/icons/items; no cell is
-// coloured by quality, only the red one. The camp stash: the personal page with bases beside their
+// each cut out of its atlas (public/icons/items/<atlas>.webp) into a blob URL, at 1x on this screen
+// of a pixel per CSS pixel (drawn down from the 2x and sharpened); no cell is coloured by quality,
+// only the red one. The camp stash: the personal page with bases beside their
 // uniques and set items, 共享 1 with a cap in each of D2's 21 colours and long swords (InvTrans 2:
 // only the steel shifts); a set item's tooltip, the quality in its name's green; the cube with items
-// in it; the merchant's shelves; an item on the cursor. Then a phone (844×390 at 3 device pixels,
-// touch controls, CPU slowed 4×, a 4G-like network; its 2x files never asked for before), the game
-// paused so the frames timed are the UI's: the bag, then the stash's personal page full, timed from opening it to every picture in (frame gaps and long tasks
-// against the idle ones, the panel's draw, the work done here), opened again with nothing to wait
-// for, 共享 2 after it loading only its own pictures; the merchant; then the same stash timed with
-// the drawn icons only, as the game was before the pictures. Page and console errors fail the run.
+// in it; the merchant's shelves; an item on the cursor. An atlas that comes broken once is asked for
+// again and its picture shows; one that never comes leaves its item the drawn icon, nothing waiting.
+// Then a phone (844×390 at 3 device pixels, touch controls, CPU slowed 4×, a 4G-like network; its
+// atlases never asked for before), the game paused so the frames timed are the UI's: the bag (2x
+// pictures), then the stash's personal page full, timed from opening it to every picture in (frame
+// gaps and long tasks against the idle ones, the panel's draw, the work done here), opened again with
+// nothing to wait for, 共享 2 after it cutting only its own pictures; the merchant; then the same stash
+// timed with the drawn icons only, as the game was before the pictures. Page and console errors fail
+// the run.
 // Shots: the bag with the equipment and belt, the uniques and set items beside their bases, the 21
 // colours, the tooltip, the cube, the merchant, the cursor; phone-1-bag, phone-2-stash and
 // phone-3-shop beside them. The last line is "ICONS OK …" or "ICONS FAIL …".
@@ -66,6 +70,7 @@ export default async function (desktop, shot, log) {
       S.make = (await import('/src/items/gen.ts')).createItem;
       // the game's own copy of src/ui/itempics.ts (an import here can be another one after an edit)
       S.pics = window.__itempics;
+      S.map = S.pics.ITEM_PICTURES;
       const { D2X_UNIQUES } = await import('/src/data/d2x/uniques.ts');
       const { D2X_SET_ITEMS } = await import('/src/data/d2x/sets.ts');
       const { D2X_PREFIXES, D2X_SUFFIXES } = await import('/src/data/d2x/affixes.ts');
@@ -109,12 +114,14 @@ export default async function (desktop, shot, log) {
           pending: S.pics.picturesPending(),
         };
       };
-      /** an item's look key and its <img>'s src kind where it is drawn: blob, file (with its name) or drawn */
+      /** an item's look key, its <img>'s src kind where it is drawn (blob, drawn, or the URL) and size against its picture's 2x */
       S.cell = (uid) => {
         const img = document.querySelector(`[data-uid="${uid}"] img`);
         const it = game.hooks.itemByUid.get(uid);
         const src = img?.src ?? '';
-        return { key: it ? S.pics.itemLookKey(it) : null, src: src.startsWith('blob:') ? 'blob' : src.startsWith('data:') ? 'drawn' : (src.match(/icons\/items\/([a-z0-9]+)(\.1x)?\.webp/)?.slice(1).join('') ?? src) };
+        const key = it ? S.pics.itemLookKey(it) : null;
+        const rect = key ? S.map[key.split('|')[0]] : null;
+        return { key, src: src.startsWith('blob:') ? 'blob' : src.startsWith('data:') ? 'drawn' : src, size: img ? `${img.naturalWidth}x${img.naturalHeight}` : '', of2x: rect ? `${rect[3]}x${rect[4]}` : '' };
       };
       /** the boxes of the item <img>s in the open panels, by uid */
       S.boxes = () => Object.fromEntries([...document.querySelectorAll('.panel.open [data-uid] img')].map((i) => [i.parentElement.dataset.uid, [...Object.values(i.getBoundingClientRect().toJSON())].map((v) => Math.round(v * 10) / 10).join()]));
@@ -208,12 +215,14 @@ export default async function (desktop, shot, log) {
     r33: 'invrzod|r33',
   };
   const checkLooks = async (ids, where) => {
+    const one = (await ev(() => window.__i.pics.PIC_STATS.scale)) === '1x';
     for (const [name, uid] of Object.entries(ids)) {
       const want = LOOKS[name];
       if (!want) continue;
       const c = await ev((u) => window.__i.cell(u), uid);
-      const plain = !want.includes('|');
-      expect(c.key === want && (plain ? c.src === `${want}${(await ev(() => window.__i.pics.PIC_STATS.scale)) === '1x' ? '.1x' : ''}` : c.src === 'blob'), `${where}: ${name} shows ${c.key} from ${c.src}, not ${want}`);
+      const [w, h] = c.of2x.split('x').map(Number);
+      const size = one ? `${w / 2}x${h / 2}` : c.of2x;
+      expect(c.key === want && c.src === 'blob' && c.size === size, `${where}: ${name} shows ${c.key} from ${c.src} at ${c.size}, not ${want} cut at ${size}`);
     }
   };
 
@@ -238,9 +247,9 @@ export default async function (desktop, shot, log) {
         return { magic: [...new Set(magic)], slots: [...new Set(slots)], shako: of(ids.shako), shakoRed: document.querySelector(`[data-uid="${ids.shako}"]`).classList.contains('unusable') };
       }, ids);
       expect(bg.magic.join() === 'rgba(0, 0, 0, 0)' && bg.slots.length === 1 && bg.shakoRed && bg.shako === 'rgba(160, 20, 20, 0.35)', `cell colours: ${JSON.stringify(bg)}`);
-      expect(after.stats.scale === '1x', `a desktop screen at 1 device pixel loads the ${after.stats.scale} files`);
+      expect(after.stats.scale === '1x', `a desktop screen at 1 device pixel cuts its pictures at ${after.stats.scale}`);
       await shot('bag-equipment-belt');
-      facts.push(`the bag, ${after.n} pictures (${after.stats.files - before.files} files), each drawn at once then painted in the same box; looks by D2's rule; no quality cell, the shako's red one kept`);
+      facts.push(`the bag, ${after.n} pictures (${after.stats.cut - before.cut} cut at 1x from ${after.stats.atlases - before.atlases} atlases, ${Math.round(after.stats.atlasKB - before.atlasKB)} KB), each drawn at once then painted in the same box; looks by D2's rule; no quality cell, the shako's red one kept`);
       steps.ids = ids;
     },
 
@@ -396,8 +405,52 @@ export default async function (desktop, shot, log) {
       });
     },
 
+    async atlasFails() {
+      // the set pictures' atlas (nothing else here asks for it) broken once, then broken for good
+      const route = '**/icons/items/sets.webp*';
+      let calls = 0;
+      let broken = 0;
+      await page.route(route, (r) => (++calls <= broken ? r.fulfill({ status: 200, contentType: 'image/webp', body: 'not a picture' }) : r.continue()));
+      try {
+        for (const [times, shows] of [[1, true], [2, false]]) {
+          calls = 0;
+          broken = times;
+          await load();
+          const ids = await ev(async () => {
+            const S = window.__i;
+            const { D2X_SET_ITEMS } = await import('/src/data/d2x/sets.ts');
+            const p = game.player;
+            for (const pl of [...p.inventory.items]) p.inventory.remove(pl.item);
+            const set = S.make('uhm', 'set', 99, { row: D2X_SET_ITEMS.find((x) => x.code === 'uhm').id });
+            const pot = S.make('hp3');
+            p.inventory.add(set);
+            p.inventory.add(pot);
+            game.hooks.left = null;
+            game.hooks.right = 'inv';
+            game.hooks.dirty = true;
+            return { set: set.uid, pot: pot.uid };
+          });
+          // the two items' own <img>s, drawn and no longer waiting (the belt's pictures may be in before the bag is drawn)
+          await until(
+            (ids) => Object.values(ids).every((u) => document.querySelector(`[data-uid="${u}"] img:not([data-pic])`)) && window.__i.pics.picturesPending() === 0,
+            ids,
+            `the bag, the sets atlas broken ${times}×`,
+            10000,
+          );
+          const c = await ev((ids) => ({ set: window.__i.cell(ids.set), pot: window.__i.cell(ids.pot), waiting: document.querySelectorAll('.panel.open img[data-pic]').length, failed: window.__i.pics.PIC_STATS.atlasesFailed }), ids);
+          expect(calls === 2, `the sets atlas broken ${times}×: asked for ${calls} times, not 2`);
+          expect(c.pot.src === 'blob', `the sets atlas broken ${times}×: the potion beside it shows ${c.pot.src}`);
+          if (shows) expect(c.set.key?.startsWith('invuhms') && c.set.src === 'blob' && !c.failed, `broken once: the set helm shows ${c.set.key} from ${c.set.src}`);
+          else expect(c.set.src === 'drawn' && c.waiting === 0 && c.failed === 1, `broken for good: the set helm shows ${c.set.src}, ${c.waiting} waiting, ${c.failed} atlases given up`);
+        }
+      } finally {
+        await page.unroute(route);
+      }
+      facts.push('an atlas that came broken was asked for once more and showed; one broken twice left its item the drawn icon, nothing waiting');
+    },
+
     async phone() {
-      // a phone of its own: a browser context at its size and pixels, touch, its files never asked for here
+      // a phone of its own: a browser context at its size and pixels, touch, its atlases never asked for here
       const url = new URL(desktop.url());
       url.searchParams.set('touch', '');
       const ctx = await desktop.context().browser().newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
@@ -413,7 +466,7 @@ export default async function (desktop, shot, log) {
         await page.screenshot({ path: file });
         console.log('shot', file);
       };
-      /** a phone's page: its CPU and network (the 2x files: never asked for before in this browser) */
+      /** a phone's page: its CPU and network (the atlases: never asked for before in this browser) */
       const phonePage = async (pictures) => {
         await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
         await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
@@ -421,7 +474,7 @@ export default async function (desktop, shot, log) {
         const touch = await ev(() => ({ touch: document.body.classList.contains('touch'), dpr: devicePixelRatio }));
         expect(touch.touch && touch.dpr === 3, `not a phone: ${JSON.stringify(touch)}`);
         // without pictures: only the drawn icons, as the game was before them
-        if (!pictures) await ev(() => import('/src/data/itempics.ts').then((m) => Object.keys(m.ITEM_PICTURES).forEach((k) => delete m.ITEM_PICTURES[k])));
+        if (!pictures) await ev(() => Object.keys(window.__itempics.ITEM_PICTURES).forEach((k) => delete window.__itempics.ITEM_PICTURES[k]));
         await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
         await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 70, downloadThroughput: (9e6 / 8) | 0, uploadThroughput: (2e6 / 8) | 0 });
       };
@@ -498,6 +551,11 @@ export default async function (desktop, shot, log) {
           // the longest piece of work while this page's pictures come in
           S.pics.PIC_STATS.longestMs = 0;
           const s0 = { ...S.pics.PIC_STATS };
+          // the atlases' bytes over the network (a copy from the HTTP cache transfers none)
+          const net = [];
+          const atlasEntry = (e) => e.name.includes('/icons/items/') && net.push(e.transferSize);
+          const ro = new PerformanceObserver((l) => l.getEntries().forEach(atlasEntry));
+          ro.observe({ type: 'resource' });
           stop = rec();
           const t = performance.now();
           game.hooks.openPanel('stash');
@@ -511,6 +569,8 @@ export default async function (desktop, shot, log) {
           // on: the frames until it is all in, and a second after
           await wait(1000);
           const open = stop();
+          ro.takeRecords().forEach(atlasEntry);
+          ro.disconnect();
           const s1 = { ...S.pics.PIC_STATS };
           // opened again: every picture ready, nothing to load
           S.close();
@@ -520,7 +580,7 @@ export default async function (desktop, shot, log) {
           await frame();
           await frame();
           const again = { at: r1(performance.now() - t2), ...S.shown() };
-          // 共享 2: only its own pictures load
+          // 共享 2: only its own pictures are cut
           const s2 = { ...S.pics.PIC_STATS };
           document.querySelectorAll('.panel.left.open .stash-tabs .tab')[2].dispatchEvent(new MouseEvent('click', { bubbles: true }));
           const t3 = performance.now();
@@ -532,19 +592,25 @@ export default async function (desktop, shot, log) {
           const s3 = { ...S.pics.PIC_STATS };
           game.hooks.renderPanels = draw;
           const files = (g) => new Set(g.items.map((x) => S.pics.itemLookKey(x.item)?.split('|')[0]).filter(Boolean)).size;
+          const atlasesOf = (g) => new Set(g.items.map((x) => S.pics.itemLookKey(x.item)?.split('|')[0]).filter(Boolean).map((f) => S.map[f][0])).size;
           return {
             idle,
             open,
             first,
             allIn,
             draws,
-            files: s1.files - s0.files,
+            cut: s1.cut - s0.cut,
+            atlases: s1.atlases - s0.atlases,
+            atlasKB: r1(s1.atlasKB - s0.atlasKB),
+            netKB: r1(net.reduce((a, b) => a + b, 0) / 1024),
+            decoded: s1.decoded - s0.decoded,
+            cutMs: r1(s1.cutMs - s0.cutMs),
             made: s1.made - s0.made,
             makeMs: r1(s1.makeMs - s0.makeMs),
             longestJob: r1(s1.longestMs),
           longestWhat: s1.longest,
             again,
-            page2: { files: s3.files - s2.files, pictures: files(game.shared.pages[1]), at: page2At },
+            page2: { cut: s3.cut - s2.cut, pictures: files(game.shared.pages[1]), atlases: s3.atlases - s2.atlases, inAtlases: atlasesOf(game.shared.pages[1]), at: page2At },
             pagePictures: files(game.player.stash),
           };
         }, pictures);
@@ -554,7 +620,7 @@ export default async function (desktop, shot, log) {
       const ids = await kit();
       await allIn("the phone's bag", 30000);
       const bagStats = await ev(() => ({ ...window.__i.pics.PIC_STATS }));
-      expect(bagStats.scale === '2x', `a phone at 3 device pixels loads the ${bagStats.scale} files`);
+      expect(bagStats.scale === '2x', `a phone at 3 device pixels cuts its pictures at ${bagStats.scale}`);
       await checkLooks(ids, "the phone's bag");
       await phoneShot('bag');
       const n = await fill();
@@ -563,7 +629,7 @@ export default async function (desktop, shot, log) {
       expect(m.allIn < 30000 && m.first?.n > 0 && m.first.blank === 0, `the phone's stash: ${JSON.stringify(m)}`);
       expect(m.longestJob < 50, `a piece of the pictures' work took ${m.longestJob} ms`);
       expect(m.again.waiting === 0 && m.again.drawn === 0 && m.again.blank === 0, `the stash opened again waits for pictures: ${JSON.stringify(m.again)}`);
-      expect(m.page2.files <= m.page2.pictures, `共享 2 loaded ${m.page2.files} files for its ${m.page2.pictures} pictures`);
+      expect(m.page2.cut <= m.page2.pictures && m.page2.atlases <= m.page2.inAtlases, `共享 2 cut ${m.page2.cut} pictures for its ${m.page2.pictures} and fetched ${m.page2.atlases} atlases of the ${m.page2.inAtlases} they are in`);
       await ev(() => {
         game.paused = false;
         game.hooks.stashPage = 0;
@@ -590,9 +656,9 @@ export default async function (desktop, shot, log) {
         game.paused = false;
       });
       facts.push(
-        `the phone (4× slower CPU, 4G, its 2x files cold), the personal page of ${n} items: drawn in ${m.draws[0]} ms (drawn icons only ${b.draws[0]} ms), every picture in ${m.allIn} ms (${m.files} files, ${m.made} made in ${m.makeMs} ms, the longest piece ${m.longestJob} ms); ` +
+        `the phone (4× slower CPU, 4G, its atlases cold), the personal page of ${n} items: drawn in ${m.draws[0]} ms (drawn icons only ${b.draws[0]} ms), every picture in ${m.allIn} ms (${m.cut} cut in ${m.cutMs} ms from ${m.decoded} atlases decoded, ${m.atlases} fetched for it, ${m.atlasKB} KB, ${m.netKB} KB of it over the network; ${m.made} made in ${m.makeMs} ms, the longest piece ${m.longestJob} ms); ` +
           `frames p95 ${m.open.p95} / max ${m.open.max} ms, ${m.open.over50} over 50 ms (drawn only ${b.open.p95} / ${b.open.max}, ${b.open.over50}; idle ${m.idle.p95} / ${m.idle.max}), long tasks ${m.open.longTasks} (longest ${m.open.longest} ms; drawn only ${b.open.longTasks}, ${b.open.longest} ms); ` +
-          `opened again ${m.again.at} ms, nothing to wait for; 共享 2 ${m.page2.files} files for its ${m.page2.pictures} pictures`,
+          `opened again ${m.again.at} ms, nothing to wait for; 共享 2 cut ${m.page2.cut} for its ${m.page2.pictures} pictures in ${m.page2.at} ms, ${m.page2.atlases} more atlases`,
       );
       await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
       await ctx.close();

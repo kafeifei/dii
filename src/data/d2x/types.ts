@@ -86,8 +86,8 @@ interface D2xBase {
   w: number;
   h: number;
   /**
-   * Its picture: Items.txt invfile in lower case, a file in public/icons/items. The normal,
-   * exceptional and elite bases of a line name the same one
+   * Its picture: Items.txt invfile in lower case, a picture in the atlases (src/data/itempics.ts). The
+   * normal, exceptional and elite bases of a line name the same one
    */
   inv: string;
   /** the picture a unique or set item of it shows when the unique or set item names none */

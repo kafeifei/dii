@@ -1,7 +1,7 @@
 // An item's inventory picture and the colour it is shown in, by Diablo II's rules on D2R 2.7's tables
 // (imported into src/data/d2x by tools/d2-import.mjs). The pictures are our own paintings, one per D2
-// picture file (public/icons/items, tools/ai-icons.mjs; tools/icons/pictures.mjs lists them by the
-// same rules); src/ui/itempics.ts loads and recolours them. D2MOO references are to
+// picture file (packed in public/icons/items by tools/ai-icons.mjs, where each is: src/data/itempics.ts;
+// tools/icons/pictures.mjs lists them by the same rules); src/ui/itempics.ts loads and recolours them. D2MOO references are to
 // github.com/ThePhrozenKeep/D2MOO at commit d9d394f.
 //
 // - A picture belongs to a file, not a base: a base shows its Items.txt invfile, and the normal,
@@ -47,8 +47,8 @@ function basePicture(item: Item, code: string): string {
 }
 
 /**
- * The picture an item shows: a file name in public/icons/items (lower case), or null for an item on
- * no D2 base (one this build doesn't know)
+ * The picture an item shows: a D2 picture file's name in lower case (src/data/itempics.ts says which
+ * atlas holds it), or null for an item on no D2 base (one this build doesn't know)
  */
 export function pictureOf(item: Item): string | null {
   const b = D2_BASES[item.baseId];

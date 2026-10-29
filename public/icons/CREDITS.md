@@ -21,6 +21,6 @@
 | 套装专属 | 5 |
 | 合计 | 400 |
 
-每张图两个文件：`<图名>.webp`（2×，一格 68 px，给高分屏）和 `<图名>.1x.webp`（1×，一格 34 px，略锐化）；图名是 D2 的 invfile 名，小写。每张图的提示词、种子、批次、形状参考和模型记在 `tools/icons/made/<列表>.json`。
+游戏里的图按种类拼成图集（`<图集>.webp`，如 `swords.webp`、`potions.webp`，分法见 `tools/icons/atlas.mjs`），图集里每张图是它的 2×（一格 68 px），一个面板只取它用到的那几张图集；每张图在哪张图集、哪个位置写在 `src/data/itempics.ts`。一个 CSS 像素对一个设备像素的屏幕上，游戏把 2× 缩成 1×，再做一次和导出 1× 时一样的轻微锐化。图名是 D2 的 invfile 名，小写。每张图的提示词、种子、批次、形状参考、模型和它在图集里的位置记在 `tools/icons/made/<列表>.json`，图集记在 `tools/icons/made/atlases.json`。
 
 本文件由 `tools/ai-icons.mjs` 生成，不要手改。

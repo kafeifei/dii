@@ -102,7 +102,11 @@ export function canvasFor(w, h) {
 export const SEEDS = [101, 202, 303, 404];
 export const seedsFor = (round) => SEEDS.map((s) => s + 404 * round);
 
-/** box-side settings: the fixed grade's chroma factor (A's), the export cells and WebP quality */
+/**
+ * box-side settings: the fixed grade's chroma factor (A's), the export cells and WebP quality. The game
+ * ships the 2x only, packed into atlases at the same quality (tools/ai-icons.mjs); the 1x is for the
+ * review sheets, a 1x screen drawing the 2x down and sharpening it as grade.py does (src/ui/sharpen.ts)
+ */
 export const GRADE = { sat: 0.8 };
 export const EXPORT = { cell: 34, scales: [2, 1], marginCss: 2, webpQuality: 92 };
 

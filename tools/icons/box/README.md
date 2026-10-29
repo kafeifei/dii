@@ -92,7 +92,10 @@ shadows. Then premultiplied Lanczos into the item's cells less a 2 CSS px margin
 `fill`): `<id>.webp` exactly w×68 by h×68 px (2×, high-density screens) and `<id>.1x.webp` w×34 by h×34 px
 with an unsharp mask (0.6 px, 50 %) on premultiplied colour. WebP, colour at quality 92, alpha lossless.
 `<id>.4x.webp` (136 px a cell, unsharpened, from the same graded cut-out) is only the review sheets' large
-view: `apply` never copies it into the game.
+view. `apply` takes only the 2× file into the game, packed into the atlas of its kind of thing
+(`public/icons/items/<atlas>.webp`, `tools/icons/atlas.mjs`, at this same quality); the 1× is the review
+sheets' too, since on a 1× screen the game draws the 2× down and sharpens it as `grade.py` does
+(`src/ui/sharpen.ts`).
 
 ### Review sheets (`review.py`)
 
@@ -100,7 +103,7 @@ A group's pictures in the list's order (a family stays together), split evenly i
 20 (12–20 for every group of 12 or more but 21–23). A row per picture: its id, every base it serves
 (normal tier first; a job's `serves`), its cells and kind, its shape guide or base picture under them;
 then a column per seed: the seed and the cut's flags (red: EDGE, P<n> pieces, SH<share>) over the
-candidate at 4× (the preview), 2× and 1× (the game's files), each on the game's inventory grid
+candidate at 4× (the preview), 2× (the game's picture) and 1× (near what a 1× screen shows), each on the game's inventory grid
 (`src/style.css` `.grid`). A run painted for a review round (`ai-icons.mjs --review n`, `review` in its
 `jobs.json`) heads each sheet with the round and names it `<group>_r<n>_NN.png`. `ai-icons.mjs` brings them
 back into `icons-src/run-NN/sheets/`, with the run's
