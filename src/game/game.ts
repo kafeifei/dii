@@ -14,7 +14,6 @@ import type { Grid } from '../items/grid';
 import { charStats, potionHeal } from './d2/stats';
 import type { DeathPenalty } from './d2/death';
 import { containerLoot, type Finder } from './loot';
-import { bodyItems, leaveBody, takeBody } from './corpse';
 import { updateMonster } from './ai';
 import { nullFx, type Fx } from './fx';
 import type { Level } from './level';
@@ -24,6 +23,7 @@ import { GroundItem, WorldObject } from './objects';
 import { CHARGE_PREFIX, Player } from './player';
 import { startCast, toggleAura, updatePlayer, type PlayerAction } from './playerctl';
 import { celebrateLevelUp, killMonster, killPlayer, onProc, rollLoot, wake } from './kills';
+import { layOutCorpses, respawn, takeCorpse } from './bodies';
 import { ACTIVE_RADIUS, chargedBolts, clearCorpses, separate, updateAuras, updateBlasts, updateHammers, updateProjectiles } from './fight';
 import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
@@ -873,23 +873,7 @@ export class Game {
   }
 
   respawn() {
-    const p = this.player;
-    // the body stays where the hero fell, with the gear, as the death plays out (game/corpse.ts)
-    if (p.dead) this.leaveCorpse();
-    p.dead = false;
-    p.recalc();
-    p.life = p.stats.maxLife;
-    p.mana = p.stats.maxMana;
-    p.stamina = p.stats.maxStamina;
-    p.poisonTime = 0;
-    p.chillTime = 0;
-    // the curses and auras' marks go with the death (STATES_UpdateStayDeathFlags, PlrModes.cpp:1379-1390: what doesn't stay through it)
-    p.ampTime = p.ampRes = 0;
-    p.convictTime = p.convictRes = p.convictDef = 0;
-    p.healQueue = [];
-    p.manaQueue = [];
-    // in the camp again, as D2 brings a dead hero back in town
-    this.enterArea(CAMP_AREA, 'respawn');
+    respawn(this);
   }
 
   // ───────────────────────── frame update ─────────────────────────
@@ -1316,88 +1300,10 @@ export class Game {
     killPlayer(this);
   }
 
-  /**
-   * The body left where the hero fell once the death has played out (D2GAME_CORPSE_Handler,
-   * PlrModes.cpp:429-650): all that was worn and the cursor's item on it (game/corpse.ts), the belt's
-   * potions past its first row into the inventory or onto the ground, the inventory's gold in a
-   * pile beside it
-   */
-  private leaveCorpse() {
-    const p = this.player;
-    const L = this.level;
-    const cursor = this.hooks.getCursorItem();
-    if (cursor) this.hooks.setCursorItem(null);
-    const r = leaveBody(p, cursor, { level: L, pos: p.pos, area: L.areaAt(p.pos.x, p.pos.z).id }, this.lastDeath?.corpseXp ?? 0);
-    const ground = [...r.dropped, ...r.loose.filter((it) => !p.inventory.add(it))];
-    if (ground.length) this.spawnDrops(p.pos, ground.map((item): Drop => ({ kind: 'item', item })));
-    if (p.gold > 0) {
-      L.ground.push(new GroundItem(p.pos, null, p.gold, p.pos));
-      p.gold = 0;
-    }
-    this.layOutCorpses();
-    this.hooks.inventoryChanged();
-  }
+  // ───────────────────────── bodies (src/game/bodies.ts) ─────────────────────────
 
-  /**
-   * Each body on the map it lies on. One whose map this game has let go of (a trial floor two
-   * floors back), and one read from a save, waits in the camp by the way in, as D2 sets a saved body
-   * down in town (PLRSAVE2_ReadCorpses, PlrSave2.cpp:1104-1203). Cheap enough to run every frame.
-   */
   private layOutCorpses() {
-    const p = this.player;
-    if (!p.corpses.length) return;
-    const L = this.level;
-    // the maps this game keeps (levelFor), and the one the hero is on
-    const live = new Set<object>([L]);
-    for (const l of [...this.maps.kept(), this.portalLevel, ...this.rift.levels()]) if (l) live.add(l);
-    // the map holding the camp: the overworld, or ?gallery's showroom (its start is the camp's)
-    const camp = L.inTown(L.layout.start);
-    p.corpses.forEach((c, i) => {
-      if (c.level && !live.has(c.level)) {
-        c.level = null;
-        c.pos = null;
-      }
-      if (!(c.level === L || (!c.level && camp)) || L.objects.some((o) => o.corpse === c)) return;
-      let pos = c.level ? c.pos : null;
-      if (!pos) {
-        const a = 2.4 + i * 0.9;
-        pos = L.map.nearestWalkable(L.layout.start.x + Math.sin(a) * 2.2, L.layout.start.z + Math.cos(a) * 2.2) ?? L.layout.start;
-      }
-      const o = new WorldObject('corpse', pos, `${p.name}的尸体`, 0.7);
-      o.corpse = c;
-      L.objects.push(o);
-    });
-  }
-
-  /**
-   * The hero takes a body back: the experience it holds, given back as it is (PlrModes.cpp:713-722),
-   * then its items (game/corpse.ts takeBody). What fits nowhere stays on it.
-   */
-  private takeCorpse(o: WorldObject) {
-    const p = this.player;
-    const c = o.corpse;
-    if (!c) return;
-    if (c.xp > 0) {
-      const gained = p.gainXp(c.xp);
-      c.xp = 0;
-      if (gained) {
-        this.onProc('procLevelUp', null);
-        this.celebrateLevelUp();
-      }
-    }
-    const taken = takeBody(p, c, (it) => this.beltInsert(it));
-    if (bodyItems(c).length) {
-      this.hooks.message('背包放不下尸体上剩下的物品', '#ff6060', 2);
-      this.sfx.play('ui.no_room');
-    } else {
-      this.level.objects = this.level.objects.filter((x) => x !== o);
-      p.corpses = p.corpses.filter((x) => x !== c);
-      this.sfx.play('item.equip', { pos: p.pos });
-    }
-    if (taken) {
-      p.markDirty();
-      this.hooks.inventoryChanged();
-    }
+    layOutCorpses(this);
   }
 
   spawnDrops(pos: P2, drops: Drop[]) {
@@ -1679,7 +1585,7 @@ export class Game {
         this.hooks.openPanel('stash');
         break;
       case 'corpse':
-        this.takeCorpse(obj);
+        takeCorpse(this, obj);
         break;
       case 'exit':
         if (obj.closed) this.tellClosed(obj);
