@@ -13,6 +13,9 @@ export const VIEW_NEAR = 30;
  */
 export const VIEW_FAR = 40;
 
+/** the camera's turn about the upright (Renderer): it never turns, so what faces the viewer is turned by this */
+export const CAM_YAW = Math.PI / 4;
+
 /**
  * The views of the things near the hero (monsters, items on the ground, objects): made as they come
  * within VIEW_NEAR, kept until they are past VIEW_FAR or gone from the level. On the West overworld
