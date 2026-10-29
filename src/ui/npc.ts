@@ -8,7 +8,7 @@ import { escapeHtml, h, type UIContext } from './common';
 /**
  * Seconds a line takes to scroll by while it has no voice to go with (none recorded, the sound off):
  * about five Chinese characters a second, the pace of the voice. Diablo II scrolls a line for as long
- * as it's spoken, and so does a recorded one here.
+ * as it's spoken, and so does a recorded one here, by its recording's clock.
  */
 const SECONDS_PER_CHAR = 0.2;
 const MIN_SECONDS = 4;
@@ -24,9 +24,11 @@ const VISIT = 8;
  * what they say, scrolling up through a box as D2's lines do, which a click on it, Esc or 跳过
  * cuts short. A line a quest has them say at once plays before the menu (Game.talkTo); a line
  * heard, or cut short, tells the game (Game.npcSpoke), and leaving them does too (Game.npcLeft).
- * A line is spoken as it scrolls, its recording (Sfx.speak) setting its pace, and stops with it. They
+ * A line is spoken as it scrolls (Sfx.speak), its text going by its recording's clock from the start,
+ * whether the recording has come yet or not (a late one joins it there), and stops with it. They
  * greet the hero at a visit's first click (unless a quest's word comes first), with D2's kind of
- * greeting, and bid the hero farewell on being left, once a visit (data/dialogue.ts GREETINGS).
+ * greeting, and bid the hero farewell on being left, once a visit (data/dialogue.ts GREETINGS; the
+ * farewells are ours): said beside whatever the hero is saying, not over it, as D2's greetings are.
  */
 export class NpcPanel {
   readonly el: HTMLElement;
@@ -44,10 +46,8 @@ export class NpcPanel {
   /** where the line's rows start and end up (px), measured once a line, not each frame */
   private from = 0;
   private to = 0;
-  /** the line's voice, while it's said */
+  /** the line's voice, while it's said: its clock is the text's */
   private speech: Speech | null = null;
-  /** the line's voice is still decoding: its text waits at the start for it */
-  private waiting = false;
   /** the townsperson the hero is with, from the visit's first click until walking off: greeted once, bid farewell once */
   private visit: { obj: WorldObject; farewell: boolean } | null = null;
   /** whose trade is open, from their menu: shut, the hero has left them */
@@ -109,9 +109,12 @@ export class NpcPanel {
     }
   }
 
-  /** a greeting or a farewell, one of `obj`'s at random (never the one heard last), spoken where they stand */
+  /**
+   * a greeting or a farewell, one of `obj`'s at random (never the one heard last), spoken where they
+   * stand, beside whatever the hero is saying (D2's greetings: sounds.txt Stop Inst 0, Solo 0)
+   */
   private voice(obj: WorldObject, what: 'greeting' | 'farewell') {
-    if (obj.npcId) this.ui.sfx.speak(npcLine(obj.npcId, what), { pos: obj.pos });
+    if (obj.npcId) this.ui.sfx.speak(npcLine(obj.npcId, what), { pos: obj.pos, solo: false });
   }
 
   /** the hero leaves `obj`: their farewell, the first time in the visit */
@@ -156,8 +159,9 @@ export class NpcPanel {
   }
 
   /**
-   * `t` scrolls up through the box, spoken if it's recorded: its text waits for the voice to start
-   * (SPEECH_LATE at most), then scrolls for as long as it runs
+   * `t` scrolls up through the box, spoken if it's recorded: at its recording's pace from the start,
+   * its length known before it comes (SPEECH_WAIT at most for it to be decoded first), and by its
+   * clock (Speech.elapsed), so a late one joins the text where it has got to
    */
   private say(t: Topic) {
     this.speech?.stop();
@@ -167,17 +171,14 @@ export class NpcPanel {
     this.textEl.textContent = t.text;
     this.dlgEl.classList.add('open');
     this.t = 0;
-    this.dur = Math.max(MIN_SECONDS, [...t.text].length * SECONDS_PER_CHAR);
-    this.measure();
-    this.scroll();
     const s = this.obj ? this.ui.sfx.speak(npcLine(t.npc, t.id, t.quest), { pos: this.obj.pos }) : null;
     this.speech = s;
-    this.waiting = !!s;
+    this.dur = s?.secs ?? Math.max(MIN_SECONDS, [...t.text].length * SECONDS_PER_CHAR);
+    this.measure();
+    this.scroll();
+    // (as decoded, a hair off the manifest's)
     void s?.started.then((secs) => {
-      if (this.speech !== s) return;
-      this.waiting = false;
-      if (secs === null) this.speech = null;
-      else this.dur = secs;
+      if (this.speech === s && secs !== null) this.dur = secs;
     });
   }
 
@@ -207,7 +208,6 @@ export class NpcPanel {
     this.topic = null;
     this.speech?.stop();
     this.speech = null;
-    this.waiting = false;
     this.dlgEl.classList.remove('open');
     if (t) this.ui.game.npcSpoke(t);
     if (this.obj) this.showMenu();
@@ -268,11 +268,10 @@ export class NpcPanel {
       return;
     }
     if (this.topic) {
-      // the text goes with its voice: by the sound's clock while it's said, its own after
-      if (!this.waiting) {
-        this.t = Math.max(this.t + dt, this.speech?.elapsed() ?? 0);
-        this.scroll();
-      }
+      // the text goes by its voice's clock, come or not; its own with none, or once that's cut off (Sfx.hush)
+      const s = this.speech;
+      this.t = s && !s.stopped ? s.elapsed() : this.t + dt;
+      this.scroll();
       if (this.t >= this.dur + HOLD) this.finish();
     } else this.place();
   }

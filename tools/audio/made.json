@@ -1076,7 +1076,13 @@
     "secs": 30.905,
     "lufs": -18,
     "peak": -3.9,
-    "encoder": "aac_at"
+    "encoder": "aac_at",
+    "check": {
+      "date": "2026-10-29",
+      "by": "Whisper large-v3-turbo on box (GPU 0): what it hears, and where each character falls; at every character with more than one reading, the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "占卜的占 zhān、血 xuè、深处的处 chù、发 fā、埋 mái、都得的得 děi、木栅的栅 zhà、干净的干 gān、教 jiāo",
+      "note": "血 falls 320→184 Hz (4th); 占, 发, 干, 教 hold level (1st); 处, 栅 fall (4th); 埋 rises on /ai/; 得's vowel is /ei/ (F2 to 2370 Hz), rising before 守 as a 3rd tone does"
+    }
   },
   "voice.akara.a1q1_remind_out.1": {
     "key": "d9eef1b4d8bb",
@@ -1090,21 +1096,34 @@
     "secs": 6.971,
     "lufs": -18,
     "peak": -6.5,
-    "encoder": "aac_at"
+    "encoder": "aac_at",
+    "check": {
+      "date": "2026-10-29",
+      "by": "Whisper large-v3-turbo on box (GPU 0): what it hears, and where each character falls; at every character with more than one reading, the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "感觉的觉 jué、只要的只 zhǐ、一只的只 zhī",
+      "note": "觉 keeps F1 at or under 510 Hz and F2 near 2100 Hz (/ɥɛ/, jué; 整觉's jiào opens to F1 840 Hz), its rise flattened in the run of speech; 只要 starts low (3rd), 一只 holds level (1st)"
+    }
   },
   "voice.akara.a1q1_remind.1": {
-    "key": "11fddbfaae19",
-    "proc": "b1e2a5905851",
+    "key": "683c08cffe34",
+    "proc": "46f11daa3d29",
     "kind": "voice",
     "model": "eleven_v4",
     "voice": "Sarah",
     "text": "邪秽巢穴在血沼荒原里头。出了营门一路往荒原深处走，留心地上的洞口。去吧，别让那股气再漫出来。",
+    "said": "邪秽巢穴在谑沼荒原里头。出了营门一路往荒原深处走，留心地上的洞口。去吧，别让那股气再漫出来。",
     "credits": 46,
     "date": "2026-10-29",
-    "secs": 10.099,
+    "secs": 10.155,
     "lufs": -18,
     "peak": -5.5,
-    "encoder": "aac_at"
+    "encoder": "aac_at",
+    "check": {
+      "date": "2026-10-29",
+      "by": "Whisper large-v3-turbo on box (GPU 0): what it hears, and where each character falls; at every character with more than one reading, the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "血 xuè、深处的处 chù、地 dì",
+      "note": "血 falls 285→151 Hz, as in the intro; the take before (血沼 given as written, eleven_v4, two seeds) rose 186→235 Hz: xuě, turned 2nd before 沼, heard as 雪沼. Whisper writes 穴 here, but its characters don't follow tones: the pitch does. 处 and 地 fall"
+    }
   },
   "voice.akara.a1q1_reward.1": {
     "key": "945ee741cc18",
@@ -1118,7 +1137,13 @@
     "secs": 16.889,
     "lufs": -18,
     "peak": -4.4,
-    "encoder": "aac_at"
+    "encoder": "aac_at",
+    "check": {
+      "date": "2026-10-29",
+      "by": "Whisper large-v3-turbo on box (GPU 0): what it hears, and where each character falls; at every character with more than one reading, the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "散 sàn、一扇的扇 shàn、跟着的着 zhe",
+      "note": "散 and 扇 fall (4th); 着 falls short after 跟, a neutral tone (zháo would rise)"
+    }
   },
   "voice.akara.farewell.1": {
     "key": "bd641d0fa6da",
@@ -1132,7 +1157,13 @@
     "secs": 2.358,
     "lufs": -18,
     "peak": -5.4,
-    "encoder": "aac_at"
+    "encoder": "aac_at",
+    "check": {
+      "date": "2026-10-29",
+      "by": "Whisper large-v3-turbo on box (GPU 0): what it hears, and where each character falls; at every character with more than one reading, the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "着 zhe",
+      "note": "着 is a short reduced syllable, its pitch not rising: zháo would rise on an open vowel"
+    }
   },
   "voice.akara.farewell.2": {
     "key": "142d788a465c",
@@ -1160,7 +1191,13 @@
     "secs": 1.73,
     "lufs": -18,
     "peak": -6.4,
-    "encoder": "aac_at"
+    "encoder": "aac_at",
+    "check": {
+      "date": "2026-10-29",
+      "by": "Whisper large-v3-turbo on box (GPU 0): what it hears, and where each character falls; at every character with more than one reading, the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "着 zhe",
+      "note": "着 is a short reduced syllable, its pitch not rising: zháo would rise on an open vowel"
+    }
   },
   "voice.akara.gossip0.1": {
     "key": "12444c691b7d",
@@ -1174,7 +1211,13 @@
     "secs": 6.603,
     "lufs": -18,
     "peak": -5.8,
-    "encoder": "aac_at"
+    "encoder": "aac_at",
+    "check": {
+      "date": "2026-10-29",
+      "by": "Whisper large-v3-turbo on box (GPU 0): what it hears, and where each character falls; at every character with more than one reading, the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "木栅的栅 zhà、和 hé",
+      "note": "栅 falls 276→165 Hz (4th: zhà, not shān)"
+    }
   },
   "voice.akara.gossip1.1": {
     "key": "b2d2fa6c633c",
@@ -1188,7 +1231,13 @@
     "secs": 5.555,
     "lufs": -18,
     "peak": -6.1,
-    "encoder": "aac_at"
+    "encoder": "aac_at",
+    "check": {
+      "date": "2026-10-29",
+      "by": "Whisper large-v3-turbo on box (GPU 0): what it hears, and where each character falls; at every character with more than one reading, the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "没 méi",
+      "note": "没's vowel is /ei/ (F2 2040→2640 Hz; mò's /uo/ would be near 900 Hz, as 我 is in the same take)"
+    }
   },
   "voice.akara.gossip2.1": {
     "key": "1202af29d563",
@@ -1202,7 +1251,13 @@
     "secs": 5.118,
     "lufs": -18,
     "peak": -6.1,
-    "encoder": "aac_at"
+    "encoder": "aac_at",
+    "check": {
+      "date": "2026-10-29",
+      "by": "Whisper large-v3-turbo on box (GPU 0): what it hears, and where each character falls; at every character with more than one reading, the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "干净的干 gān、整觉的觉 jiào",
+      "note": "干 holds level near 250 Hz (1st); 觉 opens to /au/ (F1 840 Hz) and falls (4th: jiào, not jué)"
+    }
   },
   "voice.akara.greeting.1": {
     "key": "9b5366bb7bed",
@@ -1216,7 +1271,13 @@
     "secs": 1.868,
     "lufs": -18,
     "peak": -5.1,
-    "encoder": "aac_at"
+    "encoder": "aac_at",
+    "check": {
+      "date": "2026-10-29",
+      "by": "Whisper large-v3-turbo on box (GPU 0): what it hears, and where each character falls; at every character with more than one reading, the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "着 zhe",
+      "note": "着 is a short reduced syllable, its pitch not rising: zháo would rise on an open vowel"
+    }
   },
   "voice.akara.greeting.2": {
     "key": "732ee38d4eec",
@@ -1230,7 +1291,13 @@
     "secs": 1.438,
     "lufs": -18,
     "peak": -5.7,
-    "encoder": "aac_at"
+    "encoder": "aac_at",
+    "check": {
+      "date": "2026-10-29",
+      "by": "Whisper large-v3-turbo on box (GPU 0): what it hears, and where each character falls; at every character with more than one reading, the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "着 zhe",
+      "note": "着 is a short reduced syllable, its pitch not rising: zháo would rise on an open vowel"
+    }
   },
   "voice.akara.greeting.3": {
     "key": "422b785103b1",

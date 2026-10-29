@@ -1,7 +1,7 @@
 import type { Input } from '../core/input';
 import { chance, dist, rand, randInt, type P2 } from '../core/math';
 import type { Sfx } from '../audio/sfx';
-import { DROP_SOUND, ENTER_LINE, LARGE_MONSTER, heroLine, isNight, soundsNear, type HeroLine } from '../audio/sounds';
+import { DROP_SOUND, ENTER_LINE, LARGE_MONSTER, heroLine, isNight, npcLine, soundsNear, type HeroLine, type VoiceId } from '../audio/sounds';
 import { CLASSES, type PlayerClass } from '../data/classes';
 import { SKILL_BY_ID } from '../data/skills';
 import { D2_TO_GAME } from '../data/d2/skillmap';
@@ -677,6 +677,8 @@ export class Game {
     void this.sfx.preload(soundsNear(area, this.areasNext(area), isNight(this.clock), p.cls));
     // the quests hear of it (ChangedLevel); one may give the hero a line of its own to say
     const quest = this.quests.areaChanged(area, prev);
+    // in the camp, what its people may say now is fetched ahead
+    this.fetchAhead();
     const line = (prev && how !== 'respawn' && quest) || this.arrivalLine(area, prev, how);
     if (prev && prev.kind !== area.kind) this.leftKind.set(prev.kind, this.time);
     if (area.kind === 'dungeon') this.wentUnder = true;
@@ -1953,6 +1955,29 @@ export class Game {
   /** a townsperson's line heard to the end, or cut short: a quest given, a reward handed over */
   npcSpoke(topic: Topic) {
     this.quests.spoke(topic);
+    // what they'd say next has changed (the quest given: its reminder; their small talk's next line)
+    this.fetchAhead();
+  }
+
+  /**
+   * While the hero is in the camp, what its people may say next is fetched ahead (Sfx.prefetch, the
+   * files only, decoded when they're said): on a slow connection a line said at once (Akara's quest,
+   * her reward) would otherwise come late, a greeting after its moment. Each one's line a quest has
+   * them open with first, then their greetings, what 交谈 has them say and their farewells, as things
+   * stand; asked again as they change (a line heard, the hero back in the camp)
+   */
+  private fetchAhead() {
+    if (this.area?.kind !== 'town') return;
+    const ids: VoiceId[] = [];
+    const say = (t: Topic | null) => t && ids.push(npcLine(t.npc, t.id, t.quest));
+    for (const o of this.level.objects) {
+      if (!o.npcId) continue;
+      say(this.quests.opening(o.npcId));
+      ids.push(npcLine(o.npcId, 'greeting'));
+      say(this.quests.nextTalk(o.npcId));
+      ids.push(npcLine(o.npcId, 'farewell'));
+    }
+    this.sfx.prefetch(ids);
   }
 
   /** the hero turned from a townsperson (their menu shut) */

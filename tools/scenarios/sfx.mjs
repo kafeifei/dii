@@ -16,7 +16,10 @@
 // to the next area's composed music, which also stands in for a missing track; a line spoken at its own pitch once
 // it's decoded, never over another, and not at all without a recording; a townsperson's line said at
 // once over the hero's (cut off), as loud as NPC_LINE, its length told as it starts, the hero kept
-// from speaking over it, and silent within SPEECH_CUT of being stopped. And
+// from speaking over it, and silent within SPEECH_CUT of being stopped; one whose recording comes
+// late joining at the point its line's clock has reached (the take's own change of pitch heard
+// where the clock puts it), faded in; a greeting said beside the hero's line, both heard whole, and
+// the hero speaking over a greeting. And
 // the composed music: the same samples for the same area, another piece for another, heard but
 // quiet. Last, the game's own recordings against the synthesized sounds they replace, level for
 // level, its music against the music composed in its place and under the ambience and the fighting
@@ -63,6 +66,8 @@ const RECORDINGS = {
   'line_b.wav': wav(0.6, tone(660, 0.2)),
   // a townsperson's line, told apart from the hero's by its pitch
   'speech.wav': wav(1.2, tone(330, 0.2)),
+  // one whose pitch changes half a second in: where it joins its line late is heard by where that falls
+  'speech2.wav': wav(1.2, (t) => (t < 0.5 ? tone(330, 0.2)(t) : tone(550, 0.2)(t))),
 };
 
 export default async function (page, shot, log) {
@@ -257,6 +262,7 @@ export default async function (page, shot, log) {
       'voice.paladin.bag_full': { files: ['__test/line_b.wav'] },
       'voice.paladin.unique': { files: ['__test/missing_line.wav'] },
       'voice.akara.test_line': { files: ['__test/speech.wav'] },
+      'voice.akara.test_late': { files: ['__test/speech2.wav'], secs: [1.2] },
     };
     /** a fresh Sfx on an OfflineAudioContext `secs` long, with the scenario's recordings */
     function offline(secs, files = MANIFEST) {
@@ -427,6 +433,85 @@ export default async function (page, shot, log) {
     check(over === 0, 'the hero spoke over a townsperson');
     check(gone.peak < 1e-4, `stopped, her line still sounds at ${gone.peak.toFixed(5)}`);
     check(Math.abs(sp.elapsed() - 0.6) < 0.02, `stopped 0.6 s in, her line says ${sp.elapsed().toFixed(3)} s of it went by`);
+    // her line's recording come 0.6 s late: it joins where its clock is (SPEECH_WAIT after it was
+    // asked for, plus the time since), so the take's change of pitch at 0.5 s is heard at 0.5 s on
+    // that clock, whenever the recording came; silent before, faded in
+    const { SPEECH_WAIT } = await import('/src/audio/sfx.ts');
+    s = offline(1.5);
+    let open;
+    const gate = new Promise((r) => (open = r));
+    const decodeLate = s.buffers.decode;
+    s.buffers.decode = (u, mono) => gate.then(() => decodeLate(u, mono));
+    const lateLine = s.speak('voice.akara.test_late');
+    let joinedAt = null;
+    void s.ctx.suspend(0.6).then(async () => {
+      open();
+      await lateLine.started;
+      joinedAt = s.ctx.currentTime;
+      void s.ctx.resume();
+    });
+    const lateOut = await render(s);
+    // where it starts sounding, and where its 330 Hz gives way to 550 (the first of two 550 Hz periods
+    // running): both late by the master compressor's look-ahead alike, so it's the gap between them that counts
+    const onset = lateOut.findIndex((v) => Math.abs(v) > 1e-4) / RATE;
+    let swap = -1;
+    for (let i = Math.round((onset + 0.07) * RATE), lastCross = -1, prevGap = 0; i < lateOut.length; i++) {
+      if (!(lateOut[i - 1] < 0 && lateOut[i] >= 0)) continue;
+      if (lastCross >= 0) {
+        const gap = i - lastCross;
+        if (prevGap && Math.abs(RATE / gap - 550) < 40 && Math.abs(RATE / prevGap - 550) < 40) {
+          swap = (lastCross - prevGap) / RATE;
+          break;
+        }
+        prevGap = gap;
+      }
+      lastCross = i;
+    }
+    // started at `joinedAt` + 5 ms, `joined` s into the take: its 0.5 s that much later
+    const start = (joinedAt ?? NaN) + 0.005;
+    const want = 0.5 - lateLine.joined;
+    const delay = onset - start;
+    const first = stats(lateOut, Math.round((onset + 0.07) * RATE), Math.round((swap - 0.01) * RATE));
+    const second = stats(lateOut, Math.round((swap + 0.01) * RATE), Math.round((swap + 0.6) * RATE));
+    const fading = stats(lateOut, Math.round(onset * RATE), Math.round((onset + 0.02) * RATE)).peak;
+    facts.late = `asked at 0, in at ${joinedAt?.toFixed(3)}, joined ${lateLine.joined?.toFixed(3)} s in; the take's change of pitch ${(swap - onset).toFixed(4)} s after it came in (want ${want.toFixed(4)}), the compressor's look-ahead ${(delay * 1000).toFixed(1)} ms; ${first.hz.toFixed(0)} then ${second.hz.toFixed(0)} Hz`;
+    check(joinedAt !== null && Math.abs(lateLine.joined - (start - SPEECH_WAIT)) < 0.002, `come late, her line joined ${lateLine.joined} s in, not where its clock was (${start} - ${SPEECH_WAIT})`);
+    check(delay >= 0 && delay < 0.01, `her late recording came in at ${onset.toFixed(4)} s, not as it started (${start.toFixed(4)} s)`);
+    check(Math.abs(first.hz / 330 - 1) < 0.01 && Math.abs(second.hz / 550 - 1) < 0.01, `joined late: ${first.hz.toFixed(1)} then ${second.hz.toFixed(1)} Hz, not 330 then 550`);
+    check(Math.abs(swap - onset - want) < 0.002, `joined late, the take's 0.5 s came ${(swap - onset).toFixed(4)} s after it came in, not ${want.toFixed(4)}: not where its clock is`);
+    check(fading < 0.5 * first.peak, `joined late it didn't fade in: ${fading.toFixed(4)} in its first 20 ms against ${first.peak.toFixed(4)}`);
+    // a greeting (not solo) beside the hero's line: neither cut, each at its own level; and the hero speaking over one
+    const amp = (d, from, to, hz) => {
+      const w = (2 * Math.PI * hz) / RATE;
+      const c = 2 * Math.cos(w);
+      let s1 = 0;
+      let s2 = 0;
+      for (let i = from; i < to; i++) {
+        const s0 = d[i] + c * s1 - s2;
+        s2 = s1;
+        s1 = s0;
+      }
+      return (2 * Math.sqrt(Math.max(0, s1 * s1 + s2 * s2 - c * s1 * s2))) / (to - from);
+    };
+    s = offline(1.5);
+    s.play('voice.paladin.no_mana');
+    await wait(150);
+    const word = s.speak('voice.akara.test_line', { solo: false });
+    await Promise.race([word.started, wait(1500)]);
+    const both = await render(s);
+    const [a0, a1] = [Math.round(0.1 * RATE), Math.round(0.5 * RATE)];
+    const heroAmp = amp(both, a0, a1, 440);
+    const herAmp = amp(both, a0, a1, 330);
+    facts.beside = `the hero's 440 Hz at ${heroAmp.toFixed(4)}, her greeting's 330 at ${herAmp.toFixed(4)}`;
+    check(Math.abs(heroAmp - 0.2 * LINE_VOL * 0.7) < 0.004, `beside her greeting the hero's line is at ${heroAmp.toFixed(4)}, not ${(0.2 * LINE_VOL * 0.7).toFixed(4)}: cut off`);
+    check(Math.abs(herAmp - 0.2 * NPC_VOL * 0.7) < 0.004, `her greeting beside the hero's line is at ${herAmp.toFixed(4)}, not ${(0.2 * NPC_VOL * 0.7).toFixed(4)}`);
+    s = offline(1.5);
+    const greet = s.speak('voice.akara.test_line', { solo: false });
+    await Promise.race([greet.started, wait(1500)]);
+    s.play('voice.paladin.bag_full');
+    await wait(150);
+    const spokeOver = s.voices.filter((v) => v.id === 'voice.paladin.bag_full').length;
+    check(spokeOver === 1, `the hero kept from speaking over a greeting (${spokeOver} voices)`);
 
     // a missing loop: the bed
     s = offline(2);
@@ -620,8 +705,9 @@ async function shippedLevels(ev) {
         try {
           s = seeded(() => {
             const s = new Sfx();
-            // a line's take alone, where the job is one take
-            s.files = recorded ? Object.fromEntries(job.ids.map((id) => [id, job.file ? { ...files[id], files: [job.file] } : files[id]])) : {};
+            // a line's take alone, where the job is one take (and its length alone)
+            const one = (f) => ({ ...f, files: [job.file], secs: f.secs && [f.secs[f.files.indexOf(job.file)]] });
+            s.files = recorded ? Object.fromEntries(job.ids.map((id) => [id, job.file ? one(files[id]) : files[id]])) : {};
             s.ensure();
             return s;
           });

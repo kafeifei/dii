@@ -46,22 +46,34 @@ export class Quests {
 
   /** what 交谈 has `npc` say: a quest's word if one has any, else their small talk in turn */
   talk(npc: string): Topic | null {
+    return this.word(npc, true);
+  }
+
+  /** what 交谈 would have `npc` say now, not said: their next small talk stays next (Game.fetchAhead) */
+  nextTalk(npc: string): Topic | null {
+    return this.word(npc, false);
+  }
+
+  private word(npc: string, said: boolean): Topic | null {
     for (const s of this.scripts) {
       const t = s.talk(npc);
       if (t) return t;
     }
-    return this.gossip(npc);
+    return this.gossip(npc, said);
   }
 
-  /** their small talk in turn, of what they'd say by now; each line by its place among them all (gossip2), as it's recorded */
-  private gossip(npc: string): Topic | null {
+  /**
+   * their small talk in turn, of what they'd say by now, the turn moving on if it's `said`; each line
+   * by its place among them all (gossip2), as it's recorded
+   */
+  private gossip(npc: string, said: boolean): Topic | null {
     const p = this.host.player;
     const rec = p.quests[p.difficulty];
     const all = GOSSIP[npc] ?? [];
     const lines = all.filter((g) => !g.after || questState(rec, g.after, QFLAG.REWARDGRANTED));
     if (!lines.length) return null;
     const i = (this.gossipAt.get(npc) ?? 0) % lines.length;
-    this.gossipAt.set(npc, i + 1);
+    if (said) this.gossipAt.set(npc, i + 1);
     const l = fillLine(lines[i]);
     return { npc, id: `gossip${all.indexOf(lines[i])}`, text: l.zh, en: l.en };
   }

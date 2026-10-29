@@ -151,6 +151,11 @@ export default async (load) => {
       check(!!m, `files.ts: ${id}: ${file} isn't in tools/audio/made.json`);
       if (m) check(JSON.stringify(m.loop) === JSON.stringify(f.loop), `files.ts: ${id}: loop ${JSON.stringify(f.loop)}, ${file} was made to loop at ${JSON.stringify(m.loop)}`);
     }
+    // a line's takes' lengths, known before they're fetched (a townsperson's text scrolls by them): made.json's, take by take
+    if (id.startsWith('voice.')) {
+      const want = f.files.map((file) => made[file.replace(/\.m4a$/, '')]?.secs);
+      check(JSON.stringify(f.secs) === JSON.stringify(want), `files.ts: ${id}: secs ${JSON.stringify(f.secs)}, its takes were made ${JSON.stringify(want)} long`);
+    } else check(f.secs === undefined, `files.ts: ${id} has secs: only a voice line's takes do`);
   }
   // every recording that ships is credited, with what it was asked for (the free tier's terms)
   const out = path.join(root, 'public/audio');
@@ -201,6 +206,17 @@ export default async (load) => {
     check(JSON.stringify(e?.texts) === JSON.stringify(want), `tools/audio/list.mjs: ${id} says ${JSON.stringify(e?.texts)}, the game ${JSON.stringify(want)}`);
   }
   check(DLG.GREETINGS.akara.greeting.length === 3 && DLG.GREETINGS.akara.farewell.length === 3, 'Akara has not three greetings and three farewells');
+  // a word the voice misreads is given it respelled (SAY_AS): the take records the line as shown and what the voice was given
+  const { SAY_AS = {} } = await import(`${path.join(root, 'tools/audio/list.mjs')}?t=${Date.now()}`);
+  for (const [id, pairs] of Object.entries(SAY_AS)) {
+    const e = list.find((x) => x.id === id);
+    check(e?.kind === 'voice', `tools/audio/list.mjs: SAY_AS ${id} is no voice line`);
+    (e?.texts ?? []).forEach((text, i) => {
+      const said = pairs.reduce((s, [word, as]) => s.split(word).join(as), text);
+      const m = made[`${id}.${i + 1}`];
+      if (said !== text && m) check(m.text === text && m.said === said, `made.json: ${id}.${i + 1} says ${m.text}, given as ${m.said}, not ${said}`);
+    });
+  }
   const stray = list.filter((e) => e.kind === 'voice' && !HEROES.includes(e.id.split('.')[1]) && !(e.id in town));
   check(!stray.length, `tools/audio/list.mjs: townsfolk's lines the game doesn't say: ${stray.map((e) => e.id).join(' ')}`);
   check(!!SPEAKERS.akara?.voice && !HEROES.includes('akara'), `Akara's voice: ${JSON.stringify(SPEAKERS.akara)}`);

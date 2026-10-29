@@ -4,8 +4,10 @@
 // loud and where a sound with a place is heard, which voice a new sound takes
 // over when the limits are reached (a critical sound must always get one), when a line may be said
 // (one at a time, not the same one too often) and in which take (at random, never the last one
-// again, only that one decoded), a townsperson's taking the floor and giving it back when cut short,
-// and what's decoded walking into an area.
+// again, only that one decoded), a townsperson's line taking the floor and giving it back when cut
+// short, said by its own clock (heard from its start when it's in at once, joining its text where
+// that has got to when it comes late), their greeting said beside the hero's line, and what's
+// decoded walking into an area, or fetched ahead and decoded only when it's said.
 // tools/scenarios/sfx.mjs renders the same in a page.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -59,7 +61,7 @@ const results = (s) => literals(s.replace(/[=!]==?\s*('[^'\n]*'|"[^"\n]*")|('[^'
 
 export default async (load) => {
   const { SOUNDS, PRIORITY, HERO_LINES, LINE, ENTER_LINE, AREA_FILES, areaSound, areaKind, soundsNear, heroLine } = await load('/src/audio/sounds.ts');
-  const { Sfx, spatial, earGains, voiceToSteal, PAN_MAX, Lines, LINE_GAP, LINE_AGAIN, LINE_LATE, SPEECH_LATE } = await load('/src/audio/sfx.ts');
+  const { Sfx, spatial, earGains, voiceToSteal, PAN_MAX, Lines, LINE_GAP, LINE_AGAIN, LINE_LATE, SPEECH_LATE, SPEECH_WAIT, SPEECH_CUT, JOIN_MIN } = await load('/src/audio/sfx.ts');
   const { NPC_LINE, npcLine } = await load('/src/audio/sounds.ts');
   const { FILES } = await load('/src/audio/files.ts');
   const { Buffers } = await load('/src/audio/buffers.ts');
@@ -353,38 +355,197 @@ export default async (load) => {
     const one = M.book('voice.paladin.no_gold', 3 * LINE_AGAIN, 1, () => 0.99);
     check(one?.take === 0 && M.start(one, 3 * LINE_AGAIN, 1) && M.book('voice.paladin.no_gold', 4 * LINE_AGAIN, 1, () => 0.99)?.take === 0, 'a line of one take not said in it every time');
   }
-  // a townsperson's line (Sfx.speak) takes the floor whatever holds it: over the hero mid-line, over
-  // a line still decoding (never said after), however lately it was said, as it goes with its text;
-  // to start within SPEECH_LATE, a greeting never in the take heard last. Cut short, the floor is the
-  // hero's again after LINE_GAP, at once if it hadn't started; a cut of a line gone by changes nothing
+  // a townsperson's line of dialogue (Sfx.speak, solo: Lines.claim) takes the floor whatever holds it:
+  // over the hero mid-line, over a line still decoding (never said after), however lately it was said,
+  // as it goes with its text; it holds the floor for as long as its text runs (its take's length),
+  // its recording coming or not, and may join that text any time before its end. Cut short, the floor
+  // is the hero's again after LINE_GAP, at once if it hadn't started; a cut of a line gone by changes
+  // nothing. A greeting or a farewell (not solo: Lines.aside) is said beside the hero's line: it
+  // neither takes the floor nor waits for it nor drops the hero's line decoding, never in the take
+  // heard last, and only within SPEECH_LATE
   {
     check(NPC_LINE.prio === 'critical' && NPC_LINE.vary === 0 && NPC_LINE.vol < LINE.vol && Math.abs(NPC_LINE.vol / LINE.vol - 210 / 255) < 0.01, `a townsperson's line plays as ${JSON.stringify(NPC_LINE)}`);
     check(npcLine('akara', 'remindOut', 'a1q1') === 'voice.akara.a1q1_remind_out' && npcLine('akara', 'gossip2') === 'voice.akara.gossip2', `npcLine: ${npcLine('akara', 'remindOut', 'a1q1')}`);
     const L = new Lines();
     const a = L.book('voice.paladin.no_mana', 10);
     check(a && L.start(a, 10, 3), 'a line with nothing said was not said');
-    const first = () => 0;
-    const g = L.claim('voice.akara.greeting', 10.5, 3, SPEECH_LATE, first);
-    check(g.take === 0 && L.start(g, 10.5 + SPEECH_LATE - 0.01, 2), "a townsperson's line kept from the floor by the hero's, or by decoding within SPEECH_LATE");
+    const q = L.claim('voice.akara.a1q1_intro', 10.5, 1, [30]);
     check(L.book('voice.paladin.bag_full', 11) === null, 'the hero spoke over a townsperson');
-    const g2 = L.claim('voice.akara.greeting', 12.2, 3, SPEECH_LATE, first);
-    check(g2.take === 1, `the same greeting's take twice running: ${g2.take}`);
-    check(!L.start(g2, 12.2 + SPEECH_LATE + 0.01, 2) && L.book('voice.paladin.bag_full', 12.2 + SPEECH_LATE + 0.02) !== null, "a townsperson's line decoded too late was said, or kept the floor");
+    check(L.book('voice.paladin.bag_full', 10.5 + SPEECH_WAIT + 29) === null, "the hero spoke over a townsperson's line whose recording hasn't come, its text still running");
+    // its recording come 20 s late, 20 s into its text: it joins it, and the floor is held to its end
+    const end = 30.5 + 10.25;
+    check(L.start(q, 30.5, 10.25), "a townsperson's line come late didn't join its text");
+    check(L.book('voice.paladin.bag_full', end + LINE_GAP - 0.01) === null && L.book('voice.paladin.bag_full', end + LINE_GAP) !== null, `a line joined late gave the floor back at ${end + LINE_GAP}, not after its end and LINE_GAP`);
+    const r = L.claim('voice.akara.a1q1_remind', 50, 1, [10]);
+    check(!L.start(r, 50 + SPEECH_WAIT + 10 + 0.01, 0.5), "a townsperson's line come after its text was over was said");
     const M = new Lines();
     const held = M.book('voice.paladin.rune', 20);
-    const f = M.claim('voice.akara.farewell', 20.1);
-    check(!M.start(held, 20.2, 1) && M.start(f, 20.2, 2), "a hero's line still decoding was said after a townsperson took the floor");
+    const f = M.claim('voice.akara.gossip0', 20.1, 1, [6]);
+    check(!M.start(held, 20.2, 1) && M.start(f, 20.2, 6), "a hero's line still decoding was said after a townsperson took the floor");
     M.cut(f, 21);
     check(M.book('voice.paladin.shrine', 21 + LINE_GAP - 0.01) === null && M.book('voice.paladin.shrine', 21 + LINE_GAP) !== null, `cut short, the hero speaks again ${LINE_GAP} s on`);
     const N = new Lines();
-    const n1 = N.claim('voice.akara.a1q1_intro', 30);
+    const n1 = N.claim('voice.akara.a1q1_intro', 30, 1, [30]);
     N.cut(n1, 30.2);
     check(N.book('voice.paladin.rune', 30.2) !== null && !N.start(n1, 30.3, 30), 'a line cut before it started kept the floor, or started');
-    const n2 = N.claim('voice.akara.gossip0', 40);
-    const n3 = N.claim('voice.akara.gossip1', 40.1);
+    const n2 = N.claim('voice.akara.gossip0', 40, 1, [6]);
+    const n3 = N.claim('voice.akara.gossip1', 40.1, 1, [5]);
     check(!N.start(n2, 40.2, 5) && N.start(n3, 40.2, 5), 'a townsperson line taken over before it started was said');
     N.cut(n2, 41);
     check(N.book('voice.paladin.rune', 41 + LINE_GAP) === null, 'the cut of a line gone by freed the floor from the one being said');
+    // a greeting beside the hero's line: neither cut nor held off, nor holding the floor
+    const first = () => 0;
+    const A = new Lines();
+    const h = A.book('voice.paladin.rune', 60);
+    check(h && A.start(h, 60, 2), "the hero's line not said");
+    const g = A.aside('voice.akara.greeting', 60.5, 3, first);
+    check(g.take === 0 && A.start(g, 60.5 + SPEECH_LATE - 0.01, 1.9), "a greeting kept from being said beside the hero's line, or by coming within SPEECH_LATE");
+    check(A.book('voice.paladin.shrine', 60 + 2 + LINE_GAP) !== null, 'a greeting held the floor from the hero');
+    const g2 = A.aside('voice.akara.greeting', 70, 3, first);
+    check(g2.take === 1, `the same greeting's take twice running: ${g2.take}`);
+    check(!A.start(g2, 70 + SPEECH_LATE + 0.01, 1.9), 'a greeting come too late was said');
+    const g3 = A.aside('voice.akara.farewell', 80, 3, first);
+    check(A.start(g3, 80, 2) && A.book('voice.paladin.bag_full', 80.5) !== null, 'the hero kept from speaking over a farewell');
+    const decoding = A.book('voice.paladin.no_gold', 90);
+    A.aside('voice.akara.greeting', 90.1, 3);
+    check(A.start(decoding, 90.2, 1), "a hero's line still decoding given up for a greeting");
+  }
+
+  // and Sfx.speak by the line's clock, on a pretended context (each take decoded when the test says):
+  // a line in within SPEECH_WAIT heard from its start, the clock starting with it; one come later
+  // joining where the clock has got to, fading in; one with too little left, not at all. A greeting
+  // never cuts the hero off, only a word of the townsperson's own still being said, and is said whole
+  {
+    const sfx = new Sfx();
+    const take = (id, n = 1) => `${id}.${n}.m4a`;
+    const ids = ['voice.akara.a', 'voice.akara.b', 'voice.akara.c'];
+    sfx.files = Object.fromEntries(ids.map((id) => [id, { files: [take(id)], secs: [10] }]));
+    sfx.files['voice.akara.greeting'] = { files: [1, 2, 3].map((n) => take('voice.akara.greeting', n)), secs: [1.5, 1.5, 1.5] };
+    sfx.ctx = { currentTime: 0 };
+    const gates = new Map();
+    sfx.buffers = new Buffers((url) => new Promise((r) => gates.set(url.split('/').pop(), () => r({ length: 48000 * 10, numberOfChannels: 1, duration: 10, url }))));
+    const played = [];
+    sfx.sound = (sid, def, opts, t) => {
+      const v = { id: sid, def, start: sfx.ctx.currentTime, end: sfx.ctx.currentTime + 0.005 + (t.buf.duration - t.lead), lead: t.lead, fade: t.fade ?? 0 };
+      played.push(v);
+      return v;
+    };
+    // (a voice cut short: it ends now)
+    sfx.cut = (v) => {
+      v.cut = true;
+      v.end = Math.min(v.end, sfx.ctx.currentTime);
+    };
+    let hushes = 0;
+    const hush = sfx.hush.bind(sfx);
+    sfx.hush = () => {
+      hushes++;
+      hush();
+    };
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    const at = async (t, file) => {
+      sfx.ctx.currentTime = t;
+      if (file) {
+        gates.get(file)();
+        await tick();
+      }
+    };
+    const near = (x, y) => Math.abs(x - y) < 1e-9;
+    // in at once: from its start
+    const s1 = sfx.speak('voice.akara.a');
+    check(s1 && s1.secs === 10 && s1.elapsed() === 0 && hushes === 1, `a line asked for: ${JSON.stringify({ secs: s1?.secs, hushes })}`);
+    await at(0.1, take('voice.akara.a'));
+    const p1 = played.at(-1);
+    check(p1?.id === 'voice.akara.a' && p1.lead === 0 && p1.fade === 0 && s1.joined === 0 && p1.def === NPC_LINE, `a line in within SPEECH_WAIT didn't start from its start: ${JSON.stringify(p1)}`);
+    await at(2.105);
+    check(near(s1.elapsed(), 2), `2 s after its recording started, its clock says ${s1.elapsed()}`);
+    s1.stop();
+    check(s1.stopped && near(s1.elapsed(), 2), 'stopped, its clock went on');
+    // in 3 s late: its text has scrolled on, and the recording joins it there, fading in
+    await at(20);
+    const s2 = sfx.speak('voice.akara.b');
+    await at(20 + SPEECH_WAIT / 2);
+    check(s2.elapsed() === 0, 'the text left its start before SPEECH_WAIT was up');
+    await at(22);
+    check(near(s2.elapsed(), 2 - SPEECH_WAIT), `2 s on, no recording yet, its clock says ${s2.elapsed()}, not ${2 - SPEECH_WAIT}`);
+    await at(23, take('voice.akara.b'));
+    const p2 = played.at(-1);
+    const off = 23 + 0.005 - (20 + SPEECH_WAIT);
+    check(p2?.id === 'voice.akara.b' && near(p2.lead, off) && near(s2.joined, off) && p2.fade === SPEECH_CUT, `come 3 s late, it started ${p2?.lead} s in (fading over ${p2?.fade}), not ${off}`);
+    await at(25);
+    check(near(s2.elapsed(), 25 - 20 - SPEECH_WAIT), `joined late, its clock says ${s2.elapsed()}`);
+    check(sfx.lines.book('voice.paladin.rune', 25) === null, 'the hero spoke over a line joined late');
+    const s2secs = await s2.started;
+    check(s2secs === 10, `a line's length told as ${s2secs}`);
+    s2.stop();
+    // in with less than JOIN_MIN left: not started, its text going on without it
+    await at(40);
+    const s3 = sfx.speak('voice.akara.c');
+    const n = played.length;
+    await at(40 + SPEECH_WAIT + 10 - JOIN_MIN / 2, take('voice.akara.c'));
+    check(played.length === n && (await s3.started) === null, 'a line come with less than JOIN_MIN of it left was started');
+    // a greeting beside the hero's line: no hush, the hero's floor untouched; said whole, or not at all
+    await at(60);
+    const hero = sfx.lines.book('voice.paladin.no_mana', 60);
+    sfx.lines.start(hero, 60, 2);
+    const h0 = hushes;
+    const g1 = sfx.speak('voice.akara.greeting', { solo: false });
+    check(g1 && hushes === h0, 'a greeting cut the hero off');
+    const gfile = played.length;
+    const gtake = [...gates.keys()].find((f) => f.startsWith('voice.akara.greeting'));
+    await at(60.5, gtake);
+    const pg = played[gfile];
+    check(pg?.id === 'voice.akara.greeting' && pg.lead === 0 && pg.fade === 0, `a greeting in 0.5 s late wasn't said whole: ${JSON.stringify(pg)}`);
+    check(sfx.lines.book('voice.paladin.bag_full', 60 + 2 + LINE_GAP) !== null, 'a greeting held the floor from the hero');
+    // a farewell asked for while the greeting is said: the greeting gives way, the hero doesn't
+    const f1 = sfx.speak('voice.akara.greeting', { solo: false });
+    check(g1.stopped && f1 && !f1.stopped && hushes === h0, `a second word of hers: the first ${g1.stopped ? 'gave way' : 'went on'}, hushes ${hushes - h0}`);
+  }
+
+  // fetched ahead (Sfx.prefetch): each take's file, one at a time in the order asked; asked again,
+  // what's no longer wanted is let go; a take decoded uses the bytes fetched ahead (a copy), and one
+  // only queued is fetched at once. Nothing is fetched where nothing could play it
+  {
+    const realFetch = globalThis.fetch;
+    const hadAC = 'AudioContext' in globalThis;
+    const asked = [];
+    const pending = [];
+    globalThis.fetch = (url) => {
+      asked.push(String(url).split('/').pop());
+      return new Promise((r) => pending.push(() => r({ ok: true, headers: { get: () => 'audio/mp4' }, arrayBuffer: async () => new ArrayBuffer(16) })));
+    };
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    try {
+      const sfx = new Sfx();
+      sfx.files = { 'voice.akara.x': { files: ['x.1.m4a'] }, 'voice.akara.y': { files: ['y.1.m4a', 'y.2.m4a'] }, 'voice.akara.z': { files: ['z.1.m4a'] } };
+      sfx.prefetch(['voice.akara.x']);
+      check(!asked.length, `fetched ahead with no WebAudio to play it: ${asked.join(' ')}`);
+      globalThis.AudioContext = class {};
+      sfx.prefetch(['voice.akara.x', 'voice.akara.y', 'voice.akara.nothing']);
+      check(asked.join() === 'x.1.m4a', `fetching ahead started with ${asked.join(' ')}, not x.1.m4a alone`);
+      pending.shift()();
+      await tick();
+      await tick();
+      check(asked.join() === 'x.1.m4a,y.1.m4a', `after the first: ${asked.join(' ')}`);
+      // asked again for z and x: y.2 isn't fetched; z after y.1, which is under way
+      sfx.prefetch(['voice.akara.z', 'voice.akara.x']);
+      pending.shift()();
+      await tick();
+      await tick();
+      check(asked.join() === 'x.1.m4a,y.1.m4a,z.1.m4a' && !sfx.ahead.has('/audio/y.1.m4a') && sfx.ahead.has('/audio/x.1.m4a'), `asked again: fetched ${asked.join(' ')}, ahead ${[...sfx.ahead.keys()].join(' ')}`);
+      // decoding x takes its bytes from what was fetched ahead, a copy each time
+      const b1 = await sfx.bytes('/audio/x.1.m4a');
+      const b2 = await sfx.bytes('/audio/x.1.m4a');
+      check(asked.length === 3 && b1.byteLength === 16 && b1 !== b2, `decoding what was fetched ahead fetched again (${asked.join(' ')}), or gave the same buffer twice`);
+      // queued, not yet fetched: asked for, it's fetched at once
+      sfx.prefetch(['voice.akara.x', 'voice.akara.z', 'voice.akara.y']);
+      const now = sfx.bytes('/audio/y.2.m4a');
+      check(asked.at(-1) === 'y.2.m4a', `a take asked for while queued waited its turn: ${asked.join(' ')}`);
+      while (pending.length) pending.shift()();
+      check((await now).byteLength === 16, 'a take fetched out of turn has no bytes');
+    } finally {
+      globalThis.fetch = realFetch;
+      if (!hadAC) delete globalThis.AudioContext;
+    }
   }
 
   // and Sfx says the take booked, decoding only it: a pretended context, its decoder only noting the URL

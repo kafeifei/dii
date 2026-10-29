@@ -2,7 +2,9 @@
 // quest log text (src/data/dialogue.ts), with the names filled in as the game shows them, and of
 // each line spoken, its recording: the take (voice.akara.a1q1_intro.1, public/audio/<take>.m4a) and
 // its length, or that it's to be made, or to be made again since the line changed (what each take
-// said is in tools/audio/made.json). tools/audio/list.mjs reads the spoken lines off this page:
+// said is in tools/audio/made.json), a word the voice was given respelled (made.json `said`, from
+// tools/audio/list.mjs SAY_AS), and the readings checked by ear (made.json `check`).
+// tools/audio/list.mjs reads the spoken lines off this page:
 //   node tools/dialogue-review.mjs
 // tools/test/quests.test.mjs fails while the page is behind the lines, or the recordings.
 import fs from 'node:fs';
@@ -17,6 +19,16 @@ const AUDIO = path.join(ROOT, 'public/audio');
 /** characters as the voice would read them: the text without spaces, punctuation counted */
 const count = (s) => [...s.replace(/\s/g, '')].length;
 const cell = (s) => s.replace(/\|/g, '\\|');
+
+/** what of `text` the voice was given otherwise in `said`: the stretch between what they share at either end */
+function respelled(text, said) {
+  const [a, b] = [[...text], [...said]];
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  let j = 0;
+  while (j < a.length - i && j < b.length - i && a[a.length - 1 - j] === b[b.length - 1 - j]) j++;
+  return [a.slice(i, a.length - j).join(''), b.slice(i, b.length - j).join('')];
+}
 
 /** the page, from the game's own modules (`load`: an ssrLoadModule) */
 export async function reviewMarkdown(load) {
@@ -46,7 +58,13 @@ export async function reviewMarkdown(load) {
       redo++;
       return `\`${name}\` **要重录**：录音念的是旧词`;
     }
-    return `\`${name}\` ${m.secs.toFixed(1)} 秒`;
+    const notes = [`${m.secs.toFixed(1)} 秒`];
+    if (m.said) {
+      const [word, as] = respelled(m.text, m.said);
+      notes.push(`「${word}」给配音写作「${as}」`);
+    }
+    if (m.check) notes.push(`读音查过：${m.check.read}`);
+    return `\`${name}\` ${notes.join('；')}`;
   };
   /** rows of [key, when, line, vars, voice]: `voice` [id, take] where it's spoken */
   const table = (rows) => {
@@ -71,6 +89,7 @@ export async function reviewMarkdown(load) {
     '- 中文是游戏里显示、配音念的；英文写在旁边给配音说明用。字数是中文去掉空白后的字符数，含标点，按每秒约 5 个字估算时长；配了音的台词按录音的长度滚动。',
     `- ${akara}说的每句都配了音（\`tools/audio/list.mjs\` 里的音色），配音照这一页的中文念（\`tools/audio/list.mjs\` 读这一页）。「配音」一栏是录音：\`voice.akara.a1q1_intro.1\` 就是 \`public/audio/voice.akara.a1q1_intro.1.m4a\`，后面是它的长度。`,
     '- 改了台词、重新生成这一页之后，录音念的还是旧词的那几条标「要重录」，没录过的标「未录」：运行 `node tools/ai-audio.mjs --budget <积分>` 录好，再生成一次这一页。',
+    '- 配音把字念错时（多音字），在 `tools/audio/list.mjs` 的 `SAY_AS` 里给那句换一个只有正确读音的同音字，只给配音看，显示的还是原字；「配音」一栏写着换了哪个字。「读音查过」是逐个核对过的多音字读法：用 box 上的 Whisper 听写、定位每个字，再看那个音节的音高走向和元音的共振峰（记在 `tools/audio/made.json` 各条的 `check` 里）。',
     '',
     `## ${akara}：「${den.name}」（${den.nameEn}）`,
     '',

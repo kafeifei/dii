@@ -9,6 +9,7 @@
 //   text      the line, as spoken (voice); every character counts a credit
 //   texts     several ways of saying it instead (voice), each its own take: take n says the nth, so
 //             one added at the end is made alone, and one changed makes only its own take again
+//             (where the voice misreads a word as written, SAY_AS below gives it another spelling)
 //   duration  seconds asked for (sfx, loop; 0.5 to 30, default 1 and 20), 'auto' to let the model pick:
 //             it costs about 10 credits a second either way
 //   variants  how many takes (default 1). Variety comes from Sfx picking a take and nudging its pitch,
@@ -69,6 +70,18 @@ export const SPEAKERS = {
 
 /** the speakers with a column in the heroes' script (tools/audio/voice-lines.md), in its order */
 export const HEROES = ['paladin', 'sorceress'];
+
+/**
+ * Where the voice misreads a word of a line as written, what it's given for it instead, by line:
+ * [word, said as] pairs, the word spelled by its sound in characters that have only that reading.
+ * The line shown, and the text made.json records for its takes, keep the word (made.json's `said` is
+ * what the voice was given); a pair changed makes that line's takes again, and no other line's.
+ */
+export const SAY_AS = {
+  // eleven_v4 read 血 in 血沼荒原 as xuě (雪沼, the 3rd tone rising before 沼's), in takes of two
+  // seeds; here it's xuè, as the intro reads it. 谑 is only ever xuè
+  'voice.akara.a1q1_remind': [['血沼', '谑沼']],
+};
 
 /**
  * The heroes' lines, from their script (tools/audio/voice-lines.md, a table of key, when, and a

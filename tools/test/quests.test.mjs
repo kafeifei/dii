@@ -228,6 +228,9 @@ export default async (load) => {
   check(game.talkTo(akara()) === null && p().skillPoints === points + 1, 'the reward handed over twice');
   check(game.quests.log('a1q1').state === 'done' && !game.quests.hasNews('akara'), 'done in the log');
   check(game.quests.unseen().join() === 'a1q1', 'the log has the done quest to show');
+  // what 交谈 would have her say next (fetched ahead: Game.fetchAhead) is what it says, and asking doesn't move her small talk on
+  const next = game.quests.nextTalk('akara')?.id;
+  check(next?.startsWith('gossip') && game.quests.nextTalk('akara')?.id === next && game.npcTalk(akara())?.id === next, `her next small talk ${next}, then ${game.quests.nextTalk('akara')?.id}`);
   const gossip = new Set();
   for (let i = 0; i < 6; i++) gossip.add(game.npcTalk(akara())?.id);
   check(gossip.size === 3, `her small talk once the den is done: ${[...gossip].join()}`);
