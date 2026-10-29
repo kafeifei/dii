@@ -1,8 +1,15 @@
 import type { P2 } from '../core/math';
 import type { Elem } from '../data/monsters';
+import type { Merc } from './merc';
 
 export type Faction = 'player' | 'monster';
 export type ActorState = 'idle' | 'move' | 'attack' | 'cast' | 'hit' | 'dead' | 'block' | 'charge';
+
+/**
+ * Who killed a monster (Game.killMonster, src/game/kills.ts): the hero, the hireling, or nobody (a
+ * death no friendly dealt, as Blood Raven's raised dead falling with her): what the kill gives, and to whom
+ */
+export type Killer = 'hero' | Merc | null;
 
 export interface Resists {
   fire: number;
@@ -97,6 +104,9 @@ export abstract class Actor {
   /** open wounds */
   bleedTime = 0;
   bleedDps = 0;
+  /** whose poison and open wounds these are: who killed it, if they do (combat.ts applyDamage, strikeEffects) */
+  poisonBy: Killer = 'hero';
+  bleedBy: Killer = 'hero';
   /** "slows target by X%" */
   slowTime = 0;
   slowAmount = 0;

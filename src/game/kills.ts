@@ -8,9 +8,10 @@ import { coldEnchantBurst, fireEnchantBurst } from './d2/monstats';
 import { deathPenalty } from './d2/death';
 import { killXp } from './d2/xp';
 import { monsterLoot, type Finder } from './loot';
-import { emptyPacket } from './actor';
+import { emptyPacket, type Killer } from './actor';
 import { monsterDied, notice } from './ai';
 import type { Game } from './game';
+import { Merc } from './merc';
 import type { Monster } from './monster';
 import { DelayedBlast } from './objects';
 import { castItemSkill } from './playerctl';
@@ -24,7 +25,16 @@ export function wake(g: Game, m: Monster) {
   notice(g, m);
 }
 
-export function killMonster(g: Game, m: Monster, elem: Elem) {
+/**
+ * A monster killed by `killer` (docs/M2A-STEP0.md 2.1): whoever killed it, it dies as it does, its
+ * quests and the rift count it, a boss's fall is told and saved. The hero has the experience of a kill
+ * of theirs or the hireling's, whole (docs/M2A-STEP0.md 2.1's table); the procs on kill, life and
+ * mana per kill and the demon heal are only the hero's own kills'
+ * (inferred, to be checked against D2MOO: docs/M2A-STEP0.md 5); what it drops goes by the killer's
+ * magic find (rollLoot). A death no friendly dealt (`null`: Blood Raven's raised dead falling with
+ * her) gives no experience and drops nothing
+ */
+export function killMonster(g: Game, m: Monster, elem: Elem, killer: Killer = 'hero') {
   if (m.dead) return;
   const p = g.player;
   m.dead = true;
@@ -41,22 +51,26 @@ export function killMonster(g: Game, m: Monster, elem: Elem) {
   monsterDied(g, m);
   // Diablo II's experience for the kill (SUNITDMG_ComputeExperienceGain: game/d2/xp.ts killXp):
   // the level gap's two tables, ExpRatio, then "+X% experience gained" and the shrine's on top;
-  // none for a raised or summoned one, nor a drop (UNITFLAG_NOXP | UNITFLAG_NOTC)
+  // none for a raised or summoned one, nor a drop (UNITFLAG_NOXP | UNITFLAG_NOTC), nor for one nobody killed
   const addPct = (p.shrine ? (SHRINE_BY_ID[p.shrine.id].xpPct ?? 0) : 0) + (p.stats.bag.xpPct ?? 0);
-  const gained = m.noXp ? 0 : p.gainXp(Math.floor(killXp(m.xp, p.level, m.level, addPct) * debugOpts.xp));
+  const gained = m.noXp || killer === null ? 0 : p.gainXp(Math.floor(killXp(m.xp, p.level, m.level, addPct) * debugOpts.xp));
   if (gained > 0) {
     onProc(g, 'procLevelUp', null);
     celebrateLevelUp(g);
   }
-  const d = p.stats;
-  onProc(g, 'procKill', m);
-  if (m.def.demon && d.bag.demonHeal) p.life = Math.min(d.maxLife, p.life + d.bag.demonHeal);
-  if (d.lifePerKill) p.life = Math.min(d.maxLife, p.life + d.lifePerKill);
-  if (d.manaPerKill) p.mana = Math.min(d.maxMana, p.mana + d.manaPerKill);
+  // the hireling's share of it (hireling.ts killShare: 86/256 of a kill of the hero's, all of her
+  // own, none of nobody's) comes with her, as she is played (M2a's M line)
+  if (killer === 'hero') {
+    const d = p.stats;
+    onProc(g, 'procKill', m);
+    if (m.def.demon && d.bag.demonHeal) p.life = Math.min(d.maxLife, p.life + d.bag.demonHeal);
+    if (d.lifePerKill) p.life = Math.min(d.maxLife, p.life + d.lifePerKill);
+    if (d.manaPerKill) p.mana = Math.min(d.maxMana, p.mana + d.manaPerKill);
+  }
   // loot
-  if (!m.noXp) g.spawnDrops(m.pos, g.rollLoot((hero) => monsterLoot(m, hero)));
+  if (!m.noXp && killer !== null) g.spawnDrops(m.pos, g.rollLoot((hero) => monsterLoot(m, hero), killer));
   // the quests count it (MonsterKilled): the Den of Evil's last one done
-  g.quests.monsterKilled(m);
+  g.quests.monsterKilled(m, killer);
   // and the rift's progress
   g.rift.killed(m);
   // fx
@@ -111,10 +125,14 @@ export function celebrateLevelUp(g: Game) {
   g.hooks.levelUp();
 }
 
-/** loot from a monster or a container (src/game/loot.ts) for the hero, rolled once more for each extra pass the debug panel asks for */
-export function rollLoot(g: Game, roll: (hero: Finder) => Item[]): Drop[] {
-  const s = g.player.stats;
+/**
+ * loot from a monster or a container (src/game/loot.ts) for the hero, rolled once more for each extra
+ * pass the debug panel asks for; a monster the hireling killed drops by her magic and gold find
+ * (`by`: the killer's, inferred, docs/M2A-STEP0.md 5), in the hero's difficulty and quests
+ */
+export function rollLoot(g: Game, roll: (hero: Finder) => Item[], by: Killer = 'hero'): Drop[] {
   const p = g.player;
+  const s = by instanceof Merc ? by : p.stats;
   // a rift's floors drop in its tier's difficulty, never a quest's class: its kills are no quest's
   const hero: Finder = { mf: s.mf, gf: s.gf, difficulty: p.rules, quests: p.ruled === null ? p.quests[p.difficulty] : 'done' };
   const drops: Drop[] = [];

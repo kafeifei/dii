@@ -919,7 +919,7 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
     m.bleedTime -= dt;
     m.life -= m.bleedDps * dt;
     if (m.life <= 0) {
-      g.killMonster(m, 'phys');
+      g.killMonster(m, 'phys', m.bleedBy);
       return;
     }
   }
@@ -927,7 +927,7 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
     m.poisonTime -= dt;
     m.life -= m.poisonDps * dt;
     if (m.life <= 0) {
-      g.killMonster(m, 'poison');
+      g.killMonster(m, 'poison', m.poisonBy);
       return;
     }
   }

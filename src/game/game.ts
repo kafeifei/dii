@@ -28,6 +28,7 @@ import { autoBeltInsert, beltInsert, drink, drinkable, dropBlock, dropFromBag, d
 import { ACTIVE_RADIUS, chargedBolts, clearCorpses, separate, updateAuras, updateBlasts, updateHammers, updateProjectiles } from './fight';
 import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
+import type { Killer } from './actor';
 import { claimedElsewhere, claimHero, handOver, heroTaken, isReadOnly, loadSave, loadShared, markInGame, mayWriteLast, neverWrite, playedElsewhere, reclaimHero, savedWaypoints, setSlot, slotNow, syncShared, waitHandOver, writeSave, writtenElsewhere, type Difficulty } from './save';
 import { CAMP_AREA, trialFloor, type AreaDef } from '../world/areas';
 import { Quests } from './quests/control';
@@ -1025,16 +1026,16 @@ export class Game {
     wake(this, m);
   }
 
-  killMonster(m: Monster, elem: Elem) {
-    killMonster(this, m, elem);
+  killMonster(m: Monster, elem: Elem, killer: Killer = 'hero') {
+    killMonster(this, m, elem, killer);
   }
 
   celebrateLevelUp() {
     celebrateLevelUp(this);
   }
 
-  rollLoot(roll: (hero: Finder) => Item[]): Drop[] {
-    return rollLoot(this, roll);
+  rollLoot(roll: (hero: Finder) => Item[], by: Killer = 'hero'): Drop[] {
+    return rollLoot(this, roll, by);
   }
 
   onProc(kind: StatKey, target: Monster | null) {

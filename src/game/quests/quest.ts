@@ -9,6 +9,7 @@ import { D2X_MONSTERS } from '../../data/d2x/monsters';
 import type { Line } from '../../data/dialogue';
 import type { QuestDef, QuestKey } from '../../data/quests';
 import { CAMP_AREA, DEN_OF_EVIL, WILD_AREA, areaDef, type AreaDef } from '../../world/areas';
+import type { Killer } from '../actor';
 import type { Level } from '../level';
 import type { Monster } from '../monster';
 import type { Player } from '../player';
@@ -154,8 +155,8 @@ export abstract class QuestScript {
   changedArea(_area: AreaDef, _prev: AreaDef | null): HeroLine | null {
     return null;
   }
-  /** a monster died at the hero's hand (MonsterKilled) */
-  monsterKilled(_m: Monster) {}
+  /** a monster died (MonsterKilled): `killer` the hero, the hireling, or nobody (every death counts, whoever dealt it: docs/M2A-STEP0.md 2.1) */
+  monsterKilled(_m: Monster, _killer: Killer) {}
   /** one of D2's quest ticks went by (QUESTS_QuestUpdater's timers) */
   tick() {}
   /** what the quest log shows of it */

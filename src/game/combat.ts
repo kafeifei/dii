@@ -5,11 +5,12 @@ import type { Elem } from '../data/monsters';
 import { struckArmor, wearDown } from '../items/d2/durability';
 import { baseOf, displayName, type Item } from '../items/item';
 import { MATH_RAND } from '../items/make';
-import { emptyPacket, type Actor, type DamagePacket } from './actor';
+import { emptyPacket, type Actor, type DamagePacket, type Killer } from './actor';
 import { blockAnimGap, hitRecoveryOdds } from './d2/frames';
 import { amplifyCurse } from './d2/monai';
 import { RES_FLOOR, absorb, attackRating, charStats, hitChance, mitigate, resistance } from './d2/stats';
 import type { Game } from './game';
+import { Merc } from './merc';
 import { Monster } from './monster';
 import { Player } from './player';
 
@@ -72,6 +73,14 @@ export function playerWeaponPacket(p: Player, edBonus: number): DamagePacket {
   if (pk.cold > 0 || d.chillOnHit) pk.chill = 1.5;
   pk.source = p;
   return pk;
+}
+
+/**
+ * Who a blow's damage kills with (Game.killMonster): the hireling for her own, else the hero, whose
+ * every other source is (their skills, items and auras; one with none counts as theirs too)
+ */
+export function killerOf(source: Actor | null | undefined): Killer {
+  return source instanceof Merc ? source : 'hero';
 }
 
 function mainElem(pk: DamagePacket): Elem {
@@ -145,6 +154,7 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
       if (pl && target.poisonTime <= 0) g.say('poisoned');
       target.poisonDps = dps;
       target.poisonTime = len;
+      target.poisonBy = killerOf(pk.source);
     }
   }
   const noFreeze = pl ? !!pl.stats.bag.cantFreeze : false;
@@ -204,7 +214,7 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
       m.boltsAt = g.time;
       g.chargedBolts(m);
     }
-    if (m.life <= 0) g.killMonster(m, mainElem(pk));
+    if (m.life <= 0) g.killMonster(m, mainElem(pk), killerOf(pk.source));
   } else if (isPlayer) {
     const p = target as Player;
     p.lastDamageTime = g.time;
@@ -223,14 +233,14 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
     if (src instanceof Monster && p.stats.thorns > 0 && !pk.spell) {
       src.life -= p.stats.thorns;
       src.hitFlash = 0.6;
-      if (src.life <= 0) g.killMonster(src, 'phys');
+      if (src.life <= 0) g.killMonster(src, 'phys', 'hero');
     }
     // "attacker takes lightning damage": the same for melee hits, less the attacker's lightning resistance
     const lt = p.stats.bag.lightThorns ?? 0;
     if (src instanceof Monster && lt > 0 && !pk.spell && !src.dead) {
       src.life -= lt * (1 - Math.min(100, src.resists().light) / 100);
       src.hitFlash = 0.6;
-      if (src.life <= 0) g.killMonster(src, 'light');
+      if (src.life <= 0) g.killMonster(src, 'light', 'hero');
     }
     // mana burn's (and the ghosts') mana drain
     if (pk.mana) p.mana = Math.max(0, p.mana - pk.mana);
@@ -253,6 +263,7 @@ function strikeEffects(m: Monster, pk: DamagePacket, physRes: number, coldRes: n
   if (pk.ow && chance(pk.ow / 100)) {
     m.bleedDps = Math.max(m.bleedDps, openWoundsDps(pk.alvl ?? 1) / (m.rank === 'boss' ? 4 : 1));
     m.bleedTime = 8;
+    m.bleedBy = killerOf(pk.source);
   }
   if (pk.freeze) {
     // the hero's freeze length (not D2's yet), less the monster's cold resistance as a cold length

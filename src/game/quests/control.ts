@@ -6,6 +6,7 @@ import type { HeroLine } from '../../audio/sounds';
 import { GOSSIP, LOG_LINES } from '../../data/dialogue';
 import { ACT1_QUESTS, type QuestKey } from '../../data/quests';
 import type { AreaDef } from '../../world/areas';
+import type { Killer } from '../actor';
 import type { Level } from '../level';
 import type { Monster } from '../monster';
 import { DenOfEvil } from './denofevil';
@@ -113,8 +114,9 @@ export class Quests {
     return line;
   }
 
-  monsterKilled(m: Monster) {
-    for (const s of this.scripts) s.monsterKilled(m);
+  /** a monster died (MonsterKilled), by `killer`'s hand, or by nobody's */
+  monsterKilled(m: Monster, killer: Killer = 'hero') {
+    for (const s of this.scripts) s.monsterKilled(m, killer);
   }
 
   update(dt: number) {

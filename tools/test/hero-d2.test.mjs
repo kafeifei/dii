@@ -1,7 +1,7 @@
 // The Diablo II formulas wired into the hero and combat (src/game/player.ts recalc and gainXp,
 // combat.ts, playerctl.ts, game.ts's kills and deaths, corpse.ts, save.ts's body): the hero's vitals,
 // rating, defense, block, resistances and speeds are game/d2's for the class, level and gear; kills
-// give killXp; hit chance both ways goes by levels, a running hero is always hit in melee and blocks a
+// give killXp, a kill of nobody's none and nothing dropped, the hireling's all of it to the hero; hit chance both ways goes by levels, a running hero is always hit in melee and blocks a
 // third as often; running spends stamina; a death costs D2's gold and experience and leaves a body
 // with the gear that the hero takes back, that the save keeps and that waits in the camp when loaded;
 // an old save keeps its levels and points, its derived numbers worked out anew.
@@ -137,6 +137,105 @@ export default async (load) => {
     // a monster 8 levels up gives 92/256 of its experience below hero level 25, 9 up 38/256
     assert.equal(X.killXp(1000, 3, 11), Math.trunc((1000 * 92) / 256));
     assert.equal(X.killXp(1000, 3, 12), Math.trunc((1000 * 38) / 256));
+  }
+
+  // ── who killed it (Game.killMonster's killer, docs/M2A-STEP0.md 2.1): nobody's kill gives no
+  // experience and drops nothing, but the quests and the rift count it; the hireling's gives the hero
+  // all of the experience, drops by hers and leaves the hero's per-kill life alone; her blows and her
+  // poison kill as hers ──
+  {
+    const { Merc } = await load('/src/game/merc.ts');
+    const counted = [];
+    const quests = game.quests;
+    const questsWas = quests.monsterKilled;
+    quests.monsterKilled = (m, k) => {
+      counted.push(k);
+      return questsWas.call(quests, m, k);
+    };
+    let rifted = 0;
+    const riftWas = game.rift.killed;
+    game.rift.killed = (m) => {
+      rifted++;
+      return riftWas.call(game.rift, m);
+    };
+    const rolled = [];
+    const rollWas = game.rollLoot;
+    game.rollLoot = function (r, by) {
+      rolled.push(by);
+      return rollWas.call(this, r, by);
+    };
+    // an item's life per kill on the hero: only the hero's own kills heal with it
+    const ring = createItem('rin');
+    ring.props = [];
+    ring.mods = [{ stat: 'lifePerKill', value: 7 }];
+    p.equipment.ring1 = ring;
+    p.markDirty();
+    const zombie = () => {
+      const m = new Monster(ZOMBIE, 3, 'normal', { ...p.pos });
+      game.level.monsters.push(m);
+      return m;
+    };
+    try {
+      assert.equal(p.stats.lifePerKill, 7);
+      const ground0 = game.level.ground.length;
+      p.life = 10;
+      let xp0 = p.xp;
+      const nobody = zombie();
+      game.killMonster(nobody, 'phys', null);
+      assert.ok(nobody.dead, "nobody's kill: dead all the same");
+      assert.equal(p.xp, xp0, "nobody's kill: no experience");
+      assert.equal(p.life, 10, "nobody's kill: no life per kill");
+      assert.deepEqual(rolled, [], "nobody's kill: nothing rolled");
+      assert.equal(game.level.ground.length, ground0, "nobody's kill: nothing dropped");
+      assert.deepEqual(counted, [null], "nobody's kill: the quests count it");
+      assert.equal(rifted, 1, "nobody's kill: the rift counts it");
+      // the hireling's
+      const merc = new Merc({ ...p.pos });
+      merc.mf = 300;
+      const hers = zombie();
+      const want = X.killXp(hers.xp, p.level, hers.level, 0);
+      xp0 = p.xp;
+      game.killMonster(hers, 'phys', merc);
+      assert.equal(p.xp - xp0, want, "the hireling's kill: the hero has all of its experience");
+      assert.equal(p.life, 10, "the hireling's kill: the hero's life per kill isn't hers");
+      assert.deepEqual(rolled, [merc], "the hireling's kill: rolled by hers");
+      assert.deepEqual(counted, [null, merc]);
+      assert.equal(rifted, 2);
+      // the hero's own, as ever
+      const own = zombie();
+      game.killMonster(own, 'phys');
+      assert.equal(p.life, 17, "the hero's kill heals by the ring's 7");
+      assert.equal(rolled.at(-1), 'hero');
+      assert.equal(counted.at(-1), 'hero');
+      // her arrow lands the killing blow: hers (combat.ts killerOf)
+      const shot = zombie();
+      const pk = emptyPacket();
+      pk.phys = 10000;
+      pk.spell = true;
+      pk.source = merc;
+      applyDamage(game, shot, pk, merc.pos);
+      assert.ok(shot.dead);
+      assert.equal(counted.at(-1), merc, "her blow's kill is hers");
+      // her poison runs it down: hers too (ai.ts reads poisonBy), and a hero's blow after it is the hero's
+      const poisoned = zombie();
+      const venom = emptyPacket();
+      venom.poison = 100000;
+      venom.spell = true;
+      venom.source = merc;
+      applyDamage(game, poisoned, venom, merc.pos);
+      assert.equal(poisoned.poisonBy, merc);
+      const { updateMonster } = await load('/src/game/ai.ts');
+      for (let i = 0; i < 600 && !poisoned.dead; i++) updateMonster(game, poisoned, 1 / 60);
+      assert.ok(poisoned.dead, 'the poison kills it');
+      assert.equal(counted.at(-1), merc, "her poison's kill is hers");
+    } finally {
+      quests.monsterKilled = questsWas;
+      game.rift.killed = riftWas;
+      game.rollLoot = rollWas;
+      delete p.equipment.ring1;
+      p.markDirty();
+      p.life = p.stats.maxLife;
+    }
   }
 
   // ── hit chance both ways, with the levels; a running hero is always hit and blocks a third as often ──
