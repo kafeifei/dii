@@ -17,14 +17,17 @@ import { createHash } from 'node:crypto';
 const DT = 1 / 60;
 const SEED = 0x5eed2a;
 
-/** the digests of each checkpoint, part by part (sha-256 of the part's JSON, first 16 hex digits), recorded 2026-10-29 at M2a step 0 ② */
+/**
+ * the digests of each checkpoint, part by part (sha-256 of the part's JSON, first 16 hex digits), recorded 2026-10-29 at M2a step 0 ②;
+ * den.monsters recorded again the same day as the D line rebuilt the Den from D2's maze, with its level's seed (every other part as it was)
+ */
 const RECORDED = {
   camp: { hero: '28a2901209dbab6f', monsters: '24ca960f975b3c74', ground: 'bb5bb1b3a77487ee', quests: '82e81eff8fdb5188', save: '6d3a476ce8832805' },
   fight: { hero: '9d3d5a02f2d5f52d', monsters: 'e13c147125362c81', ground: 'f6d08cdda7aa4ec0', quests: '82e81eff8fdb5188', save: 'd2a9c11627e7cbe9' },
   portal: { hero: '762e6f20ba09f967', monsters: '4459859c1343844d', ground: 'f6d08cdda7aa4ec0', quests: '82e81eff8fdb5188', save: 'cec21529e01728b8' },
   body: { hero: 'e9e0c94c4afaed28', monsters: '1c60d56619c97986', ground: 'f6d08cdda7aa4ec0', quests: '82e81eff8fdb5188', save: 'aa43ae3a3748a4ab' },
   waypoint: { hero: '0a49de5487ad267d', monsters: 'a23e6eb417ad35eb', ground: 'f6d08cdda7aa4ec0', quests: '82e81eff8fdb5188', save: 'bb77ce134b5f7f28' },
-  den: { hero: 'f9fe373dff8d26d4', monsters: '5924a3e0c3eadc67', ground: '232bc5e7520fbf5e', quests: 'a7ce0e07f8306b66', save: '236f70197bd3611e' },
+  den: { hero: 'f9fe373dff8d26d4', monsters: 'ebccc22970271c94', ground: '232bc5e7520fbf5e', quests: 'a7ce0e07f8306b66', save: '236f70197bd3611e' },
   nightmare: { hero: 'a3b4cc10c86272f0', monsters: '35498b168a6dbbf1', ground: 'bb5bb1b3a77487ee', quests: 'a7ce0e07f8306b66', save: '22e8a44fe960e5df' },
 };
 
