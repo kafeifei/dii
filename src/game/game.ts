@@ -1,16 +1,16 @@
 import type { Input } from '../core/input';
 import { dist, type P2 } from '../core/math';
 import type { Sfx } from '../audio/sfx';
-import { heroLine, isNight, npcLine, type HeroLine, type VoiceId } from '../audio/sounds';
+import { heroLine, isNight, type HeroLine } from '../audio/sounds';
 import { CLASSES, type PlayerClass } from '../data/classes';
 import { SKILL_BY_ID } from '../data/skills';
-import { createItem, newGameDrops, starterKit, type Drop } from '../items/gen';
-import { CAMP_VENDORS, fillStore, Store } from '../items/vendor';
-import { displayName, type Item } from '../items/item';
+import { newGameDrops, starterKit, type Drop } from '../items/gen';
+import { CAMP_VENDORS, Store } from '../items/vendor';
+import type { Item } from '../items/item';
 import { SharedStash } from '../items/stash';
 import type { Grid } from '../items/grid';
 import type { DeathPenalty } from './d2/death';
-import { containerLoot, type Finder } from './loot';
+import type { Finder } from './loot';
 import { updateMonster } from './ai';
 import { nullFx, type Fx } from './fx';
 import type { Level } from './level';
@@ -20,15 +20,16 @@ import { GroundItem, WorldObject } from './objects';
 import { CHARGE_PREFIX, Player } from './player';
 import { startCast, toggleAura, updatePlayer, type PlayerAction } from './playerctl';
 import { celebrateLevelUp, killMonster, killPlayer, onProc, rollLoot, wake } from './kills';
-import { layOutCorpses, respawn, takeCorpse } from './bodies';
-import { castTownPortal, closePortals, enterArea, enterLevel, enterTrial, openTownPortal, readTownPortal, teleportWithin, tellClosed, travel, travelToArea, updateArea, walkExits, type Trip } from './travel';
+import { layOutCorpses, respawn } from './bodies';
+import { interact } from './interact';
+import { npcLeft, npcSpoke, npcTalk, refreshShop, talkTo } from './townsfolk';
+import { castTownPortal, closePortals, enterArea, enterLevel, enterTrial, openTownPortal, readTownPortal, teleportWithin, travel, travelToArea, updateArea, walkExits, type Trip } from './travel';
 import { autoBeltInsert, beltInsert, drink, drinkable, dropBlock, dropFromBag, dropItem, heldGrids, layOutUnplaced, moveStashGold, pickupGround, readHeld, refuseDrop, spawnDrops, stashBlock, useBelt, type Finds } from './items';
 import { ACTIVE_RADIUS, chargedBolts, clearCorpses, separate, updateAuras, updateBlasts, updateHammers, updateProjectiles } from './fight';
 import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
 import { claimedElsewhere, claimHero, handOver, heroTaken, isReadOnly, loadSave, loadShared, markInGame, mayWriteLast, neverWrite, playedElsewhere, reclaimHero, savedWaypoints, setSlot, slotNow, syncShared, waitHandOver, writeSave, writtenElsewhere, type Difficulty } from './save';
-import { CAMP_AREA, areaLevel, builtWaypoints, trialFloor, type AreaDef } from '../world/areas';
-import { SHRINE_BY_ID } from '../data/shrines';
+import { CAMP_AREA, trialFloor, type AreaDef } from '../world/areas';
 import { Quests } from './quests/control';
 import type { Topic } from './quests/quest';
 import { Rifts } from './rift';
@@ -621,8 +622,7 @@ export class Game {
   }
 
   refreshShop() {
-    // Diablo II's camp shelves for the one merchant: Charsi's weapons and armour, Akara's staves, potions, scrolls and tomes
-    this.shop = fillStore(CAMP_VENDORS, Math.max(1, this.player.level), this.player.difficulty);
+    refreshShop(this);
   }
 
   respawn() {
@@ -1101,164 +1101,28 @@ export class Game {
     useBelt(this, col);
   }
 
-  // ───────────────────────── interaction ─────────────────────────
+  // ───────────────────────── interaction (src/game/interact.ts, containers.ts) ─────────────────────────
 
   interact(obj: WorldObject) {
-    const p = this.player;
-    if (this.rift.use(obj)) return;
-    switch (obj.kind) {
-      case 'chest': {
-        if (obj.used) return;
-        obj.used = true;
-        this.sfx.play('env.chest', { pos: obj.pos });
-        this.fx.burst('chest', obj.pos);
-        // the area it stands in's Chest A, B or C at the area's level, as D2 rolls a chest's treasure
-        // class by its level's (src/game/loot.ts containerLoot; D2Game OBJECTS/ObjMode.cpp
-        // OBJMODE_DropFromChestTCWithQuality: DATATBLS_GetMonsterLevelInArea)
-        const area = this.level.areaAt(obj.pos.x, obj.pos.z);
-        const drops = this.rollLoot((hero) => containerLoot('chest', area, hero));
-        // the Horadric Cube waits in the first chest opened in an area of level 4 or more (plan A2;
-        // D2's is in the Halls of the Dead, in Act 2)
-        if (areaLevel(area) >= 4 && !p.cubeFound) {
-          p.cubeFound = true;
-          const box = createItem('box');
-          drops.push({ kind: 'item', item: box });
-          this.hooks.message(`你找到了${displayName(box)}！`, '#c8a86a', 4);
-        }
-        this.spawnDrops(obj.pos, drops);
-        break;
-      }
-      case 'barrel': {
-        if (obj.used) return;
-        obj.used = true;
-        this.sfx.play('env.barrel', { pos: obj.pos });
-        this.fx.burst('barrel', obj.pos);
-        // the area's classes at its level, as a chest's
-        const area = this.level.areaAt(obj.pos.x, obj.pos.z);
-        this.spawnDrops(obj.pos, this.rollLoot((hero) => containerLoot('barrel', area, hero)));
-        break;
-      }
-      case 'stairs':
-        if (obj.closed) tellClosed(this, obj);
-        else this.enterArea(obj.dest, 'stairs');
-        break;
-      case 'waypoint': {
-        // using a waypoint activates it, in the difficulty being played (D2Game OBJECTS/ObjMode.cpp
-        // OBJECTS_OperateFunction23_Waypoint: WAYPOINTS_ActivateWaypoint on pWaypointData[nDifficulty])
-        const a = this.level.areaAt(obj.pos.x, obj.pos.z);
-        if (!p.waypoints.includes(a.id) && builtWaypoints([a.id]).includes(a.id)) {
-          p.waypoints = builtWaypoints([...p.waypoints, a.id]);
-          this.hooks.message('传送点已激活', '#c8a86a', 2);
-          this.say('waypoint');
-          this.save();
-        }
-        this.hooks.openPanel('waypoint');
-        break;
-      }
-      case 'vendor':
-        this.talkTo(obj);
-        break;
-      case 'stash':
-        this.hooks.openPanel('stash');
-        break;
-      case 'corpse':
-        takeCorpse(this, obj);
-        break;
-      case 'exit':
-        if (obj.closed) tellClosed(this, obj);
-        else this.enterArea(obj.dest, 'exit');
-        break;
-      case 'shrine': {
-        if (obj.used) return;
-        obj.used = true;
-        const def = SHRINE_BY_ID[obj.shrine ?? ''];
-        if (!def) return;
-        if (def.refill) {
-          p.life = p.stats.maxLife;
-          p.mana = p.stats.maxMana;
-        } else {
-          p.shrine = { id: def.id, left: def.secs };
-          p.markDirty();
-        }
-        this.fx.burst('aura_switch', p.pos, { color: def.color });
-        this.sfx.play('env.shrine', { pos: obj.pos });
-        this.hooks.message(`${def.name}：${def.desc}`, def.color, 3);
-        this.say('shrine');
-        break;
-      }
-      case 'portal':
-        this.sfx.play('env.portal_enter', { pos: obj.pos });
-        this.enterArea(this.level.inTown(obj.pos) ? obj.dest : CAMP_AREA, 'portal');
-        break;
-    }
+    interact(this, obj);
   }
 
+  // ───────────────────────── townsfolk (src/game/townsfolk.ts) ─────────────────────────
 
-  /**
-   * Speaking to a townsperson, as in Diablo II: Akara's heal first (D2GAME_NPC_Heal, SUnitNpc.cpp:
-   * 2784-2802), then the line a quest has them say at once, if any (QUESTS_NPCActivateSpeeches: a
-   * SCROLLMENU_MESSAGE line, such as Akara giving the Den of Evil), then their menu. That line is
-   * returned (the tests hear it through npcSpoke)
-   */
   talkTo(obj: WorldObject): Topic | null {
-    this.vendorHeal(obj);
-    const opening = obj.npcId ? this.quests.opening(obj.npcId) : null;
-    if (this.hooks.npcMenu) this.hooks.npcMenu(obj, opening);
-    else this.hooks.openPanel('shop');
-    return opening;
+    return talkTo(this, obj);
   }
 
-  /** what the townsperson says under 交谈: a quest's word for the hero, else their small talk */
   npcTalk(obj: WorldObject): Topic | null {
-    return obj.npcId ? this.quests.talk(obj.npcId) : null;
+    return npcTalk(this, obj);
   }
 
-  /** a townsperson's line heard to the end, or cut short: a quest given, a reward handed over */
   npcSpoke(topic: Topic) {
-    this.quests.spoke(topic);
-    // what they'd say next has changed (the quest given: its reminder; their small talk's next line)
-    this.fetchAhead();
+    npcSpoke(this, topic);
   }
 
-  /**
-   * While the hero is in the camp, what its people may say next is fetched ahead (Sfx.prefetch, the
-   * files only, decoded when they're said): on a slow connection a line said at once (Akara's quest,
-   * her reward) would otherwise come late, a greeting after its moment. Each one's line a quest has
-   * them open with first, then their greetings, what 交谈 has them say and their farewells, as things
-   * stand; asked again as they change (a line heard, the hero back in the camp). The first of them is
-   * the line said next: Sfx fetches it before anything else it fetches or warms here
-   */
-  fetchAhead() {
-    if (this.area?.kind !== 'town') return;
-    const ids: VoiceId[] = [];
-    const say = (t: Topic | null) => t && ids.push(npcLine(t.npc, t.id, t.quest));
-    for (const o of this.level.objects) {
-      if (!o.npcId) continue;
-      say(this.quests.opening(o.npcId));
-      ids.push(npcLine(o.npcId, 'greeting'));
-      say(this.quests.nextTalk(o.npcId));
-      ids.push(npcLine(o.npcId, 'farewell'));
-    }
-    this.sfx.prefetch(ids);
-  }
-
-  /** the hero turned from a townsperson (their menu shut) */
   npcLeft(obj: WorldObject) {
-    if (obj.npcId) this.quests.left(obj.npcId);
-  }
-
-  /** like Akara in Diablo II: talking to the merchant puts life and mana back to full and cures poison, chill and the rest */
-  private vendorHeal(vendor: WorldObject) {
-    const p = this.player;
-    const s = p.stats;
-    if (p.life >= s.maxLife && p.mana >= s.maxMana && p.poisonTime <= 0 && p.chillTime <= 0 && p.bleedTime <= 0 && p.slowTime <= 0) return;
-    p.life = s.maxLife;
-    p.mana = s.maxMana;
-    p.poisonTime = p.chillTime = p.bleedTime = p.slowTime = p.stunTime = 0;
-    this.fx.burst('potion_hp', p.pos);
-    this.fx.burst('potion_mp', p.pos);
-    this.sfx.play('env.vendor_heal', { pos: p.pos });
-    this.hooks.message(`${vendor.npc ?? '商人'}为你恢复了生命与法力`, '#c8a86a', 2);
+    npcLeft(this, obj);
   }
 
   // ───────────────────────── travel (src/game/travel.ts) ─────────────────────────

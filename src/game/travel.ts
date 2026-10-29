@@ -4,6 +4,7 @@ import { displayName, type Item } from '../items/item';
 import { isTome, isTownPortal, readable, townPortalFrom } from '../items/tomes';
 import type { Arrival, Game } from './game';
 import { holds, layOutUnplaced } from './items';
+import { fetchAhead } from './townsfolk';
 import type { Level } from './level';
 import { WorldObject } from './objects';
 import type { Difficulty } from './save';
@@ -213,7 +214,7 @@ export function updateArea(g: Game, entered = false, how: Arrival | 'walk' | nul
   // the quests hear of it (ChangedLevel); one may give the hero a line of its own to say
   const quest = g.quests.areaChanged(area, prev);
   // in the camp, what its people may say now is fetched ahead, the line they'll say next first
-  g.fetchAhead();
+  fetchAhead(g);
   // decode what's heard here and in the areas next to it, so it plays recorded from the first time
   // (in the camp, after that line: Sfx.preload)
   void g.sfx.preload(soundsNear(area, areasNext(g, area), isNight(g.clock), p.cls));
