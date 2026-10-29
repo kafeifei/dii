@@ -6,6 +6,11 @@
 // scene is matched to its model by the template geometry it shares (src/render/assets.ts); the
 // world-space area of its triangles at that instance's scale (posed through the bones for a skinned
 // body), against their area in the picture, gives its texels per metre, and a model keeps its lowest.
+// That is a mesh's mean over its surface, weighted by area: where a model's UV islands are scaled
+// unevenly, parts of it get fewer texels a metre than the number says (the 2026-10-29 review found
+// w_spear, d_shelf_small_candles and h_lantern_standing with large parts at 0.16–0.56 of their mean),
+// so those parts show softer than the mean promises. Those are small on screen and fine as cut; don't
+// go by the number alone to shrink a big prop's pictures without looking at it in the game.
 // Walked: the ?gallery showroom (every prop, item base and monster, the monsters as uniques), the
 // hero holding each weapon and shield model, then plain games in four seeded worlds: the camp with
 // its townsfolk, the overworld out to Cold Plains, the Den of Evil; and the sorceress. Scenery is

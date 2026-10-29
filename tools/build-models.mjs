@@ -95,12 +95,14 @@ function budget(name) {
  * goes; on a phone the screen's height over 84 (42 CSS px a metre). So a metre is CSS height / (2 ×
  * zoom) × the pixel ratio device pixels: 126 on a phone at DPR 3 drawn at 100%, 178 on a 1280×800
  * laptop at 2× zoomed all the way in, 186 on a 16-inch one in full screen at the 'auto' 1.5×, 200 on
- * a 5K screen at 100% at the game's own zoom. A picture gets the smallest of SIZES (never more than
- * it comes at, nor than its budget's `texture`) that gives TEXELS texels a metre where its model is
- * drawn biggest (tools/texel-density.json, measured in the game by tools/texel-density.mjs): a colour
- * picture one texel a device pixel at 200 px a metre, a data picture (normals) half that, its detail
- * being only shading. On screens past that, zoomed all the way in (a 5K one at 100% is 320), a cut
- * picture shows a little softer. A model the measure hasn't seen keeps its pictures as they come; one
+ * a 5K screen at 100% at the game's own zoom, 240 on a 5K / Studio Display at the 'auto' 1.5× zoomed
+ * all the way in (the most the default setting shows). A picture gets the smallest of SIZES (never
+ * more than it comes at, nor than its budget's `texture`) that gives TEXELS texels a metre where its
+ * model is drawn biggest (tools/texel-density.json, measured in the game by tools/texel-density.mjs,
+ * a mean over each mesh's surface: see there): a colour picture one texel a device pixel at 200 px a
+ * metre, a data picture (normals) half that, its detail being only shading. Past 200 px a metre (240
+ * zoomed all the way in at 'auto' on a 5K screen, 320 there at 1:1, the 「高」 preset) a cut picture
+ * shows a little softer. A model the measure hasn't seen keeps its pictures as they come; one
  * cut is encoded as WebP at QUALITY (as tools/ai-props.mjs makes them), one kept is left as it is.
  */
 const TEXELS = { colour: 200, data: 100 };
