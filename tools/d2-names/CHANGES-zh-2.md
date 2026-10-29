@@ -859,3 +859,287 @@
 | uniques.json | Rotting Fissure | 腐烂裂迹 → 腐瘴地罅 → 腐朽裂迹 | Rotting Crevice（原 Miasmal Earthrent） | 腐瘴地罅全换了；留「腐」「裂迹」，烂换朽；英文留 Rotting（术士版 PreCrafted 同名，一起改） |
 | uniques.json | Bone Break | 白骨裂纹 → 骸骨摧折 → 白骨碎纹 | Bone Shatter（原 Shattered Remains） | 骸骨摧折全换了；留「白骨」「纹」，裂换碎；英文留 Bone（术士版 PreCrafted 同名，一起改） |
 | uniques.json | Black Cleft | 漆黑裂痕 → 幽玄裂谷 → 漆黑裂谷 | Black Ravine（原 The Umbral Ravine） | 幽玄裂谷丢了「漆黑」；留下，痕换谷；英文留 Black（术士版 PreCrafted 同名，一起改） |
+
+## 套装、符文之语（sets.json、runewords.json）
+
+`sets.json` 175 条、`runewords.json` 99 条逐条对照官方中文和 Blizzard 英文重审。套装改了中文 143 条、英文 168 条，符文之语改了中文 80 条、英文 97 条（两版喧嚣算两条）；其余照旧。各行的 `note` 里记了曾用名。
+
+- 中文：上一版多半是「逐字换同义词」往远处推，两个字全换（望楼、跋涉、迷障、团牌、甲仗、千锻刃、铜垣），或者换了意象（镌石之君、祖灵盟约、蛇蝎心肠、九死之志）。照新规则往回拉：留老玩家认它的那个字，只换一个字（远祖之誓、权柄、坚垒、钢锋、不朽之君、喀森的计策），或者整个留下加一两个字（太初混沌、雄狮之心、太古神话、按手圣礼）。套装部件照「X 的 Y」结构，Y 只换一个字或加一个字（不朽之君的锤锻、陀·剌沙的裁断、纳济的额环）。整套的称号统一：狂斗士、牛首王、神使、冥神（死神）、极地（北极）、炼狱（地狱）、兵主（Warlord，官方无中文）。
+- 英文：照 Blizzard 英文重审。上一版英文大多是跟着中文另起的词（Eyrie、Graven Sovereign、Covenant of Forebear Shades、Mad Ravings），改成留 Blizzard 的关键词、换一个词或加一个词：Immortal Sovereign、Uncanny Enigma、Bitter Rain（style-en.md 的例子）、Seraphic Halo、Polar Gear、Heart of the Elder Oak。整套统一：Berserker（留下）、Oxhead King、Seraphic、Deathlord、Polar、Purgatorial、Hostlord。
+- 官方中文另起炉灶的，中文对着官方中文、英文对着 Blizzard 英文：Magnus' Skin 官方叫「雄主的皮手套」，中文改为雄君的鲛皮手套（原来的音译「墨格努」中文老玩家对不上），英文 Morgenu 留 Magnus 的音；喧嚣（Hustle 的误译）改喧腾，两版同一个字串，同名；Mosaic 的碎彩迷离、Pattern 的典纹都一头接官方中文、一头接英文本义。
+- 避开别处已有的名字：符文之语不用别的行的官方名（狂怒、暴怒、大地、光华、迷乱都是官方中文，Everlasting、Sorrow、Pestilence 单用是官方英文），也避开别的表的词：Bone 不叫枯骨（稀有名词、怪物前缀 Bone）、Exile 不叫放逐（游侠「放逐者」）、Venom 不叫毒涎（稀有名词 venom）、Steel 不用 style.md 例子里的「百炼」（前缀 Steel 的名字），Dragon 不再叫孽龙（怪物前缀 Dragon 的孽龙作 Wyrm，一个中文词只对一个英文词，改邪龙 / Baleful Dragon）。
+- CHANGES-zh.md 里在这两个文件的 10 条都改回：Bulwark 铜垣 → 坚垒、Steel 千锻刃 → 钢锋、Hsarus' Iron Fist 团牌 → 铁腕，Immortal King 镌石之君 → 不朽之君，连同六个部件（见下表）。
+- 术语表一组列出的 `sets.json` 59 行已照新写法换好（人名部分：波勒铠梭、寰涅、季琏、韦阑、韦思丹、喀森、善铎、陀戈敖、谭衮、爱蕊莎、纳济；英文 Tangreth、Bol-Khatos、Hwaneth、Siverbor、Ondamir、Veydola、Clegaro……），下表的新名字已含这些写法；只因术语表而变的只有 Tancred's Spine（Tangreth's Iron Backbone），不在表里。
+- 没动的：陀·剌沙的殓布、何罗德门之徽，牛首王之盘角，檀格烈的铁脊，尊荣（Laurels），玄冰（Umbral Rime）。
+- 跟着要改的别处：`monster-prefixes.json` SharpUM 的 note 说锋芒＝Glint「与符文之语 Blade's Glint 一致」，符文之语现在是 Glinting Edge；`suffixes.json` 几条 note 还提到旧名（铜垣、纳妲丽娅的宿怨、疾驰、疾行、海谟索的磐心、梅薇妮的慧眼）；`tools/icons/desc/sets.json`、`uniques.json` 的 note 里有几个旧英文名（Wengde's Puissance、Shalush's Roundel 等），只是记录，不进游戏。生成的 `src/data/d2x/sets.ts`、`runewords.ts`、`skills.ts`（迷狂的变身随符文之语改名迷妄 / Fevered Delirium）已重新生成。
+
+| 文件 | 原版 | 官方 → 旧名 → 新名 | 新英文名 | 为什么 |
+| --- | --- | --- | --- | --- |
+| sets.json | Aldur's Watchtower | 艾尔多的警戒塔 → 阿勒铎的望楼 → 阿勒铎的瞭望塔 | Aledor's Lookout Tower（原 Aledor's Eyrie） | 警戒塔→瞭望塔，留塔；Watchtower→Lookout Tower，留 Tower |
+| sets.json | Aldur's Advance | 艾尔多的成长 → 阿勒铎的跋涉 → 阿勒铎的生长 | Aledor's Progress（原 Aledor's Wayfaring） | 官方「成长」（Advance 的误译）只换一个字，留长；Advance→Progress |
+| sets.json | Aldur's Deception | 艾尔多的欺骗 → 阿勒铎的迷障 → 阿勒铎的欺瞒 | Aledor's Ruse（原 Aledor's Mistveil） | 欺骗→欺瞒，留欺；Deception→Ruse |
+| sets.json | Aldur's Rhythm | 艾尔多的律动 → 阿勒铎的脉搏 → 阿勒铎的节律 | Aledor's Cadence（原 Aledor's Pulse） | 律动→节律，留律；Rhythm→Cadence |
+| sets.json | Aldur's Stony Gaze | 艾尔多的冷酷凝视 → 阿勒铎的石眸 → 阿勒铎的冷峻凝视 | Aledor's Stony Stare（原 Aledor's Granite Eyes） | 冷酷凝视只换一个字（酷→峻）；Gaze→Stare，留 Stony |
+| sets.json | Berserker's Arsenal | 狂战士的兵械 → 狂斗士的武备 → 狂斗士的兵甲 | Berserker's Armaments（原 Frenzied Champion's Panoply） | 狂战士是通用词，全套改为狂斗士（只换一个字）；兵械→兵甲，留兵；英文全套留 Berserker，Arsenal→Armaments |
+| sets.json | Berserker's Hatchet | 狂战士的手斧 → 狂斗士的劈斧（不变） | Berserker's Cleaver（原 Frenzied Champion's Cleaver） | 劈斧已留斧；英文全套留 Berserker；劈＝Cleaver，同暗金「劈霄」 |
+| sets.json | Berserker's Hauberk | 狂战士的锁甲 → 狂斗士的怒铠 → 狂斗士的锁铠 | Berserker's Mail Shirt（原 Frenzied Champion's Wrathmail） | 锁甲→锁铠，留锁；Hauberk→Mail Shirt |
+| sets.json | Berserker's Headgear | 狂战士的头盔 → 狂斗士的兜鍪 → 狂斗士的战盔 | Berserker's War Helm（原 Frenzied Champion's Bascinet） | 头盔→战盔，留盔；Headgear→War Helm |
+| sets.json | Cow King's Leathers | 牛魔王之革 → 牛首王之裘 → 牛首王之皮革 | Oxhead King's Leathers（原 Oxhead King's Furred Robes） | 牛魔王是《西游记》人物名，全套改为牛首王（同超级暗金怪「牛首王」）；革→皮革，留革；Cow King→Oxhead King，Leathers 留下 |
+| sets.json | Cow King's Hide | 牛魔王之皮 → 牛首王之兽革 → 牛首王之兽皮 | Oxhead King's Rawhide（原 Oxhead King's Tanned Jerkin） | 皮→兽皮，留皮；Hide→Rawhide |
+| sets.json | Cow King's Hooves | 牛魔王之蹄 → 牛首王之重蹄（不变） | Oxhead King's Heavy Hooves（原 Oxhead King's Heavy Tread） | 重蹄已留蹄；英文随中文，Hooves 留下，加 Heavy（重） |
+| sets.json | Hsarus' Defense | 萨鲁斯的防御 → 沙卢施的壁垒 → 沙卢施的防卫 | Shalush's Safeguard（原 Shalush's Redoubt） | 防御→防卫，留防；原「壁垒」是符文之语 Bulwark 的官方名；Defense→Safeguard |
+| sets.json | Hsarus' Iron Fist | 萨鲁斯的铁拳 → 沙卢施的团牌 → 沙卢施的铁腕 | Shalush's Iron Hand（原 Shalush's Roundel） | 铁拳→铁腕，留铁；Fist→Hand，留 Iron；按旧规则改成的「团牌」认不出 |
+| sets.json | Hsarus' Iron Heel | 萨鲁斯的铁踵 → 沙卢施的踏铁 → 沙卢施的铁足 | Shalush's Iron Tread（原 Shalush's Ironstep） | 铁踵→铁足，留铁（「铁蹄」是稀有名词 trample 的名字）；Heel→Tread，留 Iron |
+| sets.json | Hsarus' Iron Stay | 萨鲁斯的铁固腰 → 沙卢施的铁箍 → 沙卢施的铁束腰 | Shalush's Iron Cinch（原 Shalush's Ironband） | 铁固腰只换一个字（固→束）；Stay→Cinch，留 Iron |
+| sets.json | Isenhart's Armory | 依森哈特的武器库 → 伊申赫德的甲仗 → 伊申赫德的兵器库 | Ishenhed's Arms Vault（原 Ishenhed's Mail and Steel） | 武器库→兵器库，留器库；Armory→Arms Vault |
+| sets.json | Isenhart's Case | 依森哈特的胸胄 → 伊申赫德的铁衣 → 伊申赫德的胸甲 | Ishenhed's Chest Case（原 Ishenhed's Iron Raiment） | 胸胄→胸甲，留胸；Case 留下，加 Chest（胸） |
+| sets.json | Isenhart's Horns | 依森哈特的号角 → 伊申赫德的双角（不变） | Ishenhed's Twin Horns（原 Ishenhed's Twin Tines） | 双角已留角；Horns 留下，随中文加 Twin |
+| sets.json | Isenhart's Lightbrand | 依森哈特的光之烙印 → 伊申赫德的辉刃 → 伊申赫德的辉光烙印 | Ishenhed's Gleaming Brand（原 Ishenhed's Burnished Blade） | 光之烙印→辉光烙印，留光、烙印；Lightbrand→Gleaming Brand，留 Brand |
+| sets.json | Isenhart's Parry | 依森哈特的格挡 → 伊申赫德的拒锋 → 伊申赫德的招架 | Ishenhed's Riposte（原 Ishenhed's Bladeward） | 格挡→招架，一看就对得上的近义词；Parry→Riposte |
+| sets.json | Natalya's Odium | 娜塔亚的杀意 → 纳妲丽娅的宿怨 → 纳妲丽娅的杀心 | Nadhalia's Loathing（原 Nadhalia's Abiding Grudge） | 杀意→杀心，留杀；Odium→Loathing |
+| sets.json | Natalya's Mark | 娜塔亚的标记 → 纳妲丽娅的血痕 → 纳妲丽娅的暗记 | Nadhalia's Hidden Mark（原 Nadhalia's Bloodstreak） | 标记→暗记，留记；Mark 留下，加 Hidden（暗） |
+| sets.json | Natalya's Shadow | 娜塔亚的阴影 → 纳妲丽娅的影衣 → 纳妲丽娅的幽影 | Nadhalia's Umbra（原 Nadhalia's Shadeweave） | 阴影→幽影，留影；Shadow→Umbra（幽影＝Umbra，同「枯骨幽影」；Shade 离 Shadow 只差两个字母） |
+| sets.json | Natalya's Soul | 娜塔亚的灵魂 → 纳妲丽娅的魂踪 → 纳妲丽娅的游魂 | Nadhalia's Wandering Soul（原 Nadhalia's Spirit Trail） | 灵魂→游魂，留魂，靴子取游走之意；Soul 留下，加 Wandering（游） |
+| sets.json | Natalya's Totem | 娜塔亚的徽记 → 纳妲丽娅的祖灵 → 纳妲丽娅的徽纹 | Nadhalia's Carved Totem（原 Nadhalia's Forebears） | 徽记→徽纹，留徽（「族徽」是稀有名词 emblem 的名字）；Totem 留下，加 Carved |
+| sets.json | Tancred's Battlegear | 坦克雷的圣战装 → 檀格烈的戎装（不变） | Tangreth's Wargear（原 Tangelier's War Livery） | 戎装已留装；Battlegear→Wargear，留 gear |
+| sets.json | Tancred's Crowbill | 坦克雷的鸦嘴锄 → 檀格烈的鸦啄 → 檀格烈的鸦嘴镐 | Tangreth's Crowbeak（原 Tangelier's Ravenpeck） | 鸦嘴锄只换一个字（锄→镐）；Crowbill→Crowbeak，留 Crow |
+| sets.json | Tancred's Hobnails | 坦克雷的钉头鞋 → 檀格烈的征履 → 檀格烈的钉靴 | Tangreth's Hobnail Boots（原 Tangelier's Campaign Boots） | 钉头鞋→钉靴，留钉；Hobnails→Hobnail Boots |
+| sets.json | Tancred's Skull | 坦克雷的头骨 → 檀格烈的枯颅 → 檀格烈的颅骨 | Tangreth's Skullbone（原 Tangelier's Withered Cranium） | 头骨→颅骨，留骨；Skull→Skullbone，留 Skull |
+| sets.json | Tancred's Weird | 坦克雷的怪诞 → 檀格烈的诡谲 → 檀格烈的诡诞 | Tangreth's Strange Fate（原 Tangelier's Shifting Wiles） | 怪诞→诡诞，留诞；Weird（命运、怪异）→Strange Fate |
+| sets.json | Angelic Raiment | 天使的装束 → 神使的法衣 → 神使的圣装 | Seraphic Raiment（原 Herald's Vestments） | 天使→神使，全套统一（只换一个字）；装束→圣装，留装；Angelic→Seraphic，全套统一，Raiment 留下 |
+| sets.json | Angelic Halo | 天使的光环 → 神使的光冕（不变） | Seraphic Halo（原 Herald's Lightcrown） | 光冕已留光；Angelic→Seraphic，Halo 留下 |
+| sets.json | Angelic Mantle | 天使的披风 → 神使的圣氅 → 神使的圣披风 | Seraphic Mantle（原 Herald's Hallowed Cloak） | 披风留下，加圣；Angelic→Seraphic，Mantle 留下 |
+| sets.json | Angelic Sickle | 天使的镰刀 → 神使的月镰（不变） | Seraphic Sickle（原 Herald's Crescent Blade） | 月镰已留镰；Angelic→Seraphic，Sickle 留下 |
+| sets.json | Angelic Wings | 天使的飞翼 → 神使的圣翎 → 神使的羽翼 | Seraphic Wings（原 Herald's Sacred Plume） | 飞翼→羽翼，留翼；Angelic→Seraphic，Wings 留下 |
+| sets.json | Bul-Kathos' Children | 布尔凯索的子嗣 → 波勒迦托的血裔 → 波勒铠梭的后嗣 | Bol-Khatos' Offspring（原 Bolegath's Bloodline） | 子嗣→后嗣，留嗣；Children→Offspring |
+| sets.json | Bul-Kathos' Sacred Charge | 布尔凯索的神圣职责 → 波勒迦托的圣命 → 波勒铠梭的神圣使命 | Bol-Khatos' Holy Charge（原 Bolegath's Decree of the Gods） | 神圣职责→神圣使命，留神圣；Sacred→Holy，留 Charge |
+| sets.json | Bul-Kathos' Tribal Guardian | 布尔凯索的部族守护 → 波勒迦托的卫族之刃 → 波勒铠梭的部族护卫 | Bol-Khatos' Tribal Warden（原 Bolegath's Clanward Blade） | 部族守护→部族护卫，留部族、护；Guardian→Warden，留 Tribal |
+| sets.json | Death's Disguise | 死神的伪装 → 冥主的假面 → 冥神的伪饰 | Deathlord's Masquerade（原 Netherlord's Mask） | 死神→冥神，全套统一（只换一个字）；伪装→伪饰，留伪；Death→Deathlord，全套统一，留 Death；Disguise→Masquerade |
+| sets.json | Death's Guard | 死神之卫 → 冥主的护身索 → 冥神之护 | Deathlord's Ward（原 Netherlord's Warding Cord） | 死神之卫→冥神之护（卫→护）；Guard→Ward |
+| sets.json | Death's Hand | 死神之手 → 冥主的骨掌 → 冥神之掌 | Deathlord's Palm（原 Netherlord's Bone Palm） | 死神之手→冥神之掌（手→掌）；Hand→Palm |
+| sets.json | Death's Touch | 死神之触 → 冥主的轻拂 → 冥神之抚 | Deathlord's Caress（原 Netherlord's Fleeting Graze） | 死神之触→冥神之抚（触→抚）；Touch→Caress |
+| sets.json | Hwanin's Majesty | 桓因的威严 → 寰音的君临 → 寰涅的威仪 | Hwaneth's Dread Majesty（原 Huanyin's Enthronement） | 威严→威仪，留威；Majesty 留下，加 Dread（威） |
+| sets.json | Hwanin's Justice | 桓因的圣裁 → 寰音的天罚 → 寰涅的神裁 | Hwaneth's Divine Justice（原 Huanyin's Heavenly Wrath） | 圣裁→神裁，留裁；Justice 留下，加 Divine |
+| sets.json | Hwanin's Refuge | 桓因的庇佑 → 寰音的圣所 → 寰涅的天佑 | Hwaneth's Haven（原 Huanyin's Sanctum） | 庇佑→天佑，留佑（「护佑之」是后缀）；Refuge→Haven |
+| sets.json | Hwanin's Blessing | 桓因的祝福 → 寰音的恩泽 → 寰涅的祝祷 | Hwaneth's Benediction（原 Huanyin's Dew of Grace） | 祝福→祝祷，留祝；Blessing→Benediction |
+| sets.json | Hwanin's Splendor | 桓因的壮美 → 寰音的荣光 → 寰涅的壮丽 | Hwaneth's Magnificence（原 Huanyin's Crown of Glory） | 壮美→壮丽，留壮，同符文之语 Splendor「壮丽」；Splendor→Magnificence |
+| sets.json | M'avina's Battle Hymn | 艾维娜的战斗诗歌 → 梅薇妮的出征颂 → 梅薇妮的战斗颂歌 | Meiveni's War Hymn（原 Meiveni's Marching Paean） | 战斗诗歌只换一个字（诗→颂）；Battle→War，留 Hymn |
+| sets.json | M'avina's Caster | 艾维娜的施展 → 梅薇妮的引弦 → 梅薇妮的施射 | Meiveni's Arrowcaster（原 Meiveni's Taut Bowstring） | 官方「施展」只换一个字（展→射），留施；Caster 留下，加 Arrow |
+| sets.json | M'avina's Embrace | 艾维娜的拥抱 → 梅薇妮的拥卫 → 梅薇妮的怀抱 | Meiveni's Close Embrace（原 Meiveni's Encircling Guard） | 拥抱→怀抱，留抱；Embrace 留下，加 Close |
+| sets.json | M'avina's Icy Clutch | 艾维娜的冰握 → 梅薇妮的霜爪 → 梅薇妮的寒握 | Meiveni's Icy Grip（原 Meiveni's Frost Talon） | 冰握→寒握，留握；Clutch→Grip，留 Icy |
+| sets.json | M'avina's Tenet | 艾维娜的教义 → 梅薇妮的誓约 → 梅薇妮的教谕 | Meiveni's Doctrine（原 Meiveni's Covenant） | 教义→教谕，留教；Tenet→Doctrine |
+| sets.json | M'avina's True Sight | 艾维娜的真视 → 梅薇妮的慧眼 → 梅薇妮的真眸 | Meiveni's True Gaze（原 Meiveni's Discerning Eye） | 真视→真眸，留真；Sight→Gaze，留 True |
+| sets.json | Orphan's Call | 孤儿的号令 → 遗孤的号角（不变） | Orphan's Horn（原 Foundling's Horn） | 遗孤的号角已留孤、号；Orphan 留下，Call→Horn（号角） |
+| sets.json | Guillaume's Face | 威廉的威容 → 季约穆的铁面 → 季琏的威颜 | Guilhem's Stern Face（原 Jeyomu's Iron Visage） | 威容→威颜，留威；Face 留下，加 Stern |
+| sets.json | Magnus' Skin | 雄主的皮手套 → 墨格努的鲛皮 → 雄君的鲛皮手套 | Morgenu's Sharkhide（不变） | 官方把 Magnus 意译作「雄主」，中文老玩家认的是它：雄主→雄君，留雄；皮手套留下，加鲛（底材是鲨皮手套）；英文留 Magnus 的音，不变 |
+| sets.json | Whitstan's Guard | 威斯顿之御 → 惠茨丹的戍盾 → 韦思丹之御盾 | Witsdane's Shieldguard（原 Huitsdan's Garrison Shield） | 之御留下，加盾；Guard 留下，加 Shield |
+| sets.json | Wilhelm's Pride | 威廉的骄傲 → 韦尔汉的傲骨 → 韦阑的傲骨 | Wilhan's Arrogance（原 Weirhan's Unbowed Spine） | 傲骨已留傲；Pride→Arrogance |
+| sets.json | The Disciple | 门徒 → 求道者 → 信徒 | The Devotee（原 The Wayseeker） | 门徒→信徒，留徒；Disciple→Devotee |
+| sets.json | Credendum | 信念腰带 → 笃信之索 → 信念之索 | Credo Cord（原 Cord of Steadfast Faith） | 信念腰带→信念之索，留信念；Credendum→Credo，同词根 cred- |
+| sets.json | Laying of Hands | 按手礼套 → 覆手圣礼 → 按手圣礼 | Laying of Holy Hands（原 Palm of Benediction） | 按手礼套→按手圣礼，留按手礼；Laying of Hands 留下，加 Holy |
+| sets.json | Rite of Passage | 皈依之道 → 启途之仪 → 皈依之路 | Rite of Crossing（原 Sacrament of Setting Forth） | 皈依之道只换一个字（道→路）；Passage→Crossing，留 Rite of |
+| sets.json | Dark Adherent | 隐秘教徒 → 暗誓者 → 幽秘教徒 | Shadow Adherent（原 Nightsworn） | 隐秘教徒只换一个字（隐→幽）；Dark→Shadow，留 Adherent |
+| sets.json | Telling of Beads | 赐福念珠 → 捻珠默诵 → 祈福念珠 | Telling of Prayer Beads（原 Silent Rosary） | 赐福念珠只换一个字（赐→祈）；Telling of Beads 留下，加 Prayer |
+| sets.json | Arcanna's Tricks | 阿卡娜的诡计 → 雅坎纳的幻术 → 雅坎纳的诡术 | Yakanna's Wiles（原 Yakanna's Phantasms） | 诡计→诡术，留诡；Tricks→Wiles |
+| sets.json | Arcanna's Deathwand | 阿卡娜的死亡之杖 → 雅坎纳的夺魂杖 → 雅坎纳的夺命之杖 | Yakanna's Deathstaff（原 Yakanna's Soulthief Staff） | 死亡之杖→夺命之杖，留之杖；Deathwand→Deathstaff，留 Death |
+| sets.json | Arcanna's Flesh | 阿卡娜的血肉 → 雅坎纳的凡躯 → 雅坎纳的肉身 | Yakanna's Mortal Flesh（原 Yakanna's Mortal Frame） | 血肉→肉身，留肉；Flesh 留下，加 Mortal |
+| sets.json | Arcanna's Head | 阿卡娜的头 → 雅坎纳的首级（不变） | Yakanna's Severed Head（原 Yakanna's Severed Trophy） | 首级是斩下的头，一看就是头；Head 留下，加 Severed |
+| sets.json | Arcanna's Sign | 阿卡娜的符号 → 雅坎纳的秘符（不变） | Yakanna's Secret Sign（原 Yakanna's Veiled Cipher） | 秘符已留符；Sign 留下，加 Secret（秘） |
+| sets.json | Cathan's Traps | 卡珊的计谋 → 伽森的暗阱 → 喀森的计策 | Khathen's Pitfalls（原 Ghasen's Hidden Pitfalls） | 计谋→计策，留计；Traps→Pitfalls |
+| sets.json | Cathan's Mesh | 卡珊的札甲 → 伽森的锁环衣 → 喀森的札铠 | Khathen's Mesh Coat（原 Ghasen's Ringwoven Coat） | 札甲→札铠，留札；Mesh 留下，加 Coat |
+| sets.json | Cathan's Rule | 卡珊的统治 → 伽森的法度 → 喀森的统御 | Khathen's Reign（原 Ghasen's Lawstaff） | 统治→统御，留统；Rule→Reign |
+| sets.json | Cathan's Seal | 卡珊的印章 → 伽森的封缄 → 喀森的印信 | Khathen's Signet（原 Ghasen's Unbroken Wax） | 印章→印信，留印；Seal→Signet |
+| sets.json | Cathan's Sigil | 卡珊的符徽 → 伽森的纹章 → 喀森的灵符 | Khathen's Spirit Glyph（原 Ghasen's Blazon） | 符徽→灵符，留符；Sigil→Glyph（符＝Glyph，同「镌符巨匠」；灵＝Spirit） |
+| sets.json | Cathan's Visage | 卡珊的面甲 → 伽森的真容 → 喀森的面具 | Khathen's Masked Visage（原 Ghasen's True Face） | 面甲→面具，留面（底材是面具）；Visage 留下，加 Masked |
+| sets.json | Griswold's Legacy | 格里斯沃尔德的遗产 → 葛雷兹渥的薪传 → 葛雷兹渥的遗泽 | Gerezwor's Heritage（原 Gerezwor's Ancestral Flame） | 遗产→遗泽，留遗；Legacy→Heritage |
+| sets.json | Griswold's Heart | 格里斯沃尔德的赤诚 → 葛雷兹渥的丹心（不变） | Gerezwor's Loyal Heart（原 Gerezwor's Crimson Fealty） | 丹心有心，也就是官方的赤诚；Heart 留下，加 Loyal |
+| sets.json | Griswold's Honor | 格里斯沃尔德的荣耀 → 葛雷兹渥的清誉 → 葛雷兹渥的荣誉 | Gerezwor's Esteem（原 Gerezwor's Unsullied Name） | 荣耀→荣誉，留荣；Honor→Esteem |
+| sets.json | Griswold's Valor | 格里斯沃尔德的勇气 → 葛雷兹渥的胆魄 → 葛雷兹渥的勇毅 | Gerezwor's Courage（原 Gerezwor's Dauntless Spirit） | 勇气→勇毅，留勇；Valor→Courage |
+| sets.json | Griswold's Redemption | 格里斯沃尔德的救赎 → 葛雷兹渥的涤罪 → 葛雷兹渥的赎罪 | Gerezwor's Atonement（原 Gerezwor's Purgation） | 救赎→赎罪，留赎；Redemption→Atonement |
+| sets.json | Immortal King | 不朽之王 → 镌石之君 → 不朽之君 | Immortal Sovereign（原 Graven Sovereign） | 不朽之王→不朽之君（style.md 的例子），全套统一；King→Sovereign，留 Immortal（君＝Sovereign，同「玄冰君」「雷君之魄」）；按旧规则改成的「镌石之君」认不出 |
+| sets.json | Immortal King's Detail | 不朽之王的功业 → 镌石之君的勋绩 → 不朽之君的功勋 | Immortal Sovereign's Detail（原 Graven Sovereign's Deeds） | 功业→功勋，留功；King→Sovereign，Detail 留下 |
+| sets.json | Immortal King's Forge | 不朽之王的锤炼 → 镌石之君的锻火 → 不朽之君的锤锻 | Immortal Sovereign's Forge（原 Graven Sovereign's Anvilfire） | 锤炼→锤锻，留锤；King→Sovereign，Forge 留下 |
+| sets.json | Immortal King's Pillar | 不朽之王的基石 → 镌石之君的柱础 → 不朽之君的础石 | Immortal Sovereign's Pillar（原 Graven Sovereign's Plinth） | 基石→础石，留石；King→Sovereign，Pillar 留下 |
+| sets.json | Immortal King's Soul Cage | 不朽之王的灵魂之笼 → 镌石之君的石椁 → 不朽之君的灵魂牢笼 | Immortal Sovereign's Soul Cage（原 Graven Sovereign's Sarcophagus） | 灵魂之笼→灵魂牢笼，留灵魂、笼；King→Sovereign，Soul Cage 留下 |
+| sets.json | Immortal King's Stone Crusher | 不朽之王的碎石锤 → 镌石之君的裂岩槌 → 不朽之君的碎岩锤 | Immortal Sovereign's Stone Crusher（原 Graven Sovereign's Cragsplitter） | 碎石锤→碎岩锤，留碎、锤；King→Sovereign，Stone Crusher 留下 |
+| sets.json | Immortal King's Will | 不朽之王的意志 → 镌石之君的遗诏 → 不朽之君的斗志 | Immortal Sovereign's Will（原 Graven Sovereign's Last Edict） | 意志→斗志，留志（意旨、遗志都只差声调）；King→Sovereign，Will 留下 |
+| sets.json | Sander's Folly | 山德的愚行 → 桑达尔的痴妄 → 善铎的愚妄 | Sandreth's Foolery（原 Sangdar's Delusion） | 愚行→愚妄，留愚；Folly→Foolery |
+| sets.json | Sander's Paragon | 山德的崇拜 → 桑达尔的圭臬 → 善铎的尊崇 | Sandreth's Exemplar（原 Sangdar's Touchstone） | 崇拜→尊崇，留崇；Paragon→Exemplar |
+| sets.json | Sander's Riprap | 山德的石碓 → 桑达尔的垒石 → 善铎的垒石 | Sandreth's Ripstone（原 Sangdar's Drystone） | 垒石已留石；Riprap→Ripstone，留 Rip- |
+| sets.json | Sander's Superstition | 山德的迷信 → 桑达尔的谶纬 → 善铎的盲信 | Sandreth's Blind Faith（原 Sangdar's Portents） | 迷信→盲信，留信；Superstition→Blind Faith |
+| sets.json | Sander's Taboo | 山德的禁忌 → 桑达尔的犯讳 → 善铎的讳忌 | Sandreth's Interdict（原 Sangdar's Transgression） | 禁忌→讳忌，留忌；Taboo→Interdict |
+| sets.json | Sazabi's Grand Tribute | 圣·沙略的伟大颂词 → 圣·撒札拜的无上献礼 → 圣·撒札拜的宏大颂词 | Saint Sazhabai's Great Tribute（原 Saint Sazhabai's Peerless Oblation） | 伟大颂词只换一个字（伟→宏）；Grand→Great，留 Tribute |
+| sets.json | Sazabi's Cobalt Redeemer | 圣·沙略的济世之剑 → 圣·撒札拜的赎世青锋 → 圣·撒札拜的济世之锋 | Saint Sazhabai's Cobalt Savior（原 Saint Sazhabai's World-Absolving Edge） | 济世之剑→济世之锋，留济世之；Redeemer→Savior，留 Cobalt |
+| sets.json | Sazabi's Ghost Liberator | 圣·沙略的魂灵解救者 → 圣·撒札拜的渡魂者 → 圣·撒札拜的魂灵解放者 | Saint Sazhabai's Spirit Liberator（原 Saint Sazhabai's Soul Ferryman） | 魂灵解救者只换一个字（救→放）；Ghost→Spirit，留 Liberator |
+| sets.json | Sazabi's Mental Sheath | 圣·沙略的心灵庇护 → 圣·撒札拜的敛神之鞘 → 圣·撒札拜的心灵护鞘 | Saint Sazhabai's Mental Scabbard（原 Saint Sazhabai's Stillmind Sheath） | 心灵庇护→心灵护鞘，留心灵、护；Sheath→Scabbard，留 Mental |
+| sets.json | Trang-Oul's Avatar | 塔格奥的化身 → 唐古尔的魔相 → 陀戈敖的化形 | Thangur's Incarnation（原 Thangur's Fiendform） | 化身→化形，留化；Avatar→Incarnation |
+| sets.json | Trang-Oul's Claws | 塔格奥的利爪 → 唐古尔的噬骨爪 → 陀戈敖的锐爪 | Thangur's Talons（原 Thangur's Bonegnaw Talons） | 利爪→锐爪，留爪；Claws→Talons（爪＝Talon） |
+| sets.json | Trang-Oul's Girth | 塔格奥的肚带 → 唐古尔的束腰 → 陀戈敖的腹带 | Thangur's Girthband（原 Thangur's Knotted Cincture） | 肚带→腹带，留带；Girth 留下，加 band（带） |
+| sets.json | Trang-Oul's Guise | 塔格奥的伪装 → 唐古尔的诡容 → 陀戈敖的伪容 | Thangur's False Face（原 Thangur's False Countenance） | 伪装→伪容，留伪；Guise→False Face |
+| sets.json | Trang-Oul's Scales | 塔格奥的鳞片 → 唐古尔的蟒鳞 → 陀戈敖的蛇鳞 | Thangur's Serpent Scales（原 Thangur's Serpent Mail） | 鳞片→蛇鳞，留鳞；Scales 留下，加 Serpent（蛇） |
+| sets.json | Trang-Oul's Wing | 塔格奥的飞翼 → 唐古尔的残翼 → 陀戈敖的残翼 | Thangur's Tattered Wing（原 Thangur's Tattered Pennon） | 残翼已留翼；Wing 留下，加 Tattered（残） |
+| sets.json | Arctic Gear | 北极装备 → 冰原行装 → 极地装备 | Polar Gear（原 Icefield Trappings） | 北极→极地，全套统一（只换一个字）；Arctic→Polar，全套统一，Gear 留下 |
+| sets.json | Arctic Binding | 北极束带 → 冰原革带 → 极地革带 | Polar Binding（原 Icefield Baldric） | 束带→革带，留带；Arctic→Polar，Binding 留下 |
+| sets.json | Arctic Furs | 北极毛皮 → 冰原裘衣 → 极地裘皮 | Polar Furs（原 Icefield Fur Mantle） | 毛皮→裘皮，留皮；Arctic→Polar，Furs 留下 |
+| sets.json | Arctic Horn | 北极号角 → 冰原角弓 → 极地角弓 | Polar Horn（原 Icefield Hornbow） | 号角→角弓（底材是弓），留角；Arctic→Polar，Horn 留下 |
+| sets.json | Arctic Mitts | 北极手套 → 冰原护掌 → 极地护手 | Polar Mitts（原 Icefield Palmguards） | 手套→护手，留手；Arctic→Polar，Mitts 留下 |
+| sets.json | Civerb's Vestments | 希弗伯的法衣 → 锡维勃的祭服 → 锡维勃的祭衣 | Siverbor's Priestly Robes（原 Shiwebor's Altar Raiment） | 法衣→祭衣，留衣；Vestments→Priestly Robes |
+| sets.json | Civerb's Cudgel | 希弗伯的短棍 → 锡维勃的惩戒棒 → 锡维勃的短棒 | Siverbor's Bludgeon（原 Shiwebor's Chastening Rod） | 短棍→短棒，留短；Cudgel→Bludgeon |
+| sets.json | Civerb's Icon | 希弗伯的圣像 → 锡维勃的圣徽（不变） | Siverbor's Sacred Icon（原 Shiwebor's Holy Sigil） | 圣徽已留圣；Icon 留下，加 Sacred（圣） |
+| sets.json | Civerb's Ward | 希弗伯的防护 → 锡维勃的圣垣 → 锡维勃的屏护 | Siverbor's Holy Ward（原 Shiwebor's Hallowed Rampart） | 防护→屏护，留护；Ward 留下，加 Holy |
+| sets.json | Heaven's Brethren | 天堂同袍 → 天阙袍泽 → 天国同袍 | Heaven's Comrades（原 Comrades of the Empyrean） | 天堂同袍只换一个字（堂→国）；Brethren→Comrades，留 Heaven's |
+| sets.json | Dangoon's Teaching | 覃君的教导 → 丹衮的垂训 → 谭衮的教诲 | Tangun's Instruction（原 Danghun's Precepts） | 教导→教诲，留教；Teaching→Instruction |
+| sets.json | Haemosu's Adamant | 解慕苏的坚定 → 海谟索的磐心 → 海谟索的坚贞 | Haimorso's Steadfast Heart（原 Haimorso's Stoneheart） | 坚定→坚贞，留坚；Adamant→Steadfast Heart |
+| sets.json | Taebaek's Glory | 泰白的荣耀 → 太魄的天辉 → 太魄的荣华 | Taibeck's Shining Glory（原 Taipor's Heavenly Radiance） | 荣耀→荣华，留荣（「光耀」给了符文之语 Radiance）；Glory 留下，加 Shining |
+| sets.json | Ondal's Almighty | 温达的全灵 → 翁德的大能 → 翁德的全能 | Ondamir's Omnipotence（原 Wengde's Puissance） | 全灵→全能，留全，也正是 Almighty；Almighty→Omnipotence |
+| sets.json | Infernal Tools | 地狱工具 → 炼狱法器 → 炼狱器具 | Purgatorial Tools（原 Purgatorial Instruments） | 地狱→炼狱，全套统一，留狱；工具→器具，留具；Infernal→Purgatorial（炼狱＝Purgatorial，同暗金「炼狱飞矢」），全套统一，Tools 留下 |
+| sets.json | Infernal Cranium | 地狱颅骨 → 炼狱髑髅 → 炼狱颅盔 | Purgatorial Cranium（原 Purgatorial Death's-Head） | 颅骨→颅盔，留颅；Cranium 留下 |
+| sets.json | Infernal Sign | 地狱印记 → 炼狱烙印 → 炼狱印痕 | Purgatorial Sign（原 Purgatorial Brand） | 印记→印痕，留印（「烙印」是符文之语 Brand 的官方名）；Sign 留下 |
+| sets.json | Infernal Torch | 地狱火炬 → 炼狱燎火 → 炼狱火把 | Purgatorial Torch（原 Purgatorial Blaze） | 火炬→火把，留火；Torch 留下 |
+| sets.json | Milabrega's Regalia | 米拉伯佳的王权 → 弥罗贝伽的王仪（不变） | Mirobeiga's Royal Regalia（原 Mirobeiga's Royal Pomp） | 王仪已留王；Regalia 留下，加 Royal（王） |
+| sets.json | Milabrega's Diadem | 米拉伯佳的冠冕 → 弥罗贝伽的宝冠（不变） | Mirobeiga's Jeweled Diadem（原 Mirobeiga's Jeweled Crown） | 宝冠已留冠；Diadem 留下，加 Jeweled（宝） |
+| sets.json | Milabrega's Orb | 米拉伯佳的宝球 → 弥罗贝伽的御珠 → 弥罗贝伽的宝珠 | Mirobeiga's Precious Orb（原 Mirobeiga's Sovereign Pearl） | 宝球→宝珠，留宝；Orb 留下，加 Precious（宝） |
+| sets.json | Milabrega's Robe | 米拉伯佳的袍甲 → 弥罗贝伽的衮服 → 弥罗贝伽的袍铠 | Mirobeiga's Armored Robe（原 Mirobeiga's Coronation Mantle） | 袍甲→袍铠，留袍；Robe 留下，加 Armored |
+| sets.json | Milabrega's Rod | 米拉伯佳的权杖 → 弥罗贝伽的王笏 → 弥罗贝伽的王杖 | Mirobeiga's Sceptre（不变） | 权杖→王杖，留杖；英文 Sceptre 不变 |
+| sets.json | Sigon's Complete Steel | 西刚的全身甲胄 → 希贡的浑铁铠胄 → 希贡的全身铠胄 | Shigund's Full Steel（原 Shigund's Iron Panoply） | 全身甲胄只换一个字（甲→铠）；Complete→Full，留 Steel |
+| sets.json | Sigon's Gage | 西刚的挑战 → 希贡的战帖（不变） | Shigund's Thrown Gage（原 Shigund's Thrown Gauntlet） | 战帖已留战；Gage 留下，加 Thrown |
+| sets.json | Sigon's Guard | 西刚的守护 → 希贡的壁垒 → 希贡的守卫 | Shigund's Defender（原 Shigund's Redoubt） | 守护→守卫，留守；Guard→Defender |
+| sets.json | Sigon's Sabot | 西刚的木底鞋 → 希贡的铁履 → 希贡的铁底鞋 | Shigund's Iron Sabatons（原 Shigund's Iron Sollerets） | 木底鞋只换一个字（木→铁）；Sabot→Sabatons，读音相近 |
+| sets.json | Sigon's Shelter | 西刚的遮蔽 → 希贡的荫庇 → 希贡的遮护 | Shigund's Aegis（原 Shigund's Warding Shade） | 遮蔽→遮护，留遮；Shelter→Aegis |
+| sets.json | Sigon's Visor | 西刚的面甲 → 希贡的覆面 → 希贡的面罩 | Shigund's Faceplate（不变） | 面甲→面罩，留面；英文 Faceplate 不变 |
+| sets.json | Sigon's Wrap | 西刚的腰带 → 希贡的束甲带（不变） | Shigund's Mail Wrap（原 Shigund's Harness Girdle） | 束甲带已留带；Wrap 留下，加 Mail（甲） |
+| sets.json | Vidala's Rig | 维达拉的配装 → 薇朵菈的猎装（不变） | Veydola's Hunting Rig（原 Weydola's Hunting Garb） | 猎装已留装；Rig 留下，加 Hunting（猎） |
+| sets.json | Vidala's Ambush | 维达拉的突袭 → 薇朵菈的暗伏 → 薇朵菈的奇袭 | Veydola's Ambuscade（原 Weydola's Covert） | 突袭→奇袭，留袭；Ambush→Ambuscade |
+| sets.json | Vidala's Barb | 维达拉的倒刺 → 薇朵菈的棘镞 → 薇朵菈的倒钩 | Veydola's Barbed Shaft（原 Weydola's Thorn Broadhead） | 倒刺→倒钩，留倒；Barb→Barbed Shaft |
+| sets.json | Vidala's Fetlock | 维达拉的扣带靴 → 薇朵菈的轻蹄 → 薇朵菈的系带靴 | Veydola's Fleet Fetlock（原 Weydola's Fleet Hooves） | 扣带靴只换一个字（扣→系）；Fetlock 留下，加 Fleet |
+| sets.json | Vidala's Snare | 维达拉的陷阱 → 薇朵菈的套索 → 薇朵菈的伏阱 | Veydola's Noose（原 Weydola's Noose） | 陷阱→伏阱，留阱（「陷坑」是区域名）；英文 Noose 不变 |
+| sets.json | Bane's Garments | （无） → 拜因的衣冠（不变） | Baiyen's Garb（原 Baiyen's Regalia） | Garments→Garb（原 Regalia 是 Milabrega's Regalia 的原名） |
+| sets.json | Bane's Authority | （无） → 拜因的印绶 → 拜因的权印 | Baiyen's Mandate（原 Baiyen's Signet Cord） | 官方无中文，照英文 Authority（权威）留权；Authority→Mandate |
+| sets.json | Bane's Oathmaker | （无） → 拜因的誓锋（不变） | Baiyen's Oathblade（原 Baiyen's Sworn Edge） | 誓锋已留誓；Oathmaker→Oathblade，留 Oath |
+| sets.json | Bane's Wraithskin | （无） → 拜因的魂蜕（不变） | Baiyen's Wraithhide（原 Baiyen's Soul Slough） | Wraithskin→Wraithhide，留 Wraith |
+| sets.json | Cleglaw's Brace | 克雷格劳的支柱 → 柯勒戈罗的基石 → 柯勒戈罗的支撑 | Clegaro's Buttress（原 Kelegaro's Cornerstone） | 支柱→支撑，留支（原「基石」是不朽之王的基石的官方名）；Brace→Buttress |
+| sets.json | Cleglaw's Claw | 克雷格劳之爪 → 柯勒戈罗的利钩 → 柯勒戈罗之铁爪 | Clegaro's Iron Claw（原 Kelegaro's Barbed Hook） | 之爪留下，加铁；Claw 留下，加 Iron（铁） |
+| sets.json | Cleglaw's Pincers | 克雷格劳之钳 → 柯勒戈罗的铁螯 → 柯勒戈罗之巨钳 | Clegaro's Great Pincers（原 Kelegaro's Ironshell Grasp） | 之钳留下，加巨；Pincers 留下，加 Great（巨） |
+| sets.json | Cleglaw's Tooth | 克雷格劳之牙 → 柯勒戈罗的獠齿 → 柯勒戈罗之尖牙 | Clegaro's Sharp Tooth（原 Kelegaro's Snarling Tusk） | 之牙留下，加尖；Tooth 留下，加 Sharp（尖） |
+| sets.json | Horazon's Splendor | （无） → 浩瑞赞的辉华（不变） | Haurezan's Grandeur（原 Haurezan's Aureole） | Splendor→Grandeur |
+| sets.json | Horazon's Countenance | （无） → 浩瑞赞的眉宇（不变） | Haurezan's Grave Countenance（原 Haurezan's Brow） | Countenance 留下，加 Grave |
+| sets.json | Horazon's Dominion | （无） → 浩瑞赞的御境（不变） | Haurezan's Realm（原 Haurezan's Warded Realm） | Dominion→Realm |
+| sets.json | Horazon's Hold | （无） → 浩瑞赞的执掌（不变） | Haurezan's Grip（原 Haurezan's Ruling Hand） | Hold→Grip |
+| sets.json | Horazon's Legacy | （无） → 浩瑞赞的余荫（不变） | Haurezan's Bequest（原 Haurezan's Lingering Shade） | Legacy→Bequest |
+| sets.json | Horazon's Secrets | （无） → 浩瑞赞的隐典（不变） | Haurezan's Secret Tome（原 Haurezan's Cloistered Tome） | Secrets→Secret Tome，随中文隐典 |
+| sets.json | Iratha's Finery | 艾蕾萨的华服 → 依蕊莎的锦裳 → 爱蕊莎的华裳 | Eirusha's Fine Attire（原 Yirusha's Brocade） | 华服→华裳，留华；Finery→Fine Attire |
+| sets.json | Iratha's Coil | 艾蕾萨的铁围盔 → 依蕊莎的蟠冠 → 爱蕊莎的铁环盔 | Eirusha's Iron Coil（原 Yirusha's Serpent Crown） | 铁围盔只换一个字（围→环）；Coil 留下，加 Iron（铁） |
+| sets.json | Iratha's Collar | 艾蕾萨的护颈圈 → 依蕊莎的项锁 → 爱蕊莎的护颈环 | Eirusha's Neckguard（原 Yirusha's Locket） | 护颈圈只换一个字（圈→环）；Collar→Neckguard |
+| sets.json | Iratha's Cord | 艾蕾萨的束带 → 依蕊莎的系绦 → 爱蕊莎的绦带 | Eirusha's Silken Cord（原 Yirusha's Silk Sash） | 束带→绦带，留带；Cord 留下，加 Silken |
+| sets.json | Iratha's Cuff | 艾蕾萨的袖手套 → 依蕊莎的腕箍 → 爱蕊莎的袖甲 | Eirusha's Wristcuff（原 Yirusha's Banded Bracer） | 袖手套→袖甲，留袖；Cuff→Wristcuff，留 cuff |
+| sets.json | Naj's Ancient Vestige | 诺吉的古代遗物 → 纳奇的上古遗痕 → 纳济的上古遗物 | Nadji's Ancient Relic（原 Natchi's Elder Imprint） | 古代遗物→上古遗物，留古、遗物；Vestige→Relic，留 Ancient |
+| sets.json | Naj's Circlet | 诺吉的头环 → 纳奇的玄冕 → 纳济的额环 | Nadji's Brow Circlet（原 Natchi's Sable Diadem） | 头环→额环，留环；Circlet 留下，加 Brow（额） |
+| sets.json | Naj's Light Plate | 诺吉的轻铠甲 → 纳奇的羽铠 → 纳济的轻板甲 | Nadji's Featherlight Plate（原 Natchi's Feather Mail） | 轻铠甲只换一个字（铠→板）；Light→Featherlight，留 Plate |
+| sets.json | Naj's Puzzler | 诺吉的解密棒 → 纳奇的谜杖 → 纳济的解密杖 | Nadji's Puzzle Staff（原 Natchi's Riddle Staff） | 解密棒→解密杖，留解密；Puzzler→Puzzle Staff |
+| sets.json | Tal Rasha's Adjudication | 塔·拉夏的裁决 → 陀·剌沙的审断 → 陀·剌沙的裁断 | Thol Lashar's Judgment（原 Thol Lashar's Reckoning） | 裁决→裁断，留裁；Adjudication→Judgment |
+| sets.json | Tal Rasha's Fine-Spun Cloth | 塔·拉夏的精织带 → 陀·剌沙的纤缕 → 陀·剌沙的细织带 | Thol Lashar's Fine-Woven Cloth（原 Thol Lashar's Gossamer） | 精织带只换一个字（精→细）；Spun→Woven，留 Fine、Cloth |
+| sets.json | Tal Rasha's Guardianship | 塔·拉夏的守护 → 陀·剌沙的屏藩 → 陀·剌沙的护持 | Thol Lashar's Wardship（原 Thol Lashar's Palisade） | 守护→护持，留护；Guardianship→Wardship |
+| sets.json | Tal Rasha's Lidless Eye | 塔·拉夏的无睑之眼 → 陀·剌沙的不瞑之目 → 陀·剌沙的无睑之目 | Thol Lashar's Lidless Gaze（原 Thol Lashar's Everwatch Gaze） | 无睑之眼只换一个字（眼→目）；Eye→Gaze，留 Lidless |
+| sets.json | Warlord's Glory | （无） → 兵主的威烈 → 兵主的荣光 | Hostlord's Glory（原 Hostlord's Dread Might） | Warlord 是称号，全套译作古称「兵主」（兵＝war，主＝lord）；官方无中文，Glory 照英文取荣光（同暗金「猎颅者的荣光」）；Warlord→Hostlord，全套统一，Glory 留下 |
+| sets.json | Warlord's Authority | （无） → 兵主的号令 → 兵主的军令 | Hostlord's Command（原 Hostlord's Clarion） | 官方无中文，Authority 取军令（号令＝Clarion 是稀有名词 Calling 的）；Authority→Command |
+| sets.json | Warlord's Conquest | （无） → 兵主的拓疆 → 兵主的征伐 | Hostlord's Subjugation（原 Hostlord's Borderbreaker） | 官方无中文，Conquest 照英文取征伐；Conquest→Subjugation |
+| sets.json | Warlord's Crushers | （无） → 兵主的碾骨（不变） | Hostlord's Bonecrushers（原 Hostlord's Bonetreads） | 碾骨已是碾压；Crushers 留下，加 Bone（骨） |
+| sets.json | Warlord's Lust | （无） → 兵主的血欲（不变） | Hostlord's Bloodlust（原 Hostlord's Blood Hunger） | 血欲已留欲；Lust 留下，加 Blood（血） |
+| sets.json | Warlord's Mantle | （无） → 兵主的战氅（不变） | Hostlord's War Mantle（原 Hostlord's Warcloak） | 战氅；Mantle 留下，加 War（战） |
+| runewords.json | Ancients' Pledge | 先祖之誓 → 祖灵盟约 → 远祖之誓 | Ancients' Vow（原 Covenant of Forebear Shades） | 先祖之誓只换一个字（先→远）；Pledge→Vow，留 Ancients'（Oath 是另一个符文之语） |
+| runewords.json | Authority | 权威 → 统御 → 权柄 | High Authority（原 Reins of Command） | 权威→权柄，留权；Authority 留下，加 High |
+| runewords.json | Beast | 野兽 → 兽魄 → 猛兽 | Feral Beast（原 Feral Anima） | 野兽→猛兽，留兽（「凶兽」是稀有名词 Beast）；Beast 留下，加 Feral |
+| runewords.json | Black | 黑色 → 墨夜 → 漆黑 | Pitch Black（原 Inkdark Night） | 黑色→漆黑，留黑；Black 留下，加 Pitch |
+| runewords.json | Bone | 白骨 → 骨冢 → 骸骨 | Charnel Bone（原 Charnel Barrow） | 白骨→骸骨，留骨（「枯骨」是稀有名词、怪物前缀 Bone）；Bone 留下，加 Charnel（骸＝Charnel） |
+| runewords.json | Bramble | 荆棘 → 棘莽 → 荆丛 | Bramble Thicket（原 Snarl of Thorns） | 荆棘→荆丛，留荆；Bramble 留下，加 Thicket（丛） |
+| runewords.json | Brand | 烙印 → 焚痕 → 灼印 | Scorching Brand（原 Scorchmark） | 烙印→灼印，留印；Brand 留下，加 Scorching（灼） |
+| runewords.json | Breath of the Dying | 濒死之息 → 垂亡残喘 → 垂死之息 | Gasp of the Dying（原 Deathbed Gasp） | 濒死之息只换一个字（濒→垂）；Breath→Gasp，留 of the Dying |
+| runewords.json | Bulwark | 壁垒 → 铜垣 → 坚垒 | Stout Bulwark（原 Brazen Rampart） | 壁垒→坚垒，留垒；Bulwark 留下，加 Stout（坚）；按旧规则改成的「铜垣」认不出 |
+| runewords.json | Call to Arms | 战争召唤 → 执戈之召 → 战争号召 | Call to Battle（原 Muster of Spears） | 战争召唤→战争号召（style.md 的例子）；Arms→Battle，留 Call to |
+| runewords.json | Chains of Honor | 荣耀之链 → 尊荣枷锁 → 荣耀锁链 | Fetters of Honor（原 Laurel Fetters） | 荣耀之链→荣耀锁链，留荣耀、链；Chains→Fetters，留 Honor |
+| runewords.json | Chaos | 混沌 → 乱世 → 太初混沌 | Primal Chaos（原 Age of Turmoil） | 混沌整个留下，加太初；Chaos 留下，加 Primal（太初） |
+| runewords.json | Coven | （无） → 夜巫秘会（不变） | Midnight Coven（原 Midnight Sabbat） | 官方无中文，夜巫秘会即 Coven；Coven 留下，加 Midnight（夜） |
+| runewords.json | Crescent Moon | 新月 → 钩月（不变） | Sickle Moon（原 Moonhook） | 钩月已留月，新月如钩；Crescent→Sickle，留 Moon |
+| runewords.json | Cure | 解药 → 药石 → 灵药 | Panacea（原 Balm and Lancet） | 解药→灵药，留药；Cure→Panacea |
+| runewords.json | Death | 死亡 → 殒命 → 死兆 | Death Knell（原 Lastbreath） | 死亡→死兆，留死；Death 留下，加 Knell（丧钟，死兆） |
+| runewords.json | Delirium | 迷狂 → 狂呓 → 迷妄 | Fevered Delirium（原 Mad Ravings） | 迷狂→迷妄，留迷，妄同谵妄（「癫狂」是前缀 Raging，「迷乱」是技能 Confuse 的官方名）；Delirium 留下，加 Fevered |
+| runewords.json | Destruction | 毁灭 → 天崩 → 覆灭 | Ruination（原 Sundered Heavens） | 毁灭→覆灭，留灭；Destruction→Ruination |
+| runewords.json | Doom | 厄运 → 劫数 → 厄劫 | Impending Doom（原 Fated Calamity） | 厄运→厄劫，留厄；Doom 留下，加 Impending |
+| runewords.json | Dragon | 巨龙 → 孽龙 → 邪龙 | Baleful Dragon（原 Sinborn Wyrm） | 巨龙→邪龙，留龙（「孽龙」是怪物前缀 Dragon 的名字，在那里作 Wyrm，一个中文词只对一个英文词）；Dragon 留下，加 Baleful（邪） |
+| runewords.json | Dream | 梦境 → 幽梦（不变） | Ghostly Dream（原 Phantom Reverie） | 幽梦已留梦；Dream 留下，加 Ghostly（幽） |
+| runewords.json | Duress | 强压 → 钳制 → 威压 | Coercion（原 Iron Vise） | 强压→威压，留压；Duress→Coercion |
+| runewords.json | Edge | 锐锋 → 锋芒（不变） | Glinting Edge（原 Blade's Glint） | 锋芒已留锋；Edge 留下，加 Glinting（芒） |
+| runewords.json | Enigma | 谜团 → 诡谜（不变） | Uncanny Enigma（原 Uncanny Riddle） | 诡谜（style.md 的例子）；Enigma 留下，加 Uncanny（诡） |
+| runewords.json | Enlightenment | 启迪 → 顿悟 → 启悟 | Illumination（原 Sudden Awakening） | 启迪→启悟，留启；Enlightenment→Illumination |
+| runewords.json | Eternity | 永恒 → 亘古 → 永世 | Evermore（原 Time Immemorial） | 永恒→永世，留永；Eternity→Evermore（Everlasting 是官方的另一条英文） |
+| runewords.json | Exile | 流放 → 远谪 → 流亡 | Banishment（原 Banished Afar） | 流放→流亡，留流（「放逐者」是游侠）；Exile→Banishment |
+| runewords.json | Faith | 信念 → 狂信（不变） | Fervent Faith（原 Zealot's Creed） | 狂信已留信；Faith 留下，加 Fervent（狂） |
+| runewords.json | Famine | 饥荒 → 饿殍 → 饥馑 | Starvation（原 The Starved Dead） | 饥荒→饥馑，留饥；Famine→Starvation |
+| runewords.json | Flickering Flame | 闪烁火焰 → 明灭之焰 → 闪烁烛焰 | Guttering Flame（原 Gutterflame） | 闪烁火焰只换一个字（火→烛）；Flickering→Guttering，留 Flame |
+| runewords.json | Fortitude | 刚毅 → 铁骨 → 坚毅 | Stalwart Fortitude（原 Bones of Iron） | 刚毅→坚毅，留毅；Fortitude 留下，加 Stalwart（坚） |
+| runewords.json | Fury | 愤怒 → 怒潮 → 盛怒 | Towering Fury（原 Raging Tide） | 愤怒→盛怒，留怒（「狂怒」「暴怒」是官方的另几条中文）；Fury 留下，加 Towering（盛） |
+| runewords.json | Gloom | 阴霾 → 晦冥 → 阴晦 | Lightless Gloom（原 Lightless Murk） | 阴霾→阴晦，留阴；Gloom 留下，加 Lightless |
+| runewords.json | Grief | 悔恨 → 泣血 → 遗恨 | Lingering Sorrow（原 Weeping Blood） | 悔恨→遗恨，留恨；Grief→Lingering Sorrow（Sorrow 是官方的另一条英文） |
+| runewords.json | Ground | 地面 → 厚土 → 实地 | Solid Ground（原 Deep Earth） | 地面→实地，留地（「大地」是官方的另一条中文）；Ground 留下，加 Solid（实） |
+| runewords.json | Hand of Justice | 正义之手 → 秉衡之手 → 正义之掌 | Palm of Justice（原 Scale-Bearing Hand） | 正义之手只换一个字（手→掌）；Hand→Palm，留 of Justice |
+| runewords.json | Harmony | 和谐 → 和鸣（不变） | Harmony of Voices（原 Answering Song） | 和鸣已留和；Harmony 留下，加 of Voices（鸣） |
+| runewords.json | Heart of the Oak | 橡树之心 → 古橡心髓 → 古橡之心 | Heart of the Elder Oak（原 Elder Oak Marrow） | 橡树之心→古橡之心，留橡、之心，古橡同技能「古橡贤灵」；Heart of the Oak 留下，加 Elder（古） |
+| runewords.json | Hearth | 壁炉 → 炉火（不变） | Hearthflame（原 Banked Embers） | 炉火已留炉；Hearth 留下，加 flame（火） |
+| runewords.json | Holy Thunder | 圣雷 → 神霆 → 圣霆 | Sacred Thunder（原 Godsbolt） | 圣雷→圣霆，留圣；Holy→Sacred（圣＝Sacred），留 Thunder |
+| runewords.json | Hustle | 喧嚣 → 疾驰 → 喧腾 | Headlong Hustle（原 Headlong Gallop） | 官方「喧嚣」是误译，但老玩家认的是它：喧嚣→喧腾，留喧，喧腾也有奔涌之意；Hustle 留下，加 Headlong；与 Runeword172 是同一个符文之语，同名 |
+| runewords.json | Hustle | 喧嚣 → 疾行 → 喧腾 | Headlong Hustle（原 Swift Stride） | 官方「喧嚣」是误译，但老玩家认的是它：喧嚣→喧腾，留喧，喧腾也有奔涌之意；Hustle 留下，加 Headlong；与 Runeword171 是同一个符文之语，同名 |
+| runewords.json | Infinity | 无限 → 无始无终 → 无穷 | Limitless（原 Neither Dawn nor Dusk） | 无限→无穷，留无；Infinity→Limitless（Boundless 是前缀「太虚」） |
+| runewords.json | Insight | 眼光 → 洞明 → 慧眼 | Eye of Insight（原 Piercing Clarity） | 眼光→慧眼，留眼（「慧光之」是后缀）；Insight 留下，加 Eye of |
+| runewords.json | King's Grace | 王恩 → 圣眷 → 君恩 | Sovereign's Grace（原 Favor of the Throne） | 王恩→君恩，留恩；King→Sovereign（君＝Sovereign），留 Grace |
+| runewords.json | Kingslayer | 弑君者 → 碎冠者 → 弑王者 | Regicide（原 Crownbreaker） | 弑君者→弑王者，留弑…者；Kingslayer→Regicide |
+| runewords.json | Last Wish | 临终之愿 → 弥留遗愿 → 临终遗愿 | Final Wish（原 Bequest at Death's Door） | 临终之愿→临终遗愿，留临终、愿；Last→Final，留 Wish |
+| runewords.json | Lawbringer | 执法者 → 颁律者 → 执律者 | Lawkeeper（原 Herald of Edicts） | 执法者→执律者，留执…者；Lawbringer→Lawkeeper，留 Law |
+| runewords.json | Leaf | 叶子 → 焚叶（不变） | Burning Leaf（原 Cinderfrond） | 焚叶已留叶；Leaf 留下，加 Burning（焚） |
+| runewords.json | Lionheart | 狮心 → 雄狮之胆 → 雄狮之心 | Lionsoul（原 Lion's Gall） | 狮心整个留下，加雄、之；Lionheart→Lionsoul，留 Lion |
+| runewords.json | Lore | 学识 → 秘卷 → 博识 | Deep Lore（原 Veiled Codex） | 学识→博识，留识；Lore 留下，加 Deep |
+| runewords.json | Malice | 怨恨 → 蛇蝎心肠 → 积怨 | Rankling Malice（原 Heart of Scorpions） | 怨恨→积怨，留怨（「怨毒之」是后缀）；Malice 留下，加 Rankling |
+| runewords.json | Melody | 旋律 → 弦歌 → 弦律 | Bowstring Melody（原 Stringsong） | 旋律→弦律，留律，弓类；Melody 留下，加 Bowstring（弦） |
+| runewords.json | Memory | 回忆 → 前尘 → 追忆 | Remembrance（原 Yesteryear's Dust） | 回忆→追忆，留忆；Memory→Remembrance |
+| runewords.json | Metamorphosis | 变形 → 蜕骨化形 → 蜕形 | Transformation（原 Bonemolt） | 变形→蜕形，留形；Metamorphosis→Transformation |
+| runewords.json | Mist | 迷雾 → 幽岚 → 幽雾 | Ghostly Mist（原 Gloomfell Haze） | 迷雾→幽雾，留雾；Mist 留下，加 Ghostly（幽） |
+| runewords.json | Mosaic | 模糊 → 碎彩迷离（不变） | Fractured Mosaic（原 Splintered Hues） | 碎彩迷离：碎彩是 Mosaic，迷离接官方「模糊」；Mosaic 留下，加 Fractured（碎） |
+| runewords.json | Myth | 神话 → 太古神谭 → 太古神话 | Primeval Myth（原 Primeval Saga） | 神话整个留下，加太古；Myth 留下，加 Primeval（太古） |
+| runewords.json | Nadir | 天底 → 渊底（不变） | Abyssal Nadir（原 Nethermost Deep） | 渊底已留底；Nadir 留下，加 Abyssal（渊） |
+| runewords.json | Oath | 誓言 → 歃血之盟 → 誓约 | Solemn Oath（原 Bloodsealed Pact） | 誓言→誓约，留誓；Oath 留下，加 Solemn |
+| runewords.json | Obedience | 顺从 → 俯首 → 服从 | Submission（原 Bowed Head） | 顺从→服从，留从；Obedience→Submission |
+| runewords.json | Obsession | 执着 → 执魇 → 执念 | Fixation（原 Nightmare's Grip） | 执着→执念，留执；Obsession→Fixation |
+| runewords.json | Passion | 热情 → 炽心 → 炽情 | Ardor（原 Kindled Heart） | 热情→炽情，留情；Passion→Ardor |
+| runewords.json | Pattern | 典范 → 暗纹 → 典纹 | Etched Pattern（原 Dusk-Etched Tracery） | 典范→典纹，留典，纹是 Pattern 的本义；Pattern 留下，加 Etched |
+| runewords.json | Peace | 平和 → 止戈 → 祥和 | Tranquility（原 Stilled Spear） | 平和→祥和，留和；Peace→Tranquility |
+| runewords.json | Phoenix | 凤凰 → 烬羽涅槃 → 烬凰 | Ember Phoenix（原 Emberplume Rebirth） | 凤凰→烬凰，留凰；Phoenix 留下，加 Ember（烬） |
+| runewords.json | Plague | 瘟疫 → 黑疫之潮 → 黑瘟 | Creeping Pestilence（原 Tide of Black Pestilence） | 瘟疫→黑瘟，留瘟；Plague→Creeping Pestilence（瘟＝Pestilence，同暗金「行瘟者」；Pestilence 单用是官方的另一条英文） |
+| runewords.json | Pride | 骄傲 → 睥睨 → 倨傲 | Hubris（原 Gaze of Disdain） | 骄傲→倨傲，留傲；Pride→Hubris |
+| runewords.json | Principle | 信条 → 守正之律 → 戒条 | Axiom（原 Canon of the Upright） | 信条→戒条，留条；Principle→Axiom |
+| runewords.json | Prudence | 谨慎 → 履冰 → 审慎 | Caution（原 Thin Ice Underfoot） | 谨慎→审慎，留慎；Prudence→Caution |
+| runewords.json | Radiance | 光辉 → 曜芒 → 光耀 | Brilliance（原 Daystar Gleam） | 光辉→光耀，留光（「光华」是官方的另一条中文）；Radiance→Brilliance |
+| runewords.json | Rain | 暴雨 → 苦雨（不变） | Bitter Rain（原 Dolorous Deluge） | 苦雨已留雨；Rain 留下，加 Bitter（苦），style-en.md 的例子 |
+| runewords.json | Rhyme | 韵律 → 长吟 → 诗韵 | Verse（原 Lingering Chant） | 韵律→诗韵，留韵；Rhyme→Verse |
+| runewords.json | Rift | 裂隙 → 天裂（不变） | Skyrift（原 Skycleft） | 天裂已留裂；Rift 留下，加 Sky（天） |
+| runewords.json | Ritual | （无） → 血祭（不变） | Blood Ritual（原 Blood Oblation） | 官方无中文，血祭即 Ritual；Ritual 留下，加 Blood（血） |
+| runewords.json | Sanctuary | 庇护 → 圣荫 → 庇荫 | Shaded Sanctuary（原 Consecrated Shade） | 庇护→庇荫，留庇；Sanctuary 留下，加 Shaded（荫） |
+| runewords.json | Silence | 沉默 → 死寂 → 沉寂 | Stillness（原 Grave Stillness） | 沉默→沉寂，留沉；Silence→Stillness |
+| runewords.json | Smoke | 烟雾 → 狼烟（不变） | Wolfsmoke（原 Wolfbeacon） | 狼烟已留烟；Smoke 留下，加 Wolf（狼） |
+| runewords.json | Spirit | 精神 → 神魂 → 精魂 | Living Spirit（原 Godsoul） | 精神→精魂，留精；Spirit 留下，加 Living |
+| runewords.json | Splendor | 壮美 → 煌煌 → 壮丽 | Magnificence（原 Blazing Majesty） | 壮美→壮丽，留壮，同「寰音的壮丽」；Splendor→Magnificence |
+| runewords.json | Stealth | 隐秘 → 匿影 → 隐匿 | Concealment（原 Concealing Shadow） | 隐秘→隐匿，留隐；Stealth→Concealment |
+| runewords.json | Steel | 钢铁 → 千锻刃 → 钢锋 | Honed Steel（原 Thousand-Forged Blade） | 钢铁→钢锋，留钢（style.md 例子里的「百炼」是前缀 Steel 的名字）；Steel 留下，加 Honed（锋）；按旧规则改成的「千锻刃」认不出 |
+| runewords.json | Stone | 磐石 → 苍岩 → 磐岩 | Stonecrag（原 Hoarcrag） | 磐石→磐岩，留磐；Stone 留下，加 crag（岩＝Crag） |
+| runewords.json | Strength | 力量 → 扛鼎 → 巨力 | Great Might（原 Shouldered Cauldron） | 力量→巨力，留力；Strength→Great Might |
+| runewords.json | Temper | 淬火 → 烈炉 → 淬炼 | Temper of the Forge（原 Roaring Forge） | 淬火→淬炼，留淬；Temper 留下，加 of the Forge（炼） |
+| runewords.json | Treachery | 背叛 → 叛刃 → 背弃 | Betrayal（原 Turncoat's Blade） | 背叛→背弃，留背；Treachery→Betrayal |
+| runewords.json | Unbending Will | 不屈之志 → 九死之志 → 不挠之志 | Unbending Resolve（原 Resolve of Nine Deaths） | 不屈之志只换一个字（屈→挠，不屈不挠）；Will→Resolve，留 Unbending |
+| runewords.json | Venom | 毒液 → 蝮牙 → 蛇毒 | Serpent Venom（原 Adder's Fang） | 毒液→蛇毒，留毒（「毒涎」是稀有名词 venom）；Venom 留下，加 Serpent（蛇） |
+| runewords.json | Vigilance | （无） → 不寐之眼（不变） | Sleepless Vigilance（原 Sleepless Eye） | 官方无中文，不寐之眼即 Vigilance；Vigilance 留下，加 Sleepless（不寐） |
+| runewords.json | Voice of Reason | 理智之声 → 清明谏言 → 理性之声 | Voice of Sanity（原 Lucid Counsel） | 理智之声只换一个字（智→性）；Reason→Sanity，留 Voice of |
+| runewords.json | Void | 虚空 → 冥空（不变） | Stygian Void（原 Stygian Hollow） | 冥空已留空；Void 留下，加 Stygian（冥） |
+| runewords.json | Wealth | 财富 → 敛金 → 财宝 | Riches（原 Hoarded Gold） | 财富→财宝，留财；Wealth→Riches |
+| runewords.json | White | 白色 → 缟素 → 素白 | Pure White（原 Pale Mourning Shroud） | 白色→素白，留白；White 留下，加 Pure（素） |
+| runewords.json | Wind | 疾风 → 卷地风 → 劲风 | Strong Gale（原 Scouring Squall） | 疾风→劲风，留风；Wind→Strong Gale（风＝Gale） |
+| runewords.json | Wisdom | 智慧 → 明哲 → 睿智 | Sagacity（原 Sage's Discernment） | 智慧→睿智，留智，同暗金「奎赫根的睿智」；Wisdom→Sagacity |
+| runewords.json | Wrath | 怒火 → 赫怒 → 怒焰 | Wrathflame（原 Kingly Ire） | 怒火→怒焰，留怒；Wrath 留下，加 flame（焰） |
+| runewords.json | Zephyr | 和风 → 轻飏 → 惠风 | Kindly Zephyr（原 Featherdrift） | 和风→惠风，留风（惠风和畅）；Zephyr 留下，加 Kindly（惠） |

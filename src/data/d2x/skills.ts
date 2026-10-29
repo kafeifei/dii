@@ -238,7 +238,7 @@ export const D2X_SKILL_REFS: Record<string, D2xSkillRef> = {
   "Venom": {"id":278,"name":"涂毒","en":"Venom","cls":"ass","reqLvl":30,"cost":{"mult":896,"add":64000}},
   "Shadow Master": {"id":279,"name":"孪影宗师","nameEn":"Twinshade Master","en":"Shadow Master","cls":"ass","reqLvl":30,"cost":{"mult":896,"add":64000}},
   "Royal Strike": {"id":280,"name":"凤凰攻击","en":"Phoenix Strike","cls":"ass","reqLvl":30,"cost":{"mult":896,"add":64000},"staffModType":"mele"},
-  "Delerium Change": {"id":350,"name":"狂呓","nameEn":"Mad Ravings","en":"Delirium","reqLvl":1},
+  "Delerium Change": {"id":350,"name":"迷妄","nameEn":"Fevered Delirium","en":"Delirium","reqLvl":1},
   "Mark of the Bear": {"id":371,"name":"巨熊印记","en":"Mark of the Bear","reqLvl":1,"cost":{"mult":256,"add":1000}},
   "Mark of the Wolf": {"id":372,"name":"恶狼印记","en":"Mark of the Wolf","reqLvl":1,"cost":{"mult":256,"add":1000}},
 };
