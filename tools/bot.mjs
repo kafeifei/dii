@@ -742,7 +742,7 @@ export default async function (page, shot, log) {
     let campDone = false;
     /**
      * Why it should go to town: the reward, gear worn thin, hurt with nothing to drink (a hero's life
-     * doesn't come back by itself in D2; the merchant heals for nothing: Game.vendorHeal), potions
+     * doesn't come back by itself in D2; the merchant heals for nothing: src/game/townsfolk.ts vendorHeal), potions
      * gone, the bag full of things to sell, things to identify and nothing to read
      */
     const needTown = () => {

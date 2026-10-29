@@ -55,7 +55,7 @@ export class Quests {
     return this.word(npc, true);
   }
 
-  /** what 交谈 would have `npc` say now, not said: their next small talk stays next (Game.fetchAhead) */
+  /** what 交谈 would have `npc` say now, not said: their next small talk stays next (townsfolk.ts fetchAhead) */
   nextTalk(npc: string): Topic | null {
     return this.word(npc, false);
   }

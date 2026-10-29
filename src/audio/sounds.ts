@@ -544,7 +544,7 @@ const HEARD: Record<AreaKind, readonly SoundCategory[]> = {
  * for each area next to it (`next`: across a seam, or where a way on leads) its recordings at this
  * time of day and the hero's line for walking into it. The place's own ambience isn't here: coming
  * in has started it already. Nor are the townsfolk's lines: long, and decoded only as they're said,
- * they're fetched ahead without decoding while the hero is in the camp (Game.fetchAhead).
+ * they're fetched ahead without decoding while the hero is in the camp (src/game/townsfolk.ts fetchAhead).
  */
 export function soundsNear(place: Place, next: readonly Place[], night: boolean, cls: PlayerClass): FileId[] {
   const kind = areaKind(place);

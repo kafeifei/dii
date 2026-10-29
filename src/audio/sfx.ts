@@ -877,7 +877,7 @@ export class Sfx {
   }
 
   /**
-   * Fetch these ahead (a townsperson's lines, while the hero is in the camp: Game.fetchAhead), so that
+   * Fetch these ahead (a townsperson's lines, while the hero is in the camp: src/game/townsfolk.ts fetchAhead), so that
    * on a slow connection they're here when they're said: each take's file, one at a time in this
    * order, kept as it came and decoded when it's said. Decoding a few seconds of speech is quick, and
    * decoded they'd take the buffers' budget (a 30 s line decodes to 6 MB; compressed, all of a
