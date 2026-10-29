@@ -15,12 +15,7 @@ import { ITEM_BASES, UNKNOWN_BASE } from '../data/items';
 import { createItem } from '../items/gen';
 import { DelayedBlast, GroundItem, Hammer, Projectile, WorldObject } from './objects';
 import { SHRINES } from '../data/shrines';
-
-/**
- * What the kinds no map sets down yet are called when hovered, until the rename tables name them
- * (rule 5: the O line's, with the objects themselves): the words docs/M2A-STEP0.md 2.5 uses
- */
-const PENDING_NAMES = { casket: '石棺', remains: '遗骸', well: '井' } as const;
+import { objectName } from './containers';
 
 /** the box an area's tiles fill on a level's map: first and last column (x) and row (z), inclusive */
 export interface AreaBox {
@@ -134,7 +129,8 @@ export class Level {
     // chests and barrels with what a maze's object groups say of them (objgroups.ts): the old
     // generators' plain spots are plain chests and barrels, as ever
     for (const c of L.chests) {
-      const o = new WorldObject('chest', { x: c.x, z: c.z }, '宝箱', 0.45);
+      // what each is called when hovered: the rename tables' (containers.ts objectName, rule 5)
+      const o = new WorldObject('chest', { x: c.x, z: c.z }, objectName('chest', c) ?? '', 0.45);
       if (c.d2 !== undefined) o.d2 = c.d2;
       if (c.locked) o.locked = true;
       if (c.trap) o.trap = c.trap;
@@ -142,29 +138,29 @@ export class Level {
       this.objects.push(o);
     }
     for (const b of L.barrels) {
-      const o = new WorldObject('barrel', { x: b.x, z: b.z }, '木桶', 0.35);
+      const o = new WorldObject('barrel', { x: b.x, z: b.z }, objectName('barrel', b) ?? '', 0.35);
       if (b.d2 !== undefined) o.d2 = b.d2;
       if (b.exploding) o.exploding = true;
       // one that came broken already (PreOperate, Objects.cpp:418-423) is spent from the start
       if (b.opened) o.used = true;
       this.objects.push(o);
     }
-    // a maze's caskets and holes, rogue corpses and wells (what using them does is the O line's: interact.ts USE)
+    // a maze's caskets and the graves among them, rogue corpses and wells (what using them does: interact.ts USE, containers.ts)
     for (const c of L.caskets ?? []) {
-      const o = new WorldObject('casket', c.pos, PENDING_NAMES.casket, 0.5);
+      const o = new WorldObject('casket', c.pos, objectName('casket', { d2: c.id, hole: c.hole }) ?? '', 0.5);
       o.d2 = c.id;
       if (c.hole) o.hole = true;
       if (c.opened) o.used = true;
       this.objects.push(o);
     }
     for (const c of L.remains ?? []) {
-      const o = new WorldObject('remains', c.pos, PENDING_NAMES.remains, 0.5);
+      const o = new WorldObject('remains', c.pos, objectName('remains', { d2: c.id }) ?? '', 0.5);
       o.d2 = c.id;
       if (c.flies) o.flies = true;
       this.objects.push(o);
     }
     for (const w of L.wells ?? []) {
-      const o = new WorldObject('well', w.pos, PENDING_NAMES.well, 0.7);
+      const o = new WorldObject('well', w.pos, objectName('well', { d2: w.id }) ?? '', 0.7);
       o.d2 = w.id;
       this.objects.push(o);
     }

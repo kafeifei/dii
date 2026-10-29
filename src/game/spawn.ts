@@ -474,9 +474,65 @@ export function presetMonster(_level: Level, _pm: PresetMonster): Monster | null
 }
 
 /**
- * One monster of `area`'s kinds come up at `at` on `level` (a casket's zombie or skeleton, 18% of
- * them: docs/M2A.md 地下城), awake. M2a's O line's; none yet
+ * The trap monster bases (OBJRGN_GetTrapMonsterId, ObjRgn.cpp:278-279): Act 1's zombie class, its
+ * first row and the four after it; the skeletons' six classes, each its first row and the three after
+ * it (MonStats rows by hcIdx, D2's monster ids). The ones the data has.
  */
-export function spawnOne(_level: Level, _area: AreaDef, _at: P2, _rng: RNG): Monster | null {
-  return null;
+const TRAP_ZOMBIES = ['zombie1'].filter((id) => D2X_MONSTERS[id]);
+const TRAP_SKELETONS = ['skeleton1', 'sk_archer1', 'skmage_pois1', 'skmage_cold1', 'skmage_fire1', 'skmage_ltng1'].filter((id) => D2X_MONSTERS[id]);
+const inClass = (id: string, base: string, n: number) => {
+  const a = D2X_MONSTERS[id]?.hcIdx;
+  const b = D2X_MONSTERS[base].hcIdx;
+  return a !== undefined && a >= b && a < b + n;
+};
+
+/**
+ * An area's trap monster (OBJRGN_GetTrapMonsterId, ObjRgn.cpp:268-314): down the kinds it drew this
+ * game in their order (its MonsterRegion's pMonData; SpawnReport.kinds), the first that is of a
+ * zombie class (a row of zombie1's five) or a skeleton class (a row of one of the six's four) gives
+ * that class's first row; none, D2's flying scimitar, which Act 1 never raises (ObjMode.cpp:1070),
+ * so none here. Then the level's variant of it (D2Common_11063, Monsters.cpp:1150-1203): the area's
+ * normal list's row of that class, else the class's rows up from its first while their normal level
+ * is at most the area's normal monster level + 1.
+ */
+export function trapMonster(level: Level, area: AreaDef): string | null {
+  const kinds = level.spawned.get(area.id)?.kinds ?? [];
+  let base: string | null = null;
+  for (const k of kinds) {
+    base = TRAP_ZOMBIES.find((z) => inClass(k, z, 5)) ?? TRAP_SKELETONS.find((s) => inClass(k, s, 4)) ?? null;
+    if (base) break;
+  }
+  if (!base) return null;
+  const row = AREAS.get(area.rift?.source ?? area.id);
+  const own = row?.mon.find((id) => (D2X_MONSTERS[id]?.base ?? id) === base);
+  if (own) return own;
+  let id = base;
+  for (let next = D2X_MONSTERS[id].next; next && D2X_MONSTERS[next] && D2X_MONSTERS[next].diff[0].level <= (row?.lvl[0] ?? 0) + 1; next = D2X_MONSTERS[next].next) id = next;
+  return id;
+}
+
+/**
+ * One monster of `area`'s come up at `at` on `level`: its trap monster (trapMonster), raised by a
+ * casket or a barrel opened (D2GAME_SpawnTrapMonster_6FC75B40, ObjMode.cpp:1065-1078: a normal monster
+ * of the level, MONSTERSPAWN_SpawnLevelVariantAtUnit, MonsterSpawn.cpp:1274-1295), at the area's
+ * level for it in the level's difficulty as the area's own spawn, awake. On the spot, or the nearest
+ * free one round it D2's search rings find (−1, then 1, then 3 rings), here a few tries within a
+ * tile; null when the area has no trap monster or it has no look.
+ */
+export function spawnOne(level: Level, area: AreaDef, at: P2, rng: RNG): Monster | null {
+  const id = trapMonster(level, area);
+  const def = id && monsterDef(id);
+  if (!id || !def) return null;
+  const map = level.monsterMap;
+  let p: P2 = { ...at };
+  for (let k = 0; k < 16 && !(map.walkableAt(p.x, p.z) && map.circleClear(p.x, p.z, def.radius)); k++) {
+    const r = 0.4 + (k >> 2) * 0.3;
+    p = { x: at.x + rng.range(-r, r), z: at.z + rng.range(-r, r) };
+  }
+  if (!map.walkableAt(p.x, p.z)) return null;
+  const d = level.difficulty;
+  const m = new Monster(def, spawnLevel(D2X_MONSTERS[id], d, areaLevel(area, d)), 'normal', p, [], { difficulty: d, roll: (lo, hi) => rng.int(lo, hi) });
+  m.awake = true;
+  level.monsters.push(m);
+  return m;
 }

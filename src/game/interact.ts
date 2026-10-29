@@ -1,6 +1,6 @@
 import { CAMP_AREA, builtWaypoints } from '../world/areas';
 import { takeCorpse } from './bodies';
-import { openBarrel, openChest, useShrine } from './containers';
+import { drinkWell, openBarrel, openCasket, openChest, searchRemains, useShrine } from './containers';
 import type { Game } from './game';
 import type { ObjKind, WorldObject } from './objects';
 import { tellClosed } from './travel';
@@ -38,6 +38,10 @@ export const USE: Partial<Record<ObjKind, (g: Game, obj: WorldObject) => void>> 
     else g.enterArea(obj.dest, 'exit');
   },
   shrine: useShrine,
+  // a maze's (containers.ts): a casket or its grave opened, a rogue's corpse searched, a drink from a well
+  casket: openCasket,
+  remains: searchRemains,
+  well: drinkWell,
   portal: (g, obj) => {
     g.sfx.play('env.portal_enter', { pos: obj.pos });
     g.enterArea(g.level.inTown(obj.pos) ? obj.dest : CAMP_AREA, 'portal');

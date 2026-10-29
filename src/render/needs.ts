@@ -52,8 +52,21 @@ export function specNeeds(spec: ModelSpec): ModelKey[] {
   return out;
 }
 
+/**
+ * The models a maze's objects are drawn with (objviews.ts), the closest the packs have, each at the size
+ * the furnishings use it (src/world/furnish.ts): a casket the dungeon pack's coffin, the grave among the
+ * caskets the graveyard's grave and its broken one once opened, a well the camp's well. A rogue's corpse
+ * has none: drawn in code.
+ */
+export const OBJECT_MODELS = {
+  casket: 'h_coffin',
+  grave: 'h_grave_A',
+  graveOpened: 'h_grave_A_destroyed',
+  well: 'x_well',
+} as const satisfies Record<string, ModelKey>;
+
 /** what an object's view is made of (Renderer.makeObjectView); the way down from under the sky has braziers */
-export function objectNeeds(o: WorldObject, outdoor: boolean): ModelKey[] {
+export function objectNeeds(o: Pick<WorldObject, 'kind' | 'corpse' | 'hole'>, outdoor: boolean): ModelKey[] {
   switch (o.kind) {
     case 'chest':
     case 'stash':
@@ -72,10 +85,12 @@ export function objectNeeds(o: WorldObject, outdoor: boolean): ModelKey[] {
       return specNeeds(vendorSpec());
     case 'corpse':
       return o.corpse ? specNeeds(playerSpec({ cls: o.corpse.cls, equipment: o.corpse.equipment } as Player)) : [];
-    // a maze's caskets, rogue corpses and wells: drawn in code until they have models (the O line's: objviews.ts)
+    // a maze's caskets and their graves, and wells (OBJECT_MODELS); a rogue's corpse is drawn in code
     case 'casket':
-    case 'remains':
+      return o.hole ? [OBJECT_MODELS.grave, OBJECT_MODELS.graveOpened] : [OBJECT_MODELS.casket];
     case 'well':
+      return [OBJECT_MODELS.well];
+    case 'remains':
       return [];
   }
   return [];
