@@ -1,4 +1,5 @@
 import { RNG, type P2 } from '../core/math';
+import { D2X_AREAS } from '../data/d2x/areas';
 import { D2X_MONSTERS } from '../data/d2x/monsters';
 import type { QuestKey } from '../data/quests';
 import type { PlacedCasket, PlacedObject, PlacedRemains, PlacedShrine } from './objgroups';
@@ -64,6 +65,26 @@ export interface Theme {
   outdoor?: boolean;
 }
 
+/**
+ * The switch for Act 1's caves' own tiles (docs/M2A.md 第一幕洞穴新做一对土褐色贴图): false while
+ * public/textures has no grotto_floor.webp and grotto_wall.webp, and THEMES.grotto is drawn with the
+ * old caves' (its key 'cave', which the renderer's tiles, grade, motes and prop tints go by). When
+ * line A's tiles land, set it true: its key turns 'grotto', and those tables want a row for it
+ * (render/post.ts GRADES, render/atmosphere.ts THEME_MOTES, the props' tint), else they fall back to
+ * the crypt's. Its maps keep the caves' dressing either way (maze.ts dresses a cave as THEMES.cave)
+ */
+export const GROTTO_TILES = false;
+
+/** the Cave's levels' name (levels.json 9, 13) without the level, from the rename table: 石窟一层, 石窟二层 → 石窟 */
+function caveName(key: 'name' | 'nameEn'): string {
+  const [a, b] = [9, 13].map((id) => D2X_AREAS.find((r) => r.id === id)?.[key] ?? '');
+  let n = 0;
+  while (n < a.length && a[n] === b[n]) n++;
+  return a.slice(0, n).replace(/\s*Level\s*$/, '');
+}
+const GROTTO_NAME = caveName('name');
+const GROTTO_EN = caveName('nameEn');
+
 export const THEMES: Record<string, Theme> = {
   town: {
     key: 'town', name: '流离者营寨', en: "Rogues' Stockade", wall: '#5a4630', wallDark: '#33281b',
@@ -80,6 +101,16 @@ export const THEMES: Record<string, Theme> = {
   cave: {
     key: 'cave', name: '血岩洞窟', en: 'Bloodrock Caverns', wall: '#5c4030', wallDark: '#2c1d15',
     ambient: '#5e3a3a', ambientIntensity: 0.16, torch: '#ff7a2c', bg: '#040202',
+  },
+  /**
+   * Act 1's caves (LvlTypes.txt 3: the Den of Evil, Cave Levels 1 and 2), earth-brown, no torches: lit
+   * by the hero's light alone (decisions: 洞里照原版不点火把). Drawn with the old caves' tiles under
+   * their key until line A's grotto tiles are in (GROTTO_TILES); named like the Cave's levels
+   * (tools/d2-names/areas.json), though no banner shows a theme's name for a map of an area
+   */
+  grotto: {
+    key: GROTTO_TILES ? 'grotto' : 'cave', name: GROTTO_NAME, en: GROTTO_EN, wall: '#5a4a38', wallDark: '#2a2219',
+    ambient: '#6a5a48', ambientIntensity: 0.16, torch: '#ff8a3c', bg: '#030202',
   },
   ice: {
     key: 'ice', name: '霜寂地窖', en: 'Stillfrost Vaults', wall: '#6a7888', wallDark: '#2a323c',

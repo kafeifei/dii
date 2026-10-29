@@ -10,14 +10,20 @@
 //      there on going back in, and taken.
 //   3. in Blood Moor again, then saved and played again: the body waits in the camp by the way in
 //      (PLRSAVE2_ReadCorpses sets a saved body down in town), and taken there the save has none.
+//   4. in the Crypt, as a player plays (the address without ?dev, a hero from the title, since only
+//      there does a reload play on): saved there and reloaded, the hero is in the same Crypt; dead
+//      there, back in the camp, the body stays in the Crypt; reloaded, it waits in the camp with every
+//      item it wore, and taking it puts them all back on.
 // Page and console errors fail the run. Shots: the death screen, the hero back in the camp, the body
-// in Blood Moor, the gear back on, the body in the den, the saved body in the camp. The last line is
+// in Blood Moor, the gear back on, the body in the den, the saved body in the camp, the Crypt after a
+// reload, the Crypt's body in the camp. The last line is
 // "CORPSE OK …" or "CORPSE FAIL …".
 
 /** src/world/areas.ts */
 const CAMP_AREA = 1;
 const WILD_AREA = 2;
 const DEN_OF_EVIL = 8;
+const CRYPT = 18;
 const GOLD = 4000;
 
 export default async function (page, shot, log) {
@@ -105,6 +111,25 @@ export default async function (page, shot, log) {
     const note = await ev(() => document.querySelector('.overlay .death-title').closest('.overlay').querySelector('.note').textContent);
     return { ...d, note };
   };
+  /** the game started (a new hero, a reload played on) */
+  const started = () => until(() => window.game?.started && window.game.level, null, 'the game to start', 60000);
+  /** the "载入中…" veil gone and a few frames drawn */
+  const settle = async () => {
+    await until(() => !document.querySelector('.overlay.is-loading.open'), null, 'the loading veil to lift', 20000).catch(() => {});
+    await frames(20);
+  };
+  /** god mode on or off, by hand (no debug panel without ?dev) */
+  const god = (on) =>
+    ev(async (on) => {
+      (await import('/src/game/debug.ts')).debugOpts.god = on;
+    }, on);
+  /** a short fingerprint of the map the hero is on, its tiles' */
+  const mapPrint = () =>
+    ev(() => {
+      let h = 0;
+      for (const t of game.level.layout.map.tiles) h = (Math.imul(h, 31) + t) | 0;
+      return `${game.level.layout.map.w}x${game.level.layout.map.h}:${h >>> 0}`;
+    });
   const pressRespawn = () =>
     ev(() => {
       const o = document.querySelector('.overlay .death-title').closest('.overlay');
@@ -298,6 +323,73 @@ export default async function (page, shot, log) {
       expect(JSON.stringify(t.worn) === JSON.stringify(worn) && t.kept === 0, `after the saved body: wearing ${JSON.stringify(t.worn)}, ${t.kept} kept`);
       expect(t.savedCorpse === null, `the save still has a body: ${JSON.stringify(t.savedCorpse)?.slice(0, 80)}`);
       facts.push(`saved: a body of ${saved.items} items, in the camp in the next game, taken`);
+    },
+
+    async cryptDeath() {
+      // as a player plays: the address without ?dev, a new hero from the title
+      const plain = new URL(page.url());
+      plain.search = '';
+      await ev(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+      });
+      await page.goto(plain.href, { timeout: 60000 });
+      await page.waitForSelector('.overlay.open .btn.new:not([disabled])', { timeout: 60000 });
+      await page.click('.overlay.open .btn.new');
+      await started();
+      await god(true);
+      // to the Crypt the debug panel's way (Game.travelToArea): its way in from the Burial Grounds is the W line's
+      const into = await ev((id) => ({ ok: game.travelToArea(id), area: game.area?.id }), CRYPT);
+      expect(into.ok && into.area === CRYPT, `into the Crypt: ${JSON.stringify(into)}`);
+      await settle();
+      const crypt = await mapPrint();
+      // an autosave there, then a reload: the same Crypt, the hero in it
+      await until((id) => JSON.parse(localStorage.getItem('dii-save-v1') ?? 'null')?.area === id, CRYPT, 'an autosave in the Crypt', 15000);
+      await page.reload({ timeout: 60000 });
+      await started();
+      await settle();
+      const back = await ev(() => game.area?.id);
+      const again = await mapPrint();
+      expect(back === CRYPT && again === crypt, `reloaded in the Crypt: area ${back}, the map ${again} (was ${crypt})`);
+      await shot('crypt-after-reload');
+      // dead in the Crypt: the body there, the hero in the camp
+      const worn = await ev(() => Object.values(game.player.equipment).filter(Boolean).map((it) => it.uid).sort());
+      expect(worn.length >= 1, `the hero wears ${worn.length} items`);
+      await god(false);
+      await ev(() => game.killPlayer());
+      await until(() => document.querySelector('.overlay.open .death-title'), null, 'the death screen', 10000);
+      await frames(90);
+      await ev(() => document.querySelector('.overlay .death-title').closest('.overlay').querySelector('.btn').click());
+      await until(() => game.level.inTown(game.player.pos) && !game.player.dead, null, 'the hero back in the camp', 10000);
+      await god(true);
+      const died = await ev((id) => {
+        const c = game.player.corpses[0];
+        return { bodies: game.player.corpses.length, inCrypt: !!c && c.level === game.mapOf(id) && !!c.level, worn: Object.values(game.player.equipment).filter(Boolean).length };
+      }, CRYPT);
+      expect(died.bodies === 1 && died.inCrypt && died.worn === 0, `dead in the Crypt: ${JSON.stringify(died)}`);
+      // saved and reloaded: the body waits in the camp, every item on it
+      await ev(() => game.save());
+      await page.reload({ timeout: 60000 });
+      await started();
+      await settle();
+      const r = await ev(() => {
+        game.layOutCorpses();
+        const b = game.level.objects.find((o) => o.kind === 'corpse');
+        const on = b ? Object.values(b.corpse.equipment).filter(Boolean).map((it) => it.uid).sort() : [];
+        return { camp: game.level.inTown(game.player.pos), area: game.area?.id, body: !!b && game.level.inTown(b.pos), bodies: game.player.corpses.length, on, near: b && game.level.map.nearestWalkable(b.pos.x + 1.4, b.pos.z + 1) };
+      });
+      expect(r.camp && r.area === 1 && r.body && r.bodies === 1, `reloaded after dying in the Crypt: ${JSON.stringify({ ...r, on: r.on.length })}`);
+      expect(JSON.stringify(r.on) === JSON.stringify(worn), `the body in the camp holds ${r.on.length} of the ${worn.length} items worn`);
+      if (r.near) await ev((at) => game.teleportWithin(at), r.near);
+      await frames(10);
+      await shot('crypt-body-in-camp');
+      const t = await ev(() => {
+        const b = game.level.objects.find((o) => o.kind === 'corpse');
+        if (b) game.interact(b);
+        return { left: game.player.corpses.length, worn: Object.values(game.player.equipment).filter(Boolean).map((it) => it.uid).sort() };
+      });
+      expect(t.left === 0 && JSON.stringify(t.worn) === JSON.stringify(worn), `the Crypt's body taken: ${t.left} left, wearing ${t.worn.length} of ${worn.length}`);
+      facts.push(`the Crypt: the same map after a reload; dead there, the body in the camp after a reload with all ${worn.length} worn items, taken`);
     },
   };
 

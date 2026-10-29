@@ -2,8 +2,11 @@
 // asks: D2's seed against 64-bit arithmetic; the room graph by LvlMaze's rooms in each difficulty
 // (the Den always 3, Cave Level 1 4–7, the crypts 12–14, 24–26, 36–38), its special rooms dead ends,
 // its theme rooms as D2 rolls them; then whole levels: everything reachable from the way in, the
-// bosses in their rooms, the spark chests where they belong, D2's object rules kept, the same level
-// for the same seed, and each under 200 ms (median and max over 20 seeds printed).
+// ways in and out against the rock at the end of their dead ends, the bosses in their rooms, the
+// spark chests where they belong, D2's object rules kept and carried in the Layout (each object's
+// row, lock, trap, spark; caskets, corpses, wells; the special rooms as presets), nothing loose lying
+// on an object, no light in a cave but the hero's and torches in a crypt, the same level for the same
+// seed, and each under 200 ms (median and max over 20 seeds printed).
 const GRAPH_SEEDS = 300;
 const LEVEL_SEEDS = 20;
 const SLOW_MS = 200;
@@ -15,6 +18,7 @@ export default async (load) => {
   const { D2X_SUPERUNIQUES } = await load('/src/data/d2x/superuniques.ts');
   const { D2X_OBJECTS } = await load('/src/data/d2x/objects.ts');
   const { T_FLOOR } = await load('/src/world/tilemap.ts');
+  const { PROP_DEFS } = await load('/src/world/furnish.ts');
   const problems = [];
   const check = (ok, what) => ok || problems.push(what);
   const AREA = new Map(D2X_AREAS.map((a) => [a.id, a]));
@@ -163,9 +167,16 @@ export default async (load) => {
         check(map.walkableAt(e.x + e.nx * 2, e.z + e.nz * 2), `${what}: no floor in front of the way to ${e.dest}`);
       }
       check(Math.hypot(L.start.x - up[0].x, L.start.z - up[0].z) < 2.5, `${what}: the start is not by the way up`);
-      // a level of its area all over, no waypoint (Waypoint 255), no old trial stairs
+      // a way in or out against the end of its dead end: rock right behind it, none of the floor
+      // going on past its back (the review's 2–3 tiles behind the caves' stairs)
+      for (const e of L.entrances ?? []) {
+        const back = [-1.5, 0, 1.5].map((s) => ({ x: e.x - e.nx * 1.2 - e.nz * s * 0.5, z: e.z - e.nz * 1.2 + e.nx * s * 0.5 }));
+        check(back.every((b) => !map.walkableAt(b.x, b.z)), `${what}: floor behind the way to ${e.dest}`);
+      }
+      // a level of its area all over, no waypoint (Waypoint 255), no old trial stairs, in its look
+      // (the caves the grotto's, the crypts the old crypts': dungeons.ts dungeonSpec)
       check(L.areaOf.length === map.w * map.h && L.areaOf.every((a) => a === area), `${what}: tiles of another area`);
-      check(!L.waypoints.length && !L.stairs && L.theme.key === def.style, `${what}: waypoints ${L.waypoints.length}, stairs ${!!L.stairs}, look ${L.theme.key}`);
+      check(!L.waypoints.length && !L.stairs && L.theme === dungeonSpec(area, seed, diff).theme && X.style === def.style, `${what}: waypoints ${L.waypoints.length}, stairs ${!!L.stairs}, look ${L.theme.key}`);
       // the boss in its own room, the area's superunique
       const boss = X.specials.find((s) => s.kind === 'boss');
       const su = row.superuniques?.[0];
@@ -184,9 +195,24 @@ export default async (load) => {
       else if (area === MAUSOLEUM) check(sparks.length === 1 && sparks[0].id === 397 && sparks[0].consolation && room && inside(sparks[0].pos, X.cells[room.cell].rect), `${what}: spark chests ${JSON.stringify(sparks)}`);
       else check(!sparks.length, `${what}: ${sparks.length} spark chests`);
       for (const c of sparks) sparkOf.set(area, (sparkOf.get(area) ?? 0) + 1);
-      // the Layout's lists are the extra's, in its order
-      check(L.chests.length === X.chests.length && L.chests.every((p, i) => p === X.chests[i].pos), `${what}: Layout.chests isn't MazeExtra.chests`);
-      check(L.barrels.length === X.barrels.length && (L.shrines ?? []).length === X.shrines.length, `${what}: Layout's barrels or shrines aren't the extra's`);
+      // the Layout's lists are the extra's, in its order, with what D2 rolled for each (the fields
+      // the game's objects take: level.ts), and its special rooms by their lvlprest Def
+      const at = (p, o) => p.x === o.pos.x && p.z === o.pos.z;
+      const spark = (o) => (o.sparkly ? (o.consolation ? 'consolation' : 'unique') : undefined);
+      check(L.chests.length === X.chests.length && L.chests.every((c, i) => at(c, X.chests[i]) && c.d2 === X.chests[i].id && !!c.locked === X.chests[i].locked && (c.trap ?? 0) === X.chests[i].trap && c.sparkly === spark(X.chests[i])), `${what}: Layout.chests isn't MazeExtra.chests`);
+      check(L.barrels.length === X.barrels.length && L.barrels.every((b, i) => at(b, X.barrels[i]) && b.d2 === X.barrels[i].id && !!b.exploding === X.barrels[i].exploding && !!b.opened === X.barrels[i].opened), `${what}: Layout.barrels isn't MazeExtra.barrels`);
+      check(L.shrines.length === X.shrines.length && L.shrines.every((s, i) => at(s, X.shrines[i]) && s.kind === X.shrines[i].kind), `${what}: Layout.shrines isn't MazeExtra.shrines`);
+      check(L.caskets === X.caskets && L.remains === X.remains && L.wells === X.wells, `${what}: Layout's caskets, remains or wells aren't the extra's`);
+      const pre = X.cells.filter((c) => c.special >= 0);
+      check(area === CAVE2 ? L.presets.length === 1 && L.presets[0].kind === 'hall' && L.presets[0].d2 === 104 : L.presets.length === pre.length && L.presets.every((r, i) => r.d2 === pre[i].preset && r.kind === def.specials[pre[i].special].kind && r.area === area), `${what}: presets ${JSON.stringify(L.presets.map((r) => [r.kind, r.d2]))}`);
+      // nothing the dressing puts loose on the floor lies on an object (the review: bones on Cave Level 2's wells)
+      const loose = L.props.filter((x) => !PROP_DEFS[x.model]?.solid);
+      const all0 = [...X.chests, ...X.barrels, ...X.shrines, ...X.caskets, ...X.remains, ...X.wells];
+      const onIt = loose.filter((x) => all0.some((o) => Math.max(Math.abs(x.x - o.pos.x), Math.abs(x.z - o.pos.z)) < 1));
+      check(!onIt.length, `${what}: ${onIt.map((x) => x.model).join(', ')} on an object`);
+      // in a cave no light but the hero's: no torches, nothing lit on the floor or the walls
+      if (def.style === 'cave') check(!L.torches.length && !L.props.some((x) => x.light) && !L.wallDecor.some((w) => w.light), `${what}: a light in a cave`);
+      else check(L.torches.length > 0, `${what}: a crypt without torches`);
       // every object on floor the way in reaches, and of the kinds its level rolls
       const all = [...X.chests, ...X.barrels, ...X.shrines, ...X.caskets, ...X.remains, ...X.wells];
       check(all.every((o) => onFloor(o.pos)), `${what}: ${all.filter((o) => !onFloor(o.pos)).length} objects off the reached floor`);

@@ -152,7 +152,7 @@ export default async (load) => {
   // ── areas by key and in order: normal play's, and the trial ground's floors after one another ──
   const list = areaList();
   // by levels.txt Id (docs/M2A-STEP0.md 2.9)
-  check(list.map((a) => a.key).join() === 'camp,wild,coldplains,denofevil', `areaList(): ${list.map((a) => a.key).join()}`);
+  check(list.map((a) => a.key).join() === 'camp,wild,coldplains,denofevil,cave1,cave2,crypt,mausoleum', `areaList(): ${list.map((a) => a.key).join()}`);
   check(list.every((a, i) => i === 0 || nextArea(list[i - 1]) === a) && nextArea(list.at(-1)) === undefined, 'nextArea does not follow the list, or goes on past its end');
   check(list.every((a) => isBuilt(a.id)) && !isBuilt(STONY_FIELD) && !isBuilt(dungeonArea(1)), 'isBuilt is not the list');
   check(nextArea(areaDef(dungeonArea(3))) === areaDef(dungeonArea(4)), 'the trial ground does not go on floor by floor');
@@ -167,21 +167,29 @@ export default async (load) => {
     for (const [id, key] of [[A.CAVE_1, 'cave1'], [A.CAVE_2, 'cave2'], [A.CRYPT, 'crypt'], [A.MAUSOLEUM, 'mausoleum']]) {
       const a = areaDef(id);
       const row = D2X_AREAS.find((r) => r.id === id);
-      check(a?.key === key && areaByKey(key) === a && a.kind === 'dungeon' && !a.waypoint && a.name === row.name && a.en === row.nameEn && a.alvl.join() === row.lvl.join() && !isBuilt(id), `area ${id}: ${JSON.stringify(a)}`);
+      check(a?.key === key && areaByKey(key) === a && a.kind === 'dungeon' && !a.waypoint && a.name === row.name && a.en === row.nameEn && a.alvl.join() === row.lvl.join() && isBuilt(id), `area ${id}: ${JSON.stringify(a)}`);
     }
-    check(BUILT_WEST.join() === '1,2,3' && BUILT_DUNGEONS.join() === '8', `the BUILT lists: west ${BUILT_WEST}, dungeons ${BUILT_DUNGEONS}`);
-    check(A.areaLinks(COLD_PLAINS).join() === '2,4,9,17' && A.areaLinks(A.CRYPT).join() === '17' && A.areaLinks(DEN_OF_EVIL).join() === '2' && A.areaLinks(dungeonArea(3)).length === 0, `links: Cold Plains ${A.areaLinks(COLD_PLAINS)}, the Crypt ${A.areaLinks(A.CRYPT)}, the Den ${A.areaLinks(DEN_OF_EVIL)}`);
+    // the D line's dungeons built (src/game/maps.ts DUNGEON_MAKERS): the Den, the Cave's two levels, the crypts
+    check(BUILT_WEST.join() === '1,2,3' && BUILT_DUNGEONS.join() === '8,9,13,18,19', `the BUILT lists: west ${BUILT_WEST}, dungeons ${BUILT_DUNGEONS}`);
+    check(A.areaLinks(COLD_PLAINS).join() === '2,4,9,17' && A.areaLinks(A.CRYPT).join() === '17' && A.areaLinks(DEN_OF_EVIL).join() === '2' && A.areaLinks(A.CAVE_2).join() === '9' && A.areaLinks(dungeonArea(3)).length === 0, `links: Cold Plains ${A.areaLinks(COLD_PLAINS)}, the Crypt ${A.areaLinks(A.CRYPT)}, the Den ${A.areaLinks(DEN_OF_EVIL)}`);
     const route = (a, b) => A.routeTo(a, b)?.join() ?? 'none';
     check(route(CAMP_AREA, COLD_PLAINS) === '1,2,3' && route(CAMP_AREA, DEN_OF_EVIL) === '1,2,8' && route(DEN_OF_EVIL, COLD_PLAINS) === '8,2,3' && route(COLD_PLAINS, COLD_PLAINS) === '3', `routeTo: 1→3 ${route(1, 3)}, 1→8 ${route(1, 8)}, 8→3 ${route(8, 3)}`);
+    check(route(CAMP_AREA, A.CAVE_1) === '1,2,3,9' && route(CAMP_AREA, A.CAVE_2) === '1,2,3,9,13' && route(A.CAVE_2, DEN_OF_EVIL) === '13,9,3,2,8', `routeTo the Cave: 1→9 ${route(1, 9)}, 1→13 ${route(1, 13)}, 13→8 ${route(13, 8)}`);
     // never through an area not built: none to one that isn't, nor to a built one only it leads to
-    check(route(CAMP_AREA, STONY_FIELD) === 'none' && route(CAMP_AREA, A.CAVE_1) === 'none' && route(CAMP_AREA, dungeonArea(1)) === 'none', `routeTo an area not built: ${route(1, 4)}, ${route(1, 9)}`);
-    BUILT_DUNGEONS.push(A.CAVE_2);
+    // (the crypts, under the Burial Grounds)
+    check(route(CAMP_AREA, STONY_FIELD) === 'none' && route(CAMP_AREA, A.CRYPT) === 'none' && route(A.CRYPT, A.MAUSOLEUM) === 'none' && route(CAMP_AREA, dungeonArea(1)) === 'none', `routeTo an area not built: ${route(1, 4)}, ${route(1, 18)}`);
+    const cave1 = BUILT_DUNGEONS.indexOf(A.CAVE_1);
+    BUILT_DUNGEONS.splice(cave1, 1);
     try {
       check(isBuilt(A.CAVE_2) && route(CAMP_AREA, A.CAVE_2) === 'none', `the Cave's second level built without its first: ${route(1, 13)}`);
-      BUILT_DUNGEONS.push(A.CAVE_1);
-      check(route(CAMP_AREA, A.CAVE_2) === '1,2,3,9,13', `both the Cave's levels built: ${route(1, 13)}`);
     } finally {
-      BUILT_DUNGEONS.length = 1;
+      BUILT_DUNGEONS.splice(cave1, 0, A.CAVE_1);
+    }
+    BUILT_WEST.push(BURIAL_GROUNDS);
+    try {
+      check(route(CAMP_AREA, A.CRYPT) === '1,2,3,17,18' && route(A.CRYPT, A.MAUSOLEUM) === '18,17,19', `with the Burial Grounds built: 1→18 ${route(1, 18)}, 18→19 ${route(18, 19)}`);
+    } finally {
+      BUILT_WEST.length = 3;
     }
     // the waypoint list by Id: the camp's, Cold Plains', and Stony Field's after them once it is built
     check(builtWaypoints([COLD_PLAINS, CAMP_AREA]).join() === '1,3', `waypoints: ${builtWaypoints([3, 1])}`);
@@ -191,7 +199,7 @@ export default async (load) => {
     } finally {
       BUILT_WEST.length = 3;
     }
-    check(!isBuilt(STONY_FIELD) && !isBuilt(A.CAVE_1), 'a BUILT list was left changed');
+    check(!isBuilt(STONY_FIELD) && !isBuilt(BURIAL_GROUNDS) && BUILT_DUNGEONS.join() === '8,9,13,18,19', 'a BUILT list was left changed');
   }
 
   // the Act 1 areas' levels in the three difficulties are levels.json MonLvlEx, (N), (H), as areaLevel gives them

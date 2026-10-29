@@ -32,6 +32,8 @@ const CAMP = 1;
 const MOOR = 2;
 const PLAINS = 3;
 const DEN = 8;
+/** the dungeons after the Den by levels.txt Id, each a map of its own (areas.ts CAVE_1, CAVE_2, CRYPT, MAUSOLEUM) */
+const DUNGEONS = [9, 13, 18, 19];
 
 export default async function (page, shot, log) {
   const t0 = Date.now();
@@ -657,7 +659,7 @@ export default async function (page, shot, log) {
         const opts = [...(s?.options ?? [])];
         return { values: opts.map((o) => o.value), value: s?.value, here: String(game.area.id) };
       });
-      expect(list.values.join() === [CAMP, MOOR, PLAINS, DEN].join() && list.value === list.here, `the area list is ${list.values.join()}, ${list.value} picked (the hero is in ${list.here})`);
+      expect(list.values.join() === [CAMP, MOOR, PLAINS, DEN, ...DUNGEONS].join() && list.value === list.here, `the area list is ${list.values.join()}, ${list.value} picked (the hero is in ${list.here})`);
       await debugRow('前往').locator('select').selectOption(String(PLAINS));
       await debugButton('前往', '去').click();
       await frames();
@@ -668,6 +670,14 @@ export default async function (page, shot, log) {
       await frames();
       const b = await ev(() => ({ id: game.area.id, west: game.level === window.__smoke.west }));
       expect(b.id === DEN && !b.west, `next from Cold Plains went to area ${b.id}, on the overworld ${b.west}`);
+      // and on through the dungeons by Id: the Cave's two levels, the Crypt, the Mausoleum, each a map of its own
+      for (const id of DUNGEONS) {
+        await ev(() => (window.__smoke.was = game.level));
+        await debugButton('前往', '下一个').click();
+        await frames();
+        const d = await ev(() => ({ id: game.area.id, own: game.level !== window.__smoke.was && game.level !== window.__smoke.west, kind: game.area.kind }));
+        expect(d.id === id && d.own && d.kind === 'dungeon', `next went to area ${d.id} (${d.kind}), its own map ${d.own}, not ${id}`);
+      }
       // the trial ground: a floor and a difficulty picked, then the next floor down
       await debugRow('试炼场').locator('select').first().selectOption('3');
       await debugButton('试炼场', '进入').click();
@@ -685,7 +695,7 @@ export default async function (page, shot, log) {
       expect((await ev(() => game.area.id)) === CAMP, 'the camp in the list did not lead to the camp');
       expect(await ev(DEBUG_OPEN), 'the debug panel did not stay open through the jumps, or the game paused');
       await key('Backquote', DEBUG_FOLDED, 'the debug panel to fold');
-      facts.push('area jumps and the trial ground');
+      facts.push(`area jumps (the Den, then ${DUNGEONS.join(', ')}) and the trial ground`);
     },
 
     async difficulty() {
