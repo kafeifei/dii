@@ -107,6 +107,7 @@
 
 - **Vercel**：在没有未提交改动的检出里运行 `vercel build --prod`，再运行 `vercel deploy --prebuilt --prod`，地址是 dii-abyss.vercel.app。工作树里要有 `.vercel/project.json`，没有就从主检出复制。
 - **内部站点**：发布方法、地址和登录都不在仓库里，用本机的内部站点 skill 发布，记下它报的版本。
+  - 平台限制：最多 5000 个文件、总共 50 MB。2026-10-28 我们是 1117 个文件、43.2 MB，资源压缩要先做。
 
 ## 并行开发怎么做
 
