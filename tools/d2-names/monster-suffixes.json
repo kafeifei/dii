@@ -17,7 +17,7 @@
   "web": {"name":"罗网","nameEn":"Snare","en":"Web","official":"之网","note":"罗网＝Snare，与暗金「冥蛛罗网」一致"},
   "shieldUM": {"name":"坚盾","nameEn":"Escutcheon","en":"Shield","official":"之盾","note":"坚盾＝Escutcheon，与稀有名词一致；Rampart 是「垣」"},
   "KillerUM": {"name":"戮命者","nameEn":"Lifetaker","en":"Killer","official":"杀戮者"},
-  "RazorUM": {"name":"剃刃","nameEn":"Shear","en":"Razor","official":"剃刀","note":"曾用名 削刃；削刃不留「剃」；与稀有名词 Razor 同"},
+  "RazorUM": {"name":"剃锋","nameEn":"Shear","en":"Razor","official":"剃刀","note":"曾用名 剃刃：刃和刀只差一点，是形近字；改作剃锋，和魔法后缀剃锋之同一个词。曾用名 削刃；削刃不留「剃」；与稀有名词 Razor 同"},
   "drinker": {"name":"啜血者","nameEn":"Bloodsipper","en":"Drinker","official":"饮血者"},
   "shifter": {"name":"易形者","nameEn":"Shapeshifter","en":"Shifter","official":"变形者","note":"曾用英文名 Turnskin；中文留「形者」不变；Turnskin 是生僻词；Shapeshifter 留着 Shifter"},
   "crawler": {"name":"匍行者","nameEn":"Bellycrawler","en":"Crawler","official":"爬行者","note":"曾用英文名 Creeper；中文留「行者」不变；Creeper 是《我的世界》的苦力怕"},

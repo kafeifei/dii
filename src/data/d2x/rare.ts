@@ -58,7 +58,7 @@ export const D2X_RARE_SUFFIXES: D2xRareWord[] = [
   {"id":3,"name":"獠牙","nameEn":"Tusk","en":"Fang","itypes":["swor","knif","spea","pole"]},
   {"id":4,"name":"剖膛刀","nameEn":"Disemboweler","en":"Gutter","itypes":["swor","knif","spea","pole"]},
   {"id":5,"name":"焦渴","nameEn":"Drought","en":"Thirst","itypes":["swor","knif","spea","pole","axe","h2h"]},
-  {"id":6,"name":"剃刃","nameEn":"Shear","en":"Razor","itypes":["swor","knif","axe","h2h"]},
+  {"id":6,"name":"剃锋","nameEn":"Shear","en":"Razor","itypes":["swor","knif","axe","h2h"]},
   {"id":7,"name":"刈镰","nameEn":"Sickle","en":"Scythe","itypes":["swor","axe","pole"]},
   {"id":8,"name":"白刃","nameEn":"Bareblade","en":"Edge","itypes":["swor","knif","axe"]},
   {"id":9,"name":"骨锯","nameEn":"Bonesaw","en":"Saw","itypes":["swor"]},

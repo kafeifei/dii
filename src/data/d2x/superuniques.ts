@@ -180,7 +180,7 @@ export const D2X_UNIQUE_NAMES: { prefix: D2xUniqueNameWord[]; suffix: D2xUniqueN
     {"key":"web","name":"罗网","nameEn":"Snare","en":"Web"},
     {"key":"shieldUM","name":"坚盾","nameEn":"Escutcheon","en":"Shield"},
     {"key":"KillerUM","name":"戮命者","nameEn":"Lifetaker","en":"Killer"},
-    {"key":"RazorUM","name":"剃刃","nameEn":"Shear","en":"Razor"},
+    {"key":"RazorUM","name":"剃锋","nameEn":"Shear","en":"Razor"},
     {"key":"drinker","name":"啜血者","nameEn":"Bloodsipper","en":"Drinker"},
     {"key":"shifter","name":"易形者","nameEn":"Shapeshifter","en":"Shifter"},
     {"key":"crawler","name":"匍行者","nameEn":"Bellycrawler","en":"Crawler"},

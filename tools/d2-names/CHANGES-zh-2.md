@@ -1821,3 +1821,25 @@
 | monsters.json | Rogue | 流亡者 → 放逐者 → 流离者 | Rogue Sister（不变） | 曾用名 放逐者（英文不变）：放逐者就是怪物 The Banished 的官方名「被放逐者」去掉一个「被」（style.md 规则 4）；官方的流亡者留「流」「者」，亡换离（流离＝离乡漂泊，她们被赶出了修道院） |
 | areas.json | Rogue Encampment | 流亡者营地 → 放逐者营寨 → 流离者营寨 | Rogues' Stockade（不变） | 曾用名 放逐者营寨（英文不变）：放逐者就是怪物 The Banished 的官方名「被放逐者」去掉一个「被」（style.md 规则 4）；官方的流亡者留「流」「者」，亡换离（流离＝离乡漂泊，她们被赶出了修道院） |
 | mercenaries.json | Rogue Scout | 流亡者斥候 → 放逐者斥候 → 流离者斥候 | Rogue Wayfinder（不变） | 曾用名 放逐者斥候（英文不变）：放逐者就是怪物 The Banished 的官方名「被放逐者」去掉一个「被」（style.md 规则 4）；官方的流亡者留「流」「者」，亡换离（流离＝离乡漂泊，她们被赶出了修道院） |
+
+## 导入复核（三）：最后一轮，由我拍板
+
+第三轮审查又挑出 4 处违反硬性规则 1 的名字，这里改掉；其余意见看过，不再改，名字到此定稿。
+
+| 表 | 行 | 中文 | 英文 | 理由 |
+| --- | --- | --- | --- | --- |
+| glossary | Diablo | 迪亚波罗 → 狄雅孛洛 → 狄亚贝洛尔 | Diyabelo → Diabelor | 狄雅孛洛每个字都和原名同音，Diyabelo 只多两个字母；波换贝、多一个音节，留住 Diab- |
+| glossary-en | Tyrael | 提睿埃（不变） | Tiruel → Tiruveil | Tiruel 只换两个字母，辅音和音节数和原名一样；多一个音节、换收尾 |
+| bases.json | dhn | 狄雅孛洛的角 → 狄亚贝洛尔的角 | Diabelor's Horn | 随术语表 |
+| uniques.json | Tyrael's Might | 提睿埃的威能（不变） | Tiruveil's Majesty | 随术语表 |
+| uniques.json | Ars Al'Diablolos | 狄亚贝洛尔禁典 | Diabelor's Forbidden Codex | 随术语表（术士版物品，不进游戏） |
+| rare-suffixes.json | Razor | 剃刃 → 剃锋 | Shear（不变） | 刃和刀只差一点，是形近字；和魔法后缀剃锋之同一个词 |
+| monster-suffixes.json | Razor | 剃刃 → 剃锋 | Shear（不变） | 同上 |
+| uniques.json | The Jade Tan Do | 玉尖刃 → 玉尖匕 | Jade Point（不变） | 刃和刀是形近字；底材是波刃匕首 |
+| uniques.json | Serpent Lord | 海蛇之主 → 海蛇君王 | Serpent Sire（不变） | 主和王是形近字；之换君 |
+
+没改的（非阻塞）：
+- 离原名不远的音译（Gherim、Iroth、Tahmor、Dimorg、Felovie、Aledor、Mefistor、Aesthrion、Arrieth、Ennifoss、Drokhul、Ghintor、Bol-Khatos、Gerrick、Veydola，以及蔚莎拉）：都换了音节或收尾，念出来是另一个名字，老玩家一听就对得上，规则允许。
+- 佣兵的名字认不出（Jaerith、葛韫妮 / Gerunie 等）：老玩家本来也记不住原版佣兵叫什么，不影响。
+- Frontlet、Graze、Canker、Ambush、Escutcheon 这类不常见的英文词：意思对，留着。
+- 旧存档里自编物品用的官方词（雷霆之怒、碎骨者）：只在旧存档的物品上出现，以后整理旧物品时再换。

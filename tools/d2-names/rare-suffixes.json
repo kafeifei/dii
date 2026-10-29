@@ -5,7 +5,7 @@
   "fang": {"name":"獠牙","nameEn":"Tusk","en":"Fang","official":"尖牙"},
   "gutter": {"name":"剖膛刀","nameEn":"Disemboweler","en":"Gutter","official":"开膛刀","note":"曾用名 剜肠（Entrail）；剜肠不留「膛」「刀」，又和暗金 Visceratuant 的「剜肠」同名；英文 Entrail 是内脏，Disemboweler 是开膛的人"},
   "thirst": {"name":"焦渴","nameEn":"Drought","en":"Thirst","official":"渴求"},
-  "razor": {"name":"剃刃","nameEn":"Shear","en":"Razor","official":"剃刀","note":"曾用名 薄刃（Sliver）；薄刃不留「剃」；刀换刃；与怪物后缀 Razor 同"},
+  "razor": {"name":"剃锋","nameEn":"Shear","en":"Razor","official":"剃刀","note":"曾用名 剃刃：刃和刀只差一点，是形近字；改作剃锋，和魔法后缀剃锋之同一个词。曾用名 薄刃（Sliver）；薄刃不留「剃」；刀换刃；与怪物后缀 Razor 同"},
   "scythe": {"name":"刈镰","nameEn":"Sickle","en":"Scythe","official":"镰刀","note":"原「长镰」即 scythe 直译；刈：收割"},
   "edge": {"name":"白刃","nameEn":"Bareblade","en":"Edge","official":"刀锋","note":"原「刃口」生硬；白刃：出鞘之刃；Steel 是符文之语名"},
   "saw": {"name":"骨锯","nameEn":"Bonesaw","en":"Saw","official":"利锯","note":"曾用名 锯刃（Ripper）；英文 Ripper 是官方怪物后缀名；Bonesaw 留着 Saw"},
