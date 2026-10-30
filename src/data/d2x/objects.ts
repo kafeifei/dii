@@ -22,12 +22,13 @@ export interface D2xObjGroup {
  * What using an object does, by OperateFn (D2MOO's table, ObjMode.cpp:79-157): casket 1 (2441-2472),
  * shrine 2 (2359-2437), urn 3 (2551-2583), chest 4 (1251-1545), barrel 5 (2781-2827), tome 6 (the Tower
  * Tome, A1Q5.cpp:80), explodingBarrel 7 (2829-2889: it hurts everything within 3 subtiles and sets off
- * the exploding barrels within 2), stone 9 (a Cairn Stone, A1Q4.cpp:690), corpse 14 (2585-2614),
- * well 22 (3711-3808); placeholder, a preset's stand-in that becomes another object
- * (Objects.cpp:215-249); none, nothing to use.
+ * the exploding barrels within 2), stone 9 (a Cairn Stone, A1Q4.cpp:690), torch 11 (2916-2939: a fire
+ * lit or put out; the fires a chest's trap lights, which burn the players near them,
+ * OBJMODE_UpdateTrapProximity 328-351), corpse 14 (2585-2614), well 22 (3711-3808); placeholder, a
+ * preset's stand-in that becomes another object (Objects.cpp:215-249); none, nothing to use.
  */
 export type D2xObjectKind =
-  | 'casket' | 'shrine' | 'urn' | 'chest' | 'barrel' | 'tome' | 'explodingBarrel' | 'stone' | 'corpse' | 'well' | 'placeholder' | 'none';
+  | 'casket' | 'shrine' | 'urn' | 'chest' | 'barrel' | 'tome' | 'explodingBarrel' | 'stone' | 'torch' | 'corpse' | 'well' | 'placeholder' | 'none';
 
 /**
  * An object (Objects.txt row). Sizes are D2 subtiles (a tile is 5×5). Three function numbers say what
@@ -79,8 +80,10 @@ export interface D2xObject {
   /**
    * rolled: trapped when it appears, the level's D2xMaze.trap % (InitFn 2, 3, 57); the trap goes off
    * 35 frames after it is opened, one of eight alike, (rand & 7) + 1: lightning, fire bolt (2 and 6),
-   * poison cloud, nova, fire (5 and 7) or one or two of the level's trap monster (ObjMode.cpp:1547-1588,
-   * 1044-1175). monster: 18.08 % of openings raise one trap monster, rand % 10000 ≥ 8192 (2458, 2810).
+   * poison cloud, nova, fire (5 and 7: the fires 162 and 160) or one or two of the level's trap monster
+   * (ObjMode.cpp:1547-1588, 1044-1175); below level 40 lightning, nova and (but in level 25) poison
+   * cloud go off as the fire bolt, and from 75 the trap monsters do (OBJMODE_DispatchTrap, 354-440).
+   * monster: 18.08 % of openings raise one trap monster, rand % 10000 ≥ 8192 (2458, 2810).
    * The trap monster is the first zombie or skeleton kind among the level's monsters, as its first row
    * (zombie1, skeleton1, …), spawned as the level's variant (ObjRgn.cpp:268-314, ObjMode.cpp:1065-1078).
    */
@@ -103,7 +106,7 @@ export interface D2xObject {
   well?: { uses: number; regen: number; restore: number; life: boolean; mana: boolean };
   /** a placeholder's: the objects it becomes, one at random (Objects.cpp:103-202) */
   becomes?: number[];
-  /** an exploding barrel's Damage: % of the 1/32–1/8 of a target's life it rolls (ObjEval.cpp:16-90) */
+  /** an exploding barrel's or a trap fire's Damage: % of the 1/32–1/8 of a target's life it rolls (ObjEval.cpp:16-90) */
   damage?: number;
 }
 
@@ -153,6 +156,8 @@ export const D2X_OBJECTS: Record<number, D2xObject> = {
   "140": {"id":140,"key":"ChestOutdoor2","nameKey":"chest","desc":"chest-r-tallskinney act 1","size":[1,1],"subclass":8,"populate":3,"init":3,"operate":4,"parm":[18],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"chest","drop":75,"trap":"rolled","lockable":true},
   "141": {"id":141,"key":"ChestOutdoor3","nameKey":"chest","desc":"chest-r-med act 1","size":[3,2],"subclass":8,"populate":3,"init":3,"operate":4,"parm":[18],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"chest","drop":75,"trap":"rolled","lockable":true},
   "144": {"id":144,"key":"ChestOutdoor4","nameKey":"chest","desc":"Lchest1 act 1","size":[1,1],"subclass":8,"populate":3,"init":3,"operate":4,"parm":[18],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"chest","drop":75,"trap":"rolled","lockable":true},
+  "160": {"id":160,"key":"FireSmall","nameKey":"fire","desc":"fire small","size":[0,0],"populate":0,"init":22,"operate":11,"orientation":3,"kind":"torch","damage":100},
+  "162": {"id":162,"key":"FireLarge","nameKey":"fire","desc":"fire large","size":[0,0],"populate":0,"init":22,"operate":11,"parm":[1],"orientation":3,"kind":"torch","damage":100},
   "165": {"id":165,"key":"ManaWell2","nameKey":"Shrine","desc":"mana well2","size":[3,3],"subclass":1,"populate":2,"init":1,"operate":2,"parm":[2,77],"orientation":1,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"shrine","shrine":"mana","healAs":77},
   "176": {"id":176,"key":"Chest1B","nameKey":"chest","desc":"chest-L-med","size":[1,1],"subclass":8,"populate":3,"init":3,"operate":4,"parm":[18],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"chest","drop":75,"trap":"rolled","lockable":true},
   "177": {"id":177,"key":"Chest2B","nameKey":"chest","desc":"chest-L-large","size":[1,1],"subclass":8,"populate":3,"init":3,"operate":4,"parm":[18],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"chest","drop":75,"trap":"rolled","lockable":true},

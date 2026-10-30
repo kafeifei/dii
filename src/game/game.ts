@@ -26,6 +26,7 @@ import { interact } from './interact';
 import { npcLeft, npcSpoke, npcTalk, refreshShop, talkTo } from './townsfolk';
 import { castTownPortal, closePortals, enterArea, enterLevel, enterTrial, openTownPortal, readTownPortal, teleportWithin, travel, travelToArea, updateArea, walkExits, type Trip } from './travel';
 import { autoBeltInsert, beltInsert, drink, drinkable, dropBlock, dropFromBag, dropItem, heldGrids, layOutUnplaced, moveStashGold, pickupGround, readHeld, refuseDrop, spawnDrops, stashBlock, useBelt, type Finds } from './items';
+import { updateTraps } from './containers';
 import { chargedBolts, clearCorpses, monstersAround, separate, updateAuras, updateBlasts, updateHammers, updateProjectiles } from './fight';
 import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
@@ -713,6 +714,8 @@ export class Game {
     updateProjectiles(this, dt);
     updateHammers(this, dt);
     updateBlasts(this, L, dt);
+    // a chest's trap going off, its trap fires burning (containers.ts)
+    updateTraps(this, L);
     // ground items: animate & auto-pickup gold
     for (const gi of L.ground) {
       gi.age += dt;

@@ -220,7 +220,7 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
       m.boltsAt = g.time;
       g.chargedBolts(m);
     }
-    if (m.life <= 0) g.killMonster(m, mainElem(pk), killerOf(pk.source));
+    if (m.life <= 0) g.killMonster(m, mainElem(pk), pk.byObject ? 'object' : killerOf(pk.source));
   } else if (isPlayer) {
     const p = target as Player;
     p.lastDamageTime = g.time;

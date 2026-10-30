@@ -6,10 +6,11 @@ export type Faction = 'player' | 'monster';
 export type ActorState = 'idle' | 'move' | 'attack' | 'cast' | 'hit' | 'dead' | 'block' | 'charge';
 
 /**
- * Who killed a monster (Game.killMonster, src/game/kills.ts): the hero, the hireling, or nobody (a
- * death no friendly dealt, as Blood Raven's raised dead falling with her): what the kill gives, and to whom
+ * Who killed a monster (Game.killMonster, src/game/kills.ts): the hero, the hireling, an object (an
+ * exploding barrel's blast: src/game/containers.ts), or nobody (a death no friendly dealt, as Blood
+ * Raven's raised dead falling with her): what the kill gives, and to whom
  */
-export type Killer = 'hero' | Merc | null;
+export type Killer = 'hero' | Merc | 'object' | null;
 
 export interface Resists {
   fire: number;
@@ -64,6 +65,8 @@ export interface DamagePacket {
   ar?: number;
   /** mana burned off the hero (mana burn) */
   mana?: number;
+  /** an object's: an exploding barrel's blast or a trap fire's (OBJEVAL_ApplyTrapObjectDamage), whose kills are an object's (Killer) */
+  byObject?: boolean;
 }
 
 export function emptyPacket(): DamagePacket {

@@ -68,6 +68,8 @@ export class WorldObject {
   locked?: boolean;
   /** a chest's trap, D2's roll for it (0 or none: no trap) */
   trap?: number;
+  /** the trap fires burning on a chest since its fire trap went off (containers.ts lightFires): where, and whether the large one */
+  fires?: { x: number; z: number; large: boolean }[];
   /** a spark chest: the unique chest's rules (580) or the consolation's (397) */
   sparkly?: 'unique' | 'consolation';
   /** a barrel that explodes */

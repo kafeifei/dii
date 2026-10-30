@@ -37,7 +37,11 @@ export function wake(g: Game, m: Monster) {
  * SUnitEvent.cpp:122-142; SKILLS/SkillItem.cpp:1458-1557), so a kill of the hireling's heals her by
  * her gear's (mercOwnKill) and none of the hero's go off. What it drops goes by the killer's magic
  * find and its owner's together (rollLoot). A death no friendly dealt (`null`: Blood Raven's raised
- * dead falling with her) gives no experience and drops nothing
+ * dead falling with her) gives no experience and drops nothing. One an object dealt ('object': an
+ * exploding barrel's blast) gives no one experience (SUNITDMG_DistributeExperience takes a player's
+ * or a monster's kill only, SUnitDmg.cpp:2926-2932) and drops as ever, by no one's magic or gold
+ * find (MONSTERMODE_DropTreasure on its death whoever dealt it, MonsterMode.cpp:491-572; the finds
+ * are a player's or a monster's, Items.cpp:2334-2341, 2549-2556)
  */
 export function killMonster(g: Game, m: Monster, elem: Elem, killer: Killer = 'hero') {
   if (m.dead) return;
@@ -60,7 +64,7 @@ export function killMonster(g: Game, m: Monster, elem: Elem, killer: Killer = 'h
   // the hireling's share first, at the hero's level before this kill's (SUnitDmg.cpp:2981-2988)
   mercKillXp(g, m, killer);
   const addPct = (p.shrine ? (SHRINE_BY_ID[p.shrine.id].xpPct ?? 0) : 0) + (p.stats.bag.xpPct ?? 0);
-  const gained = m.noXp || killer === null ? 0 : p.gainXp(Math.floor(killXp(m.xp, p.level, m.level, addPct) * debugOpts.xp));
+  const gained = m.noXp || killer === null || killer === 'object' ? 0 : p.gainXp(Math.floor(killXp(m.xp, p.level, m.level, addPct) * debugOpts.xp));
   if (gained > 0) {
     onProc(g, 'procLevelUp', null);
     celebrateLevelUp(g);
@@ -143,9 +147,10 @@ export function celebrateLevelUp(g: Game) {
 export function rollLoot(g: Game, roll: (hero: Finder) => Item[], by: Killer = 'hero'): Drop[] {
   const p = g.player;
   const own = p.stats;
-  const s = by instanceof Merc ? { mf: by.mf + own.mf, gf: by.gf + own.gf } : own;
+  // an object's kill: no one's finds, and no one's quest record to pick a quest class by (MonsterMode.cpp:536-570: the killer isn't a player's)
+  const s = by === 'object' ? { mf: 0, gf: 0 } : by instanceof Merc ? { mf: by.mf + own.mf, gf: by.gf + own.gf } : own;
   // a rift's floors drop in its tier's difficulty, never a quest's class: its kills are no quest's
-  const hero: Finder = { mf: s.mf, gf: s.gf, difficulty: p.rules, quests: p.ruled === null ? p.quests[p.difficulty] : 'done' };
+  const hero: Finder = { mf: s.mf, gf: s.gf, difficulty: p.rules, quests: p.ruled === null && by !== 'object' ? p.quests[p.difficulty] : 'done' };
   const drops: Drop[] = [];
   for (let i = 0; i < debugOpts.loot; i++) for (const item of roll(hero)) drops.push({ kind: 'item', item });
   return drops;

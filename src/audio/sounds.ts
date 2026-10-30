@@ -228,6 +228,10 @@ const GROUPS = {
     well: { synth: 'potion', max: 1, prio: 'high' },
     /** a body searched */
     search: { synth: 'pickup', max: 2 },
+    /** a chest's trap set off as it opens, before it goes off (D2's sound 13 on the chest, ObjMode.cpp:1575, 1584) */
+    trap: { synth: 'click', max: 2, prio: 'high' },
+    /** an exploding barrel's blast (ObjMode.cpp:2829-2888) */
+    explode: { synth: 'fire', max: 3, prio: 'high' },
   },
 } satisfies Record<SoundCategory, Record<string, SoundDef>>;
 

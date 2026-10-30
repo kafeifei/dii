@@ -46,7 +46,7 @@ import {
   type WearRefusal,
 } from './d2/hireling';
 import { defense, difficulty } from './d2/stats';
-import { Actor, type DamagePacket, type Resists } from './actor';
+import { Actor, type DamagePacket, type Killer, type Resists } from './actor';
 import { applyDamage, hitOdds } from './combat';
 import type { Game } from './game';
 import { layOutUnplaced } from './items';
@@ -475,9 +475,10 @@ export function healMerc(g: Game): boolean {
  * (hireling.ts killShare, her gear's +% in); alive, wherever she is (the pet lookup has no range,
  * and skips the dead). Added by gainXp: a new level remakes her at full life. The experience given
  */
-export function mercKillXp(g: Game, m: Monster, killer: 'hero' | Merc | null): number {
+export function mercKillXp(g: Game, m: Monster, killer: Killer): number {
   const st = g.player.merc;
-  if (!playable(st) || st.dead || killer === null || m.noXp) return 0;
+  // none for an object's kill: D2 gives experience for a player's or a monster's alone (SUnitDmg.cpp:2926-2932)
+  if (!playable(st) || st.dead || killer === null || killer === 'object' || m.noXp) return 0;
   const on = g.merc && g.merc.kept === st ? g.merc : null;
   const share = killShareFor(st, m, killer instanceof Merc, on?.xpPct ?? mercGearStats(st).xpPct ?? 0);
   if (share <= 0) return 0;
