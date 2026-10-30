@@ -7,7 +7,11 @@
 //   (Objects.txt): size, the populate, init and operate functions D2 dispatches on, Parm, lock, trap
 //   and what kind of container each is;
 // - the sequences (MonSeq.txt) the west block's monsters play for their skills: Blood Raven's
-//   summoning and Quick Strike, the nest's laying, the shamans' raising, a skeleton's rising.
+//   summoning and Quick Strike, the nest's laying, the shamans' raising, a skeleton's rising;
+// - the shrines (Shrines.txt → shrines.ts): every row, what a shrine object rolls its kind among and
+//   what each kind does, with our names (tools/d2-names/shrines.json); the four shrines an Act 1
+//   wilderness area's shrine cells hold (LvlSub type 5), which the old wilderness's shrines are
+//   made as too.
 // Every row as D2R 2.7 has it (load(REF27, …), see rows27 in load.mjs). The generated files carry
 // their own types, which say what each field means in D2MOO's game code.
 //
@@ -16,7 +20,7 @@
 // the dungeons under them.
 //
 // D2MOO references are to github.com/ThePhrozenKeep/D2MOO at commit d9d394f, by file and line.
-import { REF27, load, record, rows, writeD2x } from './load.mjs';
+import { REF27, list, load, record, rows, writeD2x } from './load.mjs';
 import { names } from './names.mjs';
 
 /** the dungeons M2a builds, by Levels.txt id: the Den of Evil, Cave Levels 1 and 2, the Crypt, the Mausoleum */
@@ -129,14 +133,37 @@ const GORE_MAX = 2;
  * Objects.txt Name string keys get our names from tools/d2-names/objects.json (rule 5), and so does
  * lockedchest, the string a locked chest hovers with. D2CE has no object strings: the official
  * English and Chinese they were written against are the names file's (D2R 2.7's objects.json).
- * Shrines keep the names of the shrines they are (src/data/shrines.ts); the Cairn Stones and the
- * Tower Tome are named with their quests (M2b).
+ * A shrine is called by the shrine it is (D2X_SHRINES, its names from tools/d2-names/shrines.json);
+ * the Cairn Stones and the Tower Tome are named with their quests (M2b).
  */
 const NAMED_KINDS = new Set(['chest', 'barrel', 'explodingBarrel', 'casket', 'corpse', 'well']);
 const LOCKED_CHEST = 'lockedchest';
 
 /** MonSeq.txt's events (SequenceTbls.h:8-15) */
 const SEQ_EVENT = { 1: 'melee', 2: 'missile', 3: 'sound', 4: 'skill' };
+
+/**
+ * The shrines InitFn01 makes another as it sets a shrine's kind (Objects.cpp:531-544): the two
+ * exchange shrines the health and the mana shrine, the Enirhs shrine the gem shrine. No shrine ends
+ * as one of these, nor as the null shrine 0 (effect class 0 is never asked for: OBJECTS_GetShrineId
+ * takes class 0 as 2, Objects.cpp:554-557; Parm0 0 picks from row 1 on, 522), so they get no names.
+ */
+const SHRINE_BECOMES = { 4: 2, 5: 3, 16: 18 };
+/**
+ * The Act 1 wilderness's shrine cells (DRLGOUTDOORS_SpawnAct12Shrines(pLevel, 5), DrlgOutWild.cpp:
+ * 217-220, for Blood Moor (2) to Tamoe Highland (7)): five cells a level, the first taking a sub of
+ * the level's SubShrine LvlSub type (5) picked by rand & 3, each next one the next, round the four
+ * (DrlgOutdoors.cpp:577-646; the sub by its flag bit, DrlgOutPlace.cpp:2675-2681, DrlgTileSub.cpp:
+ * 299-357). Each sub's DS1 holds a shrine object, known here by the sub's name: the DS1 maps aren't in
+ * d2data.
+ */
+const WILD_SHRINES = { levels: [2, 3, 4, 5, 6, 7], cells: 5, subType: 5 };
+const WILD_SHRINE_SUBS = [
+  ['Healing Well', 'HealingWell'],
+  ['Deer Shrine', 'DeerShrine'],
+  ['Forest Shrine', 'ForestAltar'],
+  ['Horn Shrine', 'HornShrine'],
+];
 
 // ───────────────────────── columns ─────────────────────────
 // Every column of every table read, taken or not, so a new one fails the import instead of being dropped.
@@ -173,6 +200,23 @@ const OBJ_IGNORED = [
   [['expansion'], 'marks the rows the expansion added'],
 ];
 const OBJ_COLS = new Set([...OBJ_TAKEN, ...OBJ_IGNORED.flatMap(([cols]) => cols)]);
+/** Shrines.txt columns taken into the data (D2MOO loads Code, Arg0, Arg1, Duration in frames, reset time in minutes, rarity, the two strings, effectclass and LevelMin: ObjectsTbls.cpp:257-275) */
+const SHRINE_TAKEN = ['Code', 'Name', 'StringName', 'effectclass', 'LevelMin', 'Arg0', 'Arg1', 'Duration in frames', 'reset time in minutes'];
+/** Shrines.txt columns not taken, and why */
+const SHRINE_IGNORED = [
+  [['rarity'], 'D2MOO loads it (ObjectsTbls.cpp:266, D2ShrinesTxt nRarity) and reads it nowhere'],
+  [
+    ['StringPhrase'],
+    'the line D2 shows over a shrine as it is used (string 3683 + its kind, ObjMode.cpp:2391-2402): the game says what the blessing does in words of its own, an official line not being ours to show',
+  ],
+  [['*Shrine Type', '*Effect'], 'the table’s own notes'],
+  [['lineNumber'], 'd2data’s row number'],
+];
+const SHRINE_COLS = new Set([...SHRINE_TAKEN, ...SHRINE_IGNORED.flatMap(([cols]) => cols)]);
+/** LvlSub.txt: the rows of a type, in order, each a sub by its DS1; read for the wilderness's shrine subs (Type, Name), the rest how D2 lays a sub's tiles, which the game doesn't */
+const LVLSUB_COLS = new Set([
+  'Name', 'Type', 'File', 'CheckAll', 'BordType', 'GridSize', 'Dt1Mask', ...[0, 1, 2, 3, 4].flatMap((i) => [`Prob${i}`, `Trials${i}`, `Max${i}`]), 'expansion',
+]);
 function columns(table, rs, known) {
   const unknown = new Set();
   for (const r of rs) for (const k of Object.keys(r)) if (!known.has(k)) unknown.add(k);
@@ -180,16 +224,22 @@ function columns(table, rs, known) {
 }
 
 export async function buildMaze({ areas, monsters, superuniques }) {
-  const [mazeJ, levelsJ, groupJ, objectsJ, seqJ, modeJ] = await Promise.all(['lvlmaze', 'levels', 'objgroup', 'objects', 'monseq', 'monmode'].map((n) => load(REF27, n)));
+  const [mazeJ, levelsJ, groupJ, objectsJ, seqJ, modeJ, shrinesJ, lvlsubJ] = await Promise.all(
+    ['lvlmaze', 'levels', 'objgroup', 'objects', 'monseq', 'monmode', 'shrines', 'lvlsub'].map((n) => load(REF27, n)),
+  );
   const mazeRows = rows(mazeJ);
   const groupRows = rows(groupJ);
   const objectRows = rows(objectsJ);
   // (d2data keys MonSeq by row, so the values come in file order)
   const seqRows = rows(seqJ);
+  const shrineRows = rows(shrinesJ);
+  const lvlsubRows = rows(lvlsubJ);
   columns('lvlmaze', mazeRows, MAZE_COLS);
   columns('objgroup', groupRows, GROUP_COLS);
   columns('objects', objectRows, OBJ_COLS);
   columns('monseq', seqRows, SEQ_COLS);
+  columns('shrines', shrineRows, SHRINE_COLS);
+  columns('lvlsub', lvlsubRows, LVLSUB_COLS);
   const LEVEL = new Map(rows(levelsJ).map((r) => [r.Id, r]));
   // objects by *ID, D2's class: d2data keys them by file row, one past it after the Expansion divider it leaves out
   const OBJ = new Map(objectRows.map((r) => [r['*ID'], r]));
@@ -265,6 +315,42 @@ export async function buildMaze({ areas, monsters, superuniques }) {
   // every member must be one the population handler places at all
   for (const g of Object.values(groups)) for (const o of g.objects) if ((OBJ.get(o.id).Gore ?? 0) > GORE_MAX) throw new Error(`objgroup ${g.id}: object ${o.id} has Gore above ${GORE_MAX}`);
   for (const id of PRESET_OBJECTS) want(id, 'a west block preset');
+
+  // ───────────────────────── shrines ─────────────────────────
+  // D2 indexes Shrines.txt by row and dispatches on its Code (DATATBLS_GetShrinesTxtRecord,
+  // ObjectsTbls.cpp:278-283; ObjMode.cpp:2404-2421): they must be one
+  shrineRows.forEach((r, i) => {
+    if ((r.Code ?? 0) !== i) throw new Error(`shrines row ${i}: Code ${r.Code}`);
+  });
+  const shrineNames = names('shrines');
+  const shrines = shrineRows.map((r, i) => {
+    const s = { code: i, key: r.StringName, en: r.Name ?? '' };
+    if (i > 0 && !(i in SHRINE_BECOMES)) {
+      const n = shrineNames.named(r.StringName, r.Name);
+      if (!n) throw new Error(`shrines ${i}: no names for ${r.StringName} in tools/d2-names/shrines.json`);
+      Object.assign(s, n);
+    }
+    s.effectClass = r.effectclass ?? 0;
+    s.levelMin = r.LevelMin ?? 0;
+    s.arg0 = r.Arg0 ?? 0;
+    s.arg1 = r.Arg1 ?? 0;
+    s.frames = r['Duration in frames'] ?? 0;
+    s.reset = r['reset time in minutes'] ?? 0;
+    return s;
+  });
+  // (each becomes one of its own effect class, so what a shrine object can be stays its Parm0's)
+  for (const [from, to] of Object.entries(SHRINE_BECOMES)) if (shrines[from].effectClass !== shrines[to].effectClass) throw new Error(`shrines ${from} becomes ${to}, of another effect class`);
+  // the wilderness's shrine subs: the levels' SubShrine type, its rows in order, each the object its name says
+  const subs = lvlsubRows.filter((r) => r.Type === WILD_SHRINES.subType && !r.expansion);
+  if (subs.map((r) => r.Name).join() !== WILD_SHRINE_SUBS.map(([n]) => n).join()) throw new Error(`lvlsub type ${WILD_SHRINES.subType}: ${subs.map((r) => r.Name).join(', ')}`);
+  for (const id of WILD_SHRINES.levels) if (LEVEL.get(id)?.SubShrine !== WILD_SHRINES.subType) throw new Error(`levels ${id}: SubShrine ${LEVEL.get(id)?.SubShrine}`);
+  const byClass = new Map(objectRows.map((r) => [r.Class, r]));
+  const wildShrines = WILD_SHRINE_SUBS.map(([sub, cls]) => {
+    const r = byClass.get(cls);
+    if (!r || r.OperateFn !== 2) throw new Error(`lvlsub ${sub}: no shrine object ${cls}`);
+    want(r['*ID'], `the wilderness's shrine sub ${sub}`);
+    return r['*ID'];
+  });
 
   // ───────────────────────── objects ─────────────────────────
   // and what those bring along: cluster companions, flies, a shrine's healing self, a placeholder's chests
@@ -436,11 +522,17 @@ export async function buildMaze({ areas, monsters, superuniques }) {
       `/**\n * The hover names of the objects the game shows (chests, barrels, caskets and their graves, rogue corpses,\n * wells), ours (tools/d2-names/objects.json), by their Objects.txt Name string key (D2xObject.nameKey),\n * and ${LOCKED_CHEST}, a locked chest's\n */\nexport const D2X_OBJECT_NAMES: Record<string, D2xObjectName> = ${record(objectNames)};\n`,
   );
   writeD2x('monseq.ts', `${SEQ_TYPES}\n/** the sequences the west block's monsters play for their skills, by name (D2xMonster skills' mode) */\nexport const D2X_MONSEQ: Record<string, D2xMonSeq> = ${record(monseq)};\n`);
+  writeD2x(
+    'shrines.ts',
+    `${SHRINE_TYPES}\n/** Shrines.txt, every row, by Code (its row) */\nexport const D2X_SHRINES: D2xShrine[] = ${list(shrines)};\n\n` +
+      `/**\n * The Act 1 wilderness's shrine cells: the levels that have them, how many, and the shrine object each\n * of the four subs they take in turn holds (LvlSub type ${WILD_SHRINES.subType}: ${WILD_SHRINE_SUBS.map(([n]) => n).join(', ')})\n */\n` +
+      `export const D2X_WILD_SHRINES = ${JSON.stringify({ levels: WILD_SHRINES.levels, cells: WILD_SHRINES.cells, objects: wildShrines })};\n`,
+  );
   console.log(
     `maze: ${Object.keys(mazes).length} dungeon levels, ${Object.keys(groups).length} object groups, ${Object.keys(objects).length} objects (${Object.keys(objectNames).length} hover names), ` +
-      `${Object.keys(monseq).length} sequences of the west block's ${mons.size} monsters (${west.size} areas)`,
+      `${Object.keys(monseq).length} sequences of the west block's ${mons.size} monsters (${west.size} areas); ${shrines.length} shrines (${shrines.filter((s) => s.name).length} named)`,
   );
-  return { mazes, groups, objects, objectNames, monseq };
+  return { mazes, groups, objects, objectNames, monseq, shrines };
 }
 
 /** the shrine a shrine object becomes when it must be the level's healing one (Objects.cpp:1594-1606) */
@@ -596,7 +688,12 @@ export interface D2xObject {
   cluster?: number[];
   /** % of these that get flies (object 103) on them (PopulateFn6, Objects.cpp:1417) */
   flies?: number;
-  /** a shrine's kind by Parm0 (InitFn 1, Objects.cpp:489-548): health, mana, magic (a boon, effect class 4; one in ten a special one, class 1) or any of the area's level */
+  /**
+   * a shrine's kind by Parm0 (InitFn 1, Objects.cpp:489-548): what it picks its shrine (D2X_SHRINES) among,
+   * by effect class: health (1: class 2), mana (2: class 3), magic (3 and more: a boon, class 4, or one
+   * time in ten a special one, class 1, as Objects.txt calls such objects magic shrines), any (0: any
+   * shrine of the area's level)
+   */
   shrine?: 'any' | 'health' | 'mana' | 'magic';
   /** the object a shrine becomes when it must be the level's healing one: Parm1, or the healing well 84 (Objects.cpp:1594-1606) */
   healAs?: number;
@@ -613,6 +710,38 @@ export interface D2xObjectName {
   name: string;
   nameEn: string;
   en: string;
+}
+`;
+
+const SHRINE_TYPES = `/**
+ * A shrine (Shrines.txt row): what a shrine object is, once it has rolled its kind as it appears
+ * (OBJECTS_InitFunction01_Shrine, D2MOO Objects.cpp:489-548), and what touching it does by its Code
+ * (the handlers' table, ObjMode.cpp:2142-2168, run by OBJECTS_OperateFunction02_Shrine, 2359-2437).
+ */
+export interface D2xShrine {
+  /** Code: its row, which D2 indexes it by and dispatches on */
+  code: number;
+  /** StringName: its name's string key, ours by it (tools/d2-names/shrines.json) */
+  key: string;
+  /** Name: Blizzard's English for it */
+  en: string;
+  /** ours, for the shrines a shrine can be: not 0 (the null shrine), 4, 5 or 16, which InitFn01 makes another (Objects.cpp:531-544) */
+  name?: string;
+  nameEn?: string;
+  /**
+   * effectclass: what a shrine object picks its kind among (OBJRGN's lists by class, ObjRgn.cpp:47-78):
+   * 2 health, 3 mana, 4 a boon (with the refilling shrine), 1 a special one; 0 the null shrine alone
+   */
+  effectClass: number;
+  /** LevelMin: the lowest Levels.txt Id it is kept in, the pick tried again up to 8 times below it (Objects.cpp:520-528, 565-578) */
+  levelMin: number;
+  /** Arg0, Arg1: what its handler reads, the % or points of its boon, the specials' counts and % */
+  arg0: number;
+  arg1: number;
+  /** Duration in frames: how long a boon's state lasts, at 25 frames a second */
+  frames: number;
+  /** reset time in minutes: it can be touched again 1200 × this + 1 frames after (ObjMode.cpp:2423-2426, OBJMODE_ResetShrine 252-262); 0, never */
+  reset: number;
 }
 `;
 

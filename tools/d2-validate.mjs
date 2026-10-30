@@ -25,7 +25,8 @@
 // - the properties: every code is one src/items/props.ts reads or KNOWN_UNMAPPED lists;
 // - the skills: all 30 Paladin and 30 Sorceress skills;
 // - the dungeons: the west block's maze rows, the object groups and objects that furnish them and its
-//   monsters' sequences, each as 2.7 has it, worked out again from the tables.
+//   monsters' sequences, each as 2.7 has it, worked out again from the tables;
+// - the shrines: Shrines.txt by Code, our names for each a shrine can be, the wilderness's shrine cells.
 //
 // D2MOO references are to github.com/ThePhrozenKeep/D2MOO at commit d9d394f, by file and line.
 import fs from 'node:fs';
@@ -589,6 +590,7 @@ section('English names');
     ...of('superunique', 'superuniques', ['monsters'], X.D2X_SUPERUNIQUES, (s) => s.key),
     ...of('area', 'areas', ['areas'], X.D2X_AREAS, (a) => a.id),
     ...of('object', 'objects', ['objects'], Object.entries(X.D2X_OBJECT_NAMES ?? {}).map(([key, n]) => ({ ...n, key })), (o) => o.key),
+    ...of('shrine', 'shrines', ['shrines'], X.D2X_SHRINES.filter((x) => x.name), (x) => x.key),
     ...['prefix', 'suffix', 'title'].flatMap((k) => of(`unique monster ${k}`, `unique monster ${k}${k === 'title' ? 's' : 'es'}`, [`monster-${k}${k === 'title' ? 's' : 'es'}`], X.D2X_UNIQUE_NAMES[k], (w) => w.key)),
     ...Object.entries(X.D2X_HIRELING_NAMES).map(([k, v]) => ({ where: `hireling name ${k}`, group: 'hireling names', files: ['mercenaries'], zh: v.name, nameEn: v.nameEn, en: merc.en[k] })),
     ...X.D2X_HIRELINGS.filter((h) => h.type).map((h) => ({ where: `hireling ${h.id} type`, group: 'hireling types', files: ['mercenaries'], zh: h.type, nameEn: h.typeEn, en: hire27.get(h.id)?.Hireling })),
@@ -1007,6 +1009,8 @@ section('Dungeons: maze rows, object groups, objects and monster sequences, as 2
   const obad = [];
   const want = new Set([...Object.values(OG).flatMap((g) => g.objects.map((o) => o.id)), 580, 581, 397, 17, 18, 19, 20, 21, 22, 8]);
   for (const o of Object.values(OB)) for (const c of [...(o.cluster ?? []), ...(o.becomes ?? []), ...(o.healAs ? [o.healAs] : [])]) want.add(c);
+  // the shrines the wilderness's cells hold (the shrines section below)
+  for (const id of X.D2X_WILD_SHRINES.objects) want.add(id);
   if (Object.values(OB).some((o) => o.flies)) want.add(103);
   // a trapped chest's fire trap lights the large fire and the small one (D2GAME_OBJECTS_TrapHandler5_7, ObjMode.cpp:1081-1102)
   if (Object.values(OB).some((o) => o.trap === 'rolled')) for (const f of [162, 160]) want.add(f);
@@ -1133,6 +1137,70 @@ section('Dungeons: maze rows, object groups, objects and monster sequences, as 2
       ...X.D2X_MONSTERS.bloodraven.skills.filter((s) => !SQ[s.mode]).map((s) => `bloodraven ${s.skill}: ${s.mode}`),
     ],
   );
+}
+
+// ───────────────────────── shrines ─────────────────────────
+// Shrines.txt (tools/d2/maze.mjs), worked out again from the 2.7 tables: every row by its Code, what
+// D2MOO reads of it; our names for each shrine a shrine object can end as (InitFn01 makes 4, 5 and 16
+// the health, mana and gem shrine, Objects.cpp:531-544; 0 is the null shrine), none the official
+// Chinese or English it was written against (D2R 2.x's strings/shrines.json, which D2CE has not); the
+// wilderness's shrine subs (LvlSub type 5 for Blood Moor to Tamoe Highland, DrlgOutWild.cpp:217-220).
+section('Shrines: Shrines.txt and the wilderness shrine cells, as 2.7 has them');
+{
+  const [shr27, sub27, lv27, obj27] = await Promise.all(['shrines', 'lvlsub', 'levels', 'objects'].map((n) => load(REF27, n)));
+  const SH = X.D2X_SHRINES;
+  const bad = [];
+  const rs = rows(shr27);
+  if (rs.length !== SH.length) bad.push(`${SH.length} shrines, 2.7 has ${rs.length}`);
+  rs.forEach((r, i) => {
+    const s = SH[i];
+    const w = `shrine ${i}`;
+    if (!s) return bad.push(`${w}: missing`);
+    mismatch(bad, w, 'code', r.Code ?? 0, s.code);
+    mismatch(bad, w, 'code is its row', i, s.code);
+    mismatch(bad, w, 'key en', [r.StringName, r.Name ?? ''], [s.key, s.en]);
+    mismatch(bad, w, 'class levelMin', [r.effectclass ?? 0, r.LevelMin ?? 0], [s.effectClass, s.levelMin]);
+    mismatch(bad, w, 'args frames reset', [r.Arg0 ?? 0, r.Arg1 ?? 0, r['Duration in frames'] ?? 0, r['reset time in minutes'] ?? 0], [s.arg0, s.arg1, s.frames, s.reset]);
+  });
+  check('every Shrines.txt row by its Code (its row): class, LevelMin, Arg0, Arg1, frames, reset time', bad);
+  // the lists a shrine object picks among (ObjRgn.cpp:47-78): health 2 and 4, mana 3 and 5, the boons
+  // with the refilling shrine, the specials 16–22
+  const cls = (c) => SH.filter((s) => s.effectClass === c).map((s) => s.code);
+  check(
+    'effect classes: 2 health (2, 4), 3 mana (3, 5), 4 the boons and refilling (1, 6–15), 1 the specials (16–22)',
+    [
+      ...(same(cls(2), [2, 4]) ? [] : [`class 2: ${cls(2)}`]),
+      ...(same(cls(3), [3, 5]) ? [] : [`class 3: ${cls(3)}`]),
+      ...(same(cls(4), [1, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]) ? [] : [`class 4: ${cls(4)}`]),
+      ...(same(cls(1), [16, 17, 18, 19, 20, 21, 22]) ? [] : [`class 1: ${cls(1)}`]),
+    ],
+  );
+  const theirs = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/d2-names/shrines.json'), 'utf8'));
+  const nbad = [];
+  const zh = (v) => (v ?? '').trim().replace(/[的之·・\s]/g, '');
+  for (const s of SH) {
+    const shown = s.code > 0 && ![4, 5, 16].includes(s.code);
+    if (shown !== !!(s.name && s.nameEn)) nbad.push(`shrine ${s.code}: ${shown ? 'no names' : 'names on a shrine none ends as'}`);
+    if (!s.name) continue;
+    const t = theirs[s.key];
+    if (!t || t.name !== s.name || t.nameEn !== s.nameEn || t.en !== s.en) nbad.push(`${s.key}: not shrines.json's names`);
+    if (t?.official && zh(s.name) === zh(t.official)) nbad.push(`${s.key}: ${s.name} is the official ${t.official}`);
+    if (t?.en && s.nameEn.toLowerCase().replace(/[\s'-]/g, '') === t.en.toLowerCase().replace(/[\s'-]/g, '')) nbad.push(`${s.key}: ${s.nameEn} is the official ${t.en}`);
+  }
+  count('shrine names', SH.filter((s) => s.name).map((s) => `${s.code} ${s.name}`).join('、'));
+  check('every shrine a shrine can end as has our names, shrines.json’s, none the official one; the null, exchange and Enirhs shrines none', nbad);
+  // the wilderness: LvlSub type 5's subs in order, each the shrine object its name says; Blood Moor to Tamoe Highland, five cells each
+  const OBJ27 = new Map(rows(obj27).map((r) => [r['*ID'], r]));
+  const subs = rows(sub27).filter((r) => r.Type === 5 && !r.expansion);
+  const wbad = [];
+  const want = { 'Healing Well': 'HealingWell', 'Deer Shrine': 'DeerShrine', 'Forest Shrine': 'ForestAltar', 'Horn Shrine': 'HornShrine' };
+  mismatch(wbad, 'lvlsub 5', 'subs', Object.keys(want), subs.map((r) => r.Name));
+  mismatch(wbad, 'D2X_WILD_SHRINES', 'objects', subs.map((r) => rows(obj27).find((o) => o.Class === want[r.Name])?.['*ID']), X.D2X_WILD_SHRINES.objects);
+  for (const id of X.D2X_WILD_SHRINES.objects) if (OBJ27.get(id)?.OperateFn !== 2 || !X.D2X_OBJECTS[id]) wbad.push(`object ${id}: not a shrine in D2X_OBJECTS`);
+  const LV = new Map(rows(lv27).map((r) => [r.Id, r]));
+  mismatch(wbad, 'D2X_WILD_SHRINES', 'levels cells', [[2, 3, 4, 5, 6, 7], 5], [X.D2X_WILD_SHRINES.levels, X.D2X_WILD_SHRINES.cells]);
+  for (const id of X.D2X_WILD_SHRINES.levels) if (LV.get(id)?.SubShrine !== 5) wbad.push(`level ${id}: SubShrine ${LV.get(id)?.SubShrine}`);
+  check('the wilderness’s shrine cells: five in Blood Moor to Tamoe Highland, of LvlSub 5’s Healing Well, Deer, Forest and Horn shrines (objects 84, 2, 81, 83)', wbad);
 }
 
 console.log(`\n${passed} checks passed, ${failed} failed${warned ? `, ${warned} name${warned > 1 ? 's' : ''} to look at` : ''}`);

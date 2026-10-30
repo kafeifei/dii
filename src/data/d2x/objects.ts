@@ -98,7 +98,12 @@ export interface D2xObject {
   cluster?: number[];
   /** % of these that get flies (object 103) on them (PopulateFn6, Objects.cpp:1417) */
   flies?: number;
-  /** a shrine's kind by Parm0 (InitFn 1, Objects.cpp:489-548): health, mana, magic (a boon, effect class 4; one in ten a special one, class 1) or any of the area's level */
+  /**
+   * a shrine's kind by Parm0 (InitFn 1, Objects.cpp:489-548): what it picks its shrine (D2X_SHRINES) among,
+   * by effect class: health (1: class 2), mana (2: class 3), magic (3 and more: a boon, class 4, or one
+   * time in ten a special one, class 1, as Objects.txt calls such objects magic shrines), any (0: any
+   * shrine of the area's level)
+   */
   shrine?: 'any' | 'health' | 'mana' | 'magic';
   /** the object a shrine becomes when it must be the level's healing one: Parm1, or the healing well 84 (Objects.cpp:1594-1606) */
   healAs?: number;
@@ -132,6 +137,7 @@ export const D2X_OBJGROUPS: Record<number, D2xObjGroup> = {
  * west block's map presets place (Objects.txt), by class: 580, 581, 397, 17, 18, 19, 20, 21, 22, 8 for the presets.
  */
 export const D2X_OBJECTS: Record<number, D2xObject> = {
+  "2": {"id":2,"key":"DeerShrine","nameKey":"Shrine","desc":"Shrine","size":[3,3],"subclass":1,"populate":2,"init":1,"operate":2,"parm":[3,84],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"shrine","shrine":"magic","healAs":84},
   "3": {"id":3,"key":"Casket6","nameKey":"Casket","desc":"Casket #6","size":[5,3],"space":[5,5],"subclass":8,"populate":1,"init":0,"operate":1,"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"casket","drop":100,"trap":"monster","cluster":[3,28]},
   "5": {"id":5,"key":"LargeChestR","nameKey":"chest","desc":"LargeChestR","size":[1,2],"subclass":8,"populate":3,"init":3,"operate":4,"parm":[15],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"chest","drop":75,"trap":"rolled","lockable":true},
   "6": {"id":6,"key":"LargeChestL","nameKey":"chest","desc":"LargeChestL","size":[2,1],"subclass":8,"populate":3,"init":3,"operate":4,"parm":[15],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"chest","drop":75,"trap":"rolled","lockable":true},
@@ -149,6 +155,8 @@ export const D2X_OBJECTS: Record<number, D2xObject> = {
   "55": {"id":55,"key":"RogueCorpse2","nameKey":"RogueCorpse","desc":"Rogue corpse 2","size":[1,1],"populate":6,"init":0,"operate":14,"orientation":3,"selectable":true,"blocks":true,"kind":"corpse","drop":100,"flies":29},
   "56": {"id":56,"key":"RogueRollingCorpse1","nameKey":"RogueCorpse","desc":"rolling rogue corpse","size":[1,1],"populate":6,"init":0,"operate":14,"orientation":3,"selectable":true,"blocks":true,"kind":"corpse","drop":100,"flies":29},
   "77": {"id":77,"key":"ShrineAltar","nameKey":"Shrine","desc":"healthorama","size":[3,3],"subclass":1,"populate":2,"init":1,"operate":2,"parm":[1,84],"orientation":1,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"shrine","shrine":"health","healAs":84},
+  "81": {"id":81,"key":"ForestAltar","nameKey":"Shrine","desc":"forest altar","size":[3,3],"subclass":1,"populate":2,"init":1,"operate":2,"parm":[3,84],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"shrine","shrine":"magic","healAs":84},
+  "83": {"id":83,"key":"HornShrine","nameKey":"Shrine","desc":"horn shrine","size":[3,3],"subclass":1,"populate":2,"init":1,"operate":2,"parm":[3,84],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"shrine","shrine":"magic","healAs":84},
   "84": {"id":84,"key":"HealingWell","nameKey":"Shrine","desc":"healing well","size":[3,3],"subclass":1,"populate":2,"init":1,"operate":2,"parm":[1,84],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"shrine","shrine":"health","healAs":84},
   "103": {"id":103,"key":"Flies","nameKey":"Dummy","desc":"flies","size":[1,1],"populate":0,"init":0,"operate":0,"orientation":3,"kind":"none"},
   "138": {"id":138,"key":"Fountain8","nameKey":"Well","desc":"cavewell act 1 caves","size":[4,4],"subclass":32,"populate":8,"init":16,"operate":22,"parm":[750,128,1,3],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"well","well":{"uses":2,"regen":30.04,"restore":0.5,"life":true,"mana":true}},
