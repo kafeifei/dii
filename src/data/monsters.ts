@@ -58,7 +58,8 @@ export interface MonsterLook {
  * Brutes, sprite YE) as yetis, skeletons with their bows and staves. The rest stand in until they get
  * their own: ghosts as wraiths, the Arach as the spider, goatmen as demons, the Afflicted (Bighead) as
  * ghouls, the foul crows as bats, the Banished (Vampire) as the lich, the rat men (Fetish) as small
- * imps; the foul crow nest, with no model anywhere yet, is a PLACEHOLDER: a dead tree tinted dark. Act 1's bosses take the floor bosses' bodies: the Smith the butcher's, Blood Raven the lich's,
+ * imps; the foul crow nest, with no model anywhere yet, is a PLACEHOLDER: a dead tree tinted dark.
+ * Act 1's bosses take the floor bosses' bodies: the Smith the butcher's, Blood Raven the lich's,
  * Andariel the overlord's, Griswold a big zombie's. Sizes are the game's: D2 gives sprites' heights (MonStats2 pixHeight), not models'.
  */
 export const LOOKS: Record<string, MonsterLook> = {
@@ -97,9 +98,10 @@ export const LOOKS: Record<string, MonsterLook> = {
   foulcrow: { key: 'foulcrow', model: 'bat', scale: 0.8, radius: 0.36, blood: 'red', color: '#3a3030', color2: '#6a1a1a', voice: 'flesh', range: 1.1, attackSpeed: 1.4, attack: [] },
   // PLACEHOLDER until the nest has a model (docs/M2A.md 美术: 鸟巢; none in models-src or public/models): the
   // graveyard pack's small dead tree, tinted the crows' dark red, standing where D2's nest (MonStats
-  // crownest1: velocity 0, 3×3, pixHeight 128) stands; it neither hatches crows nor strikes until the B
+  // crownest1: velocity 0, 3×3, pixHeight 128) stands. It has no arm (range 0) as D2's has no attack
+  // (no A1 in MonStats), so the AI's fallback never comes to a blow; it hatches no crows until the B
   // line writes its AI (FoulCrowNest)
-  crownest: { key: 'crownest', model: 'nest', scale: 1, radius: 0.7, blood: 'red', color: '#3a2e22', color2: '#6a1a1a', voice: 'flesh', range: 1.0, attackSpeed: 0.5, attack: [], tint: '#4a1a12' },
+  crownest: { key: 'crownest', model: 'nest', scale: 1, radius: 0.7, blood: 'red', color: '#3a2e22', color2: '#6a1a1a', voice: 'flesh', range: 0, attackSpeed: 0.5, attack: [], tint: '#4a1a12' },
   vampire: {
     key: 'vampire', model: 'lich', scale: 1.1, radius: 0.45, blood: 'red', color: '#8a3a4a', color2: '#2a0a10', missile: 'fireball', voice: 'flesh', range: 1.2, attackSpeed: 0.6,
     attack: ['Attack'], cast: ['Cast'], tint: '#a03040',
