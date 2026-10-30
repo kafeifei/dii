@@ -1486,6 +1486,198 @@
     "peak": -5.6,
     "encoder": "aac_at"
   },
+  "voice.kashya.a1q2_intro.1": {
+    "key": "69a61efeab1a",
+    "proc": "16af1c41b006",
+    "kind": "voice",
+    "model": "eleven_v4",
+    "voice": "River",
+    "text": "你就是替亚喀蕾清了那个洞的外乡人？好。我不信嘴上说的，只认做出来的。绯鸦本是我们自己人，营里没有谁拉弓比她更稳。可她的心被什么东西攫走了，如今她守在凛寒原野那头的葬骨荒冢，把我们亲手埋下的姊妹一个个从土里拖出来，替她卖命。我的斥候没法朝昔日同袍的尸身放箭。你去。了结她，让那些坟重新安静下来。办成了，我的人就认你。",
+    "said": "你就是替亚喀垒清了那个洞的外乡人？好。我不信嘴上说的，只认做出来的。绯鸦本是我们自己人，营里没有谁拉弓比她更稳。可她的心被什么东西攫走了，如今她守在凛寒原野那头的葬骨荒冢，把我们亲手埋下的姊妹一个个从土里拖出来，替她卖命。我的斥后没法潮昔日同袍的尸身放箭。你去。了结她，让那些坟重新安静下来。办成了，我的人就认你。",
+    "credits": 157,
+    "date": "2026-10-29",
+    "secs": 32.467,
+    "lufs": -18,
+    "peak": -1,
+    "limited": 0.4,
+    "encoder": "aac_at",
+    "check": {
+      "date": "2026-10-29",
+      "by": "MMS_FA forced alignment (torchaudio wav2vec2, on the line's pinyin) and Whisper large-v3-turbo on box (GPU 0): what it hears, and each syllable's window; at every character with more than one reading, and every one Whisper wrote otherwise, the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "亚喀蕾的蕾 lěi、好 hǎo、只认的只 zhǐ、没 méi、更 gèng、攫走了和办成了的了 le、葬 zàng、把 bǎ、埋 mái、一个个的一 yí、斥候的候 hòu、朝 cháo、了结 liǎojié、重新的重 chóng",
+      "note": "候 (given 后) falls 219→158 Hz after 斥's fall; in the take before, 候 as written rose 165→208 Hz (hóu, Whisper heard 赤猴). 垒 dips to 129 Hz (3rd); 蕾 as written dipped and rose again, nearer léi. 潮 dips and rises (2nd); 了结's 了 stays low for 0.22 s (liǎo), 结 rises; 重 rises 182→250 Hz; 更 falls 239→138 Hz; 没 rises on /ei/ (F2 2250-2410 Hz); 埋 glides /a/→/i/ (F1 870→310, F2 1180→2400 Hz); 好 is low and creaky; 葬 falls 276→163 Hz after 60 ms of frication (z), though Whisper writes 藏"
+    }
+  },
+  "voice.kashya.a1q2_remind_out.1": {
+    "key": "329c8a800b5f",
+    "proc": "8a50aaff716a",
+    "kind": "voice",
+    "model": "eleven_v4",
+    "voice": "River",
+    "text": "她还站着，对吧？我在木栅上都闻得见那边翻起来的土腥味。别让我等太久。",
+    "credits": 34,
+    "date": "2026-10-29",
+    "secs": 6.609,
+    "lufs": -18,
+    "peak": -4.8,
+    "encoder": "aac_at",
+    "check": {
+      "date": "2026-10-29",
+      "by": "MMS_FA forced alignment (torchaudio wav2vec2, on the line's pinyin) and Whisper large-v3-turbo on box (GPU 0): what it hears, and each syllable's window; at every character with more than one reading, and every one Whisper wrote otherwise, the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "还 hái、站着的着 zhe、木栅的栅 zhà、都 dōu、闻得见的得 de",
+      "note": "还 rises 148→250 Hz on /ai/; 着 short and low; 栅 falls 327→246 Hz between 木 and 上, each falling (zhà, not shān); 都 holds level on /ou/ (F2 1360 Hz; dū's /u/ sits lower); 得 short and level"
+    }
+  },
+  "voice.kashya.a1q2_remind.1": {
+    "key": "528b56c89caf",
+    "proc": "7aadd2467d13",
+    "kind": "voice",
+    "model": "eleven_v4",
+    "voice": "River",
+    "text": "葬骨荒冢在凛寒原野的那一头。出了营门，穿过血沼荒原一直往前走。记着，别站远了跟她对射，她从不失手。贴上去打。",
+    "said": "葬骨荒冢在凛寒原野的那一头。出了营门，穿过谑沼荒原一直往前走。记着，别站远了跟她对射，她从不失手。贴上去打。",
+    "credits": 54,
+    "date": "2026-10-29",
+    "secs": 10.483,
+    "lufs": -18,
+    "peak": -1,
+    "limited": 0.5,
+    "encoder": "aac_at",
+    "check": {
+      "date": "2026-10-29",
+      "by": "MMS_FA forced alignment (torchaudio wav2vec2, on the line's pinyin) and Whisper large-v3-turbo on box (GPU 0): what it hears, and each syllable's window; at every character with more than one reading, and every one Whisper wrote otherwise, the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "葬 zàng、血 xuè、出了和站远了的了 le、那 nà、记着的着 zhe、从 cóng、不 bù",
+      "note": "谑 falls 276→205 Hz (xuè; Akara's reminder with 血 as written rose, xuě); 葬 falls 286→178 Hz after 60 ms of frication, as in the intro (Whisper writes 瘫 at the take's start, its tone level where this falls); 着 is one voiced frame, unstressed; both 了 short"
+    }
+  },
+  "voice.kashya.a1q2_reward.1": {
+    "key": "b5650995f325",
+    "proc": "857a7116128e",
+    "kind": "voice",
+    "model": "eleven_v4",
+    "voice": "River",
+    "text": "探子回报，葬骨荒冢那边静下来了。……她曾是我们当中最好的一个，这一点我不会忘。你替我们做了我们下不去手的事。从今往后，我的斥候听你差遣：身边缺人手，就带一个走，这一个不收你的钱。",
+    "credits": 89,
+    "date": "2026-10-29",
+    "secs": 18.078,
+    "lufs": -18,
+    "peak": -2.4,
+    "encoder": "aac_at",
+    "check": {
+      "date": "2026-10-29",
+      "by": "MMS_FA forced alignment (torchaudio wav2vec2, on the line's pinyin) and Whisper large-v3-turbo on box (GPU 0): what it hears, and each syllable's window; at every character with more than one reading, and every one Whisper wrote otherwise, the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "曾 céng、当中的当 dāng、最好的好 hǎo、差遣的差 chāi、下来了和做了的了 le；斥候的候念成 hóu（像「赤猴」），要重录",
+      "note": "候 rises 165→213 Hz (hóu; Whisper hears 赤猴), as the intro's first take did: to be made again with 斥候 given as 斥后, as the intro is (89 credits, past this round's 600). 差 holds level and glides /a/→/i/ (F1 770→260 Hz: chāi); 曾 dips and comes back after aspirated frication (céng, not zēng); 当 and 中 level; 好 low"
+    }
+  },
+  "voice.kashya.farewell.1": {
+    "key": "50707692192c",
+    "proc": "0d54cb00db7e",
+    "kind": "voice",
+    "model": "eleven_v4",
+    "voice": "River",
+    "text": "去吧，别死在外头。",
+    "credits": 9,
+    "date": "2026-10-29",
+    "secs": 1.857,
+    "lufs": -18,
+    "peak": -4.8,
+    "encoder": "aac_at",
+    "check": {
+      "date": "2026-10-29",
+      "by": "MMS_FA forced alignment (torchaudio wav2vec2, on the line's pinyin) and Whisper large-v3-turbo on box (GPU 0): what it hears, and each syllable's window; at every character with more than one reading, and every one Whisper wrote otherwise, the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "外头的头 tou",
+      "note": "头 is one voiced frame, unstressed"
+    }
+  },
+  "voice.kashya.farewell.2": {
+    "key": "71864860ba8e",
+    "proc": "92e43a1df6ae",
+    "kind": "voice",
+    "model": "eleven_v4",
+    "voice": "River",
+    "text": "眼睛放亮些。",
+    "credits": 6,
+    "date": "2026-10-29",
+    "secs": 1.322,
+    "lufs": -18,
+    "peak": -5.9,
+    "encoder": "aac_at"
+  },
+  "voice.kashya.farewell.3": {
+    "key": "81c3ff259bf7",
+    "proc": "6b56632112d6",
+    "kind": "voice",
+    "model": "eleven_v4",
+    "voice": "River",
+    "text": "速去速回。",
+    "credits": 5,
+    "date": "2026-10-29",
+    "secs": 1.369,
+    "lufs": -18,
+    "peak": -4.2,
+    "encoder": "aac_at"
+  },
+  "voice.kashya.greeting.1": {
+    "key": "951c56963dd9",
+    "proc": "f004aab1d41b",
+    "kind": "voice",
+    "model": "eleven_v4",
+    "voice": "River",
+    "text": "有话就说。",
+    "credits": 5,
+    "date": "2026-10-29",
+    "secs": 1.229,
+    "lufs": -18,
+    "peak": -7.1,
+    "encoder": "aac_at",
+    "check": {
+      "date": "2026-10-29",
+      "by": "MMS_FA forced alignment (torchaudio wav2vec2, on the line's pinyin) and Whisper large-v3-turbo on box (GPU 0): what it hears, and each syllable's window; at every character with more than one reading, and every one Whisper wrote otherwise, the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "说 shuō",
+      "note": "说 holds level, 262-281 Hz"
+    }
+  },
+  "voice.kashya.greeting.2": {
+    "key": "b63885e5cdf5",
+    "proc": "e0efd52e9c62",
+    "kind": "voice",
+    "model": "eleven_v4",
+    "voice": "River",
+    "text": "说吧，我在听。",
+    "credits": 7,
+    "date": "2026-10-29",
+    "secs": 1.6,
+    "lufs": -18,
+    "peak": -2,
+    "encoder": "aac_at",
+    "check": {
+      "date": "2026-10-29",
+      "by": "MMS_FA forced alignment (torchaudio wav2vec2, on the line's pinyin) and Whisper large-v3-turbo on box (GPU 0): what it hears, and each syllable's window; at every character with more than one reading, and every one Whisper wrote otherwise, the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "说 shuō",
+      "note": "说 holds level, 296-308 Hz"
+    }
+  },
+  "voice.kashya.greeting.3": {
+    "key": "bfb5cd0b790e",
+    "proc": "450a6e8ceb55",
+    "kind": "voice",
+    "model": "eleven_v4",
+    "voice": "River",
+    "text": "你还活着。",
+    "credits": 5,
+    "date": "2026-10-29",
+    "secs": 1.16,
+    "lufs": -18,
+    "peak": -5.4,
+    "encoder": "aac_at",
+    "check": {
+      "date": "2026-10-29",
+      "by": "MMS_FA forced alignment (torchaudio wav2vec2, on the line's pinyin) and Whisper large-v3-turbo on box (GPU 0): what it hears, and each syllable's window; at every character with more than one reading, and every one Whisper wrote otherwise, the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "还 hái、着 zhe",
+      "note": "还 rises 190→291 Hz on /ai/; 着 falls from 291 to 225 Hz, not rising as zháo would: the line ends high, a little as if asked (Whisper writes ？)"
+    }
+  },
   "voice.paladin.area_clear.1": {
     "key": "2b37916a0544",
     "proc": "443b5c2a5b73",

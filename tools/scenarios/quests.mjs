@@ -23,20 +23,25 @@
 // (its message, the record's reward pending) and the den lights up. Back in the camp she is marked
 // again; spoken to, she hands over the reward (+1 skill point) once and never again, aloud, her
 // small talk too. The quest log
-// shows it done. With the den rewarded, Kashya (柯霞) is marked: she offers the Sisters' Burial
-// Grounds (D2MOO A1Q2.cpp) in a line that scrolls unvoiced (to be recorded at M2a's close), her menu
-// 交谈/雇佣/取消, her hire panel shut to a hero under level 8 till the reward; out to the Burial
+// shows it done. With the den rewarded, Kashya (柯霞) is marked, and her first words, greetings and
+// farewells are fetched ahead: on the slow connection again, she offers the Sisters' Burial Grounds
+// (D2MOO A1Q2.cpp) in her voice from its start as it scrolls, 跳过 cuts it short; her reminder's
+// recording held back joins its text late where that has got to, spoken to again mid-line or Esc
+// cuts it short; 取消 leaves her with a farewell; walked off and back she greets the hero, and her
+// hire panel opened from her menu brings no farewell until it's shut. Her menu is 交谈/雇佣/取消,
+// her hire panel shut to a hero under level 8 till the reward; out to the Burial
 // Grounds (ENTERAREA, the hero's line for the graveyard), Blood Raven killed with the hero two of
 // D2's rooms off counts for nothing (the log and a message say so), a reload brings her back, and
-// killed from a room on her diagonal she is done; back at Kashya her reward is a hireling for
+// killed from a room on her diagonal she is done; back at Kashya her reward, said aloud from its
+// start and cut short as the rest, is a hireling for
 // nothing, once, beside the hero, her hire panel open whatever the level. Saved and played again
 // both stay done, and nightmare's record is untouched. Page and console errors fail the run. Shots:
 // the mark, the dialogue, the menu, her reminder scrolling while its recording is held back, the
 // log, the log counting, the den dark and lit, the mark for the reward, the reward line, the log
-// done; Kashya marked, her hire panel before, her quest given, the log; Blood Raven, the log after
-// the far kill, her fallen; Kashya marked for the reward, her reward line, the hireling beside the
-// hero, the hire panel after, the log done; the nightmare log. The last line is "QUESTS OK …" or
-// "QUESTS FAIL …".
+// done; Kashya marked, her hire panel before, her quest given, her reminder held back, the log;
+// Blood Raven, the log after the far kill, her fallen; Kashya marked for the reward, her reward
+// line, the hireling beside the hero, the hire panel after, the log done; the nightmare log. The
+// last line is "QUESTS OK …" or "QUESTS FAIL …".
 
 /** src/world/areas.ts */
 const CAMP_AREA = 1;
@@ -45,8 +50,9 @@ const DEN_OF_EVIL = 8;
 const F = { REWARDGRANTED: 0, REWARDPENDING: 1, STARTED: 2, LEAVETOWN: 3, ENTERAREA: 4, UPDATEQUESTLOG: 12, PRIMARYGOALDONE: 13, COMPLETEDNOW: 14 };
 /** src/audio/sfx.ts: how long a townsperson's text waits for its recording to be decoded */
 const SPEECH_WAIT = 0.25;
-/** her reminder's take, held back a while as a slow connection would */
+/** her reminder's take, held back a while as a slow connection would; and Kashya's */
 const HELD = 'voice.akara.a1q1_remind.1.m4a';
+const HELD_K = 'voice.kashya.a1q2_remind.1.m4a';
 /** about Chrome's "3G" */
 const SLOW = { offline: false, latency: 300, downloadThroughput: (1.6 * 1024 * 1024) / 8, uploadThroughput: (0.75 * 1024 * 1024) / 8 };
 
@@ -86,6 +92,12 @@ export default async function (page, shot, log) {
   const held = new Promise((r) => (release = r));
   await page.route(`**/audio/${HELD}`, async (route) => {
     await held;
+    await route.continue();
+  });
+  let releaseK = () => {};
+  const heldK = new Promise((r) => (releaseK = r));
+  await page.route(`**/audio/${HELD_K}`, async (route) => {
+    await heldK;
     await route.continue();
   });
   const frames = (n = 6) =>
@@ -219,7 +231,7 @@ export default async function (page, shot, log) {
         const sound = sfx.sound.bind(sfx);
         sfx.sound = (id, def, opts, take) => {
           const v = sound(id, def, opts, take);
-          if (v && id.startsWith('voice.akara.')) {
+          if (v && /^voice\.(akara|kashya)\./.test(id)) {
             const an = sfx.ctx.createAnalyser();
             an.fftSize = 4096;
             v.tail.connect(an);
@@ -721,37 +733,126 @@ export default async function (page, shot, log) {
         await page.keyboard.press('Escape');
         await until(() => !document.querySelector('.panel.left.open'), null, 'her hire panel to close');
       }
-      // spoken to: she gives it at once, a line that scrolls unvoiced (to be recorded at M2a's close), by its length
-      await ev(() => game.interact(window.__q.kashya()));
+      // fetched ahead since the den's reward was heard, not decoded: her first words, her greetings and farewells
+      const ahead = await ev(async () => {
+        const s = game.sfx;
+        const out = {};
+        for (const [u, p] of s.ahead) if (u.includes('voice.kashya.')) out[u.split('/').pop()] = (await p).byteLength;
+        return { files: out, decoded: s.buffers.has('/audio/voice.kashya.a1q2_intro.1.m4a') };
+      });
+      const wanted = ['voice.kashya.a1q2_intro.1.m4a', ...[1, 2, 3].flatMap((n) => [`voice.kashya.greeting.${n}.m4a`, `voice.kashya.farewell.${n}.m4a`])];
+      expect(wanted.every((f) => ahead.files[f] > 5000) && !ahead.decoded, `her lines fetched ahead in the camp: ${JSON.stringify(ahead)}`);
+      // a slow connection from here on: spoken to, she gives it at once, in her voice from its start as it scrolls
+      await slow(true);
+      const n0 = await ev(() => window.__q.spoken.length);
+      await ev(() => {
+        window.__q.asked = performance.now();
+        game.interact(window.__q.kashya());
+      });
       await until(() => !!document.querySelector('.dialogue.open'), null, 'her line');
+      const voice = await hearing('voice.kashya.a1q2_intro');
+      expect(voice.loud > HEARD_DB, `her voice isn't heard: ${JSON.stringify(voice)}`);
+      expect(voice.file === 'voice.kashya.a1q2_intro.1.m4a' && voice.dur > 20 && Math.abs(voice.secs - voice.dur) < 0.05 && Math.abs(voice.t - voice.said) < 0.15, `her line doesn't go with her voice: ${JSON.stringify(voice)}`);
+      expect(voice.joined === 0 && voice.after < SPEECH_WAIT * 1000, `on a slow connection her first words weren't heard from their start: ${JSON.stringify(voice)}`);
+      expect(!(await ev((n) => window.__q.since(n).some((s) => s.includes('greeting')), n0)), "she greeted the hero before the quest's word");
       await page.waitForTimeout(1500);
       const said = await ev(() => {
         const S = window.__q;
         const t = S.npc.topic;
-        return { ...S.ui(), id: t?.id, quest: t?.quest, dur: +S.npc.dur.toFixed(2), chars: [...(t?.text ?? '')].length, speech: !!S.npc.speech, voiced: game.sfx.voices.some((v) => v.id.startsWith('voice.kashya.')), at: document.querySelector('.dlg-text').style.transform };
+        return { ...S.ui(), id: t?.id, quest: t?.quest, at: document.querySelector('.dlg-text').style.transform };
       });
-      expect(said.talking && !said.menu && said.id === 'intro' && said.quest === 'a1q2' && said.text.includes('绯鸦') && said.text.includes('葬骨荒冢') && said.text.includes('凛寒原野'), `Kashya's first words: ${JSON.stringify(said)}`);
-      expect(!said.speech && !said.voiced && said.dur > 20 && /translateY\(-?\d+px\)/.test(said.at), `her unvoiced line, scrolled by its length: ${JSON.stringify({ dur: said.dur, chars: said.chars, speech: said.speech, at: said.at })}`);
+      expect(said.talking && !said.menu && said.id === 'intro' && said.quest === 'a1q2' && said.text.includes('绯鸦') && said.text.includes('葬骨荒冢') && said.text.includes('凛寒原野') && /translateY\(-?\d+px\)/.test(said.at), `Kashya's first words: ${JSON.stringify(said)}`);
       expect(!said.text.includes('卡夏') && !said.text.includes('血鸦') && !said.text.includes('埋骨之地'), 'an official name in her line');
       await shot('kashya-gives-the-quest');
       await page.locator('.dialogue .dlg-skip').click();
       await until(() => !!document.querySelector('.npc-menu.open'), null, 'her menu after the line');
+      const cut = await hushed();
+      expect(!cut.saying.length && cut.loud < SILENT_DB, `cut short, her voice goes on: ${JSON.stringify(cut)}`);
+      facts.push(`Kashya on a slow connection: her intro (${voice.dur} s) fetched ahead (${Math.round(ahead.files['voice.kashya.a1q2_intro.1.m4a'] / 1024)} KB), decoded in ${voice.decoded} ms, heard from its start ${voice.after} ms after she was spoken to, at ${voice.loud} dB, cut to ${cut.loud} dB`);
       const after = await ev(() => {
         const S = window.__q;
         return { ui: S.ui(), started: S.shas(S.F.STARTED), state: S.sis().state, news: game.quests.hasNews('kashya') };
       });
       expect(after.started && after.state === 2 && !after.news, `cut short, the quest isn't given: ${JSON.stringify(after)}`);
       expect(after.ui.opts.join('/') === '交谈/雇佣/取消', `her menu: ${after.ui.opts.join('/')}`);
+      // 交谈: her reminder, its recording held back: the text scrolls on at its pace without it
       await pick('交谈');
       await until(() => !!document.querySelector('.dialogue.open'), null, 'her reminder');
       const remind = await ev(() => window.__q.ui().text);
       expect(remind.includes('营门') && remind.includes('凛寒原野'), `her reminder: ${remind}`);
+      await page.waitForTimeout(2500);
+      const waiting = await ev(() => {
+        const S = window.__q;
+        const s = S.npc.speech;
+        return { saying: S.saying(), held: game.sfx.ahead.has('/audio/voice.kashya.a1q2_remind.1.m4a'), secs: s?.secs, dur: S.npc.dur, joined: s?.joined, el: +(s?.elapsed() ?? -1).toFixed(2), t: +S.npc.t.toFixed(2) };
+      });
+      expect(waiting.held && !waiting.saying.length && waiting.joined === null && waiting.secs > 9 && waiting.dur === waiting.secs && waiting.el > 2 && Math.abs(waiting.t - waiting.el) < 0.1, `her reminder's text without its recording: ${JSON.stringify(waiting)}`);
+      await shot('kashya-reminder-held-back');
+      // let it come: it joins the text where that has got to, and is heard there
+      releaseK();
+      const joined = await ev(async () => {
+        const s = window.__q.npc.speech;
+        const t0 = performance.now();
+        while (s.joined === null && !s.stopped && performance.now() - t0 < 8000) await new Promise((r) => setTimeout(r, 10));
+        return { joined: s.joined, el: s.elapsed(), stopped: s.stopped };
+      });
+      expect(joined.joined > 2 && Math.abs(joined.joined - joined.el) < 0.08, `her reminder come late didn't join its text where it had got to: ${JSON.stringify(joined)}`);
+      await page.waitForTimeout(900);
+      const sync = await ev(() => {
+        const S = window.__q;
+        const x = S.spoken.findLast((x) => x.id === 'voice.kashya.a1q2_remind');
+        const lead = x.lead - S.npc.speech.joined;
+        const w = S.where(x, lead + S.npc.speech.elapsed());
+        return { ...w, lead: +lead.toFixed(3), loud: +S.level(x).toFixed(1) };
+      });
+      expect(sync.corr > 0.8 && Math.abs(sync.at - sync.want) < 0.03 && Math.abs(sync.at - (sync.lead + sync.el)) < 0.06 && Math.abs(sync.t - sync.el) < 0.1 && sync.loud > HEARD_DB, `her reminder joined late isn't heard where its text is: ${JSON.stringify(sync)}`);
+      facts.push(`her reminder held back 2.5 s: joined ${joined.joined.toFixed(2)} s in, heard at ${sync.at} s of its take with the text's clock at ${sync.el.toFixed(2)} (+${sync.lead} s lead), matched at ${sync.corr}`);
+      await slow(false);
+      await page.waitForTimeout(300);
+      // spoken to again mid-line, or Esc: cut short, voice and all
+      await ev(() => game.interact(window.__q.kashya()));
+      await until(() => !!document.querySelector('.npc-menu.open'), null, 'her menu, spoken to mid-line');
+      const stopped = await hushed();
+      expect(!stopped.saying.length && stopped.loud < SILENT_DB, `spoken to mid-line, her voice goes on: ${JSON.stringify(stopped)}`);
+      await pick('交谈');
+      await until(() => !!document.querySelector('.dialogue.open'), null, 'her reminder again');
+      await hearing('voice.kashya.a1q2_remind');
       await page.keyboard.press('Escape');
-      await until(() => !!document.querySelector('.npc-menu.open'), null, 'her menu after Esc');
+      await until(() => !!document.querySelector('.npc-menu.open') && !document.querySelector('.dialogue.open'), null, 'her menu after Esc');
+      const escaped = await hushed();
+      expect(!escaped.saying.length && escaped.loud < SILENT_DB, `Esc, and her voice goes on: ${JSON.stringify(escaped)}`);
+      // 取消: she's left, with a farewell
       await pick('取消');
       await until(() => !document.querySelector('.npc-menu.open'), null, 'her menu to close');
+      const bye = await hearing('voice.kashya.farewell');
+      expect(bye.loud > HEARD_DB, `her farewell isn't heard: ${JSON.stringify(bye)}`);
+      await until(() => !window.__q.saying().length, null, 'her farewell to end', 4000);
       const left = await ev(() => window.__q.sis().last);
       expect(left === 1, `the log's status after leaving her: ${left}`);
+      // walked off and back: a greeting; her hire panel opened from her menu brings no farewell, until it's shut
+      await ev(() => {
+        const k = window.__q.kashya();
+        game.teleportWithin(game.level.map.nearestWalkable(k.pos.x - 9, k.pos.z + 9));
+      });
+      await frames(6);
+      await ev(() => window.__q.toKashya());
+      await frames(3);
+      await ev(() => game.interact(window.__q.kashya()));
+      const hi = await hearing('voice.kashya.greeting');
+      expect(hi.loud > HEARD_DB, `her greeting: ${JSON.stringify(hi)}`);
+      await until(() => !window.__q.saying().length, null, 'her greeting to end', 4000);
+      const m2 = await ev(() => window.__q.spoken.length);
+      await pick('雇佣');
+      await until(() => game.hooks.left === 'hire', null, 'her hire panel from her menu');
+      await page.waitForTimeout(800);
+      const hiring = await ev((m) => window.__q.since(m), m2);
+      expect(!hiring.length, `her hire panel opened, she said ${hiring.join(' ')}`);
+      await page.keyboard.press('Escape');
+      await until(() => game.hooks.left === null, null, 'her hire panel to shut');
+      const shut = await hearing('voice.kashya.farewell');
+      expect(shut.loud > HEARD_DB && shut.file !== bye.file, `her hire panel shut: her farewell ${JSON.stringify(shut)}, the one before ${bye.file}`);
+      await until(() => !window.__q.saying().length, null, 'her farewell to end', 4000);
+      facts.push(`her greeting ${hi.file.match(/\.(\d)\.m4a/)[1]} on coming back, farewells ${bye.file.match(/\.(\d)\.m4a/)[1]} and ${shut.file.match(/\.(\d)\.m4a/)[1]} (取消, her hire panel shut)`);
       const l = await openLog();
       expect(l.cells[1].startsWith('a1q2:active') && l.cells[0].startsWith('a1q1:done'), `the log's quests: ${l.cells.join(' ')}`);
       await ev(() => document.querySelector('.panel.left.open .qcell[data-quest="a1q2"]').click());
@@ -835,12 +936,18 @@ export default async function (page, shot, log) {
       await shot('kashya-marked-for-the-reward');
       await ev(() => game.interact(window.__q.kashya()));
       await until(() => !!document.querySelector('.dialogue.open'), null, 'her reward line');
+      // in her voice from its start (fetched ahead back in the camp), the text by it
+      const thanks = await hearing('voice.kashya.a1q2_reward');
+      expect(thanks.loud > HEARD_DB && Math.abs(thanks.secs - thanks.dur) < 0.05 && thanks.joined === 0 && thanks.dur > 15, `her reward's voice: ${JSON.stringify(thanks)}`);
       await page.waitForTimeout(1300);
       const line = await ev(() => ({ ...window.__q.ui(), id: window.__q.npc.topic?.id }));
       expect(line.talking && line.id === 'reward' && line.text.includes('斥候'), `her reward line: ${JSON.stringify(line)}`);
       await shot('kashya-rewards');
       await page.locator('.dialogue .dlg-skip').click();
       await until(() => !!document.querySelector('.npc-menu.open'), null, 'her menu after the reward');
+      const thanked = await hushed();
+      expect(!thanked.saying.length && thanked.loud < SILENT_DB, `cut short, her reward's voice goes on: ${JSON.stringify(thanked)}`);
+      facts.push(`her reward (${thanks.dur} s) heard from its start at ${thanks.loud} dB, cut to ${thanked.loud} dB`);
       await frames(20);
       const after = await ev(() => {
         const S = window.__q;
@@ -859,8 +966,11 @@ export default async function (page, shot, log) {
       await pick('交谈');
       await until(() => !!document.querySelector('.dialogue.open'), null, 'her speech again');
       const again = await ev(() => window.__q.npc.topic?.id);
+      await hearing('voice.kashya.a1q2_reward');
       await page.keyboard.press('Escape');
       await until(() => !!document.querySelector('.npc-menu.open'), null, 'her menu after Esc');
+      const quiet = await hushed();
+      expect(!quiet.saying.length && quiet.loud < SILENT_DB, `Esc, and her reward's voice goes on: ${JSON.stringify(quiet)}`);
       const once = await ev((name) => game.player.merc?.name === name && window.__q.shas(window.__q.F.REWARDGRANTED), after.merc?.name);
       expect(again === 'reward' && once, `spoken to again: ${again}, one hireling ${once}`);
       // the hire panel lists her scouts now, whatever the hero's level

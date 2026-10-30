@@ -61,6 +61,19 @@ export const GREETINGS: Record<string, { greeting: Line[]; farewell: Line[] }> =
       { zh: '记得活着回来。', en: 'Remember to come back alive.' },
     ],
   },
+  // the scouts' captain: curt, a soldier's word for the stranger
+  kashya: {
+    greeting: [
+      { zh: '有话就说。', en: 'If you have something to say, say it.' },
+      { zh: '说吧，我在听。', en: "Go on. I'm listening." },
+      { zh: '你还活着。', en: "You're still alive." },
+    ],
+    farewell: [
+      { zh: '去吧，别死在外头。', en: "Go. Don't die out there." },
+      { zh: '眼睛放亮些。', en: 'Keep your eyes sharp.' },
+      { zh: '速去速回。', en: 'Go fast, and come back fast.' },
+    ],
+  },
 };
 
 /**
@@ -109,8 +122,7 @@ export const DEN_LINES = {
  *   hero too far off to have it done (D2's room rule: src/game/quests/sisters.ts nearRaven)
  * - got: on screen as the reward's hireling joins the hero; gotNone: as the reward is handed over to
  *   a hero who has one already
- * Her four spoken lines are to be recorded at M2a's close (docs/M2A.md 声音): till then they scroll
- * unvoiced, and the review page has them as 未录 (unvoicedLines).
+ * Her four spoken lines are recorded (spokenLines), as Akara's in the Den of Evil are.
  */
 export const SISTERS_LINES = {
   intro: {
@@ -176,25 +188,22 @@ export interface Spoken {
   lines: Line[];
 }
 
+/** the four moments a quest-giver speaks in (DEN_LINES, SISTERS_LINES): the rest of a quest's lines are on screen */
+const QUEST_SAYS = ['intro', 'remind', 'remindOut', 'reward'] as const;
+
 /**
  * Every line the townsfolk say aloud, each recorded as voice.<npc>.<key> (src/audio/sounds.ts
- * npcLine) and spoken as it scrolls (src/ui/npc.ts): Akara's words in the Den of Evil (the rest of
- * DEN_LINES is on screen), their small talk, and their greetings and farewells, a take for each way
- * of saying them. tools/dialogue-review.mjs puts each on the review page, which the voice reads.
+ * npcLine) and spoken as it scrolls (src/ui/npc.ts): Akara's words in the Den of Evil and Kashya's
+ * in the Sisters' Burial Grounds, their small talk, and their greetings and farewells, a take for
+ * each way of saying them. tools/dialogue-review.mjs puts each on the review page, which the voice
+ * reads (tools/audio/list.mjs, its speakers there).
  */
 export function spokenLines(): Spoken[] {
-  const out: Spoken[] = (['intro', 'remind', 'remindOut', 'reward'] as const).map((id) => ({ npc: 'akara', quest: 'a1q1', id, lines: [DEN_LINES[id]] }));
+  const out: Spoken[] = [
+    ...QUEST_SAYS.map((id) => ({ npc: 'akara', quest: 'a1q1' as const, id, lines: [DEN_LINES[id]] })),
+    ...QUEST_SAYS.map((id) => ({ npc: 'kashya', quest: 'a1q2' as const, id, lines: [SISTERS_LINES[id]] })),
+  ];
   for (const [npc, lines] of Object.entries(GOSSIP)) lines.forEach((g, i) => out.push({ npc, id: `gossip${i}`, lines: [g] }));
   for (const [npc, g] of Object.entries(GREETINGS)) out.push({ npc, id: 'greeting', lines: g.greeting }, { npc, id: 'farewell', lines: g.farewell });
   return out;
-}
-
-/**
- * The lines to be said aloud that aren't recorded yet: Kashya's in the Sisters' Burial Grounds, to be
- * recorded at M2a's close (docs/M2A.md 声音). Each will be voice.<npc>.<key> as spokenLines' are; the
- * review page lists them as 未录, and tools/audio/list.mjs doesn't ask for them until they move into
- * spokenLines (with a voice for her in its SPEAKERS)
- */
-export function unvoicedLines(): Spoken[] {
-  return (['intro', 'remind', 'remindOut', 'reward'] as const).map((id) => ({ npc: 'kashya', quest: 'a1q2', id, lines: [SISTERS_LINES[id]] }));
 }
