@@ -641,7 +641,8 @@ export function updatePlayer(g: Game, p: Player, dt: number) {
         return;
       }
       const before = { ...p.pos };
-      stepToward(g, p, t.pos, 13, dt, reachTo(p, t) * 0.9, 1500);
+      // D2's Charge speed (Player.recalc chargeSpeed); how long it may go on and from how far are the game's own
+      stepToward(g, p, t.pos, p.stats.chargeSpeed, dt, reachTo(p, t) * 0.9, 1500);
       if (Math.random() < 0.7) g.fx.burst('charge', p.pos, { dir: { x: Math.sin(p.facing), z: Math.cos(p.facing) } });
       if (dist(p.pos, t.pos) <= reachTo(p, t) + 0.1) {
         startAttack(g, p, 'charge', t, t.pos, true);

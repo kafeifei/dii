@@ -141,6 +141,17 @@ export function moveVelocity(cs: D2xClass, o: MoveOpts = {}): number {
 }
 
 /**
+ * Charge's speed on the same scale (SKILLS_SrvSt31_Charge, SkillPal.cpp:676-700): the class's
+ * RunVelocity × (the skill's Velocity % param + STAT_VELOCITYPERCENT, at least 50) / 100, in 256ths.
+ * The stat is 100 less each armor's Speed and other slows; it has no faster run/walk (that goes on
+ * a walk or a run alone, Units.cpp:1684-1700) and no run's +50 % (only while running, Units.cpp:701-712)
+ */
+export function chargeVelocity(cs: D2xClass, velocityParam: number, o: Pick<MoveOpts, 'armorSpeed' | 'velocityPct'> = {}): number {
+  const pct = Math.max(50, 100 - (o.armorSpeed ?? 0) + (o.velocityPct ?? 0));
+  return Math.trunc(((cs.run << 8) * (velocityParam + pct)) / 100) / 256;
+}
+
+/**
  * Stamina a second spent running (D2MOO PlrModes.cpp:256-293): none in town; each frame 2 × RunDrain
  * 256ths, × (torso armor Speed / 10 + 1), less "slower stamina drain %", at least 1.
  */

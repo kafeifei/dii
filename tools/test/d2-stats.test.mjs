@@ -55,6 +55,11 @@ export default async (load) => {
   assert.equal(s.velocityPercent(pal, { running: true, frw: 20 }), 167);
   assert.equal(s.velocityPercent(pal, { armorSpeed: 15 }), 85);
   assert.equal(s.velocityPercent(pal, { velocityPct: -200 }), 25);
+  // Charge: RunVelocity 9 × (Velocity % 150 + 100) = 22.5; armor Speed 10 → 9 × 240 % in 256ths,
+  // 5529 / 256; the stat at least 50 % however slowed; faster run/walk has no part in it
+  assert.equal(s.chargeVelocity(pal, 150), 22.5);
+  assert.equal(s.chargeVelocity(pal, 150, { armorSpeed: 10 }), 5529 / 256);
+  assert.equal(s.chargeVelocity(pal, 150, { velocityPct: -90 }), 18);
   // the frames the game counts in are the ones the imported data's lengths are in (src/core/units.ts)
   const units = await load('/src/core/units.ts');
   const { D2X_FPS } = await load('/src/data/d2x/calc.ts');

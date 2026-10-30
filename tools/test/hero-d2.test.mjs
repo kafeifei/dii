@@ -70,6 +70,7 @@ export default async (load) => {
     // D2's own pace: RunVelocity 9 and WalkVelocity 6 at 25/16 subtiles of 0.25 m a second a point
     assert.equal(d.runSpeed, 3.515625, "running is D2's 3.52 m/s");
     assert.equal(d.walkSpeed, 2.34375, "walking is D2's 2.34 m/s");
+    assert.equal(d.chargeSpeed, 22.5 * S.MPS_PER_VELOCITY, "charging is D2's 8.79 m/s");
   }
   game.newGame('公式测试', 'paladin');
   const p = game.player;

@@ -178,6 +178,32 @@ export interface MoveClip {
   ref: number;
 }
 
+/** the slowest and fastest a move clip plays (nearestMove): the feet slide beyond them */
+export const MOVE_RATE_MIN = 0.4;
+export const MOVE_RATE_MAX = 3;
+
+/**
+ * The move clip nearest the speed (of those `has` finds), played at speed / ref so the feet keep to
+ * the ground, as D2 plays a walk at its velocity % (Units.cpp:1684-1700); `rate` is that before the
+ * bounds, which only catch extremes: at D2's own speeds every Act 1 monster's walk and +100 % lurch
+ * and the heroes' walk, run and charge fall between them (a zombie's walk 0.44×, a spider's lurch
+ * 2.9×; tools/test/monster-models.test.mjs)
+ */
+export function nearestMove(speed: number, moves: MoveClip[], has: (clip: string) => boolean = () => true): { move: MoveClip; rate: number; ts: number } | null {
+  let best: { move: MoveClip; rate: number; ts: number } | null = null;
+  let bestD = Infinity;
+  for (const mv of moves) {
+    if (!has(mv.clip)) continue;
+    const d = Math.abs(Math.log(Math.max(0.1, speed) / mv.ref));
+    if (d < bestD) {
+      bestD = d;
+      const rate = speed / mv.ref;
+      best = { move: mv, rate, ts: Math.min(MOVE_RATE_MAX, Math.max(MOVE_RATE_MIN, rate)) };
+    }
+  }
+  return best;
+}
+
 export interface ModelSpec {
   model: ModelKey;
   /** 'kaykit' bodies are driven by the shared skeleton_minion clip library */
@@ -476,19 +502,10 @@ export class ModelRig {
     return this.clips.get(names[i]) ?? this.pick(names);
   }
 
+  /** the move clip this body has nearest the speed, and the rate it plays at (nearestMove) */
   private pickMove(speed: number, moves: MoveClip[]): { clip: THREE.AnimationClip; ts: number } | null {
-    let best: { clip: THREE.AnimationClip; ts: number } | null = null;
-    let bestD = Infinity;
-    for (const mv of moves) {
-      const clip = this.clips.get(mv.clip);
-      if (!clip) continue;
-      const d = Math.abs(Math.log(Math.max(0.1, speed) / mv.ref));
-      if (d < bestD) {
-        bestD = d;
-        best = { clip, ts: Math.min(2.2, Math.max(0.55, speed / mv.ref)) };
-      }
-    }
-    return best;
+    const best = nearestMove(speed, moves, (c) => this.clips.has(c));
+    return best ? { clip: this.clips.get(best.move.clip)!, ts: best.ts } : null;
   }
 
   private play(clip: THREE.AnimationClip | null, loop: boolean, ts: number, fade: number) {

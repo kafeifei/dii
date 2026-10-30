@@ -14,7 +14,8 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 export default async (load) => {
   const THREE = await load('three');
   const { GLTFLoader } = await load('three/examples/jsm/loaders/GLTFLoader.js');
-  const { monsterSpec } = await load('/src/render/specs.ts');
+  const { monsterSpec, playerSpec } = await load('/src/render/specs.ts');
+  const { nearestMove, MOVE_RATE_MIN, MOVE_RATE_MAX } = await load('/src/render/models.ts');
   const { MODEL_KEYS } = await load('/src/render/model-list.ts');
   const { QuadRig } = await load('/src/render/legs.ts');
   const problems = [];
@@ -61,15 +62,41 @@ export default async (load) => {
   }
   for (const id of [...can]) for (const mid of D2X_MONSTERS[id]?.minions ?? []) can.add(mid);
   for (const d of lookedMonsters()) if (d.row.spawns && !d.boss) can.add(d.id);
+  // its move clip at D2's own speeds (Velocity × 75 % walking, +100 % lurching) plays between the
+  // bounds, so its feet keep to the ground (src/render/models.ts nearestMove)
+  const keeps = (what, speed, moves) => {
+    const b = nearestMove(speed, moves);
+    if (b) check(b.rate >= MOVE_RATE_MIN && b.rate <= MOVE_RATE_MAX, `${what} at ${speed.toFixed(2)} m/s plays ${b.move.clip} at ${b.rate.toFixed(2)}×: the feet slide`);
+  };
+  let paced = 0;
   for (const id of can) {
     const def = monsterDef(id);
     if (!def) {
       problems.push(`${id} can spawn but has no look`);
       continue;
     }
-    const s = monsterSpec(new Monster(def, def.row.diff[0].level, 'normal', { x: 0, z: 0 }));
+    const m = new Monster(def, def.row.diff[0].level, 'normal', { x: 0, z: 0 });
+    const s = monsterSpec(m);
     check(built.has(s.model), `${id} is drawn as ${s.model}, not a built model`);
     check(def.name && !/[A-Za-z]/.test(def.name), `${id} is named ${def.name}`);
+    if (def.row.velocity && s.clips.move.length) {
+      for (const bonus of [0, 100]) keeps(`${id} (+${bonus} %)`, m.moveSpeed(bonus), s.clips.move);
+      paced++;
+    }
+  }
+  const { Game } = await load('/src/game/game.ts');
+  const { Sfx } = await load('/src/audio/sfx.ts');
+  const input = { pressed: new Set(), keys: new Set(), touchPressed: new Set(), touchHeld: new Set(), stick: null, lmb: false, rmb: false, lmbPressed: false, rmbPressed: false, overUI: true, mx: 0, my: 0 };
+  const hooks = { message() {}, openPanel() {}, levelChanged() {}, areaChanged() {}, teleported() {}, playerDied() {}, inventoryChanged() {}, getCursorItem: () => null, setCursorItem() {}, hoveredGroundId: () => null, levelUp() {} };
+  for (const cls of ['paladin', 'sorceress']) {
+    const game = new Game(input, new Sfx());
+    game.hooks = hooks;
+    game.newGame('步幅', cls);
+    const p = game.player;
+    const s = playerSpec(p);
+    keeps(`the ${cls} walking`, p.stats.walkSpeed, s.clips.move);
+    keeps(`the ${cls} running`, p.stats.runSpeed, s.clips.move);
+    if (cls === 'paladin') keeps('the paladin charging', p.stats.chargeSpeed, s.clips.charge ? [s.clips.charge] : s.clips.move);
   }
 
   // the merged quill rat
@@ -132,5 +159,5 @@ export default async (load) => {
   }
 
   if (problems.length) throw new Error(problems.join('\n'));
-  console.log(`  hunter weapons ${[...held].join(', ')}; ${shields}/300 with shields; quill rat ${tris} triangles, ${(fs.statSync(file).size / 1024).toFixed(0)} KB, hind paws mirrored within ${worst.toFixed(3)}`);
+  console.log(`  hunter weapons ${[...held].join(', ')}; ${shields}/300 with shields; ${paced} kinds' and the heroes' moves at D2's speeds keep their feet; quill rat ${tris} triangles, ${(fs.statSync(file).size / 1024).toFixed(0)} KB, hind paws mirrored within ${worst.toFixed(3)}`);
 };
