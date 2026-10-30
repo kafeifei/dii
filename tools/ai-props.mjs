@@ -43,6 +43,31 @@ function splitTop(doc, holder, { name, above }) {
   holder.addChild(doc.createNode(name).setMesh(mesh).setTranslation(node.getTranslation()).setRotation(node.getRotation()).setScale(node.getScale()));
 }
 
+/** a primitive's normals made again, smooth: each vertex the area-weighted mean of its faces' */
+function smoothNormals(doc, prim) {
+  const pos = prim.getAttribute('POSITION');
+  const idx = prim.getIndices();
+  const n = new Float32Array(pos.getCount() * 3);
+  const [a, b, c] = [[], [], []];
+  for (let t = 0; t < idx.getCount(); t += 3) {
+    const tri = [idx.getScalar(t), idx.getScalar(t + 1), idx.getScalar(t + 2)];
+    pos.getElement(tri[0], a);
+    pos.getElement(tri[1], b);
+    pos.getElement(tri[2], c);
+    const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+    const v = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+    const f = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+    for (const i of tri) for (let k = 0; k < 3; k++) n[i * 3 + k] += f[k];
+  }
+  for (let i = 0; i < n.length; i += 3) {
+    const l = Math.hypot(n[i], n[i + 1], n[i + 2]) || 1;
+    n[i] /= l;
+    n[i + 1] /= l;
+    n[i + 2] /= l;
+  }
+  prim.setAttribute('NORMAL', doc.createAccessor().setType('VEC3').setArray(n).setBuffer(pos.getBuffer()));
+}
+
 /**
  * Keep the biggest object of each mesh and drop stray ones: Meshy sometimes adds a loose pole or
  * block beside a thin object. An object is the connected pieces (joined by shared positions, so UV
@@ -225,7 +250,11 @@ for (const p of todo) {
   if (p.tris) {
     await MeshoptSimplifier.ready;
     const count = () => root.listMeshes().reduce((n, m) => n + m.listPrimitives().reduce((k, q) => k + q.getIndices().getCount() / 3, 0), 0);
-    if (count() > p.tris) await doc.transform(weld(), simplify({ simplifier: MeshoptSimplifier, ratio: p.tris / count(), error: 0.01 }));
+    // `smooth`: its normals split at every face edge hold the welded mesh in pieces too small to
+    // simplify; drop them, weld, simplify, and make them again, smooth
+    if (p.smooth) for (const m of root.listMeshes()) for (const q of m.listPrimitives()) q.setAttribute('NORMAL', null);
+    if (count() > p.tris) await doc.transform(weld(), simplify({ simplifier: MeshoptSimplifier, ratio: p.tris / count(), error: p.error ?? 0.01 }));
+    if (p.smooth) for (const m of root.listMeshes()) for (const q of m.listPrimitives()) smoothNormals(doc, q);
   }
   if (p.split) splitTop(doc, holder, p.split);
   if (p.grip || p.strap) reOrigin(doc, scene, p);
@@ -236,7 +265,8 @@ for (const p of todo) {
   // the runtime shares textures by name + size (KayKit atlases); every AI texture must be unique
   root.listTextures().forEach((t, i) => t.setName(`${p.key}_${i}`).setURI(''));
 
-  const out = path.join(OUT, `${p.key}.glb`);
+  // `dir`: a model kept in the repo (models-src/ai, committed) rather than in models-src/ai-props
+  const out = path.join(p.dir ? path.resolve('models-src', p.dir) : OUT, `${p.key}.glb`);
   await io.write(out, doc);
   const nb = getBounds(scene);
   const dims = (bb) => bb.max.map((v, i) => (v - bb.min[i]).toFixed(2)).join('×');

@@ -3,7 +3,7 @@ import { UMOD_NAMES, monsterDef, type MonsterDef } from '../data/monsters';
 import type { Difficulty } from '../items/d2/types';
 import { Actor, type Resists } from './actor';
 import { attackAt, attackElems, monStats, monsterMissile, type AttackMode, type MonAttack, type MonElem, type MonPlus, type MonRank } from './d2/monstats';
-import { auraEnchant, auraNumbers, type AuraNumbers } from './d2/monai';
+import { DEATH_FRAMES, auraEnchant, auraNumbers, frames, type AuraNumbers } from './d2/monai';
 import { MPS_PER_VELOCITY } from './d2/stats';
 import type { Friendly } from './merc';
 import type { QuestKey } from '../data/quests';
@@ -175,6 +175,11 @@ export class Monster extends Actor {
   taunted = false;
   /** raised or summoned: killed again it gives no experience and drops nothing (UNITFLAG_NOXP | UNITFLAG_NOTC, SkillMonst.cpp:1266) */
   noXp = false;
+  /**
+   * When it came up in D2's S1 and how long it takes to get up, Level.time and seconds (riseUp): drawn
+   * rising over that time (src/render/models.ts); null for one that spawned standing
+   */
+  rise: { at: number; len: number } | null = null;
   /** an aura-enchanted unique's aura (MonUMod 30), what it does, and the time to its next pulse */
   aura: { skill: string; lvl: number; n: AuraNumbers } | null = null;
   auraPulse = 0;
@@ -259,6 +264,20 @@ export class Monster extends Actor {
     // its shield-hand piece, by where it stands too (no draw on Math.random or the spawn's rolls)
     const sh = d.shields;
     this.shield = sh?.length ? sh[spotHash(pos) % sh.length] : null;
+  }
+
+  /**
+   * Come up in D2's S1 at Level.time `now`: the dead Blood Raven's Nest raises (MonStats Spawn mode S1,
+   * MONSTERS_GetSpawnMode_XY) and the trap monster a casket, barrel or chest lets out
+   * (D2GAME_SpawnTrapMonster_6FC75B40's mode 8, ObjMode.cpp:1059, 2460, 2813). It stands, thinking
+   * nothing, while it gets up: as long as a death takes (DEATH_FRAMES), AnimData's S1 not being in
+   * d2data (approximate); its rise is drawn over that time
+   */
+  riseUp(now: number) {
+    this.move = null;
+    if (this.state !== 'idle') this.setState('idle');
+    this.thinkTimer = frames(DEATH_FRAMES);
+    this.rise = { at: now, len: this.thinkTimer };
   }
 
   /** its attack modes that do damage of their own, A1 first: its row's in its difficulty, so worked out once */

@@ -1617,6 +1617,8 @@ export class Renderer implements Picker {
       const an = this.anim(m, m.speed * m.slowFactor(), m.def.blood, Math.max(m.hitFlash, hover ? 0.12 : 0));
       // the attack's clip is its mode's, A1's or A2's, as the AI chose it
       if (m.act && (m.state === 'attack' || m.state === 'cast')) an.clip = MODE_CLIP[m.act.mode];
+      // one come up in S1 is drawn getting up for as long as it takes (Monster.riseUp)
+      if (m.rise && !m.dead) an.rise = { t: level.time - m.rise.at, len: m.rise.len };
       b.rig.update(step, an);
       // elemental enchant auras
       if (!m.dead && m.mods.length && Math.random() < dt * 10) {

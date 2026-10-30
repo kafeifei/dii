@@ -1248,8 +1248,8 @@ const RING = [
  * MONSTERS_GetSpawnMode_XY, Monsters.cpp:886-912: zombie2 at her feet, a foul crow at the nest's
  * exit), there or a subtile off where nothing stands (D2's ring 1, SkillMonst.cpp:726), at its level
  * in the area (spawnLevel), in its SpawnMode, no one's minion, giving no experience and dropping
- * nothing (UNITFLAG_NOXP | UNITFLAG_NOTC, SkillMonst.cpp:732). A zombie rising in S1 stands as long
- * as a death takes (AnimData's S1 isn't in d2data; approximate), a crow comes out in NU
+ * nothing (UNITFLAG_NOXP | UNITFLAG_NOTC, SkillMonst.cpp:732). A zombie gets up in S1 (Monster.riseUp:
+ * it stands as long as a death takes, AnimData's S1 not being in d2data; approximate), a crow comes out in NU
  */
 function nest(g: Game, m: Monster) {
   const sp = m.def.row.spawn;
@@ -1269,7 +1269,7 @@ function nest(g: Game, m: Monster) {
   const d = m.difficulty;
   const z = new Monster(def, spawnLevel(D2X_MONSTERS[id], d, areaLevel(L.areaAt(to.x, to.z), d)), 'normal', to, [], { difficulty: d });
   z.noXp = true;
-  if (sp?.mode === 'S1') stand(z, A.DEATH_FRAMES);
+  if (sp?.mode === 'S1') z.riseUp(L.time);
   L.monsters.push(z);
   const raven = m.def.row.ai === 'BloodRaven';
   // her dead getting up in red; the nest's twigs flying as a crow breaks out

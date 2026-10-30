@@ -45,8 +45,9 @@ export function monsterLook(m: Monster): RigLook {
       return { ...base, type: 'spider', skin: '#5a4a3a', cloth: '#2a2018', eyes: '#ff8020' };
     case 'wraith':
       return { ...base, head: 'hood', robe: '#4a7aa8', cloth: '#5a8ab8', skin: '#a8d8ff', weapon: 'claws', floating: true, ghost: true, eyes: '#c0f0ff', limb: 0.6 };
-    case 'demon':
-      return { ...base, head: 'demon', horns: true, weapon: 'claws', bulk: 1.2, limb: 1.25, eyes: '#ffa020', emissive: emissive ?? '#3a0a00', pants: '#2a0a04' };
+    // the goatman's stand-in, till its model is in: a horned beastman
+    case 'goatman':
+      return { ...base, head: 'demon', horns: true, weapon: 'greataxe', bulk: 1.2, limb: 1.2, eyes: '#ffa020', pants: '#2a1a0a' };
     case 'butcher':
       return { ...base, head: 'zombie', bulk: 1.55, limb: 1.4, weapon: 'cleaver', weaponColor: '#9a8a80', cloth: '#d0c0a8', armor: '#6a1010', metal: 0, pants: '#3a2a20', hunch: 0.15, eyes: '#ff2020' };
     case 'lich':

@@ -15,7 +15,8 @@
 // and enchanted uniques: lightning's charged bolts when hit, fire's burst and cold's frost ring as
 // they die, multiple shots' three quills, the cursed one's Amplify Damage, an aura's. The west
 // block (M2a): the Burial Grounds' Blood Raven on her own body, her Nest raising a zombie at her feet
-// and the undead round her falling as she dies; a foul crow nest in Stony Field hatching its crows.
+// (drawn getting up, its Rise, while it stands in S1) and the undead round her falling as she dies; a
+// foul crow nest in Stony Field hatching its crows.
 // Every wait is on the game's clock: the scenario steps the sim itself (run, S.run: the page's loop
 // held, Game.headless, as tools/bot.mjs does), so a page that draws few frames runs as much game time
 // as one that draws many, and each check has its bound in game seconds. Where a check stands the hero
@@ -391,13 +392,32 @@ export default async function (page, shot, log) {
       S.hold();
       b.aiCount = 1000;
       const z = game.level.monsters.find((m) => m.def.id === 'zombie2' && m.noXp && !m.dead && S.dist(m.pos, b.pos) < 0.6);
-      return z ? { off: S.dist(z.pos, b.pos) / S.A.subtiles(1), mine: z.leader === b || b.minions.includes(z), rising: z.thinkTimer, tally: b.aiTally } : null;
+      if (z) S.raven.z = z;
+      return z ? { off: S.dist(z.pos, b.pos) / S.A.subtiles(1), mine: z.leader === b || b.minions.includes(z), rising: z.thinkTimer, rise: z.rise?.len ?? 0, tally: b.aiTally } : null;
     });
     if (!expect(up, 'Blood Raven raised no zombie in 6 s')) return;
     await frames();
     await shot('raven-raise');
     log(`  her Nest: a zombie ${up.off.toFixed(1)} subtiles from her feet, ${up.mine ? 'HERS' : "no one's"}, getting up for ${up.rising.toFixed(1)} s more; ${up.tally} cast so far`);
     expect(up.off <= 2.5 && !up.mine, `her zombie ${up.off.toFixed(1)} subtiles off, hers ${up.mine}`);
+    // it gets up in S1 (Monster.riseUp): drawn rising, its Rise clip, all the while it stands (shot part-way), then up
+    const drawnAs = () =>
+      ev(() => {
+        const z = window.__mon.raven.z;
+        const rig = renderer.monsterViews.views.get(z)?.body?.rig;
+        return { clip: rig?.curClip?.name ?? null, t: z.rise ? game.level.time - z.rise.at : null, state: z.state, thinking: z.thinkTimer };
+      });
+    const first = await drawnAs();
+    await run(0.75, null);
+    await frames();
+    const part = await drawnAs();
+    await shot('raven-raise-rising');
+    await run(Math.max(0.1, up.rise - part.t + 0.3), null);
+    await frames();
+    const risen = await drawnAs();
+    await shot('raven-raise-risen');
+    log(`  her zombie drawn ${first.clip} at ${first.t?.toFixed(2)} s and ${part.clip} at ${part.t?.toFixed(2)} s of its ${up.rise.toFixed(2)} s rise (standing: ${part.state}), then ${risen.clip} at ${risen.t?.toFixed(2)} s`);
+    expect(up.rise > 1.5 && first.clip === 'Rise' && part.clip === 'Rise' && part.state === 'idle' && risen.clip !== 'Rise', `her zombie's rise: ${up.rise} s, drawn ${first.clip}, ${part.clip} (${part.state}), then ${risen.clip}`);
     // the rest of her count, then her death: the undead round her fall, nobody's kill
     const d = await ev(() => {
       const S = window.__mon;

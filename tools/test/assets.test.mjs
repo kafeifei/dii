@@ -105,7 +105,7 @@ export default async (load) => {
       await tick();
       check(fetched[2] === 'mon_lich', `NOW went after ${fetched.join()}`);
       await now;
-      check(a.has('mon_lich') && !a.has('mon_bat'), 'the file asked for NOW is in, the rest not yet');
+      check(a.has('mon_lich') && !a.has('mon_foulcrow'), 'the file asked for NOW is in, the rest not yet');
       for (const o of open) o();
       await a.ensure(['g_ring', 'h_crypt', 'x_well']);
       check(a.has('g_ring') && a.has('h_crypt') && a.has('x_well') && a.settled('x_well'), 'the packs came');
@@ -116,12 +116,12 @@ export default async (load) => {
     {
       fetched.length = 0;
       const b = lib();
-      fails.set('mon_bat', 1);
+      fails.set('mon_foulcrow', 1);
       fails.set('mon_yeti', 99);
       const t0 = Date.now();
-      await b.ensure(['mon_bat', 'mon_yeti'], NOW);
+      await b.ensure(['mon_foulcrow', 'mon_yeti'], NOW);
       const waited = Date.now() - t0;
-      check(b.has('mon_bat') && fetched.filter((f) => f === 'mon_bat').length === 2, `mon_bat after a failure: in ${b.has('mon_bat')}, fetched ${fetched.filter((f) => f === 'mon_bat').length}×`);
+      check(b.has('mon_foulcrow') && fetched.filter((f) => f === 'mon_foulcrow').length === 2, `mon_foulcrow after a failure: in ${b.has('mon_foulcrow')}, fetched ${fetched.filter((f) => f === 'mon_foulcrow').length}×`);
       check(!b.has('mon_yeti') && b.failed('mon_yeti') && b.settled('mon_yeti') && fetched.filter((f) => f === 'mon_yeti').length === 2, `mon_yeti failing: in ${b.has('mon_yeti')}, failed ${b.failed('mon_yeti')}, fetched ${fetched.filter((f) => f === 'mon_yeti').length}×`);
       check(waited < 3000, `the waiting took ${waited} ms`);
       check(b.stats().failed.includes('mon_yeti'), `stats: ${JSON.stringify(b.stats())}`);
@@ -183,10 +183,10 @@ export default async (load) => {
       let release = () => {};
       c.hold(new Promise((r) => (release = r)));
       const later = c.ensure(['mon_wraith'], LATER);
-      const now = c.ensure(['mon_demon'], NOW);
+      const now = c.ensure(['mon_goatman'], NOW);
       await now;
       await tick(20);
-      check(fetched.join() === 'mon_demon', `while held, fetched ${fetched.join()}`);
+      check(fetched.join() === 'mon_goatman', `while held, fetched ${fetched.join()}`);
       release();
       await later;
       check(c.has('mon_wraith'), 'what was held back came once released');
