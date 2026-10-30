@@ -157,6 +157,14 @@ export default [
   { id: 'monster.die_imp', kind: 'sfx', prompt: 'a small demonic imp dying, a short high-pitched shriek cut off, then a light body thud, no music', duration: 0.9, variants: 2, gain: 0.06 },
   { id: 'monster.die_large', kind: 'sfx', prompt: 'a huge beast dying, a deep roaring death groan and a heavy body crashing onto the ground, no music', duration: 1.5, gain: 0.086 },
   { id: 'monster.die_bone', kind: 'sfx', prompt: 'a skeleton collapsing into a pile of bones, dry bones clattering and scattering on a stone floor, no voice, no music', duration: 1, variants: 2, gain: 0.25 },
+  // M2a's (DEATH_SOUND, HURT_SOUND, MONSTER_SOUND in src/audio/sounds.ts): the foul crows, the
+  // goatmen, the rogues (the hireling, the Dark Rangers: a woman's cry), the nest and Blood Raven
+  { id: 'monster.die_bird', kind: 'sfx', prompt: 'a large carrion crow killed, a harsh croaking caw cut short, a flurry of feathers and wings and a light thud on the ground, no music', duration: 0.9, variants: 2, gain: 0.056 },
+  { id: 'monster.die_goat', kind: 'sfx', prompt: 'a goat-headed beastman dying, a guttural bleating roar cut short and a heavy body falling onto the ground, no music', duration: 1.2, variants: 2, gain: 0.09 },
+  { id: 'monster.die_rogue', kind: 'sfx', prompt: 'a woman warrior dying in battle, a short pained female cry fading into a last gasp, and a body falling onto the ground, no words, no music', duration: 1.2, variants: 2, gain: 0.072 },
+  { id: 'monster.hurt_rogue', kind: 'sfx', prompt: 'a woman warrior struck in battle, a short sharp pained female grunt, close, dry, no words, no music', duration: 0.5, variants: 2, gain: 0.076 },
+  { id: 'monster.nest_hatch', kind: 'sfx', prompt: "a crows' nest of sticks and bones bursting open as birds hatch out, twigs cracking, a sudden flurry of flapping wings and harsh caws, no music", duration: 1.5, gain: 0.14 },
+  { id: 'monster.raven_summon', kind: 'sfx', prompt: 'a dark necromantic spell raising the dead out of the earth, a deep ominous swelling whoosh, soil and bones cracking and shifting, a low eerie breath, no music', duration: 1.5, gain: 0.14 },
 
   // ---- items: each kind lands with its own sound, as in Diablo II
   { id: 'item.drop', kind: 'sfx', prompt: 'a wooden staff dropped onto stony ground, a hollow wooden clack and a short roll, close, dry, no music', duration: 0.5, gain: 0.099 },
@@ -227,6 +235,14 @@ export default [
     gain: 0.36,
   },
   {
+    // the Crypt and the Mausoleum (ENVIRONS crypt): one loop, day and night alike underground
+    id: 'amb.crypt',
+    kind: 'loop',
+    prompt: 'underground crypt ambience: a cold hollow stone tomb, slow water drips echoing, a faint low draught moaning through the tunnels, an occasional distant creak, no voices, no music',
+    duration: 16,
+    gain: 0.64,
+  },
+  {
     id: 'amb.wild_night',
     kind: 'loop',
     prompt: 'wild moor at night ambience: a cold wind over open grassland, crickets chirping steadily, grass rustling, no birds, no voices, no music',
@@ -293,6 +309,25 @@ export default [
     model: 'acestep-v15-turbo',
     lm: 'acestep-5Hz-lm-1.7B',
     takes: [{ seed: 302 }],
+    gain: 0.11,
+  },
+  {
+    // the Crypt and the Mausoleum (ENVIRONS crypt). Of 18 takes (2026-10-29: 6 XL and 4 XL, 8 turbo,
+    // three prompts), read back by ACE-Step's LM: the XL ones and the first prompt's (which named the
+    // synths and drums it was to leave out) drifted to synth beds, drum machines and epic swells;
+    // this one, the sparsest and darkest (0.53 onsets a second, little pulse, spectral centroid 444
+    // Hz), is a pizzicato bass under a mournful cello, strings joining later, each reading alike
+    id: 'music.crypt',
+    kind: 'music',
+    prompt:
+      'dark ambient horror soundtrack for an ancient crypt in a video game, slow sustained low cello and double bass drones, a mournful wordless low male choir, a distant tolling bell, sparse hollow stone knocks, cold dripping echoes, still and dreadful, very slow, vast cathedral reverb, instrumental',
+    bpm: 50,
+    key: 'D minor',
+    time: 4,
+    duration: 150,
+    model: 'acestep-v15-turbo',
+    lm: 'acestep-5Hz-lm-1.7B',
+    takes: [{ seed: 416 }],
     gain: 0.11,
   },
 

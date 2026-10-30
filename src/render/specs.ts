@@ -101,12 +101,24 @@ function rogueSpec(m: Monster, sc: number): ModelSpec {
   return { ...base, attach, clips: meshyClips(h, 1.42, 4.25, atk(['Attack'])) };
 }
 
-/** a short bow in world units: limbs along ±Y bowed toward +Z (the target), the grip at the origin */
-function makeBow(): THREE.Object3D {
+/** a short bow's length tip to tip, in metres: the Dark Rangers' (cr_archer) */
+const SHORT_BOW = 1.1;
+/**
+ * A long bow's, about as tall as the woman drawing it: the Scarlet Raven's (D2 monstats2 bloodraven
+ * LHv lbb, a long battle bow) against the rangers' short ones; D2's long bows stand a cell taller in
+ * the inventory than the short (weapons.txt invheight 4 to sbw's 3)
+ */
+export const LONG_BOW = 1.6;
+
+/**
+ * a bow `length` metres tip to tip (a short one unless told) in world units: limbs along ±Y bowed
+ * toward +Z (the target), the grip at the origin; a longer one bows back as far for its length
+ */
+export function makeBow(length = SHORT_BOW): THREE.Object3D {
   const g = new THREE.Group();
   const wood = new THREE.MeshStandardMaterial({ color: '#5a3a1e', roughness: 0.8 });
-  const tip = 0.55;
-  const back = -0.16;
+  const tip = length / 2;
+  const back = -0.16 * (length / SHORT_BOW);
   const curve = new THREE.CatmullRomCurve3([
     new THREE.Vector3(0, -tip, back),
     new THREE.Vector3(0, -tip * 0.55, -0.035),

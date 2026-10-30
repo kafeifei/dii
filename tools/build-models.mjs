@@ -34,8 +34,8 @@ const packs = new Map();
  */
 const UNUSED = new Set(['mon_dragon', 'mon_mushroom', 'mon_skullfly', 'd_trunk_large_A', 'd_shelf_large']);
 
-/** the models the game animates, the heroes, the townsfolk and the monsters: each a file of its own */
-const CHARACTER = /^(mon_|npc_)|^(paladin|sorceress|ai_hero|knight|skeleton_minion)$/;
+/** the models the game animates, the heroes, the townsfolk, the hireling and the monsters: each a file of its own */
+const CHARACTER = /^(mon_|npc_|merc_)|^(paladin|sorceress|ai_hero|knight|skeleton_minion)$/;
 
 /** what stands in the camp besides its buildings: its gates, lantern posts, fire, tents and waypoint, the vendor's table, the stash (the gold-bound chest, the trunk where that's missing) */
 const CAMP = new Set(['h_arch_gate', 'h_post_lantern', 'p_campfire', 'p_tent', 'p_waypoint', 'd_table_long_decorated_A', 'd_stool', 'd_chest_gold', 'd_trunk_medium_A']);
@@ -81,7 +81,8 @@ const SMALL = /^(g_|w_|axe_|skeleton_(blade|axe|staff|crossbow|shield)|h_(bone|s
 const LARGE = /^(x_(tavern|blacksmith|home_|well)|h_crypt|h_arch_gate|p_entrance)/;
 function budget(name) {
   if (name === 'paladin' || name === 'sorceress') return { tris: 20000, error: 0.006 };
-  if (name.startsWith('npc_')) return { tris: 9000, error: 0.012, texture: 512 };
+  // the hireling stands beside the hero as the townsfolk do, on the camp rogue's mesh (merc_rogue)
+  if (name.startsWith('npc_') || name.startsWith('merc_')) return { tris: 9000, error: 0.012, texture: 512 };
   if (name.startsWith('mon_')) return { tris: 7000, error: 0.015 };
   if (SMALL.test(name)) return { tris: 1500, error: 0.02, texture: 256 };
   if (LARGE.test(name)) return { tris: 6000, error: 0.015 };
@@ -141,6 +142,65 @@ async function sizePictures(doc, keysOf, label) {
 /** what sizePictures cut, said at the end */
 const resized = [];
 
+const clamp01 = (x) => Math.min(1, Math.max(0, x));
+const smooth = (a, b, x) => {
+  const t = clamp01((x - a) / (b - a));
+  return t * t * (3 - 2 * t);
+};
+const lerp = (a, b, t) => a + (b - a) * t;
+/** sRGB 0–1 → hue (degrees), saturation, lightness */
+function toHsl(r, g, b) {
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+  if (d < 1e-6) return [0, 0, l];
+  let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  h *= 60;
+  return [h < 0 ? h + 360 : h, d / (1 - Math.abs(2 * l - 1)), l];
+}
+function fromHsl(h, s, l) {
+  const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = l - c / 2;
+  const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  return [r + m, g + m, b + m];
+}
+
+/**
+ * The Scarlet Raven (models-src/ai/mon_bloodraven.glb) came out of Meshy in brown-black leather:
+ * her base picture's mean luma 44 of 255, 2.4% of its texels red, so at the game's distance she was
+ * a dark shape no one would take for Blood Raven, whom D2 draws red and pale. Her coloured leather
+ * (most of her, hue 15–45°) turns crimson, saturated to about 0.6 and lifted (lightness to the
+ * power 0.72: 0.1 → 0.19, 0.25 → 0.37); her skin, the light texels, goes paler and cooler; the
+ * near-black and grey ones (her raven feathers, her braid, the buckles) keep their hue and are
+ * lifted alike. As shipped (WebP): mean luma 56, 81% of texels red, the face a pale white.
+ */
+function crimsonAndPale(r, g, b) {
+  const [h, s, l] = toHsl(r, g, b);
+  const skin = smooth(0.38, 0.52, l) * (1 - smooth(0.4, 0.55, s));
+  const warm = smooth(0.06, 0.16, s) * (1 - skin);
+  const L = lerp(l, Math.pow(l, 0.72), smooth(0.04, 0.12, l));
+  let H = lerp(h > 180 ? h - 360 : h, -6, warm);
+  if (H < 0) H += 360;
+  const [rr, gg, bb] = fromHsl(H, lerp(s, Math.min(0.72, 0.4 + 0.6 * s), warm), L);
+  return [lerp(rr, lerp(r, 0.95, 0.45), skin), lerp(gg, lerp(g, 0.92, 0.45), skin), lerp(bb, lerp(b, 0.94, 0.45), skin)];
+}
+
+/** models whose base pictures are recoloured as they're built, the source left as it was made */
+const RECOLOUR = { mon_bloodraven: crimsonAndPale };
+
+/** each base colour picture in `doc` through `fn` (sRGB 0–1 in and out), encoded as a cut picture is */
+async function recolour(doc, fn) {
+  const done = new Set();
+  for (const mat of doc.getRoot().listMaterials()) {
+    const t = mat.getBaseColorTexture();
+    if (!t || done.has(t)) continue;
+    done.add(t);
+    const { data, info } = await sharp(Buffer.from(t.getImage())).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    for (let i = 0; i < data.length; i += 4) {
+      const c = fn(data[i] / 255, data[i + 1] / 255, data[i + 2] / 255);
+      for (let k = 0; k < 3; k++) data[i + k] = Math.round(clamp01(c[k]) * 255);
+    }
+    t.setImage(await sharp(data, { raw: info }).webp({ quality: QUALITY, effort: 6 }).toBuffer()).setMimeType('image/webp');
+  }
+}
+
 /** the keys of a pack's models a texture is on: the root nodes (named by key) above its meshes */
 function packKeys(t) {
   const keys = new Set();
@@ -191,6 +251,7 @@ async function build(src, out, opts = {}) {
   // an AI-generated replacement (tools/ai-props.mjs) takes over the pack model's key
   if (!src.startsWith('ai/') && fs.existsSync(path.join(SRC, 'ai-props', out))) src = `ai-props/${out}`;
   const doc = await io.read(path.join(SRC, src));
+  if (RECOLOUR[key]) await recolour(doc, RECOLOUR[key]);
   const root = doc.getRoot();
   for (const anim of root.listAnimations()) {
     const name = anim.getName();

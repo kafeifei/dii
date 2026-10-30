@@ -623,8 +623,15 @@ async function shippedLevels(ev) {
     const { npcLine } = await import('/src/audio/sounds.ts');
     return spokenLines().map((s) => npcLine(s.npc, s.id, s.quest));
   });
-  // the areas of normal play (src/world/areas.ts), to find the one a loop is played in
-  const AREAS = await ev(async () => (await import('/src/world/areas.ts')).areaList());
+  // the areas of normal play (src/world/areas.ts), to find the one a loop is played in; then Act 1's
+  // defined but not built yet (levels.txt Ids under 40), whose recordings can ship ahead of their maps
+  // (M2a's Crypt and Mausoleum: amb.crypt, music.crypt)
+  const AREAS = await ev(async () => {
+    const A = await import('/src/world/areas.ts');
+    const ahead = [];
+    for (let id = 1; id < 40; id++) if (!A.isBuilt(id) && A.areaDef(id)) ahead.push(A.areaDef(id));
+    return [...A.areaList(), ...ahead];
+  });
   const fails = [];
   const facts = {};
   const jobs = [];

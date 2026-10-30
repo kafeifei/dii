@@ -2,7 +2,7 @@
 
 这两个模型是本项目用 AI 生成的，不是 CC0，也不是暴雪的美术资源：设定图用图像模型按统一的风格版画，Meshy 建模、绑骨，动作来自 Meshy 动作库，最后由 `tools/meshy-merge.mjs` 按 `tools/meshy-chars.mjs` 合成到这里。其余模型的来源见 `public/models/CREDITS.md`。
 
-它们还没有接进游戏，也没有进 `public/models`。接进去时，`public/models/CREDITS.md` 人形那一行要加上 `merc_rogue`（`mon_bloodraven` 已经在 `mon_*`（人形）里）。
+2026-10-29 起两个都由 `tools/build-models.mjs` 构建进 `public/models`（`merc_` 照 `npc_` 的预算：约 9000 面、图最大 512），`public/models/CREDITS.md` 人形那一行已加上 `merc_rogue`；游戏里还没有地方用它们（佣兵归 M 线，绯鸦的样子归接线的那条）。绯鸦这里的源文件保持 Meshy 出来的样子，底色图偏暗、红色少（平均亮度 44/255，红色图素 2.4%），构建时重新调色（`build-models.mjs` 的 `RECOLOUR`）：皮甲转成深红、饱和到约 0.6、提亮，皮肤调白偏冷，近黑的鸦羽、辫子和扣件保留色相、一起提亮；发布的图平均亮度 56，红色图素约 80%。
 
 | 文件 | 内容 | 怎么来的 | Meshy 积分 |
 | --- | --- | --- | --- |
