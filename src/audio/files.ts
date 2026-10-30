@@ -161,7 +161,7 @@ export const FILES: Partial<Record<FileId, SoundFiles>> = {
   'voice.kashya.a1q2_intro': { files: ['voice.kashya.a1q2_intro.1.m4a'], secs: [32.467] },
   'voice.kashya.a1q2_remind': { files: ['voice.kashya.a1q2_remind.1.m4a'], secs: [10.483] },
   'voice.kashya.a1q2_remind_out': { files: ['voice.kashya.a1q2_remind_out.1.m4a'], secs: [6.609] },
-  'voice.kashya.a1q2_reward': { files: ['voice.kashya.a1q2_reward.1.m4a'], secs: [18.078] },
+  'voice.kashya.a1q2_reward': { files: ['voice.kashya.a1q2_reward.1.m4a'], secs: [17.657] },
   'voice.akara.gossip0': { files: ['voice.akara.gossip0.1.m4a'], secs: [6.603] },
   'voice.akara.gossip1': { files: ['voice.akara.gossip1.1.m4a'], secs: [5.555] },
   'voice.akara.gossip2': { files: ['voice.akara.gossip2.1.m4a'], secs: [5.118] },

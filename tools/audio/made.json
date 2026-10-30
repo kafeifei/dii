@@ -1551,23 +1551,25 @@
     }
   },
   "voice.kashya.a1q2_reward.1": {
-    "key": "b5650995f325",
-    "proc": "857a7116128e",
+    "key": "bc63712629db",
+    "proc": "b10fe6c0ba90",
     "kind": "voice",
     "model": "eleven_v4",
     "voice": "River",
     "text": "探子回报，葬骨荒冢那边静下来了。……她曾是我们当中最好的一个，这一点我不会忘。你替我们做了我们下不去手的事。从今往后，我的斥候听你差遣：身边缺人手，就带一个走，这一个不收你的钱。",
+    "said": "探子回报，葬骨荒冢那边静下来了。……她曾是我们当中最好的一个，这一点我不会忘。你替我们做了我们下不去手的事。从今往后，我的斥后听你差遣：身边缺人手，就带一个走，这一个不收你的钱。",
     "credits": 89,
     "date": "2026-10-29",
-    "secs": 18.078,
+    "secs": 17.657,
     "lufs": -18,
-    "peak": -2.4,
+    "peak": -1,
+    "limited": 0.9,
     "encoder": "aac_at",
     "check": {
       "date": "2026-10-29",
-      "by": "MMS_FA forced alignment (torchaudio wav2vec2, on the line's pinyin) and Whisper large-v3-turbo on box (GPU 0): what it hears, and each syllable's window; at every character with more than one reading, and every one Whisper wrote otherwise, the pitch (autocorrelation) and the formants (LPC) of its syllable",
-      "read": "曾 céng、当中的当 dāng、最好的好 hǎo、差遣的差 chāi、下来了和做了的了 le；斥候的候念成 hóu（像「赤猴」），要重录",
-      "note": "候 rises 165→213 Hz (hóu; Whisper hears 赤猴), as the intro's first take did: to be made again with 斥候 given as 斥后, as the intro is (89 credits, past this round's 600). 差 holds level and glides /a/→/i/ (F1 770→260 Hz: chāi); 曾 dips and comes back after aspirated frication (céng, not zēng); 当 and 中 level; 好 low"
+      "by": "MMS_FA forced alignment (torchaudio wav2vec2, on the line's pinyin) on box (GPU 0): each syllable's window, and at the characters with more than one reading the pitch (autocorrelation) and the formants (LPC) of its syllable",
+      "read": "斥候的候 hòu、往后的后 hòu、差遣的差 chāi、当中的当 dāng、曾 céng",
+      "note": "候 (given 后) falls 162→125 Hz (−4.4 st); in the take before, 候 as written rose (hóu, heard as 赤猴). 曾 is near level (−0.6 st), mid in her range, as a second tone said fast"
     }
   },
   "voice.kashya.farewell.1": {

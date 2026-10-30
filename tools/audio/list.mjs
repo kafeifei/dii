@@ -94,6 +94,8 @@ export const SAY_AS = {
     ['斥候', '斥后'],
     ['亚喀蕾', '亚喀垒'],
   ],
+  // its first take (River, eleven_v4) rose on 斥候's 候 as the intro's first did (hóu, 赤猴)
+  'voice.kashya.a1q2_reward': [['斥候', '斥后']],
 };
 
 /**
