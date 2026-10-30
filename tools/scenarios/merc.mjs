@@ -174,12 +174,20 @@ export default async function (page, shot, log) {
       g.hooks.left = null;
       g.hooks.right = null;
       g.hooks.dirty = true;
-      // a clearing in Blood Moor with monsters about
+      // a clearing in Blood Moor by a monster: the hero 4 m from it, in its sight, nothing that stops a
+      // walk within 2 m, so the hireling put beside them has it inside the 25 subtiles she fights in
+      // (mercai.ts ENGAGE) whichever side of them she stands. From 6 m a Fallen, which comes on only
+      // from 10 subtiles (its aip2), could wander about out of her reach, and a spot nearestWalkable
+      // alone finds could be a pocket in the rocks with the monsters stuck outside: she never shot
       const L = g.level;
       const live = L.monsters.filter((m) => !m.dead && L.areaAt(m.pos.x, m.pos.z).id === 2);
-      const pick = live.find((m) => L.map.nearestWalkable(m.pos.x - 6, m.pos.z));
-      const at = L.map.nearestWalkable(pick.pos.x - 6, pick.pos.z);
-      g.teleportWithin(at);
+      const spotBy = (m) => {
+        const at = L.map.nearestWalkable(m.pos.x - 4, m.pos.z);
+        const open = at && Math.hypot(at.x - m.pos.x, at.z - m.pos.z) <= 4.5 && L.map.circleClear(at.x, at.z, 2) && L.map.los(at, m.pos) && !L.inTown(at);
+        return open ? at : null;
+      };
+      const pick = live.find(spotBy);
+      g.teleportWithin(spotBy(pick));
       window.__mercKills = [];
       const kill = g.killMonster.bind(g);
       g.killMonster = (m, elem, killer) => {
