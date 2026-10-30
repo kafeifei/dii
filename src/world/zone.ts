@@ -1,10 +1,11 @@
 import { RNG, type P2 } from '../core/math';
 import { M_PER_D2_TILE } from '../core/units';
 import { D2X_AREAS } from '../data/d2x/areas';
+import { D2X_WILD_SHRINES } from '../data/d2x/shrines';
 import type { QuestKey } from '../data/quests';
 import { areaDef } from './areas';
 import { Furnisher, type Prop } from './furnish';
-import type { Decor, Entrance, House, Npc, PresetMonster, PresetSpot, Room, Service, SuperUnique } from './levelgen';
+import type { Decor, Entrance, House, Npc, PresetMonster, PresetSpot, Room, Service, ShrineSpot, SuperUnique } from './levelgen';
 import { BIG_ROCKS, TREES, clamp01, fbm, growWoods, pickWeighted, valueNoise } from './outdoors';
 import { CELL_PRESETS, campPreset, carveRuins, dressPreset, layGraveyard, onGraveWalk, stampCamp, type CellPreset, type PresetOut, type Way } from './presets';
 import { TileMap, T_FLOOR, T_VOID, T_WALL } from './tilemap';
@@ -95,7 +96,8 @@ export interface Zone {
   decor: Decor[];
   chests: P2[];
   barrels: P2[];
-  shrines: P2[];
+  /** its shrine cells' shrines, each the object of its cell's sub (shrineObjects) */
+  shrines: ShrineSpot[];
   elites: P2[];
   services: Service[];
   spawnRooms: Room[];
@@ -827,7 +829,7 @@ export function generateZone(spec: ZoneSpec): Zone {
     decor: [...(stamp?.decor ?? []), ...furn.decor],
     chests: out.chests,
     barrels: out.barrels,
-    shrines: out.shrines,
+    shrines: shrineObjects(spec.area, spec.seed, out.shrines),
     elites: out.elites,
     services: [...(stamp?.services ?? []), ...out.services],
     spawnRooms,
@@ -844,4 +846,19 @@ export function generateZone(spec: ZoneSpec): Zone {
     presetMonsters,
     presets,
   };
+}
+
+/**
+ * The shrine object each of an area's shrine cells holds, in the order the cells were flagged
+ * (DRLGOUTDOORS_SpawnAct12Shrines, DrlgOutdoors.cpp:577-646): the first the sub rand & 3 of the level's
+ * shrine subs (LvlSub type 5: the healing well, the deer, forest and horn shrines), each next one the
+ * next sub round the four (D2X_WILD_SHRINES), so an area's five have each of the four and the first
+ * twice. In the Act 1 wilderness, Blood Moor to Tamoe Highland, only. The roll is on a seed of its own,
+ * so the rest of the area stays as it was laid out.
+ */
+function shrineObjects(area: number, seed: number, at: P2[]): ShrineSpot[] {
+  const W = D2X_WILD_SHRINES;
+  if (!W.levels.includes(area)) return at.map((p) => ({ ...p }));
+  const first = new RNG((seed ^ 0x5a17e5) >>> 0).int(0, 3);
+  return at.map((p, i) => ({ ...p, d2: W.objects[(first + i) % W.objects.length] }));
 }

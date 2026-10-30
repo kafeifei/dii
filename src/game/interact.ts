@@ -1,8 +1,9 @@
 import { builtWaypoints } from '../world/areas';
 import { takeCorpse } from './bodies';
-import { drinkWell, openBarrel, openCasket, openChest, searchRemains, useShrine } from './containers';
+import { drinkWell, openBarrel, openCasket, openChest, searchRemains } from './containers';
 import type { Game } from './game';
 import type { ObjKind, WorldObject } from './objects';
+import { useShrine } from './shrines';
 import { tellClosed, usePortal } from './travel';
 
 /** what using each kind of object does (interact); a rift's obelisk and ways are the rift's (Rifts.use) */

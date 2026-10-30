@@ -13,9 +13,14 @@
 // (two fires on the chest that burn the hero in them, not 3 m off) and of trap monsters (one or two
 // zombies at the chest); and five exploding barrels a cluster's step apart, a plain one beside: the
 // first broken, the five go off, the plain one stays, a monster by them is struck, the hero 2 m off
-// isn't. Page and console errors fail the run. Shots: the row with nothing used, each hovered with its
-// name, the row used, each trap going off, the barrels before, in and after the chain. The last line
-// is "OBJECTS OK …" or "OBJECTS FAIL …".
+// isn't. An exploding barrel clicked as a player does: the hero walks to D2's reach of it and breaks
+// it there, inside its blast. Then one shrine of each kind a shrine can be (D2's Shrines.txt) in a
+// row, hovered: our names (X祭坛), never the official ones; a refilling, an armor and a skill altar
+// touched: the refill fills, the armor blessing gives way to the skill one, which shows under the
+// minimap with its 96 seconds. Page and console errors fail the run. Shots: the row with nothing used,
+// each hovered with its name, the row used, each trap going off, the barrels before, in and after the
+// chain, the barrel walked up to, the shrines' row, a shrine hovered, the shrines touched. The last
+// line is "OBJECTS OK …" or "OBJECTS FAIL …".
 
 export default async function (page, shot, log) {
   const t0 = Date.now();
@@ -436,6 +441,102 @@ export default async function (page, shot, log) {
     await shot('barrel-chain-after');
     expect(blown.gone === 5 && !blown.plain && blown.hero === 0 && (chain.monster === null || blown.monster > 0), `the chain: ${JSON.stringify(blown)} (${JSON.stringify(chain)})`);
     facts.push(`a chain of ${blown.gone} exploding barrels, the plain one beside it whole, ${chain.monster ?? 'no monster'} struck for ${blown.monster?.toFixed(1)}, the hero 2 m off untouched`);
+
+    step = 'an exploding barrel walked up to';
+    // clicked as a player does (an interact intent): the hero walks till D2's reach (src/game/reach.ts)
+    // and breaks it there, inside its 3-subtile blast
+    const walked = await ev(() => {
+      const S = window.__o;
+      const L = game.level;
+      const p = game.player;
+      const c = L.map.nearestWalkable(S.fire.pos.x, S.fire.pos.z - 3) ?? { ...S.fire.pos };
+      const o = new S.O.WorldObject('barrel', c, S.C.objectName('barrel', { d2: 11 }) ?? '', 0.35);
+      Object.assign(o, { d2: 11, exploding: true });
+      L.objects.push(o);
+      game.teleportWithin(L.map.nearestWalkable(c.x + 3, c.z) ?? { x: c.x + 3, z: c.z });
+      p.intent = { kind: 'interact', obj: o };
+      for (let k = 0; k < 6 * 60 && !o.used; k++) S.step(1 / 60);
+      return { used: o.used, off: Math.hypot(p.pos.x - c.x, p.pos.z - c.z), inBlast: S.C.d2InRange(o.pos, p.pos, S.C.BLAST_RANGE) };
+    });
+    await frames(4);
+    await shot('barrel-walked-up');
+    expect(walked.used && walked.inBlast, `an exploding barrel walked up to: ${JSON.stringify(walked)}`);
+    facts.push(`an exploding barrel walked up to and broken ${walked.off.toFixed(2)} m off, in its blast`);
+
+    step = 'shrines';
+    // one of each kind a shrine can be in a row by the hero (src/game/shrines.ts), each hovered: our name
+    // (tools/d2-names/shrines.json, X祭坛), never the official X圣坛; a boon touched shows under the
+    // minimap with its seconds, a refill fills, the specials do what theirs do; a touched shrine dark
+    const row = await ev(async () => {
+      const S = window.__o;
+      const L = game.level;
+      const p = game.player;
+      const { D2X_SHRINES } = await import('/src/data/d2x/shrines.ts');
+      S.SH = await import('/src/game/shrines.ts');
+      L.objects = L.objects.filter((o) => o.kind !== 'barrel' && o.kind !== 'chest');
+      L.blasts = [];
+      L.projectiles = [];
+      const mid = { ...p.pos };
+      const kinds = D2X_SHRINES.filter((s) => s.name).map((s) => s.code);
+      const spot = (i) => {
+        const want = { x: mid.x - 4 + (i % 7) * 1.35, z: mid.z - 2.4 + Math.floor(i / 7) * 2.2 };
+        return L.map.nearestWalkable(want.x, want.z) ?? want;
+      };
+      S.shrines = kinds.map((code, i) => {
+        const o = new S.O.WorldObject('shrine', spot(i), S.SH.shrineName(code), 0.6);
+        Object.assign(o, { d2: [2, 81, 83, 84][i % 4], shrine: code });
+        L.objects.push(o);
+        return o;
+      });
+      return S.shrines.map((o) => ({ id: o.id, code: o.shrine, name: o.name, pos: o.pos, official: D2X_SHRINES[o.shrine].en }));
+    });
+    await ev(() => (window.renderer.zoomTarget = 7));
+    await frames(40);
+    await page.mouse.move(4, 4);
+    await shot('shrines-row');
+    const shrineNames = JSON.parse(await ev(() => fetch('/tools/d2-names/shrines.json').then((r) => r.text()).catch(() => '{}')));
+    for (const s of row.filter((x) => [1, 6, 7, 15, 19].includes(x.code))) {
+      const at = await ev(({ x, z }) => {
+        const c = renderer.camera;
+        c.updateMatrixWorld();
+        const v = c.matrixWorldInverse.elements;
+        const pm = c.projectionMatrix.elements;
+        const mul = (m, [a, b, cc, d]) => [0, 1, 2, 3].map((r) => m[r] * a + m[4 + r] * b + m[8 + r] * cc + m[12 + r] * d);
+        const e = mul(pm, mul(v, [x, 0.5, z, 1]));
+        const r = document.querySelector('canvas').getBoundingClientRect();
+        return { x: r.left + ((e[0] / e[3] + 1) / 2) * r.width, y: r.top + ((1 - e[1] / e[3]) / 2) * r.height };
+      }, s.pos);
+      await page.mouse.move(at.x, at.y);
+      await frames(6);
+      const shown = await ev(() => ({ hover: game.hover.object?.id ?? null, label: document.querySelector('#target .name')?.textContent ?? '' }));
+      const off = Object.values(shrineNames).find((n) => n.name === s.name)?.official;
+      expect(shown.hover === s.id && shown.label === s.name && /祭坛$/.test(shown.label) && shown.label !== off, `shrine ${s.code}: hovered ${shown.hover} showing "${shown.label}", ours ${s.name}, official ${off}`);
+      if (s.code === 7) await shot('hover-shrine-combat');
+    }
+    await page.mouse.move(4, 4);
+    const touched = await ev(() => {
+      const S = window.__o;
+      const p = game.player;
+      const by = (c) => S.shrines.find((o) => o.shrine === c);
+      const r = {};
+      p.life = p.stats.maxLife * 0.4;
+      p.mana = 0;
+      game.interact(by(1));
+      r.refill = p.life === p.stats.maxLife && p.mana === p.stats.maxMana;
+      const def0 = p.stats.def;
+      game.interact(by(6));
+      r.armor = { code: p.shrine?.code, def: [def0, p.stats.def] };
+      game.interact(by(12));
+      r.skill = { code: p.shrine?.code, left: p.shrine && Math.round(p.shrine.left) };
+      r.spent = by(1).used && by(6).used && S.O.spent(by(1));
+      return r;
+    });
+    await frames(10);
+    const blessing = await ev(() => document.querySelector('#blessing')?.textContent ?? '');
+    await shot('shrines-touched');
+    expect(touched.refill && touched.armor.code === 6 && touched.armor.def[1] > touched.armor.def[0] && touched.skill.code === 12 && touched.skill.left === 96 && touched.spent, `the shrines touched: ${JSON.stringify(touched)}`);
+    expect(blessing.startsWith(row.find((s) => s.code === 12).name), `under the minimap: "${blessing}"`);
+    facts.push(`${row.length} kinds of shrine hovered as ours (${row.slice(0, 3).map((s) => s.name).join(' ')} …), the skill altar's blessing "${blessing}" under the minimap`);
   } catch (e) {
     fails.push(`${step}: ${e.message}`);
   }

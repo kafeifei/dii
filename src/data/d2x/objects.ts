@@ -24,11 +24,12 @@ export interface D2xObjGroup {
  * Tome, A1Q5.cpp:80), explodingBarrel 7 (2829-2889: it hurts everything within 3 subtiles and sets off
  * the exploding barrels within 2), stone 9 (a Cairn Stone, A1Q4.cpp:690), torch 11 (2916-2939: a fire
  * lit or put out; the fires a chest's trap lights, which burn the players near them,
- * OBJMODE_UpdateTrapProximity 328-351), corpse 14 (2585-2614), well 22 (3711-3808); placeholder, a
+ * OBJMODE_UpdateTrapProximity 328-351), corpse 14 (2585-2614), portal 15, well 22 (3711-3808), waypoint 23,
+ * stash 32 (the Bank; those three the game's own, here for their sizes); placeholder, a
  * preset's stand-in that becomes another object (Objects.cpp:215-249); none, nothing to use.
  */
 export type D2xObjectKind =
-  | 'casket' | 'shrine' | 'urn' | 'chest' | 'barrel' | 'tome' | 'explodingBarrel' | 'stone' | 'torch' | 'corpse' | 'well' | 'placeholder' | 'none';
+  | 'casket' | 'shrine' | 'urn' | 'chest' | 'barrel' | 'tome' | 'explodingBarrel' | 'stone' | 'torch' | 'corpse' | 'portal' | 'well' | 'waypoint' | 'stash' | 'placeholder' | 'none';
 
 /**
  * An object (Objects.txt row). Sizes are D2 subtiles (a tile is 5×5). Three function numbers say what
@@ -98,7 +99,12 @@ export interface D2xObject {
   cluster?: number[];
   /** % of these that get flies (object 103) on them (PopulateFn6, Objects.cpp:1417) */
   flies?: number;
-  /** a shrine's kind by Parm0 (InitFn 1, Objects.cpp:489-548): health, mana, magic (a boon, effect class 4; one in ten a special one, class 1) or any of the area's level */
+  /**
+   * a shrine's kind by Parm0 (InitFn 1, Objects.cpp:489-548): what it picks its shrine (D2X_SHRINES) among,
+   * by effect class: health (1: class 2), mana (2: class 3), magic (3 and more: a boon, class 4, or one
+   * time in ten a special one, class 1, as Objects.txt calls such objects magic shrines), any (0: any
+   * shrine of the area's level)
+   */
   shrine?: 'any' | 'health' | 'mana' | 'magic';
   /** the object a shrine becomes when it must be the level's healing one: Parm1, or the healing well 84 (Objects.cpp:1594-1606) */
   healAs?: number;
@@ -132,6 +138,7 @@ export const D2X_OBJGROUPS: Record<number, D2xObjGroup> = {
  * west block's map presets place (Objects.txt), by class: 580, 581, 397, 17, 18, 19, 20, 21, 22, 8 for the presets.
  */
 export const D2X_OBJECTS: Record<number, D2xObject> = {
+  "2": {"id":2,"key":"DeerShrine","nameKey":"Shrine","desc":"Shrine","size":[3,3],"subclass":1,"populate":2,"init":1,"operate":2,"parm":[3,84],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"shrine","shrine":"magic","healAs":84},
   "3": {"id":3,"key":"Casket6","nameKey":"Casket","desc":"Casket #6","size":[5,3],"space":[5,5],"subclass":8,"populate":1,"init":0,"operate":1,"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"casket","drop":100,"trap":"monster","cluster":[3,28]},
   "5": {"id":5,"key":"LargeChestR","nameKey":"chest","desc":"LargeChestR","size":[1,2],"subclass":8,"populate":3,"init":3,"operate":4,"parm":[15],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"chest","drop":75,"trap":"rolled","lockable":true},
   "6": {"id":6,"key":"LargeChestL","nameKey":"chest","desc":"LargeChestL","size":[2,1],"subclass":8,"populate":3,"init":3,"operate":4,"parm":[15],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"chest","drop":75,"trap":"rolled","lockable":true},
@@ -148,14 +155,19 @@ export const D2X_OBJECTS: Record<number, D2xObject> = {
   "54": {"id":54,"key":"RogueCorpse1","nameKey":"RogueCorpse","desc":"Rogue corpse 1","size":[1,1],"populate":6,"init":0,"operate":14,"orientation":3,"selectable":true,"blocks":true,"kind":"corpse","drop":100,"flies":29},
   "55": {"id":55,"key":"RogueCorpse2","nameKey":"RogueCorpse","desc":"Rogue corpse 2","size":[1,1],"populate":6,"init":0,"operate":14,"orientation":3,"selectable":true,"blocks":true,"kind":"corpse","drop":100,"flies":29},
   "56": {"id":56,"key":"RogueRollingCorpse1","nameKey":"RogueCorpse","desc":"rolling rogue corpse","size":[1,1],"populate":6,"init":0,"operate":14,"orientation":3,"selectable":true,"blocks":true,"kind":"corpse","drop":100,"flies":29},
+  "59": {"id":59,"key":"TownPortal","nameKey":"Portal","desc":"Town portal","size":[4,4],"subclass":4,"populate":0,"init":11,"operate":15,"orientation":3,"blocks":true,"blocksOpen":true,"kind":"portal"},
   "77": {"id":77,"key":"ShrineAltar","nameKey":"Shrine","desc":"healthorama","size":[3,3],"subclass":1,"populate":2,"init":1,"operate":2,"parm":[1,84],"orientation":1,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"shrine","shrine":"health","healAs":84},
+  "81": {"id":81,"key":"ForestAltar","nameKey":"Shrine","desc":"forest altar","size":[3,3],"subclass":1,"populate":2,"init":1,"operate":2,"parm":[3,84],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"shrine","shrine":"magic","healAs":84},
+  "83": {"id":83,"key":"HornShrine","nameKey":"Shrine","desc":"horn shrine","size":[3,3],"subclass":1,"populate":2,"init":1,"operate":2,"parm":[3,84],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"shrine","shrine":"magic","healAs":84},
   "84": {"id":84,"key":"HealingWell","nameKey":"Shrine","desc":"healing well","size":[3,3],"subclass":1,"populate":2,"init":1,"operate":2,"parm":[1,84],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"shrine","shrine":"health","healAs":84},
   "103": {"id":103,"key":"Flies","nameKey":"Dummy","desc":"flies","size":[1,1],"populate":0,"init":0,"operate":0,"orientation":3,"kind":"none"},
+  "119": {"id":119,"key":"WaypointOutsideAct1","nameKey":"Waypoint","desc":"waypoint portal","size":[5,5],"subclass":64,"populate":0,"init":17,"operate":23,"orientation":3,"selectable":true,"kind":"waypoint"},
   "138": {"id":138,"key":"Fountain8","nameKey":"Well","desc":"cavewell act 1 caves","size":[4,4],"subclass":32,"populate":8,"init":16,"operate":22,"parm":[750,128,1,3],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"well","well":{"uses":2,"regen":30.04,"restore":0.5,"life":true,"mana":true}},
   "139": {"id":139,"key":"ChestOutdoor1","nameKey":"chest","desc":"chest-r-large act 1","size":[3,2],"subclass":8,"populate":3,"init":3,"operate":4,"parm":[18],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"chest","drop":75,"trap":"rolled","lockable":true},
   "140": {"id":140,"key":"ChestOutdoor2","nameKey":"chest","desc":"chest-r-tallskinney act 1","size":[1,1],"subclass":8,"populate":3,"init":3,"operate":4,"parm":[18],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"chest","drop":75,"trap":"rolled","lockable":true},
   "141": {"id":141,"key":"ChestOutdoor3","nameKey":"chest","desc":"chest-r-med act 1","size":[3,2],"subclass":8,"populate":3,"init":3,"operate":4,"parm":[18],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"chest","drop":75,"trap":"rolled","lockable":true},
   "144": {"id":144,"key":"ChestOutdoor4","nameKey":"chest","desc":"Lchest1 act 1","size":[1,1],"subclass":8,"populate":3,"init":3,"operate":4,"parm":[18],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"chest","drop":75,"trap":"rolled","lockable":true},
+  "157": {"id":157,"key":"WaypointInsideAct1","nameKey":"Waypoint","desc":"waypoint act 1 wilderness","size":[1,1],"subclass":64,"populate":3,"init":17,"operate":23,"orientation":3,"selectable":true,"kind":"waypoint"},
   "160": {"id":160,"key":"FireSmall","nameKey":"fire","desc":"fire small","size":[0,0],"populate":0,"init":22,"operate":11,"orientation":3,"kind":"torch","damage":100},
   "162": {"id":162,"key":"FireLarge","nameKey":"fire","desc":"fire large","size":[0,0],"populate":0,"init":22,"operate":11,"parm":[1],"orientation":3,"kind":"torch","damage":100},
   "165": {"id":165,"key":"ManaWell2","nameKey":"Shrine","desc":"mana well2","size":[3,3],"subclass":1,"populate":2,"init":1,"operate":2,"parm":[2,77],"orientation":1,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"shrine","shrine":"mana","healAs":77},
@@ -166,6 +178,7 @@ export const D2X_OBJECTS: Record<number, D2xObject> = {
   "241": {"id":241,"key":"Chest6","nameKey":"chest","desc":"gchest2R general","size":[1,1],"subclass":8,"populate":3,"init":3,"operate":4,"parm":[18],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"chest","drop":75,"trap":"rolled","lockable":true},
   "242": {"id":242,"key":"Chest7","nameKey":"chest","desc":"gchest3R general","size":[1,1],"subclass":8,"populate":3,"init":3,"operate":4,"parm":[18],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"chest","drop":75,"trap":"rolled","lockable":true},
   "243": {"id":243,"key":"Chest8","nameKey":"chest","desc":"glchest3L general","size":[1,1],"subclass":8,"populate":3,"init":3,"operate":4,"parm":[18],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"chest","drop":75,"trap":"rolled","lockable":true},
+  "267": {"id":267,"key":"Bank","nameKey":"bank","desc":"bank","size":[1,1],"populate":3,"init":0,"operate":32,"parm":[1],"orientation":1,"selectable":true,"blocks":true,"kind":"stash"},
   "275": {"id":275,"key":"HealthShrineCavesAct1","nameKey":"Shrine","desc":"health shrine for caves","size":[3,3],"subclass":1,"populate":2,"init":1,"operate":2,"parm":[1,275],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"shrine","shrine":"health","healAs":275},
   "276": {"id":276,"key":"ManaShrineCavesAct1","nameKey":"Shrine","desc":"mana shrine for caves","size":[3,3],"subclass":1,"populate":2,"init":1,"operate":2,"parm":[2,275],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"shrine","shrine":"mana","healAs":275},
   "277": {"id":277,"key":"MagicShrinesCavesAct1","nameKey":"Shrine","desc":"cave magic shrine","size":[3,3],"subclass":1,"populate":2,"init":1,"operate":2,"parm":[3,275],"orientation":3,"selectable":true,"blocks":true,"blocksOpen":true,"kind":"shrine","shrine":"magic","healAs":275},

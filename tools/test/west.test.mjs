@@ -233,6 +233,8 @@ export default async (load) => {
     const o = west.objects.find((x) => x.kind === kind && !x.used && west.areaAt(x.pos.x, x.pos.z).id === area);
     if (!o) continue;
     levels.length = 0;
+    // (a chest may be locked, as D2 rolls them: with a key it opens and drops at the same level)
+    if (o.locked) p.inventory.add(Object.assign(createItem('key'), { qty: 1 }));
     game.interact(o);
     check(levels.length && levels.every((l) => l === areaDef(area).alvl[0]), `a ${kind} in ${areaDef(area).key} rolled at levels ${levels.join()}`);
   }

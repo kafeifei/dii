@@ -471,7 +471,7 @@ export default async function (page, shot, log) {
         const dist = window.__smoke.dist;
         const { killXp } = await import('/src/game/d2/xp.ts');
         const { debugOpts } = await import('/src/game/debug.ts');
-        const { SHRINE_BY_ID } = await import('/src/data/shrines.ts');
+        const { blessingBonus } = await import('/src/game/blessing.ts');
         const { monsterLootTc } = await import('/src/game/loot.ts');
         const { D2X_TREASURE_CLASSES } = await import('/src/data/d2x/treasure.ts');
         const { noDropFor, totalProb } = await import('/src/items/d2/treasure.ts');
@@ -498,7 +498,7 @@ export default async function (page, shot, log) {
         // what a kill is worth to the hero now, as Game.killMonster reckons it: D2's level gap leaves a
         // level-1 den monster's next to nothing to a level-11 hero (game/d2/xp.ts levelGapXp)
         const worth = (m) => {
-          const add = (p.shrine ? (SHRINE_BY_ID[p.shrine.id].xpPct ?? 0) : 0) + (p.stats.bag.xpPct ?? 0);
+          const add = blessingBonus(p.shrine).xpPct + (p.stats.bag.xpPct ?? 0);
           return m.noXp ? 0 : Math.floor(killXp(m.xp, p.level, m.level, add) * debugOpts.xp);
         };
         // the nearest that are worth something; short of them, ones made at the hero's level beside it

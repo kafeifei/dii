@@ -670,6 +670,31 @@ export default async (load) => {
     check(JSON.parse(text).merc === null, 'no hireling: merc written as other than null');
   }
 
+  // ── a shrine's blessing is never saved, as D2 saves no states (src/game/blessing.ts): the game
+  // never wrote one, so no save has one; one a save carries anyway (a blessing of the seven shrines
+  // the game had before D2's, by its old id, or a later build's) loads safely, the hero blessed by
+  // nothing, and stays in the save untouched as any field this build doesn't read ──
+  {
+    reset();
+    const old = { ...clone(at.get(0).d), shrine: { id: 'armor', left: 50 } };
+    localStorage.setItem(KEY, JSON.stringify(old));
+    const s = save.loadSave();
+    check(s && s.player.shrine === null && s.player.stats.def >= 0, `an old blessing in the save: read as ${JSON.stringify(s?.player.shrine)}`);
+    s.player.shrine = { code: 6, left: 30 };
+    s.player.markDirty();
+    save.writeSave(s.player, s.area);
+    const w = JSON.parse(localStorage.getItem(KEY));
+    check(JSON.stringify(w.shrine) === JSON.stringify(old.shrine), `an old blessing in the save: written back as ${JSON.stringify(w.shrine)}`);
+    const again = save.loadSave();
+    check(again.player.shrine === null, `a blessing on the hero saved: read back as ${JSON.stringify(again.player.shrine)}`);
+    reset();
+    localStorage.setItem(KEY, JSON.stringify(at.get(0).d));
+    const s2 = save.loadSave();
+    s2.player.shrine = { code: 15, left: 99 };
+    save.writeSave(s2.player, s2.area);
+    check(!('shrine' in JSON.parse(localStorage.getItem(KEY))), 'a blessing written into the save');
+  }
+
   // ── where a version 4 save resumes on a reload: an area this build has, else the camp ──
   for (const [where, area, want] of [
     ['Blood Moor', WILD_AREA, WILD_AREA],

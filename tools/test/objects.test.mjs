@@ -151,7 +151,8 @@ async function run(load) {
     check(C.objectName('barrel', { d2: 11 }) === D2X_OBJECT_NAMES.Barrel.name && C.objectName('chest', { d2: 397 }) === D2X_OBJECT_NAMES.chest.name && C.objectName('casket', { d2: 5 }) === D2X_OBJECT_NAMES.Casket.name, 'an exploding barrel, a sparkly chest or a casket given a chest\'s row is misnamed');
     // and an old map's chests and barrels too
     const old = new Level(WILD_MAPS + 2, 3);
-    const bad = old.objects.filter((o) => (o.kind === 'chest' || o.kind === 'barrel') && o.name !== C.objectName(o.kind));
+    // (its chests each one of the act's, locked or not as it rolled: level.ts)
+    const bad = old.objects.filter((o) => (o.kind === 'chest' || o.kind === 'barrel') && o.name !== C.objectName(o.kind, o));
     check(!bad.length && old.objects.some((o) => o.kind === 'barrel'), `an old floor's chests and barrels: ${bad.map((o) => o.name).join(' ')}`);
     facts.push(`names ${Object.keys(want).map((k) => D2X_OBJECT_NAMES[k].name).join(' ')}`);
   }

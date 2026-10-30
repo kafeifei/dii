@@ -1,4 +1,4 @@
-import { SHRINE_BY_ID } from '../data/shrines';
+import { shrineColor, shrineName } from '../game/blessing';
 import type { Game } from '../game/game';
 import type { Level } from '../game/level';
 import type { ObjKind, WorldObject } from '../game/objects';
@@ -175,11 +175,11 @@ export class Automap {
     this.updateExplored();
     const g = this.game;
     const p = g.player;
-    const bl = p.shrine && SHRINE_BY_ID[p.shrine.id];
-    const blText = bl ? `${bl.name} ${Math.ceil(p.shrine!.left)}` : '';
+    const bl = p.shrine;
+    const blText = bl ? `${shrineName(bl.code)} ${Math.ceil(bl.left)}` : '';
     if (this.blessingEl.textContent !== blText) {
       this.blessingEl.textContent = blText;
-      if (bl) this.blessingEl.style.color = bl.color;
+      if (bl) this.blessingEl.style.color = shrineColor(bl.code);
     }
     this.timer -= dt;
     const area = g.level.areaAt(p.pos.x, p.pos.z);

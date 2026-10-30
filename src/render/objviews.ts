@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { wellCharges } from '../game/containers';
 import type { WorldObject } from '../game/objects';
 import type { Player } from '../game/player';
-import { SHRINE_BY_ID } from '../data/shrines';
+import { shrineColor } from '../game/blessing';
 import { CAMP_AREA } from '../world/areas';
 import { assets } from './assets';
 import { playerLook, vendorLook } from './looks';
@@ -221,8 +221,8 @@ export function makeObjectView(r: Renderer, o: WorldObject): ObjView {
       };
     }
     case 'shrine': {
-      // the shrine stone, lit by its own colour until it has been touched
-      const color = SHRINE_BY_ID[o.shrine ?? '']?.color ?? '#ffffff';
+      // the shrine stone, lit by its kind's colour while it can be touched (dark once touched, lit again when it is back: shrines.ts updateShrines)
+      const color = shrineColor(o.shrine);
       const model = assetProp(MODELS.shrine, 0.6);
       if (model) {
         model.rotation.y = CAM_YAW;
@@ -242,6 +242,11 @@ export function makeObjectView(r: Renderer, o: WorldObject): ObjView {
               view.lightColor = undefined;
             }
             return;
+          }
+          // back to be touched again (its reset time out): lit again
+          if (!glow.visible) {
+            glow.visible = true;
+            view.lightColor = color;
           }
           (glow.material as THREE.SpriteMaterial).opacity = 0.55 + Math.sin(r.time * 2.4) * 0.15;
           if (Math.random() < dt * 5) {

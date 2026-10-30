@@ -218,8 +218,13 @@ export interface Service {
 export type ChestSpot = P2 & { d2?: number; locked?: boolean; trap?: number; sparkly?: 'unique' | 'consolation' };
 /** a barrel as a map sets it down: its Objects.txt id, an exploding one, one that came broken (objgroups.ts PlacedBarrel) */
 export type BarrelSpot = P2 & { d2?: number; exploding?: boolean; opened?: boolean };
-/** a shrine as a map sets it down: its kind by Objects.txt Parm0 (objgroups.ts PlacedShrine); none, any */
-export type ShrineSpot = P2 & { kind?: PlacedShrine['kind'] };
+/**
+ * A shrine as a map sets it down: on a map D2's rules furnished, its Objects.txt id (`d2`), its kind by
+ * Parm0 and the shrine it rolled (Shrines.txt Code: objgroups.ts PlacedShrine; the wilderness's
+ * shrine cells, zone.ts, give only the object). The old generators' plain spots have neither: the
+ * level makes them as D2 makes its level's (src/game/level.ts, world/shrinekinds.ts oldShrineObject)
+ */
+export type ShrineSpot = P2 & { kind?: PlacedShrine['kind']; d2?: number; shrine?: number };
 
 /** a preset room or unit a map was made with (D2's LvlPrest.txt): what, which, where, in which area */
 export interface PresetSpot {

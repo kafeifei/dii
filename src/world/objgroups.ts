@@ -1,6 +1,7 @@
 import type { P2 } from '../core/math';
 import { M_PER_SUBTILE } from '../core/units';
 import { D2X_OBJECTS, D2X_OBJGROUPS, type D2xObject } from '../data/d2x/objects';
+import { HEALTH_SHRINE, rollShrine, shrineOfClass } from './shrinekinds';
 import type { TileMap } from './tilemap';
 
 /**
@@ -57,6 +58,8 @@ export interface PlacedRemains extends PlacedObject {
 export interface PlacedShrine extends PlacedObject {
   /** its kind by Parm0 (D2xObject.shrine); one made the level's healing shrine is 'health' */
   kind: 'any' | 'health' | 'mana' | 'magic';
+  /** the shrine it rolled as it appeared (Shrines.txt Code: src/game/shrines.ts rollShrine), the health shrine for the level's healing one */
+  shrine: number;
 }
 
 // what a box must keep clear of (D2Collision.h:38-76): COLLIDE_WALL | COLLIDE_OBJECT | COLLIDE_DOOR
@@ -78,6 +81,29 @@ const BARREL = 7;
 const BARREL_EXPLODING = 11;
 /** an Act 1 preset's random treasure chest (Objects.txt 581 PlaceRandomTreasureChest) */
 export const RANDOM_CHEST = 581;
+
+/**
+ * A chest's trap and lock % in D2 level `monLvl`, the classic game's normal MonLvl (wMonLvl[0]) of its
+ * level, whatever the difficulty (InitFn 3 and 57, Objects.cpp:642, 653): trapped under MonLvl / 8 + 5,
+ * a lockable one locked under MonLvl / 2 + 8 (D2xMaze.trap, lock for the mazes)
+ */
+export const chestRolls = (monLvl: number): { trap: number; lock: number } => ({ trap: Math.floor(monLvl / 8) + 5, lock: Math.floor(monLvl / 2) + 8 });
+
+/**
+ * A chest set where D2 would put a preset's random chest (the old maps' and the overworld's spots, which
+ * name no object): one of Act 1's thirteen at random, as 581 becomes (OBJECTS_SpawnPresetChest,
+ * Objects.cpp:103-169: rand % 13 on the object control seed), then what it rolls as it appears
+ * (OBJECTS_InitFunction03_Chest, 637-668): a trap under `rolls.trap` %, (rand & 7) + 1, a lock under
+ * `rolls.lock` % if it is lockable (all thirteen are), and the roll that seeds its own drop (667)
+ */
+export function presetChestRoll(r: Rolls, rolls: { trap: number; lock: number }): { d2: number; trap: number; locked: boolean } {
+  const list = D2X_OBJECTS[RANDOM_CHEST].becomes ?? [];
+  const d2 = list[r.roll() % list.length];
+  const trap = r.roll() % 100 < rolls.trap ? (r.roll() & 7) + 1 : 0;
+  const locked = !!D2X_OBJECTS[d2]?.lockable && r.roll() % 100 < rolls.lock;
+  r.roll();
+  return { d2, trap, locked };
+}
 
 /** a D2 room in subtiles: an 8×8-tile room is 40 × 40, and so is ours of 10×10 tiles */
 export interface SubRoom {
@@ -152,10 +178,17 @@ export class ObjectRoller {
   private done = 0;
   private rooms = 0;
 
+  /**
+   * `rolls`: the level's chests' trap and lock %; `shrineRolls`: the D2 level its shrines roll their
+   * kinds in (a Levels.txt Id, against each one's LevelMin) and the seed they roll on, the game's object
+   * control seed in D2 (OBJECTS_GetShrineId, InitFn01: pObjectControl->pSeed, Objects.cpp:509, 568),
+   * not the room's the population rolls on (pRoom->pSeed, 1518-1521, 2104-2117)
+   */
   constructor(
     map: TileMap,
     private readonly seed: Rolls,
     private readonly rolls: { trap: number; lock: number },
+    private readonly shrineRolls: { level: number; control: Rolls },
   ) {
     this.occ = new Occupancy(map);
   }
@@ -255,7 +288,7 @@ export class ObjectRoller {
         this.wells.push({ pos, id: o.id });
         break;
       case 'shrine':
-        this.shrines.push({ pos, id: o.id, kind: o.shrine ?? 'any' });
+        this.shrines.push({ pos, id: o.id, kind: o.shrine ?? 'any', shrine: 0 });
         break;
     }
     return pos;
@@ -323,8 +356,8 @@ export class ObjectRoller {
   /**
    * PopulateFn2 (Objects.cpp:1512-1627): a shrine, at most 10 a level and ⌊rooms/8⌋ + 1, 50 subtiles
    * from another both ways (ObjRgn.cpp:196-251). Past ¾ of the rooms with no healing shrine it tries
-   * 30 times instead of 3, and one that isn't a healing shrine becomes one (its Parm1, else the
-   * healing well 84). One of orientation 1 or 2 stands against the room's low-y or low-x edge; our
+   * 30 times instead of 3, and one that hasn't rolled the health shrine becomes one (its Parm1,
+   * else the healing well 84), its kind the health shrine. One of orientation 1 or 2 stands against the room's low-y or low-x edge; our
    * rooms have their walls inside the room's box, so it slides in off the wall to where its box clears.
    */
   private shrine2(room: SubRoom, o: D2xObject) {
@@ -352,14 +385,23 @@ export class ObjectRoller {
         }
         if (!x || !y || x < room.x + 1 || y < room.y + 1 || x >= room.x + room.w - 1 || y >= room.y + room.h - 1) continue;
         if (this.occ.hits(x, y, w, h, M_PLACE) || this.shrineAt.some(([sx, sy]) => Math.abs(sx - x) < 50 || Math.abs(sy - y) < 50)) continue;
+        // its kind as it appears (InitFn01: SUNIT_AllocUnitData, 1579), then the healing count by that
+        // kind (InteractType 2, 1591-1594), or, past ¾ of the rooms with none yet, the object made the
+        // healing one, its kind the health shrine, after a roll D2 makes and drops (1595-1609)
+        const { level, control } = this.shrineRolls;
         let real = o;
-        if (o.shrine === 'health') this.healing++;
+        let shrine = rollShrine(o.id, level, control);
+        if (shrine === HEALTH_SHRINE) this.healing++;
         else if (heal) {
           real = D2X_OBJECTS[o.healAs ?? 84] ?? o;
+          shrineOfClass(2, 1, control);
+          shrine = HEALTH_SHRINE;
           this.healing++;
         }
         this.put(real, x, y);
-        this.shrines[this.shrines.length - 1].kind = heal || o.shrine === 'health' ? 'health' : (o.shrine ?? 'any');
+        const placed = this.shrines[this.shrines.length - 1];
+        placed.kind = heal || o.shrine === 'health' ? 'health' : (o.shrine ?? 'any');
+        placed.shrine = shrine;
         this.shrineAt.push([x, y]);
         return;
       }

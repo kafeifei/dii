@@ -1,9 +1,13 @@
 import { RNG, type P2 } from '../core/math';
+import { D2X_AREAS } from '../data/d2x/areas';
 import { lookedMonsters } from '../data/monsters';
 import type { Difficulty } from '../items/d2/types';
 import { areaDef, areaForDepth, areaLevel, isBuilt, type AreaDef } from '../world/areas';
 import { bfsDistances, dungeonFloor, generateDungeon, generateGallery, generateTown, isWild, themeForFloor, type Layout } from '../world/levelgen';
 import type { TileMap } from '../world/tilemap';
+import { D2Seed } from '../world/maze';
+import { chestRolls, presetChestRoll } from '../world/objgroups';
+import { KIND_PARM0, oldShrineObject, rollShrine, rollShrineOfParm0 } from '../world/shrinekinds';
 import { generateWild } from '../world/wild';
 
 /** dev showroom instead of the camp (see generateGallery) */
@@ -14,8 +18,12 @@ import { areaBoxes, presetMonster, spawnArea, type SpawnReport } from './spawn';
 import { ITEM_BASES, UNKNOWN_BASE } from '../data/items';
 import { createItem } from '../items/gen';
 import { DelayedBlast, GroundItem, Hammer, Projectile, WorldObject } from './objects';
-import { SHRINES } from '../data/shrines';
-import { objectName } from './containers';
+import { d2LevelOf, objectName } from './containers';
+import { shrineName } from './blessing';
+
+/** a D2 level's classic normal MonLvl (Levels.txt MonLvl, wMonLvl[0]): what its objects roll their traps and locks by */
+const MONLVL = new Map(D2X_AREAS.map((a) => [a.id, a.lvlClassic[0]]));
+const d2MonLvl = (level: number): number => MONLVL.get(level) ?? 0;
 
 /** the box an area's tiles fill on a level's map: first and last column (x) and row (z), inclusive */
 export interface AreaBox {
@@ -85,12 +93,22 @@ export class Level {
       o.dest = areaForDepth(depth + 1).id;
       this.objects.push(o);
     }
-    const shrineRng = new RNG(seed ^ 0x51ed);
+    // the shrines as D2 makes them (src/game/shrines.ts, world/shrinekinds.ts): a maze's with the
+    // kind it rolled as its object groups placed it; the wilderness's cells with their sub's object,
+    // its kind rolled here as InitFn01 rolls it in the D2 level of the area it stands in; an old map's
+    // as that level's are (oldShrineObject), none where D2 places none. The kinds on a seed of their
+    // own, D2's object control seed's stand-in (objgroups.ts ObjectRoller)
+    const control = new D2Seed((seed ^ 0x51ed) >>> 0);
+    const wildTurn = {};
     for (const s of L.shrines ?? []) {
-      // one of any kind, as the wilderness's are; a maze's kind (ShrineSpot.kind) is the O line's to honour
-      const def = shrineRng.pick(SHRINES);
-      const o = new WorldObject('shrine', { x: s.x, z: s.z }, def.name, 0.6);
-      o.shrine = def.id;
+      const lvl = d2LevelOf(this.areaAt(s.x, s.z));
+      // (a spot a map made by hand gives only its kind: as an object of that Parm0)
+      const d2 = s.d2 ?? (s.kind ? undefined : oldShrineObject(lvl, control, wildTurn));
+      if (d2 === undefined && !s.kind) continue;
+      const code = s.shrine ?? (d2 !== undefined ? rollShrine(d2, lvl, control) : rollShrineOfParm0(KIND_PARM0[s.kind!] ?? 0, lvl, control));
+      const o = new WorldObject('shrine', { x: s.x, z: s.z }, shrineName(code), 0.6);
+      if (d2 !== undefined) o.d2 = d2;
+      o.shrine = code;
       this.objects.push(o);
     }
     for (const e of L.exits ?? []) {
@@ -126,9 +144,16 @@ export class Level {
         this.objects.push(new WorldObject('stash', s.pos, '储物箱', 0.8));
       }
     }
-    // chests and barrels with what a maze's object groups say of them (objgroups.ts): the old
-    // generators' plain spots are plain chests and barrels, as ever
-    for (const c of L.chests) {
+    // chests and barrels with what a maze's object groups say of them (objgroups.ts). A chest a map
+    // names no object of (the overworld's, the old maps': the trial ground's floors, a rift's floors
+    // made by them) stands where D2 would put a preset's random chest: one of the act's thirteen,
+    // trapped and locked as it rolls them in the D2 level of the area it stands in (presetChestRoll,
+    // chestRolls: that level's classic normal MonLvl), on a seed of its own; a town's none, where D2
+    // has no chests. The old generators' barrels are plain, as ever
+    const chestSeed = new D2Seed((seed ^ 0xc4e57) >>> 0);
+    for (const spot of L.chests) {
+      const area = this.areaAt(spot.x, spot.z);
+      const c = spot.d2 !== undefined || area.kind === 'town' ? spot : { ...spot, ...presetChestRoll(chestSeed, chestRolls(d2MonLvl(d2LevelOf(area)))) };
       // what each is called when hovered: the rename tables' (containers.ts objectName, rule 5)
       const o = new WorldObject('chest', { x: c.x, z: c.z }, objectName('chest', c) ?? '', 0.45);
       if (c.d2 !== undefined) o.d2 = c.d2;

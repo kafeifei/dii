@@ -1,0 +1,21 @@
+{
+  "ShrId1": {"name":"恢复祭坛","nameEn":"Refilling Altar","en":"Refilling Shrine","official":"恢复圣坛","note":"Shrines.txt StringName 的字串键；官方简中、英文照 D2R 2.x 的 data/local/lng/strings/shrines.json（D2CE 没有这一份；和 objects.json 用的是同一版，3.x 改作「魔坛」，经典版繁中作「神殿」）。神龛一律把「圣坛」换成「祭坛」、Shrine 换成 Altar，前面的字照官方，老玩家靠它认是哪一种"},
+  "ShrId2": {"name":"生命祭坛","nameEn":"Health Altar","en":"Health Shrine","official":"生命圣坛"},
+  "ShrId3": {"name":"法力祭坛","nameEn":"Mana Altar","en":"Mana Shrine","official":"法力圣坛"},
+  "ShrId6": {"name":"护甲祭坛","nameEn":"Armor Altar","en":"Armor Shrine","official":"护甲圣坛"},
+  "ShrId7": {"name":"战斗祭坛","nameEn":"Combat Altar","en":"Combat Shrine","official":"战斗圣坛"},
+  "ShrId8": {"name":"抗火祭坛","nameEn":"Resist Fire Altar","en":"Resist Fire Shrine","official":"抗火圣坛"},
+  "ShrId9": {"name":"抗冰祭坛","nameEn":"Resist Cold Altar","en":"Resist Cold Shrine","official":"抗冰圣坛"},
+  "ShrId10": {"name":"抗雷祭坛","nameEn":"Resist Lightning Altar","en":"Resist Lightning Shrine","official":"抗雷圣坛"},
+  "ShrId11": {"name":"抗毒祭坛","nameEn":"Resist Poison Altar","en":"Resist Poison Shrine","official":"抗毒圣坛"},
+  "ShrId12": {"name":"技能祭坛","nameEn":"Skill Altar","en":"Skill Shrine","official":"技能圣坛"},
+  "ShrId13": {"name":"法力补充祭坛","nameEn":"Mana Recharge Altar","en":"Mana Recharge Shrine","official":"法力补充圣坛"},
+  "ShrId14": {"name":"耐力祭坛","nameEn":"Stamina Altar","en":"Stamina Shrine","official":"耐力圣坛"},
+  "ShrId15": {"name":"经验祭坛","nameEn":"Experience Altar","en":"Experience Shrine","official":"经验圣坛"},
+  "ShrId17": {"name":"传送祭坛","nameEn":"Portal Altar","en":"Portal Shrine","official":"传送圣坛"},
+  "ShrId18": {"name":"宝石祭坛","nameEn":"Gem Altar","en":"Gem Shrine","official":"宝石圣坛"},
+  "ShrId19": {"name":"火焰祭坛","nameEn":"Fire Altar","en":"Fire Shrine","official":"火焰圣坛"},
+  "ShrId20": {"name":"怪物祭坛","nameEn":"Monster Altar","en":"Monster Shrine","official":"怪物圣坛"},
+  "ShrId21": {"name":"爆炸祭坛","nameEn":"Exploding Altar","en":"Exploding Shrine","official":"爆炸圣坛"},
+  "ShrId22": {"name":"毒素祭坛","nameEn":"Poison Altar","en":"Poison Shrine","official":"毒素圣坛"}
+}

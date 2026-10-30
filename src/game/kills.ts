@@ -9,6 +9,7 @@ import { deathPenalty } from './d2/death';
 import { killXp } from './d2/xp';
 import { monsterLoot, type Finder } from './loot';
 import { emptyPacket, type Killer } from './actor';
+import { blessingBonus } from './blessing';
 import { monsterDied, notice } from './ai';
 import type { Game } from './game';
 import { Merc, fallWithHero, mercKillXp, mercOwnKill } from './merc';
@@ -18,7 +19,6 @@ import { castItemSkill } from './playerctl';
 import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
 import { debugOpts } from './debug';
-import { SHRINE_BY_ID } from '../data/shrines';
 
 /** a monster struck before it noticed the hero: it notices them, its pack with it, as seeing them has it (src/game/ai.ts notice) */
 export function wake(g: Game, m: Monster) {
@@ -63,7 +63,7 @@ export function killMonster(g: Game, m: Monster, elem: Elem, killer: Killer = 'h
   // none for a raised or summoned one, nor a drop (UNITFLAG_NOXP | UNITFLAG_NOTC), nor for one nobody killed
   // the hireling's share first, at the hero's level before this kill's (SUnitDmg.cpp:2981-2988)
   mercKillXp(g, m, killer);
-  const addPct = (p.shrine ? (SHRINE_BY_ID[p.shrine.id].xpPct ?? 0) : 0) + (p.stats.bag.xpPct ?? 0);
+  const addPct = blessingBonus(p.shrine).xpPct + (p.stats.bag.xpPct ?? 0);
   const gained = m.noXp || killer === null || killer === 'object' ? 0 : p.gainXp(Math.floor(killXp(m.xp, p.level, m.level, addPct) * debugOpts.xp));
   if (gained > 0) {
     onProc(g, 'procLevelUp', null);
@@ -178,6 +178,12 @@ export function killPlayer(g: Game) {
   p.life = 0;
   p.setState('dead');
   p.intent = null;
+  // a shrine's blessing goes with the death (D2Common_10469, D2StatList.cpp:1945-1970, from PlrModes.cpp:755:
+  // the states not kept through it, plrstaydeath, which no shrine's has)
+  if (p.shrine) {
+    p.shrine = null;
+    p.markDirty();
+  }
   // Diablo II's death penalty as the death starts (PLAYER_ApplyDeathPenalty: game/d2/death.ts):
   // min(level, 20) % of all the gold, the inventory's first, and in nightmare and hell some of
   // the level's experience; the gold left in the inventory drops by the body (leaveCorpse). The
