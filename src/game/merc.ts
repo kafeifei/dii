@@ -275,13 +275,20 @@ export function hasMerc(g: Game): boolean {
   return !!g.player.merc;
 }
 
-/** a spot beside the hero on this map, behind them a little, for her to come in at */
+/**
+ * a spot beside the hero on this map, behind them a little, for her to come in at, with an open way to
+ * it from the hero (TileMap.besideOpen). Approximate: D2 sets her at a free spawn spot found from her
+ * owner's (AiThink.cpp:9684-9696, PetMove's warp: MONSTERREGION_FindSpawnLocation). The walkable
+ * ground nearest the step alone (until 2026-10-30) was past the wall, tree or rock behind a hero who
+ * stood by one about one time in twenty, up to 3 m off and round it, in a dungeon in the next corridor
+ */
 function besideHero(g: Game): P2 {
   const p = g.player;
   const a = p.facing + Math.PI * 0.8;
-  const want = { x: p.pos.x + Math.sin(a) * 1.3, z: p.pos.z + Math.cos(a) * 1.3 };
-  return g.level.map.nearestWalkable(want.x, want.z) ?? { ...p.pos };
+  return g.level.map.besideOpen(p.pos, { x: Math.sin(a) * 1.3, z: Math.cos(a) * 1.3 }, BESIDE_CLEAR);
 }
+/** how wide her way from the hero must be open (as travel.ts CLEAR, the town portal's): not between two blocks that touch at a corner */
+const BESIDE_CLEAR = 0.25;
 
 /**
  * Her on the map the hero is on (Game.merc), each step before she acts: made from what the hero keeps

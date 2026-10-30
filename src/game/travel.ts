@@ -207,25 +207,7 @@ export function usePortal(g: Game, end: WorldObject): boolean {
  * portal stands by, as the walkable ground nearest the step alone can be); else the portal's own spot
  */
 function besidePortal(L: Level, o: WorldObject, step: P2): P2 {
-  const m = L.map;
-  const want = { x: o.pos.x + step.x, z: o.pos.z + step.z };
-  const near = m.nearestWalkable(want.x, want.z);
-  if (near && m.los(o.pos, near, CLEAR)) return near;
-  let best: P2 | null = null;
-  let bestD = Infinity;
-  for (const r of [0.8, 1.1, 1.4, 1.8, 2.3]) {
-    for (let k = 0; k < 16; k++) {
-      const a = (k / 16) * Math.PI * 2;
-      const c = { x: o.pos.x + Math.sin(a) * r, z: o.pos.z + Math.cos(a) * r };
-      const d = dist(c, want);
-      if (d < bestD && m.circleClear(c.x, c.z, 0.3) && m.los(o.pos, c, CLEAR)) {
-        best = c;
-        bestD = d;
-      }
-    }
-    if (best) return best;
-  }
-  return { ...o.pos };
+  return L.map.besideOpen(o.pos, step, CLEAR);
 }
 
 /** the hero's town portal gone, both its ends, wherever they are; the rifts' own ways (src/game/rift.ts) stay */
@@ -347,9 +329,12 @@ export function openTownPortal(g: Game) {
   closePortals(g);
   const p = g.player;
   const a = p.facing;
-  // a pace ahead, on open ground the hero can see (not past a wall or a tree they face), else where they stand
+  // a pace ahead, on open ground the hero can see (not past a wall or a tree they face) in the area
+  // they stand in, else where they stand: D2's opens by the hero, so in their own level, never over
+  // a seam (at Blood Moor's gate facing in, a pace ahead was the camp's ground: until 2026-10-30
+  // the far end opened in the camp, and led from the camp to the camp)
   let pt = { x: p.pos.x + Math.sin(a) * AHEAD, z: p.pos.z + Math.cos(a) * AHEAD };
-  if (!L.map.circleClear(pt.x, pt.z, 0.4) || !L.map.los(p.pos, pt, CLEAR)) pt = { ...p.pos };
+  if (!L.map.circleClear(pt.x, pt.z, 0.4) || !L.map.los(p.pos, pt, CLEAR) || L.areaAt(pt.x, pt.z).id !== L.areaAt(p.pos.x, p.pos.z).id) pt = { ...p.pos };
   const far = new WorldObject('portal', pt, '回城传送门', 0.6);
   far.dest = CAMP_AREA;
   L.objects.push(far);

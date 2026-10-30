@@ -6,6 +6,9 @@ export const T_WALL = 2;
 /** floor occupied by solid furniture: drawn as floor, blocks movement */
 export const T_PROP = 3;
 
+/** the rings round a spot, in metres, that TileMap.besideOpen looks on for one beside it: the last its reach */
+const BESIDE = [0.8, 1.1, 1.4, 1.8, 2.3];
+
 export class TileMap {
   readonly tiles: Uint8Array;
   readonly explored: Uint8Array;
@@ -73,6 +76,34 @@ export class TileMap {
       if (radius > 0 ? !this.circleClear(x, z, radius) : !this.walkableAt(x, z)) return false;
     }
     return true;
+  }
+
+  /**
+   * Where someone set down `step` from `from` stands: the walkable ground nearest that, if it is
+   * within reach of `from` (BESIDE: the step is about 1.3 m) and `from` has an open way to it (`los`
+   * `clear` wide); else the nearest spot to it round `from` that has one; else `from` itself. Never
+   * past a wall, a tree or a rock beside `from`, as the walkable ground nearest the step alone can be,
+   * nor farther off than a ring (travel.ts besidePortal, merc.ts besideHero)
+   */
+  besideOpen(from: P2, step: P2, clear: number): P2 {
+    const want = { x: from.x + step.x, z: from.z + step.z };
+    const near = this.nearestWalkable(want.x, want.z);
+    if (near && Math.hypot(near.x - from.x, near.z - from.z) <= BESIDE.at(-1)! && this.los(from, near, clear)) return near;
+    let best: P2 | null = null;
+    let bestD = Infinity;
+    for (const r of BESIDE) {
+      for (let k = 0; k < 16; k++) {
+        const a = (k / 16) * Math.PI * 2;
+        const c = { x: from.x + Math.sin(a) * r, z: from.z + Math.cos(a) * r };
+        const d = Math.hypot(c.x - want.x, c.z - want.z);
+        if (d < bestD && this.circleClear(c.x, c.z, 0.3) && this.los(from, c, clear)) {
+          best = c;
+          bestD = d;
+        }
+      }
+      if (best) return best;
+    }
+    return { ...from };
   }
 
   /** nearest walkable tile center to a world point (BFS-ish ring search) */

@@ -172,9 +172,23 @@ export default async (load) => {
       return out;
     };
     const pick = (list) => list[Math.floor(rnd() * list.length)];
-    /** nothing near the hero to cut the cast short */
+    /**
+     * nothing near the hero to cut the cast short: the monsters within 30 m killed, and what their
+     * deaths set off gone off before the cast, the hero standing again. A fire- or cold-enchanted
+     * leader bursts 0.45 s or 0.1 s after it dies (kills.ts): killed here and left to it, its burst
+     * struck the hero in the cast (on a rift's floor or the Cold Plains, about one run in twelve), the
+     * hit recovery cut the cast short and the tome opened nothing. So do the monsters' missiles still
+     * in flight
+     */
     const quiet = () => {
-      for (const m of game.level.monsters) if (!m.dead && dist(m.pos, p.pos) < 30) game.killMonster(m, 'phys');
+      const L = game.level;
+      const settled = () => !L.blasts.some((b) => b.faction === 'monster') && !L.projectiles.some((pr) => pr.faction === 'monster') && p.state === 'idle';
+      for (let i = 0; i < 5 * 60; i++) {
+        for (const m of L.monsters) if (!m.dead && dist(m.pos, p.pos) < 30) game.killMonster(m, 'phys');
+        if (settled()) return;
+        game.update(DT);
+      }
+      check(false, `the hero was not left standing quiet: ${L.blasts.length} blast(s), ${L.projectiles.filter((pr) => pr.faction === 'monster').length} monsters' missile(s) about, the hero ${p.state}`);
     };
 
     /** portal `o` walked to and used as a player clicks it (an interact intent: playerctl.ts), until the hero arrives somewhere by it */
@@ -182,19 +196,24 @@ export default async (load) => {
       p.intent = { kind: 'interact', obj: o };
       for (let i = 0; i < 30 * 60 && !told.levels && !told.jumps.length; i++) game.update(DT);
     };
-    /** a town portal cast where the hero stands, as a player reads it: its two ends, or null */
+    /**
+     * a town portal cast where the hero stands (quiet, standing), as a player reads it, once: its two
+     * ends, or null. The far end in the area the hero stands in (travel.ts openTownPortal: never a
+     * pace over a seam)
+     */
     const cast = (w) => {
       const L = game.level;
       const t = tome();
       const before = t.qty;
       const was = new Set(ends(L));
       const opened = () => ends(L).find((o) => !was.has(o) && !L.inTown(o.pos));
-      for (let k = 0; k < 5 && !opened(); k++) {
-        game.castTownPortal();
-        for (let i = 0; i < 90 && p.state === 'cast'; i++) game.update(DT);
-      }
+      const stood = L.areaAt(p.pos.x, p.pos.z);
+      game.castTownPortal();
+      const began = p.state;
+      for (let i = 0; i < 90 && p.state === 'cast'; i++) game.update(DT);
       const far = opened();
-      if (!holds(far && t.qty === before - 1, `${w}: the portal did not open from the tome (charges ${before} → ${t.qty})`)) return null;
+      if (!holds(far && t.qty === before - 1, `${w}: the portal did not open from the tome (charges ${before} → ${t.qty}; the hero ${began === 'cast' ? `began the cast, then ${p.state}` : `did not begin it, ${began}`}; ${ends(L).length - was.size} new end(s) on this map, ${ends(L).filter((o) => !was.has(o) && L.inTown(o.pos)).length} of them in the camp)`)) return null;
+      check(L.areaAt(far.pos.x, far.pos.z).id === stood.id, `${w}: the far end opened at ${f(far.pos)} in area ${L.areaAt(far.pos.x, far.pos.z).id}, the hero in area ${stood.id}`);
       // its ends as they stand on their maps, looked for as a player sees them (and as the game links them: Trip.portal)
       const campLevel = game.mapOf(CAMP_AREA);
       const camp = campLevel ? ends(campLevel).find((o) => campLevel.inTown(o.pos)) : undefined;
@@ -273,10 +292,7 @@ export default async (load) => {
         check(dist(p.pos, end.pos) <= STEP && w2 >= 0 && w2 <= WALK, `${w}: the hero came out at ${f(p.pos)}, ${dist(p.pos, end.pos).toFixed(2)} m from the camp's end, ${w2} tiles' walk`);
       }
       check(camp.objects.includes(end) && L.objects.includes(far), `${w}: in the camp the portal is not open at both ends`);
-      if (game.merc && !game.merc.dead) {
-        followed++;
-        check(dist(game.merc.pos, p.pos) < STEP, `${w}: the hireling is ${dist(game.merc.pos, p.pos).toFixed(1)} m from the hero in the camp`);
-      }
+      mercBeside(`${w}`, 'in the camp');
       inCamp?.();
 
       // ── back: to the camp's end on foot and through it ──
@@ -294,10 +310,19 @@ export default async (load) => {
       if (!jumped) check(monsters.every((m) => m.life === life.get(m) || m.dead), `${w}: the map's monsters were healed while the hero was away`);
       if (die) check(p.corpses.some((c) => c.level === L && c.pos && dist(c.pos, far.pos) < 4), `${w}: the body is not by the portal the hero came back through`);
       step(1);
-      if (game.merc && !game.merc.dead) {
-        followed++;
-        check(dist(game.merc.pos, p.pos) < STEP, `${w}: the hireling is ${dist(game.merc.pos, p.pos).toFixed(1)} m from the hero back by the far end`);
-      }
+      mercBeside(`${w}`, 'back by the far end');
+    };
+    /**
+     * the hireling, alive, beside the hero after a jump, with nothing between them (merc.ts
+     * besideHero: until 2026-10-30 she could come in past the wall, tree or rock behind a hero by
+     * one, up to 3 m off)
+     */
+    const mercBeside = (w, where) => {
+      if (!game.merc || game.merc.dead) return;
+      followed++;
+      const d = dist(game.merc.pos, p.pos);
+      const open = game.level.map.los(p.pos, game.merc.pos);
+      check(d < STEP && open, `${w}: the hireling is ${d.toFixed(1)} m from the hero ${where}${open ? '' : ', something between them'}`);
     };
 
     /**
@@ -324,10 +349,17 @@ export default async (load) => {
         game.teleportWithin(pick(all));
         const stood = { ...p.pos };
         p.facing = rnd() * Math.PI * 2;
+        const stoodIn = L.areaAt(stood.x, stood.z).id;
         game.openTownPortal();
         const far = ends(L).find((o) => !L.inTown(o.pos));
-        if (!holds(far, `${w}: no portal opened`)) continue;
+        if (!holds(far, `${w}: no portal opened out here at ${f(stood)} facing ${p.facing.toFixed(2)} (${ends(L).filter((o) => L.inTown(o.pos)).length} end(s) in the camp)`)) {
+          closeUp();
+          continue;
+        }
         quick++;
+        // in the hero's own area: at Blood Moor's gate facing in, a pace ahead was the camp's ground,
+        // and the far end opened there (travel.ts openTownPortal, until 2026-10-30)
+        check(L.areaAt(far.pos.x, far.pos.z).id === stoodIn, `${w}: the far end opened at ${f(far.pos)} in area ${L.areaAt(far.pos.x, far.pos.z).id}, the hero in area ${stoodIn}`);
         const w1 = walk(L, stood, far.pos);
         check(dist(stood, far.pos) <= AHEAD + 1e-6 && w1 >= 0 && w1 <= WALK, `${w}: the far end opened at ${f(far.pos)}, ${dist(stood, far.pos).toFixed(2)} m from the hero at ${f(stood)} and ${w1} tiles' walk`);
         game.interact(far);
@@ -443,6 +475,7 @@ export default async (load) => {
       // ── a reload in the camp: the same world made anew, no portal left at either end ──
       home();
       game.teleportWithin(pick(spots(COLD_PLAINS, true)));
+      quiet();
       const before = cast(`${W}, before the reload`);
       reset();
       if (before) useOnFoot(before.far);
