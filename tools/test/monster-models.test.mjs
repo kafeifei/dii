@@ -1,6 +1,8 @@
 // The Act 1 bodies brought in for D2's monsters (tools/meshy-merge.mjs mon_rogue_fallen,
 // tools/tripo-merge.mjs mon_quillrat) and how src/render/specs.ts dresses them: the hunter's
-// one-handed weapon and shield rolled from every piece D2 lists (MonStats2 RHv / SHv), the
+// one-handed weapon rolled from every piece D2 lists (MonStats2 RHv), her shield, a skeleton's and a
+// Fallen's the one the game rolled from their SHv (Monster.shield, which blocks: none for nil or a
+// torch), Blood Raven on her own body with her long bow, her clips built, the
 // spearwoman's spear and the ranger's bow aimed at the attack's landing, every model named one the
 // game builds. The quill rat as merged: small, its walk one loop, the hind right leg (misnamed by
 // Tripo) stepping as the left one mirrored half a step later, and src/render/legs.ts QuadRig finding
@@ -21,13 +23,20 @@ export default async (load) => {
   const problems = [];
   const check = (ok, what) => ok || problems.push(what);
   const built = new Set(MODEL_KEYS);
-  const mon = (model, id = 1) => ({ id, def: { model, scale: 1 }, rank: 'normal' });
+  const { Monster } = await load('/src/game/monster.ts');
+  const mon = (model, id = 1, shield = null) => ({ id, def: { model, scale: 1 }, rank: 'normal', shield });
+  /** the shield-hand piece the game rolls for a monster of row `row` standing at spot `k` (Monster.shield) */
+  const pieceAt = (row, k) => new Monster(row, 2, 'normal', { x: 3 + k * 0.37, z: 5 + k * 0.61 }).shield;
 
-  // the hunter: over many monsters, every weapon look and with and without a shield
+  // the hunter: over many monsters, every weapon look and with and without a shield, the one the game rolled (MonStats2 SHv)
   const held = new Set();
   let shields = 0;
   for (let id = 1; id <= 300; id++) {
-    const s = monsterSpec(mon('corruptrogue', id));
+    const piece = pieceAt('corruptrogue1', id);
+    const s = monsterSpec(mon('corruptrogue', id, piece));
+    const drawn = s.attach.find((a) => a.hand === 'l' && a.hold === 'shield')?.model ?? null;
+    const want = piece ? { buc: 'skeleton_shield_small_a', lrg: 'skeleton_shield_large_a', kit: 'skeleton_shield_large_a' }[piece] : null;
+    check(drawn === want, `hunter ${id} holds ${piece}, drawn ${drawn}`);
     check(s.model === 'mon_rogue_fallen' && s.clips.attack[0] === 'Attack', `hunter ${id}: ${s.model} ${s.clips.attack}`);
     const r = s.attach.find((a) => a.hand === 'r');
     held.add(r.model);
@@ -37,6 +46,38 @@ export default async (load) => {
   for (const w of ['axe_1handed', 'w_club', 'w_mace', 'skeleton_blade', 'w_hammer']) check(held.has(w), `no hunter carries ${w}`);
   // SHv: nil and three shields
   check(shields > 180 && shields < 270, `${shields}/300 hunters with a shield, about 3/4 expected`);
+  // skeletons (SHv nil, buc, lrg, kit, sml) and the Fallen (nil, sml, buc, tch: a torch is no shield)
+  // hold the shield the game rolled, the small ones small, the large and the kite large
+  const SH = { buc: 'skeleton_shield_small_a', sml: 'skeleton_shield_small_a', lrg: 'skeleton_shield_large_a', kit: 'skeleton_shield_large_a' };
+  const shielded = {};
+  for (const [row, model, lo, hi] of [
+    ['skeleton1', 'skeleton', 0.7, 0.9],
+    ['fallen1', 'imp', 0.38, 0.62],
+  ]) {
+    let n = 0;
+    for (let k = 1; k <= 300; k++) {
+      const piece = pieceAt(row, k);
+      const sp = monsterSpec(mon(model, k, piece));
+      const drawn = sp.attach.find((a) => a.hand === 'l' && a.hold === 'shield')?.model ?? null;
+      check(drawn === (SH[piece] ?? null), `${row} ${k} holds ${piece}, drawn ${drawn}`);
+      if (drawn) n++;
+    }
+    check(n > lo * 300 && n < hi * 300, `${n}/300 of ${row} with a shield`);
+    shielded[row] = n;
+  }
+  // Blood Raven: her own body and her long war bow in her left hand, aimed as she shoots; her Nest on Cast
+  const raven = monsterSpec(mon('bloodraven'));
+  const longBow = raven.attach?.[0];
+  check(raven.model === 'mon_bloodraven' && built.has('mon_bloodraven'), `Blood Raven drawn as ${raven.model}`);
+  check(typeof longBow?.model === 'function' && longBow.hand === 'l' && longBow.aim && raven.clips.attack[0] === 'Shoot' && raven.clips.cast?.[0] === 'Cast' && raven.clips.hit?.[0] === 'Hit' && raven.clips.death[0] === 'Death', `Blood Raven's bow ${JSON.stringify(longBow && { hand: longBow.hand, aim: longBow.aim })}, clips ${JSON.stringify(raven.clips)}`);
+  const { LONG_BOW } = await load('/src/render/specs.ts');
+  const bow3 = longBow.model();
+  const bowLen = new THREE.Box3().setFromObject(bow3).getSize(new THREE.Vector3()).y;
+  check(Math.abs(bowLen - LONG_BOW) < 0.1, `her bow ${bowLen.toFixed(2)} m tip to tip, the long bow's ${LONG_BOW}`);
+  // the clips in the built file, read off its glTF JSON chunk
+  const glb = fs.readFileSync('public/models/mon_bloodraven.glb');
+  const ravenClips = JSON.parse(glb.subarray(20, 20 + glb.readUInt32LE(12)).toString()).animations.map((a) => a.name);
+  for (const c of ['Idle', 'Walk', 'Run', 'Shoot', 'Cast', 'Hit', 'Death']) check(ravenClips.includes(c), `mon_bloodraven has no ${c} clip (${ravenClips})`);
   const lancer = monsterSpec(mon('cr_lancer'));
   const spear = lancer.attach[0];
   check(spear.model === 'w_spear' && spear.hold === 'level' && spear.aim && lancer.clips.attack[0] === 'Thrust', `spearwoman ${JSON.stringify(lancer.attach)} ${lancer.clips.attack}`);
@@ -53,7 +94,6 @@ export default async (load) => {
   const { D2X_AREAS } = await load('/src/data/d2x/areas.ts');
   const { D2X_MONSTERS } = await load('/src/data/d2x/monsters.ts');
   const { D2X_SUPERUNIQUES } = await load('/src/data/d2x/superuniques.ts');
-  const { Monster } = await load('/src/game/monster.ts');
   const can = new Set(['smith', 'bloodraven', 'andariel', 'zombie2']);
   for (const a of areaList()) {
     const row = D2X_AREAS.find((x) => x.id === a.id);
@@ -159,5 +199,5 @@ export default async (load) => {
   }
 
   if (problems.length) throw new Error(problems.join('\n'));
-  console.log(`  hunter weapons ${[...held].join(', ')}; ${shields}/300 with shields; ${paced} kinds' and the heroes' moves at D2's speeds keep their feet; quill rat ${tris} triangles, ${(fs.statSync(file).size / 1024).toFixed(0)} KB, hind paws mirrored within ${worst.toFixed(3)}`);
+  console.log(`  hunter weapons ${[...held].join(', ')}; ${shields}/300 with shields, ${shielded.skeleton1}/300 skeletons, ${shielded.fallen1}/300 Fallen, as the game rolls them; Blood Raven on her own body with a ${bowLen.toFixed(2)} m bow; ${paced} kinds' and the heroes' moves at D2's speeds keep their feet; quill rat ${tris} triangles, ${(fs.statSync(file).size / 1024).toFixed(0)} KB, hind paws mirrored within ${worst.toFixed(3)}`);
 };

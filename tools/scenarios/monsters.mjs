@@ -13,7 +13,9 @@
 // raising its fallen once the corpse lies dead, quill rats shooting their quills, the spearmaiden
 // striking from farther than the huntmaiden, a pack noticing the hero as one, Bishibosh raising his,
 // and enchanted uniques: lightning's charged bolts when hit, fire's burst and cold's frost ring as
-// they die, multiple shots' three quills, the cursed one's Amplify Damage, an aura's.
+// they die, multiple shots' three quills, the cursed one's Amplify Damage, an aura's. The west
+// block (M2a): the Burial Grounds' Blood Raven on her own body, her Nest raising a zombie at her feet
+// and the undead round her falling as she dies; a foul crow nest in Stony Field hatching its crows.
 // Page and console errors fail the run. The last line is "MONSTERS OK <summary>" or "MONSTERS FAIL <reasons>".
 const MOOR = 2;
 const PLAINS = 3;
@@ -268,14 +270,138 @@ export default async function (page, shot, log) {
     return true;
   };
 
-  /** sim-time steps of the page's own frames: `ms` of waiting, the hero held, `poll` each 100 ms until it returns something */
-  const watch = async (ms, poll) => {
+  /** sim-time steps of the page's own frames: `ms` of waiting, the hero held, `poll` (given `arg`) each 100 ms until it returns something */
+  const watch = async (ms, poll, arg) => {
     for (let t = 0; t < ms; t += 100) {
       await page.waitForTimeout(100);
-      const r = await ev(poll ?? (() => (window.__mon.hold(), undefined)));
+      const r = await ev(poll ?? (() => (window.__mon.hold(), undefined)), arg);
       if (r !== undefined && r !== null && r !== false) return r;
     }
     return null;
+  };
+
+  /**
+   * The Burial Grounds' Blood Raven (the preset one, the only one with a quest): her own body and long
+   * bow; up close she casts her Nest and a zombie gets up at her feet, no one's minion (shot); killed,
+   * the undead within 35 subtiles of her fall 1–5 s later, nobody's kill (no experience, no drop)
+   */
+  const bloodRaven = async () => {
+    const r0 = await ev(() => {
+      const S = window.__mon;
+      if (!game.travelToArea(17)) return { error: 'no Burial Grounds' };
+      const L = game.level;
+      const ravens = L.monsters.filter((m) => m.def.id === 'bloodraven');
+      const b = ravens[0];
+      if (ravens.length !== 1 || !b) return { error: `${ravens.length} Blood Ravens on the overworld` };
+      if (![2.6, 3.2, 2].some((r) => S.beside(b, r, 3.8))) return { error: 'no spot by Blood Raven' };
+      // her chance at a Nest over 100 % from her next thought on, her roar done
+      b.awake = true;
+      b.taunted = true;
+      b.aiCount = 1000;
+      b.thinkTimer = 0;
+      S.raven = { b, tally: b.aiTally, xp: 0, ground: 0 };
+      return { quest: b.quest, model: b.def.model, voice: b.def.voice, level: b.level, life: b.maxLife, party: b.pack.filter((m) => m !== b && !m.dead).length };
+    });
+    if (r0.error) return expect(false, r0.error);
+    log(`Blood Raven in the Burial Grounds: quest ${r0.quest}, the ${r0.model} look, cry ${r0.voice}, level ${r0.level}, ${r0.life} life, ${r0.party} of her party about`);
+    expect(r0.quest === 'a1q2' && r0.model === 'bloodraven', `the Burial Grounds' Blood Raven: quest ${r0.quest}, look ${r0.model}`);
+    // her cast's moment: a zombie of hers at her feet (polled each 100 ms; the shot as it gets up)
+    const up = await watch(6000, () => {
+      const S = window.__mon;
+      const b = S.raven.b;
+      S.hold();
+      b.aiCount = 1000;
+      const z = game.level.monsters.find((m) => m.def.id === 'zombie2' && m.noXp && !m.dead && S.dist(m.pos, b.pos) < 0.6);
+      return z ? { off: S.dist(z.pos, b.pos) / S.A.subtiles(1), mine: z.leader === b || b.minions.includes(z), rising: z.thinkTimer, tally: b.aiTally } : null;
+    });
+    if (!expect(up, 'Blood Raven raised no zombie in 6 s')) return;
+    await frames();
+    await shot('raven-raise');
+    log(`  her Nest: a zombie ${up.off.toFixed(1)} subtiles from her feet, ${up.mine ? 'HERS' : "no one's"}, getting up for ${up.rising.toFixed(1)} s more; ${up.tally} cast so far`);
+    expect(up.off <= 2.5 && !up.mine, `her zombie ${up.off.toFixed(1)} subtiles off, hers ${up.mine}`);
+    // the rest of her count, then her death: the undead round her fall, nobody's kill
+    const d = await ev(() => {
+      const S = window.__mon;
+      const L = game.level;
+      const b = S.raven.b;
+      const p = game.player;
+      const r = S.A.subtiles(35);
+      const undead = L.monsters.filter((m) => !m.dead && m !== b && m.def.undead && S.dist(m.pos, b.pos) <= r);
+      const beyond = L.monsters.filter((m) => !m.dead && m.def.undead && S.dist(m.pos, b.pos) > r + 0.3 && S.dist(m.pos, b.pos) < r + 6);
+      game.killMonster(b, 'phys');
+      S.raven.undead = undead;
+      S.raven.beyond = beyond;
+      S.raven.xp = p.xp;
+      S.raven.ground = L.ground.length;
+      S.raven.t0 = game.time;
+      return { undead: undead.length, beyond: beyond.length };
+    });
+    log(`  killed: ${d.undead} undead within 35 subtiles of her, ${d.beyond} just past it`);
+    // by the game's clock (a slow page's frames carry less of it than the wall's)
+    const since = (secs) => watch(20000, (secs) => (window.__mon.hold(), game.time - window.__mon.raven.t0 >= secs || null), secs);
+    await since(0.8);
+    const early = await ev(() => window.__mon.raven.undead.filter((m) => m.dead).length);
+    await since(5.2);
+    const after = await ev(() => {
+      const S = window.__mon;
+      const R = S.raven;
+      return { fell: R.undead.filter((m) => m.dead).length, stood: R.beyond.filter((m) => !m.dead).length, xp: game.player.xp - R.xp, ground: game.level.ground.length - R.ground };
+    });
+    await frames();
+    await shot('raven-dead');
+    log(`  ${early} of them down within 0.8 s, ${after.fell} of ${d.undead} by 5.2 s; ${after.stood} of ${d.beyond} past 35 subtiles standing; ${after.xp} experience and ${after.ground} drops from their fall`);
+    expect(early === 0 && after.fell === d.undead && after.xp === 0 && after.ground === 0, `her dead: ${early} fell within 0.8 s, ${after.fell}/${d.undead} by 5.2 s, ${after.xp} experience, ${after.ground} drops`);
+    facts.push(`Blood Raven's Nest at her feet, ${after.fell} undead fell with her`);
+  };
+
+  /**
+   * A foul crow nest in Stony Field (one of its own, else one set down in a clearing): the hero within
+   * 20 subtiles, it hatches a crow at its exit every 100 frames (shot as one comes out), no one's minion
+   */
+  const crowNest = async () => {
+    const r0 = await ev(() => {
+      const S = window.__mon;
+      if (!game.travelToArea(4)) return { error: 'no Stony Field' };
+      const L = game.level;
+      // one of its own away from Rakanishu's pack at the cairn, else one set down in a clearing
+      let n = L.monsters.find((m) => m.def.id === 'crownest1' && !m.dead && L.areaAt(m.pos.x, m.pos.z).id === 4 && !L.monsters.some((o) => o.superUnique && S.dist(o.pos, m.pos) < 15));
+      const own = !!n;
+      if (!n || ![3, 2.5, 3.5].some((r) => S.beside(n, r, 3.8))) {
+        if (!S.clearing(4, 3.8)) return { error: 'no clearing in Stony Field' };
+        n = S.place('crownest1', 3, -1);
+      }
+      // what stood round it gone, for a clear look at the crows coming out
+      L.monsters = L.monsters.filter((m) => m === n || m.dead || S.dist(m.pos, n.pos) > 10);
+      // hatched in a while if never yet: its timer from now
+      n.aiStamp = L.time - 3;
+      n.thinkTimer = 0;
+      S.nest = { n, seen: new Set(), at: [] };
+      return { own, tally: n.aiTally, d: S.dist(n.pos, game.player.pos) / S.A.subtiles(1) };
+    });
+    if (r0.error) return expect(false, r0.error);
+    log(`a foul crow nest in Stony Field (${r0.own ? 'its own' : 'set down'}), the hero ${r0.d.toFixed(1)} subtiles off, ${r0.tally} hatched before`);
+    const poll = () => {
+      const S = window.__mon;
+      const N = S.nest;
+      S.hold();
+      const exit = { x: N.n.pos.x, z: N.n.pos.z + S.A.subtiles(3) };
+      for (const c of game.level.monsters) {
+        if (c.def.id !== 'foulcrow1' || !c.noXp || N.seen.has(c)) continue;
+        N.seen.add(c);
+        N.at.push({ t: game.time, off: S.dist(c.pos, exit) / S.A.subtiles(1), mine: c.leader !== null });
+        return N.at[N.at.length - 1];
+      }
+      return null;
+    };
+    const first = await watch(4000, poll);
+    if (!expect(first, 'the nest hatched nothing in 4 s')) return;
+    await frames();
+    await shot('nest-hatch');
+    const second = await watch(15000, poll);
+    const gap = second ? second.t - first.t : null;
+    log(`  a crow ${first.off.toFixed(1)} subtiles from its exit, ${first.mine ? 'a minion' : "no one's"}; the next ${gap === null ? 'never' : `${gap.toFixed(1)} s later`}`);
+    expect(first.off <= 2.5 && !first.mine && gap !== null && gap >= 3.9, `the nest: a crow ${first.off.toFixed(1)} subtiles off its exit, a minion ${first.mine}, the next ${gap}`);
+    facts.push(`the nest hatched ${gap === null ? 1 : 2} ${gap === null ? '' : `${gap.toFixed(1)} s apart`}`);
   };
 
   /** a Fallen pack 3 m off: one dies, the rest run from the hero; the hero comes on, they come back and strike */
@@ -669,6 +795,10 @@ export default async function (page, shot, log) {
   await packWake();
   await enchanted();
 
+  // ── the west block: Blood Raven in the Burial Grounds, a foul crow nest in Stony Field ──
+  await bloodRaven();
+  await crowNest();
+
   // ── the Den of Evil ──
   await ev(() => {
     const L = game.level;
@@ -737,7 +867,8 @@ export default async function (page, shot, log) {
         const mine = game.level.projectiles.filter((x) => x.owner === B.b);
         for (const x of mine) B.shots.add(x.id);
         B.most = Math.max(B.most, mine.length);
-        B.summoned = B.b.minions.filter((m) => m.noXp).length;
+        // her Nest's zombies are no one's minions: her own count of them (Monster.aiTally)
+        B.summoned = B.b.aiTally;
         return { attacking: B.b.state === 'attack' || B.b.state === 'cast' || mine.length > 0 };
       });
       if (s.attacking && !shotTaken && i >= 5) {
