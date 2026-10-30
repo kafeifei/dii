@@ -2,25 +2,36 @@
 // tiers, Act 1's eleven stretches in each difficulty, every area and guardian one the game has.
 // Which tiers are open: one past the furthest cleared. The shared record of cleared tiers: two tabs
 // clearing at once both keep theirs, a newer version's is never written. Every tier's floors: its
-// areas' monsters at their levels in its difficulty, the guardian held back. Then a rift played: the
-// obelisk, the way in, the hero under the tier's rules there and the played difficulty's again in the
-// camp, the progress filling and the guardian coming, its death clearing the tier for every hero, a
-// body left in a rift brought to the camp once it closes, a save made in one resuming in the camp.
+// areas' monsters at their levels in its difficulty, the guardian held back. A dungeon's floor (the
+// Den, the Cave's two levels, the Crypt, the Mausoleum) is the maze the game grows it as
+// (DUNGEON_MAKERS) from the floor's seed in the tier's difficulty, the same for the same seed, its
+// light (a cave's none, a crypt's torches) and D2's objects with it, its chests dropping as the
+// source's do in the tier's difficulty; every tile of it walked to from the start, the ways back and
+// on, where the hero comes up beside the way on, the guardian and the way out it leaves among them.
+// Then a rift played: the obelisk, the way in, the hero under the tier's rules there and the played
+// difficulty's again in the camp, the progress filling and the guardian coming, its death clearing
+// the tier for every hero, the Den's floor another Den than the game's own; a dungeon tier (the
+// Cave's) played through its floors by their ways; a rift begun on a crypt, its way home at the
+// maze's way up; a body left in a rift brought to the camp once it closes, a save made in one
+// resuming in the camp.
 import assert from 'node:assert/strict';
 
 export default async (load) => {
   const R = await load('/src/world/rift.ts');
+  const { riftFloorMap } = await load('/src/game/rift.ts');
+  const { DUNGEON_MAKERS, levelSeed } = await load('/src/game/maps.ts');
   const { RiftProgress } = await load('/src/game/riftsave.ts');
   const { Level } = await load('/src/game/level.ts');
   const { spawnGuardian } = await load('/src/game/spawn.ts');
   const { monsterLootTc } = await load('/src/game/loot.ts');
+  const { chestTc } = await load('/src/items/d2/treasure.ts');
   const { RNG } = await load('/src/core/math.ts');
   const { D2X_AREAS } = await load('/src/data/d2x/areas.ts');
   const { D2X_SUPERUNIQUES } = await load('/src/data/d2x/superuniques.ts');
   const { D2X_MONSTERS } = await load('/src/data/d2x/monsters.ts');
   const { monsterDef } = await load('/src/data/monsters.ts');
   const { spawnLevel } = await load('/src/game/d2/monstats.ts');
-  const { CAMP_AREA, areaDef, isBuilt } = await load('/src/world/areas.ts');
+  const { CAMP_AREA, areaDef, areaLevel, isBuilt } = await load('/src/world/areas.ts');
   const { WILD_MAPS, bfsDistances } = await load('/src/world/levelgen.ts');
   const { Game } = await load('/src/game/game.ts');
   const { Sfx } = await load('/src/audio/sfx.ts');
@@ -79,6 +90,9 @@ export default async (load) => {
   const counts = [];
   let t0 = performance.now();
   let slowest = 0;
+  const mazes = new Map();
+  const tilesOf = (L) => Buffer.from(L.map.tiles).toString('base64');
+  const objectsOf = (L) => JSON.stringify(L.objects.map((o) => [o.kind, o.d2, Math.round(o.pos.x * 10), Math.round(o.pos.z * 10)]));
   for (const t of T) {
     const rng = new RNG(1000 + t.n);
     const plan = R.riftPlan(t, rng);
@@ -86,16 +100,69 @@ export default async (load) => {
     let total = 0;
     plan.forEach((source, i) => {
       const t1 = performance.now();
+      const seed = 77 + t.n * 10 + i;
       const area = R.riftFloorArea(t, i + 1, source);
-      const { layout, down } = R.riftFloorLayout(area, source, 77 + i);
-      const L = new Level(WILD_MAPS, 77 + i, layout, t.difficulty);
+      const f = riftFloorMap(t, area, source, seed);
+      const { layout, down } = f;
+      const L = new Level(WILD_MAPS, seed, layout, t.difficulty);
       slowest = Math.max(slowest, performance.now() - t1);
       const what = `tier ${t.n} floor ${i + 1} (area ${source})`;
       assert.ok(!L.objects.some((o) => o.kind === 'waypoint' || o.kind === 'stairs' || o.kind === 'exit'), `${what}: an old map's way is left`);
       assert.ok(L.map.walkableAt(down.x, down.z), `${what}: the way down isn't on the floor`);
       const reach = bfsDistances(L.map, L.layout.start);
-      assert.ok(reach[Math.floor(down.z) * L.map.w + Math.floor(down.x)] >= 0, `${what}: the way down can't be walked to`);
+      const walked = (p) => reach[Math.floor(p.z) * L.map.w + Math.floor(p.x)] >= 0;
+      /** a spot the hero is set down at (Game.arrival, placePlayer: the nearest walkable tile), walked to from the start */
+      const setDown = (p) => {
+        const q = L.map.nearestWalkable(p.x, p.z);
+        return !!q && walked(q) && Math.hypot(q.x - p.x, q.z - p.z) < 1.5;
+      };
+      assert.ok(walked(down), `${what}: the way down can't be walked to`);
       assert.ok(L.monsters.length > 0, `${what}: no monsters`);
+      assert.ok(L.layout.areaOf.every((a) => a === area.id), `${what}: a tile of another area`);
+      if (DUNGEON_MAKERS[source]) {
+        // the source's maze, from the floor's seed in the tier's difficulty, the same again for it
+        const own = DUNGEON_MAKERS[source](seed, t.difficulty);
+        assert.equal(Buffer.from(layout.map.tiles).toString('base64'), Buffer.from(own.map.tiles).toString('base64'), `${what}: not the source's maze`);
+        assert.equal(layout.theme.key, own.theme.key);
+        const again = new Level(WILD_MAPS, seed, riftFloorMap(t, area, source, seed).layout, t.difficulty);
+        assert.equal(tilesOf(again), tilesOf(L), `${what}: one seed, two maps`);
+        assert.equal(objectsOf(again), objectsOf(L), `${what}: one seed, two sets of objects`);
+        assert.deepEqual([again.layout.start, again.monsters.length], [L.layout.start, L.monsters.length], `${what}: one seed, another start or other monsters`);
+        // a cave lit by the hero alone, a crypt by its torches (src/world/maze.ts)
+        const cave = D2X_AREAS.find((a) => a.id === source).levelType === 3;
+        assert.equal(layout.theme.key, cave ? 'grotto' : 'crypt', `${what}: the look ${layout.theme.key}`);
+        if (cave) assert.equal(layout.torches.length, 0, `${what}: torches in a cave`);
+        else assert.ok(layout.torches.length > 0, `${what}: no torches in a crypt`);
+        // D2's objects, from the Layout's fields
+        const kinds = (k) => L.objects.filter((o) => o.kind === k).length;
+        assert.deepEqual([kinds('chest'), kinds('barrel'), kinds('shrine'), kinds('casket'), kinds('remains'), kinds('well')], [layout.chests.length, layout.barrels.length, layout.shrines?.length ?? 0, layout.caskets?.length ?? 0, layout.remains?.length ?? 0, layout.wells?.length ?? 0], `${what}: objects missing`);
+        assert.ok(L.objects.some((o) => o.d2 !== undefined), `${what}: no object of D2's`);
+        // a chest drops as the source's, in the tier's difficulty (loot.ts chestDrop)
+        const d = t.difficulty;
+        assert.equal(chestTc({ id: area.id, alvl: areaLevel(area, d) }, d).name, chestTc({ id: source, alvl: areaLevel(areaDef(source), d) }, d).name, `${what}: a chest drops as another area's`);
+        // every tile walked to from the start (the guardian comes and its way out opens wherever the
+        // hero is: src/game/rift.ts summon, complete); the ways back and on where the dungeon's are
+        let tiles = 0;
+        let reached = 0;
+        for (let k = 0; k < reach.length; k++) {
+          if (!L.map.walkable(k % L.map.w, Math.floor(k / L.map.w))) continue;
+          tiles++;
+          if (reach[k] >= 0) reached++;
+        }
+        assert.equal(reached, tiles, `${what}: ${tiles - reached} of ${tiles} tiles not walked to from the start`);
+        const up = own.entrances.find((e) => e.kind === 'up');
+        assert.ok(f.up && Math.hypot(f.up.pos.x - up.x, f.up.pos.z - up.z) < 0.01 && setDown(f.up.pos), `${what}: the way back isn't the way up`);
+        assert.ok(setDown({ x: f.up.pos.x + f.up.inward.x * 2.5, z: f.up.pos.z + f.up.inward.z * 2.5 }), `${what}: coming down, the hero isn't by the way back`);
+        const on = own.entrances.find((e) => e.kind === 'cave');
+        if (on) assert.ok(Math.hypot(down.x - on.x, down.z - on.z) < 0.01, `${what}: the way on isn't the way down`);
+        else assert.ok(reach[Math.floor(down.z) * L.map.w + Math.floor(down.x)] >= 0.75 * Math.max(...reach), `${what}: the way on isn't at the far end`);
+        assert.ok(f.downIn && setDown({ x: down.x + f.downIn.x * 2.5, z: down.z + f.downIn.z * 2.5 }), `${what}: coming up, the hero isn't by the way on`);
+        // the guardian at the far end, and the way out where it falls (src/game/rift.ts complete)
+        const boss = spawnGuardian(L, area, t.segment.guardian, down, new RNG(9));
+        assert.ok(boss && walked(boss.pos) && setDown(boss.pos), `${what}: the guardian came where the hero can't walk`);
+        L.monsters.splice(L.monsters.indexOf(boss));
+        mazes.set(source, (mazes.get(source) ?? 0) + 1);
+      }
       const row = D2X_AREAS.find((x) => x.id === source);
       const kinds = new Set([...(t.difficulty ? row.nmon : row.mon), ...row.umon]);
       for (const m of L.monsters) {
@@ -167,6 +234,12 @@ export default async (load) => {
   assert.equal(game.level, run.floors[0], 'the way in led elsewhere');
   assert.equal(game.rift.floorHere(), 1);
   assert.equal(p.ruled, 0);
+  // its second floor is a Den of the maze, on the floor's own seed: another Den than the game's
+  const den = run.floors[1];
+  assert.equal(run.areas[1].rift.source, 8);
+  assert.ok(den.layout.theme.key === 'grotto' && den.layout.torches.length === 0, `the Den's floor is ${den.layout.theme.key} with ${den.layout.torches.length} torches`);
+  assert.notEqual(tilesOf(den), Buffer.from(DUNGEON_MAKERS[8](levelSeed(game.worldSeed, 8), 0).map.tiles).toString('base64'), 'the rift\'s Den is the game\'s');
+  assert.ok(!game.maps.kept().includes(den), 'the rift\'s Den is one of the game\'s maps');
   // every floor's ways: home from the first, up and down between them
   run.floors.forEach((L, i) => {
     const ways = L.objects.filter((o) => o.rift === 'home' || o.kind === 'stairs');
@@ -222,6 +295,55 @@ export default async (load) => {
   assert.ok(Math.hypot(p.pos.x - ob2.pos.x, p.pos.z - ob2.pos.z) < 3, 'came out far from the obelisk');
   assert.ok(!game.level.objects.some((o) => o.rift === 'in'), 'the way in stayed');
 
+  // a dungeon tier played through: the Cave's (Cold Plains, its two levels), floor by floor by their
+  // ways, each floor's kills its share; on a maze floor the hero comes on by its way back and walks
+  // to its way on; the guardian comes on the last, and its way out is walked to from the start
+  assert.ok(game.rift.begin(2));
+  const run2 = game.rift.run;
+  game.interact(camp.objects.find((o) => o.rift === 'in'));
+  assert.ok(run2.areas.some((a) => DUNGEON_MAKERS[a.rift.source]), `tier 2's floors are ${run2.areas.map((a) => a.rift.source)}`);
+  const walkedOn = (L, from, to) => bfsDistances(L.map, from)[Math.floor(to.z) * L.map.w + Math.floor(to.x)] >= 0;
+  run2.floors.forEach((L, i) => {
+    const what = `tier 2 floor ${i + 1} (area ${run2.areas[i].rift.source})`;
+    assert.equal(game.level, L, `${what}: not there`);
+    const back = L.objects.find((o) => (i ? o.kind === 'stairs' && o.dest === run2.areas[i - 1].id : o.rift === 'home'));
+    const on = L.objects.find((o) => o.kind === 'stairs' && o.dest === run2.areas[i + 1]?.id);
+    assert.ok(back && Math.hypot(p.pos.x - back.pos.x, p.pos.z - back.pos.z) < 4, `${what}: came on far from the way back`);
+    if (DUNGEON_MAKERS[run2.areas[i].rift.source]) {
+      assert.equal(L.layout.theme.key, 'grotto', `${what}: the look`);
+      assert.equal(L.layout.torches.length, 0, `${what}: torches in a cave`);
+      if (on) assert.ok(walkedOn(L, p.pos, on.pos), `${what}: the way on can't be walked to`);
+    }
+    for (const m of L.monsters.filter((m) => !m.dead)) if (!run2.guardian) game.killMonster(m, 'phys');
+    if (on) game.interact(on);
+  });
+  assert.ok(run2.guardian, `tier 2: no guardian at ${run2.progress}/${run2.needed}`);
+  assert.equal(run2.guardian.superUnique, 'Bishibosh');
+  assert.ok(walkedOn(game.level, game.level.layout.start, run2.guardian.pos), 'tier 2: the guardian came where the hero can\'t walk');
+  game.killMonster(run2.guardian, 'phys');
+  assert.ok(run2.done && game.rift.openTiers() === 3, 'tier 2 was not cleared');
+  const out2 = game.level.objects.find((o) => o.rift === 'out');
+  assert.ok(out2 && walkedOn(game.level, game.level.layout.start, out2.pos), 'tier 2: the way out can\'t be walked to');
+  game.interact(out2);
+  game.interact(out2);
+  assert.ok(game.level.inTown(p.pos) && !game.rift.run, 'tier 2: the way out didn\'t close it');
+  // a rift begun on a dungeon (tier 3's on the Crypt or the Mausoleum, one rift in six): its way
+  // home stands where the maze's way up does, the hero coming on beside it, and leads home
+  let first = null;
+  for (let k = 0; k < 80 && !first; k++) {
+    assert.ok(game.rift.begin(3), 'tier 3 would not open');
+    if (DUNGEON_MAKERS[game.rift.run.areas[0].rift.source]) first = game.rift.run;
+  }
+  assert.ok(first, 'no rift of tier 3 began on a dungeon in 80');
+  game.interact(camp.objects.find((o) => o.rift === 'in'));
+  const home = first.floors[0].objects.find((o) => o.rift === 'home');
+  assert.equal(game.level, first.floors[0]);
+  assert.ok(home && Math.hypot(home.pos.x - p.pos.x, home.pos.z - p.pos.z) < 4 && walkedOn(game.level, p.pos, home.pos), 'a dungeon\'s first floor: the way home isn\'t by the hero');
+  assert.ok(first.floors[0].layout.torches.length > 0, 'a crypt with no torches');
+  game.interact(home);
+  assert.ok(game.level.inTown(p.pos) && game.rift.run === first, 'the way home from a dungeon\'s first floor');
+  game.rift.close();
+
   // a hell tier for a hero in normal: its rules there, normal's again in the camp
   localStorage.setItem('dii-rift-dev', JSON.stringify({ v: 1, cleared: ['n:catacombs', 'nm:catacombs'], time: 1 }));
   localStorage.setItem('dii-rift', JSON.stringify({ v: 1, cleared: ['n:catacombs', 'nm:catacombs'], time: 1 }));
@@ -267,5 +389,6 @@ export default async (load) => {
   assert.equal(game.rift.openTiers(), 23, 'a new hero lost the tiers cleared');
 
   const avg = Math.round(counts.reduce((x, y) => x + y, 0) / counts.length);
-  console.log(`  33 tiers, ${counts.length} rifts made in ${(ms / 1000).toFixed(1)} s (slowest floor ${slowest.toFixed(0)} ms), monsters a rift ${Math.min(...counts)}–${Math.max(...counts)} (mean ${avg}); played tier 1 to its guardian and tier 23's rules`);
+  const mazed = [...mazes].map(([id, n]) => `${id}×${n}`).join(' ');
+  console.log(`  33 tiers, ${counts.length} rifts made in ${(ms / 1000).toFixed(1)} s (slowest floor ${slowest.toFixed(0)} ms), monsters a rift ${Math.min(...counts)}–${Math.max(...counts)} (mean ${avg}), maze floors ${mazed}; played tiers 1 and 2 to their guardians and tier 23's rules`);
 };
