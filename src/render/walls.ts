@@ -106,8 +106,8 @@ export function wallMaterials(theme: Theme, occ: OccUniforms): (kind: WallKind) 
   return (kind: WallKind): THREE.Material[] => {
     const had = wallMats.get(kind);
     if (had) return had;
-    // a cliff is the caves' rock for now, its look its own to come (M2a's A line)
-    const t = kind === 'palisade' ? THEMES.town : kind === 'cliff' ? THEMES.cave : theme;
+    // a cliff is the Act 1 caves' grey-brown rock (grotto_wall), the same stone the hills open into
+    const t = kind === 'palisade' ? THEMES.town : kind === 'cliff' ? THEMES.grotto : theme;
     const side = new THREE.MeshStandardMaterial({ map: tileTexture(kind === 'ruins' ? 'crypt_wall' : `${t.key}_wall`), color: WALL_TINT[t.key] ?? '#ffffff', roughness: 0.92 });
     const top =
       kind === 'ruins' || kind === 'cliff'
