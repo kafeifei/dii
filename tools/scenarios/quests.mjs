@@ -1017,7 +1017,7 @@ export default async function (page, shot, log) {
       expect(r.nightmare === '{}', `nightmare's record: ${r.nightmare}`);
       expect((r.sisters[0] & 1) === 1 && r.sisters[1] === 0 && r.sisters[2] === 0, `the save's Sisters words ${r.sisters.join(', ')}`);
       const a = r.sistersAfter;
-      expect(a.granted && !a.playable && !a.news && a.log === 'done' && a.merc && a.merc === a.hadMerc, `the Sisters played again: ${JSON.stringify(a)}`);
+      expect(a.granted && !a.playable && !a.news && a.log === 'done' && a.merc !== null && a.merc === a.hadMerc, `the Sisters played again: ${JSON.stringify(a)}`);
     },
 
     async nightmare() {
