@@ -9,8 +9,11 @@
 // their dungeon floors are the mazes the game grows the Den, the caves and the crypts as (a cave
 // with no light of its own, a crypt with its torches); on each the hero comes on by its way back,
 // the floor's kills give its share, and the hero walks (the game stepped by the scenario, as the bot
-// does) to its way on; on the last the guardian comes, falls, and the hero walks to the floor's far
-// end and back to the way out it left, out by the obelisk, the next tier open. Then, as a player
+// does, for at most twice the walk's time at the hero's walking pace and 10 s) to its way on; on the
+// last the guardian comes, falls, the rest of the floor still standing is killed, and the hero walks
+// to the floor's far end and back to the way out it left, out by the obelisk, the next tier open. A
+// walk that sticks says what stood by the hero, or, nothing there, that the maze didn't let it
+// through; a floor with no walk to the spot is the maze's. Then, as a player
 // plays (the same address without ?dev, a hero from the title,
 // since only there does a reload play on): on tier 23's Den (hell, for a hero in normal) the hero
 // takes hell's resistance penalty; once an autosave has put the floor's area in the save, the page
@@ -206,15 +209,37 @@ export default async function (page, shot, log) {
     },
 
     async dungeons() {
-      // the walk: the game run on the scenario's own steps (Game.headless, as tools/bot.mjs), the hero
-      // walking to a spot along the floor's walk a few tiles at a time, as a player clicks ahead
       await ev(() => {
-        window.__riftWalk = (to, secs = 150) => {
+        /**
+         * Every monster still standing on the floor killed, as the rest were, and their missiles gone:
+         * after the guardian came (when each floor had given its share, 40 % of its monsters' worth) the
+         * rest of the last floor and the guardian's pack stood about the maze, woke as the hero went by to
+         * the far end and closed round it on the way back (about one run in five stuck there). With nothing
+         * left standing, what is in the hero's way on a walk is the maze. How many it killed, how many stand
+         */
+        window.__riftClear = () => {
+          const L = game.level;
+          const up = L.monsters.filter((m) => !m.dead);
+          for (const m of up) if (!m.dead) game.killMonster(m, 'phys');
+          L.projectiles = L.projectiles.filter((x) => x.faction !== 'monster');
+          return { killed: up.length, standing: L.monsters.filter((m) => !m.dead).length };
+        };
+        /**
+         * The hero walking to `to` along the floor's walk a few tiles at a time, as a player clicks ahead,
+         * the game run on the scenario's own steps (Game.headless, as tools/bot.mjs), 1/60 s each as
+         * main.ts makes them, so the page's frame rate doesn't matter. At most twice the time the walk
+         * takes at the hero's walking pace (it walks once its stamina is out), and 10 s; stuck when it
+         * moved under 0.5 m in 3 s of game time, told with what stood by it or, nothing standing there,
+         * as the maze not letting it through. A floor with no walk from the hero to `to` is the maze's
+         */
+        window.__riftWalk = (to) => {
           const g = game;
           const p = g.player;
-          const map = g.level.map;
+          const L = g.level;
+          const map = L.map;
           const w = map.w;
           const tile = (q) => Math.floor(q.z) * w + Math.floor(q.x);
+          const xz = (q) => `${q.x.toFixed(1)},${q.z.toFixed(1)}`;
           const goal = map.nearestWalkable(to.x, to.z) ?? to;
           const dist = new Int32Array(w * map.h).fill(-1);
           const q = [tile(goal)];
@@ -231,8 +256,17 @@ export default async function (page, shot, log) {
             }
           }
           const off = () => Math.hypot(p.pos.x - goal.x, p.pos.z - goal.z);
-          const from = map.nearestWalkable(p.pos.x, p.pos.z) ?? p.pos;
-          if (dist[tile(from)] < 0) return { ok: false, why: 'no walk from the hero to there', off: off(), secs: 0, metres: 0 };
+          const left = () => dist[tile(map.nearestWalkable(p.pos.x, p.pos.z) ?? p.pos)];
+          const tiles = left();
+          if (tiles < 0) return { ok: false, why: `the maze has no walk from the hero at ${xz(p.pos)} to ${xz(goal)}`, off: off(), secs: 0, metres: 0, bound: 0 };
+          const bound = 10 + (2 * tiles) / p.stats.walkSpeed;
+          /** what stands within 1.5 m of the hero: monsters, the hireling */
+          const by = () => {
+            const near = (a) => !a.dead && Math.hypot(a.pos.x - p.pos.x, a.pos.z - p.pos.z) < 1.5;
+            const ms = L.monsters.filter(near).map((m) => m.displayName ?? m.def.row.name);
+            if (g.merc && near(g.merc)) ms.push('the hireling');
+            return ms;
+          };
           const was = g.headless;
           g.headless = true;
           const STEP = 1 / 60;
@@ -241,7 +275,7 @@ export default async function (page, shot, log) {
           let mark = { ...p.pos };
           let markT = 0;
           try {
-            while (t < secs && off() > 1.2) {
+            while (t < bound && off() > 1.2) {
               let c = tile(map.nearestWalkable(p.pos.x, p.pos.z) ?? p.pos);
               for (let k = 0; k < 6 && dist[c] > 0; k++) {
                 const n = STEPS.map(([dx, dy]) => c + dy * w + dx).find((n) => dist[n] === dist[c] - 1 && map.walkable(n % w, (n / w) | 0));
@@ -256,16 +290,22 @@ export default async function (page, shot, log) {
                 metres += Math.hypot(p.pos.x - before.x, p.pos.z - before.z);
               }
               if (t - markT > 3) {
-                if (Math.hypot(p.pos.x - mark.x, p.pos.z - mark.z) < 0.5) return { ok: false, why: `stuck at ${p.pos.x.toFixed(1)},${p.pos.z.toFixed(1)}`, off: off(), secs: t, metres };
+                if (Math.hypot(p.pos.x - mark.x, p.pos.z - mark.z) < 0.5) {
+                  const inWay = by();
+                  const why = inWay.length ? `${inWay.join(', ')} in the way` : 'nothing standing by: the maze does not let the hero through';
+                  return { ok: false, why: `stuck at ${xz(p.pos)}, ${left()} of ${tiles} tiles of the walk left, ${t.toFixed(0)} s in (${why})`, off: off(), secs: t, metres, bound };
+                }
                 mark = { ...p.pos };
                 markT = t;
               }
             }
           } finally {
             p.intent = null;
+            p.path = null;
             g.headless = was;
           }
-          return { ok: off() <= 1.2, why: off() > 1.2 ? 'out of time' : '', off: off(), secs: t, metres };
+          const ok = off() <= 1.2;
+          return { ok, why: ok ? '' : `out of time: ${bound.toFixed(0)} s for ${tiles} tiles, ${left()} left at ${xz(p.pos)}`, off: off(), secs: t, metres, bound };
         };
       });
       const MAZES = [8, 9, 13, 18, 19];
@@ -311,10 +351,13 @@ export default async function (page, shot, log) {
           let walked = '';
           if (!last) {
             if (maze) {
+              // the floor's kills above left none standing (the guardian comes on the last): this is to be sure
+              const c = await ev(() => window.__riftClear());
+              expect(c.standing === 0, `${here.name}: ${c.standing} monsters still standing after clearing the floor`);
               const on = await ev(() => game.level.objects.find((o) => o.kind === 'stairs' && o.dest === game.rift.run.areas[game.rift.floorHere()]?.id)?.pos);
               const r = await ev(([to]) => window.__riftWalk(to), [on]);
               expect(r.ok, `${here.name}: walking to the way on: ${r.why}, ${r.off.toFixed(1)} short`);
-              walked = ` (walked ${r.metres.toFixed(0)} m to the way on in ${r.secs.toFixed(0)} s)`;
+              walked = ` (${c.killed ? `${c.killed} left standing killed; ` : ''}walked ${r.metres.toFixed(0)} m to the way on in ${r.secs.toFixed(0)} of ${r.bound.toFixed(0)} s)`;
               await frames(30);
               await shot(`tier${n}-floor${f + 1}-way-on`);
             }
@@ -332,6 +375,9 @@ export default async function (page, shot, log) {
           });
           expect(out, `tier ${n}: no way out`);
           if (maze && out) {
+            // the rest of the floor and the guardian's pack, still standing, killed before the walks
+            const c = await ev(() => window.__riftClear());
+            expect(c.standing === 0, `${here.name}: ${c.standing} monsters still standing after clearing the floor`);
             const far = await ev(() => {
               const L = game.level;
               const s = L.layout.start;
@@ -357,7 +403,7 @@ export default async function (page, shot, log) {
             await shot(`tier${n}-far-end`);
             const back = await ev(([to]) => window.__riftWalk(to), [out]);
             expect(back.ok, `${here.name}: walking back to the way out: ${back.why}, ${back.off.toFixed(1)} short`);
-            walked = ` (walked ${(r.metres + back.metres).toFixed(0)} m to its far end and back to the way out in ${(r.secs + back.secs).toFixed(0)} s)`;
+            walked = ` (${c.killed} left standing killed; walked ${(r.metres + back.metres).toFixed(0)} m to its far end and back to the way out in ${(r.secs + back.secs).toFixed(0)} of ${(r.bound + back.bound).toFixed(0)} s)`;
           }
           told.push(`${here.name}${walked}`);
           const left = await ev(() => {
