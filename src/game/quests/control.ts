@@ -13,13 +13,16 @@ import type { Monster } from '../monster';
 import { DenOfEvil } from './denofevil';
 import { fillLine, type LogEntry, type QuestHost, type QuestScript, type Topic } from './quest';
 import { QFLAG, questState } from './record';
+import { SistersBurialGrounds } from './sisters';
 
 /** seconds between quest ticks: QUESTS_QuestUpdater runs every 20 frames (Game.cpp:1877-1880), 25 a second */
 export const QUEST_TICK = 20 / FRAMES_PER_SEC;
 
 export class Quests {
-  /** the quests this build plays: only the Den of Evil so far */
+  /** the quests this build plays: the Den of Evil and the Sisters' Burial Grounds so far */
   readonly scripts: QuestScript[];
+  private readonly den: DenOfEvil;
+  private readonly sisters: SistersBurialGrounds;
   private clock = 0;
   /** each townsperson's next line of small talk */
   private gossipAt = new Map<string, number>();
@@ -30,12 +33,30 @@ export class Quests {
   private given = new WeakSet<Topic>();
 
   constructor(private host: QuestHost) {
-    this.scripts = [new DenOfEvil(host)];
+    this.den = new DenOfEvil(host);
+    this.sisters = new SistersBurialGrounds(host);
+    this.scripts = [this.den, this.sisters];
   }
 
-  /** the hero enters the game (QUESTS_SequenceCycler, Quests.cpp:1073-1133: each quest's PlayerStartedGame) */
+  /**
+   * the hero enters the game (QUESTS_SequenceCycler, Quests.cpp:1073-1133: each quest's
+   * PlayerStartedGame), then the act's sequence (1136-1149)
+   */
   start() {
     for (const s of this.scripts) s.start();
+    this.sequence();
+  }
+
+  /**
+   * Act 1's sequence of quests on offer, as far as this build has them: the Den of Evil's filter
+   * passes on once it is done, rewarded in this game (state 5) or done in an earlier one (not
+   * playable), to the Sisters', who are then on offer (ACT1Q1_SeqCallback, A1Q1.cpp:509-529;
+   * ACT1Q2_SeqCallback, A1Q2.cpp:509-534). D2 runs it as a game starts and as Akara hands her
+   * reward over (A1Q1.cpp:225-236)
+   */
+  private sequence() {
+    if (this.den.playable && this.den.state !== 5) return;
+    this.sisters.offer();
   }
 
   script(key: QuestKey): QuestScript | undefined {
@@ -96,6 +117,8 @@ export class Quests {
   spoke(t: Topic) {
     if (!this.given.has(t)) return;
     for (const s of this.scripts) s.spoke(t);
+    // a reward handed over moves the sequence on (Akara's: A1Q1.cpp:225-236)
+    this.sequence();
   }
 
   /** the hero walked away from `npc` (NpcDeactivate) */
@@ -115,7 +138,7 @@ export class Quests {
     return line;
   }
 
-  /** a monster died (MonsterKilled), by `killer`'s hand, or by nobody's */
+  /** a monster died (MonsterKilled), by `killer`'s hand, or by nobody's: each quest asks whether it was one of its own */
   monsterKilled(m: Monster, killer: Killer = 'hero') {
     for (const s of this.scripts) s.monsterKilled(m, killer);
   }

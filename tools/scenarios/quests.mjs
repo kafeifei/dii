@@ -23,17 +23,26 @@
 // (its message, the record's reward pending) and the den lights up. Back in the camp she is marked
 // again; spoken to, she hands over the reward (+1 skill point) once and never again, aloud, her
 // small talk too. The quest log
-// shows it done; saved and played again it stays done, and nightmare's record is untouched. Page
-// and console errors fail the run. Shots: the mark, the dialogue, the menu, her reminder scrolling
-// while its recording is held back, the log, the log counting, the den dark and lit, the mark for
-// the reward, the reward line, the log done, the nightmare log. The last line is "QUESTS OK …" or
+// shows it done. With the den rewarded, Kashya (柯霞) is marked: she offers the Sisters' Burial
+// Grounds (D2MOO A1Q2.cpp) in a line that scrolls unvoiced (to be recorded at M2a's close), her menu
+// 交谈/雇佣/取消, her hire panel shut to a hero under level 8 till the reward; out to the Burial
+// Grounds (ENTERAREA, the hero's line for the graveyard), Blood Raven killed with the hero two of
+// D2's rooms off counts for nothing (the log and a message say so), a reload brings her back, and
+// killed from a room on her diagonal she is done; back at Kashya her reward is a hireling for
+// nothing, once, beside the hero, her hire panel open whatever the level. Saved and played again
+// both stay done, and nightmare's record is untouched. Page and console errors fail the run. Shots:
+// the mark, the dialogue, the menu, her reminder scrolling while its recording is held back, the
+// log, the log counting, the den dark and lit, the mark for the reward, the reward line, the log
+// done; Kashya marked, her hire panel before, her quest given, the log; Blood Raven, the log after
+// the far kill, her fallen; Kashya marked for the reward, her reward line, the hireling beside the
+// hero, the hire panel after, the log done; the nightmare log. The last line is "QUESTS OK …" or
 // "QUESTS FAIL …".
 
 /** src/world/areas.ts */
 const CAMP_AREA = 1;
 const DEN_OF_EVIL = 8;
 /** src/game/quests/record.ts QFLAG */
-const F = { REWARDGRANTED: 0, REWARDPENDING: 1, STARTED: 2, LEAVETOWN: 3, ENTERAREA: 4, UPDATEQUESTLOG: 12, PRIMARYGOALDONE: 13 };
+const F = { REWARDGRANTED: 0, REWARDPENDING: 1, STARTED: 2, LEAVETOWN: 3, ENTERAREA: 4, UPDATEQUESTLOG: 12, PRIMARYGOALDONE: 13, COMPLETEDNOW: 14 };
 /** src/audio/sfx.ts: how long a townsperson's text waits for its recording to be decoded */
 const SPEECH_WAIT = 0.25;
 /** her reminder's take, held back a while as a slow connection would */
@@ -119,6 +128,54 @@ export default async function (page, shot, log) {
         return L.map.nearestWalkable(p1.x + (p2.x - p1.x) * t, p1.z + (p2.z - p1.z) * t);
       };
       S.alive = () => game.level.monsters.filter((m) => !m.dead);
+      // the Sisters' Burial Grounds (a1q2): its word, Kashya, the Burial Grounds' Blood Raven, D2's rooms there
+      S.sword = (d = game.player.difficulty) => game.player.quests[d].a1q2 ?? 0;
+      S.shas = (f, d) => ((S.sword(d) >> f) & 1) === 1;
+      S.sis = () => game.quests.script('a1q2');
+      S.kashya = () => game.level.objects.find((o) => o.npcId === 'kashya');
+      S.toKashya = () => {
+        const k = S.kashya();
+        game.teleportWithin(game.level.map.nearestWalkable(k.pos.x + 1.6, k.pos.z + 1.6));
+        return k;
+      };
+      const merc = await import('/src/game/merc.ts');
+      const sisters = await import('/src/game/quests/sisters.ts');
+      S.mayHire = () => merc.mayHireNow(game);
+      S.mercName = (st) => merc.mercName(st);
+      S.ravens = () => (game.mapOf(17)?.monsters ?? []).filter((m) => m.def.row.id === 'bloodraven');
+      S.raven = () => S.ravens().find((m) => m.quest === 'a1q2' && !m.dead);
+      S.corner = () => {
+        const L = game.mapOf(17);
+        let x = Infinity;
+        let z = Infinity;
+        L.areas.forEach((id, i) => {
+          if (id !== 17) return;
+          x = Math.min(x, i % L.map.w);
+          z = Math.min(z, Math.floor(i / L.map.w));
+        });
+        return { x, z };
+      };
+      S.roomOf = (q, c) => [Math.floor((q.x - c.x) / sisters.ROOM_M), Math.floor((q.z - c.z) / sisters.ROOM_M)];
+      /** the hero set down in the Burial Grounds `d` rooms off `m`'s (the first of `ds` with ground to stand on); null if none */
+      S.standOff = (m, ds) => {
+        const L = game.mapOf(17);
+        const c = S.corner();
+        const [rx, rz] = S.roomOf(m.pos, c);
+        for (const d of ds) {
+          for (let i = 0; i < L.areas.length; i++) {
+            const x = i % L.map.w;
+            const z = Math.floor(i / L.map.w);
+            if (L.areas[i] !== 17 || !L.map.walkable(x, z)) continue;
+            const q = { x: x + 0.5, z: z + 0.5 };
+            const [hx, hz] = S.roomOf(q, c);
+            if (hx - rx !== d[0] || hz - rz !== d[1]) continue;
+            game.teleportWithin(q);
+            const [px, pz] = S.roomOf(game.player.pos, c);
+            if (game.area.id === 17 && px - rx === d[0] && pz - rz === d[1]) return d.join();
+          }
+        }
+        return null;
+      };
       S.ui = () => ({ talking: !!document.querySelector('.dialogue.open'), menu: !!document.querySelector('.npc-menu.open'), text: document.querySelector('.dialogue.open .dlg-text')?.textContent ?? '', opts: [...document.querySelectorAll('.npc-menu.open .npc-opt')].map((e) => e.textContent) });
       S.messages = () => [...document.querySelectorAll('#messages div')].map((e) => e.textContent).join(' | ');
       /** every message put up since, as the HUD's own list drops them as they fade */
@@ -502,7 +559,7 @@ export default async function (page, shot, log) {
     async questLog() {
       const l = await openLog();
       expect(l.cells.length === 6, `the log shows ${l.cells.length} quests`);
-      expect(l.cells[0] === 'a1q1:active.on' && l.cells.slice(1).every((c) => /:off$/.test(c)), `the log's quests: ${l.cells.join(' ')}`);
+      expect(l.cells[0] === 'a1q1:active.on' && l.cells[1] === 'a1q2:none' && l.cells.slice(2).every((c) => /:off$/.test(c)), `the log's quests: ${l.cells.join(' ')}`);
       expect(l.state === '进行中' && l.text.includes('邪秽巢穴') && l.text.includes('亚喀蕾'), `the log says ${l.state}: ${l.text}`);
       await shot('quest-log');
       await closeLog();
@@ -640,6 +697,189 @@ export default async function (page, shot, log) {
       facts.push(`reward: +1 skill point (${before.points} → ${after.points}), once`);
     },
 
+    async kashya() {
+      // the den rewarded: Kashya offers hers now, her mark over her
+      await ev(() => window.__q.toKashya());
+      await frames(12);
+      const m = await ev(() => {
+        const S = window.__q;
+        const k = S.kashya();
+        const s = window.renderer.projectP(k.pos, 1);
+        const marks = [...document.querySelectorAll('.npc-mark')].map((el) => el.getBoundingClientRect()).map((r) => ({ x: r.left, y: r.top }));
+        const over = marks.find((r) => Math.abs(r.x - s.x) < 30 && r.y < s.y);
+        return { npc: k.npc, news: game.quests.hasNews('kashya'), state: S.sis().state, word: S.sword(), over: !!over, level: game.player.level };
+      });
+      expect(m.npc === '柯霞' && m.news && m.state === 1 && m.word === 0 && m.over, `Kashya once the den is rewarded: ${JSON.stringify(m)}`);
+      await shot('kashya-marked');
+      // before her reward a hero under level 8 can't hire (SUnitNpc.cpp:951)
+      if (m.level < 8) {
+        await ev(() => game.hooks.openPanel('hire'));
+        await until(() => !!document.querySelector('.panel.left.open'), null, 'her hire panel');
+        const note = await ev(() => document.querySelector('.panel.left.open .pending-note')?.textContent ?? '');
+        expect(note.includes('8 级') && note.includes('众姊妹之冢'), `the hire panel before the reward: ${note}`);
+        await shot('hire-before-the-sisters');
+        await page.keyboard.press('Escape');
+        await until(() => !document.querySelector('.panel.left.open'), null, 'her hire panel to close');
+      }
+      // spoken to: she gives it at once, a line that scrolls unvoiced (to be recorded at M2a's close), by its length
+      await ev(() => game.interact(window.__q.kashya()));
+      await until(() => !!document.querySelector('.dialogue.open'), null, 'her line');
+      await page.waitForTimeout(1500);
+      const said = await ev(() => {
+        const S = window.__q;
+        const t = S.npc.topic;
+        return { ...S.ui(), id: t?.id, quest: t?.quest, dur: +S.npc.dur.toFixed(2), chars: [...(t?.text ?? '')].length, speech: !!S.npc.speech, voiced: game.sfx.voices.some((v) => v.id.startsWith('voice.kashya.')), at: document.querySelector('.dlg-text').style.transform };
+      });
+      expect(said.talking && !said.menu && said.id === 'intro' && said.quest === 'a1q2' && said.text.includes('绯鸦') && said.text.includes('葬骨荒冢') && said.text.includes('凛寒原野'), `Kashya's first words: ${JSON.stringify(said)}`);
+      expect(!said.speech && !said.voiced && said.dur > 20 && /translateY\(-?\d+px\)/.test(said.at), `her unvoiced line, scrolled by its length: ${JSON.stringify({ dur: said.dur, chars: said.chars, speech: said.speech, at: said.at })}`);
+      expect(!said.text.includes('卡夏') && !said.text.includes('血鸦') && !said.text.includes('埋骨之地'), 'an official name in her line');
+      await shot('kashya-gives-the-quest');
+      await page.locator('.dialogue .dlg-skip').click();
+      await until(() => !!document.querySelector('.npc-menu.open'), null, 'her menu after the line');
+      const after = await ev(() => {
+        const S = window.__q;
+        return { ui: S.ui(), started: S.shas(S.F.STARTED), state: S.sis().state, news: game.quests.hasNews('kashya') };
+      });
+      expect(after.started && after.state === 2 && !after.news, `cut short, the quest isn't given: ${JSON.stringify(after)}`);
+      expect(after.ui.opts.join('/') === '交谈/雇佣/取消', `her menu: ${after.ui.opts.join('/')}`);
+      await pick('交谈');
+      await until(() => !!document.querySelector('.dialogue.open'), null, 'her reminder');
+      const remind = await ev(() => window.__q.ui().text);
+      expect(remind.includes('营门') && remind.includes('凛寒原野'), `her reminder: ${remind}`);
+      await page.keyboard.press('Escape');
+      await until(() => !!document.querySelector('.npc-menu.open'), null, 'her menu after Esc');
+      await pick('取消');
+      await until(() => !document.querySelector('.npc-menu.open'), null, 'her menu to close');
+      const left = await ev(() => window.__q.sis().last);
+      expect(left === 1, `the log's status after leaving her: ${left}`);
+      const l = await openLog();
+      expect(l.cells[1].startsWith('a1q2:active') && l.cells[0].startsWith('a1q1:done'), `the log's quests: ${l.cells.join(' ')}`);
+      await ev(() => document.querySelector('.panel.left.open .qcell[data-quest="a1q2"]').click());
+      await frames(3);
+      const picked = await ev(() => ({ state: document.querySelector('.panel.left.open .qstate')?.textContent, text: document.querySelector('.panel.left.open .qtext')?.textContent }));
+      expect(picked.state === '进行中' && picked.text.includes('柯霞') && picked.text.includes('绯鸦'), `the Sisters in the log: ${JSON.stringify(picked)}`);
+      await shot('quest-log-sisters');
+      await closeLog();
+    },
+
+    async graves() {
+      // out of the camp, then into the Burial Grounds by her: the log says to find her, and the hero knows the place
+      await ev(() => game.teleportWithin(window.__q.spotIn(2, 1, 3, 16)));
+      await frames(4);
+      const out = await ev(() => ({ area: game.area?.id, leave: window.__q.shas(window.__q.F.LEAVETOWN), state: window.__q.sis().state }));
+      expect(out.area === 2 && out.leave && out.state === 3, `out on the moor: ${JSON.stringify(out)}`);
+      // nothing of the hero's being said, so the place's line has the floor
+      await until(() => !game.sfx.voices.some((v) => /^voice\.(paladin|sorceress)\./.test(v.id) && v.end > game.sfx.ctx.currentTime), null, "the hero's lines to end", 8000);
+      await page.waitForTimeout(1500);
+      const into = await ev(() => {
+        const S = window.__q;
+        const r = S.raven();
+        game.teleportWithin(game.level.map.nearestWalkable(r.pos.x + 6, r.pos.z + 6));
+        return { area: game.area?.id, enter: S.shas(S.F.ENTERAREA), last: S.sis().last, ravens: S.ravens().length, quest: r.quest, boss: r.rank, minions: r.minions.filter((x) => !x.dead).length };
+      });
+      expect(into.area === 17 && into.enter && into.last === 2, `into the Burial Grounds: ${JSON.stringify(into)}`);
+      expect(into.ravens === 1 && into.quest === 'a1q2', `the Burial Grounds' Blood Raven: ${JSON.stringify(into)}`);
+      await until(() => window.__q.heroSaying().some((v) => v.id.endsWith('.graveyard')), null, "the hero's line for the graveyard", 3000).catch(() => expect(false, "the hero didn't say the graveyard's line"));
+      await frames(30);
+      await shot('graves-blood-raven');
+      // killed with the hero two rooms off: done in this game without a reward; the log says so
+      const far = await ev(() => {
+        const S = window.__q;
+        const r = S.raven();
+        const d = S.standOff(r, [[2, 0], [-2, 0], [0, 2], [0, -2], [2, 2], [-2, -2], [2, -2], [-2, 2]]);
+        game.killMonster(r, 'phys');
+        return { d, pending: S.shas(S.F.REWARDPENDING), now: S.shas(S.F.COMPLETEDNOW), state: S.sis().state, log: game.quests.log('a1q2'), said: S.said.filter((t) => t.includes('绯鸦')) };
+      });
+      expect(far.d && !far.pending && far.now && far.state === 4 && far.log.state === 'done' && far.log.text.includes('不算你的'), `killed two rooms off: ${JSON.stringify(far)}`);
+      expect(far.said.some((t) => t.includes('不算你的')), `the message for a kill too far off: ${far.said.join(' | ')}`);
+      const l = await openLog();
+      expect(l.cells[1].startsWith('a1q2:done') && l.text.includes('不算你的'), `the log after a far kill: ${l.cells[1]} ${l.text}`);
+      await shot('quest-log-sisters-missed');
+      await closeLog();
+      // a reload is the next game: she's back, and it's to do again from where the record says
+      const again = await ev(() => {
+        const S = window.__q;
+        game.save();
+        const ok = game.continueGame(undefined, true);
+        S.west = game.level;
+        const r = S.raven();
+        return { ok, area: game.area?.id, alive: !!r && !r.dead, state: S.sis().state, last: S.sis().last, now: S.shas(S.F.COMPLETEDNOW), playable: S.sis().playable };
+      });
+      expect(again.ok && again.area === 17 && again.alive && again.state === 3 && again.last === 2 && !again.now && again.playable, `reloaded in the Burial Grounds: ${JSON.stringify(again)}`);
+      await frames(10);
+      // killed with the hero in a room on her diagonal: done, the reward waiting
+      const near = await ev(() => {
+        const S = window.__q;
+        const r = S.raven();
+        const d = S.standOff(r, [[1, 1], [-1, -1], [1, -1], [-1, 1]]);
+        game.killMonster(r, 'phys');
+        return { d, pending: S.shas(S.F.REWARDPENDING), goal: S.shas(S.F.PRIMARYGOALDONE), granted: S.shas(S.F.REWARDGRANTED), log: game.quests.log('a1q2'), news: game.quests.hasNews('kashya'), msgs: S.messages() };
+      });
+      expect(near.d && near.pending && near.goal && !near.granted && near.log.state === 'reward' && near.news, `killed from her diagonal room: ${JSON.stringify(near)}`);
+      expect(near.msgs.includes('绯鸦已经伏诛') && near.msgs.includes('柯霞'), `the messages: ${near.msgs}`);
+      await page.waitForTimeout(600);
+      await shot('graves-blood-raven-slain');
+      // the log turns to "go back" sixteen quest ticks later (ACT1Q2_Timer_StatusCycler)
+      await until(() => window.__q.sis().last === 3, null, 'the log to say to go back', 16000);
+      facts.push(`the Sisters: missed from two rooms off (${far.d}), done from a room on her diagonal (${near.d}) after a reload`);
+    },
+
+    async sistersReward() {
+      await ev(() => {
+        game.enterArea(1, 'waypoint');
+        window.__q.toKashya();
+      });
+      await frames(12);
+      const before = await ev(() => ({ news: game.quests.hasNews('kashya'), merc: !!game.player.merc, level: game.player.level, hire: window.__q.mayHire() }));
+      expect(before.news && !before.merc && (before.level >= 8 || !before.hire), `back at Kashya: ${JSON.stringify(before)}`);
+      await shot('kashya-marked-for-the-reward');
+      await ev(() => game.interact(window.__q.kashya()));
+      await until(() => !!document.querySelector('.dialogue.open'), null, 'her reward line');
+      await page.waitForTimeout(1300);
+      const line = await ev(() => ({ ...window.__q.ui(), id: window.__q.npc.topic?.id }));
+      expect(line.talking && line.id === 'reward' && line.text.includes('斥候'), `her reward line: ${JSON.stringify(line)}`);
+      await shot('kashya-rewards');
+      await page.locator('.dialogue .dlg-skip').click();
+      await until(() => !!document.querySelector('.npc-menu.open'), null, 'her menu after the reward');
+      await frames(20);
+      const after = await ev(() => {
+        const S = window.__q;
+        const st = game.player.merc;
+        const m = game.merc;
+        return { granted: S.shas(S.F.REWARDGRANTED), pending: S.shas(S.F.REWARDPENDING), news: game.quests.hasNews('kashya'), merc: st && { hire: st.hire, name: st.name, shown: S.mercName(st), level: st.level, dead: st.dead }, near: m ? +S.dist(m.pos, game.player.pos).toFixed(1) : null, msgs: S.messages(), hire: S.mayHire() };
+      });
+      expect(after.granted && !after.pending && !after.news && after.merc && !after.merc.dead && after.near !== null && after.near < 4, `the reward's hireling: ${JSON.stringify(after)}`);
+      expect(after.msgs.includes('随你出征') && after.hire, `the reward's message and the hire rule: ${JSON.stringify(after)}`);
+      await pick('取消');
+      await frames(10);
+      await shot('kashya-hireling-joined');
+      // 交谈 in the same visit: the speech again, and nothing more
+      await ev(() => game.interact(window.__q.kashya()));
+      await until(() => !!document.querySelector('.npc-menu.open'), null, 'her menu, spoken to again');
+      await pick('交谈');
+      await until(() => !!document.querySelector('.dialogue.open'), null, 'her speech again');
+      const again = await ev(() => window.__q.npc.topic?.id);
+      await page.keyboard.press('Escape');
+      await until(() => !!document.querySelector('.npc-menu.open'), null, 'her menu after Esc');
+      const once = await ev((name) => game.player.merc?.name === name && window.__q.shas(window.__q.F.REWARDGRANTED), after.merc?.name);
+      expect(again === 'reward' && once, `spoken to again: ${again}, one hireling ${once}`);
+      // the hire panel lists her scouts now, whatever the hero's level
+      await pick('雇佣');
+      await until(() => !!document.querySelector('.panel.left.open'), null, 'her hire panel');
+      const panel = await ev(() => ({ note: document.querySelector('.panel.left.open .pending-note')?.textContent ?? null, offers: document.querySelectorAll('.panel.left.open .hire-list > *').length }));
+      expect(panel.note === null && panel.offers > 0, `the hire panel after the reward: ${JSON.stringify(panel)}`);
+      await shot('hire-after-the-sisters');
+      await page.keyboard.press('Escape');
+      await until(() => !document.querySelector('.panel.left.open'), null, 'her hire panel to close');
+      const l = await openLog();
+      // (not flared again: the log showed it done once already, after the far kill, and D2 never clears that flag, PlrMsg.cpp:3665-3679)
+      expect(l.cells[1].startsWith('a1q2:done') && l.state === '已完成' && l.text.includes('柯霞的斥候'), `the log: ${l.cells[1]} ${l.state} ${l.text}`);
+      await page.waitForTimeout(600);
+      await shot('quest-log-sisters-done');
+      await closeLog();
+      facts.push(`the Sisters' reward: ${after.merc?.shown} (level ${after.merc?.level}) for nothing, once, beside the hero (${after.near} m); hiring open at level ${before.level}`);
+    },
+
     async saveAndContinue() {
       const r = await ev(() => {
         const S = window.__q;
@@ -650,6 +890,8 @@ export default async function (page, shot, log) {
         S.west = game.level;
         return {
           ok,
+          sisters: d.progress.map((x) => x.quests.a1q2 ?? 0),
+          sistersAfter: { granted: S.shas(S.F.REWARDGRANTED), playable: S.sis().playable, news: game.quests.hasNews('kashya'), log: game.quests.log('a1q2').state, merc: game.player.merc?.name ?? null, hadMerc: d.merc?.name ?? null },
           saved: d.progress.map((x) => x.quests.a1q1 ?? 0),
           points: [points, game.player.skillPoints],
           granted: S.has(S.F.REWARDGRANTED),
@@ -663,23 +905,27 @@ export default async function (page, shot, log) {
       expect((r.saved[0] & 1) === 1 && r.saved[1] === 0 && r.saved[2] === 0, `the save's words ${r.saved.join(', ')}`);
       expect(r.points[0] === r.points[1] && r.granted && !r.playable && !r.news && r.log === 'done', `played again: ${JSON.stringify(r)}`);
       expect(r.nightmare === '{}', `nightmare's record: ${r.nightmare}`);
+      expect((r.sisters[0] & 1) === 1 && r.sisters[1] === 0 && r.sisters[2] === 0, `the save's Sisters words ${r.sisters.join(', ')}`);
+      const a = r.sistersAfter;
+      expect(a.granted && !a.playable && !a.news && a.log === 'done' && a.merc && a.merc === a.hadMerc, `the Sisters played again: ${JSON.stringify(a)}`);
     },
 
     async nightmare() {
       const r = await ev(() => {
         const S = window.__q;
         game.setDifficulty(1);
-        const out = { word: S.word(1), log: game.quests.log('a1q1').state, news: game.quests.hasNews('akara'), normal: S.word(0), playable: S.den().playable };
+        const out = { word: S.word(1), log: game.quests.log('a1q1').state, news: game.quests.hasNews('akara'), normal: S.word(0), playable: S.den().playable, sisters: { word: S.sword(1), log: game.quests.log('a1q2').state, news: game.quests.hasNews('kashya'), state: S.sis().state, normal: S.sword(0) } };
         return out;
       });
       expect(r.word === 0 && r.log === 'none' && r.news && r.playable, `nightmare: ${JSON.stringify(r)}`);
       expect((r.normal & 1) === 1, `normal's word in nightmare: ${r.normal}`);
+      expect(r.sisters.word === 0 && r.sisters.log === 'none' && !r.sisters.news && r.sisters.state === 0 && (r.sisters.normal & 1) === 1, `the Sisters in nightmare: ${JSON.stringify(r.sisters)}`);
       const l = await openLog();
-      expect(l.cells[0].startsWith('a1q1:none'), `nightmare's log: ${l.cells[0]}`);
+      expect(l.cells[0].startsWith('a1q1:none') && l.cells[1].startsWith('a1q2:none'), `nightmare's log: ${l.cells[0]} ${l.cells[1]}`);
       await shot('quest-log-nightmare');
       await closeLog();
       await ev(() => game.setDifficulty(0));
-      facts.push('nightmare untouched');
+      facts.push('nightmare untouched, the Sisters too');
     },
   };
 

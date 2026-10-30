@@ -4,6 +4,8 @@
 // its length, or that it's to be made, or to be made again since the line changed (what each take
 // said is in tools/audio/made.json), a word the voice was given respelled (made.json `said`, from
 // tools/audio/list.mjs SAY_AS), and the readings checked by ear (made.json `check`).
+// A line to be said aloud that isn't recorded yet (dialogue.ts unvoicedLines: Kashya's, till M2a's
+// close) is listed as 未录 with the take it will be, in a cell list.mjs doesn't take for a recording.
 // tools/audio/list.mjs reads the spoken lines off this page:
 //   node tools/dialogue-review.mjs
 // tools/test/quests.test.mjs fails while the page is behind the lines, or the recordings.
@@ -32,21 +34,33 @@ function respelled(text, said) {
 
 /** the page, from the game's own modules (`load`: an ssrLoadModule) */
 export async function reviewMarkdown(load) {
-  const { GOSSIP, GREETINGS, DEN_LINES, DEN_LOG, LOG_LINES } = await load('/src/data/dialogue.ts');
+  const { GOSSIP, GREETINGS, DEN_LINES, DEN_LOG, LOG_LINES, SISTERS_LINES, SISTERS_LOG } = await load('/src/data/dialogue.ts');
+  const { D2X_HIRELING_NAMES } = await load('/src/data/d2x/hirelings.ts');
   const { QUEST_BY_KEY } = await load('/src/data/quests.ts');
   const { fillLine } = await load('/src/game/quests/quest.ts');
   const { npcLine } = await load('/src/audio/sounds.ts');
   const { D2X_MONSTERS } = await load('/src/data/d2x/monsters.ts');
   const made = fs.existsSync(MADE) ? JSON.parse(fs.readFileSync(MADE, 'utf8')) : {};
   const akara = D2X_MONSTERS.akara.name;
+  const kashya = D2X_MONSTERS.kashya.name;
+  const raven = D2X_MONSTERS.bloodraven.name;
   const den = QUEST_BY_KEY.a1q1;
+  const sisters = QUEST_BY_KEY.a1q2;
+  /** a hireling's name, for {name} (the first of the scouts' names) */
+  const mercName = D2X_HIRELING_NAMES.merc01;
+  const merc = mercName.name;
   const out = [];
   let total = 0;
   let spoken = 0;
   let redo = 0;
   let unmade = 0;
-  /** take `n` of voice line `id` saying `zh`: its name, and how it stands */
-  const take = (id, n, zh) => {
+  let later = 0;
+  /** take `n` of voice line `id` saying `zh`: its name, and how it stands; `pending`, a line not to be recorded yet */
+  const take = (id, n, zh, pending) => {
+    if (pending) {
+      later++;
+      return `未录：M2a 收尾时配音，录音是 \`${id}.${n}\``;
+    }
     const name = `${id}.${n}`;
     const m = made[name];
     spoken++;
@@ -73,22 +87,24 @@ export async function reviewMarkdown(load) {
     for (const [key, when, line, vars, voice] of rows) {
       const l = fillLine(line, vars);
       total += count(l.zh);
-      const said = voice ? ` ${take(voice[0], voice[1], l.zh)} |` : '';
+      const said = voice ? ` ${take(voice[0], voice[1], l.zh, voice[2])} |` : '';
       out.push(`| \`${key}\` | ${cell(when)} | ${cell(l.zh)} | ${cell(l.en)} | ${count(l.zh)} |${said}`);
     }
     out.push('');
   };
   const quest = (id) => [npcLine('akara', id, den.key), 1];
+  const hers = (id) => [npcLine('kashya', id, sisters.key), 1, true];
   out.push(
     '# 台词审阅：第一幕开头',
     '',
     '由 `node tools/dialogue-review.mjs` 从 `src/data/dialogue.ts` 生成，不要手改；改台词改那个文件，再生成这一页。',
     '',
-    '- 全部是新写的，按游戏自己的口吻，不是暗黑 2 原文，也不是它的翻译。场合照原版（D2MOO `A1Q1.cpp` 的 64、65、71、76 号台词各在什么时候说），话是我们自己的。',
-    '- 地名、人名不写死在台词里，用占位符 `{moor}` `{den}` `{camp}` `{akara}`，显示时从改名表（`tools/d2-names/areas.json`、`npcs.json`）填进去；下面是填好之后的样子。`{n}` 是数目，这里按 3 填。',
+    '- 全部是新写的，按游戏自己的口吻，不是暗黑 2 原文，也不是它的翻译。场合照原版（D2MOO `A1Q1.cpp` 的 64、65、71、76 号台词，`A1Q2.cpp` 的 81、82、87、92 号台词各在什么时候说），话是我们自己的。',
+    `- 地名、人名不写死在台词里，用占位符 \`{moor}\` \`{plains}\` \`{den}\` \`{graves}\` \`{camp}\` \`{akara}\` \`{kashya}\` \`{raven}\`，显示时从改名表（\`tools/d2-names/areas.json\`、\`npcs.json\`、\`monsters.json\`）填进去；下面是填好之后的样子。\`{n}\` 是数目，这里按 3 填；\`{name}\` 是佣兵的名字，这里按「${merc}」填。`,
     '- 中文是游戏里显示、配音念的；英文写在旁边给配音说明用。字数是中文去掉空白后的字符数，含标点，按每秒约 5 个字估算时长；配了音的台词按录音的长度滚动。',
     `- ${akara}说的每句都配了音（\`tools/audio/list.mjs\` 里的音色），配音照这一页的中文念（\`tools/audio/list.mjs\` 读这一页）。「配音」一栏是录音：\`voice.akara.a1q1_intro.1\` 就是 \`public/audio/voice.akara.a1q1_intro.1.m4a\`，后面是它的长度。`,
     '- 改了台词、重新生成这一页之后，录音念的还是旧词的那几条标「要重录」，没录过的标「未录」：运行 `node tools/ai-audio.mjs --budget <积分>` 录好，再生成一次这一页。',
+    `- ${kashya}的台词照 \`docs/M2A.md\`「声音」先写好放在这里审阅，M2a 收尾时再配音：「配音」一栏写「未录」和到时候的录音名，\`tools/audio/list.mjs\` 现在不录它们；配音时把它们移进 \`src/data/dialogue.ts\` 的 \`spokenLines\`，给她在 \`tools/audio/list.mjs\` 的 \`SPEAKERS\` 里定一个音色。没录之前，游戏里照字数估的时长滚动。`,
     '- 配音把字念错时（多音字），在 `tools/audio/list.mjs` 的 `SAY_AS` 里给那句换一个只有正确读音的同音字，只给配音看，显示的还是原字；「配音」一栏写着换了哪个字。「读音查过」是逐个核对过的多音字读法：用 box 上的 Whisper 听写、定位每个字，再看那个音节的音高走向和元音的共振峰（记在 `tools/audio/made.json` 各条的 `check` 里）。',
     '',
     `## ${akara}：「${den.name}」（${den.nameEn}）`,
@@ -100,12 +116,24 @@ export async function reviewMarkdown(load) {
     ['remindOut', '出过营地或进过巢穴之后，点「交谈」（原版 71 号）', DEN_LINES.remindOut, undefined, quest('remindOut')],
     ['reward', `清空巢穴后回来和${akara}说话，她马上说，说完给 1 个技能点（原版 76 号，立刻播放）`, DEN_LINES.reward, undefined, quest('reward')],
   ]);
+  out.push(`## ${kashya}：「${sisters.name}」（${sisters.nameEn}）`, '');
+  table([
+    ['intro', `「${den.name}」完成以后第一次和${kashya}说话，她马上说（交出任务；原版 81 号，立刻播放）`, SISTERS_LINES.intro, undefined, hers('intro')],
+    ['remind', '接了任务还没出营地，点「交谈」（原版 82 号）', SISTERS_LINES.remind, undefined, hers('remind')],
+    ['remindOut', '出过营地或进过荒冢之后，点「交谈」（原版 87 号）', SISTERS_LINES.remindOut, undefined, hers('remindOut')],
+    ['reward', `${raven}死后回来和${kashya}说话，她马上说，说完给一名免费的佣兵（已有佣兵就不给），往后不到 8 级也能雇佣；领赏这一趟没出营地前，点「交谈」她再说一遍（原版 92 号）`, SISTERS_LINES.reward, undefined, hers('reward')],
+  ]);
   out.push('## 屏幕上的提示（不配音）', '');
   table([
     ['cleared', '巢穴里最后一只怪物死的时候', DEN_LINES.cleared],
     ['back', '紧接着上一条', DEN_LINES.back],
     ['few', '巢穴里只剩 5 只或更少时，每杀一只', DEN_LINES.few, { n: 3 }],
     ['got', '领到奖励时', DEN_LINES.got],
+    ['sisters.slain', `${raven}死的时候，主角在她所在的地块或相邻的地块里（原版的房间，10 米见方，含斜对角）`, SISTERS_LINES.slain],
+    ['sisters.back', '紧接着上一条', SISTERS_LINES.back],
+    ['sisters.missed', `${raven}死的时候主角离得太远，这一趟不算（下一趟冒险她还在）`, SISTERS_LINES.missed],
+    ['sisters.got', `领赏时${kashya}派来的免费佣兵到了身边`, SISTERS_LINES.got, { name: [mercName.name, mercName.nameEn] }],
+    ['sisters.gotNone', '领赏时主角已经有佣兵（活的死的都算），不再给', SISTERS_LINES.gotNone],
   ]);
   out.push(`## ${akara}：闲谈（点「交谈」而她没有任务上的话要说时，轮流说）`, '');
   table(GOSSIP.akara.map((g, i) => [`gossip${i}`, g.after ? `「${QUEST_BY_KEY[g.after].name}」完成之后才说` : '随时', g, undefined, [npcLine('akara', `gossip${i}`), 1]]));
@@ -123,15 +151,20 @@ export async function reviewMarkdown(load) {
   out.push('## 任务日志（不配音）', '');
   table([
     ['none', '任务还没人交给你', LOG_LINES.none],
-    ['off', '这个版本还没有的任务（另外五个）', LOG_LINES.off],
+    ['off', '这个版本还没有的任务（另外四个）', LOG_LINES.off],
     ['den.given', `「${den.name}」：接了任务，离开${akara}之后`, DEN_LOG.given],
     ['den.clear', `「${den.name}」：进了巢穴`, DEN_LOG.clear],
     ['den.few', `「${den.name}」：只剩 5 只或更少`, DEN_LOG.few, { n: 3 }],
     ['den.back', `「${den.name}」：清空了，回去领赏`, DEN_LOG.back],
     ['den.done', `「${den.name}」：领过奖励`, DEN_LOG.done],
+    ['sisters.given', `「${sisters.name}」：接了任务，离开${kashya}之后`, SISTERS_LOG.given],
+    ['sisters.find', `「${sisters.name}」：进了荒冢（没接任务先进去也算开始）`, SISTERS_LOG.find],
+    ['sisters.back', `「${sisters.name}」：${raven}死时主角在近旁，回去领赏`, SISTERS_LOG.back],
+    ['sisters.missed', `「${sisters.name}」：${raven}死时主角离得太远，这一趟算完成、没有奖励`, SISTERS_LOG.missed],
+    ['sisters.done', `「${sisters.name}」：领过奖励`, SISTERS_LOG.done],
   ]);
   const left = [unmade && `${unmade} 条未录`, redo && `${redo} 条要重录`].filter(Boolean).join('，');
-  out.push(`共 ${total} 字；配音 ${spoken} 条${left ? `，其中 ${left}` : '，都已录好'}。`, '');
+  out.push(`共 ${total} 字；配音 ${spoken} 条${left ? `，其中 ${left}` : '，都已录好'}${later ? `；另有 ${later} 条等 M2a 收尾时配音` : ''}。`, '');
   return out.join('\n');
 }
 
