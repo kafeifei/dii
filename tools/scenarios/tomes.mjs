@@ -10,12 +10,15 @@
 // a potion fills an empty belt. The bag's scroll of identify dropped on the shelf asks before it is
 // sold (no keeps it on the cursor, Enter sells it); ctrl + click sells a potion at once. The tome's
 // tooltip shows its charges and the hints. Out on Blood Moor a right-click on it in the bag casts a
-// town portal, using a charge as the portal opens; P reads it too; the HUD's portal button counts
-// what is left. Then at a phone's size with the touch controls: two taps and the merchant's yes, the
-// shop's tooltip, and a long press on a scroll filling the tome. Page and console errors fail the
-// run. Shots: the kit, the merchant asking, the shop's tooltip, the tome filled, the sale asked, the
-// tome's tooltip, the portal from the tome, the phone's HUD, shop and tome. The last line is
-// "TOMES OK …" or "TOMES FAIL …".
+// town portal, using a charge as the portal opens (its other end in the camp at once); P reads it
+// too; the HUD's portal button counts what is left. The last portal clicked as a player does: into
+// the camp a step from its end there, and back a step from where it opened, both ends closing, the
+// camera on the hero and the minimap and the banner naming the area each time. Then at a phone's
+// size with the touch controls: two taps and the merchant's yes, the shop's tooltip, and a long
+// press on a scroll filling the tome. Page and console errors fail the run. Shots: the kit, the
+// merchant asking, the shop's tooltip, the tome filled, the sale asked, the tome's tooltip, the
+// portal from the tome and from the belt, the camp and Blood Moor through the portal, the phone's
+// HUD, shop and tome. The last line is "TOMES OK …" or "TOMES FAIL …".
 
 const CAMP_AREA = 1;
 const WILD_AREA = 2;
@@ -66,6 +69,14 @@ export default async function (page, shot, log) {
       S.bag = () => game.player.inventory.items.map((x) => x.item);
       S.tome = () => S.bag().find((it) => it.baseId === 'tbk');
       S.shelf = (code) => game.shop.all().find((it) => it.baseId === code);
+      /** the hero's town portals open on the overworld: one for each end out in the wild with its other end in the camp, else what's amiss */
+      S.portals = () => {
+        const L = game.level;
+        const mine = L.objects.filter((o) => o.kind === 'portal' && !o.rift);
+        const out = mine.filter((o) => !L.inTown(o.pos)).length;
+        const home = mine.length - out;
+        return out === home ? out : `${out} out, ${home} in the camp`;
+      };
       S.said = [];
       const message = game.hooks.message.bind(game.hooks);
       game.hooks.message = (t, c, d) => {
@@ -275,7 +286,7 @@ export default async function (page, shot, log) {
       await until(() => game.player.state === 'idle' || game.player.state === 'move', null, 'the cast to end');
       await page.keyboard.press('p');
       await until(() => window.__t.tome().qty === 18, null, 'P to read the tome');
-      const p = await ev(() => ({ scrolls: window.__t.bag().filter((it) => it.baseId === 'tsc').length, portals: game.level.objects.filter((o) => o.kind === 'portal').length }));
+      const p = await ev(() => ({ scrolls: window.__t.bag().filter((it) => it.baseId === 'tsc').length, portals: window.__t.portals() }));
       expect(p.scrolls === 1 && p.portals === 1, `P: ${JSON.stringify(p)}`);
       // the tome emptied and the bag's scroll put in the belt: the HUD counts it, and P reads it there
       await until(() => game.player.state === 'idle' || game.player.state === 'move', null, 'the cast to end');
@@ -294,11 +305,75 @@ export default async function (page, shot, log) {
       expect(hud === '1', `a scroll in the belt only: the HUD counts ${hud}`);
       await page.keyboard.press('p');
       await until((uid) => !game.player.belt[3].some((it) => it.uid === uid), belted, "P to read the belt's scroll");
-      const b = await ev(() => ({ portals: game.level.objects.filter((o) => o.kind === 'portal').length, count: document.querySelector('.hbtn .count')?.textContent, tome: window.__t.tome().qty }));
+      const b = await ev(() => ({ portals: window.__t.portals(), count: document.querySelector('.hbtn .count')?.textContent, tome: window.__t.tome().qty }));
       expect(b.portals === 1 && b.tome === 0, `P with the scroll in the belt: ${JSON.stringify(b)}`);
       await frames(4);
       await shot('portal-from-belt');
       facts.push("the tome right-clicked and P: 20 → 19 → 18, the scroll kept; the tome empty, P read the belt's scroll");
+    },
+
+    async portalTrip() {
+      // the portal the belt's scroll opened, there and back, each end clicked as a player clicks it
+      // (travel.ts usePortal): out of it a step beside the other end, the view jumped there, the
+      // minimap and the banner naming the area come to; back by the far end, both ends gone
+      await ev(() => {
+        game.hooks.left = null;
+        game.hooks.right = null;
+        game.hooks.dirty = true;
+      });
+      await frames(4);
+      const d = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+      const ends = () =>
+        ev(() => {
+          const L = game.level;
+          const mine = L.objects.filter((o) => o.kind === 'portal' && !o.rift);
+          const far = mine.find((o) => !L.inTown(o.pos));
+          const camp = mine.find((o) => L.inTown(o.pos));
+          return { n: mine.length, far: far && { ...far.pos }, camp: camp && { ...camp.pos }, dest: camp?.dest };
+        });
+      const e = await ends();
+      expect(e.n === 2 && e.far && e.camp && e.dest === WILD_AREA, `the portal open: ${JSON.stringify(e)}`);
+      /** where the portal's end `inCamp` or not stands on the screen (Renderer.pickObject's spot for it) */
+      const onScreen = (inCamp) =>
+        ev((inCamp) => {
+          const L = game.level;
+          const o = L.objects.find((x) => x.kind === 'portal' && !x.rift && L.inTown(x.pos) === inCamp);
+          const s = renderer.projectP(o.pos, 0.9);
+          const r = document.getElementById('world').getBoundingClientRect();
+          return { x: r.left + s.x, y: r.top + s.y };
+        }, inCamp);
+      /** what the view shows: where the camera looks against where the hero stands, the minimap's and the banner's names */
+      const view = () =>
+        ev(() => ({
+          area: game.area.id,
+          label: game.area.label ?? game.area.name,
+          name: game.area.name,
+          hero: { ...game.player.pos },
+          cam: { x: renderer.camTarget.x, z: renderer.camTarget.z },
+          minimap: document.querySelector('#minimap .lvl')?.textContent,
+          banner: document.querySelector('#area-banner .ab-name')?.textContent,
+          shown: +(document.getElementById('area-banner').dataset.shown ?? 0),
+        }));
+      const v0 = await view();
+      let at = await onScreen(false);
+      await page.mouse.click(at.x, at.y);
+      await until(() => game.area?.id === 1, null, 'the hero to come into the camp through the portal', 8000);
+      await frames(3);
+      const v1 = await view();
+      expect(v1.area === CAMP_AREA && d(v1.hero, e.camp) < 2.5 && d(v1.cam, v1.hero) < 0.3 && v1.minimap === v1.label && v1.banner === v1.name && v1.shown > v0.shown, `through the far end: ${JSON.stringify({ ...v1, end: e.camp })}`);
+      // (the camp's end grows open as its view is first made, a third of a second)
+      await frames(30);
+      await shot('portal-camp');
+      at = await onScreen(true);
+      await page.mouse.click(at.x, at.y);
+      await until(() => game.area?.id === 2, null, 'the hero to come back through the portal', 8000);
+      await frames(3);
+      const v2 = await view();
+      const left = await ends();
+      expect(v2.area === WILD_AREA && d(v2.hero, e.far) < 2.5 && d(v2.cam, v2.hero) < 0.3 && v2.minimap === v2.label && v2.banner === v2.name && v2.shown > v1.shown, `back through the camp's end: ${JSON.stringify({ ...v2, far: e.far })}`);
+      expect(left.n === 0, `back, ${left.n} end(s) of the portal still open`);
+      await shot('portal-back');
+      facts.push(`through the portal and back by clicking: ${d(v1.hero, e.camp).toFixed(2)} m from the camp's end, ${d(v2.hero, e.far).toFixed(2)} m from the far end, the view and names following`);
     },
 
     async phone() {
