@@ -1,9 +1,9 @@
-import { CAMP_AREA, builtWaypoints } from '../world/areas';
+import { builtWaypoints } from '../world/areas';
 import { takeCorpse } from './bodies';
 import { drinkWell, openBarrel, openCasket, openChest, searchRemains, useShrine } from './containers';
 import type { Game } from './game';
 import type { ObjKind, WorldObject } from './objects';
-import { tellClosed } from './travel';
+import { tellClosed, usePortal } from './travel';
 
 /** what using each kind of object does (interact); a rift's obelisk and ways are the rift's (Rifts.use) */
 export const USE: Partial<Record<ObjKind, (g: Game, obj: WorldObject) => void>> = {
@@ -42,9 +42,10 @@ export const USE: Partial<Record<ObjKind, (g: Game, obj: WorldObject) => void>> 
   casket: openCasket,
   remains: searchRemains,
   well: drinkWell,
+  // the hero's town portal: one end to the other (travel.ts usePortal)
   portal: (g, obj) => {
     g.sfx.play('env.portal_enter', { pos: obj.pos });
-    g.enterArea(g.level.inTown(obj.pos) ? obj.dest : CAMP_AREA, 'portal');
+    usePortal(g, obj);
   },
 };
 

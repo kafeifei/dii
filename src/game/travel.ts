@@ -25,7 +25,50 @@ export interface Trip {
   leftKind: Map<AreaKind, number>;
   /** the hero has been underground this game: enter_dungeon is said the first time */
   wentUnder: boolean;
+  /** the hero's town portal while it is open, its two ends each other's (TownPortal) */
+  portal: TownPortal | null;
 }
+
+/**
+ * The hero's town portal: the end where it was opened and the end in the camp, made together and
+ * each leading to the other, as D2 links them (D2MOO d9d394f, Skills.cpp:3070-3071 UNITS_StoreOwner
+ * both ways, so OBJECTS_OperateFunction15_Portal goes by the end's owner, ObjMode.cpp:3206-3210).
+ * Each end is known by itself, never looked for among the portals on its map: a rift's floor has
+ * its own ways that are portals too (src/game/rift.ts), and the camp has the rift's way in
+ */
+export interface TownPortal {
+  /** the end where it was opened, and the map that is on */
+  far: WorldObject;
+  level: Level;
+  /** the end in the camp, and the map holding the camp */
+  camp: WorldObject;
+  campLevel: Level;
+}
+
+/**
+ * where the hero comes out of the far end, from it, and of the camp's end: a step, about 1.3 m, as
+ * before (approximate: D2 sets them at the end and walks them on 5 subtiles along each of its axes,
+ * ObjMode.cpp:3237)
+ */
+const OUT_STEP: P2 = { x: 1, z: 0.8 };
+const IN_STEP: P2 = { x: 1.2, z: 0.6 };
+/**
+ * where the camp's end stands from the camp's start, the hero's way into it: a step toward the camp
+ * fire, in the open, with nothing tall between it, or the hero coming out of it, and the view (the
+ * camera looks from the +x, +z side: render/views.ts CAM_YAW). It stood 2.5 m west of the start
+ * until 2026-10-29, right behind the rifts' obelisk as the view has it, which hid both. Approximate:
+ * D2's town end goes to a spawn tile of the town's (Skills.cpp:3013 DUNGEON_FindActSpawnLocationEx)
+ */
+const CAMP_SPOT: P2 = { x: -1, z: -1 };
+/** how far clear of each of the camp's people and things, past its own size, the camp's end stands (ours: D2 needs only the free spot, Skills.cpp:3041) */
+const CAMP_ROOM = 1.2;
+/**
+ * how far ahead of the hero the far end opens, where they can see it, as before (approximate: D2
+ * opens it where they stand, SkillItem.cpp:103, at the free spot by them, Skills.cpp:3118)
+ */
+const AHEAD = 1.5;
+/** how wide the way from a portal (or the hero) to a spot by it must be open (ours): no slipping between two blocks that touch at a corner */
+const CLEAR = 0.25;
 
 /**
  * Go to area `id`, onto the map that holds it, arriving `how`: by a stair or an exit at the way
@@ -129,37 +172,70 @@ function areaStart(g: Game, level: Level, id: number): P2 {
 }
 
 /**
- * Through the town portal: from its far end into the camp, where its other end stands by the
- * start; from that end back to where it was opened, both ends closing (D2: the portal closes once
- * its owner comes back through it). On one map either way is a jump. With no portal open the way
- * back goes as a waypoint would
+ * Through the hero's town portal toward area `id` (enterArea): into the camp by its far end, else
+ * back by the camp's end. With none open the way goes as a waypoint would
  */
 function throughPortal(g: Game, id: number): boolean {
-  const L = g.portalLevel;
-  const far = L?.objects.find((o) => o.kind === 'portal' && !L.inTown(o.pos));
-  if (id === CAMP_AREA) {
-    const camp = g.maps.levelFor(CAMP_AREA)!;
-    camp.objects = camp.objects.filter((o) => !(o.kind === 'portal' && camp.inTown(o.pos)));
-    const s = camp.layout.start;
-    const pt = { x: s.x - 2.5, z: s.z + 0.5 };
-    const there = far && L ? L.areaAt(far.pos.x, far.pos.z) : undefined;
-    const portal = new WorldObject('portal', pt, `传送门 · ${there?.name ?? '?'}`, 0.6);
-    portal.dest = there?.id ?? CAMP_AREA;
-    camp.objects.push(portal);
-    arrive(g, camp, { x: pt.x + 1.2, z: pt.z + 0.6 }, false, 'portal');
+  const tp = g.trip.portal;
+  if (!tp) return enterArea(g, id, 'waypoint');
+  return usePortal(g, id === CAMP_AREA ? tp.far : tp.camp);
+}
+
+/**
+ * One end of the hero's town portal used: the hero comes out a step beside the other end, on the map
+ * that is on as it was left (D2: OBJECTS_OperateFunction15_Portal, ObjMode.cpp:3206-3237, sets them at
+ * the free spot by the other end's own and walks them a step on). The far end leaves both open; the
+ * camp's end, the way back, closes both (ObjMode.cpp:3240-3253). On one map either way is a jump.
+ * False for a portal that isn't an end of the hero's
+ */
+export function usePortal(g: Game, end: WorldObject): boolean {
+  const tp = g.trip.portal;
+  if (!tp || (end !== tp.far && end !== tp.camp)) return false;
+  if (end === tp.far) {
+    arrive(g, tp.campLevel, besidePortal(tp.campLevel, tp.camp, IN_STEP), false, 'portal');
     return true;
   }
   closePortals(g);
-  if (!L || !far) return enterArea(g, id, 'waypoint');
-  arrive(g, L, { x: far.pos.x + 1, z: far.pos.z + 0.8 }, false, 'portal');
+  arrive(g, tp.level, besidePortal(tp.level, tp.far, OUT_STEP), false, 'portal');
   return true;
 }
 
-/** the hero's town portal gone, both its ends, wherever they are */
+/**
+ * Where someone coming out of portal `o` on `L` stands: `step` from it (the walkable ground nearest
+ * that), if the portal has an open way to it; else the nearest spot to that round the portal that
+ * it has (D2's free spot by the portal, ObjMode.cpp:3226: never past a wall, a tree or a rock the
+ * portal stands by, as the walkable ground nearest the step alone can be); else the portal's own spot
+ */
+function besidePortal(L: Level, o: WorldObject, step: P2): P2 {
+  const m = L.map;
+  const want = { x: o.pos.x + step.x, z: o.pos.z + step.z };
+  const near = m.nearestWalkable(want.x, want.z);
+  if (near && m.los(o.pos, near, CLEAR)) return near;
+  let best: P2 | null = null;
+  let bestD = Infinity;
+  for (const r of [0.8, 1.1, 1.4, 1.8, 2.3]) {
+    for (let k = 0; k < 16; k++) {
+      const a = (k / 16) * Math.PI * 2;
+      const c = { x: o.pos.x + Math.sin(a) * r, z: o.pos.z + Math.cos(a) * r };
+      const d = dist(c, want);
+      if (d < bestD && m.circleClear(c.x, c.z, 0.3) && m.los(o.pos, c, CLEAR)) {
+        best = c;
+        bestD = d;
+      }
+    }
+    if (best) return best;
+  }
+  return { ...o.pos };
+}
+
+/** the hero's town portal gone, both its ends, wherever they are; the rifts' own ways (src/game/rift.ts) stay */
 export function closePortals(g: Game) {
-  // a rift's own ways (src/game/rift.ts) aren't the hero's portal
-  for (const L of [...g.maps.kept(), g.portalLevel, ...g.rift.levels()]) if (L) L.objects = L.objects.filter((o) => o.kind !== 'portal' || o.rift);
-  g.portalLevel = null;
+  const tp = g.trip.portal;
+  if (tp) {
+    tp.level.objects = tp.level.objects.filter((o) => o !== tp.far);
+    tp.campLevel.objects = tp.campLevel.objects.filter((o) => o !== tp.camp);
+  }
+  g.trip.portal = null;
 }
 
 /**
@@ -267,18 +343,47 @@ export function openTownPortal(g: Game) {
     g.say('cant_here');
     return;
   }
-  // one town portal a hero: a new one closes the last, both its ends
+  // one town portal a hero: a new one closes the last, both its ends (SkillItem.cpp:101 PLAYER_RemoveTownPortal)
   closePortals(g);
   const p = g.player;
   const a = p.facing;
-  let pt = { x: p.pos.x + Math.sin(a) * 1.5, z: p.pos.z + Math.cos(a) * 1.5 };
-  if (!L.map.circleClear(pt.x, pt.z, 0.4)) pt = { ...p.pos };
-  const portal = new WorldObject('portal', pt, '回城传送门', 0.6);
-  portal.dest = CAMP_AREA;
-  L.objects.push(portal);
-  g.portalLevel = L;
+  // a pace ahead, on open ground the hero can see (not past a wall or a tree they face), else where they stand
+  let pt = { x: p.pos.x + Math.sin(a) * AHEAD, z: p.pos.z + Math.cos(a) * AHEAD };
+  if (!L.map.circleClear(pt.x, pt.z, 0.4) || !L.map.los(p.pos, pt, CLEAR)) pt = { ...p.pos };
+  const far = new WorldObject('portal', pt, '回城传送门', 0.6);
+  far.dest = CAMP_AREA;
+  L.objects.push(far);
+  // its other end in the camp at once, as D2 makes both together (Skills.cpp:3078-3109
+  // D2GAME_CreatePortalObject_6FD13DF0, the town's end by D2GAME_CreateLinkPortal_6FD13B20): there
+  // to go back through after dying, or after coming back to the camp another way
+  const campLevel = g.maps.levelFor(CAMP_AREA)!;
+  const there = L.areaAt(pt.x, pt.z);
+  const camp = new WorldObject('portal', campSpot(campLevel), `传送门 · ${there.name}`, 0.6);
+  camp.dest = there.id;
+  campLevel.objects.push(camp);
+  g.trip.portal = { far, level: L, camp, campLevel };
   g.fx.burst('portal', pt);
   g.sfx.play('env.portal_open', { pos: pt });
+}
+
+/**
+ * Where the camp's end of a town portal stands: by the camp's start, the hero's way into it, on open
+ * ground clear of its people and things (D2: its town's spot for it, then the free spot nearest that
+ * no unit or object stands on, Skills.cpp:3013-3041 COLLISION_GetFreeCoordinatesEx)
+ */
+function campSpot(L: Level): P2 {
+  const s = L.layout.start;
+  const want = { x: s.x + CAMP_SPOT.x, z: s.z + CAMP_SPOT.z };
+  const free = (c: P2) => L.map.circleClear(c.x, c.z, 0.6) && L.objects.every((o) => dist(o.pos, c) >= o.radius + CAMP_ROOM);
+  if (free(want)) return want;
+  for (let r = 1; r <= 6; r++) {
+    for (let k = 0; k < 16; k++) {
+      const a = (k / 16) * Math.PI * 2;
+      const c = { x: want.x + Math.sin(a) * r, z: want.z + Math.cos(a) * r };
+      if (free(c)) return c;
+    }
+  }
+  return L.map.nearestWalkable(want.x, want.z) ?? want;
 }
 
 /**

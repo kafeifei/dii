@@ -247,7 +247,12 @@ export default async (load) => {
   // nothing near to cut the cast short
   for (const m of west.monsters) if (!m.dead && Math.hypot(m.pos.x - p.pos.x, m.pos.z - p.pos.z) < 30) game.killMonster(m, 'phys');
   west.ground.length = 0;
-  const portals = () => west.objects.filter((o) => o.kind === 'portal').length;
+  // town portals open: each one's end out on the moor, its other end in the camp with it (travel.ts openTownPortal)
+  const portals = () => {
+    const out = west.objects.filter((o) => o.kind === 'portal' && !west.inTown(o.pos)).length;
+    const home = west.objects.filter((o) => o.kind === 'portal' && !o.rift && west.inTown(o.pos)).length;
+    return out === home ? out : `${out} out, ${home} in the camp`;
+  };
   const cast = (from) => {
     game.castTownPortal(from);
     const casting = p.state === 'cast';

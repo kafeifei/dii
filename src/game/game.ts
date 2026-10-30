@@ -132,8 +132,10 @@ export class Game {
   /** the hireling on the map the hero is on, beside them (src/game/merc.ts placeMerc); none while the hero has none */
   merc: Merc | null = null;
   level!: Level;
-  /** the map the far end of the hero's town portal is on (the camp's end leads back to it) */
-  portalLevel: Level | null = null;
+  /** the map the far end of the hero's town portal is on (the camp's end leads back to it: Trip.portal) */
+  get portalLevel(): Level | null {
+    return this.trip.portal?.level ?? null;
+  }
   /** the trial ground's floor visited last (Maps.lastDungeon): the tools set it too (bot.mjs) */
   get lastDungeon(): Level | null {
     return this.maps.lastDungeon;
@@ -151,7 +153,7 @@ export class Game {
    */
   worldSeed = 0;
   /** what the game remembers of the hero's comings and goings (src/game/travel.ts) */
-  trip: Trip = { atClosed: null, leftKind: new Map(), wentUnder: false };
+  trip: Trip = { atClosed: null, leftKind: new Map(), wentUnder: false, portal: null };
   /** the monsters this sim step runs: those near the hero, and near the hireling (fight.ts monstersAround) */
   private stepped: Monster[] = [];
   /**
@@ -387,7 +389,7 @@ export class Game {
   private newWorld(seed: number) {
     this.worldSeed = seed;
     this.maps = new Maps(this);
-    this.portalLevel = null;
+    this.trip.portal = null;
     // a rift is a game's: the next game opens its own
     this.rift.forget();
     this.area = null;
