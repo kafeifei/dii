@@ -382,7 +382,9 @@ export default async (load) => {
 
     // cursed: a landed blow curses three times in four; under it physical damage is doubled
     clear();
-    const curser = place('fallen1', at(1, 0), 'unique', [7]);
+    // 4 subtiles off the hero where they stand (teleportWithin puts them on a tile's middle), well
+    // inside the curse's 3 subtiles' reach past the two bodies' edges
+    const curser = place('fallen1', { x: p.pos.x + A.subtiles(4), z: p.pos.z }, 'unique', [7]);
     let cursed = 0;
     let lasts = 0;
     for (let i = 0; i < 200; i++) {
@@ -563,10 +565,10 @@ export default async (load) => {
     }
 
     // noticing: a sleeping fallen within its notice range, the hero out of its sight or in it
-    /** a spot 3–10.5 m from `h` in area `id`, clear, in the sight of it or out of it */
+    /** a spot 9–32 subtiles from `h` (inside the fallen's notice range of 35) in area `id`, clear, in the sight of it or out of it */
     const ringSpot = (Lv, id, h, inside) => {
       const m = Lv.monsterMap;
-      for (let r = 3; r <= 10.5; r += 0.75) {
+      for (let r = A.subtiles(9); r <= A.subtiles(32); r += A.subtiles(2.25)) {
         for (let k = 0; k < 24; k++) {
           const a = (k / 24) * Math.PI * 2;
           const q = { x: h.x + Math.sin(a) * r, z: h.z + Math.cos(a) * r };
