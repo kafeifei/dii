@@ -83,7 +83,8 @@ export default async (load) => {
     rolled++;
     return roll.apply(this, a);
   };
-  const chest = west.objects.find((o) => o.kind === 'chest' && !o.used && !west.inTown(o.pos));
+  // an unlocked one: the overworld's chests roll locks as D2's do (about 8% in the Blood Moor) and this hero has no key
+  const chest = west.objects.find((o) => o.kind === 'chest' && !o.used && !o.locked && !west.inTown(o.pos));
   game.interact(chest);
   check(rolled === 1, `a chest opened rolled ${rolled} time(s) through the swapped rollLoot`);
   game.rollLoot = roll;
