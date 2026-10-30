@@ -5,7 +5,7 @@ import { D2X_SUPERUNIQUES } from '../data/d2x/superuniques';
 import type { D2xArea } from '../data/d2x/types';
 import type { Difficulty } from '../items/d2/types';
 import { defineRiftFloor, type AreaDef } from './areas';
-import { generateDungeon, THEMES, type Layout } from './levelgen';
+import { bfsDistances, generateDungeon, THEMES, type Layout } from './levelgen';
 import { generateWild } from './wild';
 
 /**
@@ -156,13 +156,28 @@ function outdoor(row: D2xArea): boolean {
 }
 
 /**
- * The map of a rift's floor `area` replaying area `source`: a wilderness map for the areas under the
- * sky, else a dungeon in the caves' look or the crypts' (the monastery's, the jail's, the cathedral's
- * and the catacombs' borrow the crypts' until they have their own). No waypoint, no way on of the
- * old maps': the rift sets its own (src/game/rift.ts). `down` is where the way to the next floor
- * goes, the map's far end
+ * A rift floor's map: its layout, with none of the ways of the map it was made as (the rift sets its
+ * own: src/game/rift.ts), and where those ways go
  */
-export function riftFloorLayout(area: AreaDef, source: number, seed: number): { layout: Layout; down: P2 } {
+export interface RiftFloorMap {
+  layout: Layout;
+  /** where the way on to the next floor goes: the source's own way down, else the map's far end */
+  down: P2;
+  /** into the map from the way on, where someone coming back up it stands; without it, from it towards the start */
+  downIn?: P2;
+  /** where the way back stands (home from the first floor, up from the others) and into the map from it; without it, a step behind the start */
+  up?: { pos: P2; inward: P2 };
+}
+
+/**
+ * The map of a rift's floor `area` replaying area `source` where the game has no maze for it yet
+ * (src/game/rift.ts riftFloorMap): a wilderness map for the areas under the sky, else a dungeon of
+ * the trial ground's kind in the caves' look or the crypts' (the monastery's, the jail's, the
+ * cathedral's and the catacombs' borrow the crypts' until they have their own). No waypoint, no way
+ * on of the old maps': the rift sets its own. `down` is where the way to the next floor goes, the
+ * map's far end
+ */
+export function riftFloorLayout(area: AreaDef, source: number, seed: number): RiftFloorMap {
   const row = areaRow(source);
   const L = outdoor(row) ? generateWild(seed) : generateDungeon(6, seed, area.id, row.levelType === 3 ? THEMES.cave : THEMES.crypt);
   const down = L.stairs ?? L.start;
@@ -177,4 +192,89 @@ export function riftFloorLayout(area: AreaDef, source: number, seed: number): { 
     areaOf: new Uint16Array(L.map.w * L.map.h).fill(area.id),
   };
   return { layout, down };
+}
+
+/**
+ * A rift's floor `area` on `maze`, the map the game grows its source dungeon as (src/world/maze.ts by
+ * src/game/maps.ts DUNGEON_MAKERS), from the floor's own seed in the tier's difficulty: its rooms,
+ * its look and light (a cave's none but the hero's, a crypt's torches), D2's objects in it (the
+ * Layout's chests, barrels, shrines, caskets, rogue corpses, wells) and its superunique's room, all
+ * the area's tiles the floor's. Its ways up and down are the rift's: the way back stands where the
+ * dungeon's way up does, the way on where its way down does (Cave Level 1's), else at its far end
+ * (farEnd). The maze keeps only the floor the way in reaches (maze.ts), so every tile of it is walked
+ * to from the start
+ */
+export function riftMazeFloor(area: AreaDef, maze: Layout): RiftFloorMap {
+  const up = maze.entrances?.find((e) => e.kind === 'up');
+  const on = maze.entrances?.find((e) => e.kind === 'cave');
+  const layout: Layout = {
+    ...maze,
+    stairs: undefined,
+    waypoints: [],
+    exits: [],
+    entrances: [],
+    presetMonsters: [],
+    presets: maze.presets?.map((p) => ({ ...p, area: area.id })),
+    areaOf: new Uint16Array(maze.map.w * maze.map.h).fill(area.id),
+  };
+  const far = on ? null : farEnd(layout);
+  return {
+    layout,
+    down: on ? { x: on.x, z: on.z } : far!.pos,
+    downIn: on ? { x: on.nx, z: on.nz } : far!.inward,
+    up: up && { pos: { x: up.x, z: up.z }, inward: { x: up.nx, z: up.nz } },
+  };
+}
+
+/** a tile's four neighbours, as a walk steps */
+const STEPS: readonly [number, number][] = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+];
+
+/**
+ * Where a maze floor with no way down of its own has its far end (docs/RIFT.md: the way on at each
+ * floor's far end): the tile farthest from the start by walk with open floor all round it and none
+ * of the floor's objects or its superunique on it or the tiles round it, so the way on stands in the
+ * open; and into the map from it, back along the walk
+ */
+function farEnd(L: Layout): { pos: P2; inward: P2 } {
+  const map = L.map;
+  const walk = bfsDistances(map, L.start);
+  const things: P2[] = [
+    ...L.chests,
+    ...L.barrels,
+    ...(L.shrines ?? []),
+    ...[...(L.caskets ?? []), ...(L.remains ?? []), ...(L.wells ?? [])].map((o) => o.pos),
+    ...(L.superUniques ?? []).map((u) => u.pos),
+  ];
+  const open = (x: number, y: number) => {
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!map.walkable(x + dx, y + dy)) return false;
+    return !things.some((t) => Math.abs(t.x - (x + 0.5)) < 1.5 && Math.abs(t.z - (y + 0.5)) < 1.5);
+  };
+  let best = -1;
+  let anyBest = -1;
+  for (let i = 0; i < walk.length; i++) {
+    if (walk[i] < 0) continue;
+    if (anyBest < 0 || walk[i] > walk[anyBest]) anyBest = i;
+    if ((best < 0 || walk[i] > walk[best]) && open(i % map.w, (i / map.w) | 0)) best = i;
+  }
+  const at = best >= 0 ? best : anyBest;
+  const pos = { x: (at % map.w) + 0.5, z: ((at / map.w) | 0) + 0.5 };
+  // a few tiles back towards the start, each a step nearer by the walk
+  let cx = at % map.w;
+  let cy = (at / map.w) | 0;
+  for (let k = 0; k < 4; k++) {
+    const d = walk[cy * map.w + cx];
+    const step = STEPS.find(([sx, sy]) => map.walkable(cx + sx, cy + sy) && walk[(cy + sy) * map.w + cx + sx] === d - 1);
+    if (d <= 0 || !step) break;
+    cx += step[0];
+    cy += step[1];
+  }
+  const dx = cx + 0.5 - pos.x;
+  const dz = cy + 0.5 - pos.z;
+  const len = Math.hypot(dx, dz);
+  return { pos, inward: len ? { x: dx / len, z: dz / len } : { x: 0, z: 1 } };
 }

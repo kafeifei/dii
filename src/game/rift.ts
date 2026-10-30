@@ -2,9 +2,10 @@ import { RNG, type P2 } from '../core/math';
 import type { Difficulty } from '../items/d2/types';
 import { CAMP_AREA, type AreaDef } from '../world/areas';
 import { WILD_MAPS } from '../world/levelgen';
-import { isRiftArea, openTiers, riftFloorArea, riftFloorLayout, riftPlan, RIFT_AREA, RIFT_TIERS, guardianName, tierLabel, type RiftTier } from '../world/rift';
+import { isRiftArea, openTiers, riftFloorArea, riftFloorLayout, riftMazeFloor, riftPlan, RIFT_AREA, RIFT_TIERS, guardianName, tierLabel, type RiftFloorMap, type RiftTier } from '../world/rift';
 import type { Arrival, Game } from './game';
 import { Level } from './level';
+import { DUNGEON_MAKERS } from './maps';
 import type { Monster, MonsterRank } from './monster';
 import { WorldObject } from './objects';
 import { RiftProgress } from './riftsave';
@@ -27,6 +28,18 @@ const WORTH: Record<MonsterRank, number> = { normal: 1, minion: 1, champion: 3, 
 const FILL = 0.4;
 /** a second use of the way out within this many seconds leaves though items lie on its floors */
 const CONFIRM = 6;
+
+/**
+ * The map of tier `t`'s floor `area` replaying area `source`, from the floor's own seed (never the
+ * world's dungeon seed, levelSeed: a rift's Crypt is another Crypt than the game's): a dungeon the
+ * game grows as D2 does (DUNGEON_MAKERS: the Den, the Cave's two levels, the Crypt, the Mausoleum)
+ * by its maze in the tier's difficulty (its rooms by difficulty, its objects, its light); the
+ * wilderness and the dungeons still to come as before (src/world/rift.ts riftFloorLayout)
+ */
+export function riftFloorMap(t: RiftTier, area: AreaDef, source: number, seed: number): RiftFloorMap {
+  const make = DUNGEON_MAKERS[source];
+  return make ? riftMazeFloor(area, make(seed, t.difficulty)) : riftFloorLayout(area, source, seed);
+}
 
 /** a rift open now */
 export interface RiftRun {
@@ -140,16 +153,17 @@ export class Rifts {
     const plan = riftPlan(tier, rng);
     const areas: AreaDef[] = [];
     const floors: Level[] = [];
-    const downs: P2[] = [];
+    const maps: RiftFloorMap[] = [];
     plan.forEach((source, i) => {
       const area = riftFloorArea(tier, i + 1, source);
+      // each floor's own seed, the rift's turned by its place in it
       const s = (seed + Math.imul(i + 1, 0x9e3779b1)) >>> 0;
-      const { layout, down } = riftFloorLayout(area, source, s);
+      const f = riftFloorMap(tier, area, source, s);
       areas.push(area);
-      floors.push(new Level(WILD_MAPS, s, layout, tier.difficulty));
-      downs.push(down);
+      floors.push(new Level(WILD_MAPS, s, f.layout, tier.difficulty));
+      maps.push(f);
     });
-    floors.forEach((L, i) => this.ways(L, i, areas, downs[i]));
+    floors.forEach((L, i) => this.ways(L, i, areas, maps[i]));
     const share = floors.map((L) => Math.max(5, Math.round(L.monsters.reduce((w, m) => w + WORTH[m.rank], 0) * FILL)));
     const needed = share.reduce((a, b) => a + b, 0);
     this.run = { tier, floors, areas, got: floors.map(() => 0), share, progress: 0, needed, guardian: null, done: false };
@@ -164,12 +178,14 @@ export class Rifts {
   }
 
   /**
-   * The ways on a floor: back to the camp from the first one's start, back up from the others', and
-   * on down from the far end of all but the last. Each faces into the map, where someone coming
-   * through it stands (Game.arrival)
+   * The ways on a floor (`f`, its map): back to the camp from the first one's start, back up from the
+   * others', and on down from the far end of all but the last; on a dungeon's maze, where its own ways
+   * up and down stand (RiftFloorMap). Each faces into the map, where someone coming through it
+   * stands (Game.arrival)
    */
-  private ways(L: Level, i: number, areas: AreaDef[], down: P2) {
+  private ways(L: Level, i: number, areas: AreaDef[], f: RiftFloorMap) {
     const start = L.layout.start;
+    const { down } = f;
     const away = (from: P2, to: P2) => {
       const dx = to.x - from.x;
       const dz = to.z - from.z;
@@ -178,21 +194,22 @@ export class Rifts {
     };
     const off = (p: P2, d: P2, r: number) => L.map.nearestWalkable(p.x - d.x * r, p.z - d.z * r) ?? p;
     const into = away(start, down);
+    const back = f.up ?? { pos: off(start, into, 1.6), inward: into };
     if (i === 0) {
-      const o = new WorldObject('portal', off(start, into, 1.6), '回到营地', 0.6);
+      const o = new WorldObject('portal', back.pos, '回到营地', 0.6);
       o.dest = CAMP_AREA;
       o.rift = 'home';
       L.objects.push(o);
     } else {
-      const o = new WorldObject('stairs', off(start, into, 1.6), `返回${areas[i - 1].name}`, 0.9);
+      const o = new WorldObject('stairs', back.pos, `返回${areas[i - 1].name}`, 0.9);
       o.dest = areas[i - 1].id;
-      o.inward = into;
+      o.inward = back.inward;
       L.objects.push(o);
     }
     if (i + 1 < areas.length) {
       const o = new WorldObject('stairs', down, `通往${areas[i + 1].name}`, 0.9);
       o.dest = areas[i + 1].id;
-      o.inward = away(down, start);
+      o.inward = f.downIn ?? away(down, start);
       L.objects.push(o);
     }
   }
