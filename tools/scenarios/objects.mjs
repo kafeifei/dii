@@ -428,6 +428,9 @@ export default async function (page, shot, log) {
       if (m) {
         m.pos = { x: o0.x + 1, z: o0.z + 0.5 };
         m.life = m.maxLife;
+        // and where the level looks for it (Level.monstersMoved): one held far off is never stepped,
+        // so its cell stayed where it stood and the blast, looking near the barrels, never found it
+        L.monstersMoved([m]);
       }
       S.struck = m;
       return { monster: m?.def.id ?? null, life: m?.life ?? 0 };
