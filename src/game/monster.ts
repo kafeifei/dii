@@ -10,6 +10,17 @@ import type { QuestKey } from '../data/quests';
 
 export type MonsterRank = MonRank;
 
+/** an even 32-bit hash of a spot, to a sixteenth of a metre (murmur3's finalizer over its two cells) */
+function spotHash(p: P2): number {
+  let h = Math.imul(Math.floor(p.x * 16), 0x9e3779b1) ^ Math.imul(Math.floor(p.z * 16) + 0x632be5ab, 0x85ebca6b);
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x7feb352d);
+  h ^= h >>> 15;
+  h = Math.imul(h, 0x846ca68b);
+  h ^= h >>> 16;
+  return h >>> 0;
+}
+
 /** what an attack or a cast does as it goes off (src/game/ai.ts fire) */
 export interface MonsterAct {
   kind: 'blow' | 'missile' | 'raise' | 'cry' | 'teleport' | 'summon' | 'spray';
@@ -17,11 +28,18 @@ export interface MonsterAct {
   mode: AttackMode | 's2' | 'sq';
   missile?: string;
   level?: number;
-  /** what it is aimed at: the corpse raised, the spot teleported to or summoned at */
+  /** what it is aimed at: the corpse raised, the spot teleported to, the spot a summon faces */
   corpse?: Monster;
   to?: P2;
-  /** missiles it looses one after another (a sequence's) */
+  /** missiles it looses one after another */
   count?: number;
+  /**
+   * the MonSeq.txt sequence it plays (D2X_MONSEQ, its skill's MonStats mode), which sets how long it
+   * takes and when it goes off (src/game/ai.ts begin)
+   */
+  seq?: string;
+  /** how far through the action it goes off, 0–1: a sequence's event row, else half-way */
+  at?: number;
 }
 
 /** a move under way: walking or running at the hero (to null) or to a spot, for so far */
@@ -112,9 +130,36 @@ export class Monster extends Actor {
   act: MonsterAct | null = null;
   /** the move under way */
   move: MonsterMove | null = null;
-  /** D2's dwAiParam[0] and [1]: what its AI keeps between thoughts (a Fallen's fright, a lancer's charge, Blood Raven's count) */
+  /**
+   * What its AI keeps between thoughts, D2's dwAiParam[0–2] (AI_GetParamValue's pAiControl): a
+   * Fallen's fright, a lancer's charge, Blood Raven's way home (aiFlag 2: her dwAiParam[2]) and her
+   * chance to raise, which grows by 3 a thought (aiCount: her dwAiParam[0])
+   */
   aiFlag = 0;
   aiCount = 0;
+  /**
+   * What its AI has made so far, never less (D2's dwAiParam[1]): the times Blood Raven cast her Nest
+   * (AiThink.cpp:10426, 10456), the crows a nest hatched (AiThink.cpp:3821, 3835)
+   */
+  aiTally = 0;
+  /**
+   * A nest's last hatching, Level.time (its dwAiParam[0], AiThink.cpp:3823-3831): when it spawned
+   * at first (AITHINK_InitializeSpawnTimerAndCount, AiThink.cpp:3800-3804), 0 for one the map was built with
+   */
+  aiStamp = 0;
+  /**
+   * Seconds until it falls dead, none (0) unless Blood Raven died near it (src/game/ai.ts ravenFall:
+   * QUESTSFX_MainHandler's MONUMOD event, QuestsFX.cpp:62-63, then MONSTERUNIQUE_KillUnitOrRemovePet,
+   * MonsterUnique.cpp:1754-1779)
+   */
+  fallIn = 0;
+  /**
+   * The piece in its shield hand, MonStats2 SH (MonsterLook.shields), a D2 item code or null:
+   * D2 rolls each piece evenly with the monster's seed as it spawns (MONSTER_SetComponents,
+   * Monster.cpp:486-511); here by where it spawns, as its aura is. A shield lets it block
+   * (src/game/combat.ts monsterBlock), and the renderer draws it
+   */
+  shield: string | null;
   /** D2's AI command (AIGENERAL_CopyAiCommand): 1, its pack leader's order to attack */
   cmd = 0;
   /**
@@ -211,6 +256,9 @@ export class Monster extends Actor {
       const a = auraEnchant(this.level, (n) => ((Math.imul(Math.floor(pos.x * 16), 73856093) ^ Math.imul(Math.floor(pos.z * 16), 19349663)) >>> 0) % n);
       this.aura = { ...a, n: auraNumbers(a.skill, a.lvl) };
     }
+    // its shield-hand piece, by where it stands too (no draw on Math.random or the spawn's rolls)
+    const sh = d.shields;
+    this.shield = sh?.length ? sh[spotHash(pos) % sh.length] : null;
   }
 
   /** its attack modes that do damage of their own, A1 first: its row's in its difficulty, so worked out once */

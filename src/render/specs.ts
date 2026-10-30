@@ -69,8 +69,18 @@ const ROGUE_RH: [ModelKey, number][] = [
   ['w_hammer', 0.6], // whm
   ['skeleton_blade', 0.62], // sbr
 ];
-/** nil, buc, lrg, kit */
-const ROGUE_SH: (ModelKey | null)[] = [null, 'skeleton_shield_small_a', 'skeleton_shield_large_a', 'skeleton_shield_large_a'];
+/**
+ * The shield a monster holds, by its MonStats2 SH piece (Monster.shield, rolled by the game: it
+ * blocks with it, src/game/combat.ts monsterBlock): the buckler and the small shield small, the large
+ * and the kite shield large; none for D2's nil or a torch (a Fallen's tch), which isn't a shield
+ */
+const SHIELD_LOOK: Record<string, ModelKey> = {
+  buc: 'skeleton_shield_small_a',
+  sml: 'skeleton_shield_small_a',
+  lrg: 'skeleton_shield_large_a',
+  kit: 'skeleton_shield_large_a',
+};
+const shieldOf = (m: Monster): ModelKey | null => (m.shield ? (SHIELD_LOOK[m.shield] ?? null) : null);
 
 /** an even pick that stays the same for a monster, a separate roll for each `salt` */
 function roll<T>(m: Monster, list: readonly T[], salt: number): T {
@@ -95,7 +105,7 @@ function rogueSpec(m: Monster, sc: number): ModelSpec {
       return { ...base, attach: [{ model: makeBow, hand: 'l', hold: 'pistol', aim: true }], clips: meshyClips(h, 1.42, 4.25, atk(['Shoot'])) };
   }
   const [rh, scale] = roll(m, ROGUE_RH, 1);
-  const sh = roll(m, ROGUE_SH, 2);
+  const sh = shieldOf(m);
   const attach: Attachment[] = [{ model: rh, hand: 'r', scale, hold: 'grip' }];
   if (sh) attach.push({ model: sh, hand: 'l', scale: 0.65, hold: 'shield' });
   return { ...base, attach, clips: meshyClips(h, 1.42, 4.25, atk(['Attack'])) };
@@ -152,14 +162,14 @@ export function monsterSpec(m: Monster): ModelSpec {
     case 'skeleton': {
       const elite = m.rank !== 'normal' || m.id % 3 === 0;
       const h = 1.7 * sc;
+      const attach: Attachment[] = [m.id % 4 === 1 ? { model: 'skeleton_axe', hand: 'r', scale: 0.7, hold: 'grip' } : { model: 'skeleton_blade', hand: 'r', scale: 0.65, hold: 'grip' }];
+      const sh = shieldOf(m);
+      if (sh) attach.push({ model: sh, hand: 'l', scale: 0.7, hold: 'shield' });
       return ranked({
         model: elite ? 'mon_skeleton_elite' : 'mon_skeleton',
         rig: 'quat',
         height: h,
-        attach: [
-          m.id % 4 === 1 ? { model: 'skeleton_axe', hand: 'r', scale: 0.7, hold: 'grip' } : { model: 'skeleton_blade', hand: 'r', scale: 0.65, hold: 'grip' },
-          { model: elite ? 'skeleton_shield_large_a' : 'skeleton_shield_small_a', hand: 'l', scale: 0.7, hold: 'shield' },
-        ],
+        attach,
         clips: meshyClips(h, 1.42, 4.34, atk(['Attack', 'Attack2']), { block: ['Block'], revive: 'Revive' }),
       });
     }
@@ -175,11 +185,15 @@ export function monsterSpec(m: Monster): ModelSpec {
     }
     case 'imp': {
       const h = 1.85 * sc;
+      const attach: Attachment[] = [{ model: 'skeleton_blade', hand: 'r', scale: 0.45, hold: 'grip' }];
+      // a Fallen's small shield or buckler (its SH piece); it blocks with it, and plays its get-hit for it
+      const sh = shieldOf(m);
+      if (sh) attach.push({ model: sh, hand: 'l', scale: 0.45, hold: 'shield' });
       return ranked({
         model: 'mon_imp',
         rig: 'quat',
         height: h,
-        attach: [{ model: 'skeleton_blade', hand: 'r', scale: 0.45, hold: 'grip' }],
+        attach,
         clips: meshyClips(h, 1.42, 4.09, atk(['Attack', 'Attack2'])),
       });
     }
@@ -228,6 +242,18 @@ export function monsterSpec(m: Monster): ModelSpec {
     case 'cr_lancer':
     case 'cr_archer':
       return ranked(rogueSpec(m, sc));
+    case 'bloodraven': {
+      // her own body (tools/meshy-chars.mjs mon_bloodraven) and her long war bow (MonStats2 LHv lbb) in
+      // her left hand, drawn and aimed as the rangers' (Walk 1.41, Run 4.18 m/s at 1.7 m: tools/meshy-merge.mjs's stride)
+      const h = 1.75 * sc;
+      return ranked({
+        model: 'mon_bloodraven',
+        rig: 'quat',
+        height: h,
+        attach: [{ model: () => makeBow(LONG_BOW), hand: 'l', hold: 'pistol', aim: true }],
+        clips: meshyClips(h, 1.41, 4.18, atk(['Shoot']), { cast: cast(['Cast']) }),
+      });
+    }
     case 'wraith': {
       const h = 1.55 * sc;
       return ranked({

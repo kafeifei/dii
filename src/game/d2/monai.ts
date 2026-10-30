@@ -40,6 +40,8 @@ export const AIP = {
   CorruptLancer: { approach: 0, attack: 1, stall: 2, run: 3, alwaysRun: 4, skill1: 5, skill2: 6, skill3: 7 },
   SkeletonBow: { shoot: 0, stall: 1, approach: 2, steps: 3, keep: 4 },
   SkeletonMage: { shoot: 0, approachDist: 1, approach: 2, tooClose: 3, walkAway: 4, fireDist: 5, circle: 6, stall: 7 },
+  // D2C_FoulCrowNestAIParams (AiThink.cpp:3806-3810): the frames between hatchings and how many it hatches
+  FoulCrowNest: { interval: 0, count: 2 },
 } as const;
 
 export type AiName = keyof typeof AIP;

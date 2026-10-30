@@ -8,13 +8,16 @@ import { chance, dist, rand, randInt, type P2 } from '../core/math';
 import { FRAMES_PER_SEC } from '../core/units';
 import { D2X_DIFFICULTIES } from '../data/d2x/difficulty';
 import { D2X_MISSILES } from '../data/d2x/missiles';
+import { D2X_MONSEQ } from '../data/d2x/monseq';
+import { D2X_MONSTERS } from '../data/d2x/monsters';
+import { D2X_SKILLS } from '../data/d2x/skills';
 import { D2X_MONUMOD_CONSTANTS } from '../data/d2x/superuniques';
 import { lookKey, monsterDef, type ProjectileKind } from '../data/monsters';
-import { BURIAL_GROUNDS } from '../world/areas';
+import { BURIAL_GROUNDS, areaLevel } from '../world/areas';
 import { emptyPacket, type DamagePacket } from './actor';
 import { applyDamage, monsterStrike } from './combat';
 import * as A from './d2/monai';
-import { attackAt, missileDamage, missileFlight, monLvl, skillMissile, type AttackMode } from './d2/monstats';
+import { attackAt, missileDamage, missileFlight, monLvl, skillMissile, spawnLevel, type AttackMode } from './d2/monstats';
 import type { Game } from './game';
 import type { Friendly } from './merc';
 import { Monster, type MonsterAct } from './monster';
@@ -246,6 +249,8 @@ function stand(m: Monster, frames: number) {
  * as near as D2's steps stop it (A.stepStop)
  */
 function go(g: Game, m: Monster, to: P2 | null, o: { bonus?: number; steps?: number; len?: number; fallback?: boolean; reach?: number } = {}) {
+  // one that can't walk (MonsterLook.still) stands: D2's move tactics give it no path
+  if (m.def.still) return stand(m, 10);
   const path = A.subtiles(Math.min(A.PATH_MAX, o.len ?? A.PATH_STEP));
   const left = !to ? path : o.len ? Math.min(dist(m.pos, to) + 0.5, path) : dist(m.pos, to) + 0.5;
   const near = !to && o.steps ? m.radius + foe(g, m).radius + A.stepStop(o.steps) : 0;
@@ -316,14 +321,25 @@ function keepAt(g: Game, m: Monster, step: number, desired: number, bonus = 0) {
   else stand(m, 10);
 }
 
-/** start an attack, a shot or a cast, in the state its look plays it in, at the auras' attack rate */
+/**
+ * Start an attack, a shot or a cast, in the state its look plays it in, at the auras' attack rate.
+ * One its skill plays as a MonSeq.txt sequence (act.seq) lasts the sequence's rows and goes off on
+ * its event's row: D2 moves speed / 256 rows a frame (D2X_MONSEQ), and a monster's animation speed
+ * is AnimData's, which d2data hasn't, so here 256, a row a frame (approximate). The rest last the
+ * look's own time (MonsterLook.attackSpeed) and go off half-way
+ */
 function begin(g: Game, m: Monster, act: MonsterAct) {
   m.move = null;
   m.act = act;
   if (act.kind === 'blow' || act.kind === 'missile') m.mode = act.mode as AttackMode;
   const cast = act.kind === 'raise' || act.kind === 'cry' || act.kind === 'summon' || act.kind === 'teleport' || (act.kind === 'missile' && m.def.shootIn === 'cast');
   const rate = 1 + auraBuff(g, m).rate / 100;
-  m.setState(cast ? 'cast' : 'attack', 1 / (m.attackSpeed * rate * Math.max(0.1, m.slowFactor())));
+  const seq = act.seq ? D2X_MONSEQ[act.seq] : undefined;
+  if (seq) {
+    const rows = seq.frames.length;
+    act.at = (seq.events.find((e) => e.type !== 'sound')?.at ?? rows / 2) / rows;
+    m.setState(cast ? 'cast' : 'attack', A.frames(rows) / (rate * Math.max(0.1, m.slowFactor())));
+  } else m.setState(cast ? 'cast' : 'attack', 1 / (m.attackSpeed * rate * Math.max(0.1, m.slowFactor())));
   faceNow(m, act.corpse?.pos ?? act.to ?? foe(g, m).pos);
 }
 
@@ -675,50 +691,121 @@ function andariel(g: Game, m: Monster, t: Target) {
 }
 
 /**
- * AITHINK_Fn059_BloodRaven (AiThink.cpp:10356-10520), her AI as D2 has it: kept within 50 subtiles of
- * where she stands at first, running at the hero from beyond 20, raising zombies near them now and
- * then (Nest: approximated as one of her party's zombies at the spot, which gives no experience
- * and drops nothing, SkillMonst.cpp:697-735), else her arrows (A1, raven1), a Quick Strike (raven1
- * as well, at full damage: SkillMonst.cpp:757-790) the more often the harder the difficulty, or
- * a step aside; up close she backs off
+ * Blood Raven's distances, subtiles (AITHINK_Fn059_BloodRaven): she stands while her target is over
+ * NOTICE off, keeps within HOME of where she first stood (and her target within it too) and once
+ * sent back runs all the way to within HOME_STOP of it; she runs at a target over CHASE off, to a
+ * spot half as far (no nearer than CHASE_TO), shoots from over CLOSE, and nearer than BACK_OFF
+ * backs away. Measured through the game's unit (A.subtiles); D2's are AIUTIL_GetDistanceToCoordinates_HalfUnitSize's
+ * octagonal ones, here straight
+ */
+const RAVEN = { NOTICE: 45, HOME: 50, HOME_STOP: 5, CHASE: 20, CHASE_TO: 12, CLOSE: 5, BACK_OFF: 12 } as const;
+
+/**
+ * AITHINK_Fn059_BloodRaven (AiThink.cpp:10356-10505; her return reset, AITHINK_ResetBloodRavenReturnState,
+ * 10350-10353), her AI as D2 has it. Kept within 50 subtiles of where she stands at first (10360-10408),
+ * running at her target from beyond 20 (10410-10422: when she can't, the rest goes by half its
+ * distance), she casts her Nest (Skill1, seq_bloodravencast) at a chance that grows by 3 each thought
+ * when it isn't in her reach (10424-10458): no more than 8, 10, 12 times by difficulty all told, a
+ * count that never goes down (dwAiParam[1] < 2 × difficulty + 8), each a zombie getting up at her
+ * feet (nest); the spot 5–19 subtiles off her target D2's AI gives the skill only turns her to it
+ * (SKILLS_SrvSt49 raises at her own, SkillMonst.cpp:661-694). Else from beyond 5 a run near them 1
+ * time in 20 (10462-10467), her arrows when she sees them and isn't reeling (A1, raven1; 10471-10481), a
+ * Quick Strike (Skill2, seq_brquickstrike) 40/50/60 % of those times by difficulty: one raven1 at
+ * her A1's full damage (SrvSt50 SUNITDMG_AllocCombat(…, 128), SrvDo092: its srvmissilea once,
+ * SkillMonst.cpp:743-795) out of A1's first seven frames, or a walk round them (10484-10489). Up close
+ * she backs off 3 times in 10 (10492-10502) and shoots (10504). Her SQ missile, raven2, is never loosed:
+ * a mode's missile flies only with no skill in use (MonsterMode.cpp:1290-1345), MissSQ is for the
+ * sequence mode (Monsters.cpp:669-670), and both her sequences are skills with their own functions
  */
 function bloodRaven(g: Game, m: Monster, t: Target) {
   const p = foe(g, m).pos;
   const home = m.homePos;
-  if (t.d > 45) return stand(m, 5);
-  const heroHome = dist(p, home) / SUB;
-  if (heroHome >= 50 || dist(m.pos, home) / SUB > 50 || (m.aiFlag === 2 && dist(m.pos, home) / SUB > 5)) {
+  const row = m.def.row;
+  if (t.d > RAVEN.NOTICE) return stand(m, 5);
+  const heroHome = dist(p, home);
+  const herHome = dist(m.pos, home);
+  if (heroHome >= A.subtiles(RAVEN.HOME) || herHome > A.subtiles(RAVEN.HOME)) {
     m.aiFlag = 2;
     return go(g, m, home, { bonus: 100 });
   }
-  if (m.aiFlag === 2) m.aiFlag = 0;
-  if (t.d > 20 && heroHome < 50) {
-    const to = spot(g, m, A.wanderPoint(p, Math.max(Math.trunc(t.d / 2), 12), Math.random));
+  if (m.aiFlag === 2 && herHome > A.subtiles(RAVEN.HOME_STOP)) return go(g, m, home, { bonus: 100 });
+  m.aiFlag = 0;
+  let d = t.d;
+  if (d > RAVEN.CHASE && heroHome < A.subtiles(RAVEN.HOME)) {
+    d = Math.max(Math.trunc(d / 2), RAVEN.CHASE_TO);
+    const to = spot(g, m, A.wanderPoint(p, d, Math.random));
     if (to) return go(g, m, to, { bonus: 100 });
   }
   m.aiCount += 3;
-  const summons = m.minions.filter((o) => o.noXp).length;
-  if (!t.combat && summons < 2 * m.difficulty + 8 && roll(m.aiCount)) {
-    const to = spot(g, m, A.wanderPoint(p, 5 + randInt(0, 14), Math.random));
-    if (to) {
-      m.aiCount = 0;
-      return begin(g, m, { kind: 'summon', mode: 'sq', to });
-    }
+  const nest = row.skills?.[0];
+  if (nest && !t.combat && m.aiTally < 2 * m.difficulty + 8 && roll(m.aiCount)) {
+    // D2's offsets, rand % 15 + 5 along one axis and up to it along the other (10428-10451)
+    const faces = A.wanderPoint(p, 5 + randInt(0, 14), Math.random);
+    m.aiCount = 0;
+    m.aiTally++;
+    return begin(g, m, { kind: 'summon', mode: 's1', to: faces, seq: nest.mode });
   }
-  if (t.d > 5) {
-    if (roll(5) && heroHome < 50) {
-      const to = spot(g, m, A.wanderPoint(p, 12, Math.random));
-      if (to) return go(g, m, to, { bonus: 100 });
+  if (d > RAVEN.CLOSE) {
+    if (roll(5) && heroHome < A.subtiles(RAVEN.HOME)) {
+      const to = spot(g, m, A.wanderPoint(p, RAVEN.CHASE_TO, Math.random));
+      if (to) go(g, m, to, { bonus: 100 });
+      else stand(m, 10);
+      return;
     }
     if (m.hasLos && !m.wasHit && roll(80)) {
-      // Quick Strike: her sequence looses it; MonSeq.txt, which says how often, isn't imported, so three arrows
-      if (roll(10 * (m.difficulty + 4))) return void shot(g, m, 'a1', 3);
+      const qs = row.skills?.[1];
+      if (qs && roll(10 * (m.difficulty + 4))) return quickStrike(g, m, qs);
       return void shot(g, m, 'a1');
     }
     return circle(g, m, 4, 50);
   }
-  if (roll(30) && t.d < 12 && escape(g, m, 12 - Math.trunc(t.d), 100)) return;
+  if (roll(30) && d < RAVEN.BACK_OFF && escape(g, m, RAVEN.BACK_OFF - Math.trunc(d), 100)) return;
   shot(g, m, 'a1');
+}
+
+/** Blood Raven's Quick Strike (Skills.txt Quick Strike: srvmissilea raven1) at its level, the difficulty's bonus on top, in its sequence */
+function quickStrike(g: Game, m: Monster, s: { skill: string; lvl: number; mode?: string }) {
+  const id = D2X_SKILLS[s.skill]?.missiles?.srvA ?? m.def.row.missiles?.a1;
+  if (!id || !D2X_MISSILES[id]) return void shot(g, m, 'a1');
+  begin(g, m, { kind: 'missile', mode: 'a1', missile: id, level: s.lvl + skillBonus(m), seq: s.mode });
+}
+
+/**
+ * AITHINK_InitializeSpawnTimerAndCount and AITHINK_Fn043_FoulCrowNest (AiThink.cpp:3800-3850): a foul
+ * crow nest stands while its target is over 20 subtiles off. Till it has hatched aip3 (6/12/15) it
+ * casts its Nest (seq_nestlay: a crow out at its exit, nest) every aip1 frames (100/80/70) since it
+ * spawned or last hatched, when the exit is clear (MONSTERSPAWN_CanSpawnAtSpawnerExit,
+ * MonsterSpawn.cpp:31-96: MonStats SpawnX/SpawnY (0, 3) off it, clear of COLLIDE_MASK_MONSTER_PATH at
+ * size 2; D2MOO passes it the nest's X twice, AiThink.cpp:3833, which would look at a spot that isn't
+ * the exit, so the exit it is), else it stands 20–29 frames. Then it falls in, its own treasure off
+ * (UNITFLAG_NOTC) and no one's kill: no experience, nothing dropped (AiThink.cpp:3844-3849)
+ */
+function foulCrowNest(g: Game, m: Monster, t: Target) {
+  const P = A.AIP.FoulCrowNest;
+  if (t.d > 20) return stand(m, 25);
+  if (m.aiTally < aip(m, P.count)) {
+    const s = m.def.row.skills?.[0];
+    if (!s || g.level.time - m.aiStamp < A.frames(aip(m, P.interval))) return stand(m, 20 + randInt(0, 9));
+    m.aiStamp = g.level.time;
+    if (exitClear(g, m)) {
+      m.aiTally++;
+      return begin(g, m, { kind: 'summon', mode: 's1', seq: s.mode });
+    }
+    return stand(m, 20 + randInt(0, 9));
+  }
+  g.killMonster(m, 'phys', null);
+}
+
+/** where what a monster's Nest brings comes out: its MonStats Spawn's SpawnX, SpawnY off it (D2's Y the game's z) */
+const spawnExit = (m: Monster): P2 => ({ x: m.pos.x + A.subtiles(m.def.row.spawn?.x ?? 0), z: m.pos.z + A.subtiles(m.def.row.spawn?.y ?? 0) });
+
+/**
+ * the exit clear (COLLIDE_MASK_MONSTER_PATH, D2Collision.h:67-70: walls, objects, doors; not other
+ * monsters) for a body of size 2, a subtile either way, in no town
+ */
+function exitClear(g: Game, m: Monster): boolean {
+  const e = spawnExit(m);
+  return g.level.monsterMap.circleClear(e.x, e.z, A.subtiles(1)) && !g.level.inTown(e);
 }
 
 /** the AIs by MonStats AI */
@@ -741,6 +828,7 @@ const THINK: Record<string, Think> = {
   SkeletonMage: skeletonMage,
   Smith: smith,
   BloodRaven: bloodRaven,
+  FoulCrowNest: foulCrowNest,
 };
 
 // ───────────────────────── thinking ─────────────────────────
@@ -968,6 +1056,14 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
     m.deathTime += dt;
     return;
   }
+  // Blood Raven's dead falling with her (ravenFall): nobody's kill
+  if (m.fallIn > 0) {
+    m.fallIn -= dt;
+    if (m.fallIn <= 0) {
+      g.killMonster(m, 'phys', null);
+      return;
+    }
+  }
   // statuses
   if (m.chillTime > 0) m.chillTime -= dt;
   if (m.stunTime > 0) m.stunTime -= dt;
@@ -1006,17 +1102,18 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
   if (m.losTimer <= 0) sight(g, m, dist(m.pos, t.pos));
   if (m.aura) auraAround(g, m, dt);
 
-  if (m.state === 'hit') {
+  if (m.state === 'hit' || m.state === 'block') {
     m.stateTime += dt;
     // D2's next thought is set for a frame: the get-hit's count against a stand it broke off
     m.thinkTimer -= dt;
     if (m.stateTime < m.stateDur) return;
-    // its get-hit done, knowing it was hit: back in neutral it thinks after its AI delay if its
-    // thought is due by now, else when it comes (MONSTERMODE_StartNeutral, MonsterMode.cpp:1080-1112)
+    // its get-hit (or its block, src/game/combat.ts monsterBlocked: a blow it stopped, no hit to its
+    // AI) done: back in neutral it thinks after its AI delay if its thought is due by now, else
+    // when it comes (MONSTERMODE_StartNeutral, MonsterMode.cpp:1080-1112)
     const left = m.thinkTimer;
     m.act = null;
     m.move = null;
-    m.wasHit = true;
+    if (m.state === 'hit') m.wasHit = true;
     stand(m, delay(m));
     if (left > 0) m.thinkTimer = left;
     return;
@@ -1032,7 +1129,7 @@ export function updateMonster(g: Game, m: Monster, dt: number) {
       return;
     }
     m.stateTime += dt * slow;
-    if (!m.actionFired && m.stateTime >= m.stateDur * 0.5) {
+    if (!m.actionFired && m.stateTime >= m.stateDur * (m.act?.at ?? 0.5)) {
       m.actionFired = true;
       fire(g, m);
     }
@@ -1102,7 +1199,7 @@ function fire(g: Game, m: Monster) {
       }
       return;
     case 'summon':
-      if (act.to) summon(g, m, act.to);
+      nest(g, m);
       return;
     case 'cry':
       return;
@@ -1132,18 +1229,53 @@ function raise(g: Game, m: Monster, c: Monster) {
   g.sfx.play('monster.resurrect', { pos: c.pos });
 }
 
-/** Blood Raven's Nest: one of her party's zombies at the spot, hers (SkillMonst.cpp:697-735: UNITFLAG_NOXP | UNITFLAG_NOTC) */
-function summon(g: Game, m: Monster, at: P2) {
-  const id = m.def.row.minions?.[0];
+/** D2's search ring 1 (D2GAME_SpawnMonster_6FC69F10(…, 1, 0)): the subtiles round a spot, one off */
+const RING = [
+  [1, 0],
+  [1, 1],
+  [0, 1],
+  [-1, 1],
+  [-1, 0],
+  [-1, -1],
+  [0, -1],
+  [1, -1],
+] as const;
+
+/**
+ * The Nest (SKILLS_SrvSt49_Nest_EvilHutSpawner and SrvDo091, SkillMonst.cpp:661-740), Blood Raven's
+ * and the foul crow nest's one skill: the monster its MonStats Spawn names, at its own spot plus
+ * SpawnX, SpawnY (D2GAME_GetSummonIdFromSkill_6FD15580(pUnit, 1, …), Skills.cpp:4084-4098 →
+ * MONSTERS_GetSpawnMode_XY, Monsters.cpp:886-912: zombie2 at her feet, a foul crow at the nest's
+ * exit), there or a subtile off where nothing stands (D2's ring 1, SkillMonst.cpp:726), at its level
+ * in the area (spawnLevel), in its SpawnMode, no one's minion, giving no experience and dropping
+ * nothing (UNITFLAG_NOXP | UNITFLAG_NOTC, SkillMonst.cpp:732). A zombie rising in S1 stands as long
+ * as a death takes (AnimData's S1 isn't in d2data; approximate), a crow comes out in NU
+ */
+function nest(g: Game, m: Monster) {
+  const sp = m.def.row.spawn;
+  const id = sp?.mon ?? m.def.row.minions?.[0];
   const def = id && monsterDef(id);
-  if (!def) return;
-  const z = new Monster(def, def.row.diff[m.difficulty].level, 'minion', at, [], { difficulty: m.difficulty });
+  if (!id || !def) return;
+  const L = g.level;
+  const at = spawnExit(m);
+  const taken = (q: P2) => L.monstersNear(q, 1).some((o) => !o.dead && dist(o.pos, q) < SUB * 0.99);
+  const free = (q: P2) => L.monsterMap.circleClear(q.x, q.z, def.radius * 0.5) && !L.inTown(q) && !taken(q);
+  let to: P2 | null = free(at) ? at : null;
+  if (!to) {
+    const ring = RING.map(([dx, dz]) => ({ x: at.x + dx * SUB, z: at.z + dz * SUB })).filter(free);
+    to = ring.length ? ring[randInt(0, ring.length - 1)] : null;
+  }
+  if (!to) return;
+  const d = m.difficulty;
+  const z = new Monster(def, spawnLevel(D2X_MONSTERS[id], d, areaLevel(L.areaAt(to.x, to.z), d)), 'normal', to, [], { difficulty: d });
   z.noXp = true;
-  z.awake = true;
-  z.follow(m);
-  g.level.monsters.push(z);
-  g.fx.burst('resurrect', at);
-  g.sfx.play('monster.resurrect', { pos: at });
+  if (sp?.mode === 'S1') stand(z, A.DEATH_FRAMES);
+  L.monsters.push(z);
+  const raven = m.def.row.ai === 'BloodRaven';
+  // her dead getting up in red; the nest's twigs flying as a crow breaks out
+  g.fx.burst(raven ? 'resurrect' : 'barrel', to);
+  // sounds.ts MONSTER_SOUND's two, written out for the sfx test's reading of every play
+  g.sfx.play(raven ? 'monster.raven_summon' : 'monster.nest_hatch', { pos: to });
 }
 
 /**
@@ -1189,6 +1321,7 @@ export function monsterDied(g: Game, m: Monster) {
   const d = g.level.deaths;
   d.push(m);
   if (d.length > 16) d.shift();
+  if (m.def.id === 'bloodraven') ravenFall(g, m);
   if (!m.leads || !m.minions.length) return;
   // a party's leader owns its minions with its row's BossXfer (AI flag 2, MonsterSpawn.cpp:1117-1120),
   // a unique or superunique without it, whatever its row (AIGENERAL_SetOwnerData(…, 1, 1, 0), MonsterUnique.cpp:2470)
@@ -1212,6 +1345,27 @@ export function monsterDied(g: Game, m: Monster) {
   // (raiseTarget); it keeps its list, and its orders still reach them (AIGENERAL_AllocCommandsForMinions,
   // AiGeneral.cpp:214-235, copies its order to every unit on its owner's list, whoever owns it)
   for (const o of m.minions) o.leader = null;
+}
+
+/** how far round her Blood Raven's death reaches, subtiles, and the frames it takes to tell (QUESTSFX_Bloodraven, QuestsFX.cpp:27-30) */
+export const RAVEN_FALL = { radius: 35, min: 25, max: 125 } as const;
+
+/**
+ * Blood Raven dies, whoever's she was (every one of her class gets MONUMOD_QUESTMOD as she spawns,
+ * MonsterSpawn.cpp:938-943, the trial ground's too; her quest record is the Burial Grounds' alone,
+ * Monster.quest): as she goes into her death (MONSTERUNIQUE_QuestCompleteModeChange, MonsterUnique.cpp:1527-1532)
+ * every living undead of the monsters' side within 35 subtiles of her (QUESTSFX_MainHandler,
+ * QuestsFX.cpp:33-69: MonStats lUndead or hUndead, MONSTERS_IsUndead, Monsters.cpp:832-846; evil
+ * alignment; a circle, UNITFINDS_TestUnit, UnitFinds.cpp:263) falls dead 25–124 frames on
+ * (25 + rand % 100): a MONUMOD event then MONMODE_DEATH with no killer (MonsterUnique.cpp:1754-1779),
+ * so no experience and no drop (Game.killMonster's null; updateMonster)
+ */
+function ravenFall(g: Game, m: Monster) {
+  const r = A.subtiles(RAVEN_FALL.radius);
+  for (const o of g.level.monstersNear(m.pos, r + 1)) {
+    if (o === m || o.dead || !o.def.undead || o.def.row.align || dist(o.pos, m.pos) > r) continue;
+    o.fallIn = A.frames(RAVEN_FALL.min + randInt(0, RAVEN_FALL.max - RAVEN_FALL.min - 1));
+  }
 }
 
 /**
