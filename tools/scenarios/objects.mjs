@@ -305,6 +305,10 @@ export default async function (page, shot, log) {
       S.step(0.2);
       r.flying = L.projectiles.filter((x) => x.kind === 'firebolt' && x.owner === null).length;
       r.life0 = p.life;
+      // the bolt held where it is for the shot, the page's loop kept off the game until it has landed:
+      // run on, the bolt could reach the hero in the frames the shot took (it burnt them there, and
+      // the steps below found it gone and nothing taken)
+      game.headless = true;
       return r;
     });
     await frames(3);
@@ -314,12 +318,16 @@ export default async function (page, shot, log) {
       const p = game.player;
       // a step at a time until it's gone: what the hero lost in the step it went (their regeneration a frame's)
       let taken = 0;
-      for (let k = 0; k < 120; k++) {
-        const flying = game.level.projectiles.some((x) => x.kind === 'firebolt');
-        if (!flying) break;
-        const before = p.life;
-        S.step(1 / 60);
-        if (!game.level.projectiles.some((x) => x.kind === 'firebolt')) taken = before - p.life;
+      try {
+        for (let k = 0; k < 120; k++) {
+          const flying = game.level.projectiles.some((x) => x.kind === 'firebolt');
+          if (!flying) break;
+          const before = p.life;
+          S.step(1 / 60);
+          if (!game.level.projectiles.some((x) => x.kind === 'firebolt')) taken = before - p.life;
+        }
+      } finally {
+        game.headless = false;
       }
       return { taken, left: game.level.projectiles.filter((x) => x.kind === 'firebolt').length };
     });
