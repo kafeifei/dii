@@ -13,7 +13,8 @@
 // takes, and Akarelle's lines: 193 more files, 3.15 MiB) took the release line to 41.75 MiB, 38.60
 // without them. It is 44 MiB since: still 6 under the internal host's hard 50 MiB (52,428,800 bytes). The
 // pictures in the models and the ground textures were compressed next (the same day: 37.41 MiB),
-// which leaves the room under it for M2a's art.
+// which left the room under it for M2a's art. M2a's release (release-2026-10-29.3) came to 42.99 MiB,
+// 1 under it, and the user raised it to 47 MiB the same day: 3 under the internal host's 50 MiB.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,8 +24,8 @@ export const MiB = 1024 * 1024;
 
 /** what one deploy to the internal host may hold, and one file at most (Cloudflare's asset limit) */
 export const HOST_LIMIT = { files: 5000, bytes: 50 * MiB, fileBytes: 25 * MiB };
-/** ours, with room under the internal host's: a build above any of these fails (44 MiB since the voices, 2026-10-29: see above) */
-export const BUDGET = { files: 2000, bytes: 44 * MiB, fileBytes: 25 * MiB };
+/** ours, with room under the internal host's: a build above any of these fails (47 MiB since M2a, 2026-10-29: see above) */
+export const BUDGET = { files: 2000, bytes: 47 * MiB, fileBytes: 25 * MiB };
 
 /** the row of the files right in the folder counted, beside its subfolders' */
 export const TOP = '(top level)';

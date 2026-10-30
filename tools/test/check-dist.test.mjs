@@ -8,9 +8,9 @@
 // after vite build; and the command prints its table and exits 0 within the budget, 1 over it, with
 // a link to nothing or with no folder to count.
 //
-// The budget is 44 MiB since 2026-10-29: the voices (each hero line in four takes, and Akarelle's
-// lines) took the release line to 41.75 MiB, over the 40 MiB it had been; the internal host stops at 50 MiB,
-// and compressing the pictures in the models and the ground textures comes before M2a adds its art.
+// The budget was raised to 44 MiB on 2026-10-29 when the voices (each hero line in four takes, and
+// Akarelle's lines) took the release line to 41.75 MiB, over the 40 MiB it had been, and to 47 MiB the
+// same day by the user when M2a's release came to 42.99; the internal host stops at 50 MiB.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -84,8 +84,8 @@ export default async () => {
     ];
     check(thrown instanceof BrokenLinks && same(thrown.links, wantLinks), `links to nothing: ${thrown instanceof BrokenLinks ? JSON.stringify(thrown.links) : thrown}`);
 
-    // ── the budget: room under what the internal host takes (44 MiB since the voices, 2026-10-29: see above) ──
-    check(BUDGET.files === 2000 && BUDGET.bytes === 44 * 1024 * 1024 && BUDGET.fileBytes === 25 * 1024 * 1024, `the budget: ${JSON.stringify(BUDGET)}`);
+    // ── the budget: room under what the internal host takes (47 MiB since M2a, 2026-10-29: see above) ──
+    check(BUDGET.files === 2000 && BUDGET.bytes === 47 * 1024 * 1024 && BUDGET.fileBytes === 25 * 1024 * 1024, `the budget: ${JSON.stringify(BUDGET)}`);
     check(HOST_LIMIT.files === 5000 && HOST_LIMIT.bytes === 50 * 1024 * 1024 && HOST_LIMIT.fileBytes === 25 * 1024 * 1024, `the internal host: ${JSON.stringify(HOST_LIMIT)}`);
     check(BUDGET.files < HOST_LIMIT.files && BUDGET.bytes < HOST_LIMIT.bytes && BUDGET.fileBytes <= HOST_LIMIT.fileBytes, 'the budget is no looser than the internal host');
 
@@ -108,11 +108,11 @@ export default async () => {
     const byCount = overBudget([...many(3, 'audio', 500), ...many(1990, 'icons'), ...many(7, 'models', 1000), ...many(1, 'textures'), { path: 'index.html', bytes: 1 }]);
     check(byCount.length === 1 && byCount[0].startsWith('2,002 files, over the budget of 2,000') && byCount[0].endsWith('the most are in icons/ (1,990), models/ (7), audio/ (3)'), `2002 files: ${byCount.join(' | ')}`);
 
-    // bytes: 44 MiB in all passes, a byte more fails, reads as more than 44 and names the three biggest folders
-    const heavy = [{ path: 'audio/m.m4a', bytes: 15 * MiB }, { path: 'icons/i.webp', bytes: 2 * MiB }, { path: 'models/a.glb', bytes: 20 * MiB }, { path: 'textures/t.webp', bytes: 7 * MiB }];
-    check(overBudget(heavy).length === 0, '44 MiB in all is within the budget');
+    // bytes: 47 MiB in all passes, a byte more fails, reads as more than 47 and names the three biggest folders
+    const heavy = [{ path: 'audio/m.m4a', bytes: 15 * MiB }, { path: 'icons/i.webp', bytes: 5 * MiB }, { path: 'models/a.glb', bytes: 20 * MiB }, { path: 'textures/t.webp', bytes: 7 * MiB }];
+    check(overBudget(heavy).length === 0, '47 MiB in all is within the budget');
     const byBytes = overBudget([...heavy, { path: 'index.html', bytes: 1 }]);
-    check(byBytes.length === 1 && byBytes[0].startsWith('44.000001 MiB in all, over the budget of 44 MiB (the internal host takes 50 MiB)') && byBytes[0].endsWith('the biggest folders are models/ (20.00 MiB), audio/ (15.00 MiB), textures/ (7.00 MiB)'), `44 MiB and a byte: ${byBytes.join(' | ')}`);
+    check(byBytes.length === 1 && byBytes[0].startsWith('47.000001 MiB in all, over the budget of 47 MiB (the internal host takes 50 MiB)') && byBytes[0].endsWith('the biggest folders are models/ (20.00 MiB), audio/ (15.00 MiB), textures/ (7.00 MiB)'), `47 MiB and a byte: ${byBytes.join(' | ')}`);
     const release = overBudget([{ path: 'models/m.glb', bytes: 43779623 }], { files: 2000, bytes: 40 * MiB, fileBytes: 50 * MiB });
     check(release.length === 1 && release[0].startsWith('41.75 MiB in all, over the budget of 40 MiB'), `the release line against the 40 MiB it outgrew: ${release.join(' | ')}`);
 
@@ -121,7 +121,7 @@ export default async () => {
     const byFile = overBudget([{ path: 'audio/long.m4a', bytes: 25 * MiB + 1 }, { path: 'index.html', bytes: 10 }]);
     check(byFile.length === 1 && byFile[0].startsWith('audio/long.m4a is 25.000001 MiB, over the 25 MiB one file may be'), `a file of 25 MiB and a byte: ${byFile.join(' | ')}`);
     // all three at once, and a budget of the caller's own (its bytes no whole MiB: they read to as many places as the total)
-    check(overBudget([...many(2001, 'icons'), { path: 'audio/long.m4a', bytes: 45 * MiB }]).length === 3, 'files, bytes and a file over at once are three findings');
+    check(overBudget([...many(2001, 'icons'), { path: 'audio/long.m4a', bytes: 48 * MiB }]).length === 3, 'files, bytes and a file over at once are three findings');
     check(overBudget(files, { files: 7, bytes: 199029, fileBytes: 120000 }).length === 1, 'a budget passed in is the one checked');
     const own = overBudget(files, { files: 8, bytes: 199028, fileBytes: 120000 });
     check(own.length === 1 && own[0].startsWith('0.189809 MiB in all, over the budget of 0.189808 MiB'), `a byte over a budget of 199028 bytes: ${own.join(' | ')}`);
@@ -134,7 +134,7 @@ export default async () => {
     const run = (...args) => spawnSync(process.execPath, [tool, ...args], { cwd: tmp, encoding: 'utf8' });
     const ok = run('dist');
     check(ok.status === 0, `within the budget it exits ${ok.status}: ${ok.stderr}`);
-    check(ok.stdout.startsWith('dist/ by top-level folder:') && /all\s+8\s+199,029/.test(ok.stdout) && /within the budget: 8 of 2,000 files, 0\.19 of 44 MiB, the biggest file 0\.11 of 25 MiB \(models\/packs\/camp\.glb\)/.test(ok.stdout), `within the budget it prints:\n${ok.stdout}`);
+    check(ok.stdout.startsWith('dist/ by top-level folder:') && /all\s+8\s+199,029/.test(ok.stdout) && /within the budget: 8 of 2,000 files, 0\.19 of 47 MiB, the biggest file 0\.11 of 25 MiB \(models\/packs\/camp\.glb\)/.test(ok.stdout), `within the budget it prints:\n${ok.stdout}`);
     // over it: sparse files, so a big one costs no disk
     const big = path.join(tmp, 'big');
     fs.mkdirSync(path.join(big, 'audio'), { recursive: true });
@@ -145,11 +145,11 @@ export default async () => {
       fs.truncateSync(path.join(big, rel), bytes);
     };
     sparse('audio/long.m4a', 25 * MiB + 1);
-    sparse('models/a.glb', 20 * MiB);
+    sparse('models/a.glb', 23 * MiB);
     const over = run('big');
     check(over.status === 1, `over the budget it exits ${over.status}`);
-    check(/models\/\s+1\s+20,971,520\s+20\.00/.test(over.stdout), `over the budget it still prints the table:\n${over.stdout}`);
-    check(/big\/ is over its budget/.test(over.stderr) && /- 45\.00 MiB in all, over the budget of 44 MiB \(the internal host takes 50 MiB\): the biggest folders are audio\/ \(25\.00 MiB\), models\/ \(20\.00 MiB\), \(top level\) \(0\.00 MiB\)/.test(over.stderr) && /- audio\/long\.m4a is 25\.000001 MiB, over the 25 MiB/.test(over.stderr), `over the budget it says:\n${over.stderr}`);
+    check(/models\/\s+1\s+24,117,248\s+23\.00/.test(over.stdout), `over the budget it still prints the table:\n${over.stdout}`);
+    check(/big\/ is over its budget/.test(over.stderr) && /- 48\.00 MiB in all, over the budget of 47 MiB \(the internal host takes 50 MiB\): the biggest folders are audio\/ \(25\.00 MiB\), models\/ \(23\.00 MiB\), \(top level\) \(0\.00 MiB\)/.test(over.stderr) && /- audio\/long\.m4a is 25\.000001 MiB, over the 25 MiB/.test(over.stderr), `over the budget it says:\n${over.stderr}`);
     // a link to nothing: said in so many words, each one with where it points, and no stack
     const linked = run('gone');
     check(linked.status === 1, `with links to nothing it exits ${linked.status}`);
