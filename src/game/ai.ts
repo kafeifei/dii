@@ -5,6 +5,7 @@
 // D2MOO references are to github.com/ThePhrozenKeep/D2MOO at commit d9d394f; "AiThink.cpp" is
 // D2Game/src/AI/AiThink.cpp, "AiTactics.cpp" D2Game/src/AI/AiTactics.cpp.
 import { chance, dist, rand, randInt, type P2 } from '../core/math';
+import { FRAMES_PER_SEC } from '../core/units';
 import { D2X_DIFFICULTIES } from '../data/d2x/difficulty';
 import { D2X_MISSILES } from '../data/d2x/missiles';
 import { D2X_MONUMOD_CONSTANTS } from '../data/d2x/superuniques';
@@ -53,11 +54,11 @@ function addElem(pk: DamagePacket, type: string, v: number, frames: number) {
       break;
     case 'cold':
       pk.cold += v;
-      if (frames > 0) pk.chill = Math.max(pk.chill ?? 0, frames / 25);
+      if (frames > 0) pk.chill = Math.max(pk.chill ?? 0, F(frames));
       break;
     case 'pois':
       pk.poison += v;
-      if (frames > 0) pk.poisonLen = frames / 25;
+      if (frames > 0) pk.poisonLen = F(frames);
       break;
     case 'mag':
       pk.magic += v;
@@ -174,7 +175,7 @@ export function shoot(g: Game, m: Monster, id: string, level: number, mode: Atta
     if (own.src > 0) Object.assign(out, monsterPacket(m, mode, own.src * mult, opts.buff));
     else out.ar = attackAt(m.def.row, m.difficulty, m.level, mode, m.dmgPct, m.arPct)?.ar ?? m.ar;
     out.phys += between(own.phys[0], own.phys[1]) * mult;
-    if (own.elem) addElem(out, own.elem.type, between(own.elem.min, own.elem.max) * mult, own.elem.seconds * 25);
+    if (own.elem) addElem(out, own.elem.type, between(own.elem.min, own.elem.max) * mult, own.elem.seconds * FRAMES_PER_SEC);
     out.spell = !ms.toHit;
   }
   const fire = (to: P2, a: number) => {

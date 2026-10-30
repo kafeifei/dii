@@ -10,11 +10,12 @@
 // and blocks from maxroll's "Breakpoints & Animations" (maxroll.gg/d2/resources/breakpoints-animations,
 // updated 2026-02-10). tools/test/d2-frames.test.mjs checks the published breakpoint tables against
 // them. Integer steps are D2's (C division truncates toward zero, hence Math.trunc).
+import { FRAMES_PER_SEC } from '../../core/units';
 import type { PlayerClass } from '../../data/classes';
 import type { ClassCode } from './stats';
 
-/** D2's game ticks a second: one animation frame a tick at the normal rate */
-export const FRAMES_PER_SEC = 25;
+/** D2's game ticks a second: one animation frame a tick at the normal rate (src/core/units.ts) */
+export { FRAMES_PER_SEC };
 
 /** seconds that many frames take */
 export function toSeconds(frames: number): number {

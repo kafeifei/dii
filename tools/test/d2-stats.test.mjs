@@ -55,6 +55,12 @@ export default async (load) => {
   assert.equal(s.velocityPercent(pal, { running: true, frw: 20 }), 167);
   assert.equal(s.velocityPercent(pal, { armorSpeed: 15 }), 85);
   assert.equal(s.velocityPercent(pal, { velocityPct: -200 }), 25);
+  // the frames the game counts in are the ones the imported data's lengths are in (src/core/units.ts)
+  const units = await load('/src/core/units.ts');
+  const { D2X_FPS } = await load('/src/data/d2x/calc.ts');
+  assert.equal(units.FRAMES_PER_SEC, D2X_FPS);
+  assert.equal(s.MPS_PER_VELOCITY, units.MPS_PER_VELOCITY);
+  assert.equal(s.M_PER_SUBTILE, units.M_PER_SUBTILE);
   // run drain: RunDrain 20 → 40 256ths a frame; heavy body armor (Speed 10) doubles it
   assert.equal(s.runDrainPerSec(pal), 3.90625);
   assert.equal(s.runDrainPerSec(pal, { torsoSpeed: 5 }), 3.90625);

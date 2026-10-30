@@ -1,4 +1,5 @@
 import { RNG, type P2 } from '../core/math';
+import { M_PER_D2_TILE } from '../core/units';
 import { D2X_AREAS } from '../data/d2x/areas';
 import type { QuestKey } from '../data/quests';
 import { areaDef } from './areas';
@@ -21,8 +22,8 @@ import { TileMap, T_FLOOR, T_VOID, T_WALL } from './tilemap';
 
 /** D2's outdoor cell, in tiles (DRLGOUTDOORS_GenerateLevel: nGridWidth = nWidth / 8) */
 export const CELL = 8;
-/** our areas are D2's this many times over each way: the one knob for their size (plan: 区域大小先按原版放大 1.25 倍) */
-export const OUT_SCALE = 1.25;
+/** our areas are D2's this many times over each way, our tile being a metre: the one knob for their size (src/core/units.ts M_PER_D2_TILE) */
+export const OUT_SCALE = M_PER_D2_TILE;
 
 /** a D2 length in tiles, scaled, in whole cells */
 export function cellsOf(d2Tiles: number, scale = OUT_SCALE): number {

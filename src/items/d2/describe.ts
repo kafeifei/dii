@@ -5,6 +5,7 @@
 // (D2X_STAT_DESC, official Simplified Chinese) filled by its descfunc, highest descpriority first.
 // D2MOO has no client: the descfuncs follow ItemStatCost.txt's documented meanings (Phrozen Keep)
 // and D2R's strings, which carry their own printf placeholders (descfunc 19).
+import { FRAMES_PER_SEC } from '../../core/units';
 import { D2X_PROPERTIES, D2X_STAT_DESC, D2X_TOOLTIP_STRINGS } from '../../data/d2x/statdesc';
 import type { D2Prop, D2xStatDesc } from '../../data/d2x/types';
 
@@ -274,7 +275,7 @@ export function describeProps(props: readonly D2Prop[], ctx: DescribeCtx): DescL
       const frames = len?.v ?? 0;
       const a = Math.round((lo.v * frames) / 256);
       const b = Math.round((hi.v * frames) / 256);
-      const sec = Math.trunc(frames / 25);
+      const sec = Math.trunc(frames / FRAMES_PER_SEC);
       push(a === b ? fmt(S[pr.one], a, sec) : fmt(S[pr.range], a, b, sec), [lo, hi, len], p, id);
     } else push(lo.v === hi.v ? fmt(S[pr.one], lo.v) : fmt(S[pr.range], lo.v, hi.v), [lo, hi, len], p, id);
   }

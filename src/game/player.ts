@@ -324,7 +324,7 @@ export class Player extends Actor {
   mendItems(dt: number, also: Grid[] = []) {
     this.mendClock += dt;
     if (this.mendClock < 0.5) return;
-    const frames = this.mendClock * 25;
+    const frames = this.mendClock * FRAMES_PER_SEC;
     this.mendClock = 0;
     const all = [...Object.values(this.equipment), ...[this.inventory, this.stash, this.cube, ...also].flatMap((g) => g.items.map((x) => x.item))];
     for (const it of all) {

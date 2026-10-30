@@ -1,4 +1,5 @@
 import { chance, randInt, type P2 } from '../core/math';
+import { FRAMES_PER_SEC } from '../core/units';
 import { D2X_DIFFICULTIES } from '../data/d2x/difficulty';
 import { isBlunt } from '../data/items';
 import type { Elem } from '../data/monsters';
@@ -33,7 +34,7 @@ export function playerPierce(p: Player): DamagePacket['pierce'] {
 /** Diablo II's open wounds damage per second at a character level (bleeds for 8 seconds) */
 function openWoundsDps(clvl: number): number {
   const perFrame = clvl < 16 ? 9 * clvl + 31 : clvl < 31 ? 18 * clvl - 104 : clvl < 46 ? 27 * clvl - 374 : clvl < 61 ? 36 * clvl - 779 : 45 * clvl - 1319;
-  return (perFrame / 256) * 25;
+  return (perFrame / 256) * FRAMES_PER_SEC;
 }
 
 /** physical + elemental damage from the player's weapon and gear */
@@ -213,7 +214,7 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
     }
     // a lightning-enchanted leader looses charged bolts when struck, not twice in 10 frames
     // (MONSTERUNIQUE_CastLightUniqueMissile, MonsterUnique.cpp:1152-1161)
-    if (m.has(17) && (m.rank === 'champion' || m.rank === 'unique') && m.life > 0 && g.time - m.boltsAt >= 10 / 25) {
+    if (m.has(17) && (m.rank === 'champion' || m.rank === 'unique') && m.life > 0 && g.time - m.boltsAt >= 10 / FRAMES_PER_SEC) {
       m.boltsAt = g.time;
       g.chargedBolts(m);
     }

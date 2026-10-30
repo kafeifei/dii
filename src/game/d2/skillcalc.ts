@@ -11,7 +11,8 @@
 // MissilesTbls.cpp source/D2Common/src/DataTbls/ (the function names and links), MissMode.cpp
 // source/D2Game/src/MISSILES/MissMode.cpp and Skills.cpp source/D2Game/src/SKILLS/Skills.cpp (how
 // the game uses the numbers). Integer steps are D2's: int32 arithmetic, every / truncating.
-import { D2X_FPS, D2X_MISSILE_CALC, D2X_SKILL_CALC } from '../../data/d2x/calc';
+import { FRAMES_PER_SEC } from '../../core/units';
+import { D2X_MISSILE_CALC, D2X_SKILL_CALC } from '../../data/d2x/calc';
 import { D2X_MISSILES } from '../../data/d2x/missiles';
 import { D2X_SKILLS, D2X_SKILL_REFS, D2X_SKILL_STATS } from '../../data/d2x/skills';
 import type { D2xCalc, D2xLenBands, D2xMissile, D2xSkill } from '../../data/d2x/types';
@@ -674,7 +675,7 @@ function skillElem256(e: SkillEval, which: 'min' | 'max', mastery: boolean): num
 /** a length by D2's bands, in frames: ELen + ELevLen1 × (lvl − 1) to 8, ELevLen2 a level to 16, ELevLen3 on (D2Skills.cpp:2756-2772) */
 function lenBands(len: D2xLenBands | undefined, L: number): number {
   if (!len) return 0;
-  const [base, a, b, c] = len.map((s) => Math.round(s * D2X_FPS));
+  const [base, a, b, c] = len.map((s) => Math.round(s * FRAMES_PER_SEC));
   if (L <= 8) return base + a * (L - 1);
   if (L <= 16) return base + 7 * a + b * (L - 8);
   return base + 7 * a + 8 * b + c * (L - 16);

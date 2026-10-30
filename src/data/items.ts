@@ -1,3 +1,4 @@
+import { FRAMES_PER_SEC } from '../core/units';
 import type { PlayerClass } from './classes';
 import { D2X_ARMOR } from './d2x/armor';
 import { D2X_ITEM_TYPES } from './d2x/itemtypes';
@@ -322,10 +323,10 @@ function miscBase(b: D2xMisc): ItemBase {
     for (const [stat, v] of b.stats ?? []) {
       if (stat === 'hpregen') {
         out.heal = v;
-        out.healSec = (b.len ?? 25) / 25;
+        out.healSec = (b.len ?? FRAMES_PER_SEC) / FRAMES_PER_SEC;
       } else if (stat === 'manarecovery') {
         out.manaHeal = v;
-        out.manaSec = (b.len ?? 25) / 25;
+        out.manaSec = (b.len ?? FRAMES_PER_SEC) / FRAMES_PER_SEC;
       } else if (stat === 'hitpoints') out.rejuv = v / 100;
     }
     out.tint = POTION_TINT[b.code];

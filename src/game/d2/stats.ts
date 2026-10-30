@@ -5,6 +5,7 @@
 // D2MOO references are to github.com/ThePhrozenKeep/D2MOO at commit d9d394f. D2 keeps life, mana
 // and stamina in 256ths of a point and everything else here in integers; the integer steps are kept
 // where they change a result (C division truncates toward zero, hence Math.trunc).
+import { FRAMES_PER_SEC } from '../../core/units';
 import type { PlayerClass } from '../../data/classes';
 import { D2X_CLASSES } from '../../data/d2x/classes';
 import { D2X_DIFFICULTIES } from '../../data/d2x/difficulty';
@@ -80,8 +81,8 @@ export function levelUpPoints(cs: D2xClass, levels: number): { stat: number; ski
  */
 export function manaRegenPerSec(cs: D2xClass, maxMana: number, recoveryPct = 0): number {
   // a ManaRegen of 0 means 300 seconds (7500 frames, PlrModes.cpp:1207-1211)
-  const perFrame = Math.max(1, Math.trunc((maxMana * 256) / (25 * (cs.manaRegen || 300))));
-  return (Math.trunc((perFrame * (recoveryPct + 100)) / 100) * 25) / 256;
+  const perFrame = Math.max(1, Math.trunc((maxMana * 256) / (FRAMES_PER_SEC * (cs.manaRegen || 300))));
+  return (Math.trunc((perFrame * (recoveryPct + 100)) / 100) * FRAMES_PER_SEC) / 256;
 }
 
 // ───────────────────────── potions ─────────────────────────
@@ -131,17 +132,8 @@ export function velocityPercent(cs: D2xClass, o: MoveOpts = {}): number {
   return Math.max(25, 100 + run + effFrw - (o.armorSpeed ?? 0) + (o.velocityPct ?? 0));
 }
 
-/**
- * metres a second for one point of D2's velocity, the hero's and the monsters' alike: the game's run,
- * 4.6 m/s from before D2's movement, is CharStats RunVelocity 9 (walk 6 is then 3.07 m/s)
- */
-export const MPS_PER_VELOCITY = 4.6 / 9;
-
-/**
- * metres for one of D2's subtiles on the same scale: a velocity point moves a sixteenth of a subtile a
- * frame (Missiles.cpp:289-292, PathMisc.cpp:1159-1161 at its base 1024), 25/16 subtiles a second
- */
-export const M_PER_SUBTILE = (MPS_PER_VELOCITY * 16) / 25;
+/** metres a second for a point of D2's velocity, and metres for a subtile (src/core/units.ts) */
+export { MPS_PER_VELOCITY, M_PER_SUBTILE } from '../../core/units';
 
 /** walk or run speed on the scale of CharStats WalkVelocity and monstats Velocity (Units.cpp:1293, 1702) */
 export function moveVelocity(cs: D2xClass, o: MoveOpts = {}): number {
@@ -155,9 +147,9 @@ export function moveVelocity(cs: D2xClass, o: MoveOpts = {}): number {
 export function runDrainPerSec(cs: D2xClass, o: { torsoSpeed?: number; drainPct?: number; inTown?: boolean } = {}): number {
   if (o.inTown) return 0;
   // cs.runDrain is already 2 × RunDrain × 25 / 256: back to 256ths a frame for the integer steps
-  let lost = Math.round((cs.runDrain * 256) / 25) * (Math.trunc((o.torsoSpeed ?? 0) / 10) + 1);
+  let lost = Math.round((cs.runDrain * 256) / FRAMES_PER_SEC) * (Math.trunc((o.torsoSpeed ?? 0) / 10) + 1);
   if (o.drainPct) lost += Math.trunc((lost * o.drainPct) / -100);
-  return (Math.max(1, lost) * 25) / 256;
+  return (Math.max(1, lost) * FRAMES_PER_SEC) / 256;
 }
 
 /** what the hero is doing, as stamina recovery tells D2's modes apart */
@@ -174,7 +166,7 @@ export function staminaRegenPerSec(maxStamina: number, mode: StaminaMode, stamin
   if (mode === 'busy' && recoveryPct < 1000) return 0;
   let per = Math.trunc(maxStamina * 256) >> (mode === 'walk' || mode === 'townWalk' ? 9 : 8);
   if (recoveryPct) per += Math.trunc((recoveryPct * per) / 100);
-  return (per * 25) / 256;
+  return (per * FRAMES_PER_SEC) / 256;
 }
 
 // ───────────────────────── attack, defense, hit and block ─────────────────────────
