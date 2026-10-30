@@ -5,7 +5,7 @@ import type { D2xMonster } from './d2x/types';
 export type MonsterModel =
   | 'zombie' | 'skeleton' | 'skelarcher' | 'imp' | 'shaman' | 'ghoul' | 'wraith' | 'spider' | 'demon' | 'butcher' | 'lich' | 'overlord'
   | 'skelmage' | 'bat' | 'yeti'
-  | 'corruptrogue' | 'cr_lancer' | 'cr_archer' | 'quillrat'
+  | 'corruptrogue' | 'cr_lancer' | 'cr_archer' | 'quillrat' | 'bloodraven'
   // a placeholder with no body of its own: the foul crow nest (LOOKS.crownest)
   | 'nest';
 export type Blood = 'red' | 'bone' | 'green' | 'ghost' | 'black' | 'fire';
@@ -50,6 +50,17 @@ export interface MonsterLook {
   shootIn?: 'attack' | 'cast';
   /** a tint over its model, for a kind that shares another's */
   tint?: string;
+  /**
+   * What its shield hand may hold, MonStats2 SHv: D2 item codes, null for D2's nil. One of them is
+   * rolled for each monster (Monster.shield); one of item type shield lets it block at its ToBlock
+   * (src/game/combat.ts monsterBlock). Those that have it all have MonStats2's block mode (mBL)
+   */
+  shields?: readonly (string | null)[];
+  /**
+   * It never moves of itself, reels or is knocked back: MonStats velocity 0 and no WL, GH or KB mode
+   * in MonStats2 (the foul crow nest's are DT NU DD SQ)
+   */
+  still?: true;
 }
 
 /**
@@ -59,13 +70,13 @@ export interface MonsterLook {
  * their own: ghosts as wraiths, the Arach as the spider, goatmen as demons, the Afflicted (Bighead) as
  * ghouls, the foul crows as bats, the Banished (Vampire) as the lich, the rat men (Fetish) as small
  * imps; the foul crow nest, with no model anywhere yet, is a PLACEHOLDER: a dead tree tinted dark.
- * Act 1's bosses take the floor bosses' bodies: the Smith the butcher's, Blood Raven the lich's,
- * Andariel the overlord's, Griswold a big zombie's. Sizes are the game's: D2 gives sprites' heights (MonStats2 pixHeight), not models'.
+ * Act 1's bosses take the floor bosses' bodies: the Smith the butcher's, Andariel the overlord's,
+ * Griswold a big zombie's; Blood Raven has her own. Sizes are the game's: D2 gives sprites' heights (MonStats2 pixHeight), not models'.
  */
 export const LOOKS: Record<string, MonsterLook> = {
   zombie: { key: 'zombie', model: 'zombie', scale: 1, radius: 0.42, blood: 'red', color: '#5d6b4a', color2: '#3a3326', voice: 'flesh', range: 1.1, attackSpeed: 0.8, attack: ['Attack'] },
   // its S2, the cry as it orders its pack on, on its stance: the imp has no cry of its own
-  fallen: { key: 'fallen', model: 'imp', scale: 0.72, radius: 0.33, blood: 'red', color: '#a83a24', color2: '#3a1a10', voice: 'imp', range: 1.0, attackSpeed: 1.0, attack: ['Attack', 'Attack2'], cast: ['Idle'] },
+  fallen: { key: 'fallen', model: 'imp', scale: 0.72, radius: 0.33, blood: 'red', color: '#a83a24', color2: '#3a1a10', voice: 'imp', range: 1.0, attackSpeed: 1.0, attack: ['Attack', 'Attack2'], cast: ['Idle'], shields: [null, 'sml', 'buc', 'tch'] },
   fallenshaman: {
     key: 'fallenshaman', model: 'shaman', scale: 0.8, radius: 0.34, blood: 'red', color: '#8a2a5a', color2: '#d8b040', missile: 'firebolt', voice: 'imp', range: 1.0,
     attackSpeed: 0.6, attack: ['Attack'], cast: ['Cast'], shootIn: 'cast',
@@ -73,11 +84,11 @@ export const LOOKS: Record<string, MonsterLook> = {
   // its bite on 'attack', its quills on 'cast' (src/render/legs.ts QuadRig poses both over a still)
   quillrat: { key: 'quillrat', model: 'quillrat', scale: 1, radius: 0.36, blood: 'red', color: '#5a4a3a', color2: '#2a2018', missile: 'arrow', voice: 'flesh', range: 0.9, attackSpeed: 0.8, attack: ['Idle'], cast: ['Idle'], shootIn: 'cast' },
   brute: { key: 'brute', model: 'yeti', scale: 1.4, radius: 0.6, blood: 'red', color: '#c8d8e8', color2: '#4a7a9a', voice: 'flesh', range: 1.4, attackSpeed: 0.8, attack: ['Attack', 'Attack2'] },
-  corruptrogue: { key: 'corruptrogue', model: 'corruptrogue', scale: 1, radius: 0.38, blood: 'red', color: '#a08a8a', color2: '#4a2a3a', voice: 'flesh', range: 1.15, attackSpeed: 1.0, attack: ['Attack'] },
+  corruptrogue: { key: 'corruptrogue', model: 'corruptrogue', scale: 1, radius: 0.38, blood: 'red', color: '#a08a8a', color2: '#4a2a3a', voice: 'rogue', range: 1.15, attackSpeed: 1.0, attack: ['Attack'], shields: [null, 'buc', 'lrg', 'kit'] },
   // the hunter's body; its spear's MonStats2 MeleeRng 2 reaches a subtile farther (meleeReach)
-  cr_lancer: { key: 'cr_lancer', model: 'cr_lancer', scale: 1, radius: 0.38, blood: 'red', color: '#a08a8a', color2: '#4a2a3a', voice: 'flesh', range: 1.15, attackSpeed: 0.9, attack: ['Thrust'] },
-  cr_archer: { key: 'cr_archer', model: 'cr_archer', scale: 1, radius: 0.38, blood: 'red', color: '#a08a8a', color2: '#4a2a3a', missile: 'arrow', voice: 'flesh', range: 1.15, attackSpeed: 0.75, attack: ['Shoot'] },
-  skeleton: { key: 'skeleton', model: 'skeleton', scale: 1, radius: 0.38, blood: 'bone', color: '#d8d0bc', color2: '#6a5a40', voice: 'bone', range: 1.15, attackSpeed: 1.15, attack: ['Attack', 'Attack2'] },
+  cr_lancer: { key: 'cr_lancer', model: 'cr_lancer', scale: 1, radius: 0.38, blood: 'red', color: '#a08a8a', color2: '#4a2a3a', voice: 'rogue', range: 1.15, attackSpeed: 0.9, attack: ['Thrust'] },
+  cr_archer: { key: 'cr_archer', model: 'cr_archer', scale: 1, radius: 0.38, blood: 'red', color: '#a08a8a', color2: '#4a2a3a', missile: 'arrow', voice: 'rogue', range: 1.15, attackSpeed: 0.75, attack: ['Shoot'] },
+  skeleton: { key: 'skeleton', model: 'skeleton', scale: 1, radius: 0.38, blood: 'bone', color: '#d8d0bc', color2: '#6a5a40', voice: 'bone', range: 1.15, attackSpeed: 1.15, attack: ['Attack', 'Attack2'], shields: [null, 'buc', 'lrg', 'kit', 'sml'] },
   sk_archer: { key: 'sk_archer', model: 'skelarcher', scale: 1, radius: 0.38, blood: 'bone', color: '#cfc6b0', color2: '#4a3a28', missile: 'arrow', voice: 'bone', range: 1.15, attackSpeed: 0.75, attack: ['Attack'] },
   skmage_fire: {
     key: 'skmage_fire', model: 'skelmage', scale: 1, radius: 0.36, blood: 'bone', color: '#c8c0b0', color2: '#6a3a2a', missile: 'firebolt', voice: 'bone', range: 1.1, attackSpeed: 0.6,
@@ -93,15 +104,15 @@ export const LOOKS: Record<string, MonsterLook> = {
   },
   wraith: { key: 'wraith', model: 'wraith', scale: 1.05, radius: 0.4, blood: 'ghost', color: '#9ad0ff', color2: '#2a4060', voice: 'bone', range: 1.2, attackSpeed: 0.9, attack: ['Attack'] },
   arach: { key: 'arach', model: 'spider', scale: 1, radius: 0.5, blood: 'green', color: '#2a2a22', color2: '#8a1a1a', voice: 'flesh', range: 1.2, attackSpeed: 1.4, attack: ['Idle'] },
-  goatman: { key: 'goatman', model: 'demon', scale: 1.2, radius: 0.5, blood: 'red', color: '#6a4a2a', color2: '#2a1a0a', voice: 'flesh', range: 1.3, attackSpeed: 1.0, attack: ['Attack', 'Attack2'], tint: '#8a6a40' },
+  goatman: { key: 'goatman', model: 'demon', scale: 1.2, radius: 0.5, blood: 'red', color: '#6a4a2a', color2: '#2a1a0a', voice: 'goat', range: 1.3, attackSpeed: 1.0, attack: ['Attack', 'Attack2'], tint: '#8a6a40' },
   bighead: { key: 'bighead', model: 'ghoul', scale: 1.1, radius: 0.45, blood: 'green', color: '#5a7a68', color2: '#2a3a30', missile: 'lightning', voice: 'flesh', range: 1.2, attackSpeed: 0.7, attack: ['Attack', 'Attack2'] },
-  foulcrow: { key: 'foulcrow', model: 'bat', scale: 0.8, radius: 0.36, blood: 'red', color: '#3a3030', color2: '#6a1a1a', voice: 'flesh', range: 1.1, attackSpeed: 1.4, attack: [] },
+  foulcrow: { key: 'foulcrow', model: 'bat', scale: 0.8, radius: 0.36, blood: 'red', color: '#3a3030', color2: '#6a1a1a', voice: 'bird', range: 1.1, attackSpeed: 1.4, attack: [] },
   // PLACEHOLDER until the nest has a model (docs/M2A.md 美术: 鸟巢; none in models-src or public/models): the
   // graveyard pack's small dead tree, tinted the crows' dark red, standing where D2's nest (MonStats
   // crownest1: velocity 0, 3×3, pixHeight 128) stands. It has no arm (range 0) as D2's has no attack
-  // (no A1 in MonStats), so the AI's fallback never comes to a blow; it hatches no crows until the B
-  // line writes its AI (FoulCrowNest)
-  crownest: { key: 'crownest', model: 'nest', scale: 1, radius: 0.7, blood: 'red', color: '#3a2e22', color2: '#6a1a1a', voice: 'flesh', range: 0, attackSpeed: 0.5, attack: [], tint: '#4a1a12' },
+  // (no A1 in MonStats): it hatches its crows (src/game/ai.ts foulCrowNest) and falls in once it has
+  // hatched them all, its cry the crows' (MonStats sound crownest has none of the game's)
+  crownest: { key: 'crownest', model: 'nest', scale: 1, radius: 0.7, blood: 'red', color: '#3a2e22', color2: '#6a1a1a', voice: 'bird', range: 0, attackSpeed: 0.5, attack: [], tint: '#4a1a12', still: true },
   vampire: {
     key: 'vampire', model: 'lich', scale: 1.1, radius: 0.45, blood: 'red', color: '#8a3a4a', color2: '#2a0a10', missile: 'fireball', voice: 'flesh', range: 1.2, attackSpeed: 0.6,
     attack: ['Attack'], cast: ['Cast'], tint: '#a03040',
@@ -110,9 +121,12 @@ export const LOOKS: Record<string, MonsterLook> = {
   // Tristram's Griswold (M2b), on the zombie's body made big and iron-grey until he has his own: the rifts' sixth stretch's guardian (src/world/rift.ts)
   griswold: { key: 'griswold', model: 'zombie', scale: 1.5, radius: 0.6, blood: 'red', color: '#6a6a60', color2: '#3a2a20', voice: 'flesh', range: 1.4, attackSpeed: 0.8, attack: ['Attack'], tint: '#8a8a80' },
   smith: { key: 'smith', model: 'butcher', scale: 1.6, radius: 0.75, blood: 'red', color: '#7a5a4a', color2: '#5a0a0a', voice: 'flesh', range: 1.7, attackSpeed: 1.0, attack: ['Attack', 'Attack2', 'Attack3'] },
+  // her own body (models-src/ai/mon_bloodraven.glb, recoloured red) with her long war bow (src/render/specs.ts
+  // LONG_BOW): Shoot for her arrows and her Quick Strike, Cast for her Nest; a little taller than the
+  // rangers, as D2 draws her (MonStats2 pixHeight 96 to their 80–96). Her cry a rogue's, a boss's death the large one
   bloodraven: {
-    key: 'bloodraven', model: 'lich', scale: 1.4, radius: 0.6, blood: 'red', color: '#6a8aaa', color2: '#c0e8ff', missile: 'arrow', voice: 'flesh', range: 1.2, attackSpeed: 0.8,
-    attack: ['Attack'], cast: ['Cast'],
+    key: 'bloodraven', model: 'bloodraven', scale: 1.05, radius: 0.42, blood: 'red', color: '#8a2a2a', color2: '#d8b8a0', missile: 'arrow', voice: 'rogue', range: 1.15, attackSpeed: 0.8,
+    attack: ['Shoot'], cast: ['Cast'],
   },
   andariel: {
     key: 'andariel', model: 'overlord', scale: 1.9, radius: 0.85, blood: 'fire', color: '#4a1410', color2: '#ff8030', missile: 'poisonspit', voice: 'flesh', range: 2.0, attackSpeed: 0.9,
@@ -128,8 +142,8 @@ export function lookKey(row: D2xMonster): string {
 /** a monster as the game fights it: its D2 row and its look */
 /**
  * A monster's kind of cry (MonsterDef.voice): its death sound by it (src/audio/sounds.ts DEATH_SOUND).
- * M2a's birds (the foul crows), goats (the goatmen) and rogues (the hireling, the Dark Rangers) have
- * theirs to come, synthesized until recorded
+ * M2a's birds (the foul crows and their nests), goats (the goatmen) and rogues (the hireling, the
+ * corrupted rogues, Blood Raven) have their own, recorded (src/audio/files.ts)
  */
 export type Voice = 'flesh' | 'bone' | 'imp' | 'bird' | 'goat' | 'rogue';
 

@@ -9,7 +9,15 @@
 // looses three quills, a cursed unique's landed blow doubles the hero's physical damage taken, a
 // unique's minion walks back to it and no more once it is dead, a struck sleeper wakes its pack; with
 // a hireling made here, a monster goes for the nearer of the two, neither in the camp nor 55 subtiles
-// off, takes the other once its target is dead, and fights her with the hero in the camp; a
+// off, takes the other once its target is dead, and fights her with the hero in the camp; the
+// west block's (M2a's B line): Rakanishu's pack as the superunique table has it; Blood Raven sent
+// home once her target is 50 subtiles from it and running on to within 5 of it, her Nest a zombie
+// at her feet that isn't hers, 8/10/12 of them all told by difficulty however many are left, worth
+// no experience or drop, her Quick Strike one arrow out of seven frames, raven2 never loosed, and
+// at her death the undead within 35 subtiles falling 1–5 s on, nobody's kill; a foul crow nest
+// hatching nothing past 20 subtiles, within them a crow at its exit every 100 frames, 6 in normal,
+// then falling in, none of it worth experience or a drop; a skeleton with a shield blocking 10 % of
+// the blows that would land, none without, a Fallen's torch no shield, Andariel without one; a
 // sleeping fallen notices the hero behind a tree or a rock out there, in the Den of Evil only in sight.
 import assert from 'node:assert/strict';
 
@@ -564,6 +572,291 @@ export default async (load) => {
       }
     }
 
+    // ── the west block's monsters (M2a's B line): Blood Raven, the foul crow nest, Rakanishu, blocks ──
+    let west = '';
+    {
+      const { playerStrike, monsterBlock } = await load('/src/game/combat.ts');
+      const { RAVEN_FALL } = await load('/src/game/ai.ts');
+      const { xferMods } = await load('/src/game/d2/population.ts');
+      const sub = A.subtiles(1);
+      const heard = [];
+      const play0 = game.sfx.play;
+      game.sfx.play = function (id, o) {
+        heard.push(id);
+        return play0.call(this, id, o);
+      };
+      /** a monster of row `id` in difficulty `d` at `pos`, awake, its roar already done */
+      const ready = (id, pos, rank = 'normal', d = 0) => {
+        const m = new Monster(id, D2X[id].diff[d].level, rank, pos, [], { difficulty: d });
+        m.awake = true;
+        m.taunted = true;
+        L.monsters = [...L.monsters, m];
+        return m;
+      };
+      /** one step with `m` thinking in it, Math.random `rnd` for it */
+      const thinkNow = (m, rnd) => {
+        m.thinkTimer = 0;
+        m.move = null;
+        m.act = null;
+        m.setState('idle');
+        game.hitstop = 0;
+        const r0 = Math.random;
+        if (rnd) Math.random = rnd;
+        try {
+          game.update(DT);
+        } finally {
+          Math.random = r0;
+        }
+      };
+      const goesHome = (r) => r.aiFlag === 2 && !!r.move?.to && dist(r.move.to, r.homePos) < 1e-9;
+      /** `dx`, `dz` m off where the hero stands */
+      const fromHero = (dx, dz) => ({ x: p.pos.x + dx, z: p.pos.z + dz });
+      /**
+       * the hero on the open ground 12 m across (`wide`: every tile within 6 m of it walkable, so no
+       * tree in a line of sight and nothing pushing them off it), the monsters round it cleared away
+       */
+      const onWide = () => {
+        L.monsters = L.monsters.filter((m) => dist(m.pos, wide) > 45);
+        L.projectiles = [];
+        L.deaths.length = 0;
+        game.teleportWithin(wide);
+        p.intent = null;
+        p.path = null;
+        p.ampTime = 0;
+      };
+      try {
+        // Rakanishu's pack as the superunique table has it (MONSTERUNIQUE_SpawnMinions with
+        // SuperUniques.txt MinGrp–MaxGrp, +1 each a difficulty, MonsterUnique.cpp:2729-2735): his
+        // row's own (fallen2) 8 of them in normal, his minions, kept near him, with what he passes on
+        const rak = L.monsters.find((m) => m.superUnique === 'Rakanishu');
+        assert.ok(rak, 'no Rakanishu on the overworld');
+        const rmin = L.monsters.filter((m) => m.leader === rak);
+        assert.ok(rak.has(17) && rak.has(6), `Rakanishu's modifiers ${rak.mods}`);
+        assert.ok(rmin.length === 8 && rmin.every((m) => m.def.id === 'fallen2' && m.rank === 'minion' && m.leashTo === rak && String(m.mods) === String(xferMods(rak.mods))), `Rakanishu's minions: ${rmin.map((m) => `${m.def.id}/${m.rank}/${m.mods}`).join(' ')}`);
+
+        // ── Blood Raven's distances, by D2's subtile: home past 50, back to within 5 of it ──
+        onWide();
+        const hp = { ...p.pos };
+        /** her home `n` subtiles from the hero along x, she 4.5 m from it toward them (31–33 subtiles off them: noticed) */
+        const homeAt = (n) => {
+          L.monsters = L.monsters.filter((m) => m.def.id !== 'bloodraven' || m.quest);
+          const r = ready('bloodraven', { x: hp.x - A.subtiles(n), z: hp.z }, 'boss');
+          r.pos = { x: r.homePos.x + 4.5, z: r.homePos.z };
+          r.prevPos = { ...r.pos };
+          return r;
+        };
+        // with every roll failing (Math.random 0.99): only her distances decide
+        const fail = () => 0.99;
+        const r51 = homeAt(51);
+        thinkNow(r51, fail);
+        assert.ok(goesHome(r51), `her target 51 subtiles from her home: she ${r51.state}, flag ${r51.aiFlag}`);
+        const r49 = homeAt(49);
+        thinkNow(r49, fail);
+        assert.ok(!goesHome(r49) && r49.aiFlag === 0, `her target 49 subtiles from her home: she went home`);
+        // sent home she runs on while over 5 subtiles from it, the hero by her home
+        L.monsters = L.monsters.filter((m) => m.def.id !== 'bloodraven' || m.quest);
+        const rh = ready('bloodraven', { x: hp.x - 2, z: hp.z }, 'boss');
+        rh.aiFlag = 2;
+        rh.pos = { x: rh.homePos.x - A.subtiles(5.4), z: rh.homePos.z };
+        thinkNow(rh, fail);
+        assert.ok(goesHome(rh), 'sent home, 5.4 subtiles from it, she stopped');
+        rh.aiFlag = 2;
+        rh.pos = { x: rh.homePos.x - A.subtiles(4.6), z: rh.homePos.z };
+        thinkNow(rh, fail);
+        assert.ok(!goesHome(rh) && rh.aiFlag === 0, 'sent home, 4.6 subtiles from it, she ran on');
+
+        // ── her Nest: a zombie at her feet, none of hers, no experience, no drop; 8/10/12 casts all told ──
+        const caps = [];
+        const missiles = new Set();
+        let feet = '';
+        for (const d of [0, 1, 2]) {
+          onWide();
+          // 2.4 m off the hero: out of her reach, over 5 subtiles, within 20
+          const r = ready('bloodraven', fromHero(2.4, 0), 'boss', d);
+          const xp0 = p.xp;
+          // what lies on the ground now (gold the hero walks over is picked up: new things are counted, not the length)
+          const ground0 = new Set(L.ground);
+          const seen = new Set();
+          let cast = null;
+          heard.length = 0;
+          run(40, (t) => {
+            // every thought a chance at it over 100 %: she casts whenever the count lets her
+            r.aiCount = 1000;
+            if (r.act?.missile) missiles.add(r.act.missile);
+            if (r.state === 'cast' && cast === null) cast = { t, dur: r.stateDur, at: r.act?.at, seq: r.act?.seq };
+            for (const z of L.monsters) {
+              if (z.def.id !== 'zombie2' || !z.noXp || seen.has(z)) continue;
+              seen.add(z);
+              if (d === 0 && seen.size === 1) {
+                const off = dist(z.pos, r.pos);
+                // there, or a subtile off (D2's ring 1), and pushed from her body for a frame
+                assert.ok(off <= 2 * sub, `her first zombie ${(off / sub).toFixed(2)} subtiles from her feet`);
+                assert.ok(z.leader === null && !r.minions.includes(z) && z.rank === 'normal', `her zombie is ${z.leader === r ? 'her minion' : z.rank}`);
+                // up out of the ground in S1, as long as a death takes
+                assert.ok(z.state === 'idle' && z.thinkTimer > A.frames(A.DEATH_FRAMES) - 0.1, `her zombie got up at once (${z.state}, ${z.thinkTimer.toFixed(2)} s)`);
+                // her cast: seq_bloodravencast's 20 rows, the zombie on row 15
+                near(cast.dur, A.frames(20), 'her Nest lasts');
+                near(cast.at, 15 / 20, 'her Nest goes off');
+                assert.ok(Math.abs(t - cast.t - A.frames(15)) < 2 * DT, `her zombie came ${(t - cast.t).toFixed(3)} s into her cast`);
+                feet = `${(off / sub).toFixed(1)} subtiles off her feet, ${(t - cast.t).toFixed(2)} s into her cast`;
+              }
+              game.killMonster(z, 'phys');
+            }
+            return false;
+          });
+          caps.push(seen.size);
+          assert.equal(seen.size, 2 * d + 8, `difficulty ${d}: her Nest brought ${seen.size}`);
+          assert.equal(r.aiTally, 2 * d + 8, `difficulty ${d}: her count`);
+          assert.equal(p.xp, xp0, `difficulty ${d}: her zombies gave experience`);
+          assert.equal(L.ground.filter((x) => !ground0.has(x)).length, 0, `difficulty ${d}: her zombies dropped something`);
+          assert.ok(heard.includes('monster.raven_summon'), 'her raise made no sound');
+        }
+        // her arrows are raven1; raven2, her SQ missile, never flies
+        assert.deepEqual([...missiles], ['raven1'], `her missiles: ${[...missiles]}`);
+
+        // ── her Quick Strike: one arrow out of A1's first seven frames; her plain shot one too ──
+        onWide();
+        const arrows = (r, secs) => {
+          const shots = new Set();
+          let first = null;
+          run(secs, (t) => {
+            for (const x of L.projectiles) if (x.owner === r && !shots.has(x)) shots.add(x) && (first ??= t);
+          });
+          return { n: shots.size, first };
+        };
+        const qr = ready('bloodraven', fromHero(3, 0), 'boss');
+        // no Nest left; rolls of 10: no run (5), a shot (80), the strike (40 in normal)
+        qr.aiTally = 8;
+        thinkNow(qr, () => 0.1);
+        assert.ok(qr.act?.kind === 'missile' && qr.act.seq === 'seq_brquickstrike' && qr.act.missile === 'raven1', `a roll of 10: ${JSON.stringify(qr.act)}`);
+        near(qr.stateDur, A.frames(7), 'her Quick Strike lasts');
+        const qs = arrows(qr, 0.8);
+        assert.equal(qs.n, 1, 'her Quick Strike loosed more than one arrow');
+        assert.ok(Math.abs(qs.first - (A.frames(6) - DT)) < 2 * DT, `her Quick Strike's arrow ${qs.first.toFixed(3)} s in`);
+        L.monsters = L.monsters.filter((m) => m !== qr);
+        const ar = ready('bloodraven', fromHero(3, 0), 'boss');
+        ar.aiTally = 8;
+        // rolls of 50: a shot, no strike
+        thinkNow(ar, () => 0.5);
+        assert.ok(ar.act?.kind === 'missile' && !ar.act.seq && ar.act.missile === 'raven1', `a roll of 50: ${JSON.stringify(ar.act)}`);
+        assert.equal(arrows(ar, 1.4).n, 1, 'her shot loosed more than one arrow');
+        L.monsters = L.monsters.filter((m) => m !== ar);
+
+        // ── her death: the undead within 35 subtiles fall 1–5 s later, nobody's kill ──
+        onWide();
+        const br = ready('bloodraven', fromHero(0, 2), 'boss');
+        const off = (n, a) => ({ x: br.pos.x + Math.cos(a) * A.subtiles(n), z: br.pos.z + Math.sin(a) * A.subtiles(n) });
+        const falls = {
+          zombie34: ready('zombie2', off(34.5, 0)),
+          skeleton20: ready('skeleton1', off(20, Math.PI / 2)),
+          raised: ready('zombie2', off(1, Math.PI)),
+        };
+        falls.raised.noXp = true;
+        const stays = { zombie36: ready('zombie2', off(35.5, Math.PI)), fallen10: ready('fallen1', off(10, -Math.PI / 2)) };
+        for (const m of [...Object.values(falls), ...Object.values(stays)]) m.maxLife = m.life = 1e6;
+        game.killMonster(br, 'phys');
+        const xp1 = p.xp;
+        const ground1 = new Set(L.ground);
+        const fell = {};
+        run(5.3, (t) => {
+          for (const [k, m] of Object.entries(falls)) if (m.dead && fell[k] === undefined) fell[k] = t;
+        });
+        for (const [k, m] of Object.entries(falls)) {
+          assert.ok(m.dead && fell[k] >= A.frames(RAVEN_FALL.min) - 2 * DT && fell[k] <= A.frames(RAVEN_FALL.max) + DT, `the ${k} fell ${m.dead ? `${fell[k].toFixed(2)} s on` : 'never'}`);
+        }
+        for (const [k, m] of Object.entries(stays)) assert.ok(!m.dead, `the ${k} fell with her`);
+        assert.equal(p.xp, xp1, 'her dead gave experience as they fell');
+        assert.equal(L.ground.filter((x) => !ground1.has(x)).length, 0, 'her dead dropped something as they fell');
+        const fallLog = Object.entries(fell)
+          .map(([k, t]) => `${k} ${t.toFixed(1)} s`)
+          .join(', ');
+
+        // ── the foul crow nest: none hatched past 20 subtiles; within, one at its exit every 100 frames, 6 in normal, then it falls in ──
+        onWide();
+        const far = ready('crownest1', fromHero(A.subtiles(21.5), 0));
+        run(6);
+        assert.ok(far.aiTally === 0 && !L.monsters.some((m) => m.def.id === 'foulcrow1' && m.noXp), `a nest 21.5 subtiles off hatched ${far.aiTally}`);
+        L.monsters = L.monsters.filter((m) => m !== far);
+        const nst = ready('crownest1', fromHero(3, 0));
+        const exit = { x: nst.pos.x, z: nst.pos.z + A.subtiles(3) };
+        const xp2 = p.xp;
+        const ground2 = new Set(L.ground);
+        const hatched = [];
+        heard.length = 0;
+        let gone = null;
+        run(45, (t) => {
+          for (const c of L.monsters) {
+            if (c.def.id !== 'foulcrow1' || !c.noXp || hatched.some((h) => h.c === c)) continue;
+            hatched.push({ c, t, off: dist(c.pos, exit) });
+            assert.ok(c.leader === null && !c.dead, 'a hatched crow is the nest\'s minion');
+            game.killMonster(c, 'phys');
+          }
+          if (nst.dead && gone === null) gone = t;
+          return nst.dead && t > gone + 0.5;
+        });
+        const count = A.param(D2X.crownest1, 0, 'FoulCrowNest', 'count');
+        const every = A.frames(A.param(D2X.crownest1, 0, 'FoulCrowNest', 'interval'));
+        assert.equal(count, 6);
+        assert.equal(hatched.length, count, `the nest hatched ${hatched.length}`);
+        assert.ok(nst.dead && nst.aiTally === count, `after hatching ${count}: the nest ${nst.dead ? 'fell' : 'stands'}`);
+        for (const h of hatched) assert.ok(h.off <= 2 * sub, `a crow ${(h.off / sub).toFixed(2)} subtiles off the nest's exit`);
+        const gaps = hatched.slice(1).map((h, i) => h.t - hatched[i].t);
+        assert.ok(gaps.every((g) => g >= every - 2 * DT), `hatchings ${gaps.map((g) => g.toFixed(2)).join(', ')} s apart, ${every} s at least`);
+        assert.equal(p.xp, xp2, 'the nest or its crows gave experience');
+        assert.equal(L.ground.filter((x) => !ground2.has(x)).length, 0, 'the nest or its crows dropped something');
+        assert.ok(heard.includes('monster.nest_hatch'), 'the nest hatched without a sound');
+        const nestLog = `the nest hatched ${hatched.length} ${gaps.length ? `${Math.min(...gaps).toFixed(1)}–${Math.max(...gaps).toFixed(1)}` : '?'} s apart at its exit and fell in ${(gone - hatched[hatched.length - 1].t).toFixed(1)} s after the last`;
+
+        // ── blocks (UNITS_GetBlockRate): a skeleton with a shield 10 %, none without; a Fallen's torch is no shield ──
+        const blk = (id, piece, d = 0) => {
+          const m = new Monster(id, D2X[id].diff[d].level, 'normal', fromHero(1, 0), [], { difficulty: d });
+          m.shield = piece;
+          return monsterBlock(m);
+        };
+        assert.deepEqual([blk('skeleton1', 'buc'), blk('skeleton1', 'kit'), blk('skeleton1', null), blk('skeleton3', 'lrg')], [10, 10, 0, 20]);
+        assert.deepEqual([blk('fallen1', 'sml'), blk('fallen1', 'tch'), blk('fallen1', null)], [9, 0, 0]);
+        // Andariel blocks without one (MonStats NoShldBlock: D2R's ShieldBlockOverride 1), 0/20/40
+        assert.deepEqual([0, 1, 2].map((d) => blk('andariel', null, d)), [0, 20, 40]);
+        onWide();
+        const w0 = p.equipment.weapon;
+        const dur0 = w0?.dur;
+        const swing = (piece, n) => {
+          const sk = ready('skeleton1', fromHero(1.1, 0));
+          sk.shield = piece;
+          sk.maxLife = sk.life = 1e12;
+          let landed = 0;
+          let blocked = 0;
+          let blockState = false;
+          for (let i = 0; i < n; i++) {
+            const pk = emptyPacket();
+            pk.phys = 1;
+            pk.source = p;
+            heard.length = 0;
+            // the hero's rating made huge: as often as the levels let a blow land (2 × 1 / (1 + 2), level 1 at level 2)
+            if (playerStrike(game, p, sk, pk, 1e6)) landed++;
+            else if (heard.includes('combat.block')) {
+              blocked++;
+              blockState ||= sk.state === 'block';
+            }
+          }
+          L.monsters = L.monsters.filter((m) => m !== sk);
+          return { landed, blocked, blockState, life: sk.maxLife - sk.life };
+        };
+        const withShield = swing('buc', 4000);
+        const rate = withShield.blocked / (withShield.blocked + withShield.landed);
+        assert.ok(rate > 0.08 && rate < 0.12, `a skeleton with a buckler blocked ${(rate * 100).toFixed(1)} % of the blows that would land`);
+        assert.ok(withShield.blockState, 'a blocking skeleton never played its block');
+        near(withShield.life, withShield.landed, 'the blocked blows did damage');
+        const without = swing(null, 1500);
+        assert.equal(without.blocked, 0, 'a skeleton with no shield blocked');
+        if (w0) w0.dur = dur0;
+        west = `Rakanishu's ${rmin.length} fallen; Blood Raven home past 50 subtiles, on to within 5; her zombie ${feet}, not hers; ${caps.join('/')} raised all told, none worth experience or a drop; one arrow a Quick Strike, raven2 never; her dead fell (${fallLog}), the zombie 35.5 subtiles off and a Fallen stood; ${nestLog}; a skeleton's buckler blocked ${(rate * 100).toFixed(1)} % of ${withShield.blocked + withShield.landed} blows`;
+      } finally {
+        game.sfx.play = play0;
+        onWide();
+      }
+    }
+
     // noticing: a sleeping fallen within its notice range, the hero out of its sight or in it
     /** a spot 9–32 subtiles from `h` (inside the fallen's notice range of 35) in area `id`, clear, in the sight of it or out of it */
     const ringSpot = (Lv, id, h, inside) => {
@@ -621,7 +914,7 @@ export default async (load) => {
     run(1.5);
     assert.ok(!denMs[0].awake && denMs[1].awake, `in the den: the one ${denD.toFixed(1)} m off out of sight awake ${denMs[0].awake}, the one in sight ${denMs[1].awake}`);
     const noticing = `a sleeper behind cover ${moorD.toFixed(1)} m off woke in Blood Moor, in the den one ${denD.toFixed(1)} m off slept on`;
-    console.log(`  parameters by difficulty, fright, raises, walks, haste, curse, auras, reach, leash; in play: ${fleeLog}; a fallen raised ${raisedAt.toFixed(1)} s after it fell; the lead passed on in D2's order; a light hit shot back at twice; three quills; cursed ${cursed}/200; ${leashLog}; a struck sleeper woke its pack; ${sides}; ${noticing}`);
+    console.log(`  parameters by difficulty, fright, raises, walks, haste, curse, auras, reach, leash; in play: ${fleeLog}; a fallen raised ${raisedAt.toFixed(1)} s after it fell; the lead passed on in D2's order; a light hit shot back at twice; three quills; cursed ${cursed}/200; ${leashLog}; a struck sleeper woke its pack; ${sides}; ${west}; ${noticing}`);
   } finally {
     debugOpts.god = god;
     localStorage.clear();

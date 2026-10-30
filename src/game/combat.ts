@@ -1,5 +1,6 @@
 import { chance, randInt, type P2 } from '../core/math';
 import { FRAMES_PER_SEC } from '../core/units';
+import { D2X_ARMOR } from '../data/d2x/armor';
 import { D2X_DIFFICULTIES } from '../data/d2x/difficulty';
 import { isBlunt } from '../data/items';
 import type { Elem } from '../data/monsters';
@@ -178,13 +179,14 @@ export function applyDamage(g: Game, target: Actor, pk: DamagePacket, from?: P2)
     // struck before it noticed the hero, it notices them as seeing them would have it, its pack with it (ai.ts notice)
     if (!m.awake && m.life > 0) g.wake(m);
     strikeEffects(m, pk, res.phys, resOf('cold'));
-    if (pk.knockback && m.rank !== 'boss') {
+    // none knocks back or staggers one that has no knockback or get-hit mode (MonsterLook.still: the nest)
+    if (pk.knockback && m.rank !== 'boss' && !m.def.still) {
       const kb = pk.knockback * (m.rank === 'unique' ? 0.5 : 1);
       m.knockVel.x += dir.x * kb;
       m.knockVel.z += dir.z * kb;
     }
     const heavy = pk.heavy || pk.crit || total > m.maxLife * 0.12;
-    if (heavy && m.life > 0 && m.rank !== 'boss' && m.state !== 'dead') {
+    if (heavy && m.life > 0 && m.rank !== 'boss' && m.state !== 'dead' && !m.def.still) {
       m.setState('hit', m.rank === 'normal' || m.rank === 'minion' ? 0.28 : 0.15);
       // its AI state is the get-hit's 3 now, even after a hit with none (MonsterMode.cpp:1796-1812)
       m.hitHeld = false;
@@ -314,7 +316,47 @@ function chill(target: Actor, len: number, res: number, half: boolean) {
   target.chillAmount = Math.min(0.9, -effect / 100);
 }
 
-/** Player melee strike: hit roll then damage. Returns true if hit. */
+/** the item codes of type shield (Armor.txt shie): what a monster's SH piece must be to block with */
+const SHIELDS = new Set(D2X_ARMOR.filter((a) => a.type === 'shie').map((a) => a.code));
+
+/**
+ * A monster's chance to block, % (UNITS_GetBlockRate, Units.cpp:2481-2543): its ToBlock (MonStats,
+ * its difficulty's; STAT_TOBLOCK, Monster.cpp:212), at most 75, when its shield hand holds a shield
+ * (MonStats2 SH, Monster.shield: an item of type shield, Units.cpp:2509-2531; a Fallen's torch
+ * isn't), or always for one that blocks without (MonStats NoShldBlock, D2R's ShieldBlockOverride 1:
+ * Andariel, Units.cpp:2486, 2538-2543); else none
+ */
+export function monsterBlock(m: Monster): number {
+  const row = m.def.row;
+  if (row.shieldBlock !== 1 && !(m.shield && SHIELDS.has(m.shield))) return 0;
+  return Math.min(75, row.diff[m.difficulty].block ?? 0);
+}
+
+/**
+ * A monster blocks a blow that would have landed (SUNITDMG_ApplyBlockOrDodge, SUnitDmg.cpp:2707-2734,
+ * after the hit roll, SUnitDmg.cpp:2612-2649): no damage, nothing set off by a hit, no wear (2312-2339).
+ * It plays its block (MONMODE_BLOCK) if its look has a shield to block with (MonStats2 mBL: every one
+ * that holds one), cutting into what it was doing as a get-hit does; one blocking without (Andariel)
+ * has no block mode and only knows it was struck (AI state 19; SUnitDmg.cpp:2096-2118)
+ */
+function monsterBlocked(g: Game, m: Monster, from: P2) {
+  if (m.def.shields?.length && m.state !== 'dead') {
+    m.act = null;
+    m.move = null;
+    // AnimData's BL frames aren't in d2data: as long as its get-hit (applyDamage)
+    m.setState('block', 0.28);
+  } else {
+    m.wasHit = true;
+    m.hitHeld = true;
+  }
+  g.fx.burst('block', m.pos, { dir: { x: from.x - m.pos.x, z: from.z - m.pos.z } });
+  g.sfx.play('combat.block', { pos: m.pos });
+}
+
+/**
+ * Player melee strike: the hit roll, the monster's block, then damage (SUNITDMG_GetResultFlags,
+ * SUnitDmg.cpp:2578-2657). Whether it landed.
+ */
 export function playerStrike(g: Game, p: Player, m: Monster, pk: DamagePacket, arBonusPct: number): boolean {
   const d = p.stats;
   const b = d.bag;
@@ -329,6 +371,12 @@ export function playerStrike(g: Game, p: Player, m: Monster, pk: DamagePacket, a
   const def = b.ignoreDef && plain ? 0 : m.effectiveDefense() - Math.trunc((m.effectiveDefense() * frac) / 100);
   if (!chance(hitOdds(ar, def, p.level, m.level))) {
     g.fx.text(m.pos, '未命中', '#aaaaaa');
+    return false;
+  }
+  // a block is rolled only when it has a chance at one (SUnitDmg.cpp:2714-2718)
+  const blk = monsterBlock(m);
+  if (blk > 0 && chance(blk / 100)) {
+    monsterBlocked(g, m, p.pos);
     return false;
   }
   applyDamage(g, m, pk, p.pos);
