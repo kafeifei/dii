@@ -187,7 +187,7 @@
 1. **Vercel**：在没有未提交改动的检出里运行 `vercel build --prod`，再运行 `vercel deploy --prebuilt --prod`，地址是 dii-abyss.vercel.app。工作树里要有 `.vercel/project.json`，没有就从主检出复制。记下这次部署的地址或 id（第 3 步写进 tag）。
 2. **内部站点**：发布方法、地址和登录都不在仓库里，用本机的内部站点 skill 发布，记下它报的版本。
    - 平台限制：一次最多 5000 个文件、总共 50 MB（52,428,800 字节），单个文件不超过 25 MB（Cloudflare 的限制）。
-3. **推进 `main`，打本地 tag，推送 `main`**（用户 2026-10-29 定的）：`main` 是主干，只在发布时前进，不在任何工作树里检出（主检出用的是用户自己的分支 `kafeifei/local`）。两边都发好以后，在集成线的工作树里把 `main` 快进到发布的那个提交：`git fetch . <提交>:main`（不是快进就会被拒，这时停下来查）。再打一个带说明的本地 tag，说明里写这次 Vercel 的部署和内部站点的版本，比如 `git tag -a release-2026-10-29 -m "Vercel <部署>；内部站点 <版本>" <提交>`，同一天第二次发布用 `.2`。最后 `git push origin main`，GitHub 上的 CI 会跑一遍。tag 和其他分支不推送。
+3. **推进 `main`，打本地 tag，推送 `main`**（用户 2026-10-29 定的）：`main` 是主干，只在发布时前进，不在任何工作树里检出（主检出用的是用户自己的分支 `kafeifei/local`）。两边都发好以后，在集成线的工作树里把 `main` 快进到发布的那个提交：`git fetch . <完整的提交号>:refs/heads/main`（短号不认，要写完整的 40 位；不是快进就会被拒，这时停下来查）。再打一个带说明的本地 tag，说明里写这次 Vercel 的部署和内部站点的版本，比如 `git tag -a release-2026-10-29 -m "Vercel <部署>；内部站点 <版本>" <提交>`，同一天第二次发布用 `.2`。然后 `git push origin main`，GitHub 上的 CI 会跑一遍。tag 和其他分支不推送。最后把用户主检出的分支也快进过去，让他的 5174 跟上发布：`git -C ~/Codes/Games/dii merge --ff-only main`（用户 2026-10-29 说「要，每次都快进」）；碰到他没提交的文件 git 会拒绝，这时停下来问他，不暂存、不重置。
 
 `vercel deploy` 上传文件时偶尔报一次「Not authorized」（2026-10-29 遇到过），`vercel whoami` 正常的话重试一次就好。
 
@@ -197,6 +197,7 @@
 | --- | --- | --- | --- | --- |
 | `release-2026-10-29` | 2e5954f | dpl_FAYY4n1T2F6LQYu1to4eoKcWpxeA | ver_5baf2c037ee75c2ead1ddc16f2ca45a1 | 改名定稿；主角每句台词四个 take、亚喀蕾配音；模型打包和按需加载；物品图集；体积检查；暂停菜单开着时也守住交接 |
 | `release-2026-10-29.2` | 130d2f0 | dpl_6jY1EbkFoDy6mkBjQLyroqA8pjxd | ver_ce07ab0cc49c29df44599f51598e9f56 | 秘境（营地方尖碑，33 层）；新调试面板和掉落筛选；模型里的图按显示大小缩、地面和墙一米 240 图素（38.86 MB）；存档交接再加固、往返缓存回来的窗口不写过时的角色；慢网下先下亚喀蕾要说的话；GitHub 上的 CI |
+| `release-2026-10-29.3` | 57cd25e | dpl_GLrprX9FwqJbuW79JmQRJaPXZ9xW | ver_aa89b66ce15d74f571a5f09cc644a67a | M2a：列石荒野、葬骨荒冢；石窟一二层、墓窖、安魂陵，邪秽巢穴照原版重做；棺椁、遗骸、井、上锁和闪光宝箱；柯霞处雇佣兵；绯鸦和腐羽鸦窠；带盾怪格挡；众姊妹之冢；长度和速度照原版单位；拆分 game.ts（42.99 MB） |
 
 **`dist/` 里有什么**（2026-10-29 合进 M2a 的 M、B、Q 三条线以后这次构建，`check-dist` 列的）：417 个文件、42.99 MB（45,081,038 字节）。
 
