@@ -738,8 +738,8 @@ export function generateZone(spec: ZoneSpec): Zone {
       }
     }
   }
-  // stony land shows dry earth in patches through the grass, the gravel's place until the A line's
-  // texture (docs/M2A.md 地图); made last, so no other area's making moves
+  // stony land shows its earth in patches through the grass, drawn as gravel (arealooks.ts
+  // GROUND_LOOKS stony: stony_dirt); made last, so no other area's making moves
   const bareNoise = spec.stony ? valueNoise(rng) : null;
   for (let z = 0; z < H; z++) {
     for (let x = 0; x < W; x++) {

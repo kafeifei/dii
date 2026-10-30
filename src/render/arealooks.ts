@@ -34,9 +34,9 @@ export const GROUND_LOOKS: Record<string, GroundLook> = {
   town: { layers: [['wild_grass', 4], ['town_floor', 4], ['wild_road', 3.5], ['crypt_floor', 4]] },
   // Cold Plains: the moor's ground gone pale and grey under the frost
   frost: { layers: WILD_LAYERS, desat: 0.3, tint: '#e4ecf0', gain: 1.12 },
-  // Stony Field: drier and greyer, dry earth in patches through it (zone.ts stony); the moor's
-  // pictures until the A line's gravel (docs/M2A.md 地图: 列石荒野新做一张碎石地贴图)
-  stony: { layers: WILD_LAYERS, desat: 0.22, tint: '#ece2d2', gain: 1.02 },
+  // Stony Field: drier and greyer, its own gravel (docs/M2A.md 地图: 列石荒野新做一张碎石地贴图)
+  // in the earth's place, in patches through the grass (zone.ts stony), at the earth's metres
+  stony: { layers: [['wild_grass', 4], ['stony_dirt', 4.5], ['wild_road', 3.5], ['crypt_floor', 4]], desat: 0.22, tint: '#ece2d2', gain: 1.02 },
   // the Burial Grounds: dark, wet earth gone colourless
   barrow: { layers: WILD_LAYERS, desat: 0.36, tint: '#cac8ba', gain: 0.96 },
 };
