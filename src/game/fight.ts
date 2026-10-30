@@ -5,7 +5,8 @@ import { blastDamage, corpseGone } from './ai';
 import { applyDamage, monsterStrike } from './combat';
 import type { Game } from './game';
 import type { Level } from './level';
-import type { Friendly } from './merc';
+import type { Friendly, Merc } from './merc';
+import { MercArrow, arrowBurst, arrowStrike } from './mercai';
 import type { Monster } from './monster';
 import { Projectile } from './objects';
 
@@ -46,6 +47,9 @@ const STILL_PUSH = 0.3;
 
 export function updateAuras(g: Game, dt: number) {
   const p = g.player;
+  // the hero's auras on the hireling are worked out afresh each step (auraOnMerc)
+  const mc = g.merc && !g.merc.dead ? g.merc : null;
+  if (mc) mc.aura = { dmgPct: 0, res: 0, frw: 0 };
   if (p.dead) return;
   // the aura switched on, and any from items (Insight's Meditation, Infinity's Conviction…)
   const auras: { id: string; lvl: number }[] = [];
@@ -54,7 +58,39 @@ export function updateAuras(g: Game, dt: number) {
   g.auraPulse -= dt;
   const pulse = g.auraPulse <= 0;
   if (pulse) g.auraPulse = 1;
-  for (const a of auras) updateAura(g, a.id, a.lvl, pulse);
+  for (const a of auras) {
+    updateAura(g, a.id, a.lvl, pulse);
+    if (mc) auraOnMerc(g, mc, a.id, a.lvl, pulse);
+  }
+}
+
+/**
+ * One of the hero's auras on the hireling within its radius: D2's auras are the party's, its pets
+ * among them (an aura's state goes on every friendly unit in range, SKILLS_AuraCallback_…), so what
+ * the hero's own numbers take from it (Player.recalc) she takes too: Might's and Concentration's
+ * damage, Resist All's resistances, Vigor's speed, and Prayer's heal on each pulse. Holy Fire's and
+ * Holy Freeze's added damage is the paladin's own, Meditation's mana she hasn't
+ */
+function auraOnMerc(g: Game, mc: Merc, aura: string, lvl: number, pulse: boolean) {
+  const p = g.player;
+  const sp = p.skillParams(aura, lvl);
+  const radius = sp.radius ?? 5;
+  if (dist(mc.pos, p.pos) > radius + mc.radius) return;
+  switch (aura) {
+    case 'might':
+    case 'concentration':
+      mc.aura.dmgPct += sp.dmg ?? 0;
+      break;
+    case 'resist_all':
+      mc.aura.res += sp.res ?? 0;
+      break;
+    case 'vigor':
+      mc.aura.frw += sp.frw ?? 0;
+      break;
+    case 'prayer':
+      if (pulse && mc.life < mc.maxLife) mc.life = Math.min(mc.maxLife, mc.life + (sp.heal ?? 0));
+      break;
+  }
 }
 
 function updateAura(g: Game, aura: string, lvl: number, pulse: boolean) {
@@ -168,6 +204,7 @@ export function updateProjectiles(g: Game, dt: number) {
     pr.pos.z += pr.vel.z * dt;
     if (!L.map.walkableAt(pr.pos.x, pr.pos.z)) {
       projectileImpact(g, pr);
+      if (pr instanceof MercArrow) arrowBurst(g, pr, pr.pos);
       continue;
     }
     if (pr.faction === 'monster') {
@@ -184,6 +221,12 @@ export function updateProjectiles(g: Game, dt: number) {
         if (m.dead || pr.hit.has(m.id)) continue;
         if (dist(pr.pos, m.pos) < pr.radius + m.radius) {
           pr.hit.add(m.id);
+          // the hireling's arrow rolls to hit and may burst (mercai.ts)
+          if (pr instanceof MercArrow) {
+            arrowStrike(g, pr, m);
+            pr.dead = true;
+            break;
+          }
           applyDamage(g, m, { ...pr.dmg }, pr.pos);
           if (!pr.pierce) {
             projectileImpact(g, pr);
@@ -192,7 +235,11 @@ export function updateProjectiles(g: Game, dt: number) {
         }
       }
     }
-    if (pr.life <= 0) pr.dead = true;
+    if (pr.life <= 0) {
+      pr.dead = true;
+      // her blast arrows burst at their flight's end too (Missiles.txt alwaysExplode)
+      if (pr instanceof MercArrow) arrowBurst(g, pr, pr.pos);
+    }
   }
   L.projectiles = L.projectiles.filter((x) => !x.dead);
 }

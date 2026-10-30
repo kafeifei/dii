@@ -97,6 +97,11 @@ async function run(load) {
     const corpse = N.objectNeeds({ kind: 'corpse', corpse: { cls, equipment: {} } }, true);
     check(corpse.length && !outside(corpse, core).length, `a ${cls}'s corpse needs ${corpse.join(' ')}`);
   }
+  // Kashya (the camp rogue's body, specs.ts kashyaSpec) is in the core with the camp; the hireling's
+  // body is her own file, built and streamed (not in the core), what her view asks for
+  const kashya = N.objectNeeds({ kind: 'vendor', serves: ['hire'] }, true);
+  check(kashya.join() === 'npc_rogue' && !outside(kashya, core).length, `Kashya needs ${kashya.join(' ')}`);
+  check(N.mercNeeds().join() === 'merc_rogue' && assets.serves('merc_rogue') && !core.has('merc_rogue'), `the hireling needs ${N.mercNeeds().join(' ')}`);
   // every drop lying on the ground, and gold
   for (const id of Object.keys(ITEM_BASES)) {
     if (id === UNKNOWN_BASE) continue;
@@ -123,6 +128,7 @@ async function run(load) {
   same(missed(() => P.makeWaypoint()), obj('waypoint'), 'a waypoint');
   same(missed(() => (P.makeStairs(true), P.makeBrazier())), obj('stairs', true), 'the way down from under the sky');
   same(missed(() => P.makeStairs(false)), obj('stairs'), 'the way further down');
+  same(missed(() => N.specNeeds(S.mercSpec()).forEach((k) => assets.get(k))), N.mercNeeds(), 'the hireling');
   // the order the rest streams in: the moor's and the plains' before the dungeons'
   const order = N.streamOrder().map(file);
   check(order.indexOf('packs/wild') < order.indexOf('packs/dungeon') && order.indexOf('packs/wild') >= 0, `stream order ${[...new Set(order)].join(' ')}`);

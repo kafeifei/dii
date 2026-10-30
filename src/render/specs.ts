@@ -571,6 +571,43 @@ export function vendorSpec(): ModelSpec {
   return npcModel('npc_vendor', 1.7, 1.47, 4.78);
 }
 
+/**
+ * Kashya (柯霞), who hires the scouts out: the camp rogue's body (npc_rogue, docs/M2A.md 美术: her own
+ * model comes with M3's townsfolk), taller than the camp's rogues and her hirelings, tinted a dark
+ * slate so she stands apart from their red leather, and broader (KASHYA_BUILD, on her view's root)
+ */
+export function kashyaSpec(): ModelSpec {
+  return { ...npcModel('npc_rogue', 1.92, 1.4, 4.56), tint: '#2c4a58', tintAmount: 0.55 };
+}
+
+/** how much broader than tall Kashya is drawn than the rogue body she's made from (across, front to back) */
+export const KASHYA_BUILD = { x: 1.14, z: 1.1 } as const;
+
+/**
+ * The hireling, the Rogue Scout (D2 roguehire, Code RG as the camp's rogues): merc_rogue, the camp
+ * rogue's mesh re-rigged with her clips (tools/meshy-chars.mjs): she stands, walks and runs, shoots
+ * (every skill of hers plays A1: one Shoot), reels and falls. Her bow is on the mesh, none attached
+ */
+export function mercSpec(): ModelSpec {
+  const height = 1.75;
+  const k = (height * 0.9) / 1.7;
+  return {
+    model: 'merc_rogue',
+    rig: 'quat',
+    height,
+    clips: {
+      idle: ['Idle'],
+      move: [
+        { clip: 'Walk', ref: 1.4 * k },
+        { clip: 'Run', ref: 4.56 * k },
+      ],
+      attack: ['Shoot'],
+      hit: ['Hit'],
+      death: ['Death'],
+    },
+  };
+}
+
 /** decorative townsfolk */
 export function npcSpec(model: string): ModelSpec {
   switch (model) {

@@ -135,12 +135,15 @@ export default async (load) => {
     if (pm.length !== 1 || pm[0].quest !== 'a1q2' || quested.length !== 1 || Math.hypot(pm[0].pos.x - s.x - 5, pm[0].pos.z - s.z - 5) > 1e-9 || pm[0].rank !== 'boss') problems.push(`the hand-made floor's preset monster: ${JSON.stringify(pm.map((m) => ({ quest: m.quest, rank: m.rank, x: m.pos.x - s.x, z: m.pos.z - s.z })))}, ${quested.length} with a quest`);
     const kashya = of('vendor').filter((o) => o.serves?.includes('hire'));
     if (kashya.length !== 1 || kashya[0].npcId !== 'kashya' || kashya[0].name !== D2X_MONSTERS.kashya.name || kashya[0].serves.join() !== 'hire') problems.push(`the hand-made floor's Kashya: ${JSON.stringify(kashya.map((o) => ({ name: o.name, npcId: o.npcId, serves: o.serves })))}`);
-    // her place in the camp, where its rogue stands, not among its services yet: the camp as it was
+    // her place in the camp, among its services, where its rogue stood (that rogue gone from its people: M2a's M line)
     const { campPreset } = await load('/src/world/presets.ts');
+    const { generateTown } = await load('/src/world/levelgen.ts');
     const cp = campPreset();
-    const rogue = cp.npcs.find((n) => n.model === 'rogue');
-    if (cp.hire.kind !== 'hire' || cp.hire.npcId !== 'kashya' || cp.hire.npc !== D2X_MONSTERS.kashya.name || cp.hire.pos.x !== rogue.x || cp.hire.pos.z !== rogue.z || cp.services.some((s) => s.kind === 'hire')) problems.push(`Kashya's place in the camp: ${JSON.stringify(cp.hire)}, services ${cp.services.map((s) => s.kind)}`);
-    console.log(`  a floor with every new Layout field: ${ch.length} chests, ${br.length} barrels, a shrine, ${cs.length} caskets, ${rm.length} corpse, ${wl.length} well, Kashya serving her hirelings; an old floor's ${plain.objects.length} objects say nothing new; her place in the camp kept aside`);
+    const rogue = (generateTown(0).npcs ?? []).find((n) => n.model === 'rogue');
+    const listed = cp.services.filter((s) => s.kind === 'hire');
+    if (cp.hire.kind !== 'hire' || cp.hire.npcId !== 'kashya' || cp.hire.npc !== D2X_MONSTERS.kashya.name || cp.hire.pos.x !== rogue.x || cp.hire.pos.z !== rogue.z || listed.length !== 1 || listed[0] !== cp.hire) problems.push(`Kashya's place in the camp: ${JSON.stringify(cp.hire)}, services ${cp.services.map((s) => s.kind)}`);
+    if (cp.npcs.some((n) => n.x === rogue.x && n.z === rogue.z)) problems.push(`the camp's rogue still stands where Kashya does: ${JSON.stringify(cp.npcs)}`);
+    console.log(`  a floor with every new Layout field: ${ch.length} chests, ${br.length} barrels, a shrine, ${cs.length} caskets, ${rm.length} corpse, ${wl.length} well, Kashya serving her hirelings; an old floor's ${plain.objects.length} objects say nothing new; Kashya among the camp's services where its rogue stood`);
   }
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
 };

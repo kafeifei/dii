@@ -836,6 +836,158 @@ body {
   font-size: 15px;
 }
 
+/* the hireling: Kashya's list (ui/hire.ts), her panel and portrait (ui/merc.ts) */
+.hire-note {
+  font-size: 13px;
+  color: #c8b890;
+  margin-bottom: 4px;
+}
+.hire-gold {
+  font-size: 12px;
+  color: #a89878;
+  margin-bottom: 8px;
+}
+.hire-list {
+  max-height: 46vh;
+}
+.hire-row .hr-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+.hire-row .hr-name {
+  color: #e8dcc0;
+}
+.hire-row .hr-price {
+  color: var(--gold);
+}
+.hire-row .hr-price.short {
+  color: #c05040;
+}
+.hire-row .hr-sub {
+  font-size: 12px;
+  color: #a89878;
+  margin-top: 2px;
+}
+.hire-raise,
+.hire-ask,
+.hire-warn {
+  margin: 6px 0 8px;
+  padding: 8px 10px;
+  border: 1px solid #6a5a40;
+  background: rgba(40, 30, 18, 0.85);
+  font-size: 13px;
+  line-height: 1.5;
+  color: #e0d0a8;
+}
+.hire-ask {
+  border-color: #c8a86a;
+  margin-top: 10px;
+}
+.hire-raise .btn {
+  margin-top: 6px;
+}
+.merc-head {
+  text-align: center;
+  margin-bottom: 6px;
+}
+.merc-head .mh-name {
+  font-size: 16px;
+  color: var(--gold);
+}
+.merc-head .mh-sub {
+  font-size: 12px;
+  color: #a89878;
+}
+.merc-head .mh-dead {
+  color: #d05040;
+}
+.merc-doll {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 4px 0 6px;
+}
+.merc-doll .merc-slot {
+  position: relative;
+  width: 58px;
+  height: 86px;
+}
+.merc-doll .merc-slot[data-slot='head'] {
+  height: 58px;
+}
+.merc-hint {
+  font-size: 11px;
+  color: #8a8278;
+  text-align: center;
+  margin-bottom: 8px;
+}
+.merc-sheet,
+.merc-skills {
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.merc-skills {
+  margin-top: 8px;
+}
+.merc-sheet .ms-row,
+.merc-skills .ms-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 1px 4px;
+  border-bottom: 1px solid rgba(58, 46, 32, 0.6);
+}
+.merc-skills .ms-title {
+  color: var(--gold);
+  font-size: 13px;
+}
+#merc-portrait {
+  position: absolute;
+  top: 14px;
+  /* clear of the debug panel's tab on the left edge */
+  left: 40px;
+  width: 132px;
+  padding: 4px 6px;
+  display: none;
+  cursor: pointer;
+  background: rgba(10, 8, 6, 0.7);
+  border: 1px solid #4a3c2a;
+  text-shadow: 0 1px 2px #000;
+}
+#merc-portrait.open {
+  display: block;
+}
+#merc-portrait .mp-name {
+  font-size: 12px;
+  color: #d8c8a0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#merc-portrait .mp-bar {
+  height: 6px;
+  margin-top: 3px;
+  background: #1a0806;
+  border: 1px solid #4a2018;
+}
+#merc-portrait .mp-bar > div {
+  height: 100%;
+  background: linear-gradient(180deg, #d04030, #7a1810);
+}
+#merc-portrait.poison .mp-bar > div {
+  background: linear-gradient(180deg, #60c040, #2a6a18);
+}
+#merc-portrait.dead {
+  opacity: 0.55;
+}
+/* the rift's bar under her portrait when both are up */
+#merc-portrait.open ~ #rift-bar,
+#rift-bar.open ~ #merc-portrait {
+  top: 52px;
+}
+
 /* waypoint */
 .wplist {
   display: flex;

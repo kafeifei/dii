@@ -11,7 +11,7 @@ import { monsterLoot, type Finder } from './loot';
 import { emptyPacket, type Killer } from './actor';
 import { monsterDied, notice } from './ai';
 import type { Game } from './game';
-import { Merc } from './merc';
+import { Merc, fallWithHero, mercKillXp, mercOwnKill } from './merc';
 import type { Monster } from './monster';
 import { DelayedBlast } from './objects';
 import { castItemSkill } from './playerctl';
@@ -27,12 +27,17 @@ export function wake(g: Game, m: Monster) {
 
 /**
  * A monster killed by `killer` (docs/M2A-STEP0.md 2.1): whoever killed it, it dies as it does, its
- * quests and the rift count it, a boss's fall is told and saved. The hero has the experience of a kill
- * of theirs or the hireling's, whole (docs/M2A-STEP0.md 2.1's table); the procs on kill, life and
- * mana per kill and the demon heal are only the hero's own kills'
- * (inferred, to be checked against D2MOO: docs/M2A-STEP0.md 5); what it drops goes by the killer's
- * magic find (rollLoot). A death no friendly dealt (`null`: Blood Raven's raised dead falling with
- * her) gives no experience and drops nothing
+ * quests and the rift count it, a boss's fall is told and saved. The hireling has her share first,
+ * whole for one of hers, 86/256 of one of the hero's (SUNITDMG_DistributeExperience gives the pet
+ * before the hero: D2Game UNIT/SUnitDmg.cpp:2981-2988; merc.ts mercKillXp), then the hero the
+ * experience of a kill of theirs or the hireling's, whole (2990-2991: the owner gets it either way).
+ * What happens on a kill (the procs, life and mana per kill, the demon heal) is the killer's own:
+ * those stats' events are put on the unit that wears them (D2Game ITEMS/ItemMode.cpp:92-101) and
+ * fire for the attacker alone (SUNITEVENT_Trigger(UNITEVENT_KILL, pAttacker), SUnitDmg.cpp:1400;
+ * SUnitEvent.cpp:122-142; SKILLS/SkillItem.cpp:1458-1557), so a kill of the hireling's heals her by
+ * her gear's (mercOwnKill) and none of the hero's go off. What it drops goes by the killer's magic
+ * find and its owner's together (rollLoot). A death no friendly dealt (`null`: Blood Raven's raised
+ * dead falling with her) gives no experience and drops nothing
  */
 export function killMonster(g: Game, m: Monster, elem: Elem, killer: Killer = 'hero') {
   if (m.dead) return;
@@ -52,14 +57,15 @@ export function killMonster(g: Game, m: Monster, elem: Elem, killer: Killer = 'h
   // Diablo II's experience for the kill (SUNITDMG_ComputeExperienceGain: game/d2/xp.ts killXp):
   // the level gap's two tables, ExpRatio, then "+X% experience gained" and the shrine's on top;
   // none for a raised or summoned one, nor a drop (UNITFLAG_NOXP | UNITFLAG_NOTC), nor for one nobody killed
+  // the hireling's share first, at the hero's level before this kill's (SUnitDmg.cpp:2981-2988)
+  mercKillXp(g, m, killer);
   const addPct = (p.shrine ? (SHRINE_BY_ID[p.shrine.id].xpPct ?? 0) : 0) + (p.stats.bag.xpPct ?? 0);
   const gained = m.noXp || killer === null ? 0 : p.gainXp(Math.floor(killXp(m.xp, p.level, m.level, addPct) * debugOpts.xp));
   if (gained > 0) {
     onProc(g, 'procLevelUp', null);
     celebrateLevelUp(g);
   }
-  // the hireling's share of it (hireling.ts killShare: 86/256 of a kill of the hero's, all of her
-  // own, none of nobody's) comes with her, as she is played (M2a's M line)
+  if (killer instanceof Merc) mercOwnKill(g, killer, m);
   if (killer === 'hero') {
     const d = p.stats;
     onProc(g, 'procKill', m);
@@ -127,12 +133,17 @@ export function celebrateLevelUp(g: Game) {
 
 /**
  * loot from a monster or a container (src/game/loot.ts) for the hero, rolled once more for each extra
- * pass the debug panel asks for; a monster the hireling killed drops by her magic and gold find
- * (`by`: the killer's, inferred, docs/M2A-STEP0.md 5), in the hero's difficulty and quests
+ * pass the debug panel asks for. A monster the hireling killed drops by her magic and gold find and
+ * her hero's added (D2GAME_DropTC_6FC51360: the killer, the dying monster's target set to its killer
+ * at SUnitDmg.cpp:1862 and passed on at MonsterMode.cpp:572, finds by its own STAT_ITEM_MAGICBONUS plus
+ * its owner's, AIGENERAL_GetMinionOwner, D2Game ITEMS/Items.cpp:2334-2341, gold the same at 2549-2556;
+ * the hireling's owner is her hero, MonsterAI.cpp:127), in the hero's difficulty and quests (the
+ * owner's quest flags pick a quest drop, MonsterMode.cpp:534-560)
  */
 export function rollLoot(g: Game, roll: (hero: Finder) => Item[], by: Killer = 'hero'): Drop[] {
   const p = g.player;
-  const s = by instanceof Merc ? by : p.stats;
+  const own = p.stats;
+  const s = by instanceof Merc ? { mf: by.mf + own.mf, gf: by.gf + own.gf } : own;
   // a rift's floors drop in its tier's difficulty, never a quest's class: its kills are no quest's
   const hero: Finder = { mf: s.mf, gf: s.gf, difficulty: p.rules, quests: p.ruled === null ? p.quests[p.difficulty] : 'done' };
   const drops: Drop[] = [];
@@ -157,6 +168,8 @@ export function killPlayer(g: Game) {
   }
   onProc(g, 'procDeath', null);
   p.dead = true;
+  // the hireling falls with the hero (docs/M2A.md 佣兵和任务: as in Diablo II)
+  fallWithHero(g);
   p.life = 0;
   p.setState('dead');
   p.intent = null;

@@ -766,6 +766,72 @@ export default async (load) => {
   const inWild = JSON.parse(localStorage.getItem(KEY) ?? '{}');
   check(inWild.area === WILD_AREA && inWild.worldSeed === game.worldSeed, `saved standing out past the camp gate: area ${inWild.area}, seed ${inWild.worldSeed} (the game's ${game.worldSeed})`);
 
+  // ── the hireling played (src/game/merc.ts): hired, geared from the cursor, saved with the hero in the
+  // same write at each move, the cursor's item never twice; read back item for item; a new one hired
+  // over her, her gear back with the hero and saved where it went; dead, saved dead; one this build
+  // can't read is never replaced by hiring, and written back as it was ──
+  {
+    reset();
+    const M = await load('/src/game/merc.ts');
+    let cursor = null;
+    const g2 = new Game({}, new Sfx());
+    g2.hooks = { ...game.hooks, getCursorItem: () => cursor, setCursorItem: (it) => (cursor = it), message() {}, mercChanged() {} };
+    g2.newGame('佣兵存档', 'paladin');
+    const p2 = g2.player;
+    p2.level = 8;
+    p2.gold = 50000;
+    const stored = () => JSON.parse(localStorage.getItem(KEY) ?? 'null');
+    /** each item the save holds, by uid: the cursor's among those by the stash (writeSave) */
+    const uidsIn = (d) => [...savedItems(d), ...Object.values(d.merc?.equipment ?? {}), ...(d.corpse ? Object.values(d.corpse.equipment ?? {}) : [])].map((it) => it.uid).sort();
+    const heroUids = () => M.heroItems(g2).map((it) => it.uid).sort();
+    const same = (what) => {
+      const d = stored();
+      const u = uidsIn(d);
+      check(new Set(u).size === u.length, `${what}: an item saved twice`);
+      check(u.join() === heroUids().join(), `${what}: the save holds ${u.length} items, the hero ${heroUids().length}`);
+    };
+    const offer = M.offers(g2)[0];
+    const r = M.hire(g2, offer.entry.name);
+    check(r.ok && stored()?.merc?.hire === offer.offer.id && stored().merc.level === offer.offer.level, `hired: ${JSON.stringify(stored()?.merc)}`);
+    same('hired');
+    for (const id of ['hbw', 'cap', 'lea']) {
+      cursor = createItem(id);
+      const out = M.handToMerc(g2, cursor);
+      check(!out.refused && cursor === null, `${id} onto her: ${out.refused}`);
+      same(`${id} onto her`);
+    }
+    cursor = createItem('sbw');
+    const swapped = M.handToMerc(g2, cursor);
+    check(swapped.cursor?.baseId === 'hbw' && cursor === swapped.cursor, 'a bow over a bow: the first on the cursor');
+    same('a bow over a bow');
+    const back = save.loadSave();
+    const q = back.player.merc;
+    check(q && Object.keys(q.equipment).sort().join() === 'body,head,weapon' && q.equipment.weapon.uid === p2.merc.equipment.weapon.uid && back.cursor?.uid === cursor.uid, `read back: ${JSON.stringify(q && Object.keys(q.equipment))}, cursor ${back.cursor?.baseId}`);
+    const n = [...playerItems(back.player), ...Object.values(q.equipment)].length + (back.cursor ? 1 : 0);
+    check(n === heroUids().length, `read back with ${n} items, the hero has ${heroUids().length}`);
+    p2.inventory.add(cursor);
+    cursor = null;
+    const gear = Object.values(p2.merc.equipment).map((it) => it.uid).sort();
+    const r2 = M.hire(g2, M.offers(g2)[0].entry.name);
+    check(r2.ok && r2.returned.every((x) => x.home === 'bag'), `a new one: her gear went ${r2.returned?.map((x) => x.home)}`);
+    const d2 = stored();
+    check(gear.every((u) => d2.inventory.some((x) => x.item.uid === u)) && Object.keys(d2.merc.equipment).length === 0, 'her gear saved in the bag, the new one bare');
+    same('a new one hired');
+    g2.killPlayer();
+    g2.save();
+    check(stored().merc.dead === true && save.loadSave().player.merc.dead === true, 'saved dead');
+    // a later build's hireling, gear and all: hiring won't replace her
+    const later = stored();
+    later.merc = { hire: 77, name: 1, level: 30, xp: 99, equipment: { weapon: item('ssd') }, dead: false };
+    localStorage.setItem(KEY, JSON.stringify(later));
+    g2.continueGame(0);
+    g2.player.level = 8;
+    g2.player.gold = 50000;
+    const r3 = M.hire(g2, M.offers(g2)[0].entry.name);
+    g2.save();
+    check(!r3.ok && r3.why === 'unreadable' && JSON.stringify(stored().merc) === JSON.stringify(later.merc), `a later build's hireling: ${JSON.stringify(r3)}, written ${JSON.stringify(stored().merc)}`);
+  }
+
   if (problems.length) throw new Error(`${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
-  console.log(`  v1 (both), v2, v3 at depths 0, 1, 5 → v4 in the camp on D2 bases with every item kept (3 unknown by the stash) and a tome of town portal once, usable gear, points adding up, backed up once; every old base onto its D2 one with its defense, mods and old requirements; steps see v4 items, keep the first and pre-v4 backups, catch restored items up; v4 round trip, the hireling read and written back the same; her gear from v1–v3 through each step once, none lost, unknown pieces by the stash; one this build can't read kept; no hireling, the same text; resuming in a built area or the camp; newer and unbacked saves never written`);
+  console.log(`  v1 (both), v2, v3 at depths 0, 1, 5 → v4 in the camp on D2 bases with every item kept (3 unknown by the stash) and a tome of town portal once, usable gear, points adding up, backed up once; every old base onto its D2 one with its defense, mods and old requirements; steps see v4 items, keep the first and pre-v4 backups, catch restored items up; v4 round trip, the hireling read and written back the same; her gear from v1–v3 through each step once, none lost, unknown pieces by the stash; one this build can't read kept; no hireling, the same text; resuming in a built area or the camp; newer and unbacked saves never written; the hireling played: hired and geared, each move saved with the hero once, read back item for item, her gear back saved where it went, dead saved dead, a later build's never replaced`);
 };

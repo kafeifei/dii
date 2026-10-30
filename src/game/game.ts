@@ -20,7 +20,7 @@ import { GroundItem, WorldObject, spent } from './objects';
 import { CHARGE_PREFIX, Player } from './player';
 import { startCast, toggleAura, updatePlayer, type PlayerAction } from './playerctl';
 import { celebrateLevelUp, killMonster, killPlayer, onProc, rollLoot, wake } from './kills';
-import { updateMerc, type Friendly, type Merc } from './merc';
+import { giveFreeMerc, hasMerc, updateMerc, type Friendly, type Merc } from './merc';
 import { layOutCorpses, respawn } from './bodies';
 import { interact } from './interact';
 import { npcLeft, npcSpoke, npcTalk, refreshShop, talkTo } from './townsfolk';
@@ -129,7 +129,7 @@ export type TouchNear = { ground: GroundItem; obj?: undefined } | { obj: WorldOb
 
 export class Game {
   player: Player;
-  /** the hireling on the map the hero is on, beside them (src/game/merc.ts); none yet */
+  /** the hireling on the map the hero is on, beside them (src/game/merc.ts placeMerc); none while the hero has none */
   merc: Merc | null = null;
   level!: Level;
   /** the map the far end of the hero's town portal is on (the camp's end leads back to it) */
@@ -410,17 +410,14 @@ export class Game {
     return this.maps.mapOf(id);
   }
 
-  /**
-   * whether the hero has a hireling, for the quests (QuestHost): a stub, false, until the hireling is
-   * played (M2a's M and Q lines make it Player.merc's, dead or alive)
-   */
+  /** whether the hero has a hireling, dead or alive, for the quests (QuestHost; src/game/merc.ts) */
   hasMerc(): boolean {
-    return false;
+    return hasMerc(this);
   }
 
-  /** the Sisters' reward, a hireling for nothing (QuestHost): a stub, giving none, until hiring is played (M2a's M and Q lines) */
+  /** the Sisters' reward, a hireling for nothing (QuestHost): none when the hero has one (src/game/merc.ts) */
   giveFreeMerc(): boolean {
-    return false;
+    return giveFreeMerc(this);
   }
 
   /** whether a quest has lit `level` up (the Den of Evil, cleared in this game) */
@@ -685,7 +682,7 @@ export class Game {
       this.hooks.message('神殿的祝福消失了', '#9a9080', 2);
     }
     updatePlayer(this, p, dt);
-    if (this.merc) updateMerc(this, this.merc, dt);
+    updateMerc(this, dt);
     // self-repairing items mend a point now and then, on the shared pages too while they can change
     p.mendItems(dt, this.shared.readOnly ? [] : this.shared.pages);
     this.quests.update(dt);

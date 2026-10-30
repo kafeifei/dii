@@ -14,8 +14,11 @@
 // or by waypoint when it has none) when its potions run out, its bag fills or its gear wears thin
 // (items break at 0): there it sells, buys potions, scrolls and tomes and better gear, and repairs,
 // then goes back through its portal or by waypoint. --level starts the hero at that level, its points
-// spent and wearing gear rolled at it. Options may come from the environment too (CLASS, START_AREA,
-// TO, LEVEL, MINUTES), the way tools/balance.mjs passes them.
+// spent and wearing gear rolled at it. --merc 1 starts it with a hireling (the Sisters' reward's free
+// one, Game.giveFreeMerc: src/game/merc.ts), who fights beside it all the way; fallen, she is raised at
+// Kashya on the next trip to the camp when the gold is there, and the run counts her kills, levels,
+// deaths and raises. Options may come from the environment too (CLASS, START_AREA, TO, LEVEL, MINUTES,
+// MERC), the way tools/balance.mjs passes them.
 const args = process.argv.slice(2);
 const opt = (k, d) => {
   const i = args.indexOf(`--${k}`);
@@ -68,6 +71,7 @@ export default async function (page, shot, log) {
     to: opt('to', 'coldplains'),
     level: +opt('level', 1),
     maxMinutes: +opt('minutes', 40),
+    merc: !!+opt('merc', 0),
     builds: BUILDS,
     itinerary: ITINERARY,
   };
@@ -86,6 +90,7 @@ export default async function (page, shot, log) {
     const { areaByKey, areaDef, dungeonArea, routeTo, trialFloor, CAMP_AREA, DEN_OF_EVIL, COLD_PLAINS } = await import('/src/world/areas.ts');
     const { hitChance } = await import('/src/game/d2/stats.ts');
     const { QFLAG, questState } = await import('/src/game/quests/record.ts');
+    const MERC = await import('/src/game/merc.ts');
     const g = game;
     const cls = o.cls || g.player.cls;
     /** how far off a spell is cast from */
@@ -149,6 +154,9 @@ export default async function (page, shot, log) {
       deaths: 0, levels: [], events: [], kills: 0, uniques: 0, sets: 0, rares: 0, magics: 0, runes: 0, potionsUsed: 0,
       casts: 0, blindCasts: 0, townTrips: 0, chickens: 0, portals: 0, waypointTrips: 0, jumps: 0, identified: 0, sold: 0, soldGold: 0, bought: {}, spent: {}, repairs: 0, equipped: [], timeline: [], deathList: [],
     };
+    // the hireling (--merc): the free one, as the Sisters' reward gives her (Game.giveFreeMerc)
+    stats.merc = o.merc ? { hired: g.giveFreeMerc(), kills: 0, deaths: 0, raised: 0, raiseGold: 0, levels: [], sameModule: false } : null;
+    if (stats.merc) stats.merc.sameModule = g.merc instanceof MERC.Merc;
     window.__bot = stats;
     let simTime = 0;
     const p = () => g.player;
@@ -159,8 +167,12 @@ export default async function (page, shot, log) {
       if (!m.dead) {
         stats.kills++;
         if (m.superUnique) event(`killed ${m.superUnique}`);
+        if (stats.merc && a[1] && a[1] === g.merc) stats.merc.kills++;
       }
-      return kill(m, ...a);
+      const lv = p().merc?.level;
+      const r = kill(m, ...a);
+      if (stats.merc && p().merc && p().merc.level !== lv) stats.merc.levels.push({ lvl: p().merc.level, t: Math.round(simTime) });
+      return r;
     };
     // a townsperson spoken to (Game.talkTo): instead of the UI's menu, the bot hears the line and trades
     let met = null;
@@ -708,6 +720,17 @@ export default async function (page, shot, log) {
      */
     const trade = () => {
       const pl = p();
+      // the hireling fallen: raised at Kashya first, when the gold is there (merc.ts resurrect)
+      if (stats.merc && pl.merc?.dead) {
+        const cost = MERC.raiseCost(g);
+        if (cost !== null && pl.gold + pl.stashGold >= cost && MERC.resurrect(g)) {
+          stats.merc.raised++;
+          stats.merc.raiseGold += cost;
+          event(`hireling raised (${cost} gold)`);
+          // she is made anew on the map by the game's own module next step (placeMerc)
+          if (!stats.merc.sameModule) g.merc = null;
+        }
+      }
       sortBag(sellOne);
       for (const it of junk()) sellOne(it);
       repairAll();
@@ -1197,7 +1220,12 @@ export default async function (page, shot, log) {
           if (dt > SPELL_RANGE || !g.level.map.los(pl.pos, held.target.pos)) pl.intent = engage(held.target, dt);
         }
         const wasCasting = pl.state === 'cast';
+        const mercUp = !!pl.merc && !pl.merc.dead;
         g.update(STEP);
+        if (stats.merc && mercUp && pl.merc?.dead) {
+          stats.merc.deaths++;
+          event('hireling fell');
+        }
         // a spell begun at a monster: out of sight or reach of it, it is wasted (counted for the tables)
         const it = pl.intent;
         if (!wasCasting && pl.state === 'cast' && it?.kind === 'attack' && SKILL_BY_ID[it.skill]?.kind === 'spell') {
@@ -1252,7 +1280,7 @@ export default async function (page, shot, log) {
     };
     window.__runChunk = runChunk;
     window.__botDone = () => idx > endIdx || simTime > o.maxMinutes * 60;
-    window.__botStatus = () => ({ area: route[Math.min(idx, route.length - 1)].key, at: g.area.key, simTime: Math.round(simTime), lvl: p().level, life: Math.round(p().life), max: p().stats.maxLife, deaths: stats.deaths, gold: p().gold, tp: tpCharges(), hp: potions('hp') });
+    window.__botStatus = () => ({ area: route[Math.min(idx, route.length - 1)].key, at: g.area.key, simTime: Math.round(simTime), lvl: p().level, life: Math.round(p().life), max: p().stats.maxLife, deaths: stats.deaths, gold: p().gold, tp: tpCharges(), hp: potions('hp'), ...(stats.merc ? { merc: p().merc ? `${p().merc.level}${p().merc.dead ? ' dead' : ''}` : 'none', mercKills: stats.merc.kills } : {}) });
     return { cls, route: stats.route, level: p().level };
   }, o);
   if (setup.error) {
@@ -1286,6 +1314,7 @@ export default async function (page, shot, log) {
   const { timeline, deathList, equipped, ...rest } = result;
   log(JSON.stringify(rest));
   log('equipped:\n  ' + equipped.join('\n  '));
+  if (result.merc) log('MERC_RESULT ' + JSON.stringify({ ...result.merc, final: await page.evaluate(() => game.player.merc && { level: game.player.merc.level, xp: game.player.merc.xp, dead: game.player.merc.dead, gear: Object.keys(game.player.merc.equipment) }) }));
   log('BOT_RESULT ' + JSON.stringify({ route: result.route, levels: result.levels, events: result.events, deathList, final: result.final, casts: { all: result.casts, blind: result.blindCasts }, trips: { town: result.townTrips, portals: result.portals, waypoints: result.waypointTrips, jumps: result.jumps, identified: result.identified, sold: result.sold, soldGold: result.soldGold, repairs: result.repairs, bought: result.bought, spent: result.spent }, stalls: timeline.filter((t) => t.startsWith('STALL')).slice(0, 2), status: await page.evaluate(() => window.__botStatus()) }));
   const byArea = {};
   for (const t of deathList) byArea[t.area] = (byArea[t.area] ?? 0) + 1;

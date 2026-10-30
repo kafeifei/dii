@@ -99,7 +99,11 @@ export default async (load) => {
     for (let z = 0; z < town.map.h; z++) for (let x = 0; x < town.map.w; x++) if (town.map.get(x, z) !== 0 && map.get(ox + x, oz + z) !== town.map.get(x, z)) changed++;
     check(!changed, `${what}: ${changed} of the camp's tiles differ from generateTown's`);
     for (const s of town.services) check(ow.services.some((o) => o.kind === s.kind && o.npc === s.npc && near(o.pos, { x: s.pos.x + ox, z: s.pos.z + oz })), `${what}: the camp's ${s.kind} isn't where it is in the camp`);
-    check(near(start, { x: town.start.x + ox, z: town.start.z + oz }) && (ow.npcs?.length ?? 0) === town.npcs.length && (ow.houses?.length ?? 0) === town.houses.length, `${what}: the camp's start, people or houses moved`);
+    // Kashya (a service, 'hire') stands where the camp's rogue stood: one fewer of its people (src/world/presets.ts)
+    const kashya = ow.services.find((o) => o.kind === 'hire');
+    const rogue = town.npcs.find((n) => n.model === 'rogue');
+    check(!!kashya && near(kashya.pos, { x: rogue.x + ox, z: rogue.z + oz }), `${what}: Kashya isn't where the camp's rogue stood`);
+    check(near(start, { x: town.start.x + ox, z: town.start.z + oz }) && (ow.npcs?.length ?? 0) === town.npcs.length - 1 && (ow.houses?.length ?? 0) === town.houses.length, `${what}: the camp's start, people or houses moved`);
     check(!ow.exits.length, `${what}: ${ow.exits.length} walk-through exits on a seamless map`);
 
     // ── Level's view of it: the start in the camp, the areas' levels ──
