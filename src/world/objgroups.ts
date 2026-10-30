@@ -82,6 +82,29 @@ const BARREL_EXPLODING = 11;
 /** an Act 1 preset's random treasure chest (Objects.txt 581 PlaceRandomTreasureChest) */
 export const RANDOM_CHEST = 581;
 
+/**
+ * A chest's trap and lock % in D2 level `monLvl`, the classic game's normal MonLvl (wMonLvl[0]) of its
+ * level, whatever the difficulty (InitFn 3 and 57, Objects.cpp:642, 653): trapped under MonLvl / 8 + 5,
+ * a lockable one locked under MonLvl / 2 + 8 (D2xMaze.trap, lock for the mazes)
+ */
+export const chestRolls = (monLvl: number): { trap: number; lock: number } => ({ trap: Math.floor(monLvl / 8) + 5, lock: Math.floor(monLvl / 2) + 8 });
+
+/**
+ * A chest set where D2 would put a preset's random chest (the old maps' and the overworld's spots, which
+ * name no object): one of Act 1's thirteen at random, as 581 becomes (OBJECTS_SpawnPresetChest,
+ * Objects.cpp:103-169: rand % 13 on the object control seed), then what it rolls as it appears
+ * (OBJECTS_InitFunction03_Chest, 637-668): a trap under `rolls.trap` %, (rand & 7) + 1, a lock under
+ * `rolls.lock` % if it is lockable (all thirteen are), and the roll that seeds its own drop (667)
+ */
+export function presetChestRoll(r: Rolls, rolls: { trap: number; lock: number }): { d2: number; trap: number; locked: boolean } {
+  const list = D2X_OBJECTS[RANDOM_CHEST].becomes ?? [];
+  const d2 = list[r.roll() % list.length];
+  const trap = r.roll() % 100 < rolls.trap ? (r.roll() & 7) + 1 : 0;
+  const locked = !!D2X_OBJECTS[d2]?.lockable && r.roll() % 100 < rolls.lock;
+  r.roll();
+  return { d2, trap, locked };
+}
+
 /** a D2 room in subtiles: an 8×8-tile room is 40 × 40, and so is ours of 10×10 tiles */
 export interface SubRoom {
   x: number;

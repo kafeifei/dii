@@ -86,7 +86,8 @@ export default async (load) => {
 
   // ── the Layout's fields for M2a's maps (docs/M2A-STEP0.md 2.4): a floor made by hand with every
   // one of them gets the objects they say, with what D2 says of each; an old map's objects are as
-  // they were, none of them saying anything new ──
+  // they were, none of them saying anything new but its chests, each one of the act's thirteen with its
+  // trap and lock rolled (level.ts: as a preset's random chest) ──
   {
     const { generateDungeon } = await load('/src/world/levelgen.ts');
     const { spent } = await load('/src/game/objects.ts');
@@ -94,7 +95,10 @@ export default async (load) => {
     const OLD_KINDS = ['chest', 'barrel', 'stairs', 'waypoint', 'shrine', 'exit'];
     const NEW_FIELDS = ['d2', 'locked', 'trap', 'sparkly', 'exploding', 'hole', 'flies', 'charges', 'serves'];
     const plain = new Level(WILD_MAPS + 2, SEEDS[1]);
-    const said = plain.objects.filter((o) => NEW_FIELDS.some((k) => o[k] !== undefined));
+    const { D2X_OBJECTS } = await load('/src/data/d2x/objects.ts');
+    const ACT1 = D2X_OBJECTS[581].becomes;
+    const rolled = (o) => ACT1.includes(o.d2) && (o.trap === undefined || (o.trap >= 1 && o.trap <= 8)) && (o.locked === undefined || o.locked === true) && NEW_FIELDS.every((k) => ['d2', 'trap', 'locked'].includes(k) || o[k] === undefined);
+    const said = plain.objects.filter((o) => (o.kind === 'chest' ? !rolled(o) : NEW_FIELDS.some((k) => o[k] !== undefined)));
     if (said.length || plain.objects.some((o) => !OLD_KINDS.includes(o.kind))) problems.push(`an old floor: objects ${[...new Set(plain.objects.map((o) => o.kind))].join()}, ${said.length} saying something new`);
     const L = generateDungeon(2, SEEDS[1], dungeonArea(2));
     const s = L.start;
@@ -117,7 +121,7 @@ export default async (load) => {
     const lv = new Level(WILD_MAPS + 2, SEEDS[1], L);
     const of = (kind) => lv.objects.filter((o) => o.kind === kind);
     const ch = of('chest');
-    if (ch.length !== chests + 1 || ch[0].d2 !== 397 || !ch[0].locked || ch[0].trap !== 3 || ch[0].sparkly !== 'consolation' || ch[0].pos.d2 !== undefined || ch.slice(1).some((o) => o.d2 !== undefined || o.locked)) problems.push(`the hand-made floor's chests: ${JSON.stringify(ch.slice(0, 2).map((o) => ({ d2: o.d2, locked: o.locked, trap: o.trap, sparkly: o.sparkly, pos: o.pos })))}, ${ch.length} of ${chests + 1}`);
+    if (ch.length !== chests + 1 || ch[0].d2 !== 397 || !ch[0].locked || ch[0].trap !== 3 || ch[0].sparkly !== 'consolation' || ch[0].pos.d2 !== undefined || ch.slice(1).some((o) => !rolled(o))) problems.push(`the hand-made floor's chests: ${JSON.stringify(ch.slice(0, 2).map((o) => ({ d2: o.d2, locked: o.locked, trap: o.trap, sparkly: o.sparkly, pos: o.pos })))}, ${ch.length} of ${chests + 1}`);
     const br = of('barrel');
     if (br.length !== barrels + 2 || br[0].d2 !== 11 || !br[0].exploding || br[0].used || !br[1].used || !spent(br[1])) problems.push(`the hand-made floor's barrels: ${JSON.stringify(br.slice(0, 2).map((o) => ({ d2: o.d2, exploding: o.exploding, used: o.used })))}`);
     const sh = of('shrine');
