@@ -36,7 +36,8 @@ export default async (load) => {
   const { CAMP_AREA, WILD_AREA, DEN_OF_EVIL, COLD_PLAINS, BURIAL_GROUNDS } = await load('/src/world/areas.ts');
   const { nearRaven, ROOM_M } = await load('/src/game/quests/sisters.ts');
   const { mayHireNow, placeMerc } = await load('/src/game/merc.ts');
-  const { presetMonster } = await load('/src/game/spawn.ts');
+  const { spawnGuardian } = await load('/src/game/spawn.ts');
+  const { RNG } = await load('/src/core/math.ts');
   const F = R.QFLAG;
   const problems = [];
   const check = (ok, what) => ok || problems.push(what);
@@ -426,10 +427,10 @@ export default async (load) => {
   const r1 = raven();
   game.teleportWithin(game.level.map.nearestWalkable(r1.pos.x + 12, r1.pos.z));
   check(game.area.id === BURIAL_GROUNDS && shas(F.ENTERAREA) && sis().last === 2 && heroSaid.includes('graveyard') && game.quests.log('a1q2').text.includes('绯鸦'), `in the Burial Grounds (area ${game.area.id}): word ${sword()}, status ${sis().last}, said ${heroSaid.join()}`);
-  // only hers counts: a Blood Raven put down without the quest (as a trial floor's, a rift's), and the Burial Grounds' other dead, killed beside the hero
+  // only hers counts: a Blood Raven set down as a rift's guardian is (spawnGuardian: no quest), and the Burial Grounds' other dead, killed beside the hero
   const wordBefore = sword();
-  const stray = presetMonster(game.level, { pos: game.level.map.nearestWalkable(p().pos.x + 1, p().pos.z), monster: 'bloodraven' });
-  check(stray && stray.quest === undefined && ravens().length >= 2, `a Blood Raven without the quest: ${stray?.quest}, ${ravens().length} on the map`);
+  const stray = spawnGuardian(game.level, game.area, { mon: 'bloodraven' }, game.level.map.nearestWalkable(p().pos.x + 1, p().pos.z), new RNG(7));
+  check(stray && stray.quest === undefined && ravens().length >= 2, `a rift guardian's Blood Raven: quest ${stray?.quest}, ${ravens().length} on the map`);
   if (stray) game.killMonster(stray, 'phys');
   const others = game.level.monsters.filter((m) => !m.dead && !m.quest && game.level.areaAt(m.pos.x, m.pos.z).id === BURIAL_GROUNDS).slice(0, 3);
   for (const m of others) game.killMonster(m, 'phys');
