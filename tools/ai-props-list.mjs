@@ -8,7 +8,10 @@
 //   split     { name, above }: cut the top off into its own mesh (chest lids)
 //   box       [w, h, d] metres for a new model (no orig) to fit
 //   tris      simplify to this many triangles
+//   error     how far that may move the surface, a fraction of its size (default 0.01)
+//   smooth    weld through its normals before simplifying and make them again after, smooth
 //   texture   texture size (default 512)
+//   dir       write it to models-src/<dir> (committed: 'ai') instead of models-src/ai-props
 export const ASSETS = '../avatar/assets';
 
 /** dungeon pack (d_*): same id in the avatar's dungeon set */
@@ -136,4 +139,10 @@ export const PROPS = [
   { key: 'mon_bat', file: '../viewer/public/models/bat/model.glb', tris: 8000 },
   { key: 'mon_dragon', file: '../viewer/public/models/dragon/model.glb', tris: 8000 },
   { key: 'mon_skullfly', src: 'monsters/skullfly' },
+  // the foul crow nest (D2 crownest1, Code BN): a dead stump crowned with a heap of twigs, bones,
+  // rags and feathers, from a concept drawn from words alone (the avatar's act1 crow_nest, modelled
+  // again as crow_nest_v2); still, its hatching wobble and its fall made in code (ModelSpec.motion 'nest')
+  // (Meshy split its normals at every edge of its 10.7k triangles, which holds meshopt at 10.3k:
+  // smooth, and a little more error, takes it under the monsters' 9000)
+  { key: 'mon_crownest', src: 'act1/crow_nest_v2', box: [1.6, 2.6, 1.6], tris: 7000, error: 0.015, smooth: true, dir: 'ai' },
 ];

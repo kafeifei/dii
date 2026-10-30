@@ -223,10 +223,11 @@ export interface ModelSpec {
   /** hover height for floating creatures */
   float?: number;
   /**
-   * one-piece creatures without a skeleton, moved in the vertex shader: 'flap' beats wings spread
-   * along x, 'hover' only bobs and sways
+   * one-piece creatures without a skeleton or clips, moved in code: 'nest' (the foul crow nest) stands
+   * still, shudders as a crow breaks out of it (its Nest, cast) and falls in when it dies, its top
+   * swaying and falling more than its roots (in the vertex shader: addMotion)
    */
-  motion?: 'flap' | 'hover';
+  motion?: 'nest';
   /**
    * a Tripo rig with only a walk (tools/tripo-merge.mjs): everything else is posed in code on top
    * of the clips (src/render/legs.ts), by its rig type
@@ -242,6 +243,8 @@ export interface ModelSpec {
     charge?: MoveClip;
     death: string[];
     revive?: string;
+    /** getting up off the ground, for one come up in D2's S1 (AnimInput.rise): it plays over the rise's length */
+    rise?: string;
   };
 }
 
@@ -269,23 +272,30 @@ export function rigKey(spec: ModelSpec): string | null {
 }
 
 /**
- * Vertex motion for one-piece creatures (see ModelSpec.motion), in the mesh's own space: 'flap'
- * lifts everything beyond the body along x on a sine (wings).
+ * Vertex motion for one-piece creatures (see ModelSpec.motion), in the mesh's own space, by height
+ * over its box (h, 0 at the roots, 1 at the top): 'nest' sways its top by uShake (a fraction of its
+ * height, across), the roots holding; falling in (uFall 0–1), it sinks to a quarter of its height from
+ * the top down, leaning over toward uLean and splaying at the foot.
  */
-function addMotion(mat: THREE.Material, kind: 'flap', u: Record<string, THREE.IUniform>) {
+function addMotion(mat: THREE.Material, kind: 'nest', u: Record<string, THREE.IUniform>) {
   mat.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, u);
-    const move = `float span = (uBoxMax.x - uBoxMin.x) * 0.5;
-          float side = transformed.x - (uBoxMax.x + uBoxMin.x) * 0.5;
-          float w = clamp((abs(side) - span * 0.2) / (span * 0.8), 0.0, 1.0);
-          transformed.y += sin(uMoveT) * w * w * span * 0.6 * uMoveK;
-          transformed.x -= sign(side) * (1.0 - cos(sin(uMoveT) * w)) * span * 0.25 * uMoveK;`;
+    const move = `float tall = uBoxMax.y - uBoxMin.y;
+          float h = clamp((transformed.y - uBoxMin.y) / tall, 0.0, 1.0);
+          vec2 mid = (uBoxMin.xz + uBoxMax.xz) * 0.5;
+          transformed.xz += uShake * h * h * tall;
+          transformed.y = uBoxMin.y + (transformed.y - uBoxMin.y) * (1.0 - 0.75 * uFall * (0.35 + 0.65 * h));
+          transformed.xz += uLean * uFall * h * h * tall * 0.4;
+          transformed.xz += (transformed.xz - mid) * uFall * (1.0 - h) * 0.35;`;
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nuniform float uMoveT;\nuniform float uMoveK;\nuniform vec3 uBoxMin;\nuniform vec3 uBoxMax;')
+      .replace('#include <common>', '#include <common>\nuniform vec2 uShake;\nuniform float uFall;\nuniform vec2 uLean;\nuniform vec3 uBoxMin;\nuniform vec3 uBoxMax;')
       .replace('#include <begin_vertex>', `#include <begin_vertex>\n{\n${move}\n}`);
   };
   mat.customProgramCacheKey = () => `motion-${kind}`;
 }
+
+/** where in its Nest's sequence a crow breaks out of the nest: seq_nestlay's skill event, frame 25 of 31 (src/data/d2x/monseq.ts) */
+const NEST_BREAK = 25 / 31;
 
 export class ModelRig {
   root = new THREE.Group();
@@ -296,6 +306,8 @@ export class ModelRig {
   /** twin copies so a clip can cross-fade into itself (back-to-back attacks) */
   private twins = new Map<THREE.AnimationClip, THREE.AnimationClip>();
   private mats: MatInfo[] = [];
+  /** a `motion` creature's shadow-pass materials, moved as its own are */
+  private shadowMats: THREE.Material[] = [];
   private held: Held[] = [];
   private cur: THREE.AnimationAction | null = null;
   private curClip: THREE.AnimationClip | null = null;
@@ -312,7 +324,11 @@ export class ModelRig {
   private legs: PosedRig | null = null;
   private flash = new THREE.Color();
   /** shared by every material of a `motion` creature */
-  private moveU = { uMoveT: { value: Math.random() * 10 }, uMoveK: { value: 1 }, uBoxMin: { value: new THREE.Vector3() }, uBoxMax: { value: new THREE.Vector3() } };
+  private moveU = { uShake: { value: new THREE.Vector2() }, uFall: { value: 0 }, uLean: { value: new THREE.Vector2(1, 0) }, uBoxMin: { value: new THREE.Vector3() }, uBoxMax: { value: new THREE.Vector3() } };
+  /** a nest's shudder: how hard (rad-ish, a fraction of its height at the top), its phase, and the stage of its Nest it was at last frame */
+  private shake = 0;
+  private shakePhase = Math.random() * 10;
+  private nestK = 0;
 
   constructor(readonly spec: ModelSpec) {
     const tpl = assets.get(spec.model)!;
@@ -427,11 +443,21 @@ export class ModelRig {
           mat.transparent = true;
           mat.opacity = spec.opacity;
         }
-        if (spec.motion && spec.motion !== 'hover') addMotion(mat, spec.motion, this.moveU);
+        if (spec.motion) addMotion(mat, spec.motion, this.moveU);
         this.mats.push({ mat, emissive: mat.emissive.clone(), color: mat.color.clone(), opacity: mat.opacity, transparent: mat.transparent });
         return mat;
       };
       m.material = Array.isArray(m.material) ? m.material.map(conv) : conv(m.material);
+      if (spec.motion) {
+        // its shadow sways and falls in with it (the renderer's shadow passes draw these instead)
+        const depth = new THREE.MeshDepthMaterial();
+        const distance = new THREE.MeshDistanceMaterial();
+        addMotion(depth, spec.motion, this.moveU);
+        addMotion(distance, spec.motion, this.moveU);
+        m.customDepthMaterial = depth;
+        m.customDistanceMaterial = distance;
+        this.shadowMats.push(depth, distance);
+      }
     });
 
     // animation
@@ -574,6 +600,17 @@ export class ModelRig {
       this.updateHeld(dt, false);
       return;
     }
+    // come up in D2's S1: its rise, over the rise's length, whatever the sim says meanwhile (it stands),
+    // posed where the sim's time has got to (a body first drawn part-way up, or after frames unseen)
+    const rise = a.rise && c.rise && a.rise.t < a.rise.len ? this.clips.get(c.rise) : undefined;
+    if (rise && a.rise) {
+      if (this.curClip !== rise) this.play(rise, false, rise.duration / a.rise.len, 0);
+      this.cur!.time = Math.min(rise.duration, (Math.max(0, a.rise.t) / a.rise.len) * rise.duration);
+      this.lastState = null;
+      this.advance(0, a);
+      this.updateHeld(dt, false);
+      return;
+    }
 
     const restarted = a.state !== this.lastState || a.stateTime < this.lastStateTime - 1e-4;
     this.lastState = a.state;
@@ -637,17 +674,22 @@ export class ModelRig {
     this.inner.rotation.z = b.roll;
   }
 
-  /** wing beat speed by state, a lunge on attacks, a sway for hovering skulls */
+  /**
+   * A nest's shudder (motion 'nest'): through its Nest (cast, seq_nestlay) it trembles harder and
+   * harder till the crow breaks out (NEST_BREAK), jolts, and settles; between them it stands still
+   */
   private updateMotion(dt: number, a: AnimInput) {
-    const attacking = a.state === 'attack' || a.state === 'cast';
-    const moving = a.state === 'move' || a.state === 'charge';
-    const rate = attacking ? 18 : moving ? 11 : 8;
-    this.moveU.uMoveT.value += dt * rate;
-    const k = attacking ? Math.sin(Math.min(1, a.stateTime / Math.max(0.1, a.stateDur)) * Math.PI) : 0;
-    this.inner.position.z = -this.baseCenterZ + k * 0.35;
-    this.inner.rotation.x = k * 0.35;
-    if (this.spec.motion === 'hover') this.inner.rotation.z = Math.sin(this.time * 1.7) * 0.12;
-    if (this.spec.motion === 'flap' && this.spec.float) this.inner.position.y += Math.sin(this.moveU.uMoveT.value) * 0.06;
+    const casting = a.state === 'cast';
+    const k = casting ? Math.min(1, a.stateTime / Math.max(0.1, a.stateDur)) : 1;
+    const building = casting && k < NEST_BREAK;
+    if (building) this.shake = 0.005 + 0.025 * (k / NEST_BREAK);
+    else {
+      if (casting && this.nestK < NEST_BREAK) this.shake = 0.08;
+      this.shake *= Math.exp(-dt * 4);
+    }
+    this.nestK = k;
+    this.shakePhase += dt * (building ? 34 : 20);
+    this.moveU.uShake.value.set(Math.sin(this.shakePhase) * this.shake, Math.sin(this.shakePhase * 1.31 + 1.7) * this.shake);
   }
 
   private updateDeath(dt: number, a: AnimInput) {
@@ -657,6 +699,10 @@ export class ModelRig {
       this.reviving = 0;
       const clip = this.pick(this.spec.clips.death, true);
       this.play(clip, false, a.blood === 'ghost' ? 1.6 : 1.25, 0.08);
+      if (this.spec.motion === 'nest') {
+        const lean = Math.random() * Math.PI * 2;
+        this.moveU.uLean.value.set(Math.cos(lean), Math.sin(lean));
+      }
       if (a.killedBy === 'cold') {
         for (const mi of this.mats) {
           mi.mat.color.lerp(new THREE.Color('#9ad8ff'), 0.65);
@@ -667,10 +713,14 @@ export class ModelRig {
     if (a.killedBy === 'cold') for (const mi of this.mats) mi.mat.emissive.set('#103048');
     if (a.killedBy === 'fire') for (const mi of this.mats) mi.mat.color.lerp(new THREE.Color('#120806'), Math.min(1, dt * 2));
     if (this.spec.float) this.inner.position.y = Math.max(-0.1, this.inner.position.y - dt * 2);
-    if (this.spec.motion) {
-      // no death clip: stop, and keel over
-      this.moveU.uMoveK.value = Math.max(0, this.moveU.uMoveK.value - dt * 3);
-      this.inner.rotation.z += (1.3 - this.inner.rotation.z) * Math.min(1, dt * 5);
+    if (this.spec.motion === 'nest') {
+      // no death clip: it falls in over 0.9 s, slowly then all at once, leaning over (uLean, set as it
+      // died), and its shudder dies away
+      const f = Math.min(1, t / 0.9);
+      this.moveU.uFall.value = f * f;
+      this.shake *= Math.exp(-dt * 6);
+      this.shakePhase += dt * 20;
+      this.moveU.uShake.value.set(Math.sin(this.shakePhase) * this.shake, Math.sin(this.shakePhase * 1.31 + 1.7) * this.shake);
     }
     // ghosts dissolve right away; everything else lies there for a while, then sinks
     const fadeStart = a.blood === 'ghost' ? 0.6 : 34;
@@ -703,7 +753,10 @@ export class ModelRig {
     this.root.visible = true;
     this.inner.position.copy(this.basePos);
     this.inner.rotation.set(0, 0, 0);
-    this.moveU.uMoveK.value = 1;
+    this.moveU.uFall.value = 0;
+    this.moveU.uShake.value.set(0, 0);
+    this.shake = 0;
+    this.nestK = 0;
     for (const mi of this.mats) {
       mi.mat.color.copy(mi.color);
       mi.mat.emissive.copy(mi.emissive);
@@ -718,6 +771,7 @@ export class ModelRig {
   dispose() {
     this.mixer.stopAllAction();
     for (const mi of this.mats) mi.mat.dispose();
+    for (const m of this.shadowMats) m.dispose();
     // the skeletons are the clone's own, each with a texture of its bones on the GPU
     this.body.traverse((o) => (o as THREE.SkinnedMesh).skeleton?.dispose());
     this.root.removeFromParent();

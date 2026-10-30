@@ -3,11 +3,9 @@ import type { D2xMonster } from './d2x/types';
 
 /** the body a monster is drawn with (src/render/specs.ts); the later ones are named for D2's MonStats ids */
 export type MonsterModel =
-  | 'zombie' | 'skeleton' | 'skelarcher' | 'imp' | 'shaman' | 'ghoul' | 'wraith' | 'spider' | 'demon' | 'butcher' | 'lich' | 'overlord'
-  | 'skelmage' | 'bat' | 'yeti'
-  | 'corruptrogue' | 'cr_lancer' | 'cr_archer' | 'quillrat' | 'bloodraven'
-  // a placeholder with no body of its own: the foul crow nest (LOOKS.crownest)
-  | 'nest';
+  | 'zombie' | 'skeleton' | 'skelarcher' | 'imp' | 'shaman' | 'ghoul' | 'wraith' | 'spider' | 'butcher' | 'lich' | 'overlord'
+  | 'skelmage' | 'yeti'
+  | 'corruptrogue' | 'cr_lancer' | 'cr_archer' | 'quillrat' | 'bloodraven' | 'goatman' | 'foulcrow' | 'crownest';
 export type Blood = 'red' | 'bone' | 'green' | 'ghost' | 'black' | 'fire';
 export type Elem = 'phys' | 'fire' | 'cold' | 'light' | 'poison' | 'magic';
 export type ProjectileKind = 'arrow' | 'firebolt' | 'iceshard' | 'poisonspit' | 'lightning' | 'fireball';
@@ -65,13 +63,12 @@ export interface MonsterLook {
 
 /**
  * The looks by D2 class. Act 1's monsters on the models made for them (the quill rat, the corrupted
- * rogues) or the nearest of the game's: zombies, the Fallen as imps, their shamans, D2's yetis (the
- * Brutes, sprite YE) as yetis, skeletons with their bows and staves. The rest stand in until they get
- * their own: ghosts as wraiths, the Arach as the spider, goatmen as demons, the Afflicted (Bighead) as
- * ghouls, the foul crows as bats, the Banished (Vampire) as the lich, the rat men (Fetish) as small
- * imps; the foul crow nest, with no model anywhere yet, is a PLACEHOLDER: a dead tree tinted dark.
- * Act 1's bosses take the floor bosses' bodies: the Smith the butcher's, Andariel the overlord's,
- * Griswold a big zombie's; Blood Raven has her own. Sizes are the game's: D2 gives sprites' heights (MonStats2 pixHeight), not models'.
+ * rogues, the goatmen, the foul crows and their nests) or the nearest of the game's: zombies, the
+ * Fallen as imps, their shamans, D2's yetis (the Brutes, sprite YE) as yetis, skeletons with their
+ * bows and staves. The rest stand in until they get their own: ghosts as wraiths, the Arach as the
+ * spider, the Afflicted (Bighead) as ghouls, the Banished (Vampire) as the lich, the rat men (Fetish)
+ * as small imps. Act 1's bosses take the floor bosses' bodies: the Smith the butcher's, Andariel the
+ * overlord's, Griswold a big zombie's; Blood Raven has her own. Sizes are the game's: D2 gives sprites' heights (MonStats2 pixHeight), not models'.
  */
 export const LOOKS: Record<string, MonsterLook> = {
   zombie: { key: 'zombie', model: 'zombie', scale: 1, radius: 0.42, blood: 'red', color: '#5d6b4a', color2: '#3a3326', voice: 'flesh', range: 1.1, attackSpeed: 0.8, attack: ['Attack'] },
@@ -104,15 +101,18 @@ export const LOOKS: Record<string, MonsterLook> = {
   },
   wraith: { key: 'wraith', model: 'wraith', scale: 1.05, radius: 0.4, blood: 'ghost', color: '#9ad0ff', color2: '#2a4060', voice: 'bone', range: 1.2, attackSpeed: 0.9, attack: ['Attack'] },
   arach: { key: 'arach', model: 'spider', scale: 1, radius: 0.5, blood: 'green', color: '#2a2a22', color2: '#8a1a1a', voice: 'flesh', range: 1.2, attackSpeed: 1.4, attack: ['Idle'] },
-  goatman: { key: 'goatman', model: 'demon', scale: 1.2, radius: 0.5, blood: 'red', color: '#6a4a2a', color2: '#2a1a0a', voice: 'goat', range: 1.3, attackSpeed: 1.0, attack: ['Attack', 'Attack2'], tint: '#8a6a40' },
+  // its own body (models-src/ai/mon_goatman.glb) with a two-handed weapon of D2's RHv (src/render/specs.ts);
+  // one blow, A1, as D2's goatmen have (MonStats2 modes)
+  goatman: { key: 'goatman', model: 'goatman', scale: 1, radius: 0.5, blood: 'red', color: '#6a4a2a', color2: '#2a1a0a', voice: 'goat', range: 1.3, attackSpeed: 1.0, attack: ['Attack'] },
   bighead: { key: 'bighead', model: 'ghoul', scale: 1.1, radius: 0.45, blood: 'green', color: '#5a7a68', color2: '#2a3a30', missile: 'lightning', voice: 'flesh', range: 1.2, attackSpeed: 0.7, attack: ['Attack', 'Attack2'] },
-  foulcrow: { key: 'foulcrow', model: 'bat', scale: 0.8, radius: 0.36, blood: 'red', color: '#3a3030', color2: '#6a1a1a', voice: 'bird', range: 1.1, attackSpeed: 1.4, attack: [] },
-  // PLACEHOLDER until the nest has a model (docs/M2A.md 美术: 鸟巢; none in models-src or public/models): the
-  // graveyard pack's small dead tree, tinted the crows' dark red, standing where D2's nest (MonStats
-  // crownest1: velocity 0, 3×3, pixHeight 128) stands. It has no arm (range 0) as D2's has no attack
-  // (no A1 in MonStats): it hatches its crows (src/game/ai.ts foulCrowNest) and falls in once it has
-  // hatched them all, its cry the crows' (MonStats sound crownest has none of the game's)
-  crownest: { key: 'crownest', model: 'nest', scale: 1, radius: 0.7, blood: 'red', color: '#3a2e22', color2: '#6a1a1a', voice: 'bird', range: 0, attackSpeed: 0.5, attack: [], tint: '#4a1a12', still: true },
+  // its own body (models-src/ai/mon_foulcrow.glb: Tripo's bird rig, its clips keyed in tools/tripo-merge.mjs), flying
+  foulcrow: { key: 'foulcrow', model: 'foulcrow', scale: 0.8, radius: 0.36, blood: 'red', color: '#3a3030', color2: '#6a1a1a', voice: 'bird', range: 1.1, attackSpeed: 1.4, attack: ['Attack'] },
+  // its own body (models-src/ai/mon_crownest.glb: a dead stump crowned with twigs, bones and feathers),
+  // standing where D2's nest (MonStats crownest1: velocity 0, 3×3, pixHeight 128) stands. It has no
+  // arm (range 0) as D2's has no attack (no A1 in MonStats): it hatches its crows (src/game/ai.ts
+  // foulCrowNest), shuddering as each breaks out, and falls in once it has hatched them all
+  // (src/render/models.ts, ModelSpec.motion 'nest'), its cry the crows' (MonStats sound crownest has none of the game's)
+  crownest: { key: 'crownest', model: 'crownest', scale: 1, radius: 0.7, blood: 'red', color: '#3a2e22', color2: '#6a1a1a', voice: 'bird', range: 0, attackSpeed: 0.5, attack: [], still: true },
   vampire: {
     key: 'vampire', model: 'lich', scale: 1.1, radius: 0.45, blood: 'red', color: '#8a3a4a', color2: '#2a0a10', missile: 'fireball', voice: 'flesh', range: 1.2, attackSpeed: 0.6,
     attack: ['Attack'], cast: ['Cast'], tint: '#a03040',

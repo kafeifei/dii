@@ -150,12 +150,27 @@ export const CHARS = {
     { name: 'Attack2', clip: 'Punch_Combo', quick: 'attack' },
     HIT, DEATH,
   ]),
-  mon_zombie: mon('zombie', [
+  // re-rigged 2026-10-30 (avatar zombie_rise: the same mesh, Meshy having dropped the 2026-10-09 rig) so
+  // a rise joins its clips on one skeleton: the dead Blood Raven raises and the caskets let out come up
+  // in D2's S1 (monstats spawn mode; D2GAME_SpawnTrapMonster mode 8), lying on its back, sitting up and
+  // getting to its feet over 1.8 s, the hips kept over the spot it rises on
+  mon_zombie: mon('zombie_rise', [
     { name: 'Idle', clip: 'Idle' },
     { name: 'Walk', clip: 'Monster_Walk' },
     { name: 'Attack', clip: 'Punch_Forward_with_Both_Fists', quick: 'attack' },
     HIT,
     { name: 'Death', clip: 'Knock_Down', inPlace: false },
+    { name: 'Rise', file: 'animations_extra.glb', clip: 'Arise' },
+  ]),
+  // the Moongazer Tribe (D2 goatman1-5, Code GM: one body, BaseW 2hs with a two-handed weapon in the
+  // right hand, MonStats2 RHv btx hal lax mau scy whm, the spec's to attach). Modes DT NU WL GH A1 DD
+  // KB SQ (no RN: its +100 % lurch plays the run): A1 the two-handed overhead swing. From the avatar's
+  // act1 goatwarrior (concept drawn from words alone, 2026-10-26); the free basic walk, its own
+  // Slow_Orc_Walk being a crawl for D2's velocity
+  mon_goatman: mon('goatwarrior', [
+    { name: 'Idle', clip: 'Combat_Stance' },
+    { name: 'Attack', clip: 'Heavy_Hammer_Swing', quick: 'attack' },
+    HIT, DEATH,
   ]),
   mon_imp: mon('imp', [
     { name: 'Idle', clip: 'Combat_Stance' },

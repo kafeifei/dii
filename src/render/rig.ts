@@ -58,6 +58,8 @@ export interface AnimInput {
   exact?: boolean;
   /** an attack's clip by the D2 mode it is in: its look's attack list at A1 0, A2 1, S1 2 (a monster's); a random one when unset */
   clip?: number;
+  /** seconds into its rise and the rise's length, for a monster come up in D2's S1 (Monster.rise) */
+  rise?: { t: number; len: number };
 }
 
 // ── shared geometry cache ──

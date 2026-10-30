@@ -392,12 +392,13 @@ export const trapMonsterRoll = (rng: Rand = MATH_RAND): boolean => roll(rng, 100
 
 /**
  * The level's trap monster up at an object (D2GAME_SpawnTrapMonster_6FC75B40, ObjMode.cpp:1065-1078;
- * spawn.ts spawnOne): awake, risen as the dead are
+ * spawn.ts spawnOne): awake, getting up in S1 as D2 spawns it (its mode 8: Monster.riseUp)
  */
 function raiseTrapMonster(g: Game, obj: WorldObject) {
   const area = g.level.areaAt(obj.pos.x, obj.pos.z);
   const m = spawnOne(g.level, area, obj.pos, new RNG((Math.random() * 0x7fffffff) | 0));
   if (!m) return;
+  m.riseUp(g.level.time);
   g.fx.burst('resurrect', m.pos);
   g.sfx.play('monster.resurrect', { pos: m.pos });
 }

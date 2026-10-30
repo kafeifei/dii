@@ -29,10 +29,11 @@ const packs = new Map();
 
 /**
  * Sources nothing in the game can show any more, left unbuilt (they stay in models-src): the old
- * monsters' bodies, which no look draws (src/data/monsters.ts LOOKS); the long trunk the stash was
- * before it became the gold-bound chest; the KayKit shelf, which no room hangs (src/world/furnish.ts)
+ * monsters' bodies, which no look draws (src/data/monsters.ts LOOKS; the bat and the demon stood in
+ * for the foul crows and the goatmen till 2026-10-30); the long trunk the stash was before it became
+ * the gold-bound chest; the KayKit shelf, which no room hangs (src/world/furnish.ts)
  */
-const UNUSED = new Set(['mon_dragon', 'mon_mushroom', 'mon_skullfly', 'd_trunk_large_A', 'd_shelf_large']);
+const UNUSED = new Set(['mon_dragon', 'mon_mushroom', 'mon_skullfly', 'mon_bat', 'mon_demon', 'd_trunk_large_A', 'd_shelf_large']);
 
 /** the models the game animates, the heroes, the townsfolk, the hireling and the monsters: each a file of its own */
 const CHARACTER = /^(mon_|npc_|merc_)|^(paladin|sorceress|ai_hero|knight|skeleton_minion)$/;

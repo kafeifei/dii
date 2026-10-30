@@ -26,7 +26,136 @@ import * as THREE from 'three';
  *   mirror   legs whose retargeted track is wrong, rebuilt from the opposite leg: mirrored across
  *            the body and half a step later (`from` / `to` joint chains hip first, below `parent`)
  *   tris     simplify to about this many triangles (Tripo's raw meshes run to a million and more)
+ *   keyed    clips keyed here, for a rig that comes with none (Tripo's avian rig has no presets):
+ *            name → { dur, bones: { bone: (u) => [[axis, angle], ...] }, body: (u) => [[axis, angle], ...] },
+ *            u the clip's progress 0–1. A bone turns about each axis (given in the rest pose's frame,
+ *            Tripo's: +X ahead, +Y up, +Z the creature's right) in its own frame, so it is carried by
+ *            its parent's turn; `body` turns the whole of it about BODY_PIVOT's bone, by its root
  */
+
+// ── the foul crow's clips (D2 foulcrow1, Code BK, flying: modes NU WL GH A1 DT; MonStats2 has no RN) ──
+// Tripo's avian rig stands the bird upright, wings spread flat, so every clip first tips it forward
+// to fly level, head and tail along the ground and wings beating up and down: at the game's camera
+// (39° down) an upright body with spread wings reads as a bat.
+/** its axes in the rest pose (Tripo's frame): the spine runs up and a little ahead; BACK is up once it flies level */
+const SPINE = [0.39, 0.92, 0];
+const BACK = [-0.92, 0.39, 0];
+const LAT = [0, 0, 1];
+const ease = (x) => {
+  const t = Math.min(1, Math.max(0, x));
+  return t * t * (3 - 2 * t);
+};
+/** keys [u, value, …] eased between: the value at u */
+const kf = (u, ...k) => {
+  if (u <= k[0]) return k[1];
+  for (let i = 2; i < k.length; i += 2) if (u <= k[i]) return k[i - 1] + (k[i + 1] - k[i - 1]) * ease((u - k[i - 2]) / (k[i] - k[i - 2]));
+  return k[k.length - 1];
+};
+/** a wing beat's phase, 0 at the top of the stroke: the downstroke takes `down` of the beat */
+const beat = (u, down) => {
+  const w = ((u % 1) + 1) % 1;
+  return w < down ? (w / down) * Math.PI : Math.PI + ((w - down) / (1 - down)) * Math.PI;
+};
+/**
+ * A wing beat `n` times over the clip between `top` and `bottom` (rad at the shoulder, up +), the
+ * forearm and hand trailing it so the wing whips, the hand folding back on the upstroke
+ */
+const flapping = (top, bottom, down, n = 1) => (u) => {
+  const p = beat(u * n, down);
+  const mid = (top + bottom) / 2;
+  const amp = (top - bottom) / 2;
+  return { s: mid + amp * Math.cos(p), f: 0.24 * Math.cos(p - 0.7), h: 0.2 * Math.cos(p - 1.3), sw: 0.35 * Math.max(0, -Math.sin(p - 0.4)) };
+};
+/** both wings' bones from `lift(u)` → { s, f, h, sw }: the right wing turns the other way about the spine */
+const wings = (lift) => {
+  const side = (k) => ({
+    [`Wing_${k > 0 ? 'Left' : 'Right'}_0`]: (u) => [[SPINE, k * lift(u).s]],
+    [`Wing_${k > 0 ? 'Left' : 'Right'}_1`]: (u) => [[SPINE, k * lift(u).f], [BACK, k * lift(u).sw * 0.4]],
+    [`Wing_${k > 0 ? 'Left' : 'Right'}_2`]: (u) => [[SPINE, k * lift(u).h], [BACK, k * lift(u).sw]],
+  });
+  return { ...side(1), ...side(-1) };
+};
+/** both legs: the hip swung back (−) or ahead, the knee folded, the toes curled */
+const legs = (hip, knee, toes = () => 0) => {
+  const out = {};
+  for (const s of ['Left', 'Right']) {
+    out[`0_${s}_Limb_0`] = (u) => [[LAT, hip(u)]];
+    out[`0_${s}_Limb_1`] = (u) => [[LAT, knee(u)]];
+    out[`0_${s}_Limb_2`] = (u) => [[LAT, toes(u)]];
+  }
+  return out;
+};
+/** the tail's two middle feathers, lifted (−) or dropped */
+const tail = (f) => ({ Tail_0: (u) => [[LAT, f(u)]], Tail_Mid_0: (u) => [[LAT, f(u)]] });
+/** flying level: the body tipped forward this far, the head lifted back to look ahead */
+const LEVEL = -1.05;
+const TUCK = { hip: -0.8, knee: 0.7, toes: 0.5 };
+/** the dying crow's three quick beats */
+const LAST_FLAIL = flapping(0.7, -0.6, 0.45, 3);
+const CROW = {
+  // hovering where it is (D2 draws its birds never still): tipped half-way, legs hanging, a quicker deeper beat
+  Idle: {
+    dur: 0.5,
+    body: (u) => [[LAT, -0.7 + 0.04 * Math.sin(u * 2 * Math.PI)]],
+    bones: {
+      ...wings(flapping(0.78, -0.62, 0.5)),
+      ...legs(() => -0.15, () => 0.35, () => 0.3),
+      Neck: () => [[LAT, 0.35]],
+      Head_0: () => [[LAT, 0.2]],
+      ...tail((u) => -0.1 + 0.05 * Math.sin(u * 2 * Math.PI)),
+    },
+  },
+  // flying level, legs tucked back under the tail
+  Fly: {
+    dur: 0.6,
+    body: () => [[LAT, LEVEL]],
+    bones: {
+      ...wings(flapping(0.62, -0.52, 0.42)),
+      ...legs(() => TUCK.hip, () => TUCK.knee, () => TUCK.toes),
+      Neck: (u) => [[LAT, 0.55 + 0.04 * Math.cos(u * 2 * Math.PI)]],
+      Head_0: () => [[LAT, 0.35]],
+      ...tail((u) => -0.35 + 0.06 * Math.sin(u * 2 * Math.PI)),
+    },
+  },
+  // its swoop's blow (A1): rears up braking, wings high, talons thrust ahead, then rakes them down
+  // and back as the beak stabs, landing half-way (where the sim resolves it), and flies on
+  Attack: {
+    dur: 0.8,
+    body: (u) => [[LAT, kf(u, 0, LEVEL, 0.3, -0.35, 0.5, -0.85, 1, LEVEL)]],
+    bones: {
+      ...wings((u) => ({ s: kf(u, 0, 0.1, 0.3, 0.75, 0.5, -0.55, 0.75, 0.3, 1, 0.1), f: kf(u, 0, 0, 0.35, 0.25, 0.55, -0.25, 1, 0), h: kf(u, 0, 0, 0.4, 0.2, 0.6, -0.2, 1, 0), sw: kf(u, 0, 0, 0.3, 0.2, 0.5, 0, 1, 0) })),
+      ...legs((u) => kf(u, 0, TUCK.hip, 0.35, 1.0, 0.55, -0.2, 1, TUCK.hip), (u) => kf(u, 0, TUCK.knee, 0.35, 0.1, 0.55, 0.3, 1, TUCK.knee), (u) => kf(u, 0, TUCK.toes, 0.3, -0.4, 0.5, 0.7, 1, TUCK.toes)),
+      Neck: (u) => [[LAT, kf(u, 0, 0.55, 0.3, 0.95, 0.5, 0.05, 1, 0.55)]],
+      Head_0: (u) => [[LAT, kf(u, 0, 0.35, 0.3, 0.45, 0.5, -0.1, 1, 0.35)]],
+      ...tail((u) => kf(u, 0, -0.35, 0.3, 0.25, 0.6, -0.1, 1, -0.35)),
+    },
+  },
+  // struck: thrown up and back, wings flung high, and level again
+  Hit: {
+    dur: 0.45,
+    body: (u) => [[LAT, kf(u, 0, LEVEL, 0.25, -0.55, 1, LEVEL)], [SPINE, kf(u, 0, 0, 0.25, 0.3, 1, 0)]],
+    bones: {
+      ...wings((u) => ({ s: kf(u, 0, 0.1, 0.2, 0.7, 1, 0.1), f: kf(u, 0, 0, 0.25, 0.3, 1, 0), h: kf(u, 0, 0, 0.3, 0.25, 1, 0), sw: 0 })),
+      ...legs((u) => kf(u, 0, TUCK.hip, 0.25, -0.1, 1, TUCK.hip), () => TUCK.knee, () => TUCK.toes),
+      Neck: (u) => [[LAT, kf(u, 0, 0.55, 0.2, 1.0, 1, 0.55)]],
+      Head_0: () => [[LAT, 0.35]],
+    },
+  },
+  // dead: a last flail, then tumbling over onto its back, wings slack and splayed on the ground (up
+  // for the bird is down once it lies on its back), legs curled up in the air
+  Death: {
+    dur: 1.5,
+    body: (u) => [[LAT, kf(u, 0, LEVEL, 0.4, -1.4, 0.9, -1.12)], [SPINE, kf(u, 0, 0, 0.3, 0.5, 0.85, 3.0, 1, 3.1)]],
+    bones: {
+      ...wings((u) => (u < 0.35 ? { ...LAST_FLAIL(u), sw: 0 } : { s: kf(u, 0.35, LAST_FLAIL(0.35).s, 0.85, 0.12), f: kf(u, 0.35, LAST_FLAIL(0.35).f, 0.85, 0.05), h: kf(u, 0.35, LAST_FLAIL(0.35).h, 0.85, 0.05), sw: kf(u, 0.35, 0, 0.85, 0.25) })),
+      ...legs((u) => kf(u, 0, TUCK.hip, 0.6, 0.7), (u) => kf(u, 0, TUCK.knee, 0.6, 1.1), (u) => kf(u, 0, TUCK.toes, 0.6, 0.9)),
+      Neck: (u) => [[LAT, kf(u, 0, 0.55, 0.3, 0.9, 0.9, -0.35)]],
+      Head_0: (u) => [[LAT, kf(u, 0, 0.35, 0.9, -0.3)]],
+      ...tail((u) => kf(u, 0, -0.35, 0.9, 0.1)),
+    },
+  },
+};
+
 const CREATURES = {
   mon_spider: {
     file: 'spider.glb',
@@ -86,8 +215,97 @@ const CREATURES = {
       to: ['1_Right_Limb_0', '1_Right_Limb_1', '1_Right_Limb_2', '1_Right_Limb_3'],
     },
   },
+  // D2's foul crow: Tripo's avian rig (rig_avian on an image-to-model from the avatar's act1 foulcrow
+  // concept, drawn from words alone; project files in models-src/tripo/foulcrow/tripo.json), which has
+  // no clips: they are keyed here (CROW). Wings flap cleanly about the spine up to about ±0.8 rad;
+  // folded past 1.2 the mesh tears (2026-10-26 test), so the clips stay inside that
+  mon_foulcrow: {
+    file: 'foulcrow/rig.glb',
+    project: '0471efbb-5d6e-4b3f-8ac1-fd873b64147f',
+    clips: {},
+    keyed: CROW,
+    tris: 7000,
+    rename: {
+      bone_3: 'Neck',
+      // shoulder, forearm, hand of each wing (the feathers' own bones hang off the forearm and hand)
+      bone_9: 'Wing_Left_0',
+      bone_10: 'Wing_Left_1',
+      bone_11: 'Wing_Left_2',
+      bone_22: 'Wing_Right_0',
+      bone_23: 'Wing_Right_1',
+      bone_24: 'Wing_Right_2',
+      bone_50: 'Tail_0',
+      bone_51: 'Tail_1',
+      bone_56: 'Tail_Mid_0',
+      bone_57: 'Tail_Mid_1',
+    },
+  },
 };
 
+/** the bone whose rest position the whole body turns about in a keyed clip's `body` */
+const BODY_PIVOT = 'Spine_0';
+
+/** a node's rest rotation in the scene (Tripo's frame) */
+function restWorldQ(node) {
+  const q = new THREE.Quaternion();
+  new THREE.Matrix4().fromArray(node.getWorldMatrix()).decompose(new THREE.Vector3(), q, new THREE.Vector3());
+  return q;
+}
+
+/** the clips of `keyed` (CREATURES' `keyed`) baked at FPS onto the rig's bones, in its rest frame */
+function bakeKeyed(doc, keyed, nodes) {
+  const buffer = doc.getRoot().listBuffers()[0];
+  const turns = (list) => list.map(([axis, angle]) => [new THREE.Vector3(...axis).normalize(), angle]);
+  const root = nodes.get('Root');
+  const pivot = new THREE.Vector3().setFromMatrixPosition(new THREE.Matrix4().fromArray(nodes.get(BODY_PIVOT).getWorldMatrix()));
+  const parentW = new THREE.Matrix4().fromArray(root.getParentNode()?.getWorldMatrix() ?? new THREE.Matrix4().toArray());
+  const parentInv = parentW.clone().invert();
+  const rootRest = new THREE.Matrix4().compose(new THREE.Vector3(...root.getTranslation()), new THREE.Quaternion(...root.getRotation()), new THREE.Vector3(...root.getScale()));
+  for (const [name, clip] of Object.entries(keyed)) {
+    const frames = Math.max(2, Math.round(clip.dur * FPS));
+    const input = doc.createAccessor().setType('SCALAR').setBuffer(buffer).setArray(Float32Array.from({ length: frames + 1 }, (_, i) => (i * clip.dur) / frames));
+    const anim = doc.createAnimation(name);
+    const add = (node, path, values) => {
+      const output = doc.createAccessor().setType(path === 'rotation' ? 'VEC4' : 'VEC3').setArray(values).setBuffer(buffer);
+      const smp = doc.createAnimationSampler().setInput(input).setOutput(output).setInterpolation('LINEAR');
+      anim.addSampler(smp).addChannel(doc.createAnimationChannel().setTargetNode(node).setTargetPath(path).setSampler(smp));
+    };
+    for (const [bone, f] of Object.entries(clip.bones)) {
+      const node = nodes.get(bone);
+      if (!node) throw new Error(`${name}: no bone ${bone}`);
+      const rest = new THREE.Quaternion(...node.getRotation());
+      const toLocal = restWorldQ(node).invert();
+      const values = new Float32Array((frames + 1) * 4);
+      for (let i = 0; i <= frames; i++) {
+        const q = rest.clone();
+        for (const [axis, angle] of turns(f(i / frames))) q.multiply(new THREE.Quaternion().setFromAxisAngle(axis.clone().applyQuaternion(toLocal), angle));
+        q.toArray(values, i * 4);
+      }
+      add(node, 'rotation', values);
+    }
+    if (clip.body) {
+      // the root turned about the pivot: its new transform is parent⁻¹ · (about the pivot) · its rest world
+      const rot = new Float32Array((frames + 1) * 4);
+      const pos = new Float32Array((frames + 1) * 3);
+      const t = new THREE.Vector3();
+      const q = new THREE.Quaternion();
+      const s = new THREE.Vector3();
+      for (let i = 0; i <= frames; i++) {
+        const turn = new THREE.Quaternion();
+        for (const [axis, angle] of turns(clip.body(i / frames))) turn.multiply(new THREE.Quaternion().setFromAxisAngle(axis, angle));
+        const about = new THREE.Matrix4().makeTranslation(pivot.x, pivot.y, pivot.z).multiply(new THREE.Matrix4().makeRotationFromQuaternion(turn)).multiply(new THREE.Matrix4().makeTranslation(-pivot.x, -pivot.y, -pivot.z));
+        parentInv.clone().multiply(about).multiply(parentW).multiply(rootRest).decompose(t, q, s);
+        q.toArray(rot, i * 4);
+        t.toArray(pos, i * 3);
+      }
+      add(root, 'rotation', rot);
+      add(root, 'translation', pos);
+    }
+  }
+}
+
+// the avian rig's export is meshopt-compressed
+await MeshoptDecoder.ready;
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder });
 const FPS = 30;
 
@@ -238,6 +456,8 @@ async function merge(key) {
   }
   // samplers share their time accessors: scale each once
   for (const t of times) t.setArray(t.getArray().map((v) => v / spec.pace));
+  // clips keyed here, on the rest pose (before the turn to face +Z below)
+  if (spec.keyed) bakeKeyed(doc, spec.keyed, nodes);
 
   // Tripo faces +X; the game's models face +Z (after the clips, which are worked on in Tripo's frame)
   const scene = root.listScenes()[0];

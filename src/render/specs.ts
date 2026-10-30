@@ -46,6 +46,28 @@ const QUILLRAT_STRIDE = 0.94;
 /** one-piece AI creatures (ModelSpec.motion) have no clips at all */
 const NO_CLIPS: ModelSpec['clips'] = { idle: [], move: [], attack: [], death: [] };
 
+/**
+ * What D2's goatmen carry (MonStats2 RHv btx hal lax mau scy whm, BaseW 2hs; D2Game Monster.cpp:486-511
+ * MONSTER_SetComponents rolls one evenly per monster): ours by the piece's look, the battle and large
+ * axes as the two-handed axe, the scythe as the halberd (there's no scythe model). The polearms are
+ * held upright, as the heroes hold theirs (meshyGear); a little bigger than a hero's, the goatman's
+ * hands being
+ */
+const GOAT_RH: [ModelKey, number, 'grip' | 'upright'][] = [
+  ['axe_2handed', 0.85, 'grip'], // btx
+  ['w_halberd', 0.95, 'upright'], // hal
+  ['axe_2handed', 0.85, 'grip'], // lax
+  ['w_maul', 0.85, 'grip'], // mau
+  ['w_halberd', 0.95, 'upright'], // scy
+  ['w_hammer', 0.75, 'grip'], // whm
+];
+
+/**
+ * the foul crow's wingspan's speed through the air, m/s, at which its Fly beats at 1×: D2's walk at
+ * velocity 4 (1.17 m/s) and its swoop at +90 % come out at 0.7–1.4× (tools/test/monster-models)
+ */
+const CROW_FLY = 1.6;
+
 const RANK_TINT = {
   champion: { tint: '#5a7aff', emissive: '#14206a' },
   unique: { tint: '#e0a840', emissive: '#4a2e06' },
@@ -156,8 +178,10 @@ export function monsterSpec(m: Monster): ModelSpec {
   const cast = (own: string[]) => (d.cast?.length ? d.cast : own);
   switch (d.model) {
     case 'zombie': {
+      // up from the ground in S1 (Monster.rise: Blood Raven's raise, a casket's trap monster): its Rise,
+      // lying on its back to its feet (tools/meshy-chars.mjs mon_zombie)
       const h = 1.75 * sc;
-      return ranked({ model: 'mon_zombie', rig: 'quat', height: h, clips: meshyClips(h, 0.72, 4.26, atk(['Attack'])) });
+      return ranked({ model: 'mon_zombie', rig: 'quat', height: h, clips: meshyClips(h, 0.72, 4.67, atk(['Attack']), { rise: 'Rise' }) });
     }
     case 'skeleton': {
       const elite = m.rank !== 'normal' || m.id % 3 === 0;
@@ -170,7 +194,8 @@ export function monsterSpec(m: Monster): ModelSpec {
         rig: 'quat',
         height: h,
         attach,
-        clips: meshyClips(h, 1.42, 4.34, atk(['Attack', 'Attack2']), { block: ['Block'], revive: 'Revive' }),
+        // a casket's skeleton gets up in S1 as a shaman's raised dead does: its death, backwards
+        clips: meshyClips(h, 1.42, 4.34, atk(['Attack', 'Attack2']), { block: ['Block'], revive: 'Revive', rise: 'Revive' }),
       });
     }
     case 'skelarcher': {
@@ -180,7 +205,7 @@ export function monsterSpec(m: Monster): ModelSpec {
         rig: 'quat',
         height: h,
         attach: [{ model: 'skeleton_crossbow', hand: 'r', scale: 0.7, hold: 'pistol' }],
-        clips: meshyClips(h, 1.39, 4.22, atk(['Attack']), { revive: 'Revive' }),
+        clips: meshyClips(h, 1.39, 4.22, atk(['Attack']), { revive: 'Revive', rise: 'Revive' }),
       });
     }
     case 'imp': {
@@ -268,8 +293,14 @@ export function monsterSpec(m: Monster): ModelSpec {
         clips: meshyClips(h, 1.49, 4.61, atk(['Attack'])),
       });
     }
-    case 'demon':
-      return ranked({ model: 'mon_demon', rig: 'quat', height: 1.45 * sc, emissive: '#2a0800', clips: meshyClips(1.45 * sc, 1.48, 4.83, atk(['Attack', 'Attack2'])) });
+    case 'goatman': {
+      // its own body (tools/meshy-chars.mjs mon_goatman) a head over a man, as D2 draws it (MonStats2
+      // pixHeight 96 to the zombie's 72), its two-handed weapon rolled from D2's (GOAT_RH) in the right
+      // hand, swung overhead (Walk 1.29, Run 4.08 m/s at 1.7 m: tools/meshy-merge.mjs's stride)
+      const h = 1.95 * sc;
+      const [rh, scale, hold] = roll(m, GOAT_RH, 2);
+      return ranked({ model: 'mon_goatman', rig: 'quat', height: h, attach: [{ model: rh, hand: 'r', scale, hold }], clips: meshyClips(h, 1.29, 4.08, atk(['Attack'])) });
+    }
     case 'skelmage': {
       const h = 1.7 * sc;
       return ranked({
@@ -277,16 +308,25 @@ export function monsterSpec(m: Monster): ModelSpec {
         rig: 'quat',
         height: h,
         attach: [{ model: 'skeleton_staff', hand: 'r', glow: d.missile === 'firebolt' ? '#ff7a30' : d.missile === 'poisonspit' ? '#80ff60' : '#80c0ff', scale: 0.8, hold: 'upright' }],
-        clips: meshyClips(h, 1.42, 4.34, atk(['Attack']), { cast: cast(['Cast']), revive: 'Revive' }),
+        clips: meshyClips(h, 1.42, 4.34, atk(['Attack']), { cast: cast(['Cast']), revive: 'Revive', rise: 'Revive' }),
       });
     }
-    case 'bat':
-      // wide wings: size by wingspan
-      return ranked({ model: 'mon_bat', rig: 'quat', height: 2.5 * sc, fitWidth: true, float: 0.9, motion: 'flap', clips: NO_CLIPS });
-    case 'nest':
-      // PLACEHOLDER (src/data/monsters.ts LOOKS.crownest): a prop for a body, swaying a little and
-      // keeling over when it dies (ModelSpec.motion), as tall over a zombie as D2's nest (pixHeight 128 to 72)
-      return ranked({ model: 'h_tree_dead_small', rig: 'quat', height: 3 * sc, motion: 'hover', clips: NO_CLIPS });
+    case 'foulcrow':
+      // Tripo's bird rig with its clips keyed (tools/tripo-merge.mjs mon_foulcrow): it hovers, flies
+      // level, rakes and stabs, reels, and falls onto its back; sized by its wingspan (1.7 m, a big
+      // carrion bird's), flying a little over a man's head as D2 draws its birds
+      return ranked({
+        model: 'mon_foulcrow',
+        rig: 'quat',
+        height: 2.1 * sc,
+        fitWidth: true,
+        float: 1.1,
+        clips: { idle: ['Idle'], move: [{ clip: 'Fly', ref: CROW_FLY }], attack: atk(['Attack']), hit: ['Hit'], death: ['Death'] },
+      });
+    case 'crownest':
+      // still (tools/ai-props-list.mjs mon_crownest): it shudders as a crow breaks out and falls in when
+      // it dies, in code (ModelSpec.motion 'nest'); as tall over a zombie as D2's nest (pixHeight 128 to 72)
+      return ranked({ model: 'mon_crownest', rig: 'quat', height: 2.7 * sc, motion: 'nest', clips: NO_CLIPS });
     case 'yeti': {
       const h = 1.75 * sc;
       return ranked({ model: 'mon_yeti', rig: 'quat', height: h, clips: meshyClips(h, 1.42, 4.68, atk(['Attack', 'Attack2'])) });

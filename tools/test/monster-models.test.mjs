@@ -6,7 +6,10 @@
 // spearwoman's spear and the ranger's bow aimed at the attack's landing, every model named one the
 // game builds. The quill rat as merged: small, its walk one loop, the hind right leg (misnamed by
 // Tripo) stepping as the left one mirrored half a step later, and src/render/legs.ts QuadRig finding
-// its legs and rolling it over onto its side when it dies. And every monster a built area or the
+// its legs and rolling it over onto its side when it dies. M2a's bodies of their own: the goatmen
+// with a two-handed weapon of D2's (RHv) in the right hand, the foul crow on Tripo's bird rig with
+// its clips keyed (its hover and flight loops), the nest still and moved in code, the zombie getting
+// up from the ground in S1 by its Rise and the skeletons by their revive. And every monster a built area or the
 // trial ground can spawn (levels.txt mon/nmon/umon, what they bring, the superuniques, Act 1's
 // bosses) has a look (src/data/monsters.ts) whose body is a model the game builds.
 import fs from 'node:fs';
@@ -87,6 +90,47 @@ export default async (load) => {
   const rat = monsterSpec(mon('quillrat'));
   check(rat.model === 'mon_quillrat' && rat.legs === 'quadruped' && rat.clips.move[0].clip === 'Walk', `quill rat ${rat.model} ${rat.legs}`);
   for (const m of ['mon_rogue_fallen', 'mon_quillrat']) check(built.has(m), `${m} not in the built models`);
+
+  // M2a's bodies of their own (2026-10-30)
+  const goatHeld = new Set();
+  for (let id = 1; id <= 120; id++) {
+    const s = monsterSpec(mon('goatman', id));
+    const r = s.attach?.[0];
+    check(s.model === 'mon_goatman' && s.attach.length === 1 && r.hand === 'r' && built.has(r.model) && s.clips.attack[0] === 'Attack', `goatman ${id}: ${s.model} ${JSON.stringify(s.attach)}`);
+    goatHeld.add(r?.model);
+  }
+  for (const w of ['axe_2handed', 'w_halberd', 'w_maul', 'w_hammer']) check(goatHeld.has(w), `no goatman carries ${w}`);
+  const crow = monsterSpec(mon('foulcrow'));
+  check(crow.model === 'mon_foulcrow' && crow.fitWidth && crow.float > 0.5 && !crow.motion && crow.clips.move[0]?.clip === 'Fly' && crow.clips.attack[0] === 'Attack', `the foul crow ${JSON.stringify(crow)}`);
+  const nestSpec = monsterSpec(mon('crownest'));
+  check(nestSpec.model === 'mon_crownest' && nestSpec.motion === 'nest' && !nestSpec.tint, `the nest drawn as ${nestSpec.model}, moved by ${nestSpec.motion}`);
+  check(monsterSpec(mon('zombie')).clips.rise === 'Rise' && monsterSpec(mon('skeleton')).clips.rise === 'Revive', 'the zombie gets up by its Rise, the skeleton by its revive');
+  /** the clips in a built file, read off its glTF JSON chunk */
+  const builtClips = (key) => {
+    const b = fs.readFileSync(`public/models/${key}.glb`);
+    return JSON.parse(b.subarray(20, 20 + b.readUInt32LE(12)).toString()).animations?.map((a) => a.name) ?? [];
+  };
+  for (const [key, want] of [
+    ['mon_goatman', ['Idle', 'Walk', 'Run', 'Attack', 'Hit', 'Death']],
+    ['mon_foulcrow', ['Idle', 'Fly', 'Attack', 'Hit', 'Death']],
+    ['mon_zombie', ['Idle', 'Walk', 'Run', 'Attack', 'Hit', 'Death', 'Rise']],
+    ['mon_crownest', []],
+  ]) {
+    check(built.has(key), `${key} not in the built models`);
+    const has = builtClips(key);
+    for (const c of want) check(has.includes(c), `${key} has no ${c} clip (${has})`);
+  }
+  // the crow's hover and flight loop: every track ends where it began
+  const crowDoc = await new NodeIO().registerExtensions(ALL_EXTENSIONS).read('models-src/ai/mon_foulcrow.glb');
+  for (const a of crowDoc.getRoot().listAnimations().filter((x) => ['Idle', 'Fly'].includes(x.getName()))) {
+    for (const ch of a.listChannels()) {
+      const out = ch.getSampler().getOutput();
+      const first = out.getElement(0, []);
+      const last = out.getElement(out.getCount() - 1, []);
+      const d = Math.max(...first.map((v, i) => Math.abs(v - last[i])));
+      if (d > 1e-4) check(false, `the crow's ${a.getName()}: ${ch.getTargetNode().getName()} ${ch.getTargetPath()} doesn't loop (${d.toFixed(4)})`);
+    }
+  }
 
   // every monster that can spawn has a look, drawn by a built model
   const { monsterDef, lookedMonsters } = await load('/src/data/monsters.ts');
