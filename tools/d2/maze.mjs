@@ -51,6 +51,13 @@ const HIRELING = 'roguehire';
  *   its Tower Tome (tome.ds1, lvlprest 162): DrlgOutWild.cpp:491-494.
  */
 const PRESET_OBJECTS = [580, 581, 397, 17, 18, 19, 20, 21, 22, 8];
+/**
+ * Objects the game has of its own making that D2 has as objects too, for the size the hero reaches
+ * them by (UNITS_IsObjectInInteractRange, D2Common Units.cpp:3604-3684; src/game/reach.ts): the town
+ * portal (59 TownPortal), the Act 1 waypoint outside and inside (119 WaypointOutsideAct1, 157
+ * WaypointInsideAct1) and the stash (267 Bank)
+ */
+const REACH_OBJECTS = [59, 119, 157, 267];
 
 /**
  * The preset placeholders (Objects.txt 574–582 stand for others, OBJECTS_SpawnPresetObject,
@@ -103,7 +110,10 @@ const OPERATE = {
   9: 'stone',
   11: 'torch',
   14: 'corpse',
+  15: 'portal',
   22: 'well',
+  23: 'waypoint',
+  32: 'stash',
 };
 /**
  * % of uses that drop the area's chest class, by kind (OBJMODE_DropFromChestTCWithQuality): a
@@ -315,6 +325,7 @@ export async function buildMaze({ areas, monsters, superuniques }) {
   // every member must be one the population handler places at all
   for (const g of Object.values(groups)) for (const o of g.objects) if ((OBJ.get(o.id).Gore ?? 0) > GORE_MAX) throw new Error(`objgroup ${g.id}: object ${o.id} has Gore above ${GORE_MAX}`);
   for (const id of PRESET_OBJECTS) want(id, 'a west block preset');
+  for (const id of REACH_OBJECTS) want(id, 'an object the hero reaches by its size');
 
   // ───────────────────────── shrines ─────────────────────────
   // D2 indexes Shrines.txt by row and dispatches on its Code (DATATBLS_GetShrinesTxtRecord,
@@ -614,11 +625,12 @@ export interface D2xObjGroup {
  * Tome, A1Q5.cpp:80), explodingBarrel 7 (2829-2889: it hurts everything within 3 subtiles and sets off
  * the exploding barrels within 2), stone 9 (a Cairn Stone, A1Q4.cpp:690), torch 11 (2916-2939: a fire
  * lit or put out; the fires a chest's trap lights, which burn the players near them,
- * OBJMODE_UpdateTrapProximity 328-351), corpse 14 (2585-2614), well 22 (3711-3808); placeholder, a
+ * OBJMODE_UpdateTrapProximity 328-351), corpse 14 (2585-2614), portal 15, well 22 (3711-3808), waypoint 23,
+ * stash 32 (the Bank; those three the game's own, here for their sizes); placeholder, a
  * preset's stand-in that becomes another object (Objects.cpp:215-249); none, nothing to use.
  */
 export type D2xObjectKind =
-  | 'casket' | 'shrine' | 'urn' | 'chest' | 'barrel' | 'tome' | 'explodingBarrel' | 'stone' | 'torch' | 'corpse' | 'well' | 'placeholder' | 'none';
+  | 'casket' | 'shrine' | 'urn' | 'chest' | 'barrel' | 'tome' | 'explodingBarrel' | 'stone' | 'torch' | 'corpse' | 'portal' | 'well' | 'waypoint' | 'stash' | 'placeholder' | 'none';
 
 /**
  * An object (Objects.txt row). Sizes are D2 subtiles (a tile is 5×5). Three function numbers say what

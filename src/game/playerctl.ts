@@ -7,7 +7,8 @@ import { applyDamage, playerPierce, playerStrike, playerWeaponPacket } from './c
 import type { Game } from './game';
 import type { Item } from '../items/item';
 import type { Monster } from './monster';
-import { DelayedBlast, Hammer, Projectile, type ProjKind } from './objects';
+import { DelayedBlast, Hammer, Projectile, type ProjKind, type WorldObject } from './objects';
+import { inReach } from './reach';
 import { face, faceNow, moveBy, stepToward } from './movement';
 import type { ChargeUse, Player } from './player';
 import { castAnim, toSeconds } from './d2/frames';
@@ -734,8 +735,12 @@ export function updatePlayer(g: Game, p: Player, dt: number) {
       break;
     }
     case 'interact': {
-      const o = it.obj as { pos: P2; radius: number };
-      if (stepToward(g, p, o.pos, speed, dt, o.radius + 0.75, 6000)) {
+      // used once the hero stands where D2 lets a player use it (reach.ts inReach: an object within
+      // two subtiles of its edge, a townsperson, the hero's body, a warp tile each by its own
+      // distance), walking on toward it till then; its very spot is in reach of everything
+      const o = it.obj as WorldObject;
+      const indoors = g.level.areaAt(o.pos.x, o.pos.z).kind === 'dungeon';
+      if (inReach(p.pos, o, indoors) || stepToward(g, p, o.pos, speed, dt, 0.05, 6000) || inReach(p.pos, o, indoors)) {
         g.interact(it.obj as never);
         p.intent = null;
         p.setState('idle');

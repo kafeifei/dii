@@ -1007,7 +1007,8 @@ section('Dungeons: maze rows, object groups, objects and monster sequences, as 2
   );
 
   const obad = [];
-  const want = new Set([...Object.values(OG).flatMap((g) => g.objects.map((o) => o.id)), 580, 581, 397, 17, 18, 19, 20, 21, 22, 8]);
+  // the presets' and the ones the hero reaches by their size (the town portal, the waypoints, the stash: src/game/reach.ts)
+  const want = new Set([...Object.values(OG).flatMap((g) => g.objects.map((o) => o.id)), 580, 581, 397, 17, 18, 19, 20, 21, 22, 8, 59, 119, 157, 267]);
   for (const o of Object.values(OB)) for (const c of [...(o.cluster ?? []), ...(o.becomes ?? []), ...(o.healAs ? [o.healAs] : [])]) want.add(c);
   // the shrines the wilderness's cells hold (the shrines section below)
   for (const id of X.D2X_WILD_SHRINES.objects) want.add(id);
@@ -1035,7 +1036,7 @@ section('Dungeons: maze rows, object groups, objects and monster sequences, as 2
       mismatch(obad, w, 'flags', [r.Selectable0, r.HasCollision0, r.HasCollision1, r.IsAttackable0, r.PreOperate].map((v) => !!v), [o.selectable, o.blocks, o.blocksOpen, o.attackable, o.preOperate].map((v) => !!v));
     }
     // OperateFn's kind and its drop (ObjMode.cpp:79-157; 2450, 2596, 1296, 2568, 2816)
-    const kind = { 0: 'none', 1: 'casket', 2: 'shrine', 3: 'urn', 4: 'chest', 5: 'barrel', 6: 'tome', 7: 'explodingBarrel', 9: 'stone', 11: 'torch', 14: 'corpse', 22: 'well' }[r.OperateFn ?? 0];
+    const kind = { 0: 'none', 1: 'casket', 2: 'shrine', 3: 'urn', 4: 'chest', 5: 'barrel', 6: 'tome', 7: 'explodingBarrel', 9: 'stone', 11: 'torch', 14: 'corpse', 15: 'portal', 22: 'well', 23: 'waypoint', 32: 'stash' }[r.OperateFn ?? 0];
     mismatch(obad, w, 'kind', o.id >= 573 ? 'placeholder' : kind, o.kind);
     const drop = { casket: 100, corpse: 100, chest: o.sparkly ? 100 : 75, urn: 21, barrel: 21 }[o.kind];
     mismatch(obad, w, 'drop', drop, o.drop);
