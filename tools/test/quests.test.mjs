@@ -10,7 +10,7 @@
 // rooms, diagonals too), whoever killed her; the free hireling once, none to a hero with one dead or
 // alive, the level-8 rule lifted; its flags through a reload, the title and the difficulties, each
 // difficulty's apart; the names from the rename table; every line our own, filled, and on the
-// review page, each one spoken with its takes, Kashya's listed to be recorded.
+// review page, each one spoken with its takes, Kashya's among them.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -140,15 +140,9 @@ export default async (load) => {
       check(row?.includes(`| ${fillLine(l).zh} |`), `the review page doesn't give ${take} beside its words: ${row}`);
     });
   }
-  // the lines to be recorded later (Kashya's): on the page as 未录 with the take they'll be, in a cell
-  // tools/audio/list.mjs doesn't read as a recording (it takes a row whose cell starts with the take)
-  for (const s of DLG.unvoicedLines()) {
-    const take = `${npcLine(s.npc, s.id, s.quest)}.1`;
-    const row = review.split('\n').find((r) => r.includes(`\`${take}\``));
-    check(row?.includes(`| ${fillLine(s.lines[0]).zh} |`) && row.includes(`| 未录：M2a 收尾时配音，录音是 \`${take}\` |`), `the review page doesn't list ${take} to be recorded beside its words: ${row}`);
-    check(!DLG.spokenLines().some((x) => x.npc === s.npc && x.id === s.id), `${take} both spoken and to be recorded`);
-  }
-  check(DLG.unvoicedLines().map((s) => npcLine(s.npc, s.id, s.quest)).join() === 'voice.kashya.a1q2_intro,voice.kashya.a1q2_remind,voice.kashya.a1q2_remind_out,voice.kashya.a1q2_reward', `Kashya's lines to record: ${DLG.unvoicedLines().map((s) => s.id)}`);
+  // Kashya's four in the Sisters' Burial Grounds among them, as Akara's in the Den of Evil
+  const quest = (npc, q) => DLG.spokenLines().filter((s) => s.npc === npc && s.quest === q).map((s) => npcLine(s.npc, s.id, s.quest)).join();
+  check(quest('kashya', 'a1q2') === 'voice.kashya.a1q2_intro,voice.kashya.a1q2_remind,voice.kashya.a1q2_remind_out,voice.kashya.a1q2_reward' && quest('akara', 'a1q1').split(',').length === 4, `the quest lines spoken: ${quest('akara', 'a1q1')} ${quest('kashya', 'a1q2')}`);
 
   // ── the Den of Evil, played ──
   localStorage.clear();

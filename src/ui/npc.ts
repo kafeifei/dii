@@ -50,8 +50,9 @@ export class NpcPanel {
   private speech: Speech | null = null;
   /** the townsperson the hero is with, from the visit's first click until walking off: greeted once, bid farewell once */
   private visit: { obj: WorldObject; farewell: boolean } | null = null;
-  /** whose trade is open, from their menu: shut, the hero has left them */
+  /** whose trade is open, from their menu (the merchant's shop, Kashya's hirelings), and which panel it is: shut, the hero has left them */
   private trading: WorldObject | null = null;
+  private tradePanel: 'shop' | 'hire' = 'shop';
 
   constructor(
     private ui: UIContext & { openPanel(kind: 'shop' | 'hire'): void },
@@ -147,19 +148,14 @@ export class NpcPanel {
       if (t) this.say(t);
     });
     // a merchant is a townsperson who serves nothing else (Kashya serves her hirelings)
-    if (obj.kind === 'vendor' && !obj.serves) {
-      item('交易／修理', () => {
-        this.close(true);
-        this.trading = obj;
-        this.ui.openPanel('shop');
-      });
-    }
-    if (obj.serves?.includes('hire')) {
-      item('雇佣', () => {
-        this.close(true);
-        this.ui.openPanel('hire');
-      });
-    }
+    const trade = (panel: 'shop' | 'hire') => {
+      this.close(true);
+      this.trading = obj;
+      this.tradePanel = panel;
+      this.ui.openPanel(panel);
+    };
+    if (obj.kind === 'vendor' && !obj.serves) item('交易／修理', () => trade('shop'));
+    if (obj.serves?.includes('hire')) item('雇佣', () => trade('hire'));
     item('取消', () => this.close(), ' cancel');
     m.classList.add('open');
     this.place();
@@ -275,7 +271,7 @@ export class NpcPanel {
     if (g.paused) return;
     const p = g.player;
     const away = (o: WorldObject, d: number) => !g.level.objects.includes(o) || Math.hypot(o.pos.x - p.pos.x, o.pos.z - p.pos.z) > d + o.radius;
-    if (this.trading && this.ui.left !== 'shop') {
+    if (this.trading && this.ui.left !== this.tradePanel) {
       const o = this.trading;
       this.trading = null;
       if (!away(o, VISIT)) this.farewell(o);

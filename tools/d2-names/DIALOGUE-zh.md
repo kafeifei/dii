@@ -5,9 +5,8 @@
 - 全部是新写的，按游戏自己的口吻，不是暗黑 2 原文，也不是它的翻译。场合照原版（D2MOO `A1Q1.cpp` 的 64、65、71、76 号台词，`A1Q2.cpp` 的 81、82、87、92 号台词各在什么时候说），话是我们自己的。
 - 地名、人名不写死在台词里，用占位符 `{moor}` `{plains}` `{den}` `{graves}` `{camp}` `{akara}` `{kashya}` `{raven}`，显示时从改名表（`tools/d2-names/areas.json`、`npcs.json`、`monsters.json`）填进去；下面是填好之后的样子。`{n}` 是数目，这里按 3 填；`{name}` 是佣兵的名字，这里按「艾黎札」填。
 - 中文是游戏里显示、配音念的；英文写在旁边给配音说明用。字数是中文去掉空白后的字符数，含标点，按每秒约 5 个字估算时长；配了音的台词按录音的长度滚动。
-- 亚喀蕾说的每句都配了音（`tools/audio/list.mjs` 里的音色），配音照这一页的中文念（`tools/audio/list.mjs` 读这一页）。「配音」一栏是录音：`voice.akara.a1q1_intro.1` 就是 `public/audio/voice.akara.a1q1_intro.1.m4a`，后面是它的长度。
+- 亚喀蕾和柯霞说的每句都配了音（`tools/audio/list.mjs` 的 `SPEAKERS` 里各有音色），配音照这一页的中文念（`tools/audio/list.mjs` 读这一页）。「配音」一栏是录音：`voice.akara.a1q1_intro.1` 就是 `public/audio/voice.akara.a1q1_intro.1.m4a`，后面是它的长度。
 - 改了台词、重新生成这一页之后，录音念的还是旧词的那几条标「要重录」，没录过的标「未录」：运行 `node tools/ai-audio.mjs --budget <积分>` 录好，再生成一次这一页。
-- 柯霞的台词照 `docs/M2A.md`「声音」先写好放在这里审阅，M2a 收尾时再配音：「配音」一栏写「未录」和到时候的录音名，`tools/audio/list.mjs` 现在不录它们；配音时把它们移进 `src/data/dialogue.ts` 的 `spokenLines`，给她在 `tools/audio/list.mjs` 的 `SPEAKERS` 里定一个音色。没录之前，游戏里照字数估的时长滚动。
 - 配音把字念错时（多音字），在 `tools/audio/list.mjs` 的 `SAY_AS` 里给那句换一个只有正确读音的同音字，只给配音看，显示的还是原字；「配音」一栏写着换了哪个字。「读音查过」是逐个核对过的多音字读法：用 box 上的 Whisper 听写、定位每个字，再看那个音节的音高走向和元音的共振峰（记在 `tools/audio/made.json` 各条的 `check` 里）。
 
 ## 亚喀蕾：「涤荡邪巢」（Purge the Den of Iniquity）
@@ -23,10 +22,10 @@
 
 | 键 | 什么时候 | 中文 | English | 字数 | 配音 |
 | --- | --- | --- | --- | --- | --- |
-| `intro` | 「涤荡邪巢」完成以后第一次和柯霞说话，她马上说（交出任务；原版 81 号，立刻播放） | 你就是替亚喀蕾清了那个洞的外乡人？好。我不信嘴上说的，只认做出来的。绯鸦本是我们自己人，营里没有谁拉弓比她更稳。可她的心被什么东西攫走了，如今她守在凛寒原野那头的葬骨荒冢，把我们亲手埋下的姊妹一个个从土里拖出来，替她卖命。我的斥候没法朝昔日同袍的尸身放箭。你去。了结她，让那些坟重新安静下来。办成了，我的人就认你。 | So you are the stranger who cleared that cave for Akarelle? Good. I put no stock in talk, only in what gets done. Scarlet Raven was one of our own; no one in the stockade held a bow steadier. But something has seized her heart. Now she holds the Burial Barrows, beyond the Bitterfrost Plains, and drags the sisters we buried with our own hands out of the earth, one by one, to fight for her. My scouts cannot loose arrows at the bodies of their old comrades. You go. Finish her, and let those graves lie quiet again. Do that, and my people will know you as one of their own. | 157 | 未录：M2a 收尾时配音，录音是 `voice.kashya.a1q2_intro.1` |
-| `remind` | 接了任务还没出营地，点「交谈」（原版 82 号） | 葬骨荒冢在凛寒原野的那一头。出了营门，穿过血沼荒原一直往前走。记着，别站远了跟她对射，她从不失手。贴上去打。 | The Burial Barrows lie on the far side of the Bitterfrost Plains. Out through the gate, across Bloodmire Heath, and keep going. And remember: don't stand off and trade shots with her. She never misses. Get in close. | 54 | 未录：M2a 收尾时配音，录音是 `voice.kashya.a1q2_remind.1` |
-| `remindOut` | 出过营地或进过荒冢之后，点「交谈」（原版 87 号） | 她还站着，对吧？我在木栅上都闻得见那边翻起来的土腥味。别让我等太久。 | She is still standing, isn't she? Up on the palisade I can smell the turned earth from out there. Don't keep me waiting long. | 34 | 未录：M2a 收尾时配音，录音是 `voice.kashya.a1q2_remind_out.1` |
-| `reward` | 绯鸦死后回来和柯霞说话，她马上说，说完给一名免费的佣兵（已有佣兵就不给），往后不到 8 级也能雇佣；领赏这一趟没出营地前，点「交谈」她再说一遍（原版 92 号） | 探子回报，葬骨荒冢那边静下来了。……她曾是我们当中最好的一个，这一点我不会忘。你替我们做了我们下不去手的事。从今往后，我的斥候听你差遣：身边缺人手，就带一个走，这一个不收你的钱。 | My lookouts say the Burial Barrows have gone quiet. … She was the best of us once, and I will not forget it. You did what we could not bring ourselves to do. From now on my scouts are yours to call on: if you lack a hand at your side, take one with you, and this one costs you nothing. | 89 | 未录：M2a 收尾时配音，录音是 `voice.kashya.a1q2_reward.1` |
+| `intro` | 「涤荡邪巢」完成以后第一次和柯霞说话，她马上说（交出任务；原版 81 号，立刻播放） | 你就是替亚喀蕾清了那个洞的外乡人？好。我不信嘴上说的，只认做出来的。绯鸦本是我们自己人，营里没有谁拉弓比她更稳。可她的心被什么东西攫走了，如今她守在凛寒原野那头的葬骨荒冢，把我们亲手埋下的姊妹一个个从土里拖出来，替她卖命。我的斥候没法朝昔日同袍的尸身放箭。你去。了结她，让那些坟重新安静下来。办成了，我的人就认你。 | So you are the stranger who cleared that cave for Akarelle? Good. I put no stock in talk, only in what gets done. Scarlet Raven was one of our own; no one in the stockade held a bow steadier. But something has seized her heart. Now she holds the Burial Barrows, beyond the Bitterfrost Plains, and drags the sisters we buried with our own hands out of the earth, one by one, to fight for her. My scouts cannot loose arrows at the bodies of their old comrades. You go. Finish her, and let those graves lie quiet again. Do that, and my people will know you as one of their own. | 157 | `voice.kashya.a1q2_intro.1` 32.5 秒；「蕾」给配音写作「垒」；「候」给配音写作「后」；「朝」给配音写作「潮」；读音查过：亚喀蕾的蕾 lěi、好 hǎo、只认的只 zhǐ、没 méi、更 gèng、攫走了和办成了的了 le、葬 zàng、把 bǎ、埋 mái、一个个的一 yí、斥候的候 hòu、朝 cháo、了结 liǎojié、重新的重 chóng |
+| `remind` | 接了任务还没出营地，点「交谈」（原版 82 号） | 葬骨荒冢在凛寒原野的那一头。出了营门，穿过血沼荒原一直往前走。记着，别站远了跟她对射，她从不失手。贴上去打。 | The Burial Barrows lie on the far side of the Bitterfrost Plains. Out through the gate, across Bloodmire Heath, and keep going. And remember: don't stand off and trade shots with her. She never misses. Get in close. | 54 | `voice.kashya.a1q2_remind.1` 10.5 秒；「血」给配音写作「谑」；读音查过：葬 zàng、血 xuè、出了和站远了的了 le、那 nà、记着的着 zhe、从 cóng、不 bù |
+| `remindOut` | 出过营地或进过荒冢之后，点「交谈」（原版 87 号） | 她还站着，对吧？我在木栅上都闻得见那边翻起来的土腥味。别让我等太久。 | She is still standing, isn't she? Up on the palisade I can smell the turned earth from out there. Don't keep me waiting long. | 34 | `voice.kashya.a1q2_remind_out.1` 6.6 秒；读音查过：还 hái、站着的着 zhe、木栅的栅 zhà、都 dōu、闻得见的得 de |
+| `reward` | 绯鸦死后回来和柯霞说话，她马上说，说完给一名免费的佣兵（已有佣兵就不给），往后不到 8 级也能雇佣；领赏这一趟没出营地前，点「交谈」她再说一遍（原版 92 号） | 探子回报，葬骨荒冢那边静下来了。……她曾是我们当中最好的一个，这一点我不会忘。你替我们做了我们下不去手的事。从今往后，我的斥候听你差遣：身边缺人手，就带一个走，这一个不收你的钱。 | My lookouts say the Burial Barrows have gone quiet. … She was the best of us once, and I will not forget it. You did what we could not bring ourselves to do. From now on my scouts are yours to call on: if you lack a hand at your side, take one with you, and this one costs you nothing. | 89 | `voice.kashya.a1q2_reward.1` 18.1 秒；读音查过：曾 céng、当中的当 dāng、最好的好 hǎo、差遣的差 chāi、下来了和做了的了 le；斥候的候念成 hóu（像「赤猴」），要重录 |
 
 ## 屏幕上的提示（不配音）
 
@@ -63,6 +62,19 @@
 | `farewell1` | 同上 | 愿你一路无伤。 | May you walk the road unharmed. | 7 | `voice.akara.farewell.2` 1.9 秒 |
 | `farewell2` | 同上 | 记得活着回来。 | Remember to come back alive. | 7 | `voice.akara.farewell.3` 1.7 秒；读音查过：着 zhe |
 
+## 柯霞：问候和告别（只有声音，不显示）
+
+照亚喀蕾的做法（原版她的是 `kashya_greeting_*`）：问候和告别都是新写的，斥候队长的口吻，话短。从菜单打开雇佣不算离开，关上时告别。
+
+| 键 | 什么时候 | 中文 | English | 字数 | 配音 |
+| --- | --- | --- | --- | --- | --- |
+| `greeting0` | 这一趟第一次打开她的菜单时（她一开口就有任务上的话要说时不问候）；走开再回来算新的一趟 | 有话就说。 | If you have something to say, say it. | 5 | `voice.kashya.greeting.1` 1.2 秒；读音查过：说 shuō |
+| `greeting1` | 同上 | 说吧，我在听。 | Go on. I'm listening. | 7 | `voice.kashya.greeting.2` 1.6 秒；读音查过：说 shuō |
+| `greeting2` | 同上 | 你还活着。 | You're still alive. | 5 | `voice.kashya.greeting.3` 1.2 秒；读音查过：还 hái、着 zhe |
+| `farewell0` | 这一趟第一次离开她时：取消、Esc、走开，或关上她的雇佣 | 去吧，别死在外头。 | Go. Don't die out there. | 9 | `voice.kashya.farewell.1` 1.9 秒；读音查过：外头的头 tou |
+| `farewell1` | 同上 | 眼睛放亮些。 | Keep your eyes sharp. | 6 | `voice.kashya.farewell.2` 1.3 秒 |
+| `farewell2` | 同上 | 速去速回。 | Go fast, and come back fast. | 5 | `voice.kashya.farewell.3` 1.4 秒 |
+
 ## 任务日志（不配音）
 
 | 键 | 什么时候 | 中文 | English | 字数 |
@@ -80,4 +92,4 @@
 | `sisters.missed` | 「众姊妹之冢」：绯鸦死时主角离得太远，这一趟算完成、没有奖励 | 绯鸦倒下时你不在她近旁，这一次不算你的。下一趟冒险再来。 | You were not near Scarlet Raven when she fell, so this time it does not count for you. Try again on your next venture. | 28 |
 | `sisters.done` | 「众姊妹之冢」：领过奖励 | 任务完成。柯霞的斥候从此听你差遣。 | Quest complete. Khassia's scouts are yours to call on. | 17 |
 
-共 1114 字；配音 13 条，都已录好；另有 4 条等 M2a 收尾时配音。
+共 1151 字；配音 23 条，都已录好。

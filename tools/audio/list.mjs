@@ -66,6 +66,8 @@ export const SPEAKERS = {
    * a little slower than she reads, as an elder speaks
    */
   akara: { voice: 'Sarah', settings: { speed: 0.92 } },
+  /** 柯霞 (Khassia), the captain of the camp's scouts, Kashya's counterpart: hard and clipped */
+  kashya: { voice: 'River', settings: { speed: 1.05 } },
 };
 
 /** the speakers with a column in the heroes' script (tools/audio/voice-lines.md), in its order */
@@ -81,6 +83,17 @@ export const SAY_AS = {
   // eleven_v4 read 血 in 血沼荒原 as xuě (雪沼, the 3rd tone rising before 沼's), in takes of two
   // seeds; here it's xuè, as the intro reads it. 谑 is only ever xuè
   'voice.akara.a1q1_remind': [['血沼', '谑沼']],
+  // given so before their first takes, each at a word the voice was likely to misread: 血沼 as above;
+  // 朝 before 昔日 is cháo (toward), but on its own 朝 is zhāo (morning) first, and 朝昔 reads like
+  // 朝夕 (zhāoxī). 潮 is only ever cháo. Then, in the intro's first take (River, eleven_v4), 斥候's
+  // 候 rose 165→208 Hz (hóu, heard as 赤猴) where hòu falls; 后 is only ever hòu. 蕾 dipped and rose
+  // again, nearer léi than lěi; 垒 is only ever lěi
+  'voice.kashya.a1q2_remind': [['血沼', '谑沼']],
+  'voice.kashya.a1q2_intro': [
+    ['朝昔', '潮昔'],
+    ['斥候', '斥后'],
+    ['亚喀蕾', '亚喀垒'],
+  ],
 };
 
 /**

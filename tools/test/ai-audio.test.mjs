@@ -192,20 +192,23 @@ export default async (load) => {
     });
   }
 
-  // the townsfolk's lines as the game says them: the list asks for each of Akara's, filled as shown
-  // (it reads them off the review page, which tools/test/quests.test.mjs holds to the lines), under
-  // the id the game plays it by (npcLine), her greetings and farewells a take each; nothing else
+  // the townsfolk's lines as the game says them: the list asks for each of Akara's and Kashya's,
+  // filled as shown (it reads them off the review page, which tools/test/quests.test.mjs holds to
+  // the lines), under the id the game plays it by (npcLine), their greetings and farewells a take
+  // each; nothing else. Akara: her four in the Den of Evil, three small talk, greetings, farewells;
+  // Kashya: her four in the Sisters' Burial Grounds, greetings, farewells
   const DLG = await load('/src/data/dialogue.ts');
   const { fillLine } = await load('/src/game/quests/quest.ts');
   const { npcLine } = await load('/src/audio/sounds.ts');
   const town = Object.fromEntries(DLG.spokenLines().map((s) => [npcLine(s.npc, s.id, s.quest), s.lines]));
-  check(Object.keys(town).length === 9 && town['voice.akara.a1q1_remind_out'] && town['voice.akara.gossip2'], `the lines spoken aloud: ${Object.keys(town).join(' ')}`);
+  const hers = ['a1q2_intro', 'a1q2_remind', 'a1q2_remind_out', 'a1q2_reward', 'greeting', 'farewell'].map((k) => `voice.kashya.${k}`);
+  check(Object.keys(town).length === 15 && town['voice.akara.a1q1_remind_out'] && town['voice.akara.gossip2'] && hers.every((id) => town[id]), `the lines spoken aloud: ${Object.keys(town).join(' ')}`);
   for (const [id, lines] of Object.entries(town)) {
     const e = list.find((e) => e.id === id);
     const want = lines.map((l) => fillLine(l).zh);
     check(JSON.stringify(e?.texts) === JSON.stringify(want), `tools/audio/list.mjs: ${id} says ${JSON.stringify(e?.texts)}, the game ${JSON.stringify(want)}`);
   }
-  check(DLG.GREETINGS.akara.greeting.length === 3 && DLG.GREETINGS.akara.farewell.length === 3, 'Akara has not three greetings and three farewells');
+  for (const who of ['akara', 'kashya']) check(DLG.GREETINGS[who]?.greeting.length === 3 && DLG.GREETINGS[who].farewell.length === 3, `${who} has not three greetings and three farewells`);
   // a word the voice misreads is given it respelled (SAY_AS): the take records the line as shown and what the voice was given
   const { SAY_AS = {} } = await import(`${path.join(root, 'tools/audio/list.mjs')}?t=${Date.now()}`);
   for (const [id, pairs] of Object.entries(SAY_AS)) {
@@ -220,6 +223,9 @@ export default async (load) => {
   const stray = list.filter((e) => e.kind === 'voice' && !HEROES.includes(e.id.split('.')[1]) && !(e.id in town));
   check(!stray.length, `tools/audio/list.mjs: townsfolk's lines the game doesn't say: ${stray.map((e) => e.id).join(' ')}`);
   check(!!SPEAKERS.akara?.voice && !HEROES.includes('akara'), `Akara's voice: ${JSON.stringify(SPEAKERS.akara)}`);
+  // each speaker a voice of their own: Kashya's none of the heroes' nor Akara's
+  const voices = Object.entries(SPEAKERS).map(([who, s]) => [who, s.voice]);
+  check(new Set(voices.map(([, v]) => v)).size === voices.length && !!SPEAKERS.kashya?.voice && !HEROES.includes('kashya'), `two speakers share a voice: ${JSON.stringify(voices)}`);
 
   // the music that ships: made by ACE-Step, credited as such with its seed, streamed whole (no loop points)
   for (const e of list.filter((e) => e.kind === 'music')) {
