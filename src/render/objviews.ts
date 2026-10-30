@@ -62,9 +62,34 @@ export function makeObjectView(r: Renderer, o: WorldObject): ObjView {
         lid.rotation.x = -1.9;
         looted();
       }
+      // its trap fires, once its fire trap has gone off (WorldObject.fires): a glow on the ground under
+      // each and flames licking up, the large one's taller (D2's FireLarge and FireSmall)
+      let lit = 0;
+      const glows: THREE.Sprite[] = [];
+      const due: number[] = [];
+      const flames = (dt: number, ob: WorldObject) => {
+        const fires = ob.fires ?? [];
+        for (; lit < fires.length; lit++) {
+          const f = fires[lit];
+          const glow = glowSprite('#ff6a20', f.large ? 2.2 : 1.5, f.large ? 0.8 : 0.6);
+          glow.position.set(f.x - o.pos.x, 0.45, f.z - o.pos.z);
+          g.add(glow);
+          glows.push(glow);
+          due.push(0);
+        }
+        for (const [i, f] of fires.entries()) {
+          const s = f.large ? 1 : 0.7;
+          // flames at a steady rate, whatever the frame rate: 50 a second from the large one, 35 from the small
+          for (due[i] += dt * (f.large ? 50 : 35); due[i] >= 1; due[i]--) {
+            r.fx.add.spawn({ x: f.x + (Math.random() - 0.5) * 0.5 * s, y: 0.2 + Math.random() * 0.2, z: f.z + (Math.random() - 0.5) * 0.5 * s, vy: (1.8 + Math.random() * 2) * s, color: Math.random() < 0.4 ? '#ffc050' : '#ff5010', size: (0.55 + Math.random() * 0.5) * s, life: 0.6, drag: 1, gravity: -1.5, endSize: 0.2 });
+          }
+          glows[i].material.opacity = (f.large ? 0.72 : 0.52) + Math.random() * 0.12;
+        }
+      };
       return {
         group: g,
         update: (dt, ob) => {
+          flames(dt, ob);
           if (!ob.used) {
             // a spark chest (580's or 397, WorldObject.sparkly) glitters until it's opened, as D2's does (bSparkChest)
             if (ob.sparkly && Math.random() < dt * 9) {

@@ -8,8 +8,14 @@
 // casket tried until it opens, the grave dug, the corpse searched, the well drunk from with the hero
 // hurt (a drink taken, the glint on while one is left), the locked chest refused without a key and
 // opened with one (the key gone), the spark chests opened, the barrel broken (no drop). What dropped
-// all lands. Page and console errors fail the run. Shots: the row with nothing used, each hovered
-// with its name, the row used. The last line is "OBJECTS OK …" or "OBJECTS FAIL …".
+// all lands. Then three trapped spark chests, the game run on the scenario's steps: a trap of fire
+// bolts (the chest drops, the bolt leaves it 35 frames on, none before, and burns the hero), of fire
+// (two fires on the chest that burn the hero in them, not 3 m off) and of trap monsters (one or two
+// zombies at the chest); and five exploding barrels a cluster's step apart, a plain one beside: the
+// first broken, the five go off, the plain one stays, a monster by them is struck, the hero 2 m off
+// isn't. Page and console errors fail the run. Shots: the row with nothing used, each hovered with its
+// name, the row used, each trap going off, the barrels before, in and after the chain. The last line
+// is "OBJECTS OK …" or "OBJECTS FAIL …".
 
 export default async function (page, shot, log) {
   const t0 = Date.now();
@@ -237,6 +243,199 @@ export default async function (page, shot, log) {
     expect(left === 0, `the models back, ${left} stand-ins left`);
     await shot('objects-swapped-near');
     facts.push(`${waiting} stand-ins with the models out, ${left} once back`);
+
+    step = 'chest traps';
+    // three trapped spark chests (they always drop) 2.2 m round the hero, the rows taken away: a trap of
+    // fire bolts (2), of fire (5) and of trap monsters (8), each opened and the game run on the scenario's
+    // steps (Game.headless) to 35 frames on and past (containers.ts armTrap, updateTraps)
+    const traps = await ev(() => {
+      const S = window.__o;
+      const L = game.level;
+      const p = game.player;
+      L.objects = L.objects.filter((o) => !S.row.includes(o) && !(S.row2 ?? []).includes(o));
+      // what the row dropped, counted above, taken off the floor: the shots below are of the traps and the barrels
+      L.ground = [];
+      const mid = { ...p.pos };
+      // the trial floor's trap monster, as the Crypt's (spawn.ts trapMonster reads the kinds it drew)
+      const area = L.areaAt(mid.x, mid.z);
+      const rep = L.spawned.get(area.id);
+      if (rep) rep.kinds = ['zombie1', ...rep.kinds];
+      const at = (dx, dz) => L.map.nearestWalkable(mid.x + dx, mid.z + dz) ?? { x: mid.x + dx, z: mid.z + dz };
+      const chest = (trap, pos) => {
+        const o = new S.O.WorldObject('chest', pos, S.C.objectName('chest', { d2: 176 }) ?? '', 0.45);
+        Object.assign(o, { d2: 176, sparkly: 'unique', trap });
+        L.objects.push(o);
+        return o;
+      };
+      S.bolt = chest(2, at(2.2, 0));
+      S.fire = chest(5, at(-2.2, 0));
+      S.mons = chest(8, at(0, 2.2));
+      /** the game run `secs` on 1/60 s steps, the page's loop held, as tools/bot.mjs runs it */
+      S.step = (secs) => {
+        const was = game.headless;
+        game.headless = true;
+        try {
+          for (let k = 0; k < Math.round(secs * 60); k++) game.update(1 / 60);
+        } finally {
+          game.headless = was;
+        }
+      };
+      return { mid, kinds: rep?.kinds.slice(0, 3) };
+    });
+    await ev(() => (window.renderer.zoomTarget = 5));
+    await frames(30);
+    // the fire bolt: set off as the chest opens, out of it 35 frames on, at the hero
+    const bolt = await ev(() => {
+      const S = window.__o;
+      const L = game.level;
+      const p = game.player;
+      p.life = p.stats.maxLife;
+      const g0 = L.ground.length;
+      game.interact(S.bolt);
+      const r = { dropped: L.ground.length - g0, waiting: S.C.trapWaiting(L, S.bolt) };
+      // (what it dropped counted, taken off the floor with the rest so the shots show the trap, not the labels)
+      L.ground = [];
+      S.step(1.3);
+      r.early = L.projectiles.filter((x) => x.kind === 'firebolt').length;
+      S.step(0.2);
+      r.flying = L.projectiles.filter((x) => x.kind === 'firebolt' && x.owner === null).length;
+      r.life0 = p.life;
+      return r;
+    });
+    await frames(3);
+    await shot('trap-firebolt');
+    const boltHit = await ev(() => {
+      const S = window.__o;
+      const p = game.player;
+      // a step at a time until it's gone: what the hero lost in the step it went (their regeneration a frame's)
+      let taken = 0;
+      for (let k = 0; k < 120; k++) {
+        const flying = game.level.projectiles.some((x) => x.kind === 'firebolt');
+        if (!flying) break;
+        const before = p.life;
+        S.step(1 / 60);
+        if (!game.level.projectiles.some((x) => x.kind === 'firebolt')) taken = before - p.life;
+      }
+      return { taken, left: game.level.projectiles.filter((x) => x.kind === 'firebolt').length };
+    });
+    expect(bolt.dropped > 0 && bolt.waiting && bolt.early === 0 && bolt.flying === 1 && boltHit.left === 0 && boltHit.taken > 0, `the fire bolt trap: ${JSON.stringify(bolt)}, then ${JSON.stringify(boltHit)}`);
+    facts.push(`a fire bolt trap: ${bolt.dropped} dropped, the bolt out at 35 frames, ${boltHit.taken.toFixed(1)} fire taken`);
+    // fire: the large fire on the chest and the small one beside it, burning the hero who steps in
+    const fire = await ev(() => {
+      const S = window.__o;
+      const L = game.level;
+      const p = game.player;
+      const g0 = L.ground.length;
+      game.interact(S.fire);
+      const r = { dropped: L.ground.length - g0 };
+      L.ground = [];
+      S.step(2);
+      r.fires = S.fire.fires?.length ?? 0;
+      return r;
+    });
+    await ev(() => {
+      const f = window.__o.fire.pos;
+      game.teleportWithin(game.level.map.nearestWalkable(f.x + 1.3, f.z + 0.6) ?? f);
+    });
+    await frames(20);
+    await shot('trap-fire');
+    const burnt = await ev(() => {
+      const S = window.__o;
+      const p = game.player;
+      p.pos = { x: S.fire.pos.x + 0.1, z: S.fire.pos.z };
+      p.life = p.stats.maxLife;
+      // a step at a time for 6 s: each drop of life a burn (their regeneration only adds)
+      let burns = 0;
+      let lost = 0;
+      for (let k = 0; k < 360; k++) {
+        const before = p.life;
+        S.step(1 / 60);
+        if (p.life < before - 1e-6) {
+          burns++;
+          lost += before - p.life;
+        }
+      }
+      // and out of them, 3 m off, none
+      p.pos = game.level.map.nearestWalkable(S.fire.pos.x + 3, S.fire.pos.z) ?? p.pos;
+      let after = 0;
+      for (let k = 0; k < 180; k++) {
+        const before = p.life;
+        S.step(1 / 60);
+        if (p.life < before - 1e-6) after++;
+      }
+      return { burns, lost, after };
+    });
+    expect(fire.dropped > 0 && fire.fires >= 1 && burnt.burns > 0 && burnt.after === 0, `the fire trap: ${JSON.stringify(fire)}, the hero in it ${JSON.stringify(burnt)}`);
+    facts.push(`a fire trap: ${fire.fires} fires, the hero in them burnt ${burnt.burns} times in 6 s (${burnt.lost.toFixed(0)} life), none 3 m off`);
+    // the trap monsters: one or two of the floor's risen at the chest
+    const mons = await ev(() => {
+      const S = window.__o;
+      const L = game.level;
+      const p = game.player;
+      p.pos = { ...S.fire.pos, x: S.fire.pos.x + 2.6 };
+      game.teleportWithin(L.map.nearestWalkable(S.mons.pos.x, S.mons.pos.z - 2) ?? p.pos);
+      const n0 = L.monsters.length;
+      const g0 = L.ground.length;
+      game.interact(S.mons);
+      const r = { dropped: L.ground.length - g0 };
+      L.ground = [];
+      S.step(1.5);
+      const risen = L.monsters.slice(n0);
+      for (const m of risen) m.stunTime = 1e9;
+      r.risen = risen.map((m) => m.def.id);
+      return r;
+    });
+    await frames(20);
+    await shot('trap-monsters');
+    expect(mons.dropped > 0 && (mons.risen.length === 1 || mons.risen.length === 2), `the trap monsters: ${JSON.stringify(mons)} (kinds ${traps.kinds?.join(' ')})`);
+    facts.push(`a trap of monsters: ${mons.risen.join(' ')}`);
+
+    step = 'a barrel chain';
+    // five exploding barrels 2 subtiles apart and one a step aside: the first broken, all go off; a held
+    // monster stood beside them is struck; the hero 2 m off isn't
+    const chain = await ev(() => {
+      const S = window.__o;
+      const L = game.level;
+      const p = game.player;
+      const c = L.map.nearestWalkable(S.fire.pos.x, S.fire.pos.z + 3) ?? { ...S.fire.pos };
+      game.teleportWithin({ x: c.x, z: c.z - 2 });
+      const sub = (v) => (Math.floor(v * 4) + 0.5) / 4;
+      const o0 = { x: sub(c.x - 1), z: sub(c.z) };
+      S.chain = [0, 2, 4, 6, 8].map((dx) => {
+        const o = new S.O.WorldObject('barrel', { x: o0.x + dx * 0.25, z: o0.z }, S.C.objectName('barrel', { d2: 11 }) ?? '', 0.35);
+        Object.assign(o, { d2: 11, exploding: true });
+        L.objects.push(o);
+        return o;
+      });
+      const plain = new S.O.WorldObject('barrel', { x: o0.x + 2.5, z: o0.z }, S.C.objectName('barrel', { d2: 7 }) ?? '', 0.35);
+      Object.assign(plain, { d2: 7 });
+      L.objects.push(plain);
+      S.plain = plain;
+      const m = L.monsters.find((x) => !x.dead && !x.def.still);
+      if (m) {
+        m.pos = { x: o0.x + 1, z: o0.z + 0.5 };
+        m.life = m.maxLife;
+      }
+      S.struck = m;
+      return { monster: m?.def.id ?? null, life: m?.life ?? 0 };
+    });
+    await frames(30);
+    await shot('barrels-before');
+    const blown = await ev(() => {
+      const S = window.__o;
+      const L = game.level;
+      const p = game.player;
+      const life0 = p.life;
+      const g0 = L.ground.length;
+      game.interact(S.chain[0]);
+      return { gone: S.chain.filter((b) => b.used).length, plain: S.plain.used, hero: life0 - p.life, monster: S.struck ? S.struck.maxLife - S.struck.life : null, dropped: L.ground.length - g0 };
+    });
+    await frames(4);
+    await shot('barrel-chain');
+    await frames(40);
+    await shot('barrel-chain-after');
+    expect(blown.gone === 5 && !blown.plain && blown.hero === 0 && (chain.monster === null || blown.monster > 0), `the chain: ${JSON.stringify(blown)} (${JSON.stringify(chain)})`);
+    facts.push(`a chain of ${blown.gone} exploding barrels, the plain one beside it whole, ${chain.monster ?? 'no monster'} struck for ${blown.monster?.toFixed(1)}, the hero 2 m off untouched`);
   } catch (e) {
     fails.push(`${step}: ${e.message}`);
   }
