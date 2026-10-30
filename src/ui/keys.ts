@@ -2,6 +2,8 @@ import { bindName, SLOT_KEYS } from './common';
 import { answerTrade, tradeAsked } from './inventory';
 import { openQuestLog } from './questlog';
 import { saveSettings } from './settings';
+import { toggleMercPanel } from './merc';
+import { beltToMerc } from '../game/merc';
 import type { UI } from './ui';
 
 // The HUD's panel buttons and the keyboard.
@@ -93,10 +95,23 @@ export function onKey(ui: UI, e: KeyboardEvent) {
     ui.dirty = true;
     return;
   }
+  // Shift and a belt key: its potion to the hireling (D2's bUseOnMerc; by the key's place, as Shift
+  // turns 1 into ! and the game's own belt keys never see it; a layout whose shifted key is the digit
+  // itself leaves it to them)
+  const belt = /^Digit([1-4])$/.exec(e.code);
+  if (belt && e.shiftKey && !/^[1-4]$/.test(e.key)) {
+    beltToMerc(ui.game, Number(belt[1]) - 1);
+    ui.dirty = true;
+    return;
+  }
   switch (k) {
     case 'i':
     case 'b':
       pressButton(ui, 'inv');
+      break;
+    // the hireling's panel (D2R's O)
+    case 'o':
+      toggleMercPanel(ui);
       break;
     case 'c':
       pressButton(ui, 'char');

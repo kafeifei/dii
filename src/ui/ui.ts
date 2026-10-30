@@ -15,7 +15,7 @@ import { renderChar } from './character';
 import { h, type LeftPanel, type RightPanel, type UIContext } from './common';
 import { renderCube } from './cube';
 import { renderHire } from './hire';
-import { renderMerc } from './merc';
+import { MercPortrait, renderMerc } from './merc';
 import { DebugPanel } from './debug';
 import { Hud, SkillPicker } from './hud';
 import { CELL } from './icons';
@@ -72,6 +72,8 @@ export class UI implements GameHooks, UIContext {
   automap!: Automap;
   banner!: AreaBanner;
   riftBar!: RiftBar;
+  /** the hireling's portrait, top left (src/ui/merc.ts) */
+  mercPortrait!: MercPortrait;
   menu!: PauseMenu;
   settingsPanel!: SettingsPanel;
   debugPanel: DebugPanel | null = null;
@@ -252,6 +254,7 @@ export class UI implements GameHooks, UIContext {
     this.automap = new Automap(this.game, r);
     this.banner = new AreaBanner(r);
     this.riftBar = new RiftBar(this.game, r);
+    this.mercPortrait = new MercPortrait(this, r);
     this.npc = new NpcPanel(this, this.renderer);
     r.appendChild(this.npc.el);
 
@@ -522,6 +525,7 @@ export class UI implements GameHooks, UIContext {
     this.automap.update(dt);
     this.banner.update();
     this.riftBar.update();
+    this.mercPortrait.update();
   }
 }
 

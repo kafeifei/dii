@@ -298,8 +298,12 @@ export default async (load) => {
     const { BUILT_DUNGEONS } = await load('/src/world/built-dungeons.ts');
     const { CAVE_1 } = await load('/src/world/areas.ts');
     check(M.levelSeed(0xffffffff, 9) === 8 && M.levelSeed(1000, 18) === 1018, `levelSeed: ${M.levelSeed(0xffffffff, 9)}, ${M.levelSeed(1000, 18)}`);
-    // the quests' word on the hireling (QuestHost), stubs until she is played
-    check(game.hasMerc() === false && game.giveFreeMerc() === false, 'hasMerc or giveFreeMerc is not the stub');
+    // the quests' word on the hireling (QuestHost, src/game/merc.ts): none; the Sisters' reward gives
+    // one, once (none to a hero who has one, D2GAME_NPC_AssignMercenary); let go again after
+    check(game.hasMerc() === false, 'a hero with no hireling has one');
+    check(game.giveFreeMerc() === true && game.hasMerc() === true && game.giveFreeMerc() === false, "the Sisters' reward: none, or given twice");
+    game.player.merc = null;
+    game.merc = null;
     check(Object.keys(M.DUNGEON_MAKERS).join() === '8,9,13,18,19' && BUILT_DUNGEONS.join() === '8,9,13,18,19', `the makers: ${Object.keys(M.DUNGEON_MAKERS)}, built ${BUILT_DUNGEONS}`);
     const made = [];
     const real = M.DUNGEON_MAKERS[CAVE_1];

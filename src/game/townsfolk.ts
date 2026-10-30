@@ -1,6 +1,7 @@
 import { npcLine, type VoiceId } from '../audio/sounds';
 import { CAMP_VENDORS, fillStore } from '../items/vendor';
 import type { Game } from './game';
+import { healMerc } from './merc';
 import type { WorldObject } from './objects';
 import type { Topic } from './quests/quest';
 
@@ -62,11 +63,21 @@ export function npcLeft(g: Game, obj: WorldObject) {
   if (obj.npcId) g.quests.left(obj.npcId);
 }
 
-/** like Akara in Diablo II: talking to the merchant puts life and mana back to full and cures poison, chill and the rest */
+/**
+ * like Akara in Diablo II: talking to the merchant puts life and mana back to full and cures poison,
+ * chill and the rest, the hireling's with the hero's (PLAYERPETS_IteratePets … SUNITNPC_PetIterate_Heal,
+ * D2Game UNIT/SUnitNpc.cpp:2775). Only the healers heal (D2GAME_NPC_Heal, 2784-2802): Kashya, who hires
+ * out (WorldObject.serves), doesn't
+ */
 function vendorHeal(g: Game, vendor: WorldObject) {
+  if (vendor.serves?.includes('hire')) return;
   const p = g.player;
   const s = p.stats;
-  if (p.life >= s.maxLife && p.mana >= s.maxMana && p.poisonTime <= 0 && p.chillTime <= 0 && p.bleedTime <= 0 && p.slowTime <= 0) return;
+  const merc = healMerc(g);
+  if (p.life >= s.maxLife && p.mana >= s.maxMana && p.poisonTime <= 0 && p.chillTime <= 0 && p.bleedTime <= 0 && p.slowTime <= 0) {
+    if (merc) g.sfx.play('env.vendor_heal', { pos: p.pos });
+    return;
+  }
   p.life = s.maxLife;
   p.mana = s.maxMana;
   p.poisonTime = p.chillTime = p.bleedTime = p.slowTime = p.stunTime = 0;

@@ -14,7 +14,7 @@ import { DEV_MODELS } from './dev-models';
 import { MODEL_PACKS } from './model-list';
 import type { ModelSpec } from './models';
 import { decorModels, groundModels, MODELS } from './props';
-import { monsterSpec, npcSpec, playerSpec, vendorSpec } from './specs';
+import { kashyaSpec, mercSpec, monsterSpec, npcSpec, playerSpec, vendorSpec } from './specs';
 
 /**
  * Which models what the game shows is made of, so they are asked for before it's built: what the
@@ -54,6 +54,15 @@ export function specNeeds(spec: ModelSpec): ModelKey[] {
 }
 
 /**
+ * What the hireling is drawn with (src/render/friends.ts, specs.ts mercSpec): her own file, streamed in
+ * the background with the monsters' (not in the core); asked for at once when a hero with her is on a
+ * map before it is in, her stand-in drawn meanwhile
+ */
+export function mercNeeds(): ModelKey[] {
+  return specNeeds(mercSpec());
+}
+
+/**
  * The models a maze's objects are drawn with (objviews.ts), the closest the packs have, each at the size
  * the furnishings use it (src/world/furnish.ts): a casket the dungeon pack's coffin, the grave among the
  * caskets the graveyard's grave and its broken one once opened, a well the camp's well. A rogue's corpse
@@ -67,7 +76,7 @@ export const OBJECT_MODELS = {
 } as const satisfies Record<string, ModelKey>;
 
 /** what an object's view is made of (Renderer.makeObjectView); the way down from under the sky has braziers */
-export function objectNeeds(o: Pick<WorldObject, 'kind' | 'corpse' | 'hole'>, outdoor: boolean): ModelKey[] {
+export function objectNeeds(o: Pick<WorldObject, 'kind' | 'corpse' | 'hole'> & Partial<Pick<WorldObject, 'serves'>>, outdoor: boolean): ModelKey[] {
   switch (o.kind) {
     case 'chest':
     case 'stash':
@@ -83,7 +92,8 @@ export function objectNeeds(o: Pick<WorldObject, 'kind' | 'corpse' | 'hole'>, ou
     case 'obelisk':
       return [MODELS.obelisk];
     case 'vendor':
-      return specNeeds(vendorSpec());
+      // Kashya is the camp rogue's body (specs.ts kashyaSpec), in the core with the camp's people
+      return specNeeds(o.serves?.includes('hire') ? kashyaSpec() : vendorSpec());
     case 'corpse':
       return o.corpse ? specNeeds(playerSpec({ cls: o.corpse.cls, equipment: o.corpse.equipment } as Player)) : [];
     // a maze's caskets and their graves, and wells (OBJECT_MODELS); a rogue's corpse is drawn in code

@@ -11,7 +11,7 @@ import { OBJECT_MODELS, specNeeds } from './needs';
 import { assetProp, glowSprite, makeBarrel, makeBrazier, makeChest, makePortal, makeStairs, makeWaypoint, MODELS, sharedResource, stdMat } from './props';
 import type { Renderer } from './renderer';
 import { Rig, type AnimInput, type RigLook } from './rig';
-import { playerSpec, vendorSpec } from './specs';
+import { KASHYA_BUILD, kashyaSpec, playerSpec, vendorSpec } from './specs';
 import { glowTexture } from './textures';
 import { CAM_YAW, tintOwn } from './views';
 
@@ -227,8 +227,11 @@ export function makeObjectView(r: Renderer, o: WorldObject): ObjView {
       return view;
     }
     case 'vendor': {
-      // what its rig misses is noted for the view (makeObjView): it's made again once that's in
-      const { rig } = makeCharRig(vendorSpec, vendorLook);
+      // what its rig misses is noted for the view (makeObjView): it's made again once that's in.
+      // Kashya, who hires out (serves 'hire'), is the camp rogue's body, taller, broader and tinted (specs.ts kashyaSpec)
+      const kashya = !!o.serves?.includes('hire');
+      const { rig } = makeCharRig(kashya ? kashyaSpec : vendorSpec, vendorLook);
+      if (kashya) rig.root.scale.set(KASHYA_BUILD.x, 1, KASHYA_BUILD.z);
       g.add(rig.root);
       const shadow = r.makeShadow(0.5);
       r.dynGroup.add(shadow);

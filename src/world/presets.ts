@@ -35,10 +35,9 @@ export interface CampPreset {
   npcs: Npc[];
   services: Service[];
   /**
-   * Kashya's place (docs/M2A-STEP0.md 2.12): her hirelings' service, where the camp's rogue stands now
-   * (its npcs' 'rogue', the npc_rogue she is to be drawn from: docs/M2A.md 美术), named by her row
-   * (tools/d2-names/npcs.json). Not among `services` yet: M2a's M line puts her there, in that rogue's
-   * place, once hiring is played, so the camp is as it was until then
+   * Kashya's place (docs/M2A-STEP0.md 2.12): her hirelings' service, among `services`, where the camp's
+   * rogue stood (its npcs' 'rogue', the npc_rogue she is drawn from: docs/M2A.md 美术; that rogue is
+   * gone from `npcs`), named by her row (tools/d2-names/npcs.json)
    */
   hire: Service;
   waypoint: P2;
@@ -64,6 +63,7 @@ export function campPreset(): CampPreset {
   const rogue = (L.npcs ?? []).find((n) => n.model === 'rogue');
   if (!rogue) throw new Error("campPreset: the camp has no rogue where Kashya is to stand");
   const kashya = D2X_MONSTERS.kashya;
+  const hire: Service = { kind: 'hire', pos: { x: rogue.x, z: rogue.z }, npc: kashya.name, npcId: kashya.id };
   camp = {
     w: map.w,
     h: map.h,
@@ -72,9 +72,10 @@ export function campPreset(): CampPreset {
     props: L.props.filter(mine),
     decor: L.decor,
     houses: L.houses ?? [],
-    npcs: L.npcs ?? [],
-    services: L.services,
-    hire: { kind: 'hire', pos: { x: rogue.x, z: rogue.z }, npc: kashya.name, npcId: kashya.id },
+    // Kashya stands where the rogue stood, one of the camp's services (M2a's M line)
+    npcs: (L.npcs ?? []).filter((n) => n !== rogue),
+    services: [...L.services, hire],
+    hire,
     waypoint: L.waypoints[0].pos,
     start: L.start,
     // the exit's normal points back in; the road leaves the other way, from the map's edge

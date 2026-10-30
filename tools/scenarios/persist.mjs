@@ -2,8 +2,11 @@
 // (tools/play.mjs scenario):
 //   node tools/play.mjs tools/scenarios/persist.mjs --url "http://localhost:5174/"
 // Clears this browser's storage first (play.mjs runs its own profile). A new paladin touches Cold
-// Plains' waypoint: a reload plays on with it, and so does the title's "continue" after saving and
-// quitting. A copy of the tab (opened from it, carrying its sessionStorage, as a duplicated tab
+// Plains' waypoint and hires a scout, a bow, a cap and armour put on her from the cursor (src/game/merc.ts):
+// a reload plays on with the waypoint and her, and so does the title's "continue" after saving and
+// quitting; she is on the map beside the hero each time, her gear the same, every item of the hero's
+// (hers among them) there once and in the save once, as again after the hand-over below and the old
+// tab's trip through the back-forward cache. A copy of the tab (opened from it, carrying its sessionStorage, as a duplicated tab
 // does) starts at the title, not in the game, and lists the hero as played in another window. Gold
 // picked up in the first tab and not yet autosaved is then in the copy once it takes the hero over:
 // the first tab saves it, hands it over and stops behind its notice, writing nothing more; brought
@@ -61,6 +64,32 @@ export default async function (page, shot, log) {
       return d && { waypoints: d.progress?.[d.difficulty ?? 0]?.waypoints ?? [], gold: d.gold };
     });
 
+  /**
+   * the hireling as a tab has her (src/game/merc.ts): who she is and her gear, and every item of the
+   * hero's by uid, the hireling's and the cursor's among them, against the save's (each once)
+   */
+  const mercNow = (pg) =>
+    pg.evaluate(async () => {
+      const M = await import('/src/game/merc.ts');
+      const g = window.game;
+      const st = g.player.merc;
+      const mine = M.heroItems(g).map((i) => i.uid).sort();
+      const d = JSON.parse(localStorage.getItem('dii-save-v1') || 'null');
+      const saved = d
+        ? [...Object.values(d.equipment), ...[...d.inventory, ...d.stash, ...d.cube].map((x) => x.item), ...d.unplaced, ...d.belt.flat(), ...Object.values(d.merc?.equipment ?? {}), ...(d.corpse ? Object.values(d.corpse.equipment ?? {}) : [])].map((i) => i.uid).sort()
+        : [];
+      return { merc: st && { hire: st.hire, name: st.name, level: st.level, dead: st.dead, gear: Object.values(st.equipment).map((i) => i.uid).sort() }, onMap: !!g.merc && g.merc.kept === st, mine, saved };
+    });
+  /** what the hireling was hired and geared as, and the hero's items then */
+  let mercWant = null;
+  /** she and the items as they were: on the map with the hero, her gear the same, no item lost or twice, here and in the save */
+  const mercKept = async (pg, where) => {
+    const n = await mercNow(pg);
+    expect(JSON.stringify(n.merc) === JSON.stringify(mercWant.merc) && n.onMap, `${where}: the hireling ${JSON.stringify(n.merc)} (on the map ${n.onMap}), was ${JSON.stringify(mercWant.merc)}`);
+    expect(n.mine.join() === mercWant.mine.join(), `${where}: the hero has ${n.mine.length} items, had ${mercWant.mine.length}`);
+    expect(n.saved.join() === n.mine.join(), `${where}: the save holds ${n.saved.length} items (${n.saved.length - new Set(n.saved).size} twice), the hero ${n.mine.length}`);
+  };
+
   try {
     step = 'new hero';
     await page.evaluate(() => {
@@ -86,10 +115,37 @@ export default async function (page, shot, log) {
     expect(touched?.includes(3), `Cold Plains' waypoint not touched: ${JSON.stringify(touched)}`);
     expect((await stored(page))?.waypoints.includes(3), 'the touched waypoint is not in the save');
 
+    step = 'a hireling hired and geared';
+    // level 8 with gold, at Kashya's list (src/game/merc.ts hire), a bow, a cap and armour put on her from the cursor
+    const hiredAs = await page.evaluate(async () => {
+      const M = await import('/src/game/merc.ts');
+      const { createItem } = await import('/src/items/gen.ts');
+      const g = window.game;
+      g.player.level = 8;
+      g.player.gold = 6000;
+      const r = M.hire(g, M.offers(g)[0].entry.name);
+      if (!r.ok) return r.why;
+      // she is made on the map again by the game's own module (a page's import of merc.ts may be
+      // another copy of it, its Merc not the game's: placeMerc)
+      g.merc = null;
+      g.update(1 / 60);
+      for (const id of ['sbw', 'cap', 'qui']) {
+        g.hooks.setCursorItem(createItem(id));
+        const out = M.handToMerc(g, g.hooks.getCursorItem());
+        if (out.refused || g.hooks.getCursorItem()) return `${id}: ${out.refused}`;
+      }
+      return 'ok';
+    });
+    expect(hiredAs === 'ok', `hiring and gearing her: ${hiredAs}`);
+    mercWant = await mercNow(page);
+    expect(mercWant.merc?.gear.length === 3 && mercWant.onMap, `she isn't geared: ${JSON.stringify(mercWant.merc)}`);
+    expect(mercWant.saved.join() === mercWant.mine.join(), `saved as hired: ${mercWant.saved.length} items, the hero ${mercWant.mine.length}`);
+
     step = 'reload';
     await page.reload();
     await started(page);
     expect((await page.evaluate(() => game.player.waypoints)).includes(3), 'a reload lost the waypoint');
+    await mercKept(page, 'a reload');
 
     step = 'title and continue';
     await page.keyboard.press('Escape');
@@ -98,7 +154,8 @@ export default async function (page, shot, log) {
     await page.click('.overlay.open .saves .btn.pick');
     await started(page);
     expect((await page.evaluate(() => game.player.waypoints)).includes(3), 'saving, quitting and continuing lost the waypoint');
-    facts.push('waypoint kept through a reload and the title');
+    await mercKept(page, 'the title');
+    facts.push('waypoint and a geared hireling kept through a reload and the title');
 
     step = 'a copy of the tab';
     const [page2] = await Promise.all([page.waitForEvent('popup'), page.evaluate(() => void window.open(location.href, '_blank'))]);
@@ -123,6 +180,7 @@ export default async function (page, shot, log) {
     await page2.waitForTimeout(500);
     expect((await page2.evaluate(() => game.player.gold)) === gold, `the copy has ${await page2.evaluate(() => game.player.gold)} gold, not ${gold}: the first tab's last moments were lost`);
     expect((await page2.evaluate(() => game.player.waypoints)).includes(3), 'the copy lost the waypoint');
+    await mercKept(page2, 'the hand-over');
     const first = await page.evaluate(() => ({ paused: game.paused, notice: !!document.querySelector('.hero-gone.open') }));
     expect(first.paused && first.notice, `the first tab plays on: ${JSON.stringify(first)}`);
     // the first tab writes nothing more: its gold changed now never reaches the save
@@ -155,7 +213,9 @@ export default async function (page, shot, log) {
     const reclaimed = await claims(page2);
     const copyNow = await page2.evaluate(() => ({ paused: game.paused, notice: !!document.querySelector('.hero-gone.open') }));
     expect(JSON.stringify(reclaimed) === JSON.stringify(claimed) && !copyNow.paused && !copyNow.notice, `the first tab back from the back-forward cache took the hero back: claims ${JSON.stringify(claimed)} → ${JSON.stringify(reclaimed)}, the copy ${JSON.stringify(copyNow)}`);
-    facts.push('the old tab back from the back-forward cache leaves the hero with the copy');
+    await page2.evaluate(() => game.save());
+    await mercKept(page2, 'the back-forward cache');
+    facts.push('the old tab back from the back-forward cache leaves the hero with the copy, the hireling with her gear');
 
     step = 'back to the title';
     await Promise.all([page.waitForEvent('load'), page.click('.hero-gone .btn')]);

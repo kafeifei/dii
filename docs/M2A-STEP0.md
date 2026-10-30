@@ -104,8 +104,8 @@ M2a 的决定见 `docs/M2A.md`，本文是第 0 步的做法。代码依据是 a
 | 标成死亡、`monsterDied`、特效、死亡声、强化怪死亡爆炸、首领消息并存档 | 有 | 有 | 有 |
 | 主角经验（`killXp`） | 有 | 有（佣兵杀的也给主角全份） | 无 |
 | 佣兵经验（`killShare`） | 86/256 | 全份 | 无 |
-| `procKill`、每杀回血回蓝、杀恶魔回血 | 有 | 无（推断，待查 D2MOO） | 无 |
-| 掉落 | 主角的寻宝率 | 待查 D2MOO（推断：佣兵的） | 无 |
+| `procKill`、每杀回血回蓝、杀恶魔回血 | 有 | 主角的都没有；她自己装备的每杀回血、杀恶魔回血回她（查过 D2MOO，见第 5 节） | 无 |
+| 掉落 | 主角的寻宝率 | 她的寻宝率加主角的（查过 D2MOO，见第 5 节） | 无 |
 | `quests.monsterKilled(m, killer)`、`rift.killed` | 有 | 有 | 有 |
 
 测试：hero-d2 加两段，一段是 `null` 击杀（没有经验、没有掉落，任务照算），一段是佣兵击杀（主角拿全份经验）。
@@ -331,7 +331,10 @@ M2a 的决定见 `docs/M2A.md`，本文是第 0 步的做法。代码依据是 a
 ## 5. 要查清的（推断）
 
 - 「佣兵在营地里也不算目标」：对照 D2MOO 的 `AIUTIL_CanSelectHostileTarget`。
-- 佣兵击杀时：掉落用谁的寻宝率；每杀回血回蓝是不是只算杀手本人。
+- 佣兵击杀时：掉落用谁的寻宝率；每杀回血回蓝是不是只算杀手本人。**M 线查过 D2MOO（d9d394f）**：
+  - 掉落：怪死时的目标就是杀手（D2Game UNIT/SUnitDmg.cpp:1862 `modeChange.pTargetUnit = pAttacker`），掉落以它为 `pPlayer`（MONSTER/MonsterMode.cpp:572）；`D2GAME_DropTC` 用杀手的 `STAT_ITEM_MAGICBONUS` 再加它主人的（ITEMS/Items.cpp:2334-2341，`AIGENERAL_GetMinionOwner`），金币也一样（2549-2556）；佣兵的主人是雇她的主角（MONSTER/MonsterAI.cpp:127）。所以是她的加主角的。任务掉落看主人的任务记录（MonsterMode.cpp:534-560）。
+  - 每杀回血回蓝、杀时施放：这些属性的事件挂在穿戴它的单位身上（ITEMS/ItemMode.cpp:92-101），击杀时只对攻击者触发（SUnitDmg.cpp:1400 `SUNITEVENT_Trigger(UNITEVENT_KILL, pAttacker)`；UNIT/SUnitEvent.cpp:122-142）。所以她杀的不触发主角的；她自己装备的每杀回血、杀恶魔回血回她（SKILLS/SkillItem.cpp:1491-1557），每杀回蓝只给英雄（SkillItem.cpp:1460）。`kills.ts` 照这样做了。
+  - 经验：佣兵先分（SUnitDmg.cpp:2981-2988，没有距离限制，死的不分），主角再拿全份（2990-2991）。
 - 小地图上佣兵、棺材、井在 D2 里怎么画。
 - 绯鸦领奖说的「地块」：建议按 D2 房间 10 米算，不按大地图 8 米的单元格算。
 - 界面上的「码」：D2 怎么把子格换成说明里的码，留给 A5 去查。
