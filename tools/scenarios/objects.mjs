@@ -66,6 +66,21 @@ export default async function (page, shot, log) {
       S.O = await import('/src/game/objects.ts');
       S.N = (await import('/src/data/d2x/objects.ts')).D2X_OBJECT_NAMES;
       S.make = (await import('/src/items/gen.ts')).createItem;
+      /**
+       * the nearest spot to `want`, looking round it out to `reach` m, that `ok` takes, else null: what
+       * the steps below set down goes on open ground this way, as the first row does, never on the
+       * nearest walkable spot alone, which on the floor's random room can be past one of its walls (a
+       * trap's bolt flew into the wall; a barrel walked up to was come at round a corner, not head-on)
+       * or on top of what was set down before (a shrine hovered showed the one on it)
+       */
+      S.find = (want, ok, reach = 6) => {
+        for (let r = 0; r <= reach; r += 0.25)
+          for (let a = 0; a < (r ? 16 : 1); a++) {
+            const q = { x: want.x + Math.cos((a * Math.PI) / 8) * r, z: want.z + Math.sin((a * Math.PI) / 8) * r };
+            if (ok(q)) return q;
+          }
+        return null;
+      };
       S.said = [];
       const message = game.hooks.message.bind(game.hooks);
       game.hooks.message = (t, c, d) => {
@@ -265,7 +280,15 @@ export default async function (page, shot, log) {
       const area = L.areaAt(mid.x, mid.z);
       const rep = L.spawned.get(area.id);
       if (rep) rep.kinds = ['zombie1', ...rep.kinds];
-      const at = (dx, dz) => L.map.nearestWalkable(mid.x + dx, mid.z + dz) ?? { x: mid.x + dx, z: mid.z + dz };
+      // each on open ground with a clear way to the hero, apart from the others (S.find)
+      const set = [];
+      const at = (dx, dz) => {
+        const off = (q) => Math.hypot(q.x - mid.x, q.z - mid.z);
+        const q = S.find({ x: mid.x + dx, z: mid.z + dz }, (q) => off(q) >= 1.5 && off(q) <= 5 && L.map.circleClear(q.x, q.z, 0.35) && L.map.los(mid, q) && set.every((t) => Math.hypot(t.x - q.x, t.z - q.z) > 1.2));
+        if (!q) throw new Error(`no open ground in sight of the hero for a chest ${dx}, ${dz} off`);
+        set.push(q);
+        return q;
+      };
       const chest = (trap, pos) => {
         const o = new S.O.WorldObject('chest', pos, S.C.objectName('chest', { d2: 176 }) ?? '', 0.45);
         Object.assign(o, { d2: 176, sparkly: 'unique', trap });
@@ -410,10 +433,21 @@ export default async function (page, shot, log) {
       const S = window.__o;
       const L = game.level;
       const p = game.player;
-      const c = L.map.nearestWalkable(S.fire.pos.x, S.fire.pos.z + 3) ?? { ...S.fire.pos };
-      game.teleportWithin({ x: c.x, z: c.z - 2 });
       const sub = (v) => (Math.floor(v * 4) + 0.5) / 4;
-      const o0 = { x: sub(c.x - 1), z: sub(c.z) };
+      // where the barrels, the monster and the hero 2 m off stand round `c`: on open ground, nothing set
+      // down before on it, the monster in sight of every barrel (S.find)
+      const strip = (c) => {
+        const o0 = { x: sub(c.x - 1), z: sub(c.z) };
+        const barrels = [0, 0.5, 1, 1.5, 2, 2.5].map((dx) => ({ x: o0.x + dx, z: o0.z }));
+        const mon = { x: o0.x + 1, z: o0.z + 0.5 };
+        const hero = { x: c.x, z: c.z - 2 };
+        const ok = [...barrels, mon, hero].every((q) => L.map.circleClear(q.x, q.z, 0.3) && L.objects.every((o) => Math.hypot(o.pos.x - q.x, o.pos.z - q.z) > 0.8)) && barrels.every((b) => L.map.los(b, mon));
+        return ok ? o0 : null;
+      };
+      const c = S.find({ x: S.fire.pos.x, z: S.fire.pos.z + 3 }, strip);
+      if (!c) throw new Error('no open ground for the barrels');
+      game.teleportWithin({ x: c.x, z: c.z - 2 });
+      const o0 = strip(c);
       S.chain = [0, 2, 4, 6, 8].map((dx) => {
         const o = new S.O.WorldObject('barrel', { x: o0.x + dx * 0.25, z: o0.z }, S.C.objectName('barrel', { d2: 11 }) ?? '', 0.35);
         Object.assign(o, { d2: 11, exploding: true });
@@ -460,11 +494,20 @@ export default async function (page, shot, log) {
       const S = window.__o;
       const L = game.level;
       const p = game.player;
-      const c = L.map.nearestWalkable(S.fire.pos.x, S.fire.pos.z - 3) ?? { ...S.fire.pos };
+      // head-on: the barrel and the hero 3 m off along x on open ground, the way between them clear of
+      // walls, of what was set down before and of the monsters (S.find)
+      const lane = (c) => {
+        const from = { x: c.x + 3, z: c.z };
+        const along = [0, 0.5, 1, 1.5, 2, 2.5, 3].map((d) => ({ x: c.x + d, z: c.z }));
+        const clear = (q) => L.objects.every((o) => Math.hypot(o.pos.x - q.x, o.pos.z - q.z) > 1) && L.monsters.every((m) => m.dead || Math.hypot(m.pos.x - q.x, m.pos.z - q.z) > 1.5);
+        return L.map.circleClear(c.x, c.z, 0.45) && L.map.circleClear(from.x, from.z, 0.45) && L.map.los(from, c, 0.4) && along.every(clear);
+      };
+      const c = S.find({ x: S.fire.pos.x, z: S.fire.pos.z - 3 }, lane);
+      if (!c) throw new Error('no open way 3 m long for the barrel walked up to');
       const o = new S.O.WorldObject('barrel', c, S.C.objectName('barrel', { d2: 11 }) ?? '', 0.35);
       Object.assign(o, { d2: 11, exploding: true });
       L.objects.push(o);
-      game.teleportWithin(L.map.nearestWalkable(c.x + 3, c.z) ?? { x: c.x + 3, z: c.z });
+      game.teleportWithin({ x: c.x + 3, z: c.z });
       p.intent = { kind: 'interact', obj: o };
       for (let k = 0; k < 6 * 60 && !o.used; k++) S.step(1 / 60);
       return { used: o.used, off: Math.hypot(p.pos.x - c.x, p.pos.z - c.z), inBlast: S.C.d2InRange(o.pos, p.pos, S.C.BLAST_RANGE) };
@@ -489,9 +532,14 @@ export default async function (page, shot, log) {
       L.projectiles = [];
       const mid = { ...p.pos };
       const kinds = D2X_SHRINES.filter((s) => s.name).map((s) => s.code);
+      // each on open ground, off the hero and as far from the others as the row's step (S.find)
+      const placed = [];
       const spot = (i) => {
         const want = { x: mid.x - 4 + (i % 7) * 1.35, z: mid.z - 2.4 + Math.floor(i / 7) * 2.2 };
-        return L.map.nearestWalkable(want.x, want.z) ?? want;
+        const q = S.find(want, (q) => L.map.circleClear(q.x, q.z, 0.4) && Math.hypot(q.x - mid.x, q.z - mid.z) > 1 && placed.every((t) => Math.hypot(t.x - q.x, t.z - q.z) >= 1.2));
+        if (!q) throw new Error(`no open ground for shrine ${i}`);
+        placed.push(q);
+        return q;
       };
       S.shrines = kinds.map((code, i) => {
         const o = new S.O.WorldObject('shrine', spot(i), S.SH.shrineName(code), 0.6);
