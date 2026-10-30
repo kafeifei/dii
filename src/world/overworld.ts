@@ -3,7 +3,7 @@ import { D2X_SUPERUNIQUES } from '../data/d2x/superuniques';
 import { BURIAL_GROUNDS, CAMP_AREA, CAVE_1, COLD_PLAINS, CRYPT, DEN_OF_EVIL, MAUSOLEUM, STONY_FIELD, UNDERGROUND_PASSAGE, WILD_AREA } from './areas';
 import { BUILT_WEST } from './built-west';
 import type { Prop } from './furnish';
-import { THEMES, type Decor, type House, type Layout, type Npc, type PresetMonster, type PresetSpot, type Room, type Service, type SuperUnique, type Waypoint } from './levelgen';
+import { THEMES, type Decor, type House, type Layout, type Npc, type PresetMonster, type PresetSpot, type Room, type Service, type ShrineSpot, type SuperUnique, type Waypoint } from './levelgen';
 import { growWoods } from './outdoors';
 import { campPreset } from './presets';
 import { TileMap } from './tilemap';
@@ -505,7 +505,7 @@ function compose(zones: Map<number, Zone>, boxes: AreaBox[], order: number[], se
   const decor: Decor[] = [];
   const chests: P2[] = [];
   const barrels: P2[] = [];
-  const shrines: P2[] = [];
+  const shrines: ShrineSpot[] = [];
   const elites: P2[] = [];
   const services: Service[] = [];
   const spawnRooms: Room[] = [];
@@ -542,7 +542,7 @@ function compose(zones: Map<number, Zone>, boxes: AreaBox[], order: number[], se
     for (const d of z0.decor) decor.push({ ...d, x: d.x + b.x, z: d.z + b.z });
     chests.push(...z0.chests.map((p) => moved(p, b)));
     barrels.push(...z0.barrels.map((p) => moved(p, b)));
-    shrines.push(...z0.shrines.map((p) => moved(p, b)));
+    shrines.push(...z0.shrines.map((p) => ({ ...p, ...moved(p, b) })));
     elites.push(...z0.elites.map((p) => moved(p, b)));
     services.push(...z0.services.map((s) => ({ ...s, pos: moved(s.pos, b) })));
     spawnRooms.push(...z0.spawnRooms.map((r) => ({ x: r.x + b.x, y: r.y + b.z, w: r.w, h: r.h })));

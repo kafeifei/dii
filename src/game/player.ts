@@ -3,7 +3,6 @@ import type { PlayerClass } from '../data/classes';
 import { D2_CLASS, D2_TO_GAME, skillTab } from '../data/d2/skillmap';
 import { EQUIP_SLOTS, ITEM_BASES, type EquipSlot } from '../data/items';
 import { SET_ITEMS } from '../data/legendary';
-import { SHRINE_BY_ID } from '../data/shrines';
 import { SKILL_BY_ID, SKILLS, type SkillDef } from '../data/skills';
 import { addStat, PARAM_STATS, poisonSeconds, type StatBag, type StatKey } from '../data/stats';
 import { Grid } from '../items/grid';
@@ -16,6 +15,7 @@ import { propMods, rollMax } from '../items/props';
 import { baseOf, classCode, globalItemStats, isIdentified, itemCategory, itemDefense, itemReqLvl, itemReqStats, meetsReqs, paramMods, weaponDamage, type Item, type ItemMod } from '../items/item';
 import { CAMP_AREA } from '../world/areas';
 import { Actor, type ActorState, type Resists } from './actor';
+import { blessingBonus, type Blessing } from './blessing';
 import type { Corpse } from './corpse';
 import type { MercState } from './merc';
 import { attackAnim, blockFrames, castAnim, FRAMES_PER_SEC, hitRecoveryFrames, toSeconds, weaponClass, type AnimFrames, type AttackSpeed, type WeaponClass } from './d2/frames';
@@ -206,8 +206,8 @@ export class Player extends Actor {
   ruled: Difficulty | null = null;
   /** the quest record of each difficulty, normal, nightmare and hell (src/game/quests/record.ts), as D2 keeps one each (pQuestData[3]) */
   quests: QuestRecords = newQuestRecords();
-  /** a shrine's blessing (one at a time) and its seconds left */
-  shrine: { id: string; left: number } | null = null;
+  /** a shrine's blessing (one at a time, the curse slot's: src/game/shrines.ts Blessing) and its seconds left; never saved, as D2 saves no states */
+  shrine: Blessing | null = null;
   // movement / action target
   intent: Intent | null = null;
   /** queued attack while animating */
@@ -489,9 +489,9 @@ export class Player extends Actor {
         if (setCounts[sid] >= +cnt) for (const [k, v] of bonus) addStat(bag, k, v);
       }
     }
-    // a shrine's blessing
-    const blessing = this.shrine ? SHRINE_BY_ID[this.shrine.id] : undefined;
-    for (const [k, v] of Object.entries(blessing?.stats ?? {})) addStat(bag, k as StatKey, v);
+    // a shrine's blessing (shrines.ts blessingBonus)
+    const blessing = blessingBonus(this.shrine);
+    for (const [k, v] of Object.entries(blessing.stats)) addStat(bag, k as StatKey, v);
     const skillsAll = bag.skillsAll ?? 0;
     // skill bonuses from items
     const myCls = this.cls === 'sorceress' ? 'sor' : 'pal';
@@ -632,7 +632,7 @@ export class Player extends Actor {
       if (it && it.defense !== undefined) armor += itemDefense(it, L, localPct.get(it)?.def ?? 0);
     }
     armor += bag.def ?? 0;
-    const def = defense(dex, armor, shieldDefPct + (blessing?.defPct ?? 0));
+    const def = defense(dex, armor, shieldDefPct + blessing.defPct);
 
     // block with a shield: (BlockFactor + block) × (dex − 15) / (2 × level), at most 75 (Units.cpp:2462-2478)
     const sh = eq.offhand;

@@ -26,7 +26,7 @@ export class GroundItem {
 
 export type ObjKind = 'chest' | 'barrel' | 'stairs' | 'waypoint' | 'vendor' | 'stash' | 'portal' | 'exit' | 'shrine' | 'corpse' | 'obelisk' | 'casket' | 'remains' | 'well';
 
-/** the kinds that are used once and then stay spent: chests, barrels, shrines, caskets, corpses searched, wells (theirs by charges, the O line's) */
+/** the kinds that are used once and then stay spent: chests, barrels, shrines (till one with a reset time is back, shrines.ts updateShrines), caskets, corpses searched, wells (theirs by charges, the O line's) */
 const ONCE = new Set<ObjKind>(['chest', 'barrel', 'shrine', 'casket', 'remains', 'well']);
 
 /** an object that is spent: used, of a kind used once (ONCE); it is no longer hovered nor offered to the touch button */
@@ -48,8 +48,8 @@ export class WorldObject {
   inward?: P2;
   /** a way on to an area this build has no map of yet: using it only says so */
   closed?: boolean;
-  /** shrines: which (src/data/shrines.ts) */
-  shrine?: string;
+  /** shrines: which, Shrines.txt Code (src/data/d2x/shrines.ts; what it does, src/game/shrines.ts) */
+  shrine?: number;
   /** vendors: who keeps the stall (the layout's Service.npc), for what they say and the shop's title */
   npc?: string;
   /** and their MonStats id (Service.npcId), which their quests and lines go by */

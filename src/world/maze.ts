@@ -854,7 +854,8 @@ export function generateMaze(spec: MazeSpec): MazeResult {
   // ── D2's objects, then our dressing round them, so the objects come at D2's density (Cave Level
   // 2's hall, one fixed map, is dressed first by its own seed, as D2's preset holds its own) ──
   const objSeed = new D2Seed(stream(spec.seed, 2));
-  const objs = new ObjectRoller(map, objSeed, { trap: maze.trap, lock: maze.lock });
+  // the shrines' kinds on a seed of their own, as D2 rolls them on its object control seed (objgroups.ts ObjectRoller)
+  const objs = new ObjectRoller(map, objSeed, { trap: maze.trap, lock: maze.lock }, { level: spec.area, control: new D2Seed(stream(spec.seed, 4)) });
   objs.occ.keep(from, 3);
   for (const e of entrances) objs.occ.keep({ x: e.x, z: e.z }, 3);
   for (const u of superUniques) objs.occ.keep(u.pos, 2);
@@ -1023,7 +1024,7 @@ export function generateMaze(spec: MazeSpec): MazeResult {
     barrels: objs.barrels.map((b) => ({ ...b.pos, d2: b.id, ...(b.exploding ? { exploding: true } : {}), ...(b.opened ? { opened: true } : {}) })),
     pillars,
     services: [],
-    shrines: objs.shrines.map((s) => ({ ...s.pos, kind: s.kind })),
+    shrines: objs.shrines.map((s) => ({ ...s.pos, kind: s.kind, d2: s.id, shrine: s.shrine })),
     caskets: objs.caskets,
     remains: objs.remains,
     wells: objs.wells,

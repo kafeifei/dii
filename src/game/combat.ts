@@ -15,6 +15,7 @@ import type { Game } from './game';
 import { Merc, mercDied, mercStruck, type Friendly } from './merc';
 import { Monster } from './monster';
 import { Player } from './player';
+import { endBlessing } from './blessing';
 
 /** Diablo II's chance to hit as odds (game/d2/stats.ts hitChance: 5–95 %, the levels counting) */
 export function hitOdds(ar: number, def: number, alvl: number, dlvl: number): number {
@@ -453,4 +454,7 @@ function curse(g: Game, m: Monster, p: Player) {
   }
   p.ampTime = Math.max(p.ampTime, c.seconds);
   p.ampRes = c.res;
+  // a curse takes the one curse slot, a shrine's blessing's (sub_6FD10EC0, D2Game Skills.cpp:1289-1345: the
+  // shrine states are curses, States.txt curse): the blessing ends
+  if (p.shrine) endBlessing(p);
 }

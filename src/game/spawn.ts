@@ -465,6 +465,60 @@ function middle(r: Room): P2 {
 }
 
 /**
+ * A monster the monster shrine makes stronger (D2GAME_SHRINES_Monster, ObjMode.cpp:1952-1972: its
+ * type flag made a unique's, MONSTERUNIQUE_AssignRandomUMods with champions allowed, MonsterUnique.cpp:
+ * 2094-2207, then MONSTERUNIQUE_SpawnMinions): one time in the MonUMod constant's a champion of a
+ * rolled kind, else a unique with the difficulty's count of modifiers and a name, 3–6 minions round it
+ * with what it passes on. D2 changes the monster itself; here one of its row, level and rank takes its
+ * place, its share of life kept, where it stands, its minions a new pack round it. The new one, or
+ * null when it has no look.
+ */
+export function promoteByShrine(level: Level, m: Monster, rng: RNG): Monster | null {
+  const d = level.difficulty;
+  const row = m.def.row;
+  const map = level.monsterMap;
+  const at: Placement = {
+    rooms: [],
+    camps: [],
+    uniques: [],
+    walk: () => 0,
+    area: 0,
+    randomIn: () => null,
+    near(c, r) {
+      for (let k = 0; k < 16; k++) {
+        const q = { x: c.x + rng.range(-r, r), z: c.z + rng.range(-r, r) };
+        if (map.walkableAt(q.x, q.z) && map.circleClear(q.x, q.z, 0.3) && map.los(c, q)) return q;
+      }
+      return { ...c };
+    },
+    roomOf: () => 0,
+  };
+  const report: SpawnReport = { kinds: [], rolls: 0, packs: 0, bossPacks: 0, bossAt: [], count: 0, superUniques: [], rooms: 0, superUniqueRooms: [] };
+  const s: Spawn = { level, rng, difficulty: d, region: trialRegion(m.level), kinds: [], lvl: () => m.level, at, count: 0, report };
+  const share = m.maxLife > 0 ? m.life / m.maxLife : 1;
+  const i = level.monsters.indexOf(m);
+  if (i < 0) return null;
+  const champion = P.isChampion(rng);
+  const pack: Monster[] = [];
+  const mods = champion ? [P.championType(row, d, rng)] : P.uniqueMods(row, d, rng);
+  const n = put(s, row.id, champion ? 'champion' : 'unique', { ...m.pos }, pack, mods);
+  if (!n) return null;
+  // in its place: the old one gone from the level (a new list, which the monster grid sorts anew) and its pack
+  level.monsters = level.monsters.filter((x) => x !== m);
+  if (m.pack) m.pack.splice(m.pack.indexOf(m), 1);
+  // nothing aims at the one gone (a hireling's target, a pack's leader): taken as gone, as dead, with no death of its own
+  m.dead = true;
+  n.life = Math.max(1, n.maxLife * share);
+  n.facing = m.facing;
+  n.awake = m.awake;
+  if (!champion) {
+    n.displayName = P.uniqueName(rng);
+    minions(s, n, P.uniqueMinions(row, rng), mods);
+  }
+  return n;
+}
+
+/**
  * A monster a map's preset sets down that isn't a superunique (Layout.presetMonsters: the Burial
  * Grounds' Blood Raven, D2's place_bloodraven), put on `level` where it says, awake to nothing yet: at
  * its D2 numbers for the area and difficulty (spawnLevel; a boss keeps its own level), a boss as one,

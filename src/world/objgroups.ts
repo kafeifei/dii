@@ -1,6 +1,7 @@
 import type { P2 } from '../core/math';
 import { M_PER_SUBTILE } from '../core/units';
 import { D2X_OBJECTS, D2X_OBJGROUPS, type D2xObject } from '../data/d2x/objects';
+import { HEALTH_SHRINE, rollShrine, shrineOfClass } from './shrinekinds';
 import type { TileMap } from './tilemap';
 
 /**
@@ -57,6 +58,8 @@ export interface PlacedRemains extends PlacedObject {
 export interface PlacedShrine extends PlacedObject {
   /** its kind by Parm0 (D2xObject.shrine); one made the level's healing shrine is 'health' */
   kind: 'any' | 'health' | 'mana' | 'magic';
+  /** the shrine it rolled as it appeared (Shrines.txt Code: src/game/shrines.ts rollShrine), the health shrine for the level's healing one */
+  shrine: number;
 }
 
 // what a box must keep clear of (D2Collision.h:38-76): COLLIDE_WALL | COLLIDE_OBJECT | COLLIDE_DOOR
@@ -152,10 +155,17 @@ export class ObjectRoller {
   private done = 0;
   private rooms = 0;
 
+  /**
+   * `rolls`: the level's chests' trap and lock %; `shrineRolls`: the D2 level its shrines roll their
+   * kinds in (a Levels.txt Id, against each one's LevelMin) and the seed they roll on, the game's object
+   * control seed in D2 (OBJECTS_GetShrineId, InitFn01: pObjectControl->pSeed, Objects.cpp:509, 568),
+   * not the room's the population rolls on (pRoom->pSeed, 1518-1521, 2104-2117)
+   */
   constructor(
     map: TileMap,
     private readonly seed: Rolls,
     private readonly rolls: { trap: number; lock: number },
+    private readonly shrineRolls: { level: number; control: Rolls },
   ) {
     this.occ = new Occupancy(map);
   }
@@ -255,7 +265,7 @@ export class ObjectRoller {
         this.wells.push({ pos, id: o.id });
         break;
       case 'shrine':
-        this.shrines.push({ pos, id: o.id, kind: o.shrine ?? 'any' });
+        this.shrines.push({ pos, id: o.id, kind: o.shrine ?? 'any', shrine: 0 });
         break;
     }
     return pos;
@@ -323,8 +333,8 @@ export class ObjectRoller {
   /**
    * PopulateFn2 (Objects.cpp:1512-1627): a shrine, at most 10 a level and ⌊rooms/8⌋ + 1, 50 subtiles
    * from another both ways (ObjRgn.cpp:196-251). Past ¾ of the rooms with no healing shrine it tries
-   * 30 times instead of 3, and one that isn't a healing shrine becomes one (its Parm1, else the
-   * healing well 84). One of orientation 1 or 2 stands against the room's low-y or low-x edge; our
+   * 30 times instead of 3, and one that hasn't rolled the health shrine becomes one (its Parm1,
+   * else the healing well 84), its kind the health shrine. One of orientation 1 or 2 stands against the room's low-y or low-x edge; our
    * rooms have their walls inside the room's box, so it slides in off the wall to where its box clears.
    */
   private shrine2(room: SubRoom, o: D2xObject) {
@@ -352,14 +362,23 @@ export class ObjectRoller {
         }
         if (!x || !y || x < room.x + 1 || y < room.y + 1 || x >= room.x + room.w - 1 || y >= room.y + room.h - 1) continue;
         if (this.occ.hits(x, y, w, h, M_PLACE) || this.shrineAt.some(([sx, sy]) => Math.abs(sx - x) < 50 || Math.abs(sy - y) < 50)) continue;
+        // its kind as it appears (InitFn01: SUNIT_AllocUnitData, 1579), then the healing count by that
+        // kind (InteractType 2, 1591-1594), or, past ¾ of the rooms with none yet, the object made the
+        // healing one, its kind the health shrine, after a roll D2 makes and drops (1595-1609)
+        const { level, control } = this.shrineRolls;
         let real = o;
-        if (o.shrine === 'health') this.healing++;
+        let shrine = rollShrine(o.id, level, control);
+        if (shrine === HEALTH_SHRINE) this.healing++;
         else if (heal) {
           real = D2X_OBJECTS[o.healAs ?? 84] ?? o;
+          shrineOfClass(2, 1, control);
+          shrine = HEALTH_SHRINE;
           this.healing++;
         }
         this.put(real, x, y);
-        this.shrines[this.shrines.length - 1].kind = heal || o.shrine === 'health' ? 'health' : (o.shrine ?? 'any');
+        const placed = this.shrines[this.shrines.length - 1];
+        placed.kind = heal || o.shrine === 'health' ? 'health' : (o.shrine ?? 'any');
+        placed.shrine = shrine;
         this.shrineAt.push([x, y]);
         return;
       }

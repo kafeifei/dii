@@ -1,4 +1,4 @@
-// What using the objects a map sets down does: chests, barrels, shrines, and a maze's caskets (and the
+// What using the objects a map sets down does: chests, barrels, and a maze's caskets (and the
 // graves among them), rogue corpses and wells, each by Diablo II's operate function for it (D2MOO
 // source/D2Game/src/OBJECTS/ObjMode.cpp at commit d9d394f: the table at 79-157), and what each is
 // called when hovered, from the rename tables (src/data/d2x/objects.ts D2X_OBJECT_NAMES, rule 5).
@@ -9,7 +9,6 @@ import { D2X_DIFFICULTIES } from '../data/d2x/difficulty';
 import { D2X_MONSTERS } from '../data/d2x/monsters';
 import { D2X_OBJECT_NAMES, D2X_OBJECTS } from '../data/d2x/objects';
 import { ITEM_BASES } from '../data/items';
-import { SHRINE_BY_ID } from '../data/shrines';
 import { MATH_RAND } from '../items/make';
 import { roll } from '../items/d2/rand';
 import type { Rand } from '../items/d2/types';
@@ -551,26 +550,4 @@ export function drinkWell(g: Game, obj: WorldObject) {
   refills.set(obj, due);
   g.sfx.play('env.well', { pos: obj.pos });
   g.fx.burst('well', obj.pos);
-}
-
-// ───────────────────────── shrines ─────────────────────────
-
-/** a shrine used, once: its blessing on the hero */
-export function useShrine(g: Game, obj: WorldObject) {
-  const p = g.player;
-  if (obj.used) return;
-  obj.used = true;
-  const def = SHRINE_BY_ID[obj.shrine ?? ''];
-  if (!def) return;
-  if (def.refill) {
-    p.life = p.stats.maxLife;
-    p.mana = p.stats.maxMana;
-  } else {
-    p.shrine = { id: def.id, left: def.secs };
-    p.markDirty();
-  }
-  g.fx.burst('aura_switch', p.pos, { color: def.color });
-  g.sfx.play('env.shrine', { pos: obj.pos });
-  g.hooks.message(`${def.name}：${def.desc}`, def.color, 3);
-  g.say('shrine');
 }

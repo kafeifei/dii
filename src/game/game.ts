@@ -27,6 +27,7 @@ import { npcLeft, npcSpoke, npcTalk, refreshShop, talkTo } from './townsfolk';
 import { castTownPortal, closePortals, enterArea, enterLevel, enterTrial, openTownPortal, readTownPortal, teleportWithin, travel, travelToArea, updateArea, walkExits, type Trip } from './travel';
 import { autoBeltInsert, beltInsert, drink, drinkable, dropBlock, dropFromBag, dropItem, heldGrids, layOutUnplaced, moveStashGold, pickupGround, readHeld, refuseDrop, spawnDrops, stashBlock, useBelt, type Finds } from './items';
 import { updateTraps } from './containers';
+import { updateBlessing, updateShrines } from './shrines';
 import { chargedBolts, clearCorpses, monstersAround, separate, updateAuras, updateBlasts, updateHammers, updateProjectiles } from './fight';
 import type { StatKey } from '../data/stats';
 import type { Elem } from '../data/monsters';
@@ -679,11 +680,9 @@ export class Game {
       return;
     }
     const p = this.player;
-    if (p.shrine && (p.shrine.left -= dt) <= 0) {
-      p.shrine = null;
-      p.markDirty();
-      this.hooks.message('神殿的祝福消失了', '#9a9080', 2);
-    }
+    // a shrine's blessing running down, and the shrines touched coming back (shrines.ts)
+    updateBlessing(this, dt);
+    updateShrines(L);
     updatePlayer(this, p, dt);
     updateMerc(this, dt);
     // self-repairing items mend a point now and then, on the shared pages too while they can change
