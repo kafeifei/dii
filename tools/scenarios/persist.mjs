@@ -125,6 +125,10 @@ export default async function (page, shot, log) {
       g.player.gold = 6000;
       const r = M.hire(g, M.offers(g)[0].entry.name);
       if (!r.ok) return r.why;
+      // she is made on the map again by the game's own module (a page's import of merc.ts may be
+      // another copy of it, its Merc not the game's: placeMerc)
+      g.merc = null;
+      g.update(1 / 60);
       for (const id of ['sbw', 'cap', 'qui']) {
         g.hooks.setCursorItem(createItem(id));
         const out = M.handToMerc(g, g.hooks.getCursorItem());
