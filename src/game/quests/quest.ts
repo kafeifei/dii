@@ -8,7 +8,7 @@ import type { HeroLine } from '../../audio/sounds';
 import { D2X_MONSTERS } from '../../data/d2x/monsters';
 import type { Line } from '../../data/dialogue';
 import type { QuestDef, QuestKey } from '../../data/quests';
-import { CAMP_AREA, DEN_OF_EVIL, WILD_AREA, areaDef, type AreaDef } from '../../world/areas';
+import { BURIAL_GROUNDS, CAMP_AREA, COLD_PLAINS, DEN_OF_EVIL, WILD_AREA, areaDef, type AreaDef } from '../../world/areas';
 import type { Killer } from '../actor';
 import type { Level } from '../level';
 import type { Monster } from '../monster';
@@ -28,6 +28,8 @@ export interface QuestHost {
   };
   say(line: HeroLine): void;
   save(): void;
+  /** the map the hero is on */
+  readonly level: Level;
   /** the map that holds area `id` in this game, if it has been made yet */
   mapOf(id: number): Level | null;
   /** the hero has a hireling, dead or alive (the Sisters' reward isn't given then: hireling.ts freeHireling) */
@@ -61,20 +63,30 @@ export interface LogEntry {
   text: string;
 }
 
-/** the names a line's placeholders stand for, from the rename tables: the areas' (AreaDef) and Akara's row (D2X_MONSTERS) */
+/** the names a line's placeholders stand for, from the rename tables: the areas' (AreaDef) and the people's rows (D2X_MONSTERS) */
 function names(): Record<string, [string, string]> {
   const area = (id: number): [string, string] => {
     const a = areaDef(id)!;
     return [a.name, a.en];
   };
-  const akara = D2X_MONSTERS.akara;
-  return { camp: area(CAMP_AREA), moor: area(WILD_AREA), den: area(DEN_OF_EVIL), akara: [akara.name ?? '', akara.nameEn ?? ''] };
+  const who = (id: string): [string, string] => [D2X_MONSTERS[id].name ?? '', D2X_MONSTERS[id].nameEn ?? ''];
+  return {
+    camp: area(CAMP_AREA),
+    moor: area(WILD_AREA),
+    den: area(DEN_OF_EVIL),
+    plains: area(COLD_PLAINS),
+    graves: area(BURIAL_GROUNDS),
+    akara: who('akara'),
+    kashya: who('kashya'),
+    raven: who('bloodraven'),
+  };
 }
 
-/** a line with its placeholders filled ({moor}, {akara}… and `vars`, {n}) */
-export function fillLine(line: Line, vars: Record<string, string | number> = {}): Line {
+/** a line with its placeholders filled ({moor}, {akara}… and `vars`, {n}, {name}: a name as [中文, English]) */
+export function fillLine(line: Line, vars: Record<string, string | number | [string, string]> = {}): Line {
   const n = names();
-  const fill = (s: string, lang: 0 | 1) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : (n[k]?.[lang] ?? m)));
+  const value = (v: string | number | [string, string], lang: 0 | 1) => (Array.isArray(v) ? v[lang] : String(v));
+  const fill = (s: string, lang: 0 | 1) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? value(vars[k], lang) : (n[k]?.[lang] ?? m)));
   return { zh: fill(line.zh, 0), en: fill(line.en, 1) };
 }
 
@@ -132,7 +144,7 @@ export abstract class QuestScript {
     if (news) this.host.hooks.questsChanged?.();
   }
 
-  protected topic(npc: string, id: string, line: Line, vars?: Record<string, string | number>): Topic {
+  protected topic(npc: string, id: string, line: Line, vars?: Record<string, string | number | [string, string]>): Topic {
     const l = fillLine(line, vars);
     return { npc, quest: this.key, id, text: l.zh, en: l.en };
   }

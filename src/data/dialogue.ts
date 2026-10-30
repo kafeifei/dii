@@ -3,8 +3,9 @@
  * Diablo II's text or a translation of it. Each line is the Chinese the game shows (and the voice
  * will speak), with its English beside it for the voice brief. A line names places and people
  * only through placeholders, filled from the rename tables as it is shown (src/game/quests/quest.ts
- * fillLine): {camp}, {moor} and {den} are areas 1, 2 and 8 (tools/d2-names/areas.json),
- * {akara} is Akara's row (npcs.json); {n} is a count. tools/d2-names/DIALOGUE-zh.md lists every
+ * fillLine): {camp}, {moor}, {plains}, {den} and {graves} are areas 1, 2, 3, 8 and 17
+ * (tools/d2-names/areas.json), {akara} and {kashya} are Akara's and Kashya's rows (npcs.json),
+ * {raven} is Blood Raven's (monsters.json); {n} is a count, {name} a hireling's name. tools/d2-names/DIALOGUE-zh.md lists every
  * line for review (tools/dialogue-review.mjs writes it), with the recording of each line spoken:
  * the voice reads the page (tools/audio/list.mjs), and plays as the line scrolls (src/ui/npc.ts).
  */
@@ -95,6 +96,58 @@ export const DEN_LINES = {
   got: { zh: '{akara}传授了你一项本事：技能点 +1', en: '{akara} taught you a new craft: +1 skill point' },
 } satisfies Record<string, Line>;
 
+/**
+ * The Sisters' Burial Grounds (a1q2), by when they come (D2's own moments for it, D2MOO
+ * D2Game/src/QUESTS/ACT1/A1Q2.cpp gpAct1Q2NpcMessages), Kashya's words, written in her voice: the
+ * captain of the camp's scouts, curt, wary of the stranger, grieving the sister who turned:
+ * - intro: Kashya gives the quest, once the Den of Evil is done (her message 81, played at once)
+ * - remind: asked again before leaving the camp (82, under 交谈)
+ * - remindOut: asked again once the hero has been out, or into the Burial Grounds (87, under 交谈)
+ * - reward: back with Blood Raven dead, as she hands the reward over (92, played at once; under 交谈
+ *   again in that visit)
+ * - slain, back: on screen as Blood Raven dies with the hero near her; missed: as she dies with the
+ *   hero too far off to have it done (D2's room rule: src/game/quests/sisters.ts nearRaven)
+ * - got: on screen as the reward's hireling joins the hero; gotNone: as the reward is handed over to
+ *   a hero who has one already
+ * Her four spoken lines are to be recorded at M2a's close (docs/M2A.md 声音): till then they scroll
+ * unvoiced, and the review page has them as 未录 (unvoicedLines).
+ */
+export const SISTERS_LINES = {
+  intro: {
+    zh: '你就是替{akara}清了那个洞的外乡人？好。我不信嘴上说的，只认做出来的。{raven}本是我们自己人，营里没有谁拉弓比她更稳。可她的心被什么东西攫走了，如今她守在{plains}那头的{graves}，把我们亲手埋下的姊妹一个个从土里拖出来，替她卖命。我的斥候没法朝昔日同袍的尸身放箭。你去。了结她，让那些坟重新安静下来。办成了，我的人就认你。',
+    en: 'So you are the stranger who cleared that cave for {akara}? Good. I put no stock in talk, only in what gets done. {raven} was one of our own; no one in the stockade held a bow steadier. But something has seized her heart. Now she holds the {graves}, beyond the {plains}, and drags the sisters we buried with our own hands out of the earth, one by one, to fight for her. My scouts cannot loose arrows at the bodies of their old comrades. You go. Finish her, and let those graves lie quiet again. Do that, and my people will know you as one of their own.',
+  },
+  remind: {
+    zh: '{graves}在{plains}的那一头。出了营门，穿过{moor}一直往前走。记着，别站远了跟她对射，她从不失手。贴上去打。',
+    en: "The {graves} lie on the far side of the {plains}. Out through the gate, across {moor}, and keep going. And remember: don't stand off and trade shots with her. She never misses. Get in close.",
+  },
+  remindOut: {
+    zh: '她还站着，对吧？我在木栅上都闻得见那边翻起来的土腥味。别让我等太久。',
+    en: "She is still standing, isn't she? Up on the palisade I can smell the turned earth from out there. Don't keep me waiting long.",
+  },
+  reward: {
+    zh: '探子回报，{graves}那边静下来了。……她曾是我们当中最好的一个，这一点我不会忘。你替我们做了我们下不去手的事。从今往后，我的斥候听你差遣：身边缺人手，就带一个走，这一个不收你的钱。',
+    en: 'My lookouts say the {graves} have gone quiet. … She was the best of us once, and I will not forget it. You did what we could not bring ourselves to do. From now on my scouts are yours to call on: if you lack a hand at your side, take one with you, and this one costs you nothing.',
+  },
+  slain: { zh: '{raven}已经伏诛', en: '{raven} has fallen' },
+  back: { zh: '回{camp}去找{kashya}', en: 'Return to {kashya} at the {camp}' },
+  missed: { zh: '{raven}倒下时你不在她近旁，这一次不算你的', en: 'You were not near {raven} when she fell; this time it is not yours' },
+  got: { zh: '{kashya}派{name}随你出征', en: '{kashya} sends {name} to march with you' },
+  gotNone: { zh: '你已有佣兵，{kashya}没有另派人手；往后随时可以找她雇佣', en: 'You already have a hireling, so {kashya} sends no one; from now on you may hire from her at any time' },
+} satisfies Record<string, Line>;
+
+/**
+ * The Sisters' Burial Grounds in the quest log, by D2's status numbers for it (A1Q2.cpp: 1 given,
+ * 2 in the Burial Grounds, 3 back to Kashya, 12 done in this game without its reward, 13 done)
+ */
+export const SISTERS_LOG = {
+  given: { zh: '{kashya}要你去{plains}那头的{graves}，了结堕落的{raven}。', en: '{kashya} wants you to go to the {graves}, beyond the {plains}, and put an end to the fallen {raven}.' },
+  find: { zh: '在{graves}里找到{raven}，亲眼看着她倒下。', en: 'Find {raven} in the {graves} and see her fall with your own eyes.' },
+  back: { zh: '{raven}已经伏诛。回{camp}找{kashya}复命。', en: '{raven} has fallen. Return to {kashya} at the {camp} to report.' },
+  missed: { zh: '{raven}倒下时你不在她近旁，这一次不算你的。下一趟冒险再来。', en: 'You were not near {raven} when she fell, so this time it does not count for you. Try again on your next venture.' },
+  done: { zh: '任务完成。{kashya}的斥候从此听你差遣。', en: "Quest complete. {kashya}'s scouts are yours to call on." },
+} satisfies Record<string, Line>;
+
 /** the quest log's words for a quest no one has given yet, and one this build doesn't have */
 export const LOG_LINES = {
   none: { zh: '还没有人把这件事托付给你。', en: 'No one has entrusted this to you yet.' },
@@ -134,4 +187,14 @@ export function spokenLines(): Spoken[] {
   for (const [npc, lines] of Object.entries(GOSSIP)) lines.forEach((g, i) => out.push({ npc, id: `gossip${i}`, lines: [g] }));
   for (const [npc, g] of Object.entries(GREETINGS)) out.push({ npc, id: 'greeting', lines: g.greeting }, { npc, id: 'farewell', lines: g.farewell });
   return out;
+}
+
+/**
+ * The lines to be said aloud that aren't recorded yet: Kashya's in the Sisters' Burial Grounds, to be
+ * recorded at M2a's close (docs/M2A.md 声音). Each will be voice.<npc>.<key> as spokenLines' are; the
+ * review page lists them as 未录, and tools/audio/list.mjs doesn't ask for them until they move into
+ * spokenLines (with a voice for her in its SPEAKERS)
+ */
+export function unvoicedLines(): Spoken[] {
+  return (['intro', 'remind', 'remindOut', 'reward'] as const).map((id) => ({ npc: 'kashya', quest: 'a1q2', id, lines: [SISTERS_LINES[id]] }));
 }
