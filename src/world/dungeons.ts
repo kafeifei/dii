@@ -120,7 +120,7 @@ export function isDungeon(id: number): boolean {
 
 /**
  * The spec of dungeon `id` for a level's seed and difficulty: an Act 1 cave in the grotto's look (its
- * own tiles once they come, levelgen.ts GROTTO_TILES), a crypt in the old crypts' (levelgen.ts THEMES)
+ * own tiles, levelgen.ts GROTTO_TILES), a crypt in the old crypts' (levelgen.ts THEMES)
  */
 export function dungeonSpec(id: number, seed: number, difficulty: Difficulty): MazeSpec {
   const d = DUNGEONS[id];

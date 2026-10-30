@@ -408,7 +408,7 @@ export default async function (page, shot, log) {
         };
       });
       expect(s.area === DEN && s.other && s.built === 1, `down the mouth: area ${s.area}, its own map ${s.other}, ${s.built} build(s)`);
-      expect(s.theme === 'cave' && s.up && s.monsters > 0 && s.corpsefire, `the den: ${s.theme}, a way up ${s.up}, ${s.monsters} monsters, Corpsefire's stand-in ${s.corpsefire}`);
+      expect(s.theme === 'grotto' && s.up && s.monsters > 0 && s.corpsefire, `the den: ${s.theme}, a way up ${s.up}, ${s.monsters} monsters, Corpsefire's stand-in ${s.corpsefire}`);
       await frames();
       await shot('den-of-evil');
     },

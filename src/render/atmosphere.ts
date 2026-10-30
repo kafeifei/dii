@@ -15,6 +15,7 @@ export const MIST: Record<string, MistLook> = {
   wild: { color: '#7a86a0', opacity: 0.24 },
   crypt: { color: '#a89a88', opacity: 0.3 },
   cave: { color: '#a87a68', opacity: 0.24 },
+  grotto: { color: '#988c7a', opacity: 0.24 },
   ice: { color: '#c8dcf4', opacity: 0.42 },
   hell: { color: '#c06040', opacity: 0.34, emissive: '#3a0c04' },
 };
@@ -184,10 +185,13 @@ export class Mist {
  * in the sun over the moor and frost blowing across Cold Plains. Dust and frost below ground only
  * show near the hero, where the light would catch them.
  */
-export type MoteKind = 'dust' | 'cave' | 'ice' | 'hell' | 'fireflies' | 'seeds' | 'frost';
+export type MoteKind = 'dust' | 'cave' | 'grotto' | 'ice' | 'hell' | 'fireflies' | 'seeds' | 'frost';
 
 /** each theme's specks; under the sky an area's own (src/render/looks.ts) take over */
-export const THEME_MOTES: Record<string, MoteKind> = { crypt: 'dust', cave: 'cave', ice: 'ice', hell: 'hell', town: 'fireflies', wild: 'fireflies' };
+export const THEME_MOTES: Record<string, MoteKind> = { crypt: 'dust', cave: 'cave', grotto: 'grotto', ice: 'ice', hell: 'hell', town: 'fireflies', wild: 'fireflies' };
+
+/** the dust's colour below ground: the crypt's pale, the old caves' ruddy, Act 1's earth caves' a dry fawn */
+const DUST_COLOR: Partial<Record<MoteKind, string>> = { dust: '#e8d4b4', cave: '#e0a888', grotto: '#d8c8aa' };
 
 /**
  * One frame's specks of `kind` round the hero and the view's centre, `rate` times as many (an
@@ -203,13 +207,14 @@ export function ambientMotes(fx: Effects, kind: MoteKind, dt: number, hero: P2, 
   const chance = (perSecond: number) => r() < perSecond * rate * dt;
   switch (kind) {
     case 'dust':
-    case 'cave': {
+    case 'cave':
+    case 'grotto': {
       if (!chance(22)) return;
       const p = around(hero, 7);
       fx.add.spawn({
         x: p.x, y: 0.3 + r() * 2, z: p.z,
         vx: (r() - 0.5) * 0.2, vy: (r() - 0.5) * 0.08, vz: (r() - 0.5) * 0.2,
-        color: kind === 'cave' ? '#e0a888' : '#e8d4b4', size: 0.05 + r() * 0.05, life: 4 + r() * 4,
+        color: DUST_COLOR[kind]!, size: 0.05 + r() * 0.05, life: 4 + r() * 4,
         alpha: 0.5 * (1 - p.d / 7.5), endSize: 1, fadeIn: 0.3,
       });
       return;

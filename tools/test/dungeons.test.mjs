@@ -99,9 +99,12 @@ export default async (load) => {
       check(L.theme === THEMES.grotto && !L.torches.length && !lit && !L.decor.some((d) => d.kind === 'campfire' || d.kind === 'crystal'), `area ${id}: ${L.torches.length} torches, ${lit} lit props, look ${L.theme.key}`);
     } else check(L.theme === THEMES.crypt && L.torches.length > 0, `area ${id}: ${L.torches.length} torches in a crypt`);
   }
-  // the grotto is drawn with the caves' tiles until its own come (levelgen.ts GROTTO_TILES)
+  // the grotto is drawn with its own tiles (levelgen.ts GROTTO_TILES), and the renderer's tables
+  // have a row for it rather than falling back to the crypt's
   const { GROTTO_TILES } = await load('/src/world/levelgen.ts');
-  check(THEMES.grotto.key === (GROTTO_TILES ? 'grotto' : 'cave') && THEMES.grotto.name === '石窟', `the grotto theme: ${THEMES.grotto.key} ${THEMES.grotto.name}`);
+  check(GROTTO_TILES && THEMES.grotto.key === 'grotto' && THEMES.grotto.name === '石窟', `the grotto theme: ${THEMES.grotto.key} ${THEMES.grotto.name}`);
+  const { MIST, THEME_MOTES } = await load('/src/render/atmosphere.ts');
+  check(MIST.grotto && MIST.grotto !== MIST.crypt && THEME_MOTES.grotto === 'grotto', `the grotto's mist ${JSON.stringify(MIST.grotto)}, motes ${THEME_MOTES.grotto}`);
 
   // ── the objects: what D2 rolled for them, on the Level ──
   {

@@ -105,6 +105,7 @@ const PROP_TINT: Record<string, [string, number]> = {
   ice: ['#a8d0ff', 0.4],
   hell: ['#ff8a6a', 0.22],
   cave: ['#c8a088', 0.12],
+  grotto: ['#b8aa94', 0.12],
 };
 
 /** an attack mode's clip in its look's attack list (AnimInput.clip): A1 the first, A2 the second, S1 the third */

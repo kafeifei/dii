@@ -23,6 +23,9 @@ export const GRADES: Record<string, Grade> = {
   wild: { shadow: '#2a3c66', light: '#ffd6a0', split: 0.45, saturation: 0.92, gamma: 1.04, vignette: 0.55, grain: 0.03, bloom: 0.35 },
   crypt: { shadow: '#3a3030', light: '#ffc890', split: 0.3, saturation: 0.9, gamma: 1.06, vignette: 0.6, grain: 0.035, bloom: 0.4 },
   cave: { shadow: '#40261e', light: '#ffbe8a', split: 0.3, saturation: 0.92, gamma: 1.06, vignette: 0.6, grain: 0.035, bloom: 0.4 },
+  // Act 1's earth caves (levelgen.ts THEMES.grotto): not the old caves' red; the darks a cool grey-brown
+  // and the hero's light warm, so the rock turned from it reads apart from the lit floor
+  grotto: { shadow: '#2a2a28', light: '#ffc890', split: 0.35, saturation: 0.9, gamma: 1.06, vignette: 0.6, grain: 0.035, bloom: 0.4 },
   ice: { shadow: '#1c3058', light: '#d8eeff', split: 0.45, saturation: 0.9, gamma: 1.04, vignette: 0.55, grain: 0.03, bloom: 0.4 },
   // hell is red already: cool its darks toward violet so it is not one colour
   hell: { shadow: '#2c1a34', light: '#ffcc80', split: 0.35, saturation: 0.9, gamma: 1.05, vignette: 0.6, grain: 0.035, bloom: 0.65 },

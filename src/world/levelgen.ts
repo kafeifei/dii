@@ -66,14 +66,14 @@ export interface Theme {
 }
 
 /**
- * The switch for Act 1's caves' own tiles (docs/M2A.md 第一幕洞穴新做一对土褐色贴图): false while
- * public/textures has no grotto_floor.webp and grotto_wall.webp, and THEMES.grotto is drawn with the
- * old caves' (its key 'cave', which the renderer's tiles, grade, motes and prop tints go by). When
- * line A's tiles land, set it true: its key turns 'grotto', and those tables want a row for it
- * (render/post.ts GRADES, render/atmosphere.ts THEME_MOTES, the props' tint), else they fall back to
- * the crypt's. Its maps keep the caves' dressing either way (maze.ts dresses a cave as THEMES.cave)
+ * The switch for Act 1's caves' own tiles (docs/M2A.md 第一幕洞穴新做一对土褐色贴图): on, since
+ * line A's grotto_floor.webp and grotto_wall.webp are in public/textures. THEMES.grotto's key is then
+ * 'grotto', which the renderer's tiles, grade, mist, motes and prop tints go by (render/post.ts
+ * GRADES, render/atmosphere.ts MIST and THEME_MOTES, renderer.ts PROP_TINT each have a row for it);
+ * off, it is 'cave' and drawn with the old caves'. Its maps keep the caves' dressing either way
+ * (maze.ts dresses a cave as THEMES.cave)
  */
-export const GROTTO_TILES = false;
+export const GROTTO_TILES = true;
 
 /** the Cave's levels' name (levels.json 9, 13) without the level, from the rename table: 石窟一层, 石窟二层 → 石窟 */
 function caveName(key: 'name' | 'nameEn'): string {
@@ -104,8 +104,8 @@ export const THEMES: Record<string, Theme> = {
   },
   /**
    * Act 1's caves (LvlTypes.txt 3: the Den of Evil, Cave Levels 1 and 2), earth-brown, no torches: lit
-   * by the hero's light alone (decisions: 洞里照原版不点火把). Drawn with the old caves' tiles under
-   * their key until line A's grotto tiles are in (GROTTO_TILES); named like the Cave's levels
+   * by the hero's light alone (decisions: 洞里照原版不点火把). Drawn with its own tiles, grotto_floor
+   * and grotto_wall (GROTTO_TILES); named like the Cave's levels
    * (tools/d2-names/areas.json), though no banner shows a theme's name for a map of an area
    */
   grotto: {

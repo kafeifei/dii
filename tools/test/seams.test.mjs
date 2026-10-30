@@ -82,8 +82,9 @@ export default async (load) => {
   // Stony Field's cliffs are its layout's (Layout.cliffs), its other walls the wilderness's ruins
   check(lookOf(stony, 'town').walls === 'ruins' && lookOf(barrow, 'town').walls === 'ruins', "Stony Field's or the Burial Grounds' walls aren't the wilderness's ruins");
   check(lookOf(camp, 'town').walls === 'palisade' && lookOf(moor, 'town').walls === 'ruins' && lookOf(plains, 'town').walls === 'ruins', 'the palisade is the camp\'s, the ruins the wilderness\'s');
-  const den = lookOf(areaDef(DEN_OF_EVIL), 'cave');
-  check(den.ground === 'cave' && den.walls === 'wall' && den.grade === NO_SHIFT && den.motes[0]?.[0] === 'cave', `the Den looks like ${JSON.stringify(den)}`);
+  // the Den is one of Act 1's earth caves (levelgen.ts THEMES.grotto)
+  const den = lookOf(areaDef(DEN_OF_EVIL), 'grotto');
+  check(den.ground === 'grotto' && den.walls === 'wall' && den.grade === NO_SHIFT && den.motes[0]?.[0] === 'grotto', `the Den looks like ${JSON.stringify(den)}`);
 
   // ── their looks blended by share, over the sky's grade ──
   const looks = { [CAMP_AREA]: lookOf(camp, 'town'), [WILD_AREA]: lookOf(moor, 'town'), [COLD_PLAINS]: lookOf(plains, 'town') };

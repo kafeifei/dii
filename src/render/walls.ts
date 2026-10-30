@@ -3,6 +3,13 @@ import { THEMES, type Theme } from '../world/levelgen';
 import type { WallKind } from './arealooks';
 import { tileTexture } from './textures';
 
+/**
+ * The wall's picture multiplied by this on a theme's levels: Act 1's earth caves' floor and wall are
+ * near one colour (grotto_floor and grotto_wall, both a grey-brown of mean luma about 52 of 255), and lit by the
+ * hero alone the rock would melt into the floor, so it is drawn a little darker and greyer
+ */
+const WALL_TINT: Record<string, string> = { grotto: '#bcb8b2' };
+
 /** a wall's height as a share of WALL_H, by how it's built: at least the first, up to the first and the second */
 export const WALL_HEIGHT: Record<WallKind, [number, number]> = { palisade: [0.85, 0.25], ruins: [0.2, 0.4], wall: [0.96, 0.08], cliff: [1.45, 0.18] };
 
@@ -101,7 +108,7 @@ export function wallMaterials(theme: Theme, occ: OccUniforms): (kind: WallKind) 
     if (had) return had;
     // a cliff is the caves' rock for now, its look its own to come (M2a's A line)
     const t = kind === 'palisade' ? THEMES.town : kind === 'cliff' ? THEMES.cave : theme;
-    const side = new THREE.MeshStandardMaterial({ map: tileTexture(kind === 'ruins' ? 'crypt_wall' : `${t.key}_wall`), roughness: 0.92 });
+    const side = new THREE.MeshStandardMaterial({ map: tileTexture(kind === 'ruins' ? 'crypt_wall' : `${t.key}_wall`), color: WALL_TINT[t.key] ?? '#ffffff', roughness: 0.92 });
     const top =
       kind === 'ruins' || kind === 'cliff'
         ? new THREE.MeshStandardMaterial({ map: tileTexture(kind === 'ruins' ? 'crypt_wall' : `${t.key}_wall`), roughness: 0.95 })
