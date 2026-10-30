@@ -3,6 +3,7 @@
 // which become champions or uniques, their modifiers, names and minions. Pure functions over an rng;
 // src/game/spawn.ts places what they decide.
 // D2MOO references are to github.com/ThePhrozenKeep/D2MOO at commit d9d394f.
+import { SUBTILES_PER_D2_TILE } from '../../core/units';
 import { D2X_MONSTERS } from '../../data/d2x/monsters';
 import { D2X_MONUMOD_CONSTANTS, D2X_UNIQUE_NAMES } from '../../data/d2x/superuniques';
 import type { D2xMonster, D2xSuperUnique, D2xTri } from '../../data/d2x/types';
@@ -89,7 +90,7 @@ export function pickBossKind(r: Region, kinds: readonly Kind[], difficulty: numb
  * D2 rolls for a pack once per 3×3 subtiles of a room, a tile being 5×5 (D2GAME_PopulateRoom,
  * MonsterRegion.cpp:668-670): 25/9 rolls a tile
  */
-export const ROLLS_PER_TILE = 25 / 9;
+export const ROLLS_PER_TILE = (SUBTILES_PER_D2_TILE * SUBTILES_PER_D2_TILE) / 9;
 
 /** a pack comes on a roll of 100000 at most MonDen (capped at 10000; MonsterRegion.cpp:651-654, 672) */
 export function packRoll(den: number, rng: Rng): boolean {

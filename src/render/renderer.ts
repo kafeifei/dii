@@ -1516,7 +1516,7 @@ export class Renderer implements Picker {
     if (!p.dead) pv.rig.root.position.y = 0;
     pv.rig.root.rotation.y = smoothAngle(pv.rig.root.rotation.y, p.facing, dt * 18);
     // the hero's attacks, casts, hit recoveries and blocks last Diablo II's frames: the clips fit them exactly
-    pv.rig.update(dt, { ...this.anim(p, p.moveSpeed() * p.slowFactor() * (p.state === 'charge' ? 2.5 : 1), 'red'), exact: true });
+    pv.rig.update(dt, { ...this.anim(p, p.state === 'charge' ? p.stats.chargeSpeed : p.moveSpeed() * p.slowFactor(), 'red'), exact: true });
     pv.shadow.position.set(pp.x, 0.02, pp.z);
 
     // the camp's people stand still: animated, and drawn, only while the hero is about

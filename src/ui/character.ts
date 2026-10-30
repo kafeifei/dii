@@ -1,3 +1,4 @@
+import { FRAMES_PER_SEC } from '../core/units';
 import { CLASSES } from '../data/classes';
 import { xpForLevel } from '../game/player';
 import { addClose, h, type UIContext } from './common';
@@ -47,8 +48,8 @@ export function renderChar(ui: UIContext, L: HTMLElement) {
   row('伤害', `${Math.floor(Math.max(1, d.wMin) * mult)} - ${Math.floor(Math.max(1, d.wMax) * mult)}`);
   row('准确率', d.ar);
   row('防御', d.def);
-  // Diablo II's frames, 25 a second (game/d2/frames.ts)
-  const frames = (s: number) => `${Math.round(s * 25)} 帧`;
+  // Diablo II's frames, 25 a second (src/core/units.ts)
+  const frames = (s: number) => `${Math.round(s * FRAMES_PER_SEC)} 帧`;
   row('攻击速度', `${d.attacksPerSec.toFixed(2)} 次/秒（${frames(d.attackTime)}）`);
   row('施法速度', frames(d.castTime));
   row('受击恢复', frames(d.hitRecovery));

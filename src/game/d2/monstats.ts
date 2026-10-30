@@ -2,6 +2,7 @@
 // champion, a unique or a unique's minion does to them (MonUMod.txt). Pure functions; src/game/monster.ts
 // makes a Monster of them, src/game/spawn.ts decides who is what.
 // D2MOO references are to github.com/ThePhrozenKeep/D2MOO at commit d9d394f. Integer steps are D2's.
+import { FRAMES_PER_SEC, M_PER_SUBTILE, MPS_PER_VELOCITY, VELOCITY_PER_SUBTILE } from '../../core/units';
 import { D2X_DIFFICULTIES } from '../../data/d2x/difficulty';
 import { D2X_MISSILES } from '../../data/d2x/missiles';
 import { D2X_MONLVL } from '../../data/d2x/monlvl';
@@ -9,7 +10,6 @@ import { D2X_MONSTERS } from '../../data/d2x/monsters';
 import { D2X_SKILLS } from '../../data/d2x/skills';
 import { D2X_MONUMOD_CONSTANTS, D2X_MONUMODS } from '../../data/d2x/superuniques';
 import type { D2xBands, D2xLenBands, D2xMonster } from '../../data/d2x/types';
-import { M_PER_SUBTILE, MPS_PER_VELOCITY } from './stats';
 import { percentOf } from './xp';
 
 export type MonRank = 'normal' | 'champion' | 'unique' | 'minion' | 'boss';
@@ -133,7 +133,7 @@ export function missileReach(id: string, vel = D2X_MISSILES[id]?.vel?.base ?? 0)
       v = Math.max(0, v + m.vel.accel);
       n = 0;
     }
-    subtiles += v / 4096;
+    subtiles += v / 256 / VELOCITY_PER_SUBTILE;
   }
   return subtiles * M_PER_SUBTILE;
 }
@@ -153,7 +153,7 @@ export function coldEnchantBurst(level: number): DeathBurst {
 export function lightEnchantBolts(level: number): { light: [number, number]; speed: number; life: number } {
   const m = D2X_MISSILES.lightunique;
   const e = missileDamage('lightunique', Math.max(1, Math.trunc(level / 2)))?.elem;
-  return { light: e ? [e.min, e.max] : [0, 0], speed: ((m?.vel?.base ?? 0) * 75 * MPS_PER_VELOCITY) / 100, life: (m?.range[0] ?? 0) / 25 };
+  return { light: e ? [e.min, e.max] : [0, 0], speed: ((m?.vel?.base ?? 0) * 75 * MPS_PER_VELOCITY) / 100, life: (m?.range[0] ?? 0) / FRAMES_PER_SEC };
 }
 
 /** D2's level bands (SKILLS_CalculateDamageBonusByLevel, D2Skills.cpp:2477-2505) */
@@ -188,7 +188,7 @@ export function missileDamage(id: string, level: number): MissileDamage | undefi
   let elem: MissileDamage['elem'];
   if (m.elem?.type && m.elem.min && m.elem.max) {
     const seconds = m.elem.len ? lenAt(m.elem.len, level) : 0;
-    const per = m.elem.type === 'pois' ? seconds * 25 : 1;
+    const per = m.elem.type === 'pois' ? seconds * FRAMES_PER_SEC : 1;
     elem = { type: m.elem.type, min: bandsAt(m.elem.min, level) * per, max: bandsAt(m.elem.max, level) * per, seconds };
   }
   return { src: m.srcNone ? 0 : (m.src ?? 0), phys, elem };
@@ -241,7 +241,7 @@ export function missileFlight(id: string, level: number): { speed: number; life:
   const m = D2X_MISSILES[id];
   if (!m) return { speed: 0, life: 0 };
   const v = m.vel ? m.vel.base + Math.floor(Math.max(0, level) * m.vel.perLvl) : 0;
-  return { speed: ((v * 75) / 100) * MPS_PER_VELOCITY, life: (m.range[0] + m.range[1] * level) / 25 };
+  return { speed: ((v * 75) / 100) * MPS_PER_VELOCITY, life: (m.range[0] + m.range[1] * level) / FRAMES_PER_SEC };
 }
 
 /** resistances in %, D2's six */
@@ -478,7 +478,7 @@ export function monStats(row: D2xMonster, difficulty: number, baseLevel: number,
     life: Math.max(1, life),
     defense: Math.max(0, defense),
     xp,
-    regen: (regenPerFrame * 25) / 256,
+    regen: (regenPerFrame * FRAMES_PER_SEC) / 256,
     res,
     dmgPct,
     arPct,

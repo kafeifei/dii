@@ -12,7 +12,7 @@
 // D2Seed.h; MonsterAI.cpp and MonsterUnique.cpp source/D2Game/src/MONSTER/, SUnitNpc.cpp and SUnitDmg.cpp
 // source/D2Game/src/UNIT/, PlrMsg.cpp and PlrSave2.cpp source/D2Game/src/PLAYER/, AiThink.cpp
 // source/D2Game/src/AI/AiThink.cpp. Integer steps are D2's: int32, / truncating toward zero, >> flooring.
-import { D2X_FPS } from '../../data/d2x/calc';
+import { FRAMES_PER_SEC } from '../../core/units';
 import { D2X_HIRELINGS, D2X_HIRELING_NAMES, D2X_HIRELING_XP } from '../../data/d2x/hirelings';
 import { D2X_SKILLS } from '../../data/d2x/skills';
 import type { D2xHireling, D2xHirelingBand } from '../../data/d2x/types';
@@ -314,7 +314,7 @@ export function mercStats(h: HirelingRef, level: number): MercStats {
     attackRating: ar + 5 * dex,
     dmg: [Math.max(b.dmg[0] + dmgUp, 0), Math.max(b.dmg[1] + dmgUp, 1)],
     resist,
-    regen: (regen256 * D2X_FPS) / 256,
+    regen: (regen256 * FRAMES_PER_SEC) / 256,
     xp: xpAt(row, level),
     nextXp: nextXp(row, level),
     perLevel: { life: b.hpPerLvl, str: b.strPerLvl, dex: b.dexPerLvl, def: b.defPerLvl, ar: b.arPerLvl, dmg: b.dmgPerLvl, resist: [...b.resistPerLvl] },

@@ -3,15 +3,14 @@
 // src/game/ai.ts decide by. Pure functions.
 // D2MOO references are to github.com/ThePhrozenKeep/D2MOO at commit d9d394f; "AiThink.cpp" is
 // D2Game/src/AI/AiThink.cpp, "AiTactics.cpp" D2Game/src/AI/AiTactics.cpp.
-import { D2X_FPS } from '../../data/d2x/calc';
+import { FRAMES_PER_SEC, M_PER_SUBTILE } from '../../core/units';
 import { D2X_MONSTER_AI } from '../../data/d2x/monsters';
 import { D2X_SKILLS } from '../../data/d2x/skills';
 import type { D2xMonster } from '../../data/d2x/types';
 import { bandsAt } from './monstats';
-import { M_PER_SUBTILE } from './stats';
 
 /** seconds of `n` of D2's frames */
-export const frames = (n: number) => n / D2X_FPS;
+export const frames = (n: number) => n / FRAMES_PER_SEC;
 /** metres of `n` of D2's subtiles */
 export const subtiles = (n: number) => n * M_PER_SUBTILE;
 /** subtiles of `m` metres */

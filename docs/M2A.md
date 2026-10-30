@@ -65,7 +65,7 @@ M2a 开工前做了一轮调研（地图、地下城、怪物、任务和佣兵�
 | `claude/m2a-art` | aa67ed4 | `models-src/ai/merc_rogue.glb`、`mon_bloodraven.glb`，两份来源说明（`models-src/ai/CREDITS.md`、`public/textures/CREDITS.md`）；石窟地面和墙、列石荒野碎石三张贴图（1024²，约 1.1 MB）合并时**没有**进 `public/textures`：放进去就直接进发布包。A 线给它们加 `SPAN` 后用 `tools/ai-textures.mjs` 重做，分支上的原样还在 aa67ed4（A 线做了，2026-10-29 合进集成线，游戏用上了，见下一节） |
 
 **接线时要处理的**（复核时发现，都不阻塞地基本身；每条后面是 D、O、W 三条线合进来以后的情况，见下一节）：
-- 子格换算不统一：`stats.ts:144` 一子格 0.327 米，大地图 `OUT_SCALE` 是一子格 0.25 米，差 1.31 倍。接线前要定一套，光环半径、技能范围、物件间距都受影响。**还没做**：第 0 步 ⑤（`docs/M2A-STEP0.md` 3）跳过了，两套换算还都在用。
+- 子格换算不统一：`stats.ts:144` 一子格 0.327 米，大地图 `OUT_SCALE` 是一子格 0.25 米，差 1.31 倍。接线前要定一套，光环半径、技能范围、物件间距都受影响。**做了**（2026-10-29，用户定「完全照原版」，`docs/M2A-STEP0.md` 3 的第 2 种）：全按原版的子格 0.25 米，速度也是，换算都在 `src/core/units.ts`；主角跑 3.52 米/秒、走 2.34 米/秒。
 - 第 0 步做了：导入器给光环和被动属性留下列号（`col`），`skillcalc.ts` 的 astN/pstN 和武器专精按列号读（照 D2Skills.cpp:371-402、3152-3190；现在范围里没有跳列的行，生成的数不变，skillcalc 测试用一行造出来的跳列数据查这一点）。`dmXY` 只剩一个，照 D2Common_11033（D2Skills.cpp:3242-3252：内层商先取整，不超过 par Y），放在 `monai.ts` 的 `dm`，skillcalc 和怪物光环都读它；d2-ai 测试里的光环数一个没变（Conviction、Holy Freeze 1 级两种算法相同），游戏里 Fanaticism、Conviction、Holy Freeze 在部分等级上比原来少 1（如 Fanaticism 3 级攻速 21 → 20）。还没做：冻结箭的爆炸按 'frze' 算（冻结，不是冰缓）；三元式默认在第一个 `?:` 处结束，A5 再定。
 - 佣兵的抗性在战斗里照主角吃难度惩罚和 75 上限；雇佣面板显示的属性照 MONSTERS_HirelingInit（>>3）算；`actionWeights` 按（Id、等级）缓存。**还没做**，M 线的。
 - 迷宫的关卡种子要按区域混入（D2 是 nLevelId + dwStartSeed），否则墓窖和安魂陵种子相同时是同一张图。**D 线做了**：每个地下城（巢穴也是）用 `maps.ts` 的 `levelSeed`（世界种子 + 区域编号），同一世界里墓窖和安魂陵不同（`dungeons` 测试）。

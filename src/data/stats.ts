@@ -1,3 +1,5 @@
+import { FRAMES_PER_SEC } from '../core/units';
+
 /** Every numeric property that items, skills and auras can contribute. */
 export type StatKey =
   | 'str'
@@ -285,7 +287,7 @@ function fmt(tpl: string, ...v: number[]): string {
 /** how long poison from a bag of stats lasts: the average of its sources, 3 s if it doesn't say */
 export function poisonSeconds(bag: StatBag): number {
   const n = bag.poisonSrc ?? 0;
-  return n > 0 ? Math.round(((bag.poisonLen ?? 0) / n / 25) * 10) / 10 : 3;
+  return n > 0 ? Math.round(((bag.poisonLen ?? 0) / n / FRAMES_PER_SEC) * 10) / 10 : 3;
 }
 
 /** Turns a stat bag into tooltip lines, in a stable order. */

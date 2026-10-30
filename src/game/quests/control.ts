@@ -3,6 +3,7 @@
 // what the townsfolk say, which of them has news and what the quest log shows. D2MOO references
 // are to github.com/ThePhrozenKeep/D2MOO at commit d9d394f.
 import type { HeroLine } from '../../audio/sounds';
+import { FRAMES_PER_SEC } from '../../core/units';
 import { GOSSIP, LOG_LINES } from '../../data/dialogue';
 import { ACT1_QUESTS, type QuestKey } from '../../data/quests';
 import type { AreaDef } from '../../world/areas';
@@ -14,7 +15,7 @@ import { fillLine, type LogEntry, type QuestHost, type QuestScript, type Topic }
 import { QFLAG, questState } from './record';
 
 /** seconds between quest ticks: QUESTS_QuestUpdater runs every 20 frames (Game.cpp:1877-1880), 25 a second */
-export const QUEST_TICK = 20 / 25;
+export const QUEST_TICK = 20 / FRAMES_PER_SEC;
 
 export class Quests {
   /** the quests this build plays: only the Den of Evil so far */

@@ -7,6 +7,7 @@ import { SHRINE_BY_ID } from '../data/shrines';
 import { SKILL_BY_ID, SKILLS, type SkillDef } from '../data/skills';
 import { addStat, PARAM_STATS, poisonSeconds, type StatBag, type StatKey } from '../data/stats';
 import { Grid } from '../items/grid';
+import { D2X_SKILLS } from '../data/d2x/skills';
 import type { D2Prop } from '../data/d2x/types';
 import { isBroken, replenish, replenishFrames } from '../items/d2/durability';
 import { setBonuses } from '../items/d2/legendary';
@@ -18,7 +19,7 @@ import { Actor, type ActorState, type Resists } from './actor';
 import type { Corpse } from './corpse';
 import type { MercState } from './merc';
 import { attackAnim, blockFrames, castAnim, FRAMES_PER_SEC, hitRecoveryFrames, toSeconds, weaponClass, type AnimFrames, type AttackSpeed, type WeaponClass } from './d2/frames';
-import { MPS_PER_VELOCITY, attackRating, baseLife, baseMana, baseStamina, blockChance, charStats, defense, difficulty, levelUpPoints, moveVelocity, resistance } from './d2/stats';
+import { MPS_PER_VELOCITY, attackRating, baseLife, baseMana, baseStamina, blockChance, charStats, chargeVelocity, defense, difficulty, levelUpPoints, moveVelocity, resistance } from './d2/stats';
 import { addXp, MAX_LEVEL, xpForLevel } from './d2/xp';
 import type { Monster } from './monster';
 import { newQuestRecords, rewardedQuests, type QuestRecords } from './quests/record';
@@ -124,6 +125,8 @@ export interface Derived {
   /** metres a second walking and running (D2's velocity: game/d2/stats.ts moveVelocity) */
   walkSpeed: number;
   runSpeed: number;
+  /** metres a second charging (Charge's Velocity %: game/d2/stats.ts chargeVelocity) */
+  chargeSpeed: number;
 }
 
 export type Equipment = Partial<Record<EquipSlot, Item>>;
@@ -324,7 +327,7 @@ export class Player extends Actor {
   mendItems(dt: number, also: Grid[] = []) {
     this.mendClock += dt;
     if (this.mendClock < 0.5) return;
-    const frames = this.mendClock * 25;
+    const frames = this.mendClock * FRAMES_PER_SEC;
     this.mendClock = 0;
     const all = [...Object.values(this.equipment), ...[this.inventory, this.stash, this.cube, ...also].flatMap((g) => g.items.map((x) => x.item))];
     for (const it of all) {
@@ -706,6 +709,7 @@ export class Player extends Actor {
       wclass,
       walkSpeed: speedAt(false),
       runSpeed: speedAt(true),
+      chargeSpeed: chargeVelocity(cs, D2X_SKILLS.Charge?.params?.[1] ?? 0, { armorSpeed }) * MPS_PER_VELOCITY,
     };
     if (this.life > this.d.maxLife) this.life = this.d.maxLife;
     if (this.mana > this.d.maxMana) this.mana = this.d.maxMana;
