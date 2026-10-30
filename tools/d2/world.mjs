@@ -168,6 +168,10 @@ export async function buildWorld({ bases }) {
   for (const p of presets) for (const id of PLACED[p] ?? []) want(id, `monpreset act 1 ${p}`);
   want('roguehire', 'the Act 1 hireling');
   want('cain5', 'Cain in the camp after his rescue');
+  // the trap a trapped chest of Act 1's sends out when it isn't fire or the level's trap monster:
+  // every trap but those goes off as the fire bolt below level 40 (D2MOO OBJMODE_DispatchTrap,
+  // ObjMode.cpp:354-440; D2GAME_OBJECTS_TrapHandler2_6, 1123-1138)
+  want('trap-firebolt', "a trapped chest's fire bolt in Act 1");
   // the pets of the game's classes, which show the skill's name (the Hydra's NameStr is a skill string)
   const pets = new Map();
   for (const s of rows(skillsJ)) {

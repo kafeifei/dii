@@ -1008,6 +1008,8 @@ section('Dungeons: maze rows, object groups, objects and monster sequences, as 2
   const want = new Set([...Object.values(OG).flatMap((g) => g.objects.map((o) => o.id)), 580, 581, 397, 17, 18, 19, 20, 21, 22, 8]);
   for (const o of Object.values(OB)) for (const c of [...(o.cluster ?? []), ...(o.becomes ?? []), ...(o.healAs ? [o.healAs] : [])]) want.add(c);
   if (Object.values(OB).some((o) => o.flies)) want.add(103);
+  // a trapped chest's fire trap lights the large fire and the small one (D2GAME_OBJECTS_TrapHandler5_7, ObjMode.cpp:1081-1102)
+  if (Object.values(OB).some((o) => o.trap === 'rolled')) for (const f of [162, 160]) want.add(f);
   mismatch(obad, 'D2X_OBJECTS', 'classes', [...want].sort((a, b) => a - b), Object.keys(OB).map(Number).sort((a, b) => a - b));
   for (const o of Object.values(OB)) {
     const r = O27.get(o.id);
@@ -1029,19 +1031,20 @@ section('Dungeons: maze rows, object groups, objects and monster sequences, as 2
       mismatch(obad, w, 'flags', [r.Selectable0, r.HasCollision0, r.HasCollision1, r.IsAttackable0, r.PreOperate].map((v) => !!v), [o.selectable, o.blocks, o.blocksOpen, o.attackable, o.preOperate].map((v) => !!v));
     }
     // OperateFn's kind and its drop (ObjMode.cpp:79-157; 2450, 2596, 1296, 2568, 2816)
-    const kind = { 0: 'none', 1: 'casket', 2: 'shrine', 3: 'urn', 4: 'chest', 5: 'barrel', 6: 'tome', 7: 'explodingBarrel', 9: 'stone', 14: 'corpse', 22: 'well' }[r.OperateFn ?? 0];
+    const kind = { 0: 'none', 1: 'casket', 2: 'shrine', 3: 'urn', 4: 'chest', 5: 'barrel', 6: 'tome', 7: 'explodingBarrel', 9: 'stone', 11: 'torch', 14: 'corpse', 22: 'well' }[r.OperateFn ?? 0];
     mismatch(obad, w, 'kind', o.id >= 573 ? 'placeholder' : kind, o.kind);
     const drop = { casket: 100, corpse: 100, chest: o.sparkly ? 100 : 75, urn: 21, barrel: 21 }[o.kind];
     mismatch(obad, w, 'drop', drop, o.drop);
     mismatch(obad, w, 'trap', [2, 3, 57].includes(r.InitFn) ? 'rolled' : [1, 5].includes(r.OperateFn) ? 'monster' : undefined, o.trap);
     mismatch(obad, w, 'sparkly', r.InitFn === 57 || o.id === 580 || undefined, o.sparkly);
     if (o.kind === 'shrine') mismatch(obad, w, 'shrine', ['any', 'health', 'mana'][r.Parm0 ?? 0] ?? 'magic', o.shrine);
+    if (o.kind === 'explodingBarrel' || o.kind === 'torch') mismatch(obad, w, 'damage', r.Damage ?? 0, o.damage);
     if (o.kind === 'well') {
       const [p0, p1, p2, p3] = [0, 1, 2, 3].map((i) => r[`Parm${i}`] ?? 0);
       mismatch(obad, w, 'well', { uses: 2 * p2, regen: (p0 + 1) / 25, restore: p1 / 256, life: !!(p3 & 2), mana: !!(p3 & 1) }, o.well);
     }
   }
-  check('every object the groups and the presets (580, 581, 397, the Cairn Stones, the Tower Tome) place, with what they bring, as Objects.txt has it: size, functions, Parm, lock, kind, drop, trap', obad);
+  check('every object the groups and the presets (580, 581, 397, the Cairn Stones, the Tower Tome) place, with what they bring (a trapped chest its fires), as Objects.txt has it: size, functions, Parm, lock, kind, drop, trap, damage', obad);
   const chests = [5, 6, 139, 140, 141, 144, 176, 177, 198, 240, 241, 242, 243];
   check(
     "580 and 581 become one of Act 1's 13 chests (Objects.cpp:146-155), 580 a sparkly one; 397 is sparkly by its InitFn 57 with its own rules",
