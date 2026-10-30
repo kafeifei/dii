@@ -16,6 +16,11 @@
 // they die, multiple shots' three quills, the cursed one's Amplify Damage, an aura's. The west
 // block (M2a): the Burial Grounds' Blood Raven on her own body, her Nest raising a zombie at her feet
 // and the undead round her falling as she dies; a foul crow nest in Stony Field hatching its crows.
+// Every wait is on the game's clock: the scenario steps the sim itself (run, S.run: the page's loop
+// held, Game.headless, as tools/bot.mjs does), so a page that draws few frames runs as much game time
+// as one that draws many, and each check has its bound in game seconds. Where a check stands the hero
+// and a monster is D2's own length for it, from its row (its AI's ranges, its blow's reach, its aura's
+// radius) through monai.ts and src/core/units.ts.
 // Page and console errors fail the run. The last line is "MONSTERS OK <summary>" or "MONSTERS FAIL <reasons>".
 const MOOR = 2;
 const PLAINS = 3;
@@ -51,14 +56,14 @@ export default async function (page, shot, log) {
     S.monsters = (await import('/src/data/d2x/monsters.ts')).D2X_MONSTERS;
     S.supers = (await import('/src/data/d2x/superuniques.ts')).D2X_SUPERUNIQUES;
     S.dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
-    /** the hero beside a monster, `r` from it where they can see each other, the camera close */
-    S.beside = (m, r, zoom) => {
+    /** the hero beside a monster, `r` from it where they can see each other (and `ok` has the spot), the camera close */
+    S.beside = (m, r, zoom, ok = () => true) => {
       const p = game.player;
       const map = game.level.map;
       for (let k = 0; k < 24; k++) {
         const a = (k / 24) * Math.PI * 2;
         const spot = { x: m.pos.x + Math.sin(a) * r, z: m.pos.z + Math.cos(a) * r };
-        if (!map.circleClear(spot.x, spot.z, 0.45) || !map.los(spot, m.pos) || game.level.inTown(spot)) continue;
+        if (!map.circleClear(spot.x, spot.z, 0.45) || !map.los(spot, m.pos) || game.level.inTown(spot) || !ok(spot)) continue;
         game.teleportWithin(spot);
         p.intent = null;
         p.path = null;
@@ -72,6 +77,73 @@ export default async function (page, shot, log) {
     };
     S.A = await import('/src/game/d2/monai.ts');
     S.applyDamage = (await import('/src/game/combat.ts')).applyDamage;
+    const { monsterDef } = await import('/src/data/monsters.ts');
+    /** an AI parameter of row `id` in the difficulty played that is a length, metres (monai.ts AIP, subtiles) */
+    S.aipM = (id, ai, name) => S.A.subtiles(S.A.param(S.monsters[id], game.player.difficulty, ai, name));
+    /**
+     * how near the hero a monster of row `id` stands when its AI strikes (findTarget's bCombat): its
+     * blow's reach (ai.ts meleeReach: its arm and D2's MeleeRng) to the hero's edge
+     */
+    S.blowAt = (id) => {
+      const d = monsterDef(id);
+      return d.range + S.A.unitGap(d.row.meleeRng) + game.player.radius;
+    };
+    /** how near the hero a monster that shoots must be for its AI to shoot: a quill rat's aip1, a shaman's aip5 (AIP), else 10 subtiles */
+    S.shootFrom = (m) => {
+      const ai = m.def.row.ai;
+      if (ai === 'QuillRat') return S.aipM(m.def.id, ai, 'activate');
+      if (ai === 'FallenShaman') return S.aipM(m.def.id, ai, 'shootRange');
+      return S.A.subtiles(10);
+    };
+    /**
+     * The hero after a monster that shoots and backs off (a quill rat: each think inside its aip1 it
+     * shoots at 35 % or backs off, past it it only wanders, and inside its blow's reach it only bites,
+     * AiThink.cpp:1050-1123): back to 0.7 of `at` from it once it is past 0.9 of `at` or within its
+     * blow's reach (S.blowAt); round it to a clear spot it can see if the straight way back isn't one
+     */
+    S.after = (m, at) => {
+      const p = game.player;
+      const d = S.dist(m.pos, p.pos);
+      if (m.dead || (d <= 0.9 * at && d > S.blowAt(m.def.id))) return;
+      const k = (0.7 * at) / Math.max(1e-6, d);
+      const to = { x: m.pos.x + (p.pos.x - m.pos.x) * k, z: m.pos.z + (p.pos.z - m.pos.z) * k };
+      const map = game.level.map;
+      if (d > 0.1 && map.circleClear(to.x, to.z, 0.45) && map.los(to, m.pos)) game.teleportWithin(to);
+      else S.beside(m, 0.7 * at, renderer.zoomTarget);
+    };
+    /** `r` from the hero `deg` degrees round from +x: S.place's dx, dz */
+    S.off = (r, deg) => [r * Math.cos((deg * Math.PI) / 180), r * Math.sin((deg * Math.PI) / 180)];
+    /**
+     * The game run on the scenario's own steps, the page's loop held (Game.headless, as tools/bot.mjs):
+     * `secs` of game time at most, a step 1/60 s as main.ts makes them, whatever the page's frame rate;
+     * `poll(arg, t)` every `every` s of it, `t` the time run, until it returns something (no poll: the
+     * hero held). What it returned (null if nothing), the time run, and whether the game stood still
+     */
+    S.run = (secs, poll, arg, every) => {
+      const STEP = 1 / 60;
+      const per = Math.max(1, Math.round(every / STEP));
+      const n = Math.round(secs / STEP);
+      const was = game.headless;
+      game.headless = true;
+      const t0 = game.time;
+      try {
+        for (let k = 1; k <= n; k++) {
+          const before = game.time;
+          game.update(STEP);
+          if (game.time === before) return { r: null, t: game.time - t0, stalled: true };
+          if (k % per && k < n) continue;
+          if (!poll) {
+            S.hold();
+            continue;
+          }
+          const r = poll(arg, game.time - t0);
+          if (r !== undefined && r !== null && r !== false) return { r, t: game.time - t0 };
+        }
+        return { r: null, t: game.time - t0 };
+      } finally {
+        game.headless = was;
+      }
+    };
     // the game's own Monster class (an import here could be another copy of the module after a hot reload)
     S.Monster = game.level.monsters[0]?.constructor ?? (await import('/src/game/monster.ts')).Monster;
     /** a clearing of the area with the hero in it, the monsters round it cleared away, the camera close */
@@ -180,25 +252,35 @@ export default async function (page, shot, log) {
       return [...new Set(L.monsters.filter((m) => !m.dead && m.rank === 'normal' && L.areaAt(m.pos.x, m.pos.z).id === id).map((m) => m.def.id))];
     }, id);
     for (const k of kinds) {
+      // the last kind's dead done dying and the hero's swing over first: a Fallen within 15 subtiles of
+      // a corpse still dying runs from the hero (monai.ts frightened), and past its aip2 doesn't come
+      // back; the nearest of the next kind may stand by the one just killed. Up to 4 s of game time
+      await run(4, () => {
+        const S = window.__mon;
+        const p = game.player;
+        S.hold();
+        return !game.level.deaths.some((c) => S.A.dying(c) && S.dist(c.pos, p.pos) < 15) && p.state !== 'attack' && p.state !== 'cast';
+      }, undefined, 1 / 60);
       const r = await ev(
         ({ id, k }) => {
           const S = window.__mon;
           const L = game.level;
           const p = game.player;
           const all = L.monsters.filter((x) => !x.dead && x.rank === 'normal' && x.def.id === k && L.areaAt(x.pos.x, x.pos.z).id === id).sort((a, b) => S.dist(a.pos, p.pos) - S.dist(b.pos, p.pos));
-          // in its blow's reach (a quill rat's, a shaman's shots: a little off), so the slow ones strike too.
-          // The nearest may stand where nothing round it is clear (a den wall, a tree): the next one
-          // then, each at its reach and a little nearer or further
-          const reach = (x) => (x.missile() ? [2.5, 2, 3] : [1.3, 1.1, 1.6]);
-          const m = all.find((x) => reach(x).some((r) => S.beside(x, r, 3.4)));
+          // inside its blow's reach (S.blowAt), so it strikes as it thinks; one that shoots inside
+          // the range its AI shoots from (S.shootFrom) and outside its blow's. The nearest may stand
+          // where nothing round it is clear (a den wall, a tree): the next one then, each a little
+          // nearer or further
+          const at = (x) => (x.missile() ? [0.7, 0.6, 0.8].map((f) => f * S.shootFrom(x)) : [0.85, 0.75, 0.95].map((f) => f * S.blowAt(x.def.id)));
+          const m = all.find((x) => at(x).some((r) => S.beside(x, r, 3.4)));
           if (!m) return { error: `no spot by any of ${all.length} ${k}` };
           m.awake = true;
           // whatever it was about (a slow zombie's wander), it thinks again now
           m.move = null;
           m.thinkTimer = 0;
           S.foe = m;
-          S.hurt0 = p.life;
-          return { name: m.displayName, level: m.level, life: m.maxLife, ar: m.ar, def: m.defense, dmg: m.dmg, ai: m.def.row.ai, ranged: !!m.missile() };
+          S.fg = { range: m.missile() ? S.shootFrom(m) : 0, seen: null, d: S.dist(m.pos, p.pos) };
+          return { name: m.displayName, level: m.level, life: m.maxLife, ar: m.ar, def: m.defense, dmg: m.dmg, ai: m.def.row.ai, ranged: !!m.missile(), d: S.fg.d };
         },
         { id, k },
       );
@@ -206,31 +288,31 @@ export default async function (page, shot, log) {
         expect(false, r.error);
         continue;
       }
-      // long enough for a blow or a shot to land, the hero striking back once it has (a fallen of
-      // 1 life would fall to the first swing before it swung), or after 4 s if it is slow to start.
-      // One that shoots is never struck first (a quill rat of 2–4 life dies to one swing) and is
-      // kept near: each think in its aip1 it shoots at 35 % or backs off 2 subtiles each way, and
-      // past its aip1 (3.3 m) it only wanders (AiThink.cpp:1077-1110), so the hero goes after it
-      const seen = { attack: false };
-      const tries = r.ranged ? 150 : 80;
-      for (let i = 0; i < tries; i++) {
-        await page.waitForTimeout(100);
-        const s = await ev(({ back, follow }) => {
-          const S = window.__mon;
-          const m = S.foe;
-          const p = game.player;
-          if (back && !m.dead && p.state !== 'attack' && p.state !== 'cast') game.useSkillAt('attack', m, { ...m.pos }, true);
-          if (follow && !m.dead && S.dist(m.pos, p.pos) > 2.6) S.beside(m, 2, 3.4);
-          p.life = Math.max(p.life, p.stats.maxLife * 0.5);
-          return { state: m.state, dead: m.dead, proj: game.level.projectiles.filter((x) => x.owner === m).length };
-        }, { back: seen.attack || (!r.ranged && i >= 40), follow: r.ranged && !seen.attack && i % 3 === 2 });
-        if (s.state === 'attack' || s.state === 'cast' || s.proj) seen.attack = true;
-        if (seen.attack && i >= 8) break;
-      }
+      // up to 10 s of game time for a blow (15 for a shot) to start, its AI's rolls given many
+      // thoughts; the hero never strikes first (a fallen of 1 life would fall to the first swing
+      // before it swung), and strikes back for 0.8 s once it has. One that shoots is kept near:
+      // each think in its aip1 a quill rat shoots at 35 % or backs off 2 subtiles each way, and past
+      // its aip1 it only wanders (AiThink.cpp:1077-1110), so the hero goes after it
+      await run(r.ranged ? 15 : 10, (_, t) => {
+        const S = window.__mon;
+        const F = S.fg;
+        const m = S.foe;
+        const p = game.player;
+        p.life = Math.max(p.life, p.stats.maxLife * 0.5);
+        if (F.seen === null && (m.state === 'attack' || m.state === 'cast' || game.level.projectiles.some((x) => x.owner === m))) F.seen = t;
+        if (F.seen !== null && !m.dead && p.state !== 'attack' && p.state !== 'cast') game.useSkillAt('attack', m, { ...m.pos }, true);
+        if (F.range && F.seen === null && !m.dead && S.dist(m.pos, p.pos) > 0.85 * F.range) S.beside(m, 0.7 * F.range, 3.4);
+        return F.seen !== null && t - F.seen >= 0.8;
+      });
+      const { seen, end } = await ev(() => {
+        const S = window.__mon;
+        const m = S.foe;
+        return { seen: S.fg.seen, end: `now ${S.dist(m.pos, game.player.pos).toFixed(2)} m off, ${m.dead ? 'dead' : m.state}, fright ${m.aiFlag}` };
+      });
       await frames();
       await shot(`${label}-${k}`);
-      expect(seen.attack, `a ${k} never attacked the hero`);
-      log(`  ${k} ${r.name}: level ${r.level}, ${r.life} life, defense ${r.def}, A1 ${r.dmg.join('–')} at ${r.ar}, fought as ${r.ai}${seen.attack ? '' : ' (no attack seen)'}`);
+      expect(seen !== null, `a ${k} never attacked the hero in ${r.ranged ? 15 : 10} s, the hero ${r.d.toFixed(2)} m off (${end})`);
+      log(`  ${k} ${r.name}: level ${r.level}, ${r.life} life, defense ${r.def}, A1 ${r.dmg.join('–')} at ${r.ar}, fought as ${r.ai}${seen !== null ? `, attacking ${seen.toFixed(1)} s in from ${r.d.toFixed(2)} m` : ' (no attack seen)'}`);
     }
   };
 
@@ -251,33 +333,30 @@ export default async function (page, shot, log) {
     }, key);
     if (r.error) return expect(false, r.error);
     log(`  ${key}: ${r.name} level ${r.level}, ${r.life} life, ${r.mods}; minions ${r.minions.join(', ')}`);
-    await page.waitForTimeout(400);
+    await run(0.4);
     await frames();
     await shot(`${label}-pack`);
     await ev(() => {
       const S = window.__mon;
       for (const m of game.level.monstersNear(S.foe.pos, 12)) m.awake = true;
     });
-    for (let i = 0; i < 15; i++) {
-      await page.waitForTimeout(100);
-      await ev(() => {
-        const p = game.player;
-        p.life = Math.max(p.life, p.stats.maxLife * 0.5);
-      });
-    }
+    await run(1.5);
     await frames();
     await shot(`${label}-fight`);
     return true;
   };
 
-  /** sim-time steps of the page's own frames: `ms` of waiting, the hero held, `poll` (given `arg`) each 100 ms until it returns something */
-  const watch = async (ms, poll, arg) => {
-    for (let t = 0; t < ms; t += 100) {
-      await page.waitForTimeout(100);
-      const r = await ev(poll ?? (() => (window.__mon.hold(), undefined)), arg);
-      if (r !== undefined && r !== null && r !== false) return r;
-    }
-    return null;
+  /**
+   * `secs` of game time at most, the scenario stepping it (S.run), `poll` (given `arg` and the time
+   * run; none: the hero held) every `every` s of it until it returns something: that, or null. The
+   * poll is sent as its source, as page.evaluate sends a function: it reads only the page and `arg`
+   */
+  const run = async (secs, poll, arg, every = 0.1) => {
+    // a level's loading veil holds the world in play (main.ts): so it does here
+    await page.waitForFunction(() => !window.renderer.veiled, null, { timeout: 30000 });
+    const out = await ev(({ secs, src, arg, every }) => window.__mon.run(secs, src ? (0, eval)(`(${src})`) : null, arg, every), { secs, src: poll ? poll.toString() : null, arg, every });
+    expect(!out.stalled, `the game stood still ${out.t.toFixed(2)} s into a run of ${secs} s`);
+    return out.r;
   };
 
   /**
@@ -305,8 +384,8 @@ export default async function (page, shot, log) {
     if (r0.error) return expect(false, r0.error);
     log(`Blood Raven in the Burial Grounds: quest ${r0.quest}, the ${r0.model} look, cry ${r0.voice}, level ${r0.level}, ${r0.life} life, ${r0.party} of her party about`);
     expect(r0.quest === 'a1q2' && r0.model === 'bloodraven', `the Burial Grounds' Blood Raven: quest ${r0.quest}, look ${r0.model}`);
-    // her cast's moment: a zombie of hers at her feet (polled each 100 ms; the shot as it gets up)
-    const up = await watch(6000, () => {
+    // her cast's moment: a zombie of hers at her feet (polled each 0.1 s; the shot as it gets up)
+    const up = await run(6, () => {
       const S = window.__mon;
       const b = S.raven.b;
       S.hold();
@@ -334,17 +413,20 @@ export default async function (page, shot, log) {
       S.raven.xp = p.xp;
       S.raven.ground = L.ground.length;
       S.raven.t0 = game.time;
+      // nothing runs from her death until the scenario steps it: 0.8 s and 5.2 s of it exactly
+      game.headless = true;
       return { undead: undead.length, beyond: beyond.length };
     });
     log(`  killed: ${d.undead} undead within 35 subtiles of her, ${d.beyond} just past it`);
-    // by the game's clock (a slow page's frames carry less of it than the wall's)
-    const since = (secs) => watch(20000, (secs) => (window.__mon.hold(), game.time - window.__mon.raven.t0 >= secs || null), secs);
+    // by the game's clock since her death, polled each step
+    const since = (secs) => run(secs + 0.5, (secs) => (window.__mon.hold(), game.time - window.__mon.raven.t0 >= secs - 1e-9 || null), secs, 1 / 60);
     await since(0.8);
     const early = await ev(() => window.__mon.raven.undead.filter((m) => m.dead).length);
     await since(5.2);
     const after = await ev(() => {
       const S = window.__mon;
       const R = S.raven;
+      game.headless = false;
       return { fell: R.undead.filter((m) => m.dead).length, stood: R.beyond.filter((m) => !m.dead).length, xp: game.player.xp - R.xp, ground: game.level.ground.length - R.ground };
     });
     await frames();
@@ -363,20 +445,30 @@ export default async function (page, shot, log) {
       const S = window.__mon;
       if (!game.travelToArea(4)) return { error: 'no Stony Field' };
       const L = game.level;
-      // one of its own away from Rakanishu's pack at the cairn, else one set down in a clearing
-      let n = L.monsters.find((m) => m.def.id === 'crownest1' && !m.dead && L.areaAt(m.pos.x, m.pos.z).id === 4 && !L.monsters.some((o) => o.superUnique && S.dist(o.pos, m.pos) < 15));
+      // where a crow comes out: MonStats SpawnX, SpawnY off it, which must be clear for a body of
+      // size 2 (ai.ts exitClear, D2's MONSTERSPAWN_CanSpawnAtSpawnerExit): one whose exit is blocked
+      // never hatches
+      const exitOf = (m) => ({ x: m.pos.x + S.A.subtiles(m.def.row.spawn?.x ?? 0), z: m.pos.z + S.A.subtiles(m.def.row.spawn?.y ?? 0) });
+      const opens = (m) => {
+        const e = exitOf(m);
+        return L.monsterMap.circleClear(e.x, e.z, S.A.subtiles(1)) && !L.inTown(e);
+      };
+      // the hero inside its 20 subtiles (past them it stands, ai.ts foulCrowNest)
+      const near = [0.6, 0.5, 0.7].map((f) => f * S.A.subtiles(20));
+      // one of its own away from Rakanishu's pack at the cairn, its exit clear, else one set down in a clearing
+      let n = L.monsters.find((m) => m.def.id === 'crownest1' && !m.dead && L.areaAt(m.pos.x, m.pos.z).id === 4 && opens(m) && !L.monsters.some((o) => o.superUnique && S.dist(o.pos, m.pos) < 15));
       const own = !!n;
-      if (!n || ![3, 2.5, 3.5].some((r) => S.beside(n, r, 3.8))) {
+      if (!n || !near.some((r) => S.beside(n, r, 3.8))) {
         if (!S.clearing(4, 3.8)) return { error: 'no clearing in Stony Field' };
-        n = S.place('crownest1', 3, -1);
+        n = S.place('crownest1', near[0], -1);
       }
       // what stood round it gone, for a clear look at the crows coming out
       L.monsters = L.monsters.filter((m) => m === n || m.dead || S.dist(m.pos, n.pos) > 10);
       // hatched in a while if never yet: its timer from now
       n.aiStamp = L.time - 3;
       n.thinkTimer = 0;
-      S.nest = { n, seen: new Set(), at: [] };
-      return { own, tally: n.aiTally, d: S.dist(n.pos, game.player.pos) / S.A.subtiles(1) };
+      S.nest = { n, exit: exitOf(n), seen: new Set(), at: [] };
+      return { own, open: opens(n), tally: n.aiTally, d: S.dist(n.pos, game.player.pos) / S.A.subtiles(1) };
     });
     if (r0.error) return expect(false, r0.error);
     log(`a foul crow nest in Stony Field (${r0.own ? 'its own' : 'set down'}), the hero ${r0.d.toFixed(1)} subtiles off, ${r0.tally} hatched before`);
@@ -384,20 +476,20 @@ export default async function (page, shot, log) {
       const S = window.__mon;
       const N = S.nest;
       S.hold();
-      const exit = { x: N.n.pos.x, z: N.n.pos.z + S.A.subtiles(3) };
       for (const c of game.level.monsters) {
         if (c.def.id !== 'foulcrow1' || !c.noXp || N.seen.has(c)) continue;
         N.seen.add(c);
-        N.at.push({ t: game.time, off: S.dist(c.pos, exit) / S.A.subtiles(1), mine: c.leader !== null });
+        N.at.push({ t: game.time, off: S.dist(c.pos, N.exit) / S.A.subtiles(1), mine: c.leader !== null });
         return N.at[N.at.length - 1];
       }
       return null;
     };
-    const first = await watch(4000, poll);
-    if (!expect(first, 'the nest hatched nothing in 4 s')) return;
+    // polled each step: a crow where it comes out, the gap between two to a step
+    const first = await run(4, poll, undefined, 1 / 60);
+    if (!expect(first, `the nest hatched nothing in 4 s (its exit ${r0.open ? 'clear' : 'blocked'})`)) return;
     await frames();
     await shot('nest-hatch');
-    const second = await watch(15000, poll);
+    const second = await run(15, poll, undefined, 1 / 60);
     const gap = second ? second.t - first.t : null;
     log(`  a crow ${first.off.toFixed(1)} subtiles from its exit, ${first.mine ? 'a minion' : "no one's"}; the next ${gap === null ? 'never' : `${gap.toFixed(1)} s later`}`);
     expect(first.off <= 2.5 && !first.mine && gap !== null && gap >= 3.9, `the nest: a crow ${first.off.toFixed(1)} subtiles off its exit, a minion ${first.mine}, the next ${gap}`);
@@ -417,7 +509,7 @@ export default async function (page, shot, log) {
       return { ok: true };
     });
     if (r0.error) return expect(false, r0.error);
-    await watch(1200);
+    await run(1.2);
     const k = await ev(() => {
       const S = window.__mon;
       const p = game.player;
@@ -427,54 +519,54 @@ export default async function (page, shot, log) {
       S.fl.far = S.fl.d0.slice();
       return { awake: S.fl.rest.every((m) => m.awake), d0: S.fl.d0 };
     });
-    let shotTaken = false;
-    for (let t = 0; t < 2600; t += 100) {
-      await page.waitForTimeout(100);
-      await ev(() => {
-        const S = window.__mon;
-        S.hold();
-        S.fl.rest.forEach((m, i) => (S.fl.far[i] = Math.max(S.fl.far[i], S.dist(m.pos, game.player.pos))));
-      });
-      if (!shotTaken && t >= 700) {
-        await frames();
-        await shot('fallen-flee');
-        shotTaken = true;
-      }
-    }
+    // how far each got: while the corpse dies (DEATH_FRAMES, 1.76 s) one mid-blow thinks within its
+    // blow and its aidel (1.6 s) and runs 12 subtiles at +50 %; 3.5 s of game time covers it
+    const track = () => {
+      const S = window.__mon;
+      S.hold();
+      S.fl.rest.forEach((m, i) => (S.fl.far[i] = Math.max(S.fl.far[i], S.dist(m.pos, game.player.pos))));
+    };
+    await run(0.7, track);
+    await frames();
+    await shot('fallen-flee');
+    await run(2.8, track);
     const fled = await ev(() => {
       const S = window.__mon;
       return { far: S.fl.far, flags: S.fl.rest.map((m) => m.aiFlag), n: S.fl.rest.filter((m, i) => S.fl.far[i] > S.fl.d0[i] + 1).length };
     });
     expect(fled.n >= 2, `only ${fled.n} of 3 fallen ran as one died`);
-    // the hero comes on, 2.5 m short of them: back they come (D2 walks a Fallen at a hero within its aip2, or a leader's cry)
-    await ev(() => {
+    // the hero comes on, inside their aip2 (a Fallen walks at a hero within it, or on a leader's cry):
+    // 0.6 of it short of the middle of them, back they come
+    const near = await ev(() => {
       const S = window.__mon;
       const p = game.player;
       const r = S.fl.rest;
+      S.fl.near = 0.6 * S.aipM('fallen1', 'Fallen', 'approachDist');
       const mid = { x: (r[0].pos.x + r[1].pos.x + r[2].pos.x) / 3, z: (r[0].pos.z + r[1].pos.z + r[2].pos.z) / 3 };
-      const k = 2.5 / Math.max(2.5, S.dist(mid, p.pos));
+      const k = S.fl.near / Math.max(S.fl.near, S.dist(mid, p.pos));
       const to = { x: mid.x + (p.pos.x - mid.x) * k, z: mid.z + (p.pos.z - mid.z) * k };
       game.teleportWithin(game.level.map.nearestWalkable(to.x, to.z, 2) ?? to);
       S.fl.t1 = game.time;
+      return S.fl.near;
     });
-    const back = await watch(12000, () => {
+    const back = await run(12, () => {
       const S = window.__mon;
       S.hold();
       const m = S.fl.rest.find((x) => x.state === 'attack');
       if (m) return { after: game.time - S.fl.t1, flag: m.aiFlag };
-      // not yet: the hero goes on, up to the nearest (a Fallen walks at a hero within its aip2, 10 subtiles)
+      // not yet (one wandered off past it): the hero goes on, up to the nearest, as near
       if (game.time - S.fl.t1 > 4 && !S.fl.closer) {
         S.fl.closer = true;
         const p = game.player;
         const n = S.fl.rest.filter((x) => !x.dead).sort((a, b) => S.dist(a.pos, p.pos) - S.dist(b.pos, p.pos))[0];
-        if (n) S.beside(n, 1.8, 5.2);
+        if (n) S.beside(n, S.fl.near, 5.2);
       }
       return null;
     });
     await frames();
     await shot('fallen-return');
-    expect(back, 'the fallen never came back to strike');
-    log(`  Fallen: one killed, ${fled.n}/3 ran (${k.d0.map((d, i) => `${d.toFixed(1)}→${fled.far[i].toFixed(1)} m`).join(', ')}), fright kept for the next blow: ${fled.flags.join('/')}; the hero came on, back and striking ${back ? back.after.toFixed(1) : '—'} s after`);
+    expect(back, 'the fallen never came back to strike in 12 s');
+    log(`  Fallen: one killed, ${fled.n}/3 ran (${k.d0.map((d, i) => `${d.toFixed(1)}→${fled.far[i].toFixed(1)} m`).join(', ')}), fright kept for the next blow: ${fled.flags.join('/')}; the hero came on to ${near.toFixed(2)} m of them, back and striking ${back ? back.after.toFixed(1) : '—'} s after`);
     facts.push(`fallen fled ${fled.n}/3`);
   };
 
@@ -491,7 +583,7 @@ export default async function (page, shot, log) {
       return { ok: true };
     });
     if (r0.error) return expect(false, r0.error);
-    await watch(800);
+    await run(0.8);
     await ev(() => {
       const S = window.__mon;
       // the hero a step off, so the fallen don't stand over the corpse
@@ -499,7 +591,7 @@ export default async function (page, shot, log) {
       game.killMonster(S.sh.fs[0], 'phys');
       S.sh.t0 = game.time;
     });
-    const casting = await watch(12000, () => {
+    const casting = await run(12, () => {
       const S = window.__mon;
       S.hold();
       const s = S.sh.sh;
@@ -508,8 +600,8 @@ export default async function (page, shot, log) {
     });
     await frames();
     await shot('shaman-raising');
-    const up = await watch(3000, () => (window.__mon.hold(), window.__mon.sh.fs[0].dead ? null : { at: game.time - window.__mon.sh.t0, noXp: window.__mon.sh.fs[0].noXp }));
-    await watch(400);
+    const up = await run(3, () => (window.__mon.hold(), window.__mon.sh.fs[0].dead ? null : { at: game.time - window.__mon.sh.t0, noXp: window.__mon.sh.fs[0].noXp }));
+    await run(0.4);
     await frames();
     await shot('shaman-raised');
     expect(up?.noXp, `the shaman's fallen wasn't raised (${JSON.stringify(casting)})`);
@@ -518,49 +610,49 @@ export default async function (page, shot, log) {
     facts.push('shaman raised');
   };
 
-  /** quill rats 2.6 m off: their quills fly (A2, spike1 at its D2 speed) */
+  /** quill rats inside their aip1: their quills fly (A2, spike1 at its D2 speed) */
   const quillRats = async () => {
     const r0 = await ev(() => {
       const S = window.__mon;
       if (!S.clearing(2, 4.4)) return { error: 'no clearing for the quill rats' };
-      S.rats = [S.place('quillrat1', 2.6, 0.6), S.place('quillrat1', 2.4, -1)];
+      // 0.7 of their aip1 (10 subtiles) off, the hero after the nearer one as it backs off (S.after)
+      S.ratAt = S.aipM('quillrat1', 'QuillRat', 'activate');
+      S.rats = [S.place('quillrat1', ...S.off(0.7 * S.ratAt, 13)), S.place('quillrat1', ...S.off(0.7 * S.ratAt, -23))];
       for (const r of S.rats) r.awake = true;
       S.ratShots = new Set();
-      return { ok: true };
+      S.ratFollow = -Infinity;
+      return { at: S.ratAt };
     });
     if (r0.error) return expect(false, r0.error);
-    let shotTaken = false;
-    for (let t = 0; t < 8000; t += 100) {
-      await page.waitForTimeout(100);
-      const n = await ev((follow) => {
-        const S = window.__mon;
-        S.hold();
-        const p = game.player;
-        // each think in their aip1 (10 subtiles, 3.3 m) they shoot at 35 % or back off; past it they
-        // only wander (AiThink.cpp:1077-1110): the hero keeps after the nearer one, inside it
+    // 15 s of game time: a rat kept in range shoots about once in 3 s (a cast and its aidel, a 35 %
+    // roll each think between). Polled each step, every quill counted; the hero after them each 0.3 s
+    const SECS = 15;
+    const poll = (stopAtFirst, t) => {
+      const S = window.__mon;
+      S.hold();
+      const p = game.player;
+      if (game.time - S.ratFollow >= 0.3 - 1e-9) {
+        S.ratFollow = game.time;
         const r = S.rats.filter((m) => !m.dead).sort((a, b) => S.dist(a.pos, p.pos) - S.dist(b.pos, p.pos))[0];
-        if (follow && r && S.dist(r.pos, p.pos) > 2.8) {
-          const k = 2.2 / S.dist(r.pos, p.pos);
-          const to = { x: r.pos.x + (p.pos.x - r.pos.x) * k, z: r.pos.z + (p.pos.z - r.pos.z) * k };
-          if (game.level.map.circleClear(to.x, to.z, 0.45)) game.teleportWithin(to);
-        }
-        const live = game.level.projectiles.filter((x) => S.rats.includes(x.owner));
-        for (const x of live) S.ratShots.add(x.id);
-        return live.length;
-      }, t % 300 === 0);
-      if (n && !shotTaken) {
-        await frames();
-        await shot('quillrats-fire');
-        shotTaken = true;
+        if (r) S.after(r, S.ratAt);
       }
+      const live = game.level.projectiles.filter((x) => S.rats.includes(x.owner));
+      for (const x of live) S.ratShots.add(x.id);
+      return stopAtFirst && live.length ? t : null;
+    };
+    const t1 = await run(SECS, poll, true, 1 / 60);
+    if (t1 !== null) {
+      await frames();
+      await shot('quillrats-fire');
+      await run(SECS - t1, poll, false, 1 / 60);
     }
     const r = await ev(() => {
       const S = window.__mon;
       const sp = game.level.projectiles.find((x) => S.rats.includes(x.owner));
       return { shots: S.ratShots.size, d: S.rats.map((m) => S.dist(m.pos, game.player.pos).toFixed(1)), speed: sp ? Math.hypot(sp.vel.x, sp.vel.z) : null };
     });
-    expect(r.shots > 0, 'the quill rats never shot');
-    log(`  quill rats: ${r.shots} quills in 8 s (the hero after them as they back off), now ${r.d.join(' and ')} m off${r.speed ? `, flying ${r.speed.toFixed(2)} m/s` : ''}`);
+    expect(r.shots > 0, `the quill rats never shot in ${SECS} s, ${(0.7 * r0.at).toFixed(2)} m off`);
+    log(`  quill rats: ${r.shots} quills in ${SECS} s from ${(0.7 * r0.at).toFixed(2)} m (their aip1 ${r0.at.toFixed(2)} m; the hero after them as they back off), now ${r.d.join(' and ')} m off${r.speed ? `, flying ${r.speed.toFixed(2)} m/s` : ''}`);
     facts.push(`quills ${r.shots}`);
   };
 
@@ -570,57 +662,59 @@ export default async function (page, shot, log) {
       const S = window.__mon;
       if (!S.clearing(2)) return { error: 'no clearing for the pack' };
       const pack = [];
-      const lead = S.place('fallen1', 7, 0, 'normal', [], pack);
-      const far = S.place('fallen1', 13, 0, 'normal', [], pack);
+      // the fallen's notice range (MonStats aidist, else 35 subtiles): the leader inside it, the minion well past it
+      const notice = S.A.subtiles(S.A.noticeRange(S.monsters.fallen1, 0));
+      const lead = S.place('fallen1', 0.8 * notice, 0, 'normal', [], pack);
+      const far = S.place('fallen1', 1.5 * notice, 0, 'normal', [], pack);
       far.follow(lead);
-      S.pw = { lead, far, notice: S.A.subtiles(S.A.noticeRange(lead.def.row, 0)) };
-      return { notice: S.pw.notice };
+      S.pw = { lead, far, notice };
+      return { notice, lead: S.dist(lead.pos, game.player.pos) };
     });
     if (r.error) return expect(false, r.error);
-    const woke = await watch(3000, () => {
+    const woke = await run(3, () => {
       const S = window.__mon;
       S.hold();
       return S.pw.lead.awake ? { far: S.pw.far.awake, d: S.dist(S.pw.far.pos, game.player.pos) } : null;
     });
-    expect(woke?.far, `the pack didn't wake as one (${JSON.stringify(woke)})`);
-    log(`  a pack noticing the hero: its leader 7 m off (notice ${r.notice.toFixed(1)} m), its minion ${woke ? woke.d.toFixed(1) : '?'} m off woke with it: ${!!woke?.far}`);
+    expect(woke?.far, `the pack didn't wake as one in 3 s (${JSON.stringify(woke)})`);
+    log(`  a pack noticing the hero: its leader ${r.lead.toFixed(1)} m off (notice ${r.notice.toFixed(1)} m), its minion ${woke ? woke.d.toFixed(1) : '?'} m off woke with it: ${!!woke?.far}`);
   };
 
-  /** the spearmaiden and the huntmaiden come on from 6 m: where each stands as it strikes */
+  /** the spearmaiden and the huntmaiden come on from afar: where each stands as it strikes */
   const lancerReach = async () => {
     const r0 = await ev(() => {
       const S = window.__mon;
       if (!S.clearing(3)) return { error: 'no clearing in Cold Plains' };
-      S.lr = { lancer: S.place('cr_lancer1', 6, 0), hunter: S.place('corruptrogue1', -6, 0), at: {} };
+      // from past where both run in: the spearmaiden's aip5, the huntmaiden's 20 subtiles (normal)
+      const from = 1.2 * Math.max(S.aipM('cr_lancer1', 'CorruptLancer', 'alwaysRun'), S.A.subtiles(20));
+      S.lr = { lancer: S.place('cr_lancer1', from, 0), hunter: S.place('corruptrogue1', -from, 0), at: {} };
       S.lr.lancer.awake = S.lr.hunter.awake = true;
       // their reaches' difference, centre to centre, where a walk at the hero stops (ai.ts heroReach, 0.9 of it)
       const reach = (m) => m.def.range + S.A.unitGap(m.def.row.meleeRng);
-      return { more: 0.9 * (reach(S.lr.lancer) - reach(S.lr.hunter)) };
+      return { from, more: 0.9 * (reach(S.lr.lancer) - reach(S.lr.hunter)) };
     });
     if (r0.error) return expect(false, r0.error);
-    let shotTaken = false;
-    for (let t = 0; t < 8000; t += 50) {
-      await page.waitForTimeout(50);
-      const s = await ev(() => {
-        const S = window.__mon;
-        S.hold();
-        const p = game.player;
-        for (const k of ['lancer', 'hunter']) {
-          const m = S.lr[k];
-          if (m.state === 'attack' && S.lr.at[k] === undefined) S.lr.at[k] = S.dist(m.pos, p.pos);
-        }
-        return { lancer: S.lr.at.lancer, hunter: S.lr.at.hunter, thrusting: S.lr.lancer.state === 'attack' };
-      });
-      if (s.thrusting && !shotTaken) {
-        await frames();
-        await shot('lancer-reach');
-        shotTaken = true;
+    // polled each step: each one's distance as its first blow begins
+    const poll = (stopAtThrust, t) => {
+      const S = window.__mon;
+      S.hold();
+      const p = game.player;
+      for (const k of ['lancer', 'hunter']) {
+        const m = S.lr[k];
+        if (m.state === 'attack' && S.lr.at[k] === undefined) S.lr.at[k] = S.dist(m.pos, p.pos);
       }
-      if (s.lancer !== undefined && s.hunter !== undefined && shotTaken) break;
+      const both = S.lr.at.lancer !== undefined && S.lr.at.hunter !== undefined;
+      return both || (stopAtThrust && S.lr.lancer.state === 'attack') ? t : null;
+    };
+    const t1 = await run(8, poll, true, 1 / 60);
+    if (t1 !== null) {
+      await frames();
+      await shot('lancer-reach');
+      await run(8 - t1, poll, false, 1 / 60);
     }
     const r = await ev(() => window.__mon.lr.at);
-    expect(r.lancer !== undefined && r.hunter !== undefined && r.lancer > r.hunter + 0.6 * r0.more, `the spearmaiden struck from ${r.lancer?.toFixed(2)} m, the huntmaiden from ${r.hunter?.toFixed(2)} m (${r0.more.toFixed(2)} m more wanted)`);
-    log(`  reach: the spearmaiden (MeleeRng 2) struck from ${r.lancer?.toFixed(2)} m, the huntmaiden from ${r.hunter?.toFixed(2)} m (D2's reach ${r0.more.toFixed(2)} m more)`);
+    expect(r.lancer !== undefined && r.hunter !== undefined && r.lancer > r.hunter + 0.6 * r0.more, `the spearmaiden struck from ${r.lancer?.toFixed(2)} m, the huntmaiden from ${r.hunter?.toFixed(2)} m in 8 s (${r0.more.toFixed(2)} m more wanted)`);
+    log(`  reach: from ${r0.from.toFixed(2)} m, the spearmaiden (MeleeRng 2) struck from ${r.lancer?.toFixed(2)} m, the huntmaiden from ${r.hunter?.toFixed(2)} m (D2's reach ${r0.more.toFixed(2)} m more)`);
   };
 
   /** Bishibosh raises a fallen of his once it lies dead (any Fallen within his aip4, a unique's search) */
@@ -629,38 +723,54 @@ export default async function (page, shot, log) {
       const S = window.__mon;
       const L = game.level;
       const b = L.monsters.find((m) => m.superUnique === 'Bishibosh' && !m.dead);
-      const f = b && L.monsters.find((m) => m.leader === b && !m.dead);
-      if (!b || !f) return { error: `Bishibosh ${!!b}, a minion ${!!f}` };
-      if (![5, 4, 3].some((r) => S.beside(b, r, 5.2))) return { error: 'no spot by Bishibosh' };
+      if (!b) return { error: 'no Bishibosh' };
+      // his search: the Fallen lying dead within his aip4 (raiseTarget). The nearest minion of his,
+      // set down within half of it if it stands farther, so it lies inside it however he steps about
+      const range = S.A.subtiles(S.A.param(b.def.row, b.difficulty, 'FallenShaman', 'raiseRange'));
+      const f = L.monsters.filter((m) => m.leader === b && !m.dead).sort((x, y) => S.dist(x.pos, b.pos) - S.dist(y.pos, b.pos))[0];
+      if (!f) return { error: 'no minion of Bishibosh' };
+      if (S.dist(f.pos, b.pos) > 0.5 * range) {
+        const spot = [...Array(16).keys()].map((k) => ({ x: b.pos.x + Math.sin((k / 16) * Math.PI * 2) * 0.4 * range, z: b.pos.z + Math.cos((k / 16) * Math.PI * 2) * 0.4 * range })).find((q) => L.monsterMap.circleClear(q.x, q.z, f.radius));
+        if (!spot) return { error: `no spot for a minion within ${(0.5 * range).toFixed(1)} m of Bishibosh` };
+        f.pos = { ...spot };
+        f.prevPos = { ...spot };
+        f.move = null;
+        L.monstersMoved([f]);
+      }
+      // the hero off the corpse to be (nothing may stand on it as it gets up)
+      if (![5, 4, 3].some((r) => S.beside(b, r, 5.2, (q) => S.dist(q, f.pos) >= 2))) return { error: 'no spot by Bishibosh' };
       for (const m of L.monstersNear(b.pos, 14)) m.awake = true;
+      const off = S.dist(f.pos, b.pos);
       game.killMonster(f, 'phys');
       S.bb = { b, f, t0: game.time };
-      return { ok: true };
+      return { range, off };
     });
     if (r.error) return expect(false, r.error);
-    const up = await watch(14000, () => {
+    const up = await run(14, () => {
       const S = window.__mon;
       S.hold();
       return S.bb.f.dead ? null : { at: game.time - S.bb.t0 };
     });
     await frames();
     await shot('bishibosh-raised');
-    expect(up, "Bishibosh didn't raise his fallen");
-    log(`  Bishibosh raised his fallen ${up ? up.at.toFixed(1) : '—'} s after it fell`);
+    expect(up, `Bishibosh didn't raise his fallen in 14 s (${r.off.toFixed(1)} m from him, his aip4 ${r.range.toFixed(1)} m)`);
+    log(`  Bishibosh raised his fallen ${up ? up.at.toFixed(1) : '—'} s after it fell ${r.off.toFixed(1)} m from him (his aip4 ${r.range.toFixed(1)} m)`);
   };
 
   /** enchanted uniques: what each modifier does */
   const enchanted = async () => {
-    // multiple shots (29) on a quill rat, cursed (7) on a fallen at the hero, an aura (Holy Freeze, on a 30)
+    // multiple shots (29) on a quill rat inside its aip1, cursed (7) on a fallen in its blow's reach,
+    // an aura (Holy Freeze, on a 30) with the hero well inside its radius (Skills.txt ln12: 6 subtiles at level 1)
     const r2 = await ev(() => {
       const S = window.__mon;
       const L = game.level;
       if (!S.clearing(2, 4.4)) return { error: 'no clearing for the uniques' };
-      S.en = {};
-      S.en.rat = S.place('quillrat1', 1.4, -0.8, 'unique', [29]);
-      S.en.cur = S.place('fallen1', 1.0, 0, 'unique', [7]);
-      S.en.aura = S.place('fallen1', -2.2, -2, 'unique', [30]);
-      S.en.aura.aura = { skill: 'Holy Freeze', lvl: 1, n: S.A.auraNumbers('Holy Freeze', 1) };
+      const n = S.A.auraNumbers('Holy Freeze', 1);
+      S.en = { ratAt: S.aipM('quillrat1', 'QuillRat', 'activate'), follow: -Infinity, multi: 0, amp: 0, chill: 0, chillFrom: null };
+      S.en.rat = S.place('quillrat1', ...S.off(0.65 * S.en.ratAt, -30), 'unique', [29]);
+      S.en.cur = S.place('fallen1', ...S.off(0.75 * S.blowAt('fallen1'), 0), 'unique', [7]);
+      S.en.aura = S.place('fallen1', ...S.off(0.6 * n.radius, 225), 'unique', [30]);
+      S.en.aura.aura = { skill: 'Holy Freeze', lvl: 1, n };
       if (!L.auras.includes(S.en.aura)) L.auras.push(S.en.aura);
       for (const m of [S.en.rat, S.en.cur, S.en.aura]) m.awake = true;
       // the hero bare, no defense and no block, so the cursed one's blows land at D2's 95 % cap and
@@ -670,54 +780,57 @@ export default async function (page, shot, log) {
         d.def = 0;
         d.block = 0;
       };
-      return { slow: S.en.aura.aura.n.slow, ampFor: S.A.amplifyCurse(S.en.cur.level).seconds };
+      return { slow: n.slow, radius: n.radius, auraOff: S.dist(S.en.aura.pos, game.player.pos), ampFor: S.A.amplifyCurse(S.en.cur.level).seconds };
     });
     if (r2.error) return expect(false, r2.error);
-    let multi = 0;
-    let amp = 0;
-    let chill = 0;
-    let shotTaken = false;
-    for (let t = 0; t < 14000; t += 100) {
-      await page.waitForTimeout(100);
-      const s = await ev((follow) => {
-        const S = window.__mon;
-        const p = game.player;
-        S.hold();
-        S.en.bare();
-        // the rat backs off: the hero keeps near it, the cursed one at their heels
-        const r = S.en.rat;
-        if (follow && !r.dead && S.dist(r.pos, p.pos) > 2.4) {
-          const k = 2 / S.dist(r.pos, p.pos);
-          const to = { x: r.pos.x + (p.pos.x - r.pos.x) * k, z: r.pos.z + (p.pos.z - r.pos.z) * k };
-          if (game.level.map.circleClear(to.x, to.z, 0.45)) game.teleportWithin(to);
-        }
-        const spikes = game.level.projectiles.filter((x) => x.owner === S.en.rat).length;
-        return { spikes, amp: p.ampTime, chill: p.chillTime > 0 ? p.chillAmount : 0 };
-      }, t % 1000 === 0);
-      multi = Math.max(multi, s.spikes);
-      amp = Math.max(amp, s.amp);
-      chill = Math.max(chill, s.chill);
-      if (s.spikes >= 3 && !shotTaken) {
-        await frames();
-        await shot('multishot-cursed-aura');
-        shotTaken = true;
+    // 20 s of game time (the rat shoots about once in 3 s, quillRats), polled each step, the most
+    // quills in flight at once counted; the rat backs off: the hero after it each 0.3 s (S.after),
+    // the cursed one at their heels
+    const SECS = 20;
+    const poll = (shotTaken, t) => {
+      const S = window.__mon;
+      const E = S.en;
+      const p = game.player;
+      S.hold();
+      E.bare();
+      const r = E.rat;
+      if (game.time - E.follow >= 0.3 - 1e-9) {
+        E.follow = game.time;
+        S.after(r, E.ratAt);
       }
-      if (multi >= 3 && amp > 0 && chill > 0 && shotTaken) break;
-    }
-    if (!shotTaken) await shot('multishot-cursed-aura');
+      const spikes = game.level.projectiles.filter((x) => x.owner === r).length;
+      E.multi = Math.max(E.multi, spikes);
+      E.amp = Math.max(E.amp, p.ampTime);
+      const chill = p.chillTime > 0 ? p.chillAmount : 0;
+      if (chill > E.chill) {
+        E.chill = chill;
+        E.chillFrom = S.dist(E.aura.pos, p.pos);
+      }
+      if (!shotTaken && spikes >= 3) return { t };
+      return shotTaken && E.multi >= 3 && E.amp > 0 && E.chill > 0 ? { t } : null;
+    };
+    const first = await run(SECS, poll, false, 1 / 60);
+    await frames();
+    await shot('multishot-cursed-aura');
+    if (first) await run(SECS - first.t, poll, true, 1 / 60);
+    const { multi, chill, chillFrom, ...got } = await ev(() => {
+      const E = window.__mon.en;
+      return { multi: E.multi, amp: E.amp, chill: E.chill, chillFrom: E.chillFrom };
+    });
+    let amp = got.amp;
     if (!amp) {
-      // the hero went after the rat: now they stand by the cursed one until a blow of its lands
+      // the hero went after the rat: now they stand by the cursed one, in its blow's reach, until a blow of its lands
       await ev(() => {
         const S = window.__mon;
-        if (!S.en.cur.dead) S.beside(S.en.cur, 1.0, 4.4);
+        if (!S.en.cur.dead) S.beside(S.en.cur, 0.75 * S.blowAt('fallen1'), 4.4);
       });
-      amp = (await watch(30000, () => (window.__mon.hold(), window.__mon.en.bare(), game.player.ampTime > 0 ? game.player.ampTime : null))) ?? 0;
+      amp = (await run(30, () => (window.__mon.hold(), window.__mon.en.bare(), game.player.ampTime > 0 ? game.player.ampTime : null))) ?? 0;
     }
     // the hero's own defense and block again
     await ev(() => game.player.markDirty());
-    expect(multi >= 3, `a multiple-shots quill rat had ${multi} quills in flight at most`);
-    expect(amp > 0, "the cursed unique's blows never cursed the hero");
-    expect(Math.abs(chill - r2.slow / 100) < 1e-9, `the Holy Freeze unique slowed the hero ${chill}, not ${r2.slow} %`);
+    expect(multi >= 3, `a multiple-shots quill rat had ${multi} quills in flight at most in ${SECS} s`);
+    expect(amp > 0, `the cursed unique's blows never cursed the hero in ${SECS} s and 30 s more beside it`);
+    expect(Math.abs(chill - r2.slow / 100) < 1e-9, `the Holy Freeze unique ${r2.auraOff.toFixed(2)} m off (its radius ${r2.radius.toFixed(2)} m) slowed the hero ${chill}, not ${r2.slow} %`);
     // lightning enchanted (17), struck: its charged bolts
     const r0 = await ev(() => {
       const S = window.__mon;
@@ -728,7 +841,7 @@ export default async function (page, shot, log) {
       S.applyDamage(game, l, { phys: 1, fire: 0, cold: 0, light: 0, magic: 0, poison: 0, source: game.player, spell: true }, game.player.pos);
       return { bolts: game.level.projectiles.filter((x) => x.kind === 'chargedbolt').length };
     });
-    await page.waitForTimeout(250);
+    await run(0.25);
     await frames();
     await shot('lightning-enchanted');
     expect(r0.bolts === 8, `a lightning-enchanted unique struck loosed ${r0.bolts} bolts`);
@@ -745,11 +858,11 @@ export default async function (page, shot, log) {
       game.killMonster(c, 'phys');
       return { blasts: L.blasts.length - b0, kinds: L.blasts.slice(b0).map((b) => b.kind) };
     });
-    await page.waitForTimeout(450);
+    await run(0.45);
     await frames();
     await shot('fire-cold-enchanted-deaths');
     expect(r1.blasts === 2, `fire and cold enchanted deaths made ${r1.blasts} blasts`);
-    log(`  enchanted: multiple shots ${multi} quills at once; cursed: Amplify Damage on the hero for ${amp.toFixed(1)} s (D2: ${r2.ampFor} s); Holy Freeze: the hero slowed ${(chill * 100).toFixed(0)} %; lightning's ${r0.bolts} charged bolts when struck; fire's and cold's deaths: ${r1.kinds.join(' and ')}`);
+    log(`  enchanted: multiple shots ${multi} quills at once; cursed: Amplify Damage on the hero for ${amp.toFixed(1)} s (D2: ${r2.ampFor} s); Holy Freeze (radius ${r2.radius.toFixed(2)} m): the hero slowed ${(chill * 100).toFixed(0)} %${chillFrom === null ? '' : ` ${chillFrom.toFixed(2)} m from it`}; lightning's ${r0.bolts} charged bolts when struck; fire's and cold's deaths: ${r1.kinds.join(' and ')}`);
     facts.push('enchantments');
   };
 
@@ -856,26 +969,25 @@ export default async function (page, shot, log) {
       const S = window.__mon;
       S.boss = { b: game.level.boss, states: new Set(), most: 0, shots: new Set(), summoned: 0 };
     });
-    let shotTaken = false;
-    for (let i = 0; i < 60; i++) {
-      await page.waitForTimeout(100);
-      const s = await ev(() => {
-        const S = window.__mon;
-        const B = S.boss;
-        S.hold();
-        B.states.add(B.b.state);
-        const mine = game.level.projectiles.filter((x) => x.owner === B.b);
-        for (const x of mine) B.shots.add(x.id);
-        B.most = Math.max(B.most, mine.length);
-        // her Nest's zombies are no one's minions: her own count of them (Monster.aiTally)
-        B.summoned = B.b.aiTally;
-        return { attacking: B.b.state === 'attack' || B.b.state === 'cast' || mine.length > 0 };
-      });
-      if (s.attacking && !shotTaken && i >= 5) {
-        await frames();
-        await shot(`trial-${floor}-${id}`);
-        shotTaken = true;
-      }
+    // 6 s of game time, polled each 0.1 s; the shot at its first attack from 0.5 s on
+    const poll = (shotTaken, t) => {
+      const S = window.__mon;
+      const B = S.boss;
+      S.hold();
+      B.states.add(B.b.state);
+      const mine = game.level.projectiles.filter((x) => x.owner === B.b);
+      for (const x of mine) B.shots.add(x.id);
+      B.most = Math.max(B.most, mine.length);
+      // her Nest's zombies are no one's minions: her own count of them (Monster.aiTally)
+      B.summoned = B.b.aiTally;
+      return !shotTaken && t >= 0.5 - 1e-9 && (B.b.state === 'attack' || B.b.state === 'cast' || mine.length > 0) ? t : null;
+    };
+    const t1 = await run(6, poll, false);
+    const shotTaken = t1 !== null;
+    if (shotTaken) {
+      await frames();
+      await shot(`trial-${floor}-${id}`);
+      await run(6 - t1, poll, true);
     }
     if (!shotTaken) await shot(`trial-${floor}-${id}`);
     const B = await ev(() => {
