@@ -275,6 +275,14 @@ export default async function (page, shot, log) {
       L.objects = L.objects.filter((o) => !S.row.includes(o) && !(S.row2 ?? []).includes(o));
       // what the row dropped, counted above, taken off the floor: the shots below are of the traps and the barrels
       L.ground = [];
+      // every monster held again, and their missiles gone: the row's casket, grave or barrel may have
+      // raised a trap monster (18.08 %), up and about, whose blows the hero took while out of the trap's
+      // fires (counted as a burn there) and who stood over a shrine to be hovered
+      for (const m of L.monsters) {
+        m.stunTime = 1e9;
+        m.awake = false;
+      }
+      L.projectiles = L.projectiles.filter((x) => x.faction !== 'monster');
       const mid = { ...p.pos };
       // the trial floor's trap monster, as the Crypt's (spawn.ts trapMonster reads the kinds it drew)
       const area = L.areaAt(mid.x, mid.z);
