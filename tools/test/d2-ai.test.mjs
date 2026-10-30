@@ -18,7 +18,7 @@ const DT = 1 / 60;
 export default async (load) => {
   const A = await load('/src/game/d2/monai.ts');
   const { D2X_MONSTERS: D2X, D2X_MONSTER_AI } = await load('/src/data/d2x/monsters.ts');
-  const { M_PER_SUBTILE } = await load('/src/game/d2/stats.ts');
+  const { M_PER_SUBTILE, MPS_PER_VELOCITY } = await load('/src/game/d2/stats.ts');
   const { Monster } = await load('/src/game/monster.ts');
   const { meleeReach, shoot, monsterDied } = await load('/src/game/ai.ts');
   const { Game } = await load('/src/game/game.ts');
@@ -378,7 +378,7 @@ export default async (load) => {
     shoot(game, minion, 'spike1', 1, 'a2', p.pos);
     assert.equal(L.projectiles.filter((x) => x.owner === minion).length, 1, 'its minion one');
     const spike = L.projectiles.find((x) => x.owner === minion);
-    near(Math.hypot(spike.vel.x, spike.vel.z), (11 * 75 * 4.6) / 9 / 100, "a spike's speed");
+    near(Math.hypot(spike.vel.x, spike.vel.z), (11 * 75 * MPS_PER_VELOCITY) / 100, "a spike's speed");
 
     // cursed: a landed blow curses three times in four; under it physical damage is doubled
     clear();

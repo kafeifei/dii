@@ -196,7 +196,7 @@ export class Monster extends Actor {
     this.plus = s.plus;
     this.drain = s.drain;
     this.coldEffect = s.coldEffect;
-    // D2's velocity on the hero's scale (game/d2/stats.ts MPS_PER_VELOCITY)
+    // D2's velocity in metres a second, as the hero's (src/core/units.ts MPS_PER_VELOCITY)
     this.velPct = s.velPct;
     this.walkSpeed = s.walk * MPS_PER_VELOCITY;
     this.speed = this.walkSpeed;

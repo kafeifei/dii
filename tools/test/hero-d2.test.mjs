@@ -67,7 +67,9 @@ export default async (load) => {
     assert.equal(d.hitRecovery, F.toSeconds(15), 'a sorceress recovers in 15 frames at 0 FHR');
     assert.equal(d.ar, S.attackRating(cs, 25), 'ToHitFactor −15 and 5 × (dex − 7)');
     assert.equal(d.walkSpeed * 1.5, d.runSpeed);
-    assert.ok(Math.abs(d.runSpeed - 4.6) < 1e-9, 'running is the game\'s old pace');
+    // D2's own pace: RunVelocity 9 and WalkVelocity 6 at 25/16 subtiles of 0.25 m a second a point
+    assert.equal(d.runSpeed, 3.515625, "running is D2's 3.52 m/s");
+    assert.equal(d.walkSpeed, 2.34375, "walking is D2's 2.34 m/s");
   }
   game.newGame('公式测试', 'paladin');
   const p = game.player;

@@ -233,7 +233,7 @@ export function updateHammers(g: Game, dt: number) {
 /**
  * A lightning-enchanted monster's charged bolts (MONSTERUNIQUE_CastLightUniqueMissile, MonsterUnique.cpp:1139-1191):
  * two toward each of the four ways round it, lightunique missiles at half its level with their own
- * lightning, at their velocity (75 %, the hero's scale) for their Range, wandering as charged bolts do
+ * lightning, at their velocity (75 %, D2's units) for their Range, wandering as charged bolts do
  */
 export function chargedBolts(g: Game, m: Monster) {
   const b = lightEnchantBolts(m.level);

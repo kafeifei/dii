@@ -1,5 +1,5 @@
 import type { P2 } from '../core/math';
-import { M_PER_D2_TILE, SUBTILES_PER_D2_TILE } from '../core/units';
+import { M_PER_SUBTILE } from '../core/units';
 import { D2X_OBJECTS, D2X_OBJGROUPS, type D2xObject } from '../data/d2x/objects';
 import type { TileMap } from './tilemap';
 
@@ -18,8 +18,8 @@ export interface Rolls {
   limited(n: number): number;
 }
 
-/** subtiles to our tile: a D2 tile is 5 subtiles (DUNGEON_GameTileToSubtileCoords), and OUT_SCALE of our tiles (src/core/units.ts) */
-export const SUB = SUBTILES_PER_D2_TILE / M_PER_D2_TILE;
+/** subtiles to our tile, a metre: a D2 tile is 5 subtiles (DUNGEON_GameTileToSubtileCoords) and OUT_SCALE of our tiles (src/core/units.ts) */
+export const SUB = 1 / M_PER_SUBTILE;
 
 /** an object placed by D2's rules: where, and its Objects.txt row (D2X_OBJECTS) */
 export interface PlacedObject {

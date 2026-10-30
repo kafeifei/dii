@@ -18,6 +18,7 @@ export default async (load) => {
   const { D2X_AREAS } = await load('/src/data/d2x/areas.ts');
   const { moveBy, stepToward } = await load('/src/game/movement.ts');
   const { updateMonster } = await load('/src/game/ai.ts');
+  const { M_PER_SUBTILE } = await load('/src/game/d2/stats.ts');
   const problems = [];
   const check = (ok, what) => ok || problems.push(what);
   const counts = [];
@@ -128,7 +129,7 @@ export default async (load) => {
     m.setState('idle');
     trail.length = 0;
     let swung = false;
-    // D2's walk home is slow (75 % of Velocity: a zombie's is 0.38 m/s), so give it the time
+    // D2's walk home is slow (75 % of Velocity: a zombie's is 0.29 m/s), so give it the time
     for (let k = 0; k < 25 / DT && !swung; k++) {
       updateMonster(game, m, DT);
       // this hero is too thin to be struck: the swing itself is the failure
@@ -137,7 +138,8 @@ export default async (load) => {
     }
     const home = Math.hypot(m.pos.x - m.homePos.x, m.pos.z - m.homePos.z);
     check(!inTownAlong(trail) && home < 1.5 && !swung, `${what}: with the hero in the camp a monster at the gate ended ${home.toFixed(1)} from home, ${swung ? 'swinging at them' : m.state}, ${inTownAlong(trail)} step(s) in the camp`);
-    hero.pos = past(6);
+    // the hero 9 subtiles off: within the Fallen's aip2, which it walks at a hero from
+    hero.pos = past(3 + (9 * M_PER_SUBTILE) / Math.hypot(out.x, out.z));
     m.pos = past(3);
     m.homePos = past(3);
     m.path = null;

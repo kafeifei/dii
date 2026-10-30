@@ -21,15 +21,14 @@ export const M_PER_D2_TILE = 1.25;
 export const VELOCITY_PER_SUBTILE = 16;
 
 /**
- * metres a second for one point of D2's velocity, the hero's and the monsters' alike: still the
- * game's run from before D2's movement, 4.6 m/s, as CharStats RunVelocity 9 (walk 6 is then 3.07 m/s)
+ * metres for one of D2's subtiles, a fifth of its tile: 0.25 m. Every length of D2's goes by it, the
+ * maps' (zone.ts, objgroups.ts) and the monsters' reaches, radii and ranges alike (the user's call
+ * of 2026-10-29, docs/M2A-STEP0.md 3: D2's own unit everywhere, no pace factor)
  */
-export const MPS_PER_VELOCITY = 4.6 / 9;
+export const M_PER_SUBTILE = M_PER_D2_TILE / SUBTILES_PER_D2_TILE;
 
 /**
- * metres for one of D2's subtiles where a speed, a reach or a radius is D2's: on the scale of the
- * velocity above, 25/16 subtiles a second a point. The maps' tiles and objects go by M_PER_D2_TILE
- * and SUBTILES_PER_D2_TILE instead (zone.ts, objgroups.ts): two scales still, 1.31 apart
- * (docs/M2A-STEP0.md 3)
+ * metres a second for one point of D2's velocity, the hero's and the monsters' alike: 25/16 subtiles
+ * a second, 0.390625 m/s. The hero's CharStats RunVelocity 9 is 3.52 m/s, WalkVelocity 6 2.34 m/s
  */
-export const M_PER_SUBTILE = (MPS_PER_VELOCITY * VELOCITY_PER_SUBTILE) / FRAMES_PER_SEC;
+export const MPS_PER_VELOCITY = (M_PER_SUBTILE * FRAMES_PER_SEC) / VELOCITY_PER_SUBTILE;

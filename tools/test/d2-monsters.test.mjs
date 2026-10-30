@@ -71,6 +71,11 @@ export default async (load) => {
   // it, for 40 frames: MaxVel caps no missile's start (Missiles.cpp:120-125); 10 + 8 = 18 in hell (level 8)
   const sf = S.missileFlight('spike1', 1);
   assert.deepEqual([sf.speed, sf.life], [8.25 * MPS_PER_VELOCITY, 1.6]);
+  // in D2's own units, both the speed and the reach: 8.25 sixteenths of a 0.25 m subtile a frame,
+  // 3.22 m/s, over its 40 frames 20.6 subtiles, 5.16 m (missileReach walks the frames)
+  assert.equal(sf.speed, 3.22265625);
+  assert.ok(Math.abs(sf.speed * sf.life - (8.25 / 16) * 40 * 0.25) < 1e-9, `spike1 reaches ${sf.speed * sf.life} m`);
+  assert.ok(Math.abs(S.missileReach('spike1', 11) - sf.speed * sf.life) < 1e-9, `missileReach: ${S.missileReach('spike1', 11)} m`);
   assert.equal(S.missileFlight('spike1', 8).speed, 13.5 * MPS_PER_VELOCITY);
   // a fallenshaman4's shafire4: 16, no VelLev
   assert.equal(S.missileFlight(S.monsterMissile(monsterDef('fallenshaman4').row, 0).missile, 1).speed, 12 * MPS_PER_VELOCITY);

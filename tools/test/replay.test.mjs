@@ -7,8 +7,8 @@
 // (where, life, mana, experience, gold, its items by uid), the monsters of the maps this game keeps
 // (alive or dead, where), what lies on their ground, the quest records and the save it writes there.
 //
-// Moving code about (G1–G7) and the interfaces of step 0 must leave every digest as it is; only the
-// length unit (step 0's ⑤) changes them on purpose, and that commit records them anew. A failure says
+// Moving code about (G1–G7) and the interfaces of step 0 must leave every digest as it is; the
+// length unit (step 0's ⑤) changed them on purpose and recorded them anew. A failure says
 // which checkpoint and which part moved, and prints the whole table to paste in when the change is
 // meant. Item uids carry the clock and a counter shared by every test of a run, so they are numbered
 // by first sight, and the save's write time is left out. Math.random is given back however it ends.
@@ -28,16 +28,21 @@ const SEED = 0x5eed2a;
  * checkpoint moved, its own map being new). Recorded again the same day with the D line merged too:
  * den.monsters alone moved from the W line's, the Den now D2's maze from its level's seed (on the D
  * line's own branch that part alone moved as well), its monsters faring as the W line's world has
- * them; joining the west block's ways down to the dungeons moved nothing
+ * them; joining the west block's ways down to the dungeons moved nothing. Recorded anew the same day
+ * when every length and speed went by D2's subtile of 0.25 m (step 0's ⑤, src/core/units.ts): the
+ * camp, every quests part and nightmare's monsters and ground are as they were; from the fight on the
+ * hero, the monsters, the ground and the save moved (the monsters come on slower and nearer, so the
+ * fight and the tools' kills fall otherwise: 9 killed for 192 xp where 10 gave 210, a pile of gold
+ * more), every checkpoint still reached as before
  */
 const RECORDED = {
   camp: { hero: '2f784f045fdad8f1', monsters: 'c1fac9e418bbd686', ground: 'bb5bb1b3a77487ee', quests: '82e81eff8fdb5188', save: '6d3a476ce8832805' },
-  fight: { hero: '28ec65ac35aaa40d', monsters: '58e6bb730c2b31cf', ground: '27320c6976c20edc', quests: '82e81eff8fdb5188', save: 'aefefd612fe16095' },
-  portal: { hero: 'f4afbb53e4f18e00', monsters: 'a34bbbd46e8f066d', ground: '27320c6976c20edc', quests: '82e81eff8fdb5188', save: '11990c59506a060e' },
-  body: { hero: 'dcc554dfaccbe19f', monsters: 'd7386d580dbd6fcb', ground: '27320c6976c20edc', quests: '82e81eff8fdb5188', save: '40ba71b7b31ea877' },
-  waypoint: { hero: '7993689fed0ab9c0', monsters: 'c3b5c88d0a10076d', ground: '27320c6976c20edc', quests: '82e81eff8fdb5188', save: 'a1798f886bafb558' },
-  den: { hero: 'cf9ddbc064c7f47e', monsters: 'f6fcdc002d4610d0', ground: 'fc0525fb880342a0', quests: 'a7ce0e07f8306b66', save: '3836de8bf3771e6e' },
-  nightmare: { hero: '2e6ff5fc8b404c96', monsters: '78e9cca0986189fd', ground: 'bb5bb1b3a77487ee', quests: 'a7ce0e07f8306b66', save: '0f14b251711d4205' },
+  fight: { hero: 'c16f3b0d659f6b97', monsters: 'd96022bafce622a5', ground: 'bea8020a121737a3', quests: '82e81eff8fdb5188', save: 'e934c3e8a7457ef4' },
+  portal: { hero: '5e40d1538a1adbee', monsters: '4a5aad930e401202', ground: '7ee4fc98577e39e9', quests: '82e81eff8fdb5188', save: '617035fff8f9e205' },
+  body: { hero: '7a15dc5f76cc2b12', monsters: 'd4526a82a072ba74', ground: '7ee4fc98577e39e9', quests: '82e81eff8fdb5188', save: '854dabb45e751b02' },
+  waypoint: { hero: 'b737314395bb36fe', monsters: '3ba9b7e60f52c140', ground: '7ee4fc98577e39e9', quests: '82e81eff8fdb5188', save: 'faeb049b87f932fc' },
+  den: { hero: '89473981c872ebe8', monsters: '015e39f4a66f3225', ground: 'ad0bf834679b4b39', quests: 'a7ce0e07f8306b66', save: 'a1a4ef02b3cf0792' },
+  nightmare: { hero: '0ece5ee8068e82f1', monsters: '78e9cca0986189fd', ground: 'bb5bb1b3a77487ee', quests: 'a7ce0e07f8306b66', save: '0e04a5951ac7b653' },
 };
 
 /** mulberry32: a small seeded generator in [0, 1), standing in for Math.random */

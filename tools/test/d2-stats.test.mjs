@@ -61,6 +61,12 @@ export default async (load) => {
   assert.equal(units.FRAMES_PER_SEC, D2X_FPS);
   assert.equal(s.MPS_PER_VELOCITY, units.MPS_PER_VELOCITY);
   assert.equal(s.M_PER_SUBTILE, units.M_PER_SUBTILE);
+  // one scale, D2's: a subtile a fifth of a 1.25 m tile, a velocity point 25/16 of it a second
+  assert.equal(units.M_PER_SUBTILE, 0.25);
+  assert.equal(units.MPS_PER_VELOCITY, 0.390625);
+  assert.equal((await load('/src/world/zone.ts')).OUT_SCALE, units.M_PER_D2_TILE);
+  assert.equal((await load('/src/world/objgroups.ts')).SUB, 1 / units.M_PER_SUBTILE);
+  assert.equal((await load('/src/game/d2/monai.ts')).subtiles(4), 1);
   // run drain: RunDrain 20 → 40 256ths a frame; heavy body armor (Speed 10) doubles it
   assert.equal(s.runDrainPerSec(pal), 3.90625);
   assert.equal(s.runDrainPerSec(pal, { torsoSpeed: 5 }), 3.90625);
