@@ -448,8 +448,8 @@ const ENVIRONS = {
   town: { bed: 'town', amb: ['amb.town'], night: ['amb.town_night'], music: 'music.town', score: 'town' },
   wilderness: { bed: 'wild', amb: ['amb.wild'], night: ['amb.wild_night'], music: 'music.wild', score: 'outdoor' },
   cave: { bed: 'dungeon', amb: ['amb.dungeon'], music: 'music.dungeon', score: 'dungeon' },
-  // ESOUNDENVIRON_CRYPT: the Crypt's and the Mausoleum's, their own loop and music to come (M2a's A
-  // line); a dungeon's drone and composed music until they are recorded
+  // ESOUNDENVIRON_CRYPT: the Crypt's and the Mausoleum's, their own loop and music (M2a's A line:
+  // amb.crypt, music.crypt) over a dungeon's drone
   crypt: { bed: 'dungeon', amb: ['amb.crypt'], music: 'music.crypt', score: 'dungeon' },
 } satisfies Record<string, AreaSound>;
 
