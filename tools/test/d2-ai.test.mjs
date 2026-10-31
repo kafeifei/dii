@@ -548,11 +548,37 @@ export default async (load) => {
         assert.notEqual(friendlyTarget(game, sk, camp), merc, 'she in the camp: a target all the same');
         // the hero in the camp, she out by it: it goes for her and strikes her (it is run though the hero is far off)
         game.teleportWithin(camp);
-        merc.pos = at(2.2, 0);
-        merc.prevPos = { ...merc.pos };
+        // the two on open ground, in sight of each other: at fixed spots this world's rocks and trees
+        // sometimes stood between them (map.los false), and it walked at her blind and never struck
+        // (about one run in ten)
+        const ring = (c, r, k) => ({ x: c.x + Math.sin((k / 16) * Math.PI * 2) * r, z: c.z + Math.cos((k / 16) * Math.PI * 2) * r });
+        const pair = (() => {
+          for (let r0 = 0; r0 <= 8; r0 += 0.5) {
+            for (let k0 = 0; k0 < 16; k0++) {
+              const a = ring(spot, r0, k0);
+              if (!openAt(a, 0.6) || L.inTown(a)) continue;
+              for (let k = 0; k < 16; k++) {
+                const b = ring(a, 2, k);
+                if (openAt(b, 0.6) && L.map.los(a, b) && !L.inTown(b)) return [a, b];
+              }
+            }
+          }
+          return null;
+        })();
+        assert.ok(pair, 'no open ground for the two in sight of each other');
+        const by = pair[1];
+        sk.pos = { ...pair[0] };
+        merc.pos = { ...by };
+        merc.prevPos = { ...by };
         sk.awake = true;
         assert.equal(friendlyTarget(game, sk), merc);
-        const struck = run(12, () => merc.life < merc.maxLife);
+        // she kept there: her own AI would take her back to the hero in the camp (mercai.ts), and the
+        // skeleton's is what is looked at here
+        const struck = run(12, () => {
+          merc.pos = { ...by };
+          merc.prevPos = { ...by };
+          return merc.life < merc.maxLife;
+        });
         assert.ok(struck !== null && sk.target === merc, `the hero in the camp, she ${dist(merc.pos, sk.pos).toFixed(1)} m off: never struck (its target ${sk.target === merc ? 'her' : sk.target === p ? 'the hero' : 'none'}, ${sk.state})`);
         // back by her, the hero farther: her; she dies: the hero
         clear();
