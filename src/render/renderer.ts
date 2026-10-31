@@ -584,6 +584,7 @@ export class Renderer implements Picker {
     this.levelGroup.clear();
     this.dynGroup.clear();
     this.fx.clearLevel();
+    this.fx.loadSheets();
 
     const L = level.layout;
     const theme = L.theme;
@@ -1534,11 +1535,15 @@ export class Renderer implements Picker {
     syncFriends(this, dt);
 
     // aura decal
-    if (p.activeAura && !p.dead && p.skillLevel(p.activeAura) > 0) {
-      const def = SKILL_BY_ID[p.activeAura];
+    const aura = p.activeAura && !p.dead && p.skillLevel(p.activeAura) > 0 ? p.activeAura : null;
+    if (aura === 'holy_fire' && this.fx.sheets.ground.mesh.visible) {
+      this.auraDecal.visible = false;
+      this.fx.holyFireAura(pp.x, pp.z, p.skillParams(aura).radius ?? 2.2, this.time, dt);
+    } else if (aura) {
+      const def = SKILL_BY_ID[aura];
       this.auraDecal.visible = true;
       (this.auraDecal.material as THREE.MeshBasicMaterial).color.set(def.color);
-      const r = p.skillParams(p.activeAura).radius ?? 2.2;
+      const r = p.skillParams(aura).radius ?? 2.2;
       this.auraDecal.scale.setScalar(Math.min(r, 4) * 2 * 0.9);
       this.auraDecal.position.set(pp.x, 0.03, pp.z);
       this.auraDecal.rotation.z += dt * 0.4;
@@ -1671,6 +1676,9 @@ export class Renderer implements Picker {
       const prp = this.at(pr);
       v.group.position.set(prp.x, 1.0, prp.z);
       v.group.rotation.y = Math.atan2(pr.vel.x, pr.vel.z);
+      // drawn off the effect pictures where it has them (effects.ts missile), else its own glow and trail
+      v.group.visible = !this.fx.missile(pr.kind, prp.x, 1.0, prp.z, v.group.rotation.y, pr.id, dt);
+      if (!v.group.visible) continue;
       const trail = pr.kind === 'firebolt' || pr.kind === 'fireball' ? '#ff6010' : pr.kind === 'iceshard' ? '#80c8ff' : pr.kind === 'holybolt' ? '#fff0b0' : pr.kind === 'chargedbolt' ? '#a0b0ff' : null;
       if (trail && Math.random() < 0.8) this.fx.add.spawn({ x: pr.pos.x, y: 1.0, z: pr.pos.z, vy: 0.3, color: trail, size: pr.kind === 'fireball' ? 0.5 : 0.25, life: 0.3 });
     }
@@ -1679,6 +1687,7 @@ export class Renderer implements Picker {
         v.group.removeFromParent();
         this.projViews.delete(pr);
         // impact puff
+        if (this.fx.impact(pr.kind, pr.pos)) continue;
         const c = pr.kind === 'iceshard' ? '#a0e0ff' : pr.kind === 'arrow' ? '#a08060' : '#ff8030';
         this.fx.sparks(pr.pos.x, 1, pr.pos.z, c, 6, 2, 0.12, 0.25, 3);
       }

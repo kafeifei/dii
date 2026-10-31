@@ -4,6 +4,7 @@ import type { Blood, Elem } from '../data/monsters';
 import type { Actor } from '../game/actor';
 import type { Fx, FxKind } from '../game/fx';
 import { Particles } from './particles';
+import { GROUND, SPRITE, SpriteBatch, type SheetName } from './sprites';
 import { bloodTexture, ringTexture } from './textures';
 
 const BLOOD_COLORS: Record<Blood, string[]> = {
@@ -64,6 +65,8 @@ export interface FlashLight {
 export class Effects implements Fx {
   add: Particles;
   norm: Particles;
+  /** billboards off the effect pictures in public/fx: CC0 flipbooks and particle sprites (sprites.ts) */
+  sheets: Record<SheetName, SpriteBatch>;
   private rings: Ring[] = [];
   private bolts: Bolt[] = [];
   private decals: Decal[] = [];
@@ -81,11 +84,25 @@ export class Effects implements Fx {
     this.add = new Particles(5000, true);
     this.norm = new Particles(3000, false);
     scene.add(this.add.points, this.norm.points, this.group);
+    this.sheets = {
+      fireball: new SpriteBatch('fireball', 400),
+      flame: new SpriteBatch('flame', 800),
+      explosion: new SpriteBatch('explosion', 120),
+      sprites: new SpriteBatch('sprites', 2000),
+      ground: new SpriteBatch('ground', 80),
+    };
+    for (const b of Object.values(this.sheets)) scene.add(b.mesh);
+  }
+
+  /** the effect pictures asked for, once a level is built (sprites.ts SpriteBatch.load) */
+  loadSheets() {
+    for (const b of Object.values(this.sheets)) b.load();
   }
 
   clearLevel() {
     this.add.clear();
     this.norm.clear();
+    for (const b of Object.values(this.sheets)) b.clear();
     for (const r of this.rings) this.group.remove(r.mesh);
     for (const b of this.bolts) this.group.remove(b.line);
     for (const d of this.decals) this.group.remove(d.mesh);
@@ -163,6 +180,74 @@ export class Effects implements Fx {
     for (const p of pts) this.glow(p.x, p.y, p.z, color, 0.5, dur * 1.5);
   }
 
+  /** fire catching on something hit: tongues of flame licking up it and a ball of fire flaring */
+  flareUp(x: number, z: number, size: number) {
+    for (let i = 0; i < 3; i++) {
+      const w = size * (0.45 + Math.random() * 0.2);
+      this.sheets.flame.spawn({ x: x + (Math.random() - 0.5) * 0.5, y: w * 0.9, z: z + (Math.random() - 0.5) * 0.5, face: 'up', size: w, aspect: 2, endSize: 0.6, life: 0.35 + Math.random() * 0.15, fadeIn: 0.15, frame: Math.random() * 64, fps: 60, color: '#ffb080' });
+    }
+    this.sheets.fireball.spawn({ x, y: 0.9, z, size: size * 0.6, endSize: 1.5, life: 0.25, frame: Math.random() * 64, fps: 50, alpha: 0.6, color: '#ffa060' });
+  }
+
+  /**
+   * A missile in flight, drawn off the effect pictures where it has them: its body where it is this
+   * frame and what it leaves behind (`dir` its heading, `id` to set each apart). Whether it drew it.
+   */
+  missile(kind: string, x: number, y: number, z: number, dir: number, id: number, dt: number): boolean {
+    if (!this.sheets.fireball.mesh.visible) return false;
+    switch (kind) {
+      case 'firebolt': {
+        const t = performance.now() / 1000;
+        const bx = -Math.sin(dir);
+        const bz = -Math.cos(dir);
+        const f = t * 45 + id * 17;
+        // the ball, a tail of fire narrowing off behind it, what it sheds: flames, smoke, embers
+        this.sheets.fireball.draw({ x, y, z, size: 0.72, frame: f, rot: id, color: '#ffe0c0', glow: 0.95 });
+        for (let k = 1; k <= 6; k++) {
+          const s = 1 - k / 7;
+          this.sheets.fireball.draw({ x: x + bx * k * 0.09, y, z: z + bz * k * 0.09, size: 0.65 * s, frame: f + k * 9, rot: id + k, alpha: 0.85 * s, color: '#ffb080' });
+        }
+        for (let n = Math.random() < dt * 60 ? 2 : 1; n > 0; n--) {
+          const k = 0.15 + Math.random() * 0.3;
+          this.sheets.fireball.spawn({ x: x + bx * k + (Math.random() - 0.5) * 0.1, y: y + (Math.random() - 0.5) * 0.1, z: z + bz * k, vy: 0.5, size: 0.42, endSize: 0.3, life: 0.18, frame: Math.random() * 64, fps: 45, alpha: 0.6, color: '#ff9a60', rot: Math.random() * 6 });
+        }
+        if (Math.random() < dt * 30) this.sheets.sprites.spawn({ x: x + bx * 0.3, y, z: z + bz * 0.3, vy: 0.6, frame: SPRITE.puff, size: 0.35, endSize: 2.4, life: 0.8, color: '#1e1814', alpha: 0.4, add: 0, rot: Math.random() * 6, spin: 1 });
+        if (Math.random() < dt * 25) this.sheets.sprites.spawn({ x, y, z, vx: bx * 1.5 + (Math.random() - 0.5), vy: 0.5 + Math.random(), vz: bz * 1.5 + (Math.random() - 0.5), frame: SPRITE.star, size: 0.14, life: 0.5, color: '#ffa040', glow: 1.6, gravity: 3, drag: 1.5 });
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** a missile's end, where it hit or ran out; whether it drew one */
+  impact(kind: string, p: P2): boolean {
+    if (!this.sheets.explosion.mesh.visible) return false;
+    const { x, z } = p;
+    switch (kind) {
+      case 'firebolt':
+        this.sheets.explosion.spawn({ x, y: 1.0, z, size: 2.2, endSize: 1.2, life: 25 / 36, fps: 36, loop: false, add: 0.3, rot: Math.random() * 6 });
+        this.sheets.sprites.spawn({ x, y: 1.0, z, frame: SPRITE.starBurst, size: 1.3, endSize: 0.4, life: 0.14, color: '#ffa050', rot: Math.random() * 6 });
+        this.sparks(x, 1, z, '#ff9040', 10, 3.5, 0.12, 0.35, 5);
+        this.flash(p, '#ff7a30', 14, 0.25, 5);
+        return true;
+    }
+    return false;
+  }
+
+  /** holy fire about the paladin as long as it's on: a glow and a swirl on the ground, flames licking up round his feet */
+  holyFireAura(x: number, z: number, r: number, t: number, dt: number) {
+    const G = this.sheets.ground;
+    G.draw({ x, y: 0.035, z, face: 'flat', frame: GROUND.glow, size: Math.min(r, 1.6) * 2, rot: t * 0.25, color: '#ff5a10', alpha: 0.3 + Math.sin(t * 2) * 0.05 });
+    G.draw({ x, y: 0.04, z, face: 'flat', frame: GROUND.swirl, size: 2.3, rot: -t * 1.4, color: '#ff8030', alpha: 0.45 });
+    G.draw({ x, y: 0.045, z, face: 'flat', frame: GROUND.swirl, size: 1.6, rot: t * 2.1 + 2, color: '#ffb050', alpha: 0.35 });
+    if (Math.random() < dt * 14) {
+      const a = Math.random() * Math.PI * 2;
+      const d = 0.5 + Math.random() * 0.5;
+      const w = 0.35 + Math.random() * 0.25;
+      this.sheets.flame.spawn({ x: x + Math.sin(a) * d, y: w, z: z + Math.cos(a) * d, face: 'up', size: w, aspect: 2, endSize: 0.6, life: 0.6 + Math.random() * 0.3, fadeIn: 0.35, frame: Math.random() * 64, fps: 50, color: '#ffa070' });
+    }
+  }
+
   // ─────────── Fx interface ───────────
   hit(target: Actor, blood: Blood, dir: P2, heavy: boolean, elem: Elem) {
     const y = 0.9;
@@ -189,7 +274,10 @@ export class Effects implements Fx {
     // impact spark
     this.sparks(x, y, z, ELEM_COLORS[elem], heavy ? 10 : 5, heavy ? 5 : 3, 0.14, 0.25, 4);
     this.glow(x, y, z, ELEM_COLORS[elem], heavy ? 1.4 : 0.8, 0.12);
-    if (elem === 'fire') this.sparks(x, y, z, '#ff6010', 8, 2, 0.25, 0.5, -2);
+    if (elem === 'fire') {
+      this.sparks(x, y, z, '#ff6010', 8, 2, 0.25, 0.5, -2);
+      if (this.sheets.flame.mesh.visible) this.flareUp(x, z, heavy ? 1.1 : 0.85);
+    }
     if (elem === 'cold') this.sparks(x, y, z, '#a0e0ff', 8, 3, 0.15, 0.5, 3);
     if (elem === 'light') this.sparks(x, y, z, '#ffffa0', 8, 6, 0.1, 0.25, 0);
     if ((blood === 'red' || blood === 'green') && Math.random() < (heavy ? 0.8 : 0.35)) {
@@ -229,11 +317,30 @@ export class Effects implements Fx {
     switch (kind) {
       case 'holyfire': {
         const r = opts.radius ?? 4;
-        this.ring(pos, '#ff6a20', 0.5, r, 0.6, 0.8);
-        for (let i = 0; i < 40; i++) {
+        if (!this.sheets.flame.mesh.visible) {
+          // the effect pictures not in (yet): a ring and sparks
+          this.ring(pos, '#ff6a20', 0.5, r, 0.6, 0.8);
+          for (let i = 0; i < 40; i++) {
+            const a = Math.random() * Math.PI * 2;
+            const d = Math.random() * r;
+            this.add.spawn({ x: x + Math.sin(a) * d, y: 0.1, z: z + Math.cos(a) * d, vy: 1.5 + Math.random() * 2, color: Math.random() < 0.5 ? '#ff6010' : '#ffa030', size: 0.3 + Math.random() * 0.3, life: 0.6, gravity: -1 });
+          }
+          this.flash(pos, '#ff6a20', 20, 0.35, r * 2);
+          break;
+        }
+        // a ring of fire running out over the ground, flames leaping up round the paladin, embers
+        const G = this.sheets.ground;
+        G.spawn({ x, y: 0.05, z, face: 'flat', frame: GROUND.ring, size: 0.8, endSize: (r * 2) / 0.8, life: 0.5, color: '#ff6a20', glow: 1.2, rot: Math.random() * 6 });
+        for (let i = 0; i < 14; i++) {
+          const a = (i / 14) * Math.PI * 2 + Math.random() * 0.3;
+          const d = 0.6 + Math.random() * 0.9;
+          const w = 0.55 + Math.random() * 0.35;
+          this.sheets.flame.spawn({ x: x + Math.sin(a) * d, y: w, z: z + Math.cos(a) * d, face: 'up', size: w, aspect: 2, endSize: 0.7, life: 0.5 + Math.random() * 0.25, fadeIn: 0.2, frame: Math.random() * 64, fps: 60, color: '#ffb080' });
+        }
+        for (let i = 0; i < 24; i++) {
           const a = Math.random() * Math.PI * 2;
           const d = Math.random() * r;
-          this.add.spawn({ x: x + Math.sin(a) * d, y: 0.1, z: z + Math.cos(a) * d, vy: 1.5 + Math.random() * 2, color: Math.random() < 0.5 ? '#ff6010' : '#ffa030', size: 0.3 + Math.random() * 0.3, life: 0.6, gravity: -1 });
+          this.sheets.sprites.spawn({ x: x + Math.sin(a) * d, y: 0.2, z: z + Math.cos(a) * d, vy: 1.5 + Math.random() * 2.5, frame: SPRITE.star, size: 0.18, life: 0.6 + Math.random() * 0.4, color: '#ffa040', glow: 1.5, gravity: -0.5, drag: 1, rot: Math.random() * 6 });
         }
         this.flash(pos, '#ff6a20', 20, 0.35, r * 2);
         break;
@@ -498,6 +605,7 @@ export class Effects implements Fx {
   setParticleDensity(d: number) {
     this.add.density = d;
     this.norm.density = d;
+    for (const b of Object.values(this.sheets)) b.density = d;
   }
 
   text(pos: P2, text: string, color: string, big = false) {
@@ -512,6 +620,7 @@ export class Effects implements Fx {
   update(dt: number) {
     this.add.update(dt);
     this.norm.update(dt);
+    for (const b of Object.values(this.sheets)) b.update(dt);
     this.shakeAmount = Math.max(0, this.shakeAmount - dt * 2.5);
     for (const r of this.rings) {
       r.t += dt;
