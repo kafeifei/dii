@@ -519,22 +519,17 @@ export default async function (page, shot, log) {
     },
 
     async reload() {
-      // saved in Blood Moor, the page reloaded, the save read back as UI.resume does a reload mid-game
-      // (?dev starts a new game on a load, which saves over the dev slot: the save is put back first)
-      const save = await ev(() => {
+      // saved in Blood Moor, the page reloaded: played on there, as a reload mid-game is (UI.resume)
+      const name = await ev(() => {
         game.teleportWithin(window.__m.across(1, 2, 8));
         game.save();
-        return localStorage.getItem('dii-save-dev');
+        return game.player.name;
       });
       await page.reload({ timeout: 60000 });
       await until(() => window.game?.started && window.game.level, null, 'the game to start again', 60000);
       await helpers();
-      const r = await ev((save) => {
-        localStorage.setItem('dii-save-dev', save);
-        const ok = game.continueGame(undefined, true);
-        return { ok, area: game.area?.id, ctx: !!game.sfx.ctx, playing: game.sfx.playing.music };
-      }, save);
-      expect(!!save && r.ok && r.area === MOOR && !r.ctx && r.playing === TRACK[MOOR], `the save read back: ${JSON.stringify(r)}`);
+      const r = await ev(() => ({ name: game.player.name, area: game.area?.id, ctx: !!game.sfx.ctx, playing: game.sfx.playing.music }));
+      expect(r.name === name && r.area === MOOR && !r.ctx && r.playing === TRACK[MOOR], `played on after the reload: ${JSON.stringify(r)} (the hero was ${name})`);
       await page.mouse.click(640, 400);
       await until(() => game.sfx.ctx?.state === 'running' && game.sfx.music?.el && !game.sfx.music.el.paused, null, "Blood Moor's track after the reload's first click");
       await playing('after a reload', MOOR);

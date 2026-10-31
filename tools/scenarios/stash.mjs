@@ -205,7 +205,8 @@ export default async function (page, shot, log) {
       const rec = await ev(() => JSON.parse(localStorage.getItem('dii-shared-dev')));
       const inRec = new Set(rec.pages.flat().map((pl) => pl.item.uid));
       expect(rec.v === 2 && JSON.stringify(rec.gold) === '[5000,0,0,0,0]' && [ids.sword, ids.ring, ids.scroll].every((u) => inRec.has(u)) && !inRec.has(ids.cube) && !inRec.has(ids.cap), `the record: ${rec.pages.map((p) => p.length).join('/')}, gold ${rec.gold}`);
-      // ?dev: a reload is a new hero
+      // ?dev: a page opened anew is a new hero (a reload plays on with this one: the tab's in-game mark cleared first)
+      await ev(() => sessionStorage.clear());
       await load(undefined, false);
       await openStash();
       const n = await ev(() => ({ name: game.player.name, where: window.__s.where(), own: game.player.stash.items.length, ownGold: game.player.stashGold, shared: game.shared.gold }));

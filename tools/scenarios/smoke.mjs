@@ -7,7 +7,8 @@
 // Evil (every skill cast, kills and their drops, Corpsefire's stand-in), a town portal there and
 // back, up out of the Den to its mouth, Cold Plains' waypoint used and travelled by through its
 // panel (jumps on the one map, nothing rebuilt), the debug panel's area jumps, its trial ground and
-// the difficulty, a jump out of the camp (Game.teleportWithin), and the save. Page errors and
+// the difficulty, a jump out of the camp (Game.teleportWithin), the save, and a reload that plays on
+// with the same hero (a page opened anew, a test hero of its own). Page errors and
 // console errors count from the reload on, and fail the run. The last line is "SMOKE OK <summary>"
 // or "SMOKE FAIL <reasons>".
 
@@ -824,6 +825,24 @@ export default async function (page, shot, log) {
       expect(JSON.stringify(s.d.skills) === JSON.stringify(s.skills), 'the saved skills differ');
       expect(s.slots.length === 1, `save keys written: ${s.slots.join(', ')}`);
       facts.push(`saved v${s.d.v}`);
+    },
+
+    async reload() {
+      // ?dev plays on with its hero through a reload, as a player's game does (the dev server's own
+      // reloads after an edit among them): the waypoint, the level, the same world, where it stood
+      const hero = () => ev(() => ({ name: game.player.name, level: game.player.level, waypoints: [...game.player.waypoints], seed: game.worldSeed, area: game.area?.id }));
+      const before = await hero();
+      await page.reload({ timeout: 60000 });
+      await until(() => window.game?.started && window.game.level, null, 'the game to start again', 60000);
+      const after = await hero();
+      expect(JSON.stringify(after) === JSON.stringify(before) && after.waypoints.includes(PLAINS), `after a reload: ${JSON.stringify(after)}, was ${JSON.stringify(before)}`);
+      // opened anew (no in-game mark in the tab's sessionStorage): a test hero of its own, the camp's waypoint only
+      await ev(() => sessionStorage.clear());
+      await page.reload({ timeout: 60000 });
+      await until(() => window.game?.started && window.game.level, null, 'a new test hero', 60000);
+      const fresh = await hero();
+      expect(fresh.level === 1 && JSON.stringify(fresh.waypoints) === JSON.stringify([CAMP]) && fresh.area === CAMP, `opened anew: ${JSON.stringify(fresh)}`);
+      facts.push('played on through a reload');
     },
   };
 

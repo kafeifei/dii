@@ -3,7 +3,7 @@ import { Sfx } from './audio/sfx';
 import { Input } from './core/input';
 import { Game } from './game/game';
 import { GALLERY } from './game/level';
-import { heartbeat, markInGame, playedElsewhere, releaseHero, slotNow, useDevSlot, wasInGame } from './game/save';
+import { claimedElsewhere, heartbeat, markInGame, playedElsewhere, releaseHero, slotNow, useDevSlot, wasInGame } from './game/save';
 import { assets, NOW } from './render/assets';
 import { CORE, streamOrder } from './render/needs';
 import { Renderer } from './render/renderer';
@@ -13,12 +13,13 @@ import { UI } from './ui/ui';
 const DEV = location.search.includes('dev');
 // ?dev&slot=1: a dev hero of its own, for two tabs with two heroes
 if (DEV) useDevSlot(Number(new URLSearchParams(location.search).get('slot')) || 0);
-// A reload of this tab goes back to the hero it had: claimed as the page starts, while the models load
+// A reload of this tab goes back to the hero it had, ?dev's test hero as much as a player's (a reload
+// the dev server makes after an edit included): claimed as the page starts, while the models load
 // (Game.claimToResume, below). A copy of this tab (duplicated, or opened from it) carries the in-game
 // mark along in its sessionStorage, but must not take the hero from the tab still playing it: it
-// starts at the title
+// starts at the title (?dev: with a test hero of its own)
 const nav = (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type;
-const resuming = !DEV && wasInGame() && (nav === 'reload' || nav === 'back_forward') && !playedElsewhere(slotNow());
+const resuming = wasInGame() && (nav === 'reload' || nav === 'back_forward') && !playedElsewhere(slotNow());
 if (!resuming && !DEV && wasInGame()) markInGame(false);
 
 const canvas = document.getElementById('world') as HTMLCanvasElement;
@@ -110,15 +111,21 @@ document.addEventListener('visibilitychange', () => {
 // camp); the rest streams in behind, each level asking for its own first as it's built
 // (Renderer.buildLevel). ?gallery's showroom has every model there is: it waits for them all
 (GALLERY ? assets.ensureAll(NOW, (done, total) => ui.loadProgress(done, total)) : assets.ensure(CORE, NOW, (done, total) => ui.loadProgress(done, total)))
-  .then(() => {
+  .then(async () => {
     ui.loadProgress(1, 1);
     assets.stream(streamOrder());
     if (DEV) {
-      ui.devStart();
-      // ?dev&lvl=3: start on that floor of the trial ground (for testing on devices without a console)
       const q = new URLSearchParams(location.search);
-      const lvl = Number(q.get('lvl'));
-      if (lvl > 0) game.enterTrial(lvl);
+      // a reload mid-game plays on with its hero, as without ?dev; opened anew (or with no save to read
+      // back) a test hero of its own. One given up to another window as the page loaded isn't taken
+      // back with a new hero: that window plays it, this one says so (Game.heroClaimed)
+      if (resuming) await ui.resume();
+      if (!game.started && !claimedElsewhere()) {
+        ui.devStart();
+        // ?dev&lvl=3: start on that floor of the trial ground (for testing on devices without a console)
+        const lvl = Number(q.get('lvl'));
+        if (lvl > 0) game.enterTrial(lvl);
+      }
       // ?dev&tod=0.5: hold the time of day there (0 midnight, 0.25 dawn, 0.5 noon, 0.75 dusk)
       if (q.has('tod')) {
         game.clock = Number(q.get('tod')) || 0;
