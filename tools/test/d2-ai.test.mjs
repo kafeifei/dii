@@ -151,14 +151,34 @@ export default async (load) => {
     const L = game.level;
     const p = game.player;
     const map = L.monsterMap;
-    let spot = null;
-    for (let z = 4; z < map.h - 4 && !spot; z += 2) {
-      for (let x = 4; x < map.w - 4; x += 2) {
-        if (L.areaAt(x, z).id === WILD_AREA && map.circleClear(x, z, 4.5) && map.circleClear(x + 3, z, 3) && map.circleClear(x - 3, z, 3)) {
-          spot = { x, z };
-          break;
+    /** every tile a disc of radius r round c touches is one monsters walk on (the clearing's edges alone are looked at) */
+    const openAt = (c, r) => {
+      for (let z = Math.floor(c.z - r); z <= Math.floor(c.z + r); z++) {
+        for (let x = Math.floor(c.x - r); x <= Math.floor(c.x + r); x++) {
+          const nx = Math.max(x, Math.min(c.x, x + 1));
+          const nz = Math.max(z, Math.min(c.z, z + 1));
+          if ((nx - c.x) ** 2 + (nz - c.z) ** 2 < r * r && !map.walkable(x, z)) return false;
         }
       }
+      return true;
+    };
+    // the hero 2 m west of the middle of open ground 14 m across (about one Blood Moor in 14000 has
+    // none: 12), the monsters 3–4 m east of them with open ground all round, to run off and circle
+    // on. Found by circleClear, which looks at a square's corners, the clearing had rocks and trees
+    // in it: a Fallen ran round one and got no farther off (about one run in 250), a shaman circled
+    // into a corner and stood on its own fallen's corpse, putting off its raise (SkillMonst.cpp:1310-1312),
+    // or walked round a rock out of its notice range (about one in 3000)
+    let spot = null;
+    for (const r of [7, 6]) {
+      for (let z = 8; z < map.h - 8 && !spot; z += 2) {
+        for (let x = 8; x < map.w - 8; x += 2) {
+          if (L.areaAt(x, z).id === WILD_AREA && openAt({ x, z }, r)) {
+            spot = { x: x - 2, z };
+            break;
+          }
+        }
+      }
+      if (spot) break;
     }
     assert.ok(spot, 'no clearing in Blood Moor');
     const clear = () => {
@@ -184,17 +204,6 @@ export default async (load) => {
       return null;
     };
     const at = (dx, dz) => ({ x: spot.x + dx, z: spot.z + dz });
-    /** every tile a disc of radius r round c touches is one monsters walk on (the clearing's edges alone are looked at) */
-    const openAt = (c, r) => {
-      for (let z = Math.floor(c.z - r); z <= Math.floor(c.z + r); z++) {
-        for (let x = Math.floor(c.x - r); x <= Math.floor(c.x + r); x++) {
-          const nx = Math.max(x, Math.min(c.x, x + 1));
-          const nz = Math.max(z, Math.min(c.z, z + 1));
-          if ((nx - c.x) ** 2 + (nz - c.z) ** 2 < r * r && !map.walkable(x, z)) return false;
-        }
-      }
-      return true;
-    };
     /** open ground `r0`–`r1` m from the hero, as near `r0` as there is */
     const offHero = (r0, r1) => {
       for (let r = r0; r <= r1; r += 0.1) {
@@ -226,6 +235,13 @@ export default async (load) => {
     for (let i = 0; i < rest.length; i++) if (far[i] > d0[i] + 1) fled++;
     assert.ok(fled >= 2, `only ${fled} of 3 fallen ran when one died: ${d0.map((d, i) => `${d.toFixed(1)} → ${far[i].toFixed(1)}`).join(', ')}`);
     assert.ok(rest.some((m) => m.aiFlag === 1), 'none keeps its fright for the next blow');
+    // the leader done running: a run that ends while the corpse is still dying (1.76 s) is run
+    // again (AiThink.cpp:533-567), and set 1.4 m from it as it still ran, the hero found it 4 m off
+    // as it next thought, past its aip2 and its cry's reach (about one run in 180). Its fright over,
+    // it walks 3 subtiles three thoughts in ten, one walk straight after another: 3.5 s at most in
+    // 9600 runs, each half second a third as likely
+    const stood = run(12, () => !lead.move && lead.state === 'idle');
+    assert.ok(stood !== null, `the leader never stopped running: ${lead.state}`);
     // they stay off while the hero keeps away (none walks at a hero beyond its aip2, nor does the
     // leader cry them on beyond 15 subtiles); the hero comes up to the leader, within its aip2 and
     // its cry's reach: back it comes and strikes, its first blow needing no attack roll, and its
@@ -237,7 +253,7 @@ export default async (load) => {
     assert.ok(dist(lp, p.pos) < A.param(D2X.fallen1, 0, 'Fallen', 'approachDist') * M_PER_SUBTILE, `the hero ${dist(lp, p.pos).toFixed(1)} m from the leader`);
     const back = run(12, () => rest.some((m) => m.state === 'attack'));
     assert.ok(back !== null, `the fallen never came back to strike: ${rest.map((m) => `${dist(m.pos, p.pos).toFixed(1)} ${m.state}`).join(', ')}`);
-    const fleeLog = `${fled}/3 ran (${d0.map((d, i) => `${d.toFixed(1)}→${far[i].toFixed(1)} m`).join(', ')}), back and striking ${back.toFixed(1)} s after the hero came on`;
+    const fleeLog = `${fled}/3 ran (${d0.map((d, i) => `${d.toFixed(1)}→${far[i].toFixed(1)} m`).join(', ')}), the leader stood ${(2.5 + stood).toFixed(1)} s on, back and striking ${back.toFixed(1)} s after the hero came on`;
 
     // a shaman with its fallen, 4 m off: one killed is raised once it lies dead, and gives no experience again
     clear();
@@ -731,7 +747,8 @@ export default async (load) => {
             return false;
           });
           caps.push(seen.size);
-          assert.equal(seen.size, 2 * d + 8, `difficulty ${d}: her Nest brought ${seen.size}`);
+          // 7 of 8 once in some 94000 runs, not yet explained: whether she cast all 8
+          assert.equal(seen.size, 2 * d + 8, `difficulty ${d}: her Nest brought ${seen.size} of ${r.aiTally} cast`);
           assert.equal(r.aiTally, 2 * d + 8, `difficulty ${d}: her count`);
           assert.equal(p.xp, xp0, `difficulty ${d}: her zombies gave experience`);
           assert.equal(L.ground.filter((x) => !ground0.has(x)).length, 0, `difficulty ${d}: her zombies dropped something`);
@@ -868,7 +885,10 @@ export default async (load) => {
           L.monsters = L.monsters.filter((m) => m !== sk);
           return { landed, blocked, blockState, life: sk.maxLife - sk.life };
         };
-        const withShield = swing('buc', 4000);
+        // about 13300 of 20000 would land: the rate's spread is √(0.1 × 0.9 / 13300) = 0.26 %, 8–12 % ±7.7
+        // of it. With 4000 (2650, 0.58 %) it was ±3.4: 6000 such runs measured blocked 10.00 % in all,
+        // each run's spread 0.58 %, and one fell outside (12.25 %)
+        const withShield = swing('buc', 20000);
         const rate = withShield.blocked / (withShield.blocked + withShield.landed);
         assert.ok(rate > 0.08 && rate < 0.12, `a skeleton with a buckler blocked ${(rate * 100).toFixed(1)} % of the blows that would land`);
         assert.ok(withShield.blockState, 'a blocking skeleton never played its block');
@@ -884,20 +904,32 @@ export default async (load) => {
     }
 
     // noticing: a sleeping fallen within its notice range, the hero out of its sight or in it
-    /** a spot 9–32 subtiles from `h` (inside the fallen's notice range of 35) in area `id`, clear, in the sight of it or out of it */
+    /** `q` and 8 points 0.75 m round it: where a fallen at `q` may be pushed in the time looked at */
+    const nudged = (q) => [q, ...Array.from({ length: 8 }, (_, k) => ({ x: q.x + Math.sin((k * Math.PI) / 4) * 0.75, z: q.z + Math.cos((k * Math.PI) / 4) * 0.75 }))];
+    /**
+     * a spot 9–32 subtiles from `h` (inside the fallen's notice range of 35) in area `id`, clear: in
+     * their sight with room for a body all the way, or out of it pushed anywhere within 0.75 m. Found
+     * by a thin sight line alone, a fallen behind a single rock in the den was pushed into sight by the
+     * other, awake and going round to the hero, and woke (about one run in 15000)
+     */
     const ringSpot = (Lv, id, h, inside) => {
       const m = Lv.monsterMap;
       for (let r = A.subtiles(9); r <= A.subtiles(32); r += A.subtiles(2.25)) {
         for (let k = 0; k < 24; k++) {
           const a = (k / 24) * Math.PI * 2;
           const q = { x: h.x + Math.sin(a) * r, z: h.z + Math.cos(a) * r };
-          if (Lv.areaAt(q.x, q.z).id === id && m.circleClear(q.x, q.z, 0.5) && Lv.map.los(q, h) === inside) return q;
+          if (Lv.areaAt(q.x, q.z).id !== id || !m.circleClear(q.x, q.z, 0.5)) continue;
+          if (inside ? Lv.map.los(q, h, 0.3) : nudged(q).every((o) => !Lv.map.los(o, h))) return q;
         }
       }
       return null;
     };
-    /** the hero set where a spot of area `id` within notice range is out of their sight, the monsters round cleared away; that spot */
-    const behindCover = (Lv, id) => {
+    /**
+     * the hero set where a spot of area `id` within notice range is out of their sight (and, `seenToo`,
+     * one in it: the first place with one out of sight had none in the den about one run in 5000), the
+     * monsters round cleared away; those spots
+     */
+    const behindCover = (Lv, id, seenToo = false) => {
       const m = Lv.monsterMap;
       for (let z = 4; z < m.h - 4; z += 3) {
         for (let x = 4; x < m.w - 4; x += 3) {
@@ -906,11 +938,12 @@ export default async (load) => {
           p.intent = null;
           p.path = null;
           if (Lv.areaAt(p.pos.x, p.pos.z).id !== id) continue;
-          const q = ringSpot(Lv, id, p.pos, false);
-          if (!q) continue;
+          const dark = ringSpot(Lv, id, p.pos, false);
+          const seen = dark && seenToo ? ringSpot(Lv, id, p.pos, true) : null;
+          if (!dark || (seenToo && !seen)) continue;
           Lv.monsters = Lv.monsters.filter((o) => dist(o.pos, p.pos) > 40);
           Lv.projectiles = [];
-          return q;
+          return { dark, seen };
         }
       }
       return null;
@@ -922,7 +955,7 @@ export default async (load) => {
       return m;
     };
     // Blood Moor's rooms are LOS-drawn: D2 looks for no sight there (AiUtil.cpp:684-704)
-    const behind = behindCover(L, WILD_AREA);
+    const behind = behindCover(L, WILD_AREA)?.dark;
     assert.ok(behind, "no spot in Blood Moor out of the hero's sight");
     const moorSleeper = sleeper(behind);
     const moorD = dist(behind, p.pos);
@@ -932,9 +965,9 @@ export default async (load) => {
     game.enterArea(DEN_OF_EVIL, 'stairs');
     const D = game.level;
     assert.equal(D.areaAt(p.pos.x, p.pos.z).id, DEN_OF_EVIL, 'not in the den');
-    const dark = behindCover(D, DEN_OF_EVIL);
-    const seen = dark && ringSpot(D, DEN_OF_EVIL, p.pos, true);
-    assert.ok(dark && seen, `spots in the den: out of sight ${!!dark}, in sight ${!!seen}`);
+    const spots = behindCover(D, DEN_OF_EVIL, true);
+    assert.ok(spots, "no place in the den with a spot out of the hero's sight and one in it");
+    const { dark, seen } = spots;
     const denMs = [sleeper(dark), sleeper(seen)];
     const denD = dist(dark, p.pos);
     run(1.5);
