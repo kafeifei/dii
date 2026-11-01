@@ -2,7 +2,8 @@
 //   node tools/play.mjs tools/scenarios/fx.mjs --url http://localhost:5185/ --dev --out <dir>          the paladin's
 //   node tools/play.mjs tools/scenarios/fx.mjs --url http://localhost:5185/ --dev --sorc --out <dir>   the sorceress's
 // FX=fire_bolt,holy_fire picks the skills (default: every one of the class's that is cast or worn);
-// FX_OFF=1 keeps the effect pictures (public/fx) from loading, for the looks they fall back to.
+// FX_OFF=1 keeps the effect pictures (public/fx) from loading, for the looks they fall back to;
+// FX_SHOTS=90,120,200,600 the waits between the shots after each is used.
 // In the Den of Evil, the hero kept alive (the debug panel's god mode) and the camera close: each
 // skill at level 20, used on the nearest monster, shot a few times as it goes off (a bolt in flight
 // and as it lands, an aura as it pulses). Page and console errors fail the run. The last line is
@@ -40,8 +41,8 @@ export default async function (page, shot, log) {
   await wait(3500);
 
   const all = {
-    paladin: ['holy_fire', 'holy_freeze', 'might', 'blessed_hammer', 'heavens_wrath', 'sacred_strike', 'holy_shield'],
-    sorceress: ['fire_bolt', 'fire_ball', 'fire_wall', 'meteor', 'charged_bolt', 'nova', 'chain_lightning', 'ice_bolt', 'frost_nova', 'glacial_spike', 'blizzard', 'static_field', 'teleport'],
+    paladin: ['holy_fire', 'holy_freeze', 'might', 'prayer', 'conviction', 'blessed_hammer', 'heavens_wrath', 'sacred_strike', 'zeal', 'charge', 'holy_shield'],
+    sorceress: ['fire_bolt', 'fire_ball', 'fire_wall', 'meteor', 'charged_bolt', 'nova', 'chain_lightning', 'ice_bolt', 'frozen_armor', 'frost_nova', 'glacial_spike', 'blizzard', 'static_field', 'teleport'],
   }[cls];
   const want = process.env.FX ? process.env.FX.split(',').filter((id) => all.includes(id)) : all;
   const done = [];
@@ -52,7 +53,7 @@ export default async function (page, shot, log) {
         const p = game.player;
         const map = game.level.map;
         const def = p.skillDef?.(id);
-        const near = ['holy_fire', 'holy_freeze', 'might', 'sacred_strike', 'holy_shield', 'frost_nova', 'nova', 'static_field'].includes(id);
+        const near = ['holy_fire', 'holy_freeze', 'might', 'prayer', 'conviction', 'sacred_strike', 'zeal', 'holy_shield', 'frozen_armor', 'frost_nova', 'nova', 'static_field'].includes(id);
         const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
         const alive = game.level.monsters.filter((m) => !m.dead).sort((a, b) => dist(a.pos, p.pos) - dist(b.pos, p.pos));
         for (const m of alive) {
@@ -65,7 +66,6 @@ export default async function (page, shot, log) {
             p.intent = null;
             p.path = null;
             p.skills[id] = 20;
-            p.mana = p.stats.maxMana;
             p.life = p.stats.maxLife;
             renderer.zoom = renderer.zoomTarget = near ? 4.6 : 5.4;
             window.__fx = { m, def };
@@ -83,11 +83,12 @@ export default async function (page, shot, log) {
     await wait(300);
     await ev((id) => {
       const { m } = window.__fx;
-      game.player.mana = game.player.stats.maxMana;
+      // mana enough for any of them, whatever the test hero's
+      game.player.mana = 9999;
       game.useSkillAt(id, m, { ...m.pos }, true);
     }, id);
     // a bolt in flight, landing, and what it leaves; an aura's pulses
-    for (const ms of [90, 120, 200, 600]) {
+    for (const ms of (process.env.FX_SHOTS ?? '90,120,200,600').split(',').map(Number)) {
       await wait(ms);
       await shot(id);
     }

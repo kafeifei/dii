@@ -24,24 +24,48 @@ const KENNEY_PARTICLES = { page: 'https://kenney.nl/assets/particle-pack', id: '
 
 /**
  * The sheets: `from` a Unity Labs flipbook (its name; the picture is <name>_<cols>x<rows>.tga) or
- * Kenney particles (`tiles`, laid out row by row, `tile` pixels each); `size` the sheet's pixels
+ * Kenney particles (`kenney`, laid out row by row: a name, or one with a turn; `crop` the share of each
+ * picture kept, x, y, w, h); `size` the sheet's pixels
  */
 const SHEETS = {
   // a ball of fire turning over, 8×8 frames looping: fire bolt, fire ball, the meteor's head
   fireball: { unity: 'FireBall01', grid: [8, 8], size: [1024, 1024], quality: 80 },
-  // a tongue of flame, 16×4 frames looping: holy fire's flames, fire wall, burning
+  // a tongue of flame, 16×4 frames looping: holy fire's flames, burning
   flame: { unity: 'Flame03', grid: [16, 4], size: [1024, 512], quality: 82 },
+  // a broader flame, 16×4 frames looping: fire wall, the fire a meteor leaves
+  blaze: { unity: 'Flame02', grid: [16, 4], size: [1024, 512], quality: 80 },
   // a fireball blooming into black smoke, 5×5 frames once: blasts and impacts; keeps its coverage
   explosion: { unity: 'Explosion01', grid: [5, 5], size: [1024, 1024], quality: 80, alpha: true },
-  // single sprites, 4×4 tiles of 128: src/render/sprites.ts SPRITE
+  // a ball of smoke rolling over, 8×8 frames looping, grey: tinted for cold mist, poison, dust; keeps its coverage
+  smoke: { unity: 'WispySmoke01', grid: [8, 8], size: [768, 768], quality: 78, alpha: true },
+  // single sprites, 5×4 tiles of 128 (the last empty): src/render/sprites.ts SPRITE
   sprites: {
-    kenney: ['circle_05', 'star_04', 'star_09', 'flare_01', 'spark_01', 'spark_02', 'spark_03', 'spark_04', 'flame_05', 'flame_06', 'muzzle_01', 'smoke_04', 'smoke_07', 'fire_01', 'scorch_02', 'trace_04'],
-    grid: [4, 4],
+    kenney: [
+      'circle_05', 'star_04', 'star_09', 'spark_01', 'spark_02',
+      'spark_03', 'spark_04', 'star_07', 'smoke_04', 'magic_03',
+      'star_08', 'slash_04', 'dirt_01', 'circle_02', 'trace_06',
+      'star_02', 'magic_05', 'twirl_01', 'light_02',
+    ],
+    grid: [5, 4],
+    size: [640, 512],
+    quality: 85,
+  },
+  // forks of lightning standing up, 4 tiles of 128×512 (the middle half of each picture): the bolts
+  // drawn stretched between two points; the third lies on its side in the pack
+  bolts: {
+    kenney: ['spark_05', 'spark_06', { name: 'spark_07', rotate: 90 }, 'trace_03'],
+    crop: [0.25, 0, 0.5, 1],
+    grid: [4, 1],
     size: [512, 512],
     quality: 85,
   },
-  // ground pieces, 2×2 tiles of 512: an aura's glow, a swirl, a ring, a scorch
-  ground: { kenney: ['light_01', 'twirl_02', 'circle_03', 'scorch_03'], grid: [2, 2], size: [1024, 1024], quality: 85 },
+  // ground pieces, 4×2 tiles of 512: an aura's glows and swirls, rings, a scorch, a ring of smoke
+  ground: {
+    kenney: ['light_01', 'twirl_02', 'circle_03', 'scorch_03', 'light_03', 'twirl_03', 'circle_01', 'smoke_10'],
+    grid: [4, 2],
+    size: [2048, 1024],
+    quality: 85,
+  },
 };
 
 /** `url` saved at `file` once */
@@ -123,12 +147,20 @@ for (const [name, s] of Object.entries(SHEETS)) {
     img = sharp(premultiply(px), { raw: { width: w, height: h, channels: 4 } }).resize(W, H, { kernel: 'lanczos3' });
   } else {
     const dir = await kenneyParticles();
-    const [cols] = s.grid;
+    const [cols, rows] = s.grid;
     const tw = W / cols;
-    const th = H / s.grid[1];
+    const th = H / rows;
     const parts = [];
     for (let i = 0; i < s.kenney.length; i++) {
-      const input = await sharp(path.join(dir, `${s.kenney[i]}.png`)).resize(tw, th, { kernel: 'lanczos3' }).toBuffer();
+      const k = typeof s.kenney[i] === 'string' ? { name: s.kenney[i] } : s.kenney[i];
+      let pic = sharp(path.join(dir, `${k.name}.png`));
+      if (k.rotate) pic = sharp(await pic.rotate(k.rotate).toBuffer());
+      if (s.crop) {
+        const { width, height } = await pic.metadata();
+        const [x, y, w, h] = s.crop;
+        pic = pic.extract({ left: Math.round(x * width), top: Math.round(y * height), width: Math.round(w * width), height: Math.round(h * height) });
+      }
+      const input = await pic.resize(tw, th, { kernel: 'lanczos3', fit: 'fill' }).toBuffer();
       parts.push({ input, left: (i % cols) * tw, top: Math.floor(i / cols) * th });
     }
     img = sharp({ create: { width: W, height: H, channels: 3, background: '#000' } }).composite(parts);

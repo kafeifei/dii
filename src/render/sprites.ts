@@ -8,9 +8,12 @@ import * as THREE from 'three';
 export const SHEETS = {
   fireball: { cols: 8, rows: 8, frames: 64, own: false },
   flame: { cols: 16, rows: 4, frames: 64, own: false },
+  blaze: { cols: 16, rows: 4, frames: 64, own: false },
   explosion: { cols: 5, rows: 5, frames: 25, own: true },
-  sprites: { cols: 4, rows: 4, frames: 16, own: false },
-  ground: { cols: 2, rows: 2, frames: 4, own: false },
+  smoke: { cols: 8, rows: 8, frames: 64, own: true },
+  sprites: { cols: 5, rows: 4, frames: 20, own: false },
+  bolts: { cols: 4, rows: 1, frames: 4, own: false },
+  ground: { cols: 4, rows: 2, frames: 8, own: false },
 } as const;
 export type SheetName = keyof typeof SHEETS;
 
@@ -19,23 +22,33 @@ export const SPRITE = {
   dot: 0,
   star: 1,
   starBurst: 2,
-  flare: 3,
-  crackle: 4, // 4–7: four patches of crackling lightning
-  tongue: 8, // 8, 9: a single flame
-  gout: 10, // a gout of flame bursting up
-  puff: 11,
-  cloud: 12,
-  embers: 13,
-  burst: 14,
-  streak: 15,
+  crackle: 3, // 3–6: four patches of crackling lightning
+  glint: 7, // a sharp four-pointed star
+  puff: 8,
+  cross: 9, // a ring crossed by four points
+  shine: 10, // a six-rayed star round a small ring
+  sweep: 11, // a wide arc bowed up
+  debris: 12, // bits flung about
+  thinRing: 13,
+  beam: 14, // a soft bar standing up
+  halo: 15, // a star in a ring
+  sparkle: 16, // a soft four-pointed star
+  arc: 17, // a swish round most of a circle
+  orb: 18,
 } as const;
 
 /** the tiles of the ground sheet */
-export const GROUND = { glow: 0, swirl: 1, ring: 2, scorch: 3 } as const;
+export const GROUND = { glow: 0, swirl: 1, ring: 2, scorch: 3, glow2: 4, swirl2: 5, softRing: 6, smokeRing: 7 } as const;
 
-/** how a sprite is turned: to the camera, standing up on the ground and turned to it, or lying on the ground */
-export type Face = 'cam' | 'up' | 'flat';
-const FACE: Record<Face, number> = { cam: 0, up: 1, flat: 2 };
+/** the forks of the bolts sheet, drawn stretched between two points (SpriteOpts.to) */
+export const BOLT = { fork: 0, tangle: 1, thread: 2, wisp: 3 } as const;
+
+/**
+ * How a sprite is turned: to the camera, standing up on the ground and turned to it, lying on the
+ * ground, or (a sprite with `to`) stretched between two points and turned about that line to the camera
+ */
+export type Face = 'cam' | 'up' | 'flat' | 'beam';
+const FACE: Record<Face, number> = { cam: 0, up: 1, flat: 2, beam: 3 };
 
 export interface SpriteOpts {
   x: number;
@@ -70,8 +83,11 @@ export interface SpriteOpts {
   face?: Face;
   gravity?: number;
   drag?: number;
-  /** share of its life spent fading in (0) */
+  /** share of its life spent fading in (0) and out (0.4) */
   fadeIn?: number;
+  fadeOut?: number;
+  /** the far end of a beam, which runs from x, y, z to it, `size` wide (its face is then 'beam') */
+  to?: { x: number; y: number; z: number };
 }
 
 const tmp = new THREE.Color();
@@ -89,8 +105,25 @@ function sheetTexture(name: SheetName, ready: () => void): THREE.Texture {
   return t;
 }
 
-/** per sprite: pos 3, vel 3, colour 3, alpha, size, aspect, endSize, life, maxLife, frame, fps, loop, rot, spin, age, gravity, drag, fadeIn, add, face */
-const STRIDE = 26;
+/** per sprite: pos 3, vel 3, colour 3, alpha, size, aspect, endSize, life, maxLife, frame, fps, loop, rot, spin, age, gravity, drag, fadeIn, add, face, axis 3, fadeOut */
+const STRIDE = 30;
+
+/** a beam's middle, axis and length over its width into `out` (its pos, axis and aspect) */
+function beam(o: SpriteOpts, out: number[]) {
+  const t = o.to!;
+  const dx = t.x - o.x;
+  const dy = t.y - o.y;
+  const dz = t.z - o.z;
+  const l = Math.hypot(dx, dy, dz) || 1e-3;
+  out[0] = (o.x + t.x) / 2;
+  out[1] = (o.y + t.y) / 2;
+  out[2] = (o.z + t.z) / 2;
+  out[3] = dx / l;
+  out[4] = dy / l;
+  out[5] = dz / l;
+  out[6] = l / o.size;
+}
+const bm = [0, 0, 0, 0, 1, 0, 1];
 
 /**
  * Billboards off one sheet, drawn in one instanced call: sprites that live and move on their own
@@ -109,6 +142,7 @@ export class SpriteBatch {
   private a: THREE.InstancedBufferAttribute;
   private b: THREE.InstancedBufferAttribute;
   private c: THREE.InstancedBufferAttribute;
+  private d: THREE.InstancedBufferAttribute;
 
   constructor(
     private name: SheetName,
@@ -121,13 +155,15 @@ export class SpriteBatch {
     const quad = new THREE.PlaneGeometry(1, 1);
     geo.index = quad.index;
     geo.setAttribute('position', quad.getAttribute('position'));
-    // pos and turn; width, height, frame, face; premultiplied colour and how much it covers
+    // pos and turn; width, height, frame, face; premultiplied colour and how much it covers; a beam's axis
     this.a = new THREE.InstancedBufferAttribute(new Float32Array(max * 4), 4).setUsage(THREE.DynamicDrawUsage);
     this.b = new THREE.InstancedBufferAttribute(new Float32Array(max * 4), 4).setUsage(THREE.DynamicDrawUsage);
     this.c = new THREE.InstancedBufferAttribute(new Float32Array(max * 4), 4).setUsage(THREE.DynamicDrawUsage);
+    this.d = new THREE.InstancedBufferAttribute(new Float32Array(max * 3), 3).setUsage(THREE.DynamicDrawUsage);
     geo.setAttribute('iA', this.a);
     geo.setAttribute('iB', this.b);
     geo.setAttribute('iC', this.c);
+    geo.setAttribute('iD', this.d);
     geo.instanceCount = 0;
     const mat = new THREE.ShaderMaterial({
       uniforms: { uMap: { value: null }, uGrid: { value: new THREE.Vector2(this.sheet.cols, this.sheet.rows) } },
@@ -136,6 +172,7 @@ export class SpriteBatch {
         attribute vec4 iA;
         attribute vec4 iB;
         attribute vec4 iC;
+        attribute vec3 iD;
         uniform vec2 uGrid;
         varying vec2 vUv;
         varying vec4 vCol;
@@ -144,7 +181,8 @@ export class SpriteBatch {
           vec2 q = vec2(position.x * c - position.y * s, position.x * s + position.y * c) * iB.xy;
           vec3 right = vec3(viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
           vec3 up = vec3(viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
-          if (iB.w > 1.5) { right = vec3(1.0, 0.0, 0.0); up = vec3(0.0, 0.0, -1.0); }
+          if (iB.w > 2.5) { up = iD; right = normalize(cross(iD, vec3(viewMatrix[0][2], viewMatrix[1][2], viewMatrix[2][2]))); }
+          else if (iB.w > 1.5) { right = vec3(1.0, 0.0, 0.0); up = vec3(0.0, 0.0, -1.0); }
           else if (iB.w > 0.5) { right = normalize(vec3(right.x, 0.0, right.z)); up = vec3(0.0, 1.0, 0.0); }
           gl_Position = projectionMatrix * viewMatrix * vec4(iA.xyz + right * q.x + up * q.y, 1.0);
           float f = floor(iB.z + 0.5);
@@ -193,9 +231,10 @@ export class SpriteBatch {
     const i = this.count++;
     const s = this.s;
     const k = i * STRIDE;
-    s[k] = o.x;
-    s[k + 1] = o.y;
-    s[k + 2] = o.z;
+    if (o.to) beam(o, bm);
+    s[k] = o.to ? bm[0] : o.x;
+    s[k + 1] = o.to ? bm[1] : o.y;
+    s[k + 2] = o.to ? bm[2] : o.z;
     s[k + 3] = o.vx ?? 0;
     s[k + 4] = o.vy ?? 0;
     s[k + 5] = o.vz ?? 0;
@@ -206,7 +245,7 @@ export class SpriteBatch {
     s[k + 8] = col.b * g;
     s[k + 9] = o.alpha ?? 1;
     s[k + 10] = o.size;
-    s[k + 11] = o.aspect ?? 1;
+    s[k + 11] = o.to ? bm[6] : (o.aspect ?? 1);
     s[k + 12] = o.endSize ?? 1;
     s[k + 13] = o.life ?? 0;
     s[k + 14] = o.life ?? 0;
@@ -220,7 +259,11 @@ export class SpriteBatch {
     s[k + 22] = o.drag ?? 0;
     s[k + 23] = o.fadeIn ?? 0;
     s[k + 24] = o.add ?? 1;
-    s[k + 25] = FACE[o.face ?? 'cam'];
+    s[k + 25] = o.to ? FACE.beam : FACE[o.face ?? 'cam'];
+    s[k + 26] = o.to ? bm[3] : 0;
+    s[k + 27] = o.to ? bm[4] : 1;
+    s[k + 28] = o.to ? bm[5] : 0;
+    s[k + 29] = o.fadeOut ?? 0.4;
   }
 
   /** a sprite for this frame only */
@@ -261,30 +304,41 @@ export class SpriteBatch {
     const A = this.a.array as Float32Array;
     const B = this.b.array as Float32Array;
     const C = this.c.array as Float32Array;
+    const D = this.d.array as Float32Array;
     for (let j = 0; j < this.count; j++) {
       const k = j * STRIDE;
       const t = s[k + 13] / s[k + 14]; // 1 → 0
       const age = s[k + 20];
       const fi = s[k + 23];
-      const alpha = s[k + 9] * Math.min(1, t * 2.5) * (fi > 0 ? Math.min(1, (1 - t) / fi) : 1);
+      const fo = s[k + 29];
+      const alpha = s[k + 9] * (fo > 0 ? Math.min(1, t / fo) : 1) * (fi > 0 ? Math.min(1, (1 - t) / fi) : 1);
       const size = s[k + 10] * (s[k + 12] + (1 - s[k + 12]) * t);
       let f = s[k + 15] + age * s[k + 16];
       f = s[k + 17] ? f % frames : Math.min(frames - 1, f);
       this.put(A, B, C, j, s[k], s[k + 1], s[k + 2], s[k + 18], size, size * s[k + 11], f, s[k + 25], s[k + 6] * alpha, s[k + 7] * alpha, s[k + 8] * alpha, alpha * (1 - s[k + 24]));
+      D[j * 3] = s[k + 26];
+      D[j * 3 + 1] = s[k + 27];
+      D[j * 3 + 2] = s[k + 28];
     }
     for (let j = this.count; j < n; j++) {
       const o = this.now[j - this.count];
       const col = o.color === undefined ? tmp.setRGB(1, 1, 1) : typeof o.color === 'string' ? tmp.set(o.color) : tmp.copy(o.color);
       const al = (o.alpha ?? 1) * (o.glow ?? 1);
       const f = (o.frame ?? 0) % frames;
-      this.put(A, B, C, j, o.x, o.y, o.z, o.rot ?? 0, o.size, o.size * (o.aspect ?? 1), f, FACE[o.face ?? 'cam'], col.r * al, col.g * al, col.b * al, (o.alpha ?? 1) * (1 - (o.add ?? 1)));
+      if (o.to) beam(o, bm);
+      const [x, y, z] = o.to ? bm : [o.x, o.y, o.z];
+      this.put(A, B, C, j, x, y, z, o.rot ?? 0, o.size, o.size * (o.to ? bm[6] : (o.aspect ?? 1)), f, o.to ? FACE.beam : FACE[o.face ?? 'cam'], col.r * al, col.g * al, col.b * al, (o.alpha ?? 1) * (1 - (o.add ?? 1)));
+      D[j * 3] = o.to ? bm[3] : 0;
+      D[j * 3 + 1] = o.to ? bm[4] : 1;
+      D[j * 3 + 2] = o.to ? bm[5] : 0;
     }
     this.now.length = 0;
     this.mesh.geometry.instanceCount = n;
-    this.a.needsUpdate = this.b.needsUpdate = this.c.needsUpdate = true;
+    this.a.needsUpdate = this.b.needsUpdate = this.c.needsUpdate = this.d.needsUpdate = true;
     this.a.addUpdateRange(0, n * 4);
     this.b.addUpdateRange(0, n * 4);
     this.c.addUpdateRange(0, n * 4);
+    this.d.addUpdateRange(0, n * 3);
   }
 
   private put(A: Float32Array, B: Float32Array, C: Float32Array, j: number, x: number, y: number, z: number, rot: number, w: number, h: number, f: number, face: number, r: number, g: number, b: number, cover: number) {

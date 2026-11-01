@@ -27,7 +27,7 @@ import { blendAtmos, GROUND_LOOKS, lookOf, newAtmos, shiftGrade, type AreaLook, 
 import { makeGround } from './ground';
 import { skyAt, type SkyLook } from './sky';
 import {
-  glowSprite, makeHouse, makeDecor, makeGroundItem, makeHammer, makeProjectile, makeTorch, makeTree, MODELS, sharedResource, topCentroid,
+  assetProp, glowSprite, makeHouse, makeDecor, makeGroundItem, makeHammer, makeProjectile, makeTorch, makeTree, MODELS, sharedResource, topCentroid,
 } from './props';
 import type { AnimInput } from './rig';
 import { monsterSpec, npcSpec, playerSpec } from './specs';
@@ -342,6 +342,8 @@ export class Renderer implements Picker {
   private rush = false;
   private projViews = new Map<Projectile, { group: THREE.Group; light: string | null }>();
   private hammerViews = new Map<Hammer, THREE.Group>();
+  /** the war hammer's materials, and each lit blue for a blessed hammer (hammerView) */
+  private hammerMats = new Map<THREE.Material, THREE.Material>();
   private objViews = new NearViews<WorldObject, ObjView>(
     (o) => this.makeObjView(o),
     (_o, v) => this.freeObjView(v),
@@ -585,6 +587,7 @@ export class Renderer implements Picker {
     this.dynGroup.clear();
     this.fx.clearLevel();
     this.fx.loadSheets();
+    this.fx.onGround = (x, z) => level.map.walkableAt(x, z);
 
     const L = level.layout;
     const theme = L.theme;
@@ -887,6 +890,41 @@ export class Renderer implements Picker {
   snapCamera() {
     const p = this.game.player;
     this.camTarget.set(p.pos.x, 0, p.pos.z);
+  }
+
+  /**
+   * A blessed hammer's view: the war hammer's model lit blue, lying flat to spin about its middle
+   * (once it's in: asked for the first time one's wanted), else the one drawn in code (props.ts)
+   */
+  private hammerView(): THREE.Group {
+    const t = assetProp('w_hammer', 0.85);
+    if (!t) {
+      void assets.ensure(['w_hammer'], HERE);
+      return makeHammer();
+    }
+    t.traverse((c) => {
+      const m = c as THREE.Mesh;
+      if (!m.isMesh) return;
+      const was = m.material as THREE.Material;
+      let lit = this.hammerMats.get(was);
+      if (!lit) {
+        lit = was.clone();
+        if (lit instanceof THREE.MeshStandardMaterial) {
+          lit.emissive.set('#4a6aff');
+          lit.emissiveIntensity = 0.9;
+        }
+        this.hammerMats.set(was, lit);
+      }
+      m.material = lit;
+    });
+    const mid = new THREE.Box3().setFromObject(t).getCenter(new THREE.Vector3());
+    t.position.sub(mid);
+    const flat = new THREE.Group();
+    flat.rotation.z = Math.PI / 2;
+    flat.add(t);
+    const g = new THREE.Group();
+    g.add(flat);
+    return g;
   }
 
   /**
@@ -1534,11 +1572,10 @@ export class Renderer implements Picker {
     // the hero's friends (src/render/friends.ts)
     syncFriends(this, dt);
 
-    // aura decal
+    // the aura about him: drawn off the effect pictures (spellfx.ts aura), else a rune circle in its colour
     const aura = p.activeAura && !p.dead && p.skillLevel(p.activeAura) > 0 ? p.activeAura : null;
-    if (aura === 'holy_fire' && this.fx.sheets.ground.mesh.visible) {
+    if (aura && this.fx.aura(aura, SKILL_BY_ID[aura].color, pp.x, pp.z, p.skillParams(aura).radius ?? 2.2, this.time, dt)) {
       this.auraDecal.visible = false;
-      this.fx.holyFireAura(pp.x, pp.z, p.skillParams(aura).radius ?? 2.2, this.time, dt);
     } else if (aura) {
       const def = SKILL_BY_ID[aura];
       this.auraDecal.visible = true;
@@ -1554,7 +1591,8 @@ export class Renderer implements Picker {
         this.fx.add.spawn({ x: p.pos.x + Math.sin(a) * d, y: 0.1, z: p.pos.z + Math.cos(a) * d, vy: 1 + Math.random(), color: def.color, size: 0.12, life: 0.9 });
       }
     } else this.auraDecal.visible = false;
-    this.shieldGlow.visible = p.holyShield > 0 && !p.dead;
+    const shielded = p.holyShield > 0 && !p.dead;
+    this.shieldGlow.visible = shielded && !this.fx.shield(pp.x, pp.z, this.time, dt);
     if (this.shieldGlow.visible) {
       this.shieldGlow.position.set(pp.x, 1.0, pp.z);
       this.shieldGlow.material.opacity = 0.2 + Math.sin(this.time * 3) * 0.05;
@@ -1628,8 +1666,8 @@ export class Renderer implements Picker {
       // elemental enchant auras
       if (!m.dead && m.mods.length && Math.random() < dt * 10) {
         // fire, cold and lightning enchanted (MonUMod 9, 18, 17)
-        const c = m.has(9) ? '#ff6010' : m.has(18) ? '#80c8ff' : m.has(17) ? '#ffff80' : null;
-        if (c) this.fx.add.spawn({ x: m.pos.x + (Math.random() - 0.5) * 0.6, y: 0.2 + Math.random() * 1.2, z: m.pos.z + (Math.random() - 0.5) * 0.6, vy: 0.8, color: c, size: 0.18, life: 0.6 });
+        const c = m.has(9) ? 'fire' : m.has(18) ? 'cold' : m.has(17) ? 'light' : null;
+        if (c) this.fx.enchanted(c, m.pos.x, m.pos.z);
       }
     }
     this.blobs.end();
@@ -1668,17 +1706,21 @@ export class Renderer implements Picker {
     for (const pr of level.projectiles) {
       pseen.add(pr);
       let v = this.projViews.get(pr);
+      // a glacial spike: an ice bolt half as big again
+      const big = pr.kind === 'iceshard' && pr.splash ? 1.5 : 1;
       if (!v) {
         v = makeProjectile(pr.kind);
+        v.group.scale.setScalar(big);
         this.dynGroup.add(v.group);
         this.projViews.set(pr, v);
       }
       const prp = this.at(pr);
       v.group.position.set(prp.x, 1.0, prp.z);
       v.group.rotation.y = Math.atan2(pr.vel.x, pr.vel.z);
-      // drawn off the effect pictures where it has them (effects.ts missile), else its own glow and trail
-      v.group.visible = !this.fx.missile(pr.kind, prp.x, 1.0, prp.z, v.group.rotation.y, pr.id, dt);
-      if (!v.group.visible) continue;
+      // drawn off the effect pictures where it has them, beside its model or for all of it (spellfx.ts missile), else its own glow and trail
+      const look = this.fx.missile(pr.kind, prp.x, 1.0, prp.z, v.group.rotation.y, pr.id, dt, big);
+      v.group.visible = look !== 'art';
+      if (look) continue;
       const trail = pr.kind === 'firebolt' || pr.kind === 'fireball' ? '#ff6010' : pr.kind === 'iceshard' ? '#80c8ff' : pr.kind === 'holybolt' ? '#fff0b0' : pr.kind === 'chargedbolt' ? '#a0b0ff' : null;
       if (trail && Math.random() < 0.8) this.fx.add.spawn({ x: pr.pos.x, y: 1.0, z: pr.pos.z, vy: 0.3, color: trail, size: pr.kind === 'fireball' ? 0.5 : 0.25, life: 0.3 });
     }
@@ -1699,13 +1741,13 @@ export class Renderer implements Picker {
       hseen.add(h);
       let v = this.hammerViews.get(h);
       if (!v) {
-        v = makeHammer();
+        v = this.hammerView();
         this.dynGroup.add(v);
         this.hammerViews.set(h, v);
       }
       v.position.set(h.pos.x, 0.9, h.pos.z);
       v.rotation.y += dt * 18;
-      if (Math.random() < 0.9) this.fx.add.spawn({ x: h.pos.x, y: 0.9, z: h.pos.z, color: '#6080ff', size: 0.35, life: 0.35, vy: 0.2 });
+      if (!this.fx.hammer(h.pos.x, h.pos.z, this.time, dt) && Math.random() < 0.9) this.fx.add.spawn({ x: h.pos.x, y: 0.9, z: h.pos.z, color: '#6080ff', size: 0.35, life: 0.35, vy: 0.2 });
     }
     for (const [h, v] of this.hammerViews) {
       if (!hseen.has(h)) {
